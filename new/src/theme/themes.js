@@ -1,0 +1,548 @@
+// Theme-Definitionen
+const THEMES = {
+  dark: {
+    bg:"#2C3035", surf:"#363B42", surf2:"#3D4349",
+    bd:"rgba(200,210,220,0.15)", bds:"rgba(200,210,220,0.28)",
+    txt:"#F0F2F4", txt2:"rgba(200,210,220,0.60)",
+    blue:"#AACC00", pos:"#AACC00", neg:"#EA4025", gold:"#F5A623",
+    lbl:"rgba(200,210,220,0.45)",  // Sekundärtext auf Hintergrund (bg)
+    vorm_bg:"#5A3A00", vorm_bd:"rgba(255,200,0,0.8)",  // Offene Vormerkungen Bar
+    cf:"#F6821F",      // Cloudflare-Akzent
+    mid:"#67E8F9",     // "Mitte"-Label Farbe
+    on_accent:"#1A1E00", disabled:"#2a2a2a",
+    warn:"#F59E0B", override:"#B45309",
+    cell_inc:"#C8E645", cell_inc_bg:"#0F1A00", cell_inc_bd:"#4A6600",
+    tab_exp:"#6B1A10", tab_inc:"#2A4A00", tab_pend:"#5A3A00",
+    surf3:"#2A2E35", err:"#FF4444",
+    // PAL: Buchungs-Panel-Farben
+    pal_inc_bg:"#161900", pal_inc_bd:"#3A4800", pal_inc_hdr:"#C8D400", pal_inc_fld:"#1A1E00", pal_inc_val:"#D4E040",
+    pal_exp_bg:"#1F0608", pal_exp_bd:"#5C1018", pal_exp_fld:"#240408",
+    pal_tg_bg:"#071820",  pal_tg_bd:"#1A3A48",  pal_tg_hdr:"#4A9FC0",  pal_tg_fld:"#091E2A",  pal_tg_val:"#80C8E0",
+    hero_bg:"linear-gradient(135deg,#1A1D22,#252B34)", logo_c1:"#6B9900", logo_c2:"#AACC00", err_bg:"#7A1020",
+    cond_neg:"#C0392B", cond_warn:"#E67E22", cond_gold:"#F1C40F", cond_pos:"#2ECC71",
+    name:"Dark (Dove Sport)",
+  },
+  light: {
+    bg:"#F2F4EF",    // Helles Grau-Grün
+    surf:"#FFFFFF",  // Weiß
+    surf2:"#EAEDE6", // Leicht getönt
+    bd:"rgba(60,80,40,0.15)", bds:"rgba(60,80,40,0.28)",
+    txt:"#1E2418",   // Fast Schwarz
+    txt2:"rgba(60,80,40,0.55)",
+    blue:"#6B9900",  // Dunkleres Limegreen (leserlich auf hell)
+    pos:"#6B9900",   // Einnahmen
+    neg:"#C0311A",   // Etwas gedämpftes Rot
+    gold:"#C07800",  // Dunkleres Amber
+    lbl:"rgba(60,80,40,0.42)",     // Sekundärtext auf Hintergrund (bg)
+    vorm_bg:"#FFF3CC", vorm_bd:"rgba(180,130,0,0.6)",  // Offene Vormerkungen Bar
+    cf:"#D4601A",      // Cloudflare-Akzent (dunkler für hell)
+    mid:"#2A90B8",     // "Mitte"-Label Farbe (dunkler für hell)
+    on_accent:"#FFFFFF", disabled:"#C0C8B0",
+    warn:"#B45309", override:"#8B4A00",
+    cell_inc:"#3A6600", cell_inc_bg:"#EDF5D0", cell_inc_bd:"#9CC050",
+    tab_exp:"#FEE8E4", tab_inc:"#E8F5D0", tab_pend:"#FFF3CC",
+    surf3:"#E8EDE4", err:"#C0271A",
+    // PAL: Buchungs-Panel-Farben (hell)
+    pal_inc_bg:"#F5FAE8", pal_inc_bd:"#C8DC80", pal_inc_hdr:"#6B9900", pal_inc_fld:"#EEF6D8", pal_inc_val:"#4A7000",
+    pal_exp_bg:"#FEF2F0", pal_exp_bd:"#F0B0A8", pal_exp_fld:"#FDE8E4",
+    pal_tg_bg:"#EFF7FC",  pal_tg_bd:"#A8D0E8",  pal_tg_hdr:"#4A9FC0",  pal_tg_fld:"#E4F2F8",  pal_tg_val:"#2A7A9C",
+    hero_bg:"linear-gradient(135deg,#7AAD00,#9CC800)", logo_c1:"#6B9900", logo_c2:"#AACC00", err_bg:"#7A0010",
+    cond_neg:"#C0392B", cond_warn:"#E67E22", cond_gold:"#D4A017", cond_pos:"#1A8A4A",
+    name:"Light (Dove Sport Hell)",
+  },
+  // ── Amazon Fire TV (1st Gen) ────────────────────────────────────────────
+  firetv: {
+    bg:"#161616", surf:"#232323", surf2:"#2C2C2C",
+    bd:"rgba(255,165,0,0.18)", bds:"rgba(255,165,0,0.35)",
+    txt:"#F0F0F0", txt2:"rgba(220,200,160,0.55)",
+    blue:"#FF9900", pos:"#67C15E", neg:"#E05252", gold:"#FF9900",
+    lbl:"rgba(220,200,160,0.45)",
+    vorm_bg:"#2A1A00", vorm_bd:"rgba(255,153,0,0.7)",
+    cf:"#FF9900", mid:"#67C15E",
+    on_accent:"#111111", disabled:"#333333",
+    warn:"#FF9900", override:"#CC7700",
+    cell_inc:"#67C15E", cell_inc_bg:"#0D1F0C", cell_inc_bd:"#2A5A28",
+    tab_exp:"#2A1010", tab_inc:"#0D1F0C", tab_pend:"#2A1A00",
+    surf3:"#1C1C1C", err:"#E05252",
+    pal_inc_bg:"#0D1F0C", pal_inc_bd:"#2A5A28", pal_inc_hdr:"#67C15E", pal_inc_fld:"#142014", pal_inc_val:"#8AE080",
+    pal_exp_bg:"#1F0A0A", pal_exp_bd:"#5A2020", pal_exp_fld:"#280F0F",
+    pal_tg_bg:"#1A1400", pal_tg_bd:"#4A3800", pal_tg_hdr:"#FF9900", pal_tg_fld:"#221A00", pal_tg_val:"#FFBB44",
+    hero_bg:"linear-gradient(135deg,#1C1C1C,#2C2C2C)",  logo_c1:"#FF9900", logo_c2:"#FFBB44", err_bg:"#5A1010",
+    cond_neg:"#E05252", cond_warn:"#FF9900", cond_gold:"#FFD700", cond_pos:"#67C15E",
+    name:"Amazon Fire TV",
+  },
+  // ── Xbox Series S/X ──────────────────────────────────────────────────────
+  xbox: {
+    bg:"#0A0A0A", surf:"#141414", surf2:"#1E1E1E",
+    bd:"rgba(16,124,16,0.25)", bds:"rgba(16,124,16,0.50)",
+    txt:"#FFFFFF", txt2:"rgba(180,220,180,0.55)",
+    blue:"#107C10", pos:"#5EC95E", neg:"#D04040", gold:"#FFB900",
+    lbl:"rgba(180,220,180,0.45)",
+    vorm_bg:"#0A1A0A", vorm_bd:"rgba(16,124,16,0.75)",
+    cf:"#107C10", mid:"#5EC95E",
+    on_accent:"#FFFFFF", disabled:"#2A2A2A",
+    warn:"#FFB900", override:"#CC8800",
+    cell_inc:"#5EC95E", cell_inc_bg:"#061406", cell_inc_bd:"#1A4A1A",
+    tab_exp:"#1A0808", tab_inc:"#061406", tab_pend:"#1A1400",
+    surf3:"#121212", err:"#D04040",
+    pal_inc_bg:"#061406", pal_inc_bd:"#1A4A1A", pal_inc_hdr:"#5EC95E", pal_inc_fld:"#0A1E0A", pal_inc_val:"#80E080",
+    pal_exp_bg:"#1A0606", pal_exp_bd:"#4A1414", pal_exp_fld:"#220A0A",
+    pal_tg_bg:"#0A1000", pal_tg_bd:"#203A10", pal_tg_hdr:"#107C10", pal_tg_fld:"#0E1A08", pal_tg_val:"#40A040",
+    hero_bg:"linear-gradient(135deg,#0A0A0A,#141414)",   logo_c1:"#107C10", logo_c2:"#5EC95E", err_bg:"#4A0808",
+    cond_neg:"#D04040", cond_warn:"#FFB900", cond_gold:"#FFD700", cond_pos:"#5EC95E",
+    name:"Xbox Series",
+  },
+  // ── PlayStation 5 ────────────────────────────────────────────────────────
+  ps5: {
+    bg:"#050914", surf:"#0D1526", surf2:"#152038",
+    bd:"rgba(0,160,214,0.20)", bds:"rgba(0,160,214,0.40)",
+    txt:"#E8F0FF", txt2:"rgba(160,190,230,0.55)",
+    blue:"#00A0D6", pos:"#00CC88", neg:"#E84060", gold:"#F0C040",
+    lbl:"rgba(160,190,230,0.45)",
+    vorm_bg:"#0A0818", vorm_bd:"rgba(0,160,214,0.65)",
+    cf:"#00A0D6", mid:"#00CC88",
+    on_accent:"#FFFFFF", disabled:"#1A2A3A",
+    warn:"#F0C040", override:"#C09030",
+    cell_inc:"#00CC88", cell_inc_bg:"#00180E", cell_inc_bd:"#005A38",
+    tab_exp:"#1A0818", tab_inc:"#00180E", tab_pend:"#180A00",
+    surf3:"#0A1020", err:"#E84060",
+    pal_inc_bg:"#00180E", pal_inc_bd:"#005A38", pal_inc_hdr:"#00CC88", pal_inc_fld:"#002010", pal_inc_val:"#40E8A8",
+    pal_exp_bg:"#180610", pal_exp_bd:"#501828", pal_exp_fld:"#200816",
+    pal_tg_bg:"#04091A", pal_tg_bd:"#082040", pal_tg_hdr:"#00A0D6", pal_tg_fld:"#071230", pal_tg_val:"#40C8F0",
+    hero_bg:"linear-gradient(135deg,#050914,#0D1526)",   logo_c1:"#00A0D6", logo_c2:"#00CC88", err_bg:"#4A0818",
+    cond_neg:"#E84060", cond_warn:"#F0C040", cond_gold:"#FFD700", cond_pos:"#00CC88",
+    name:"PlayStation 5",
+  },
+  // ── Disney+ ──────────────────────────────────────────────────────────────
+  disneyplus: {
+    bg:"#040B1C", surf:"#0B1A38", surf2:"#122248",
+    bd:"rgba(20,100,214,0.25)", bds:"rgba(20,100,214,0.48)",
+    txt:"#F0F4FF", txt2:"rgba(160,185,230,0.55)",
+    blue:"#1464D6", pos:"#1AC8A0", neg:"#E83050", gold:"#F5C518",
+    lbl:"rgba(160,185,230,0.45)",
+    vorm_bg:"#08102A", vorm_bd:"rgba(245,197,24,0.65)",
+    cf:"#1464D6", mid:"#1AC8A0",
+    on_accent:"#FFFFFF", disabled:"#1A2840",
+    warn:"#F5C518", override:"#C89C14",
+    cell_inc:"#1AC8A0", cell_inc_bg:"#001A14", cell_inc_bd:"#006050",
+    tab_exp:"#1A0810", tab_inc:"#001A14", tab_pend:"#1A1000",
+    surf3:"#081428", err:"#E83050",
+    pal_inc_bg:"#001A14", pal_inc_bd:"#006050", pal_inc_hdr:"#1AC8A0", pal_inc_fld:"#002018", pal_inc_val:"#50E8C0",
+    pal_exp_bg:"#180610", pal_exp_bd:"#501828", pal_exp_fld:"#200816",
+    pal_tg_bg:"#030A1A", pal_tg_bd:"#0A1C48", pal_tg_hdr:"#1464D6", pal_tg_fld:"#081030", pal_tg_val:"#4890F0",
+    hero_bg:"linear-gradient(135deg,#040B1C,#0B1A38)",   logo_c1:"#1464D6", logo_c2:"#1AC8A0", err_bg:"#4A0810",
+    cond_neg:"#E83050", cond_warn:"#F5C518", cond_gold:"#FFD700", cond_pos:"#1AC8A0",
+    name:"Disney+",
+  },
+  // ── Netflix ──────────────────────────────────────────────────────────────
+  netflix: {
+    bg:"#141414", surf:"#1F1F1F", surf2:"#2A2A2A",
+    bd:"rgba(229,9,20,0.20)", bds:"rgba(229,9,20,0.40)",
+    txt:"#FFFFFF", txt2:"rgba(200,200,200,0.55)",
+    blue:"#E50914", pos:"#46D369", neg:"#E50914", gold:"#F5A623",
+    lbl:"rgba(200,200,200,0.45)",
+    vorm_bg:"#2A0808", vorm_bd:"rgba(229,9,20,0.70)",
+    cf:"#E50914", mid:"#46D369",
+    on_accent:"#FFFFFF", disabled:"#333333",
+    warn:"#F5A623", override:"#CC7700",
+    cell_inc:"#46D369", cell_inc_bg:"#091A0E", cell_inc_bd:"#1A5A28",
+    tab_exp:"#2A0808", tab_inc:"#091A0E", tab_pend:"#1A1200",
+    surf3:"#1A1A1A", err:"#E50914",
+    pal_inc_bg:"#091A0E", pal_inc_bd:"#1A5A28", pal_inc_hdr:"#46D369", pal_inc_fld:"#0E2016", pal_inc_val:"#70E890",
+    pal_exp_bg:"#1F0606", pal_exp_bd:"#601010", pal_exp_fld:"#280A0A",
+    pal_tg_bg:"#141414", pal_tg_bd:"#3A1010", pal_tg_hdr:"#E50914", pal_tg_fld:"#1A0A0A", pal_tg_val:"#FF4444",
+    hero_bg:"linear-gradient(135deg,#141414,#1F1F1F)",   logo_c1:"#E50914", logo_c2:"#FF4444", err_bg:"#5A0808",
+    cond_neg:"#E50914", cond_warn:"#F5A623", cond_gold:"#FFD700", cond_pos:"#46D369",
+    name:"Netflix",
+  },
+  // ── MagentaTV ────────────────────────────────────────────────────────────
+  magenta: {
+    bg:"#1A0018", surf:"#280028", surf2:"#340038",
+    bd:"rgba(226,0,116,0.22)", bds:"rgba(226,0,116,0.44)",
+    txt:"#FFE8F8", txt2:"rgba(255,180,240,0.55)",
+    blue:"#E20074", pos:"#60D080", neg:"#FF4060", gold:"#FFB800",
+    lbl:"rgba(255,180,240,0.45)",
+    vorm_bg:"#200018", vorm_bd:"rgba(226,0,116,0.70)",
+    cf:"#E20074", mid:"#60D080",
+    on_accent:"#FFFFFF", disabled:"#3A003A",
+    warn:"#FFB800", override:"#CC8C00",
+    cell_inc:"#60D080", cell_inc_bg:"#081A10", cell_inc_bd:"#205A30",
+    tab_exp:"#200010", tab_inc:"#081A10", tab_pend:"#180C00",
+    surf3:"#1E0020", err:"#FF4060",
+    pal_inc_bg:"#081A10", pal_inc_bd:"#205A30", pal_inc_hdr:"#60D080", pal_inc_fld:"#0E2018", pal_inc_val:"#88E8A0",
+    pal_exp_bg:"#1E0810", pal_exp_bd:"#601028", pal_exp_fld:"#280A14",
+    pal_tg_bg:"#140010", pal_tg_bd:"#400040", pal_tg_hdr:"#E20074", pal_tg_fld:"#1C0018", pal_tg_val:"#FF60B0",
+    hero_bg:"linear-gradient(135deg,#1A0018,#280028)",   logo_c1:"#E20074", logo_c2:"#FF60B0", err_bg:"#3A0010",
+    cond_neg:"#FF4060", cond_warn:"#FFB800", cond_gold:"#FFD700", cond_pos:"#60D080",
+    name:"MagentaTV",
+  },
+  // ── iOS / Apple Light ────────────────────────────────────────────────────
+  ios: {
+    bg:"#F2F2F7", surf:"#FFFFFF", surf2:"#E5E5EA",
+    bd:"rgba(60,60,67,0.12)", bds:"rgba(60,60,67,0.25)",
+    txt:"#000000", txt2:"rgba(60,60,67,0.55)",
+    blue:"#007AFF", pos:"#34C759", neg:"#FF3B30", gold:"#FF9500",
+    lbl:"rgba(60,60,67,0.45)",
+    vorm_bg:"#FFF3E0", vorm_bd:"rgba(255,149,0,0.55)",
+    cf:"#FF6B00", mid:"#007AFF",
+    on_accent:"#FFFFFF", disabled:"#C7C7CC",
+    warn:"#FF9500", override:"#CC7A00",
+    cell_inc:"#34C759", cell_inc_bg:"#E8F9ED", cell_inc_bd:"#A8E8B8",
+    tab_exp:"#FFE8E8", tab_inc:"#E8F9ED", tab_pend:"#FFF3E0",
+    surf3:"#EFEFF4", err:"#FF3B30",
+    pal_inc_bg:"#E8F9ED", pal_inc_bd:"#A8E8B8", pal_inc_hdr:"#1A8C34", pal_inc_fld:"#D8F5E0", pal_inc_val:"#0A6020",
+    pal_exp_bg:"#FFE8E8", pal_exp_bd:"#F0A8A8", pal_exp_fld:"#FFD8D8",
+    pal_tg_bg:"#E8F4FF", pal_tg_bd:"#A8D0F8", pal_tg_hdr:"#007AFF", pal_tg_fld:"#D8ECFF", pal_tg_val:"#0055CC",
+    hero_bg:"linear-gradient(135deg,#E8F9ED,#C8F0D8)",   logo_c1:"#007AFF", logo_c2:"#34C759", err_bg:"#FFE0E0",
+    cond_neg:"#FF3B30", cond_warn:"#FF9500", cond_gold:"#FFCC00", cond_pos:"#34C759",
+    name:"iOS Light",
+  },
+  // ── Material Light (Google) ───────────────────────────────────────────────
+  material: {
+    bg:"#FAFAFA", surf:"#FFFFFF", surf2:"#F5F5F5",
+    bd:"rgba(0,0,0,0.10)", bds:"rgba(0,0,0,0.22)",
+    txt:"#212121", txt2:"rgba(0,0,0,0.50)",
+    blue:"#1976D2", pos:"#388E3C", neg:"#D32F2F", gold:"#F57C00",
+    lbl:"rgba(0,0,0,0.42)",
+    vorm_bg:"#FFF8E1", vorm_bd:"rgba(245,124,0,0.50)",
+    cf:"#E64A19", mid:"#0288D1",
+    on_accent:"#FFFFFF", disabled:"#BDBDBD",
+    warn:"#F57C00", override:"#BF360C",
+    cell_inc:"#388E3C", cell_inc_bg:"#E8F5E9", cell_inc_bd:"#A5D6A7",
+    tab_exp:"#FFEBEE", tab_inc:"#E8F5E9", tab_pend:"#FFF8E1",
+    surf3:"#EEEEEE", err:"#D32F2F",
+    pal_inc_bg:"#E8F5E9", pal_inc_bd:"#A5D6A7", pal_inc_hdr:"#2E7D32", pal_inc_fld:"#DCEDC8", pal_inc_val:"#1B5E20",
+    pal_exp_bg:"#FFEBEE", pal_exp_bd:"#EF9A9A", pal_exp_fld:"#FFE0E0",
+    pal_tg_bg:"#E3F2FD", pal_tg_bd:"#90CAF9", pal_tg_hdr:"#1976D2", pal_tg_fld:"#BBDEFB", pal_tg_val:"#0D47A1",
+    hero_bg:"linear-gradient(135deg,#E8F5E9,#C8E6C9)",   logo_c1:"#1976D2", logo_c2:"#388E3C", err_bg:"#FFEBEE",
+    cond_neg:"#D32F2F", cond_warn:"#F57C00", cond_gold:"#FBC02D", cond_pos:"#388E3C",
+    name:"Material Light",
+  },
+  // ── Papier / Warm White ───────────────────────────────────────────────────
+  paper: {
+    bg:"#F8F4EE", surf:"#FFFDF8", surf2:"#F0EBE0",
+    bd:"rgba(80,60,30,0.12)", bds:"rgba(80,60,30,0.25)",
+    txt:"#2C1F0E", txt2:"rgba(80,60,30,0.50)",
+    blue:"#5C4A1E", pos:"#3A7A3A", neg:"#B03020", gold:"#A07010",
+    lbl:"rgba(80,60,30,0.42)",
+    vorm_bg:"#FFF5DC", vorm_bd:"rgba(160,112,16,0.50)",
+    cf:"#C05C10", mid:"#4A7A9A",
+    on_accent:"#FFFDF8", disabled:"#C8BEA8",
+    warn:"#A07010", override:"#804A00",
+    cell_inc:"#3A7A3A", cell_inc_bg:"#EEF5EE", cell_inc_bd:"#A8C8A8",
+    tab_exp:"#F8EEEC", tab_inc:"#EEF5EE", tab_pend:"#FFF5DC",
+    surf3:"#EDE8DF", err:"#B03020",
+    pal_inc_bg:"#EEF5EE", pal_inc_bd:"#A8C8A8", pal_inc_hdr:"#2A5A2A", pal_inc_fld:"#E0EEE0", pal_inc_val:"#1A401A",
+    pal_exp_bg:"#F8EEEC", pal_exp_bd:"#E0A898", pal_exp_fld:"#F0E0DC",
+    pal_tg_bg:"#EEF2F8", pal_tg_bd:"#A8B8D0", pal_tg_hdr:"#4A6A9A", pal_tg_fld:"#E0E8F4", pal_tg_val:"#2A4A7A",
+    hero_bg:"linear-gradient(135deg,#EEF5EE,#E0EEE0)",   logo_c1:"#5C4A1E", logo_c2:"#3A7A3A", err_bg:"#F8EEEC",
+    cond_neg:"#B03020", cond_warn:"#A07010", cond_gold:"#C8960C", cond_pos:"#3A7A3A",
+    name:"Papier",
+  },
+
+  // ── DKB Banking App (hell, wie die echte App) ────────────────────────────
+  dkb: {
+    bg:"#E8EEF4",        // Entsättigtes Hellblau — DKB App Hintergrund
+    surf:"#FFFFFF",      // Weiße Karten / Hero-Cards
+    surf2:"#D8E4EE",     // Info-Hero: etwas dunkleres entsättigtes Hellblau
+    surf3:"#EDF2F7",     // Leicht abgehobene Fläche
+    bd:"#DDE6EF",        // Klare helle Rahmen
+    bds:"#B8CAD8",       // Stärkerer Rahmen
+    txt:"#0D1520",       // Fast Schwarz für Haupttext
+    txt2:"#5A6E80",      // Hellgrau für Sekundärtext
+    blue:"#003F7E",      // DKB-Primärblau
+    pos:"#1A5C2A",       // Dunkelgrün
+    neg:"#C0311A",       // Gedämpftes Rot
+    gold:"#8A6800",      // Gedämpftes Amber
+    lbl:"#7A8E9E",
+    vorm_bg:"#FFF8E0",   vorm_bd:"#C8960A",
+    cf:"#003F7E",        mid:"#1A5C2A",
+    on_accent:"#FFFFFF", disabled:"#C0CDD8",
+    warn:"#8A6800",      override:"#6A4E00",
+    cell_inc:"#1A5C2A",  cell_inc_bg:"#D4EAD8", cell_inc_bd:"#8EC89A",
+    tab_exp:"#FAEAE8",   tab_inc:"#E0EED8",    tab_pend:"#FFF3D0",
+    err:"#C0311A",
+    pal_inc_bg:"#E0EED8", pal_inc_bd:"#9EC8AA", pal_inc_hdr:"#1A5C2A", pal_inc_fld:"#D0E8D8", pal_inc_val:"#0D3818",
+    pal_exp_bg:"#FAEAE8", pal_exp_bd:"#E8B0A8", pal_exp_fld:"#F4D8D4",
+    pal_tg_bg:"#DCE8F4",  pal_tg_bd:"#98BAD8",  pal_tg_hdr:"#003F7E",  pal_tg_fld:"#CCE0EE",  pal_tg_val:"#00285A",
+    hero_bg:"linear-gradient(135deg,#D8E4EE,#E8EEF4)", logo_c1:"#003F7E", logo_c2:"#0060C0", err_bg:"#FAE0DC",
+    cond_neg:"#C0311A", cond_warn:"#8A6800", cond_gold:"#A07800", cond_pos:"#1A5C2A",
+    name:"DKB Hell",
+  },
+
+  // ── Obsidian — Tiefes Dunkel, elektrische Akzente, maximale Lesbarkeit ───────
+  obsidian: {
+    name:"Obsidian",
+    bg:"#0F1117",        // Fast-Schwarz mit Blauton
+    surf:"#1C1F2E",      // Erhöhte Fläche — Mitternachtsblau
+    surf2:"#252840",     // Noch höher — tiefes Blauviolett
+    surf3:"#161927",     // Tiefer als bg
+    bd:"#2E3356",        // Klare Trennlinie, kein Alpha
+    bds:"#3D4470",       // Stärkere Trennlinie
+    txt:"#F0F2FF",       // Fast-Weiß mit Kühle
+    txt2:"#7B82B0",      // Gedimmtes Blaugrau
+    lbl:"#5A6090",
+    // Akzentfarbe: elektrisches Indigo
+    blue:"#6C63FF",
+    // Einnahmen: Smaragd
+    pos:"#00D68F",
+    cell_inc:"#00D68F",  cell_inc_bg:"#00200F", cell_inc_bd:"#005030",
+    // Ausgaben: Koralle
+    neg:"#FF5370",
+    // Gold/Warn: Bernstein
+    gold:"#FFB547",
+    warn:"#FFB547",      override:"#CC8800",
+    // Buttons
+    on_accent:"#FFFFFF", disabled:"#252840",
+    // Vormerkungen: tiefes Bernstein
+    vorm_bg:"#1F1500",   vorm_bd:"#CC8800",
+    // Halbmonat-Label
+    cf:"#6C63FF",        mid:"#00D68F",
+    // Tabs
+    tab_exp:"#2A0A10",   tab_inc:"#001F12",    tab_pend:"#1A1000",
+    // Panels
+    pal_inc_bg:"#001912", pal_inc_bd:"#005030", pal_inc_hdr:"#00D68F", pal_inc_fld:"#001510", pal_inc_val:"#33FFB8",
+    pal_exp_bg:"#1A0810", pal_exp_bd:"#5A1030", pal_exp_fld:"#150508",
+    pal_tg_bg:"#0D1030",  pal_tg_bd:"#2E3356",  pal_tg_hdr:"#6C63FF",  pal_tg_fld:"#0A0D25",  pal_tg_val:"#A09CFF",
+    // Hero
+    hero_bg:"linear-gradient(135deg,#0F1117,#1C1F2E)",
+    logo_c1:"#4A42CC",   logo_c2:"#6C63FF",
+    err:"#FF5370",       err_bg:"#250510",
+    cond_neg:"#FF5370",  cond_warn:"#FFB547",  cond_gold:"#FFD166",  cond_pos:"#00D68F",
+  },
+
+  // ── Sand — Warmes Hellthema, erdige Töne, maximale Lesbarkeit ────────────────
+  sand: {
+    name:"Sand",
+    bg:"#F5F0E8",        // Warmes Off-White
+    surf:"#FFFFFF",      // Karten: reines Weiß
+    surf2:"#EDE8DF",     // Leicht vertieft
+    surf3:"#F9F6F0",
+    bd:"#DDD5C8",        // Warmer Sandton
+    bds:"#C4B8A8",
+    txt:"#1A1410",       // Tiefes Warmbraun
+    txt2:"#7A6E62",      // Gedimmtes Braun
+    lbl:"#9A8E82",
+    blue:"#6B4FBF",      // Tiefes Violett — Akzent
+    pos:"#1A7A4A",       // Sattgrün
+    cell_inc:"#1A7A4A",  cell_inc_bg:"#E8F5EE", cell_inc_bd:"#A0CEB4",
+    neg:"#C0391A",       // Terrakotta-Rot
+    gold:"#8A5A00",      // Dunkles Amber
+    warn:"#8A5A00",      override:"#5A3A00",
+    on_accent:"#FFFFFF", disabled:"#D8D0C4",
+    vorm_bg:"#FFF3D8",   vorm_bd:"#B07800",
+    cf:"#6B4FBF",        mid:"#1A7A4A",
+    tab_exp:"#FAE8E0",   tab_inc:"#E8F5EE",    tab_pend:"#FFF3D8",
+    pal_inc_bg:"#E8F5EE", pal_inc_bd:"#A0CEB4", pal_inc_hdr:"#1A7A4A", pal_inc_fld:"#D8EEE4", pal_inc_val:"#0D4A2A",
+    pal_exp_bg:"#FAE8E0", pal_exp_bd:"#D4A090", pal_exp_fld:"#F5DDD5",
+    pal_tg_bg:"#EDE8F8",  pal_tg_bd:"#B4A0DC",  pal_tg_hdr:"#6B4FBF",  pal_tg_fld:"#E4DEFC",  pal_tg_val:"#4A30A0",
+    hero_bg:"linear-gradient(135deg,#EDE8DF,#F5F0E8)",
+    logo_c1:"#4A30A0",   logo_c2:"#6B4FBF",
+    err:"#C0391A",       err_bg:"#FAE8E0",
+    cond_neg:"#C0391A",  cond_warn:"#8A5A00",  cond_gold:"#A07000",  cond_pos:"#1A7A4A",
+  },
+
+  // ── Clean — Minimalistisch, kein Schnörkel, reines SW ───────────────────
+  clean: {
+    name:"Clean",
+    bg:"#FFFFFF",
+    surf:"#F5F5F5",
+    surf2:"#EBEBEB",
+    surf3:"#F0F0F0",
+    bd:"#CCCCCC",
+    bds:"#999999",
+    txt:"#000000",
+    txt2:"#555555",
+    lbl:"#777777",
+    blue:"#0066CC",
+    pos:"#006600",
+    neg:"#CC0000",
+    gold:"#886600",
+    warn:"#886600",   override:"#664400",
+    on_accent:"#FFFFFF", disabled:"#CCCCCC",
+    cell_inc:"#006600",  cell_inc_bg:"#EEFFEE", cell_inc_bd:"#99CC99",
+    tab_exp:"#FFEEEE",   tab_inc:"#EEFFEE",    tab_pend:"#FFFFEE",
+    vorm_bg:"#FFFFF0",   vorm_bd:"#AAAAAA",
+    cf:"#0066CC",        mid:"#006699",
+    pal_inc_bg:"#EEFFEE", pal_inc_bd:"#99CC99", pal_inc_hdr:"#006600", pal_inc_fld:"#E0FFE0", pal_inc_val:"#003300",
+    pal_exp_bg:"#FFEEEE", pal_exp_bd:"#CC9999", pal_exp_fld:"#FFE0E0",
+    pal_tg_bg:"#EEF4FF",  pal_tg_bd:"#99BBEE",  pal_tg_hdr:"#0066CC",  pal_tg_fld:"#E0EEFF",  pal_tg_val:"#003399",
+    hero_bg:"#F5F5F5",
+    logo_c1:"#333333",   logo_c2:"#000000",
+    err:"#CC0000",       err_bg:"#FFEEEE",
+    cond_neg:"#CC0000",  cond_warn:"#886600",  cond_gold:"#886600",  cond_pos:"#006600",
+  },
+
+  // ── Brutalist / Anti-Design ───────────────────────────────────────────────
+  brutalist: {
+    name:"Brutalist",
+    bg:"#FFEC3E",
+    surf:"#FFFFFF",
+    surf2:"#F5E800",
+    surf3:"#FFF8A0",
+    bd:"#000000",
+    bds:"#000000",
+    txt:"#000000",
+    txt2:"#333333",
+    lbl:"#444444",
+    blue:"#000000",
+    pos:"#000000",
+    neg:"#CC0000",
+    gold:"#000000",
+    warn:"#CC0000",   override:"#880000",
+    on_accent:"#FFEC3E", disabled:"#CCCCCC",
+    cell_inc:"#000000",  cell_inc_bg:"#CCFFCC", cell_inc_bd:"#000000",
+    tab_exp:"#FFCCCC",   tab_inc:"#CCFFCC",    tab_pend:"#FFF8A0",
+    vorm_bg:"#FFF8A0",   vorm_bd:"#000000",
+    cf:"#000000",        mid:"#000000",
+    pal_inc_bg:"#CCFFCC", pal_inc_bd:"#000000", pal_inc_hdr:"#000000", pal_inc_fld:"#BBFFBB", pal_inc_val:"#000000",
+    pal_exp_bg:"#FFCCCC", pal_exp_bd:"#000000", pal_exp_fld:"#FFBBBB",
+    pal_tg_bg:"#E8F4FF",  pal_tg_bd:"#000000",  pal_tg_hdr:"#000000",  pal_tg_fld:"#D0EAFF",  pal_tg_val:"#000000",
+    hero_bg:"#FFEC3E",
+    logo_c1:"#000000",   logo_c2:"#333333",
+    err:"#CC0000",       err_bg:"#FFCCCC",
+    cond_neg:"#CC0000",  cond_warn:"#884400",  cond_gold:"#664400",  cond_pos:"#006600",
+  },
+
+  // ── Terminal / Hacker ─────────────────────────────────────────────────────
+  terminal: {
+    name:"Terminal",
+    bg:"#0D0D0D",
+    surf:"#111111",
+    surf2:"#1A1A1A",
+    surf3:"#0A0A0A",
+    bd:"#00FF4133",
+    bds:"#00FF4166",
+    txt:"#00FF41",
+    txt2:"#00AA2A",
+    lbl:"#007A1E",
+    blue:"#00FF41",
+    pos:"#00FF41",
+    neg:"#FF4444",
+    gold:"#FFD700",
+    warn:"#FFD700",   override:"#CC9900",
+    on_accent:"#0D0D0D", disabled:"#1A1A1A",
+    cell_inc:"#00FF41",  cell_inc_bg:"#001A00", cell_inc_bd:"#005500",
+    tab_exp:"#1A0000",   tab_inc:"#001A00",    tab_pend:"#1A1400",
+    vorm_bg:"#1A1400",   vorm_bd:"#FFD70066",
+    cf:"#00FF41",        mid:"#00CCFF",
+    pal_inc_bg:"#001A00", pal_inc_bd:"#005500", pal_inc_hdr:"#00FF41", pal_inc_fld:"#002200", pal_inc_val:"#44FF66",
+    pal_exp_bg:"#1A0000", pal_exp_bd:"#660000", pal_exp_fld:"#220000",
+    pal_tg_bg:"#001A1A",  pal_tg_bd:"#005555",  pal_tg_hdr:"#00CCFF",  pal_tg_fld:"#002222",  pal_tg_val:"#44DDFF",
+    hero_bg:"#0D0D0D",
+    logo_c1:"#007A1E",   logo_c2:"#00FF41",
+    err:"#FF4444",       err_bg:"#1A0000",
+    cond_neg:"#FF4444",  cond_warn:"#FFD700",  cond_gold:"#FFD700",  cond_pos:"#00FF41",
+  },
+
+  // ── Swiss / International Style ───────────────────────────────────────────
+  swiss: {
+    name:"Swiss",
+    bg:"#FFFFFF",
+    surf:"#FAFAFA",
+    surf2:"#F0F0F0",
+    surf3:"#F8F8F8",
+    bd:"#DDDDDD",
+    bds:"#AAAAAA",
+    txt:"#111111",
+    txt2:"#777777",
+    lbl:"#999999",
+    blue:"#111111",
+    pos:"#111111",
+    neg:"#111111",
+    gold:"#555555",
+    warn:"#555555",   override:"#333333",
+    on_accent:"#FFFFFF", disabled:"#CCCCCC",
+    cell_inc:"#111111",  cell_inc_bg:"#F0F0F0", cell_inc_bd:"#AAAAAA",
+    tab_exp:"#F5F5F5",   tab_inc:"#F0F0F0",    tab_pend:"#F8F8F8",
+    vorm_bg:"#F0F0F0",   vorm_bd:"#AAAAAA",
+    cf:"#111111",        mid:"#555555",
+    pal_inc_bg:"#F0F0F0", pal_inc_bd:"#AAAAAA", pal_inc_hdr:"#111111", pal_inc_fld:"#E8E8E8", pal_inc_val:"#111111",
+    pal_exp_bg:"#F5F5F5", pal_exp_bd:"#AAAAAA", pal_exp_fld:"#EEEEEE",
+    pal_tg_bg:"#F0F0F0",  pal_tg_bd:"#AAAAAA",  pal_tg_hdr:"#111111",  pal_tg_fld:"#E8E8E8",  pal_tg_val:"#111111",
+    hero_bg:"#FFFFFF",
+    logo_c1:"#555555",   logo_c2:"#111111",
+    err:"#111111",       err_bg:"#F5F5F5",
+    cond_neg:"#111111",  cond_warn:"#555555",  cond_gold:"#555555",  cond_pos:"#111111",
+  },
+
+  // ── Keyboard / Tastatur-inspiriert ─────────────────────────────────────────
+  // Korrigiert nach genauer Screenshot-Analyse: Tasten sind HELL genug, dass
+  // schwarzer Text + leuchtend gelbgrüne Großbuchstaben gut lesbar sind.
+  // Hierarchie wie auf der echten Tastatur:
+  //   - App-BG (Installer-Fenster):  #2D2D33  dunkles Anthrazit
+  //   - Tastatur-Rahmen (Strich):    #E8E8E0  fast-weiß
+  //   - Zwischen den Tasten:         #4A4A48  mittel-dunkel
+  //   - Tastenflächen (=Karten):     #B8B8B0  helles Grau (Sand-ähnlich)
+  //   - Text auf Tasten:             #1A1A18  schwarz (wie Kleinbuchstaben)
+  //   - Akzent:                      #D4E834  gelbgrün (Großbuchstaben)
+  //   - Petrol:                      #2D5A78  (Selektions-Highlight)
+  keyboard: {
+    name:"Keyboard",
+    bg:"#2D2D33",                // App-BG = Installer-Hintergrund (dunkel)
+    surf:"#B8B8B0",              // Karten = Tastenflächen (HELL, schwarzer Text drauf)
+    surf2:"#A8A8A0",             // leicht dunkler (Modals etc.)
+    surf3:"#9A9A95",             // dunklere Variante (Trennungen)
+    cat_bg:"#B8B8B0",            // Kategorien-Karten = Tasten-Hell
+    bd:"rgba(40,40,38,0.45)",        // Tasten-Rahmen-Kanten
+    bds:"rgba(40,40,38,0.75)",       // stärker
+    txt:"#1A1A18",               // schwarzer Text auf den hellen Tasten
+    txt2:"rgba(30,30,28,0.65)",  // gedämpfter Text
+    lbl:"rgba(30,30,28,0.50)",   // Labels
+    blue:"#5A6B14",              // sattes Olivgrün als Hauptakzent (auf hell lesbar)
+    pos:"#5A6B14",               // Einnahmen-Grün
+    neg:"#A82820",               // sattes Rot (auf hell gut sichtbar)
+    gold:"#8B5A00",              // dunkler Bernstein
+    warn:"#A0541A",
+    override:"#7A3A00",
+    on_accent:"#FFFFFF",         // weißer Text auf Accent-Buttons
+    disabled:"#888880",
+    mid:"#1F4060",               // tiefes Petrol-Blau (für Mitte/Tagesgeld)
+    cf:"#B0501A",
+    vorm_bg:"#F0E0B0",   vorm_bd:"rgba(140,100,0,0.7)",
+    cell_inc:"#4A5810",  cell_inc_bg:"rgba(212,232,52,0.32)", cell_inc_bd:"#8FA821",
+    tab_exp:"rgba(168,40,32,0.18)",   tab_inc:"rgba(212,232,52,0.32)",     tab_pend:"rgba(180,130,0,0.20)",
+    pal_inc_bg:"#D4E07A",  pal_inc_bd:"#A0B82A",  pal_inc_hdr:"#3A4A00",  pal_inc_fld:"#C8D670",  pal_inc_val:"#2A3500",
+    pal_exp_bg:"#E8C0B8",  pal_exp_bd:"#A82820",  pal_exp_fld:"#DCB0A8",  /* fld für Eingabefeld in Ausgaben-Palette */
+    pal_tg_bg:"#A8C8DC",   pal_tg_bd:"#1F4060",   pal_tg_hdr:"#0A2540",   pal_tg_fld:"#90B8D0",   pal_tg_val:"#0A2540",
+    hero_bg:"linear-gradient(135deg,#C8C8C0,#A8A8A0)",
+    logo_c1:"#3A4A00",     logo_c2:"#D4E834",
+    err:"#A82820",         err_bg:"rgba(168,40,32,0.18)",
+    cond_neg:"#A82820",    cond_warn:"#8B5A00",   cond_gold:"#8B5A00",   cond_pos:"#5A6B14",
+  },
+
+};
+// Globales T — wird von getAppTheme() überschrieben, initialisiert mit dark — wird von getAppTheme() überschrieben, initialisiert mit dark
+function getTheme(name) {
+  const t = THEMES[name] || THEMES.dark;
+  if (!t.lbl)         t.lbl         = t.txt2;
+  if (!t.cf)          t.cf          = "#F6821F";
+  if (!t.mid)         t.mid         = "#67E8F9";
+  if (!t.on_accent)   t.on_accent   = "#1A1E00";
+  if (!t.disabled)    t.disabled    = "#2a2a2a";
+  if (!t.warn)        t.warn        = "#F59E0B";
+  if (!t.override)    t.override    = "#B45309";
+  if (!t.cell_inc)    t.cell_inc    = "#C8E645";
+  if (!t.cell_inc_bg) t.cell_inc_bg = "#0F1A00";
+  if (!t.cell_inc_bd) t.cell_inc_bd = "#4A6600";
+  if (!t.tab_exp)     t.tab_exp     = "#6B1A10";
+  if (!t.tab_inc)     t.tab_inc     = "#2A4A00";
+  if (!t.tab_pend)    t.tab_pend    = "#5A3A00";
+  if (!t.surf3)       t.surf3       = "#2A2E35";
+  if (!t.err)         t.err         = "#FF4444";
+  if (!t.vorm_bg)     t.vorm_bg     = "#5A3E00";
+  if (!t.vorm_bd)     t.vorm_bd     = "#F5A623";
+  // fallback for saved themes without newer tokens
+  if (!t.hero_bg)   t.hero_bg   = t.bg || "#1A1D22";
+  if (!t.cond_neg)  t.cond_neg  = "#C0392B";
+  if (!t.cond_warn) t.cond_warn = "#E67E22";
+  if (!t.cond_gold) t.cond_gold = "#F1C40F";
+  if (!t.cond_pos)  t.cond_pos  = "#2ECC71";
+  if (!t.logo_c1)  t.logo_c1  = t.blue || "#6B9900";
+  if (!t.logo_c2)  t.logo_c2  = t.pos  || "#AACC00";
+  if (!t.err_bg)   t.err_bg   = "#7A1020";
+  return t;
+}
+// INP: live getter damit Theme-Wechsel wirkt
+
+export { THEMES, getTheme };

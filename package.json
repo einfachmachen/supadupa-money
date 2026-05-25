@@ -1,0 +1,16 @@
+{
+  "name": "mybudgettracker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "start:prod": "node server.js --prod",
+    "build": "cd new && npm install && npm run build",
+    "install:app": "cd new && npm install"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "vite": "^5.4.10"
+  }
+}

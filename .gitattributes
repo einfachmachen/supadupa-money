@@ -1,0 +1,22 @@
+# Auto-detect text files for line-ending normalization
+* text=auto eol=lf
+
+# Windows-Skripte: IMMER CRLF (sonst funktionieren sie nicht im cmd.exe)
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Unix/macOS-Skripte: IMMER LF
+*.sh      text eol=lf
+*.command text eol=lf
+
+# Binärdateien: nicht anfassen
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary
+*.zip   binary
+*.woff  binary
+*.woff2 binary
