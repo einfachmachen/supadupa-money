@@ -1,6 +1,6 @@
 // Auto-generated module (siehe app-src.jsx)
 
-import React, { useContext, useState } from "react";
+import React, { useContext } from "react";
 import { Lbl } from "../atoms/Lbl.jsx";
 import { SupaField } from "../atoms/SupaField.jsx";
 import { CustomThemeEditor } from "./CustomThemeEditor.jsx";
@@ -24,37 +24,13 @@ function SettingsInline() {
     syncStatus, setSyncStatus, syncError,
     themeName, setThemeName, setThemeRev,
     handedness, setHandedness,
-    dashboardVariant, setDashboardVariant,
-    debugFlags, setDebugFlag, setDebugFlags,
     confirmReset, setConfirmReset,
     cats, setCats, groups, setGroups, txs, setTxs, yearData, setYearData,
     noBorders, setNoBorders,
   } = useContext(AppCtx);
 
-  const [showDebugExpand, setShowDebugExpand] = useState(false);
-
   return (
     <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 14px 24px"}}>
-
-      {/* Dashboard-Variante */}
-      <div style={{marginBottom:14}}>
-        <div style={{color:T.lbl||T.txt2,fontSize:11,fontWeight:600,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
-          {Li("layout",13,T.blue)} Dashboard-Stil
-        </div>
-        <div style={{display:"flex",gap:6}}>
-          {[["v1","Klassisch","Bestehendes Layout"],["v2","Clean","Neue, kompakte Variante"]].map(([key,label,desc])=>(
-            <button key={key} onClick={()=>setDashboardVariant(key)}
-              style={{flex:1,padding:"10px 8px",borderRadius:12,cursor:"pointer",fontFamily:"inherit",
-                border:`2px solid ${dashboardVariant===key?T.blue:T.bd}`,
-                background:dashboardVariant===key?T.blue+"22":"transparent",
-                color:T.txt,
-                display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-              <div style={{fontSize:13,fontWeight:700,color:dashboardVariant===key?T.blue:T.txt}}>{label}</div>
-              <div style={{fontSize:10,color:T.lbl||T.txt2,textAlign:"center"}}>{desc}</div>
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* Theme-Auswahl */}
       <div style={{marginBottom:14}}>
@@ -332,62 +308,6 @@ function SettingsInline() {
               </div>
             </div>
         }
-      </div>
-
-      {/* ── Performance-Debug (einklappbar, am Ende, für Diagnose) ── */}
-      <div style={{marginTop:24,paddingTop:14,borderTop:`1px solid ${T.bd}`}}>
-        <div onClick={()=>setShowDebugExpand(v=>!v)}
-          style={{cursor:"pointer",display:"flex",alignItems:"center",gap:6,
-            color:T.lbl||T.txt2,fontSize:11,fontWeight:600}}>
-          {Li("zap",13,Object.values(debugFlags||{}).some(v=>v)?T.gold:T.txt2)}
-          <span style={{flex:1}}>
-            Performance-Debug
-            {Object.values(debugFlags||{}).some(v=>v) && (
-              <span style={{color:T.gold,marginLeft:6,fontSize:10,fontWeight:700}}>
-                ({Object.values(debugFlags).filter(v=>v).length} aktiv)
-              </span>
-            )}
-          </span>
-          {Li(showDebugExpand?"chevron-up":"chevron-down",12,T.txt2)}
-        </div>
-        {showDebugExpand && (
-          <div style={{marginTop:10,padding:"10px 12px",
-            background:T.surf2||"rgba(255,255,255,0.03)",border:`1px solid ${T.bd}`,
-            borderRadius:10}}>
-            <div style={{color:T.txt2,fontSize:10,marginBottom:8,lineHeight:1.4}}>
-              Funktionen einzeln deaktivieren, um Bottlenecks zu finden.
-              Nur für Diagnose — im Normalbetrieb alles aktiv lassen.
-            </div>
-            {[
-              ["disable_warnings","Warnungen-Widget"],
-              ["disable_sticky","Sticky Hero (top)"],
-              ["disable_drilldown","Prognose-Drilldown"],
-              ["disable_cattotals","Kategorien-Liste (Home)"],
-              ["disable_progndeacc","getProgEndeAccGlobal-Cache"],
-              ["disable_kumcache","getKumulierterSaldo-Cache"],
-              ["disable_progdetail","getPrognoseSaldoDetail (Hero)"],
-              ["disable_pendinglist","Pending-Liste rendern"],
-              ["disable_categorychart","Kategorie-Chart (Monat)"],
-            ].map(([key,label])=>(
-              <label key={key} style={{display:"flex",alignItems:"center",
-                gap:8,padding:"5px 0",cursor:"pointer",fontSize:12,color:T.txt}}>
-                <input type="checkbox" checked={!!debugFlags?.[key]}
-                  onChange={e=>setDebugFlag(key,e.target.checked)}
-                  style={{cursor:"pointer"}}/>
-                <span style={{flex:1}}>{label}</span>
-                {debugFlags?.[key] && (
-                  <span style={{color:T.gold,fontSize:10,fontWeight:700}}>AUS</span>
-                )}
-              </label>
-            ))}
-            <button onClick={()=>{setDebugFlags({});kvStore.removeItem("mbt_debug_flags");}}
-              style={{marginTop:8,padding:"6px 12px",borderRadius:7,
-                background:"transparent",border:`1px solid ${T.bd}`,
-                color:T.txt2,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>
-              Alle wieder aktivieren
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -2449,7 +2449,12 @@ Abbrechen = ${remoteName}-Stand laden`
       fontFamily:"'SF Pro Text',-apple-system,BlinkMacSystemFont,sans-serif",
       userSelect:"none",overflow:"hidden"}}>
 
-      {/* ── Performance-Debug + Theme-Umschalter wurden nach Einstellungen verschoben ── */}
+      {/* ── Performance-Debug-Button wurde nach Einstellungen verschoben ── */}
+
+      <div style={{position:"absolute",top:"calc(env(safe-area-inset-top, 0px) + 8px)",
+        right:12,zIndex:50}}>
+        <ThemeDropdown themeName={themeName} setThemeName={setThemeName}/>
+      </div>
 
       {/* Global edit popup */}
       <ErrorBoundary name="EditPopup"><EditPopup/></ErrorBoundary>

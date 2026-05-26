@@ -18,9 +18,9 @@ import { matchAmount, matchSearch } from "../../utils/search.js";
 import { txFingerprint, isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
 import { saldoAt } from "../../utils/saldo.js";
 
-function DashboardScreen() {
+function DashboardScreenV2() {
   const { cats,setCats,groups,setGroups,txs,setTxs,accounts,setAccounts,
-    yearData,setYearData,year,setYear,month,setMonth,selAcc,isLand,
+    yearData,setYearData,year,setYear,month,setMonth,selAcc,setSelAcc,isLand,
     col3Name,setCol3Name,modal,setModal,mgmtCat,setMgmtCat,
     editTx,setEditTx,newTx,setNewTx,newCat,setNewCat,
     newSubName,setNewSubName,exportModal,setExportModal,
@@ -602,26 +602,75 @@ function DashboardScreen() {
             const _pTxsOutM = _mitteAbg ? [] : pTxsOut.filter(t=>_h2txM(t)&&(!t._budgetSubId||t._budgetSubId.endsWith("_mitte")));
             const _uInM2    = _mitteAbg ? [] : _uIn.filter(_h2txM);
             const _uOutM2   = _mitteAbg ? [] : _uOut.filter(_h2txM);
-            return (
-            <SaldoHero2 year={year} month={month}
-              buchInM={_sum(_realInM)}   buchOutM={_sum(_realOutM)}
-              buchInE={_sum(_realIn)}    buchOutE={_sum(_realOut)}
-              pendInM={_sum(_pTxsInM)}   pendOutM={_sum(_pTxsOutM)}
-              pendInE={pendingIn}         pendOutE={pendingOut}
-              uInM={_sum(_uInM2)}         uOutM={_sum(_uOutM2)}
-              uInE={_sum(_uIn)}           uOutE={_sum(_uOut)}
-              prognoseMitte={prognoseMitte} prognoseEnde={prognoseEnde}
-              detailMitte={detailMitte} detailEnde={detailEnde}
-              saldoMitte={saldoMitte}   saldoEnde={saldoEnde}
-              onDrillBuchIn ={(isMitte)=>{const l=isMitte?_realInM :_realIn; setDashDrill({label:"Einnahmen"+(isMitte?" bis 14.":""),txList:l,isIncome:true, uncatCount:(isMitte?_uInM2:_uIn).length,cat:null,total:_sum(l)});setDashSearch("");}}
-              onDrillBuchOut={(isMitte)=>{const l=isMitte?_realOutM:_realOut;setDashDrill({label:"Ausgaben" +(isMitte?" bis 14.":""),txList:l,isIncome:false,uncatCount:(isMitte?_uOutM2:_uOut).length,cat:null,total:_sum(l)});setDashSearch("");}}
-              onDrillPendIn ={(isMitte)=>{const l=isMitte?_pTxsInM :pTxsIn; setDashDrill({label:"Einnahmen – VM"+(isMitte?" bis 14.":""),txList:l,isIncome:true, uncatCount:0,cat:null,total:_sum(l),isPending:true});setDashSearch("");}}
-              onDrillPendOut={(isMitte)=>{const l=isMitte?_pTxsOutM:pTxsOut;setDashDrill({label:"Ausgaben – VM" +(isMitte?" bis 14.":""),txList:l,isIncome:false,uncatCount:0,cat:null,total:_sum(l),isPending:true});setDashSearch("");}}
-              onDrillUncatIn ={(isMitte)=>{const l=isMitte?_uInM2 :_uIn; setDashDrill({label:"Einnahmen – unkat."+(isMitte?" bis 14.":""),txList:l,isIncome:true, uncatCount:l.length,cat:null,total:null});setDashSearch("");}}
-              onDrillUncatOut={(isMitte)=>{const l=isMitte?_uOutM2:_uOut;setDashDrill({label:"Ausgaben – unkat." +(isMitte?" bis 14.":""),txList:l,isIncome:false,uncatCount:l.length,cat:null,total:null});setDashSearch("");}}
-              onDrill={(d)=>{setDashDrill(d);setDashSearch("");}}
-            />
-            );
+            return (()=>{
+              // V2-Hero — eigene clean Variante
+              // Hat Mitte/Ende unten in 2-Spalten-Layout (links/rechts), fluchtet mit Cat-Pillen.
+              const accLabel = selAcc===null
+                ? "GESAMT"
+                : (accounts.find(a=>a.id===selAcc)?.name?.toUpperCase() || "");
+              const allAccIds = [null, ...accounts.map(a=>a.id)];
+              const cycleAcc = () => {
+                const idx = allAccIds.findIndex(a => a===selAcc);
+                setSelAcc(allAccIds[(idx+1) % allAccIds.length]);
+              };
+              const saldo = prognoseEnde;
+              const fmtMoney = v => v==null||v===undefined ? "—" : fmt(v);
+              return (
+                <div style={{padding:"12px 24px 6px"}}>
+                  {/* Zeile 1: Konto-Name links klein + Saldo rechts groß */}
+                  <div onClick={cycleAcc}
+                    style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",
+                      gap:12,cursor:"pointer",userSelect:"none"}}>
+                    <div style={{
+                      color:selAcc===null ? T.txt2 : T.blue,
+                      fontSize:13,fontWeight:700,letterSpacing:1,
+                      flexShrink:0,
+                    }}>
+                      {accLabel}
+                    </div>
+                    <div style={{
+                      color: saldo>=0 ? T.pos : T.neg,
+                      fontSize:32,fontWeight:700,fontVariantNumeric:"tabular-nums",
+                      letterSpacing:-0.5,lineHeight:1.1,
+                      textAlign:"right",flex:1,minWidth:0,
+                      overflow:"hidden",textOverflow:"ellipsis",
+                    }}>
+                      {saldo>=0?"":"−"}{fmtMoney(Math.abs(saldo||0))} €
+                    </div>
+                  </div>
+
+                  {/* Zeile 2: MITTE / ENDE in 2 Spalten unten, fluchten mit Cat-Pillen */}
+                  <div style={{display:"flex",gap:8,marginTop:10}}>
+                    {/* Mitte-Spalte */}
+                    <div onClick={()=>{
+                        if(detailMitte) setDashDrill({...detailMitte, _isHeroDrill:true, label:"Prognose Mitte"});
+                      }}
+                      style={{flex:1,textAlign:"center",cursor:detailMitte?"pointer":"default",
+                        padding:"6px 0",borderRadius:8}}>
+                      <div style={{color:T.mid||T.txt2,fontSize:10,fontWeight:700,
+                        letterSpacing:1,marginBottom:2}}>MITTE</div>
+                      <div style={{color: prognoseMitte>=0?T.pos:T.neg,
+                        fontSize:16,fontWeight:700,fontVariantNumeric:"tabular-nums"}}>
+                        {prognoseMitte>=0?"":"−"}{fmtMoney(Math.abs(prognoseMitte||0))} €
+                      </div>
+                    </div>
+                    {/* Ende-Spalte */}
+                    <div onClick={()=>{
+                        if(detailEnde) setDashDrill({...detailEnde, _isHeroDrill:true, label:"Prognose Ende"});
+                      }}
+                      style={{flex:1,textAlign:"center",cursor:detailEnde?"pointer":"default",
+                        padding:"6px 0",borderRadius:8}}>
+                      <div style={{color:T.gold||T.txt2,fontSize:10,fontWeight:700,
+                        letterSpacing:1,marginBottom:2}}>ENDE</div>
+                      <div style={{color: prognoseEnde>=0?T.pos:T.neg,
+                        fontSize:16,fontWeight:700,fontVariantNumeric:"tabular-nums"}}>
+                        {prognoseEnde>=0?"":"−"}{fmtMoney(Math.abs(prognoseEnde||0))} €
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })();
           }
         })()}
         </div>
@@ -708,514 +757,193 @@ function DashboardScreen() {
 
         {pTxs.length>0&&!window.MBT_DEBUG?.disable_pendinglist&&<PendingList pTxs={pTxs} getCat={getCat} getSub={getSub} txType={txType} openEdit={openEdit} dayOf={dayOf} pendOpenAmt={pendOpenAmt}/>}
 
-        {/* ── Sticky Spaltenüberschrift Mitte | Ende | Aktuell ── */}
-        {(incomeTotals.length>0||catTotals.length>0)&&(
-          <div style={{position:"sticky",top:0,zIndex:5,
-            background:T.bg,borderBottom:`1px solid ${T.bd}`,
-            padding:"4px 10px"}}>
-            {/* Sort-Buttons */}
-            <div style={{display:"flex",gap:4,marginBottom:4}}>
-              {[["desc","↓ Größe"],["asc","↑ Größe"],["custom","✎ Eigene"]].map(([mode,lbl])=>(
-                <button key={mode} onClick={()=>setCatSortMode(mode)}
-                  style={{fontSize:9,fontWeight:700,padding:"2px 7px",borderRadius:6,cursor:"pointer",
-                    fontFamily:"inherit",border:"none",
-                    background:catSortMode===mode?T.blue:"rgba(255,255,255,0.07)",
-                    color:catSortMode===mode?(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss"?"#fff":T.bg):T.txt2}}>
-                  {lbl}
-                </button>
-              ))}
-              {catSortMode==="custom"&&<span style={{color:T.txt2,fontSize:9,alignSelf:"center",marginLeft:2}}>
-                Ziehen zum Sortieren
-              </span>}
-            </div>
-            {/* Spaltenköpfe */}
-            <div style={{display:"flex",alignItems:"center",gap:3}}>
-              <div style={{width:44,height:16,flexShrink:0}}/>
-              {["Mitte","Ende","Aktuell"].map(lbl=>(
-                <div key={lbl} style={{flex:1,minWidth:0,textAlign:"center",
-                  color:T.txt2,fontSize:9,fontWeight:700,letterSpacing:0.5,
-                  textTransform:"uppercase",padding:"0 4px"}}>
-                  {lbl}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
-        {incomeTotals.length>0&&<>
-          {(()=>{
-            const sumMitte = _inMitte;
-            const sumEnde  = _inEnde;
-            const sumAkt   = _inAkt;
-            return (
-              <div style={{padding:"8px 10px 2px"}}>
-                <div style={{color:T.lbl||T.txt2,fontSize:13,fontWeight:700,letterSpacing:0.5,textTransform:"uppercase",marginBottom:3}}>Einnahmen</div>
-                <div style={{display:"flex",alignItems:"center",gap:3}}>
-                  <div style={{width:44,flexShrink:0}}/>
-                  {[sumMitte,sumEnde,sumAkt].map((v,i)=>(
-                    <div key={i} style={{flex:1,minWidth:0,textAlign:"center",
-                      color:v>0?T.pos:T.txt2,fontSize:11,fontWeight:700,fontFamily:"monospace",padding:"0 4px"}}>
-                      {v>0?fmt(v):"—"}
-                    </div>
-                  ))}
+        {/* ── V2: Sort-Buttons + Datum (oben rechts) ── */}
+        {(incomeTotals.length>0||catTotals.length>0)&&(()=>{
+          // Datum nur im aktuellen Monat anzeigen
+          const today = new Date();
+          const isCurrentMonth = today.getFullYear()===year && today.getMonth()===month;
+          const dateStr = isCurrentMonth
+            ? `${String(today.getDate()).padStart(2,"0")}.${String(today.getMonth()+1).padStart(2,"0")}.`
+            : null;
+          return (
+            <div style={{padding:"6px 12px 4px",display:"flex",alignItems:"center",gap:8}}>
+              <div style={{display:"flex",gap:6,flex:1,minWidth:0}}>
+                {[["desc","\u2193 Gr\u00f6\u00dfe"],["asc","\u2191 Gr\u00f6\u00dfe"],["custom","\u270e Eigene"]].map(([mode,lbl])=>(
+                  <button key={mode} onClick={()=>setCatSortMode(mode)}
+                    style={{background:catSortMode===mode?T.blue:"transparent",
+                      color:catSortMode===mode?T.on_accent||"#000":T.txt2,
+                      border:`1px solid ${catSortMode===mode?T.blue:T.bd}`,
+                      borderRadius:14,padding:"3px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                    {lbl}
+                  </button>
+                ))}
+              </div>
+              {dateStr && (
+                <div style={{color:T.lbl||T.txt2,fontSize:11,fontWeight:600,
+                  fontVariantNumeric:"tabular-nums",flexShrink:0}}>
+                  {dateStr}
                 </div>
-              </div>
-            );
-          })()}
-          {incomeTotals.map(cat=>{
-            const isDragTargetI = catSortMode==="custom" && dragOver===cat.id && dragCatId!==cat.id;
-            const isDraggingI   = catSortMode==="custom" && dragCatId===cat.id;
-            return (
-            <div key={cat.id}
-              draggable={catSortMode==="custom"}
-              onDragStart={()=>setDragCatId(cat.id)}
-              onDragEnd={()=>{ setDragCatId(null); setDragOver(null); }}
-              onDragOver={e=>{e.preventDefault();setDragOver(cat.id);}}
-              onDrop={e=>{
-                e.preventDefault();
-                if(!dragCatId||dragCatId===cat.id) return;
-                setCats(prev=>{
-                  const arr=[...prev];
-                  const fi=arr.findIndex(c=>c.id===dragCatId);
-                  const ti=arr.findIndex(c=>c.id===cat.id);
-                  if(fi<0||ti<0) return prev;
-                  const [moved]=arr.splice(fi,1);
-                  arr.splice(ti,0,moved);
-                  return arr;
-                });
-                setDragCatId(null); setDragOver(null);
-              }}
-              style={{background:isDraggingI?"rgba(255,255,255,0.10)":isDragTargetI?T.blue+"22":T.themeName==="dkb"?"#FFFFFF":(T.cat_bg||"rgba(255,255,255,0.04)"),
-                borderRadius:0,padding:"7px 10px",margin:"2px 0",
-                cursor:catSortMode==="custom"?"grab":"pointer",opacity:isDraggingI?0.5:1,
-                borderTop:`2px solid ${isDragTargetI?T.blue:T.themeName==="dkb"?"#E0E8F0":T.bd}`,
-                borderBottom:`1px solid ${T.themeName==="dkb"?"#E0E8F0":T.bd}`}}
-              onClick={()=>{
-                if(catSortMode==="custom") return;
-                const txList=txs.filter(t=>{const d=new Date(t.date);return !t.pending&&!t._linkedTo&&d.getFullYear()===year&&d.getMonth()===month&&(t.splits||[]).some(sp=>sp.catId===cat.id);});
-                const pendList=txs.filter(t=>{const d=new Date(t.date);return t.pending&&!t._budgetSubId&&d.getFullYear()===year&&d.getMonth()===month&&(t.splits||[]).some(sp=>sp.catId===cat.id);});
-                setDashDrill({cat,txList:[...txList,...pendList].sort(drillSort),isIncome:true});
-              }}>
-              {/* Kategoriename als Überschrift; bei Gesamt zusätzlich das/die Konto/n in Klammern */}
-              <div style={{color:cat.color||T.pos,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginBottom:6,lineHeight:1.2}}>
-                {cat.name}
-                {!selAcc && _accLabelByCat.get(cat.id) && (
-                  <span style={{color:T.lbl,fontWeight:500,fontSize:11,marginLeft:6}}>
-                    ({_accLabelByCat.get(cat.id)})
-                  </span>
-                )}
-              </div>
-              {dashIconPick===cat.id&&<IconPickerDialog selectedIcon={cat.icon} selectedColor={cat.color}
-                onSelect={ic=>{setCats(p=>p.map(c=>c.id===cat.id?{...c,icon:ic}:c));setDashIconPick(null);}}
-                onClose={()=>setDashIconPick(null)}/>}
-              {(()=>{
-                // PERFORMANCE-FIX: vorher 3× txs.filter (12k iters je) pro Cat pro Render.
-                // Bei 30 Cats: 1 Mio+ Iterationen je Render. Jetzt O(1)-Lookup.
+              )}
+            </div>
+          );
+        })()}
+
+        {/* ── V2: Kategorie-Karten (clean) ── */}
+        {(()=>{
+          const lastDay = new Date(year, month+1, 0).getDate();
+          const allCatsToShow = [...incomeTotals, ...catTotals];
+          if(allCatsToShow.length===0) return null;
+          const isLight = (T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss");
+          const cellBg = T.cat_bg ? "rgba(255,255,255,0.10)" : isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)";
+
+          // Ampelfarbe (6-stufig wie in V1):
+          //  ≤25%  hellgrün     ≤50%  grün       ≤75%  gelb
+          //  ≤100% orange       ≤125% hellrot    >125% rot
+          const trafficColor = (amt, bgt) => {
+            if(!bgt || bgt===0) return null;
+            const r = amt/bgt*100;
+            if(r<=25)  return isLight?"#4CAF50":"#66BB6A";
+            if(r<=50)  return isLight?"#43A047":"#4CAF50";
+            if(r<=75)  return isLight?"#FBC02D":"#FDD835";
+            if(r<=100) return isLight?"#FB8C00":"#FFA726";
+            if(r<=125) return isLight?"#E53935":"#EF5350";
+            return isLight?"#C62828":(T.err||"#E53935");
+          };
+          // Text-Farbe (Ampel): bei Einnahmen nicht ampeln (immer grün/Akzent), bei Ausgaben ampeln
+          const textColor = (amt, bgt, isInc) => {
+            if(isInc) {
+              // Einnahmen: nur grün wenn vorhanden, sonst neutral
+              return amt>0 ? T.pos : T.txt2;
+            }
+            const c = trafficColor(amt, bgt);
+            return c || T.txt;
+          };
+
+          return (
+            <div style={{padding:"4px 10px 12px",display:"flex",flexDirection:"column",gap:8}}>
+              {allCatsToShow.map(cat => {
+                const isIncome = _isCatIncomeOrTagesgeld(cat);
                 const iMitte = _catSumUpToDay(cat.id, 14);
-                const iEnde  = _catSumUpToDay(cat.id, 31);
+                const iEnde  = _catSumUpToDay(cat.id, lastDay);
                 const iAkt   = _catTxMaps.sumRealByCat.get(cat.id) || 0;
-                const cell = (label, amt, onTap) => (
-                  <div style={{textAlign:"center",cursor:"pointer",padding:"5px 4px",borderRadius:7,flex:1,minWidth:0,
-                    background:T.themeName==="dkb"?"transparent":T.cat_bg?"rgba(255,255,255,0.10)":(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper")?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.04)",
-                    border:T.themeName==="dkb"?"none":`1px solid ${T.bd}`}}
-                    onClick={e=>{e.stopPropagation();onTap();}}>
-                    <div style={{color:amt>0?T.pos:T.txt2,fontSize:15,fontWeight:700,fontFamily:"monospace",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{amt>0?fmt(amt):"—"}</div>
-                  </div>
-                );
-                const drill = () => {
-                  const txList=txs.filter(t=>{const d=new Date(t.date);return !t.pending&&!t._linkedTo&&d.getFullYear()===year&&d.getMonth()===month&&(t.splits||[]).some(sp=>sp.catId===cat.id);});
-                  const pendList=txs.filter(t=>{const d=new Date(t.date);return t.pending&&!t._budgetSubId&&d.getFullYear()===year&&d.getMonth()===month&&(t.splits||[]).some(sp=>sp.catId===cat.id);});
-                  setDashDrill({cat,txList:[...txList,...pendList].sort(drillSort),isIncome:true});
-                };
+                const catColor = cat.color || (isIncome ? T.pos : T.neg);
+                const accLabel = !selAcc ? _accLabelByCat.get(cat.id) : null;
+
+                // Budget je Halbmonat aus den Subs aggregieren (nur für Ausgaben-Cats relevant)
+                let budgetMitte = 0, budgetEnde = 0;
+                if(!isIncome) {
+                  (cat.subs||[]).forEach(sub => {
+                    const gesamt = getBudgetForMonth(sub.id, year, month) || 0;
+                    const mitte  = getBudgetForMonth(sub.id+"_mitte", year, month) || 0;
+                    const hasSplit = mitte>0 && mitte<gesamt;
+                    budgetMitte += hasSplit ? mitte : 0;  // Wenn kein expliziter Mitte-Split: kein Mitte-Budget
+                    budgetEnde  += gesamt;
+                  });
+                }
+
+                // Striche unter den Pillen
+                const stripeMitte = !isIncome && budgetMitte>0 ? trafficColor(iMitte, budgetMitte) : null;
+                const stripeEnde  = !isIncome && budgetEnde>0  ? trafficColor(iEnde,  budgetEnde)  : null;
+
+                // Großer Hauptbetrag rechts = ENDE-Wert, gefärbt nach Ampel
+                const headColor = textColor(iEnde, budgetEnde, isIncome);
+
                 return (
-                  <div style={{display:"flex",gap:3,alignItems:"center"}}>
-                    <button onClick={e=>{e.stopPropagation();setDashIconPick(dashIconPick===cat.id?null:cat.id);}}
-                      style={{width:44,height:44,flexShrink:0,borderRadius:7,background:cat.color+"22",
-                        border:`1px solid ${dashIconPick===cat.id?cat.color+"88":"transparent"}`,
-                        display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
-                      {Li(cat.icon,18,cat.color||T.txt2)}
-                    </button>
-                    {cell("Mitte",iMitte,drill)}
-                    {cell("Ende",iEnde,drill)}
-                    {cell("",iAkt,drill)}
+                  <div key={cat.id}
+                    onClick={()=>{
+                      const drill = {
+                        cat,
+                        label: `${cat.name} \u2013 Ende`,
+                        txList: (_catTxMaps.realByCat.get(cat.id)||[]).concat(_catTxMaps.pendByCat.get(cat.id)||[]),
+                        isIncome,
+                        total: iEnde,
+                        cutDay: lastDay,
+                      };
+                      setDashDrill(drill);
+                    }}
+                    style={{
+                      background: T.surf || (isLight?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.04)"),
+                      border: `1px solid ${T.bd}`,
+                      borderRadius: 14,
+                      padding: "12px 14px",
+                      cursor: "pointer",
+                    }}>
+                    {/* Zeile 1: Icon + Name + Ende-Wert (groß, Ampel-gefärbt) */}
+                    <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+                      <div style={{
+                        width:34,height:34,borderRadius:10,
+                        background:catColor+"22",
+                        display:"flex",alignItems:"center",justifyContent:"center",
+                        flexShrink:0,
+                      }}>
+                        {Li(cat.icon||"folder", 18, catColor)}
+                      </div>
+                      <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
+                        <div style={{
+                          color:catColor,fontSize:15,fontWeight:700,
+                          overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
+                        }}>{cat.name}</div>
+                        {accLabel && (
+                          <div style={{color:T.lbl,fontSize:10,fontWeight:500,marginTop:1}}>
+                            ({accLabel})
+                          </div>
+                        )}
+                      </div>
+                      <div style={{
+                        color:headColor,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",
+                        flexShrink:0,
+                      }}>
+                        {fmt(iEnde)}
+                      </div>
+                    </div>
+                    {/* Zeile 2: Mitte/Ende-Pillen mit Ampel-Strich unten — gleich groß wie Hauptbetrag, aber blasser */}
+                    <div style={{display:"flex",gap:8,marginTop:8}}>
+                      {/* Mitte */}
+                      <div style={{
+                        flex:1,position:"relative",textAlign:"center",
+                        padding:"7px 0",borderRadius:9,
+                        background:cellBg,
+                        color: textColor(iMitte, budgetMitte, isIncome),
+                        fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",
+                        opacity:0.55,
+                        overflow:"hidden",
+                      }}>
+                        {iMitte>0 ? fmt(iMitte) : "\u2014"}
+                        {/* Ampel-Strich an der Unterkante */}
+                        {stripeMitte && (
+                          <div style={{
+                            position:"absolute",left:0,right:0,bottom:0,
+                            height:3,background:stripeMitte,
+                          }}/>
+                        )}
+                      </div>
+                      {/* Ende */}
+                      <div style={{
+                        flex:1,position:"relative",textAlign:"center",
+                        padding:"7px 0",borderRadius:9,
+                        background:cellBg,
+                        color: textColor(iEnde, budgetEnde, isIncome),
+                        fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",
+                        opacity:0.55,
+                        overflow:"hidden",
+                      }}>
+                        {iEnde>0 ? fmt(iEnde) : "\u2014"}
+                        {stripeEnde && (
+                          <div style={{
+                            position:"absolute",left:0,right:0,bottom:0,
+                            height:3,background:stripeEnde,
+                          }}/>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 );
-              })()}
+              })}
             </div>
-            );
-          })}
-        </>}
+          );
+        })()}
 
-        {catTotals.length>0&&<>
-          {(()=>{
-            const sumMitte = _outMitte;
-            const sumEnde  = _outEnde;
-            const sumAkt   = _outAkt;
-            return (
-              <div style={{padding:"8px 10px 2px"}}>
-                <div style={{color:T.lbl||T.txt2,fontSize:13,fontWeight:700,letterSpacing:0.5,textTransform:"uppercase",marginBottom:3}}>Ausgaben</div>
-                <div style={{display:"flex",alignItems:"center",gap:3}}>
-                  <div style={{width:44,flexShrink:0}}/>
-                  {[sumMitte,sumEnde,sumAkt].map((v,i)=>(
-                    <div key={i} style={{flex:1,minWidth:0,textAlign:"center",
-                      color:v>0?T.neg:T.txt2,fontSize:11,fontWeight:700,fontFamily:"monospace",padding:"0 4px"}}>
-                      {v>0?fmt(v):"—"}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
-          {catTotals.map(cat=>{
-            const isDragTarget = catSortMode==="custom" && dragOver===cat.id && dragCatId!==cat.id;
-            const isDragging   = catSortMode==="custom" && dragCatId===cat.id;
-            // budgets[sub.id].amount = Gesamtbudget (Mitte+Ende)
-            const budget = (cat.subs||[]).reduce((s,sub)=>s+(getBudgetForMonth(sub.id,year,month))||0,0);
-            const hasBudget = budget > 0;
-            const pct = budget > 0 ? Math.min(100, (cat.sum / budget) * 100) : null;
-
-            // Budget-bewusste Vormerkungssumme je Halbmonat für diese Kategorie
-            const getBudgetAwarePendSum = (maxDay) => {
-              const isMitte = maxDay===14;
-              const seenP=new Set();
-              // Alle Vormerkungen dieser Kategorie im Zeitraum (ohne Duplikate)
-              const allP = txs.filter(t=>{
-                if(!t.pending||t._linkedTo) return false;
-                const d=new Date(t.date);
-                if(d.getFullYear()!==year||d.getMonth()!==month||d.getDate()>maxDay) return false;
-                if(!(t.splits||[]).some(sp=>sp.catId===cat.id)) return false;
-                const dk=`${t.date}|${t.totalAmount}|${(t.desc||"").slice(0,30)}`;
-                if(seenP.has(dk)) return false; seenP.add(dk);
-                return true;
-              });
-              const concreteP = allP.filter(t=>!t._budgetSubId);
-              // Summe der konkreten Vormerkungen (immer zählen)
-              const concreteSum = concreteP.reduce((s,t)=>
-                s+(t.splits||[]).filter(sp=>sp.catId===cat.id)
-                  .reduce((ss,sp)=>ss+Math.abs(pn(sp.amount)),0),0);
-              // Budget-Restbetrag je Unterkategorie berechnen
-              let budgetSum = 0;
-              const seenSub=new Set();
-              (cat.subs||[]).forEach(sub=>{
-                const gesamt = getBudgetForMonth(sub.id,year,month);
-                const mitte  = getBudgetForMonth(sub.id+"_mitte",year,month);
-                const hasSplit = mitte>0 && mitte<gesamt;
-                const subBudget = isMitte ? (hasSplit?mitte:0) : gesamt;
-                if(!subBudget) return;
-                // Hat diese Unterkategorie einen Budget-Platzhalter im Zeitraum?
-                const hasPH = allP.some(t=>t._budgetSubId&&
-                  (t._budgetSubId===sub.id||(isMitte&&t._budgetSubId===sub.id+"_mitte")));
-                if(!hasPH) return;
-                // Konkrete Vormerkungen + echte Buchungen für diese Unterkategorie
-                const concSub = concreteP.filter(c=>(c.splits||[]).some(sp=>sp.subId===sub.id))
-                  .reduce((s,c)=>s+(c.splits||[]).filter(sp=>sp.subId===sub.id)
-                    .reduce((ss,sp)=>ss+Math.abs(pn(sp.amount)),0),0);
-                const realSub = txs.filter(t=>{
-                  if(t.pending||t._linkedTo) return false;
-                  const d=new Date(t.date);
-                  return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()<=maxDay&&
-                    (t.splits||[]).some(sp=>sp.subId===sub.id);
-                }).reduce((s,t)=>s+(t.splits||[]).filter(sp=>sp.subId===sub.id)
-                  .reduce((ss,sp)=>ss+Math.abs(pn(sp.amount)),0),0);
-                budgetSum += Math.max(0, subBudget - concSub - realSub);
-              });
-              return concreteSum + budgetSum;
-            };
-
-            const pendSumMitte = getBudgetAwarePendSum(14);
-            const pendSumEnde  = getBudgetAwarePendSum(31);
-
-            // Drilldown: zeigt Budget-Restbetrag + konkrete Vormerkungen getrennt
-            const openDrillBudget = (maxDay, label) => {
-              const isMitte = maxDay===14;
-              // Budget je Unterkategorie:
-              // Echtes Mitte/Ende-Paar: budgets[id_mitte].amount < budgets[id].amount
-              // Einfaches Budget (kein Split): budgets[id_mitte] fehlt oder == budgets[id]
-              const budgetForHalf = (cat.subs||[]).reduce((s,sub)=>{
-                const gesamt = getBudgetForMonth(sub.id,year,month);
-                const mitte  = getBudgetForMonth(sub.id+"_mitte",year,month);
-                const hasSplit = mitte>0 && mitte<gesamt;
-                if(isMitte) return s+(hasSplit?mitte:0);
-                return s+gesamt; // Ende = immer Gesamtbetrag
-              },0);
-
-
-              const seenP=new Set();
-              const allP = txs.filter(t=>{
-                if(!t.pending||t._linkedTo) return false;
-                const d=new Date(t.date);
-                if(d.getFullYear()!==year||d.getMonth()!==month||d.getDate()>maxDay) return false;
-                if(!(t.splits||[]).some(sp=>sp.catId===cat.id)) return false;
-                const dk=`${t.date}|${t.totalAmount}|${(t.desc||"").slice(0,30)}`;
-                if(seenP.has(dk)) return false; seenP.add(dk);
-                return true;
-              });
-              const concreteP = allP.filter(t=>!t._budgetSubId);
-              const realTxsForCat = txs.filter(t=>{
-                if(t.pending||t._linkedTo) return false;
-                const d=new Date(t.date);
-                return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()<=maxDay&&
-                  (t.splits||[]).some(sp=>sp.catId===cat.id);
-              });
-
-              // Restbudget je Unterkategorie: Gesamtbudget minus konkrete Vormerkungen minus echte Buchungen
-              const processedSubs = new Set(); let budgetRest=0;
-              (cat.subs||[]).forEach(sub=>{
-                const gesamt2 = getBudgetForMonth(sub.id,year,month);
-                const mitte2  = getBudgetForMonth(sub.id+"_mitte",year,month);
-                const hasSplit2 = mitte2>0 && mitte2<gesamt2;
-                const subBudget = isMitte
-                  ? (hasSplit2?mitte2:gesamt2)
-                  : gesamt2;
-                if(!subBudget) return;
-                // Konkrete Vormerkungen für diese Unterkategorie
-                const concreteSub = concreteP.filter(c=>
-                  (c.splits||[]).some(sp=>sp.subId===sub.id)
-                ).reduce((s,c)=>s+(c.splits||[]).filter(sp=>sp.subId===sub.id).reduce((ss,sp)=>ss+Math.abs(pn(sp.amount)),0),0);
-                // Echte Buchungen für diese Unterkategorie
-                const realSub = realTxsForCat.filter(r=>
-                  (r.splits||[]).some(sp=>sp.subId===sub.id)
-                ).reduce((s,r)=>s+(r.splits||[]).filter(sp=>sp.subId===sub.id).reduce((ss,sp)=>ss+Math.abs(pn(sp.amount)),0),0);
-                budgetRest += Math.max(0, subBudget - concreteSub - realSub);
-              });
-
-              // Sub-Budget-Details für Aufschlüsselung
-              const subBudgetDetails = (cat.subs||[]).map(sub=>{
-                const gesamt = getBudgetForMonth(sub.id,year,month);
-                const mitte  = getBudgetForMonth(sub.id+"_mitte",year,month);
-                const hasSplit = mitte>0 && mitte<gesamt;
-                const subBudget = isMitte?(hasSplit?mitte:0):gesamt;
-                if(!subBudget) return null;
-                const concSub = concreteP.filter(c=>(c.splits||[]).some(sp=>sp.subId===sub.id))
-                  .reduce((s,c)=>s+(c.splits||[]).filter(sp=>sp.subId===sub.id).reduce((ss,sp)=>ss+Math.abs(pn(sp.amount)),0),0);
-                const realSub = realTxsForCat.filter(r=>(r.splits||[]).some(sp=>sp.subId===sub.id))
-                  .reduce((s,r)=>s+(r.splits||[]).filter(sp=>sp.subId===sub.id).reduce((ss,sp)=>ss+Math.abs(pn(sp.amount)),0),0);
-                return {sub, subBudget, spent: concSub+realSub};
-              }).filter(Boolean);
-
-              setDashDrill({cat, label:`${cat.name} – ${label}`,
-                txList:[...realTxsForCat,...concreteP].sort(drillSort),
-                isIncome: cat.type==="income", isMitte,
-                budgetRest: budgetForHalf>0?budgetRest:null,
-                budgetTotal: budgetForHalf||budget,
-                subBudgetDetails,
-              });
-            };
-
-            return (
-            <div key={cat.id}
-              draggable={catSortMode==="custom"}
-              onDragStart={()=>setDragCatId(cat.id)}
-              onDragEnd={()=>{ setDragCatId(null); setDragOver(null); }}
-              onDragOver={e=>{e.preventDefault();setDragOver(cat.id);}}
-              onDrop={e=>{
-                e.preventDefault();
-                if(!dragCatId||dragCatId===cat.id) return;
-                setCats(prev=>{
-                  const arr=[...prev];
-                  const fi=arr.findIndex(c=>c.id===dragCatId);
-                  const ti=arr.findIndex(c=>c.id===cat.id);
-                  if(fi<0||ti<0) return prev;
-                  const [moved]=arr.splice(fi,1);
-                  arr.splice(ti,0,moved);
-                  return arr;
-                });
-                setDragCatId(null); setDragOver(null);
-              }}
-              onClick={()=>catSortMode!=="custom"&&openDrillBudget(31,"Ende")}
-              style={{background:isDragging?"rgba(255,255,255,0.10)":isDragTarget?T.blue+"22":T.themeName==="dkb"?"#FFFFFF":(T.cat_bg||"rgba(255,255,255,0.04)"),
-              borderRadius:0,padding:"7px 10px",margin:"2px 0",
-              cursor:catSortMode==="custom"?"grab":"pointer",opacity:isDragging?0.5:1,
-              borderTop:`2px solid ${isDragTarget?T.blue:T.themeName==="dkb"?"#E0E8F0":T.bd}`,
-              borderBottom:`1px solid ${T.themeName==="dkb"?"#E0E8F0":T.bd}`}}>
-              {/* Kategoriename als Teilüberschrift — bei Gesamt zusätzlich Konto in Klammern */}
-              <div style={{color:cat.color||T.txt,fontSize:13,fontWeight:700,
-                overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
-                marginBottom:6,lineHeight:1.2}}>
-                {cat.name}
-                {!selAcc && _accLabelByCat.get(cat.id) && (
-                  <span style={{color:T.lbl,fontWeight:500,fontSize:11,marginLeft:6}}>
-                    ({_accLabelByCat.get(cat.id)})
-                  </span>
-                )}
-              </div>
-              {dashIconPick===cat.id&&<IconPickerDialog selectedIcon={cat.icon} selectedColor={cat.color}
-                onSelect={ic=>{setCats(p=>p.map(c=>c.id===cat.id?{...c,icon:ic}:c));setDashIconPick(null);}}
-                onClose={()=>setDashIconPick(null)}/>}
-              <div style={{display:"flex",alignItems:"center",gap:3}}>
-                {/* Icon links */}
-                <button onClick={e=>{e.stopPropagation();setDashIconPick(dashIconPick===cat.id?null:cat.id);}}
-                  style={{width:44,height:44,flexShrink:0,borderRadius:7,background:cat.color+"22",
-                    border:`1px solid ${dashIconPick===cat.id?cat.color+"88":"transparent"}`,
-                    display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
-                  {Li(cat.icon,18,cat.color||T.txt2)}
-                </button>
-                {/* Mitte | Ende | aktuell mit Ampelfarben */}
-                {(()=>{
-                  const trafficLight = (amt, bgt) => {
-                    if(!bgt || bgt===0) return null;
-                    const r = amt/bgt*100;
-                    const isLight = (T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss");
-                    if(r<=25)  return isLight?"#C8E6C9":"#1B5E20";
-                    if(r<=50)  return isLight?"#81C784":"#2E7D32";
-                    if(r<=75)  return isLight?"#FFF176":"#827717";
-                    if(r<=100) return isLight?"#FFB74D":"#E65100";
-                    if(r<=125) return isLight?"#EF9A9A":"#B71C1C";
-                    return isLight?"#E53935":T.err;
-                  };
-                  const trafficTxt = (amt, bgt) => {
-                    if(!bgt) return T.txt;
-                    const r = amt/bgt*100;
-                    return r>75 ? ((T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"#1A1A1A":"#fff") : T.txt;
-                  };
-                  const budgetMitte = (cat.subs||[]).reduce((s,sub)=>{
-                    const g=getBudgetForMonth(sub.id,year,month), m=getBudgetForMonth(sub.id+"_mitte",year,month);
-                    const hasSplit=m>0&&m<g;
-                    return s+(hasSplit?m:0);
-                  },0);
-                  const budgetEnde = (cat.subs||[]).reduce((s,sub)=>s+(getBudgetForMonth(sub.id,year,month)),0);
-                  const subsWithBudget = new Set(
-                    (cat.subs||[]).filter(sub=>pn(budgets[sub.id]?.amount)>0).map(s=>s.id)
-                  );
-                  const today = new Date();
-                  const todayY = today.getFullYear(), todayM = today.getMonth(), todayD2 = today.getDate();
-                  const isCurrentMonth = year===todayY && month===todayM;
-                  const isPastMonth    = year<todayY || (year===todayY && month<todayM);
-                  const lastDayOfMonth = new Date(year, month+1, 0).getDate();
-                  // Abgelaufen nur für vergangene Monate oder aktuellen Monat nach Stichtag
-                  const mitteAbgelaufen = isPastMonth || (isCurrentMonth && todayD2 > 14);
-                  const endeAbgelaufen  = isPastMonth || (isCurrentMonth && todayD2 >= lastDayOfMonth);
-                  const calcTotal = (maxDay) => {
-                    const isMitteCalc = maxDay===14;
-                    const isEndeCalc  = !isMitteCalc;
-                    // Abgelaufen? → echte Buchungen + Finanzierungsraten (die nie "real" werden)
-                    const isFinanzPend = t => t.pending&&t._seriesTyp==="finanzierung"&&!t._linkedTo&&!t._budgetSubId;
-                    if(isMitteCalc && mitteAbgelaufen) {
-                      return txs.filter(t=>{
-                        if(t._linkedTo||t._budgetSubId) return false;
-                        if(t.pending && !isFinanzPend(t)) return false;
-                        const d=new Date(t.date);
-                        return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()<=maxDay&&
-                          (t.splits||[]).some(sp=>sp.catId===cat.id);
-                      }).reduce((s,t)=>s+(t.splits||[]).filter(sp=>sp.catId===cat.id)
-                        .reduce((ss,sp)=>ss+Math.abs(pn(sp.amount)),0),0);
-                    }
-                    if(isEndeCalc && endeAbgelaufen) {
-                      return txs.filter(t=>{
-                        if(t._linkedTo||t._budgetSubId) return false;
-                        if(t.pending && !isFinanzPend(t)) return false;
-                        const d=new Date(t.date);
-                        return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()<=maxDay&&
-                          (t.splits||[]).some(sp=>sp.catId===cat.id);
-                      }).reduce((s,t)=>s+(t.splits||[]).filter(sp=>sp.catId===cat.id)
-                        .reduce((ss,sp)=>ss+Math.abs(pn(sp.amount)),0),0);
-                    }
-                    // Noch nicht abgelaufen:
-                    // Je Sub: max(budget, real+pend) für Vormerkungen MIT subId
-                    const subTotal = (cat.subs||[]).reduce((catSum, sub)=>{
-                      const budgetGesamt = getBudgetForMonth(sub.id, year, month);
-                      const budgetMitteS = (()=>{
-                        const m=getBudgetForMonth(sub.id+"_mitte",year,month);
-                        return (m>0&&m<budgetGesamt)?m:0;
-                      })();
-                      const budget = isMitteCalc ? budgetMitteS : budgetGesamt;
-                      const real = txs.filter(t=>{
-                        if(t.pending||t._linkedTo||t._budgetSubId) return false;
-                        const d=new Date(t.date);
-                        return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()<=maxDay&&
-                          (t.splits||[]).some(sp=>sp.catId===cat.id&&sp.subId===sub.id);
-                      }).reduce((s,t)=>s+Math.abs((t.splits||[]).find(sp=>sp.subId===sub.id)?.amount||0),0);
-                      const pend = txs.filter(t=>{
-                        if(!t.pending||t._linkedTo||t._budgetSubId) return false;
-                        const d=new Date(t.date);
-                        return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()<=maxDay&&
-                          (t.splits||[]).some(sp=>sp.catId===cat.id&&sp.subId===sub.id);
-                      }).reduce((s,t)=>s+Math.abs((t.splits||[]).find(sp=>sp.subId===sub.id)?.amount||t.totalAmount),0);
-                      return catSum + (budget>0 ? Math.max(budget, real+pend) : real+pend);
-                    }, 0);
-                    // Zusätzlich: Vormerkungen MIT catId aber OHNE subId (nicht in subs enthalten)
-                    const subIds = new Set((cat.subs||[]).map(s=>s.id));
-                    const pendNoSub = txs.filter(t=>{
-                      if(!t.pending||t._linkedTo||t._budgetSubId) return false;
-                      const d=new Date(t.date);
-                      return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()<=maxDay&&
-                        (t.splits||[]).some(sp=>sp.catId===cat.id&&(!sp.subId||!subIds.has(sp.subId)));
-                    }).reduce((s,t)=>s+(t.splits||[]).filter(sp=>sp.catId===cat.id&&(!sp.subId||!subIds.has(sp.subId)))
-                      .reduce((ss,sp)=>ss+Math.abs(pn(sp.amount)||t.totalAmount),0),0);
-                    // Echte Buchungen ohne subId
-                    const realNoSub = txs.filter(t=>{
-                      if(t.pending||t._linkedTo||t._budgetSubId) return false;
-                      const d=new Date(t.date);
-                      return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()<=maxDay&&
-                        (t.splits||[]).some(sp=>sp.catId===cat.id&&(!sp.subId||!subIds.has(sp.subId)));
-                    }).reduce((s,t)=>s+(t.splits||[]).filter(sp=>sp.catId===cat.id&&(!sp.subId||!subIds.has(sp.subId)))
-                      .reduce((ss,sp)=>ss+Math.abs(pn(sp.amount)),0),0);
-                    return subTotal + pendNoSub + realNoSub;
-                  };
-                  const calcBudgetSpent = (maxDay) => txs.filter(t=>{
-                    if(t._linkedTo||t._budgetSubId) return false;
-                    const d=new Date(t.date);
-                    return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()<=maxDay&&
-                      (t.splits||[]).some(sp=>sp.catId===cat.id&&subsWithBudget.has(sp.subId));
-                  }).reduce((s,t)=>s+(t.splits||[])
-                    .filter(sp=>sp.catId===cat.id&&subsWithBudget.has(sp.subId))
-                    .reduce((ss,sp)=>ss+Math.abs(pn(sp.amount)),0),0);
-
-                  const totalMitte  = calcTotal(14);
-                  const totalEnde   = calcTotal(31);
-                  const totalAkt    = txs.filter(t=>{
-                    if(t._linkedTo||t._budgetSubId) return false;
-                    if(t.pending&&t._seriesTyp!=="finanzierung") return false;
-                    const d=new Date(t.date);
-                    return d.getFullYear()===year&&d.getMonth()===month&&
-                      (t.splits||[]).some(sp=>sp.catId===cat.id);
-                  }).reduce((s,t)=>s+(t.splits||[]).filter(sp=>sp.catId===cat.id)
-                    .reduce((ss,sp)=>ss+Math.abs(pn(sp.amount)),0),0);
-                  const bgMitte = budgetMitte>0?trafficLight(calcBudgetSpent(14),budgetMitte):null;
-                  const bgEnde  = budgetEnde>0?trafficLight(calcBudgetSpent(31),budgetEnde):null;
-
-                  const showCells = hasBudget || totalAkt>0 || totalMitte>0 || totalEnde>0 || cat.sum>0;
-                  if(!showCells) return (
-                    <div style={{color:T.neg,fontSize:13,fontWeight:700,
-                      fontFamily:"monospace",flexShrink:0}}>—</div>
-                  );
-
-                  // Zellen: gleich breit (flex:1), kein Vorzeichen, größere Schrift
-                  const cell = (label, amt, bgt, bg, onTap) => (
-                    <div onClick={e=>{e.stopPropagation();onTap();}}
-                      style={{textAlign:"center",cursor:"pointer",padding:"5px 4px",
-                        borderRadius:7,flex:1,minWidth:0,
-                        background:bg||(T.themeName==="dkb"?"transparent":T.cat_bg?"rgba(255,255,255,0.10)":(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper")?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.04)"),
-                        border:(!bg&&T.themeName==="dkb")?"none":`1px solid ${bg?"transparent":T.bd}`}}>
-                      <div style={{color:bg?trafficTxt(amt,bgt):(amt>0?(cat.type==="income"?T.pos:T.neg):T.txt2),
-                        fontSize:15,fontWeight:700,fontFamily:"monospace",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
-                        {amt>0?fmt(amt):"—"}
-                      </div>
-                      {bgt>0&&(
-                        <div style={{
-                          color:bg?((T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(0,0,0,0.55)":"rgba(255,255,255,0.65)"):T.txt2,
-                          fontSize:8,marginTop:2,fontWeight:600,whiteSpace:"nowrap",
-                          borderTop:`1px solid ${bg?"rgba(0,0,0,0.1)":"rgba(255,255,255,0.08)"}`,
-                          paddingTop:2}}>
-                          {fmt(bgt)}
-                        </div>
-                      )}
-                    </div>
-                  );
-                  return (
-                    <div style={{display:"flex",gap:3,alignItems:"stretch",flexShrink:0,flex:1}}>
-                      {cell("Mitte",   totalMitte, budgetMitte, bgMitte, ()=>openDrillBudget(14,"Mitte"))}
-                      {cell("Ende",    totalEnde,  budgetEnde,  bgEnde,  ()=>openDrillBudget(31,"Ende"))}
-                      {cell("",        totalAkt,   null,        null,    ()=>openDrillBudget(31,"aktuell"))}
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-            );
-          })}
-        </>}
-        <div style={{height:20}}/>
 
         {/* Drilldown Overlay */}
         {dashDrill&&(
@@ -1743,4 +1471,4 @@ function DashboardScreen() {
 
 // ══════════════════════════════════════════════════════════════════════
 
-export { DashboardScreen };
+export { DashboardScreenV2 };

@@ -632,6 +632,157 @@ function DashboardScreen() {
         {/* ── Tagesgeld-Transfer Widget ── */}
         <TagesgeldWidget year={year} month={month}/>
 
+        {/* ── DEBUG: Tagesgeld-Diagnose (immer sichtbar wenn ein Konto ausgewählt ist, das KEIN Giro ist) ── */}
+        {selAcc && selAcc !== "acc-giro" && (() => {
+          // Was sieht die App über Cats?
+          const accObj = (accounts||[]).find(a => a.id === selAcc);
+          const accName = accObj?.name || selAcc;
+          const allCats = cats || [];
+          const incomeCats = allCats.filter(_isCatIncomeOrTagesgeld);
+          const expenseCats = allCats.filter(_isCatExpense);
+          // Tx in diesem Monat mit accountId === selAcc
+          const monthTxsAll = _txsInMonth(year, month) || [];
+          const accTxs = monthTxsAll.filter(_isSelAcc);
+          const accTxsWithCat = accTxs.filter(t => (t.splits||[]).some(sp => sp.catId));
+          // Welche Cats sind über die Buchungen dieses Kontos getroffen?
+          const usedCatIds = new Set();
+          accTxs.forEach(t => (t.splits||[]).forEach(sp => { if(sp.catId) usedCatIds.add(sp.catId); }));
+          const catsUsed = allCats.filter(c => usedCatIds.has(c.id));
+          // Welche dieser Cats sind in incomeTotals/catTotals?
+          const itIds = new Set(incomeTotals.map(c=>c.id));
+          const ctIds = new Set(catTotals.map(c=>c.id));
+          return (
+            <div style={{margin:"6px 10px",padding:"10px 12px",
+              background:"rgba(255,200,0,0.08)",border:"1px dashed rgba(255,200,0,0.5)",
+              borderRadius:8,fontSize:11,fontFamily:"monospace",color:T.txt2,lineHeight:1.5}}>
+              <div style={{color:T.gold,fontWeight:700,fontSize:12,marginBottom:6}}>
+                🔧 DEBUG: Tagesgeld-Diagnose
+              </div>
+              <div>Konto: <b style={{color:T.txt}}>{accName}</b> (selAcc=<code>{selAcc}</code>)</div>
+              <div>Buchungen in {year}-{String(month+1).padStart(2,"0")} auf diesem Konto: <b style={{color:T.txt}}>{accTxs.length}</b> (davon mit Cat zugeordnet: <b style={{color:T.txt}}>{accTxsWithCat.length}</b>)</div>
+              <div style={{marginTop:6}}>Cats insgesamt in der App: <b style={{color:T.txt}}>{allCats.length}</b></div>
+              <div>Davon Einnahme/Tagesgeld (laut _isCatIncomeOrTagesgeld): <b style={{color:T.pos}}>{incomeCats.length}</b></div>
+              <div>Davon Ausgabe (laut _isCatExpense): <b style={{color:T.neg}}>{expenseCats.length}</b></div>
+              <div style={{marginTop:6}}>Cats, die durch Buchungen dieses Kontos berührt werden: <b style={{color:T.txt}}>{catsUsed.length}</b></div>
+              {catsUsed.length > 0 && (
+                <div style={{marginLeft:10,marginTop:4}}>
+                  {catsUsed.map(c => {
+                    const b = _catBehavior(c);
+                    const inIT = itIds.has(c.id);
+                    const inCT = ctIds.has(c.id);
+                    const grp = _groupMap.get(c.type);
+                    // alle Tx dieses Kontos im Monat, die diese Cat berühren
+                    const catTxs = accTxs.filter(t => (t.splits||[]).some(sp => sp.catId === c.id));
+                    return (
+                      <div key={c.id} style={{padding:"3px 0",borderTop:`1px solid ${T.bd}`}}>
+                        <b style={{color:T.txt}}>{c.name}</b>
+                        <span style={{color:T.lbl}}> · type=</span>
+                        <code style={{color:T.lbl}}>{String(c.type).slice(0,32)}</code>
+                        <span style={{color:T.lbl}}> · behavior=</span>
+                        <b style={{color: b==="expense"?T.neg : (b==="income"||b==="tagesgeld")?T.pos : T.gold}}>
+                          {b||"(unbekannt)"}
+                        </b>
+                        {grp && <span style={{color:T.lbl}}> [Group: {grp.label||grp.type}]</span>}
+                        <span style={{marginLeft:8}}>
+                          {inIT && <span style={{color:T.pos,fontWeight:700}}>✓ Einnahme-Karte</span>}
+                          {inCT && <span style={{color:T.neg,fontWeight:700}}>✓ Ausgabe-Karte</span>}
+                          {!inIT && !inCT && <span style={{color:T.gold,fontWeight:700}}>✗ NICHT auf Home</span>}
+                        </span>
+                        {/* Pro Cat: Tx-Liste */}
+                        <div style={{marginLeft:14,marginTop:3}}>
+                          {catTxs.map(t => {
+                            const amtForCat = (t.splits||[])
+                              .filter(sp => sp.catId === c.id)
+                              .reduce((s,sp) => s + Math.abs(pn(sp.amount)||0), 0);
+                            return (
+                              <div key={t.id} style={{padding:"1px 0",color:T.txt2}}>
+                                {t.pending
+                                  ? <span style={{color:T.gold,fontWeight:700}}>● VM </span>
+                                  : <span style={{color:T.pos,fontWeight:700}}>● BUCH</span>}
+                                {" "}{t.date}
+                                {" "}<span style={{color:T.txt}}>{fmt(amtForCat)}</span>
+                                {t._linkedTo && <span style={{color:T.neg}}> _linkedTo!</span>}
+                                {t._budgetSubId && <span style={{color:T.neg}}> _budgetSubId!</span>}
+                                {" "}<span style={{color:T.lbl}}>{(t.desc||"").slice(0,30)}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <div style={{marginTop:6,color:T.lbl}}>
+                Cat-Karten auf Home: <b style={{color:T.pos}}>{incomeTotals.length}</b> Einnahmen + <b style={{color:T.neg}}>{catTotals.length}</b> Ausgaben
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── DEBUG: Prognose-Drilldown-Diagnose (sichtbar bei Gesamt oder Giro) ── */}
+        {(!selAcc || selAcc === "acc-giro") && dashDetailEnde && (() => {
+          const det = dashDetailEnde;
+          // Alle VMs im Monat (pending tx, kein _budgetSubId)
+          const monthTxsAll = _txsInMonth(year, month) || [];
+          const allVMs = monthTxsAll.filter(t => t.pending && !t._budgetSubId);
+          // VM-IDs in unbudgetedPend
+          const inUnbPendIds = new Set((det.unbudgetedPend || []).map(t => t.id));
+          // VM-IDs in irgendeinem budgetEntries[].concTxs
+          const inBudgetIds = new Set();
+          (det.budgetEntries || []).forEach(be => {
+            (be.concTxs || []).forEach(t => inBudgetIds.add(t.id));
+          });
+          const accNameById = new Map((accounts||[]).map(a => [a.id, a.name||a.id]));
+          const getAccLabel = (t) => {
+            const aid = t.accountId || "acc-giro";
+            return accNameById.get(aid) || aid;
+          };
+          return (
+            <div style={{margin:"6px 10px",padding:"10px 12px",
+              background:"rgba(123,196,224,0.08)",border:"1px dashed rgba(123,196,224,0.5)",
+              borderRadius:8,fontSize:11,fontFamily:"monospace",color:T.txt2,lineHeight:1.5}}>
+              <div style={{color:T.mid,fontWeight:700,fontSize:12,marginBottom:6}}>
+                🔧 DEBUG: Prognose-ENDE-Drilldown ({year}-{String(month+1).padStart(2,"0")})
+              </div>
+              <div>Vormerkungen im Monat (kein _budgetSubId): <b style={{color:T.txt}}>{allVMs.length}</b></div>
+              <div>In unbudgetedPend (= Drilldown-sichtbar):    <b style={{color:T.pos}}>{(det.unbudgetedPend||[]).length}</b></div>
+              <div>In budgetEntries (= Drilldown-sichtbar):     <b style={{color:T.pos}}>{inBudgetIds.size}</b></div>
+              {allVMs.length > 0 && (
+                <div style={{marginTop:6}}>
+                  <div style={{color:T.lbl,marginBottom:3}}>Pro VM:</div>
+                  {allVMs.map(t => {
+                    const inUnb = inUnbPendIds.has(t.id);
+                    const inBgt = inBudgetIds.has(t.id);
+                    const visible = inUnb || inBgt;
+                    return (
+                      <div key={t.id} style={{padding:"2px 0",borderTop:`1px solid ${T.bd}`}}>
+                        <span style={{color:T.txt}}>{t.date}</span>
+                        {" · "}
+                        <span style={{color:T.lbl}}>{getAccLabel(t)}</span>
+                        {" · "}
+                        <span style={{color:T.txt}}>{fmt(Math.abs(t.totalAmount||0))}€</span>
+                        {" · "}
+                        <span style={{color:T.lbl}}>{(t.desc||"").slice(0,28)}</span>
+                        {t._linkedTo && <span style={{color:T.gold}}> _linkedTo</span>}
+                        <span style={{marginLeft:8}}>
+                          {visible
+                            ? <span style={{color:T.pos,fontWeight:700}}>
+                                ✓ {inUnb ? "unbudgeted" : "budgetEntry"}
+                              </span>
+                            : <span style={{color:T.neg,fontWeight:700}}>
+                                ✗ NICHT im Drilldown
+                              </span>}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         {/* Vorzeichen-Fehlzuordnung-Warnung — einklappbar */}
         {mismatchTxs.length>0&&(
           <div style={{margin:"6px 10px",background:T.tab_pend,

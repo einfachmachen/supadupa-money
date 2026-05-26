@@ -61,6 +61,7 @@ export default function FinanzApp() {
   const [debugFlags, setDebugFlags] = useState(()=>{
     try { return JSON.parse(kvStore.getItem("mbt_debug_flags")||"{}"); } catch { return {}; }
   });
+  const [showDebugMenu, setShowDebugMenu] = useState(false);
   const setDebugFlag = (key, val) => {
     setDebugFlags(p=>{
       const next = {...p, [key]:val};
@@ -2405,7 +2406,6 @@ Abbrechen = ${remoteName}-Stand laden`
     hideEmptyRows, setHideEmptyRows,
     handedness, setHandedness,
     dashboardVariant, setDashboardVariant,
-    debugFlags, setDebugFlag, setDebugFlags,
     cfActive, cfSave, cfLoad, cfStatus, setCfStatus, cfUrl, cfSecret, setCfUrl, setCfSecret,
     syncStatus, setSyncStatus, syncError,
     cfSaveOnClose, setCfSaveOnClose,
@@ -2449,7 +2449,72 @@ Abbrechen = ${remoteName}-Stand laden`
       fontFamily:"'SF Pro Text',-apple-system,BlinkMacSystemFont,sans-serif",
       userSelect:"none",overflow:"hidden"}}>
 
-      {/* ── Performance-Debug + Theme-Umschalter wurden nach Einstellungen verschoben ── */}
+      {/* ── Floating Top Buttons (Debug links, Theme rechts) ── */}
+      <div style={{position:"absolute",top:"calc(env(safe-area-inset-top, 0px) + 8px)",
+        left:12,zIndex:50}}>
+        <div style={{position:"relative"}}>
+          <button onClick={()=>setShowDebugMenu(v=>!v)}
+            title="Performance-Debug"
+            style={{background:Object.values(debugFlags).some(v=>v)?T.gold+"33":"rgba(0,0,0,0.45)",
+              border:`1px solid ${Object.values(debugFlags).some(v=>v)?T.gold:"rgba(255,255,255,0.15)"}`,
+              borderRadius:10,padding:"6px 8px",cursor:"pointer",
+              display:"flex",alignItems:"center",gap:3,
+              backdropFilter:"blur(8px)",WebkitBackdropFilter:"blur(8px)"}}>
+            {Li("zap",14,Object.values(debugFlags).some(v=>v)?T.gold:T.txt2)}
+          </button>
+          {showDebugMenu&&(
+            <div style={{position:"absolute",top:38,left:0,zIndex:100,
+              background:T.surf,border:`1px solid ${T.bds}`,borderRadius:10,
+              padding:"8px 10px",minWidth:260,boxShadow:"0 8px 32px rgba(0,0,0,0.5)"}}>
+              <div style={{color:T.gold,fontSize:11,fontWeight:700,marginBottom:6,
+                display:"flex",alignItems:"center",gap:5}}>
+                {Li("zap",12,T.gold)} Performance-Debug
+              </div>
+              <div style={{color:T.txt2,fontSize:9,marginBottom:8}}>
+                Funktionen einzeln deaktivieren um Bottleneck zu finden
+              </div>
+              {[
+                ["disable_warnings","Warnungen-Widget"],
+                ["disable_sticky","Sticky Hero (top)"],
+                ["disable_drilldown","Prognose-Drilldown"],
+                ["disable_cattotals","Kategorien-Liste (Home)"],
+                ["disable_progndeacc","getProgEndeAccGlobal-Cache"],
+                ["disable_kumcache","getKumulierterSaldo-Cache"],
+                ["disable_progdetail","getPrognoseSaldoDetail (Hero)"],
+                ["disable_pendinglist","Pending-Liste rendern"],
+                ["disable_categorychart","Kategorie-Chart (Monat)"],
+              ].map(([key,label])=>(
+                <label key={key} style={{display:"flex",alignItems:"center",
+                  gap:8,padding:"5px 0",cursor:"pointer",fontSize:11,color:T.txt}}>
+                  <input type="checkbox" checked={!!debugFlags[key]}
+                    onChange={e=>setDebugFlag(key,e.target.checked)}
+                    style={{cursor:"pointer"}}/>
+                  <span style={{flex:1}}>{label}</span>
+                  {debugFlags[key]&&<span style={{color:T.gold,fontSize:9,fontWeight:700}}>AUS</span>}
+                </label>
+              ))}
+              <div style={{borderTop:`1px solid ${T.bd}`,marginTop:6,paddingTop:6,
+                display:"flex",gap:6}}>
+                <button onClick={()=>{setDebugFlags({});kvStore.removeItem("mbt_debug_flags");}}
+                  style={{flex:1,background:"rgba(255,255,255,0.05)",border:`1px solid ${T.bd}`,
+                    borderRadius:6,padding:"4px 8px",color:T.txt2,fontSize:10,cursor:"pointer",fontFamily:"inherit"}}>
+                  Alle aktivieren
+                </button>
+                <button onClick={()=>setShowDebugMenu(false)}
+                  style={{background:"rgba(255,255,255,0.05)",border:`1px solid ${T.bd}`,
+                    borderRadius:6,padding:"4px 10px",color:T.txt2,fontSize:10,cursor:"pointer",fontFamily:"inherit"}}>
+                  Schließen
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div style={{position:"absolute",top:"calc(env(safe-area-inset-top, 0px) + 8px)",
+        right:12,zIndex:50}}>
+        <ThemeDropdown themeName={themeName} setThemeName={setThemeName}/>
+      </div>
 
       {/* Global edit popup */}
       <ErrorBoundary name="EditPopup"><EditPopup/></ErrorBoundary>
