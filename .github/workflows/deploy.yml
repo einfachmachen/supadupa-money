@@ -3,16 +3,16 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
-  workflow_dispatch: # manuell auslösbar
+  workflow_dispatch:
 
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# concurrency:
-#   group: "pages"
-#   cancel-in-progress: false
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -34,17 +34,15 @@ jobs:
 
       - name: Build app
         working-directory: ./new
-        # Base = /<repo-name>/ — App liegt jetzt direkt unter dem Repo-Pfad.
-        # Die alte App lebt im 'legacy'-Branch weiter.
         run: npm run build -- --base=/${{ github.event.repository.name }}/
 
       - name: Assemble site
         run: |
           mkdir -p _site
-          # Build-Output direkt nach _site (kein /new/-Unterpfad mehr)
           cp -r new/dist/* _site/
           echo "── Site-Inhalt ──"
           find _site -maxdepth 2 -type f | head -30
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
