@@ -69,8 +69,7 @@ function DashboardScreenV2() {
     const [dashDrill, _setDashDrill] = useState(null);
     // Wrapper: synct dashDrillOpen in FinanzApp für TopBar-zIndex
     const setDashDrill = (v) => { _setDashDrill(v); setDashDrillOpen(!!v); };
-    const [detailsOpen, setDetailsOpen] = useState(false);
-    const [warningsExpanded, setWarningsExpanded] = useState(false);
+    const [heroDetailOpen, setHeroDetailOpen] = useState(false);
     // Hero-Prognose-Drilldown: null | "Mitte" | "Ende"
     const [heroProgDrill, setHeroProgDrill] = useState(null);
     const [expandedSplitId, setExpandedSplitId] = useState(null);
@@ -79,7 +78,7 @@ function DashboardScreenV2() {
     const [budgetEditKey, setBudgetEditKey] = useState(0);
     const openBudgetEdit = (sub) => { setBudgetEditSub(sub); setBudgetEditKey(k=>k+1); };
     const [dashIconPick, setDashIconPick] = useState(null);
-    const [catSortMode, setCatSortMode] = useState("custom"); // "desc" | "asc" | "custom"
+    const [catSortMode, setCatSortMode] = useState("desc"); // "desc" | "asc" | "custom"
     const [dragCatId,   setDragCatId]   = useState(null);
     const [dragOver,    setDragOver]    = useState(null);
     const [dashSearch, setDashSearch] = useState("");
@@ -710,17 +709,17 @@ function DashboardScreenV2() {
                       <div style={{color:T.mid||T.txt2,fontSize:10,fontWeight:700,
                         letterSpacing:1,marginBottom:2}}>MITTE</div>
                       <div style={{color: prognoseMitte>=0?T.pos:T.neg,
-                        fontSize:20,fontWeight:500,fontVariantNumeric:"tabular-nums"}}>
+                        fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums"}}>
                         {prognoseMitte>=0?"":"−"}{fmtMoney(Math.abs(prognoseMitte||0))}
                       </div>
                     </div>
                     {/* Caret-Toggle zentral zwischen Mitte und Ende */}
-                    <div onClick={()=>setDetailsOpen(v=>!v)}
+                    <div onClick={()=>setHeroDetailOpen(v=>!v)}
                       style={{display:"flex",alignItems:"center",justifyContent:"center",
                         cursor:"pointer",userSelect:"none",padding:"0 6px",
                         opacity:0.7}}
-                      title={detailsOpen?"Details ausblenden":"Details anzeigen"}>
-                      {Li(detailsOpen?"chevron-up":"chevron-down",22,T.txt2)}
+                      title={heroDetailOpen?"Details ausblenden":"Details anzeigen"}>
+                      {Li(heroDetailOpen?"chevron-up":"chevron-down",22,T.txt2)}
                     </div>
                     {/* Ende-Spalte */}
                     <div onClick={()=>setHeroProgDrill(v=>v==="Ende"?null:"Ende")}
@@ -730,14 +729,14 @@ function DashboardScreenV2() {
                       <div style={{color:T.gold||T.txt2,fontSize:10,fontWeight:700,
                         letterSpacing:1,marginBottom:2}}>ENDE</div>
                       <div style={{color: prognoseEnde>=0?T.pos:T.neg,
-                        fontSize:20,fontWeight:500,fontVariantNumeric:"tabular-nums"}}>
+                        fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums"}}>
                         {prognoseEnde>=0?"":"−"}{fmtMoney(Math.abs(prognoseEnde||0))}
                       </div>
                     </div>
                   </div>
 
                   {/* Detail-Block: Buch / VM / unkat — drei Zeilen mit Drill-Pfaden */}
-                  {detailsOpen && (
+                  {heroDetailOpen && (
                     <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${T.bd}`}}>
                       <DetailRow label="Buch."
                         mIn={buchInM} mOut={buchOutM} eIn={buchInE} eOut={buchOutE}
@@ -774,30 +773,8 @@ function DashboardScreenV2() {
         })()}
         </div>
 
-        {/* ── Kontostand-Warnung (defaultmäßig kollabiert, dezenter Header) ── */}
-        <div style={{margin:"4px 10px 0"}}>
-          <div onClick={()=>setWarningsExpanded(v=>!v)}
-            style={{display:"flex",alignItems:"center",gap:8,
-              padding:"7px 10px",borderRadius:8,cursor:"pointer",
-              background:`${T.pos}10`,border:`1px solid ${T.pos}33`,
-              userSelect:"none"}}>
-            <div style={{width:24,height:24,borderRadius:6,
-              background:`${T.pos}22`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              {Li("shield-check",13,T.pos)}
-            </div>
-            <div style={{flex:1,color:T.txt,fontSize:12,fontWeight:600}}>
-              Konto-Warnungen
-            </div>
-            <div style={{color:T.txt2}}>
-              {Li(warningsExpanded?"chevron-up":"chevron-down",14,T.txt2)}
-            </div>
-          </div>
-          {warningsExpanded && (
-            <div style={{marginTop:4}}>
-              <KontoWarnungWidget showFolgemonateToggle={true}/>
-            </div>
-          )}
-        </div>
+        {/* ── Kontostand-Warnung ── */}
+        <KontoWarnungWidget showFolgemonateToggle={true}/>
 
         {/* ── Tagesgeld-Transfer Widget ── */}
         <TagesgeldWidget year={year} month={month}/>
@@ -889,8 +866,8 @@ function DashboardScreenV2() {
             : null;
           return (
             <div style={{padding:"6px 12px 4px",display:"flex",alignItems:"center",gap:8}}>
-              <div style={{display:"flex",gap:6,flex:1,minWidth:0,alignItems:"center"}}>
-                {[["custom","\u270e Eigene"],["desc","\u2193"],["asc","\u2191"]].map(([mode,lbl])=>(
+              <div style={{display:"flex",gap:6,flex:1,minWidth:0}}>
+                {[["desc","\u2193 Gr\u00f6\u00dfe"],["asc","\u2191 Gr\u00f6\u00dfe"],["custom","\u270e Eigene"]].map(([mode,lbl])=>(
                   <button key={mode} onClick={()=>setCatSortMode(mode)}
                     style={{background:catSortMode===mode?T.blue:"transparent",
                       color:catSortMode===mode?T.on_accent||"#000":T.txt2,
@@ -1003,7 +980,7 @@ function DashboardScreenV2() {
                       </div>
                       <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
                         <div style={{
-                          color:T.txt,fontSize:15,fontWeight:600,
+                          color:catColor,fontSize:15,fontWeight:700,
                           overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
                         }}>{cat.name}</div>
                         {accLabel && (
@@ -1019,48 +996,46 @@ function DashboardScreenV2() {
                         {fmt(iAkt)}
                       </div>
                     </div>
-                    {/* Zeile 2: Mitte/Ende-Pillen — nur sichtbar wenn Toggle "Prog." aktiviert */}
-                    {detailsOpen && (
-                      <div style={{display:"flex",gap:6,marginTop:6}}>
-                        {/* Mitte */}
-                        <div style={{
-                          flex:1,position:"relative",textAlign:"center",
-                          padding:"5px 0",borderRadius:7,
-                          background:cellBg,
-                          color: textColor(iMitte, budgetMitte, isIncome),
-                          fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",
-                          opacity:0.55,
-                          overflow:"hidden",
-                        }}>
-                          {iMitte>0 ? fmt(iMitte) : "\u2014"}
-                          {/* Ampel-Strich an der Unterkante */}
-                          {stripeMitte && (
-                            <div style={{
-                              position:"absolute",left:0,right:0,bottom:0,
-                              height:3,background:stripeMitte,
-                            }}/>
-                          )}
-                        </div>
-                        {/* Ende */}
-                        <div style={{
-                          flex:1,position:"relative",textAlign:"center",
-                          padding:"5px 0",borderRadius:7,
-                          background:cellBg,
-                          color: textColor(iEnde, budgetEnde, isIncome),
-                          fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",
-                          opacity:0.55,
-                          overflow:"hidden",
-                        }}>
-                          {iEnde>0 ? fmt(iEnde) : "\u2014"}
-                          {stripeEnde && (
-                            <div style={{
-                              position:"absolute",left:0,right:0,bottom:0,
-                              height:3,background:stripeEnde,
-                            }}/>
-                          )}
-                        </div>
+                    {/* Zeile 2: Mitte/Ende-Pillen mit Ampel-Strich unten — gleich groß wie Hauptbetrag, aber blasser */}
+                    <div style={{display:"flex",gap:6,marginTop:6}}>
+                      {/* Mitte */}
+                      <div style={{
+                        flex:1,position:"relative",textAlign:"center",
+                        padding:"5px 0",borderRadius:7,
+                        background:cellBg,
+                        color: textColor(iMitte, budgetMitte, isIncome),
+                        fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",
+                        opacity:0.55,
+                        overflow:"hidden",
+                      }}>
+                        {iMitte>0 ? fmt(iMitte) : "\u2014"}
+                        {/* Ampel-Strich an der Unterkante */}
+                        {stripeMitte && (
+                          <div style={{
+                            position:"absolute",left:0,right:0,bottom:0,
+                            height:3,background:stripeMitte,
+                          }}/>
+                        )}
                       </div>
-                    )}
+                      {/* Ende */}
+                      <div style={{
+                        flex:1,position:"relative",textAlign:"center",
+                        padding:"5px 0",borderRadius:7,
+                        background:cellBg,
+                        color: textColor(iEnde, budgetEnde, isIncome),
+                        fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",
+                        opacity:0.55,
+                        overflow:"hidden",
+                      }}>
+                        {iEnde>0 ? fmt(iEnde) : "\u2014"}
+                        {stripeEnde && (
+                          <div style={{
+                            position:"absolute",left:0,right:0,bottom:0,
+                            height:3,background:stripeEnde,
+                          }}/>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 );
               })}
