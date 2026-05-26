@@ -608,14 +608,7 @@ function DashboardScreenV2() {
               const accLabel = selAcc===null
                 ? "GESAMT"
                 : (accounts.find(a=>a.id===selAcc)?.name?.toUpperCase() || "");
-              // Nur Konten mit mindestens einer Buchung im Toggle anbieten
-              const usedAccIds = (()=>{
-                const s = new Set();
-                (txs||[]).forEach(t => { if(t.accountId) s.add(t.accountId); });
-                return s;
-              })();
-              const filteredAccs = (accounts||[]).filter(a => usedAccIds.has(a.id));
-              const allAccIds = [null, ...filteredAccs.map(a => a.id)];
+              const allAccIds = [null, ...accounts.map(a=>a.id)];
               const cycleAcc = () => {
                 const idx = allAccIds.findIndex(a => a===selAcc);
                 setSelAcc(allAccIds[(idx+1) % allAccIds.length]);
@@ -645,41 +638,38 @@ function DashboardScreenV2() {
                   <div style={{flex:1,textAlign:"center",cursor:vOut>0&&onTapOut?"pointer":"default",padding:"2px 0",opacity:dim?0.65:1}}
                     onClick={vOut>0&&onTapOut?()=>onTapOut(isMitte):undefined}>
                     {vOut>0
-                      ? <span style={{color:clrOut||T.neg,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums"}}>{fmt(vOut)}</span>
-                      : <span style={{color:T.txt2,fontSize:20}}>—</span>}
+                      ? <span style={{color:clrOut||T.neg,fontSize:11,fontWeight:700,fontVariantNumeric:"tabular-nums"}}>−{fmt(vOut)}</span>
+                      : <span style={{color:T.txt2,fontSize:11}}>—</span>}
                   </div>
                   <div style={{flex:1,textAlign:"center",cursor:vIn>0&&onTapIn?"pointer":"default",padding:"2px 0",opacity:dim?0.65:1}}
                     onClick={vIn>0&&onTapIn?()=>onTapIn(isMitte):undefined}>
                     {vIn>0
-                      ? <span style={{color:clrIn||T.pos,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums"}}>{fmt(vIn)}</span>
-                      : <span style={{color:T.txt2,fontSize:20}}>—</span>}
+                      ? <span style={{color:clrIn||T.pos,fontSize:11,fontWeight:700,fontVariantNumeric:"tabular-nums"}}>+{fmt(vIn)}</span>
+                      : <span style={{color:T.txt2,fontSize:11}}>—</span>}
                   </div>
                 </div>
               );
               const DetailRow = ({label, mIn, mOut, eIn, eOut, clrIn, clrOut, onTapIn, onTapOut}) => (
-                <div style={{display:"flex",alignItems:"center",marginBottom:4}}>
+                <div style={{display:"flex",alignItems:"center",marginBottom:2}}>
                   <HalfCell vIn={mIn} vOut={mOut} clrIn={clrIn} clrOut={clrOut}
                     dim={true} isMitte={true} onTapIn={onTapIn} onTapOut={onTapOut}/>
-                  <div style={{width:44,flexShrink:0,textAlign:"center",
-                    color:T.txt2,fontSize:10,fontWeight:600,letterSpacing:0.3}}>{label}</div>
+                  <div style={{width:48,flexShrink:0,textAlign:"center",
+                    color:T.txt2,fontSize:9,fontWeight:600,letterSpacing:0.3}}>{label}</div>
                   <HalfCell vIn={eIn} vOut={eOut} clrIn={clrIn} clrOut={clrOut}
                     dim={false} isMitte={false} onTapIn={onTapIn} onTapOut={onTapOut}/>
                 </div>
               );
 
               return (
-                <div style={{padding:"12px 20px 6px"}}>
+                <div style={{padding:"12px 24px 6px"}}>
                   {/* Zeile 1: Konto-Name links klein + Saldo rechts groß */}
                   <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",
                     gap:12,userSelect:"none"}}>
                     <div onClick={cycleAcc}
                       style={{
                         color:selAcc===null ? T.txt2 : T.blue,
-                        fontSize:32,fontWeight:700,
-                        lineHeight:1.1,
-                        cursor:"pointer",
-                        minWidth:0,
-                        overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
+                        fontSize:13,fontWeight:700,letterSpacing:1,
+                        flexShrink:0,cursor:"pointer",
                       }}>
                       {accLabel}
                     </div>
@@ -687,69 +677,51 @@ function DashboardScreenV2() {
                       color: saldo>=0 ? T.pos : T.neg,
                       fontSize:32,fontWeight:700,fontVariantNumeric:"tabular-nums",
                       letterSpacing:-0.5,lineHeight:1.1,
-                      textAlign:"right",minWidth:0,flexShrink:0,
+                      textAlign:"right",flex:1,minWidth:0,
+                      overflow:"hidden",textOverflow:"ellipsis",
                     }}>
                       {saldo>=0?"":"−"}{fmtMoney(Math.abs(saldo||0))} €
                     </div>
                   </div>
 
-                  {/* Zeile 2: MITTE | ENDE-Pillen (gleiche Schriftgröße wie Cat-Pillen)
-                      mit Caret-Toggle für Buch./VM-Details rechts */}
-                  <div style={{display:"flex",gap:6,marginTop:10,alignItems:"stretch"}}>
+                  {/* Zeile 2: MITTE / Prog.-Toggle / ENDE in 3 Spalten */}
+                  <div style={{display:"flex",gap:8,marginTop:10,alignItems:"flex-start"}}>
                     {/* Mitte-Spalte */}
                     <div onClick={()=>{
-                        // Klick auf MITTE: Drill aller Buchungen + VM bis Tag 14
-                        const isInc = prognoseMitte>=0;
-                        const txList = (isInc ? [..._realInM, ..._pTxsInM] : [..._realOutM, ..._pTxsOutM]);
-                        setDashDrill({
-                          label:"Prognose Mitte",
-                          txList,
-                          isIncome:isInc,
-                          uncatCount:(isInc?_uInM2:_uOutM2).length,
-                          cat:null,
-                          total:Math.abs(prognoseMitte||0),
-                        });
-                        setDashSearch("");
+                        if(detailMitte) setDashDrill({...detailMitte, _isHeroDrill:true, label:"Prognose Mitte"});
                       }}
-                      style={{flex:1,textAlign:"center",cursor:"pointer",
-                        padding:"4px 0 6px",borderRadius:8}}>
+                      style={{flex:1,textAlign:"center",cursor:detailMitte?"pointer":"default",
+                        padding:"6px 0",borderRadius:8}}>
                       <div style={{color:T.mid||T.txt2,fontSize:10,fontWeight:700,
                         letterSpacing:1,marginBottom:2}}>MITTE</div>
                       <div style={{color: prognoseMitte>=0?T.pos:T.neg,
-                        fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums"}}>
-                        {prognoseMitte>=0?"":"−"}{fmtMoney(Math.abs(prognoseMitte||0))}
+                        fontSize:16,fontWeight:700,fontVariantNumeric:"tabular-nums"}}>
+                        {prognoseMitte>=0?"":"−"}{fmtMoney(Math.abs(prognoseMitte||0))} €
                       </div>
                     </div>
-                    {/* Caret-Toggle zentral zwischen Mitte und Ende */}
+                    {/* Prog.-Toggle mittig (kein eigener Saldo, nur Toggle für Details) */}
                     <div onClick={()=>setHeroDetailOpen(v=>!v)}
-                      style={{display:"flex",alignItems:"center",justifyContent:"center",
-                        cursor:"pointer",userSelect:"none",padding:"0 6px",
-                        opacity:0.7}}
+                      style={{width:60,textAlign:"center",cursor:"pointer",
+                        padding:"6px 0",borderRadius:8,userSelect:"none"}}
                       title={heroDetailOpen?"Details ausblenden":"Details anzeigen"}>
-                      {Li(heroDetailOpen?"chevron-up":"chevron-down",22,T.txt2)}
+                      <div style={{color:T.txt2,fontSize:10,fontWeight:700,
+                        letterSpacing:1,marginBottom:2,opacity:0}}>·</div>
+                      <div style={{color:T.txt2,fontSize:11,fontWeight:600,
+                        display:"flex",alignItems:"center",justifyContent:"center",gap:2}}>
+                        Prog. {Li(heroDetailOpen?"chevron-up":"chevron-down",11,T.txt2)}
+                      </div>
                     </div>
                     {/* Ende-Spalte */}
                     <div onClick={()=>{
-                        // Klick auf ENDE: Drill aller Buchungen + VM bis Monatsende
-                        const isInc = prognoseEnde>=0;
-                        const txList = (isInc ? [..._realIn, ...pTxsIn] : [..._realOut, ...pTxsOut]);
-                        setDashDrill({
-                          label:"Prognose Ende",
-                          txList,
-                          isIncome:isInc,
-                          uncatCount:(isInc?_uIn:_uOut).length,
-                          cat:null,
-                          total:Math.abs(prognoseEnde||0),
-                        });
-                        setDashSearch("");
+                        if(detailEnde) setDashDrill({...detailEnde, _isHeroDrill:true, label:"Prognose Ende"});
                       }}
-                      style={{flex:1,textAlign:"center",cursor:"pointer",
-                        padding:"4px 0 6px",borderRadius:8}}>
+                      style={{flex:1,textAlign:"center",cursor:detailEnde?"pointer":"default",
+                        padding:"6px 0",borderRadius:8}}>
                       <div style={{color:T.gold||T.txt2,fontSize:10,fontWeight:700,
                         letterSpacing:1,marginBottom:2}}>ENDE</div>
                       <div style={{color: prognoseEnde>=0?T.pos:T.neg,
-                        fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums"}}>
-                        {prognoseEnde>=0?"":"−"}{fmtMoney(Math.abs(prognoseEnde||0))}
+                        fontSize:16,fontWeight:700,fontVariantNumeric:"tabular-nums"}}>
+                        {prognoseEnde>=0?"":"−"}{fmtMoney(Math.abs(prognoseEnde||0))} €
                       </div>
                     </div>
                   </div>
@@ -952,9 +924,8 @@ function DashboardScreenV2() {
                 const stripeMitte = !isIncome && budgetMitte>0 ? trafficColor(iMitte, budgetMitte) : null;
                 const stripeEnde  = !isIncome && budgetEnde>0  ? trafficColor(iEnde,  budgetEnde)  : null;
 
-                // Großer Hauptbetrag rechts = AKTUELLER Verbrauch (real gebucht), gefärbt nach Ampel
-                // Mitte/Ende-Pillen zeigen die Prognose; oben zeigt der reale Stand.
-                const headColor = textColor(iAkt, budgetEnde, isIncome);
+                // Großer Hauptbetrag rechts = ENDE-Wert, gefärbt nach Ampel
+                const headColor = textColor(iEnde, budgetEnde, isIncome);
 
                 return (
                   <div key={cat.id}
@@ -1001,7 +972,7 @@ function DashboardScreenV2() {
                         color:headColor,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",
                         flexShrink:0,
                       }}>
-                        {fmt(iAkt)}
+                        {fmt(iEnde)}
                       </div>
                     </div>
                     {/* Zeile 2: Mitte/Ende-Pillen mit Ampel-Strich unten — gleich groß wie Hauptbetrag, aber blasser */}
