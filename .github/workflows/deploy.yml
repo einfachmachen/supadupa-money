@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [main]
-  workflow_dispatch:
+  workflow_dispatch: # manuell auslösbar
 
 permissions:
   contents: read
@@ -11,8 +11,8 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
-  cancel-in-progress: true
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -24,32 +24,31 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
           cache-dependency-path: new/package-lock.json
 
       - name: Install dependencies
-        working-directory: new
-        run: npm ci
+        working-directory: ./new
+        run: npm ci --no-audit --no-fund
 
-      - name: Build
-        working-directory: new
-        env:
-          VITE_BASE: /supadupa/new/
-        run: npm run build
+      - name: Build app
+        working-directory: ./new
+        # Base = /<repo-name>/ — App liegt jetzt direkt unter dem Repo-Pfad.
+        # Die alte App lebt im 'legacy'-Branch weiter.
+        run: npm run build -- --base=/${{ github.event.repository.name }}/
 
-      - name: Prepare deploy structure
+      - name: Assemble site
         run: |
-          mkdir -p deploy/new
-          cp -r new/dist/* deploy/new/
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
+          mkdir -p _site
+          # Build-Output direkt nach _site (kein /new/-Unterpfad mehr)
+          cp -r new/dist/* _site/
+          echo "── Site-Inhalt ──"
+          find _site -maxdepth 2 -type f | head -30
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: deploy
+          path: _site
 
   deploy:
     needs: build
