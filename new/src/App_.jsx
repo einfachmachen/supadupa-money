@@ -116,6 +116,9 @@ export default function FinanzApp() {
   const [showMobileWiederkehrend, setShowMobileWiederkehrend] = useState(false);
   const [showMobileWiederkehrendTyp, setShowMobileWiederkehrendTyp] = useState("wiederkehrend");
   const [showMobilePicker, setShowMobilePicker] = useState(false);
+  // Plus-Button: arretiert (höhere Position + 1,5× Größe) ja/nein
+  // NICHT persistiert — beim App-Start immer false (Bottom-Bar-Position)
+  const [plusArretiert, setPlusArretiert] = useState(false);
   const [showMobileBudget, setShowMobileBudget] = useState(false);
   const [showMobileKategorien, setShowMobileKategorien] = useState(false);
   const [showMonthPickerModal, setShowMonthPickerModal] = useState(false);  // für Master-Button
@@ -2504,6 +2507,10 @@ Abbrechen = ${remoteName}-Stand laden`
           const VISUAL_LIMIT = 15;     // Joystick darf max so weit wandern
           const HOLD_MS = 600;         // wie lange in einer Richtung halten für Edge-Jump
           const DOUBLE_TAP_MS = 350;   // Fenster für Doppel-Tap → jumpToToday
+          // Plus-Button-Rest-Position: Bottom-Bar oder arretiert (80px höher, 1,5× größer)
+          const restingTransform = plusArretiert
+            ? "translate(0px, -94px) scale(1.5)"
+            : "translate(0px, -14px) scale(1)";
 
           // GESTEN-NEUDESIGN:
           // - Single-Tap   → nichts (nur visuelles Feedback)
@@ -2589,8 +2596,12 @@ Abbrechen = ${remoteName}-Stand laden`
               visX = clamp(dx, VISUAL_LIMIT);
               visY = clamp(dy, VISUAL_LIMIT) - 14;
             }
+            // Live-Drag visuell: Translation relativ zur aktuellen Rest-Position
+            // (arretiert: y-Offset -94, scale 1.5; sonst y-Offset -14, scale 1)
+            const restY = plusArretiert ? -94 : -14;
+            const dragScale = plusArretiert ? 1.5*1.08 : 1.08;
             if(e.currentTarget) {
-              e.currentTarget.style.transform = `translate(${visX}px, ${visY}px) scale(1.08)`;
+              e.currentTarget.style.transform = `translate(${visX}px, ${visY+restY+14}px) scale(${dragScale})`;
               e.currentTarget.style.transition = "none";
             }
             // Hold-Timer NUR wenn horizontale Achse gelockt
@@ -2612,7 +2623,7 @@ Abbrechen = ${remoteName}-Stand laden`
             // Visuell zurück
             if(e.currentTarget) {
               e.currentTarget.style.transition = "transform 0.2s cubic-bezier(.34,1.4,.64,1)";
-              e.currentTarget.style.transform = "translate(0px, -14px) scale(1)";
+              e.currentTarget.style.transform = restingTransform;
             }
             try { e.currentTarget.releasePointerCapture(e.pointerId); } catch(err) {}
             // Falls schon durch Hold ausgelöst → nichts mehr tun
@@ -2625,7 +2636,8 @@ Abbrechen = ${remoteName}-Stand laden`
                 // Swipe-Up
                 if(showMonthPickerModal)      setShowMonthPickerModal(false);                                 // MonthPicker offen → schließen
                 else if(showMobilePicker)     { setShowMobilePicker(false); setShowMonthPickerModal(true); } // Mehr offen → wechseln
-                else                          setShowMonthPickerModal(true);                                  // sonst → MonthPicker auf
+                else if(!plusArretiert)       setPlusArretiert(true);                                         // 1. Hochziehen → nur arretieren
+                else                          setShowMonthPickerModal(true);                                  // schon arretiert → MonthPicker auf
               } else {
                 // Swipe-Down
                 if(showMobilePicker)          setShowMobilePicker(false);                                     // Mehr offen → schließen
@@ -2662,7 +2674,7 @@ Abbrechen = ${remoteName}-Stand laden`
               clearHoldTimer(ref);
               if(e.currentTarget) {
                 e.currentTarget.style.transition = "transform 0.2s cubic-bezier(.34,1.4,.64,1)";
-                e.currentTarget.style.transform = "translate(0px, -14px) scale(1)";
+                e.currentTarget.style.transform = restingTransform;
               }
             }
           };
@@ -2693,7 +2705,7 @@ Abbrechen = ${remoteName}-Stand laden`
                   boxShadow: isBrutalist ? "4px 4px 0 #FFEC3E" : "0 -2px 14px rgba(0,0,0,0.4)",
                   display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
                   position:"relative",
-                  transform:"translate(0px, -14px) scale(1)",
+                  transform: restingTransform,
                   transition:"transform 0.2s cubic-bezier(.34,1.4,.64,1)",
                   touchAction:"none",userSelect:"none",cursor:"pointer",
                   WebkitTapHighlightColor:"transparent",padding:0,

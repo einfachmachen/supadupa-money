@@ -8,6 +8,7 @@ import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
 import { KontoWarnungWidget } from "../organisms/KontoWarnungWidget.jsx";
 import { PendingList } from "../organisms/PendingList.jsx";
 import { SaldoHero2 } from "../organisms/SaldoHero2.jsx";
+import { SaldoPrognose } from "../organisms/SaldoPrognose.jsx";
 import { TagesgeldWidget } from "../organisms/TagesgeldWidget.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
@@ -69,6 +70,8 @@ function DashboardScreenV2() {
     // Wrapper: synct dashDrillOpen in FinanzApp für TopBar-zIndex
     const setDashDrill = (v) => { _setDashDrill(v); setDashDrillOpen(!!v); };
     const [heroDetailOpen, setHeroDetailOpen] = useState(false);
+    // Hero-Prognose-Drilldown: null | "Mitte" | "Ende"
+    const [heroProgDrill, setHeroProgDrill] = useState(null);
     const [expandedSplitId, setExpandedSplitId] = useState(null);
     const [drillExpandedSub, setDrillExpandedSub] = useState(null);
     const [budgetEditSub, setBudgetEditSub] = useState(null);
@@ -620,7 +623,9 @@ function DashboardScreenV2() {
                 const idx = allAccIds.findIndex(a => a===selAcc);
                 setSelAcc(allAccIds[(idx+1) % allAccIds.length]);
               };
-              const saldo = prognoseEnde;
+              const saldo = selAcc === null
+                ? getKumulierterSaldo(year, month)
+                : getKumulierterSaldo(year, month, selAcc);
               const fmtMoney = v => v==null||v===undefined ? "—" : fmt(v);
 
               // Detail-Werte für Buch/VM/unkat
@@ -697,22 +702,10 @@ function DashboardScreenV2() {
                       mit Caret-Toggle für Buch./VM-Details rechts */}
                   <div style={{display:"flex",gap:6,marginTop:10,alignItems:"stretch"}}>
                     {/* Mitte-Spalte */}
-                    <div onClick={()=>{
-                        // Klick auf MITTE: Drill aller Buchungen + VM bis Tag 14
-                        const isInc = prognoseMitte>=0;
-                        const txList = (isInc ? [..._realInM, ..._pTxsInM] : [..._realOutM, ..._pTxsOutM]);
-                        setDashDrill({
-                          label:"Prognose Mitte",
-                          txList,
-                          isIncome:isInc,
-                          uncatCount:(isInc?_uInM2:_uOutM2).length,
-                          cat:null,
-                          total:Math.abs(prognoseMitte||0),
-                        });
-                        setDashSearch("");
-                      }}
+                    <div onClick={()=>setHeroProgDrill(v=>v==="Mitte"?null:"Mitte")}
                       style={{flex:1,textAlign:"center",cursor:"pointer",
-                        padding:"4px 0 6px",borderRadius:8}}>
+                        padding:"4px 0 6px",borderRadius:8,
+                        background: heroProgDrill==="Mitte" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
                       <div style={{color:T.mid||T.txt2,fontSize:10,fontWeight:700,
                         letterSpacing:1,marginBottom:2}}>MITTE</div>
                       <div style={{color: prognoseMitte>=0?T.pos:T.neg,
@@ -729,22 +722,10 @@ function DashboardScreenV2() {
                       {Li(heroDetailOpen?"chevron-up":"chevron-down",22,T.txt2)}
                     </div>
                     {/* Ende-Spalte */}
-                    <div onClick={()=>{
-                        // Klick auf ENDE: Drill aller Buchungen + VM bis Monatsende
-                        const isInc = prognoseEnde>=0;
-                        const txList = (isInc ? [..._realIn, ...pTxsIn] : [..._realOut, ...pTxsOut]);
-                        setDashDrill({
-                          label:"Prognose Ende",
-                          txList,
-                          isIncome:isInc,
-                          uncatCount:(isInc?_uIn:_uOut).length,
-                          cat:null,
-                          total:Math.abs(prognoseEnde||0),
-                        });
-                        setDashSearch("");
-                      }}
+                    <div onClick={()=>setHeroProgDrill(v=>v==="Ende"?null:"Ende")}
                       style={{flex:1,textAlign:"center",cursor:"pointer",
-                        padding:"4px 0 6px",borderRadius:8}}>
+                        padding:"4px 0 6px",borderRadius:8,
+                        background: heroProgDrill==="Ende" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
                       <div style={{color:T.gold||T.txt2,fontSize:10,fontWeight:700,
                         letterSpacing:1,marginBottom:2}}>ENDE</div>
                       <div style={{color: prognoseEnde>=0?T.pos:T.neg,
@@ -772,6 +753,17 @@ function DashboardScreenV2() {
                           clrIn={T.gold} clrOut={T.gold}
                           onTapIn={drillUncatIn} onTapOut={drillUncatOut}/>
                       )}
+                    </div>
+                  )}
+
+                  {/* Prognose-Drilldown (Mitte oder Ende): inline wie in V1 */}
+                  {heroProgDrill && (
+                    <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${T.bd}`}}>
+                      <SaldoPrognose year={year} month={month} txs={[]}
+                        detailMitte={detailMitte} detailEnde={detailEnde}
+                        saldoMitte={saldoMitte} saldoEnde={saldoEnde}
+                        getCat={getCat} getSub={getSub}
+                        initialOpen={heroProgDrill}/>
                     </div>
                   )}
                 </div>

@@ -608,7 +608,14 @@ function DashboardScreenV2() {
               const accLabel = selAcc===null
                 ? "GESAMT"
                 : (accounts.find(a=>a.id===selAcc)?.name?.toUpperCase() || "");
-              const allAccIds = [null, ...accounts.map(a=>a.id)];
+              // Nur Konten mit mindestens einer Buchung im Toggle anbieten
+              const usedAccIds = (()=>{
+                const s = new Set();
+                (txs||[]).forEach(t => { if(t.accountId) s.add(t.accountId); });
+                return s;
+              })();
+              const filteredAccs = (accounts||[]).filter(a => usedAccIds.has(a.id));
+              const allAccIds = [null, ...filteredAccs.map(a => a.id)];
               const cycleAcc = () => {
                 const idx = allAccIds.findIndex(a => a===selAcc);
                 setSelAcc(allAccIds[(idx+1) % allAccIds.length]);
@@ -668,8 +675,11 @@ function DashboardScreenV2() {
                     <div onClick={cycleAcc}
                       style={{
                         color:selAcc===null ? T.txt2 : T.blue,
-                        fontSize:13,fontWeight:700,letterSpacing:1,
-                        flexShrink:0,cursor:"pointer",
+                        fontSize:32,fontWeight:700,
+                        lineHeight:1.1,
+                        cursor:"pointer",
+                        minWidth:0,
+                        overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
                       }}>
                       {accLabel}
                     </div>
@@ -677,8 +687,7 @@ function DashboardScreenV2() {
                       color: saldo>=0 ? T.pos : T.neg,
                       fontSize:32,fontWeight:700,fontVariantNumeric:"tabular-nums",
                       letterSpacing:-0.5,lineHeight:1.1,
-                      textAlign:"right",flex:1,minWidth:0,
-                      overflow:"hidden",textOverflow:"ellipsis",
+                      textAlign:"right",minWidth:0,flexShrink:0,
                     }}>
                       {saldo>=0?"":"−"}{fmtMoney(Math.abs(saldo||0))} €
                     </div>
