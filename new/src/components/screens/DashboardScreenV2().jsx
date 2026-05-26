@@ -70,7 +70,6 @@ function DashboardScreenV2() {
     // Wrapper: synct dashDrillOpen in FinanzApp für TopBar-zIndex
     const setDashDrill = (v) => { _setDashDrill(v); setDashDrillOpen(!!v); };
     const [heroDetailOpen, setHeroDetailOpen] = useState(false);
-    const [warningsExpanded, setWarningsExpanded] = useState(false);
     // Hero-Prognose-Drilldown: null | "Mitte" | "Ende"
     const [heroProgDrill, setHeroProgDrill] = useState(null);
     const [expandedSplitId, setExpandedSplitId] = useState(null);
@@ -710,7 +709,7 @@ function DashboardScreenV2() {
                       <div style={{color:T.mid||T.txt2,fontSize:10,fontWeight:700,
                         letterSpacing:1,marginBottom:2}}>MITTE</div>
                       <div style={{color: prognoseMitte>=0?T.pos:T.neg,
-                        fontSize:20,fontWeight:500,fontVariantNumeric:"tabular-nums"}}>
+                        fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums"}}>
                         {prognoseMitte>=0?"":"−"}{fmtMoney(Math.abs(prognoseMitte||0))}
                       </div>
                     </div>
@@ -730,7 +729,7 @@ function DashboardScreenV2() {
                       <div style={{color:T.gold||T.txt2,fontSize:10,fontWeight:700,
                         letterSpacing:1,marginBottom:2}}>ENDE</div>
                       <div style={{color: prognoseEnde>=0?T.pos:T.neg,
-                        fontSize:20,fontWeight:500,fontVariantNumeric:"tabular-nums"}}>
+                        fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums"}}>
                         {prognoseEnde>=0?"":"−"}{fmtMoney(Math.abs(prognoseEnde||0))}
                       </div>
                     </div>
@@ -774,30 +773,8 @@ function DashboardScreenV2() {
         })()}
         </div>
 
-        {/* ── Kontostand-Warnung (defaultmäßig kollabiert, dezenter Header) ── */}
-        <div style={{margin:"4px 10px 0"}}>
-          <div onClick={()=>setWarningsExpanded(v=>!v)}
-            style={{display:"flex",alignItems:"center",gap:8,
-              padding:"7px 10px",borderRadius:8,cursor:"pointer",
-              background:`${T.pos}10`,border:`1px solid ${T.pos}33`,
-              userSelect:"none"}}>
-            <div style={{width:24,height:24,borderRadius:6,
-              background:`${T.pos}22`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              {Li("shield-check",13,T.pos)}
-            </div>
-            <div style={{flex:1,color:T.txt,fontSize:12,fontWeight:600}}>
-              Konto-Warnungen
-            </div>
-            <div style={{color:T.txt2}}>
-              {Li(warningsExpanded?"chevron-up":"chevron-down",14,T.txt2)}
-            </div>
-          </div>
-          {warningsExpanded && (
-            <div style={{marginTop:4}}>
-              <KontoWarnungWidget showFolgemonateToggle={true}/>
-            </div>
-          )}
-        </div>
+        {/* ── Kontostand-Warnung ── */}
+        <KontoWarnungWidget showFolgemonateToggle={true}/>
 
         {/* ── Tagesgeld-Transfer Widget ── */}
         <TagesgeldWidget year={year} month={month}/>
@@ -1003,7 +980,7 @@ function DashboardScreenV2() {
                       </div>
                       <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
                         <div style={{
-                          color:T.txt,fontSize:15,fontWeight:600,
+                          color:catColor,fontSize:15,fontWeight:700,
                           overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
                         }}>{cat.name}</div>
                         {accLabel && (
