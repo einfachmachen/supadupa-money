@@ -71,6 +71,7 @@ function DashboardScreenV2() {
     const setDashDrill = (v) => { _setDashDrill(v); setDashDrillOpen(!!v); };
     const [heroDetailOpen, setHeroDetailOpen] = useState(false);
     const [warningsExpanded, setWarningsExpanded] = useState(false);
+    const [catDetailsOpen, setCatDetailsOpen] = useState(false);
     // Hero-Prognose-Drilldown: null | "Mitte" | "Ende"
     const [heroProgDrill, setHeroProgDrill] = useState(null);
     const [expandedSplitId, setExpandedSplitId] = useState(null);
@@ -889,7 +890,7 @@ function DashboardScreenV2() {
             : null;
           return (
             <div style={{padding:"6px 12px 4px",display:"flex",alignItems:"center",gap:8}}>
-              <div style={{display:"flex",gap:6,flex:1,minWidth:0}}>
+              <div style={{display:"flex",gap:6,flex:1,minWidth:0,alignItems:"center"}}>
                 {[["desc","\u2193 Gr\u00f6\u00dfe"],["asc","\u2191 Gr\u00f6\u00dfe"],["custom","\u270e Eigene"]].map(([mode,lbl])=>(
                   <button key={mode} onClick={()=>setCatSortMode(mode)}
                     style={{background:catSortMode===mode?T.blue:"transparent",
@@ -899,6 +900,16 @@ function DashboardScreenV2() {
                     {lbl}
                   </button>
                 ))}
+                {/* Toggle für Mitte/Ende-Details aller Cat-Karten */}
+                <button onClick={()=>setCatDetailsOpen(v=>!v)}
+                  title={catDetailsOpen?"Prognose ausblenden":"Prognose anzeigen"}
+                  style={{background:catDetailsOpen?T.blue+"22":"transparent",
+                    color:catDetailsOpen?T.blue:T.txt2,
+                    border:`1px solid ${catDetailsOpen?T.blue:T.bd}`,
+                    borderRadius:14,padding:"3px 8px",fontSize:11,fontWeight:600,cursor:"pointer",
+                    display:"flex",alignItems:"center",gap:3}}>
+                  Prog. {Li(catDetailsOpen?"chevron-up":"chevron-down",11,catDetailsOpen?T.blue:T.txt2)}
+                </button>
               </div>
               {dateStr && (
                 <div style={{color:T.lbl||T.txt2,fontSize:11,fontWeight:600,
@@ -1019,46 +1030,48 @@ function DashboardScreenV2() {
                         {fmt(iAkt)}
                       </div>
                     </div>
-                    {/* Zeile 2: Mitte/Ende-Pillen mit Ampel-Strich unten — gleich groß wie Hauptbetrag, aber blasser */}
-                    <div style={{display:"flex",gap:6,marginTop:6}}>
-                      {/* Mitte */}
-                      <div style={{
-                        flex:1,position:"relative",textAlign:"center",
-                        padding:"5px 0",borderRadius:7,
-                        background:cellBg,
-                        color: textColor(iMitte, budgetMitte, isIncome),
-                        fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",
-                        opacity:0.55,
-                        overflow:"hidden",
-                      }}>
-                        {iMitte>0 ? fmt(iMitte) : "\u2014"}
-                        {/* Ampel-Strich an der Unterkante */}
-                        {stripeMitte && (
-                          <div style={{
-                            position:"absolute",left:0,right:0,bottom:0,
-                            height:3,background:stripeMitte,
-                          }}/>
-                        )}
+                    {/* Zeile 2: Mitte/Ende-Pillen — nur sichtbar wenn Toggle "Prog." aktiviert */}
+                    {catDetailsOpen && (
+                      <div style={{display:"flex",gap:6,marginTop:6}}>
+                        {/* Mitte */}
+                        <div style={{
+                          flex:1,position:"relative",textAlign:"center",
+                          padding:"5px 0",borderRadius:7,
+                          background:cellBg,
+                          color: textColor(iMitte, budgetMitte, isIncome),
+                          fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",
+                          opacity:0.55,
+                          overflow:"hidden",
+                        }}>
+                          {iMitte>0 ? fmt(iMitte) : "\u2014"}
+                          {/* Ampel-Strich an der Unterkante */}
+                          {stripeMitte && (
+                            <div style={{
+                              position:"absolute",left:0,right:0,bottom:0,
+                              height:3,background:stripeMitte,
+                            }}/>
+                          )}
+                        </div>
+                        {/* Ende */}
+                        <div style={{
+                          flex:1,position:"relative",textAlign:"center",
+                          padding:"5px 0",borderRadius:7,
+                          background:cellBg,
+                          color: textColor(iEnde, budgetEnde, isIncome),
+                          fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",
+                          opacity:0.55,
+                          overflow:"hidden",
+                        }}>
+                          {iEnde>0 ? fmt(iEnde) : "\u2014"}
+                          {stripeEnde && (
+                            <div style={{
+                              position:"absolute",left:0,right:0,bottom:0,
+                              height:3,background:stripeEnde,
+                            }}/>
+                          )}
+                        </div>
                       </div>
-                      {/* Ende */}
-                      <div style={{
-                        flex:1,position:"relative",textAlign:"center",
-                        padding:"5px 0",borderRadius:7,
-                        background:cellBg,
-                        color: textColor(iEnde, budgetEnde, isIncome),
-                        fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",
-                        opacity:0.55,
-                        overflow:"hidden",
-                      }}>
-                        {iEnde>0 ? fmt(iEnde) : "\u2014"}
-                        {stripeEnde && (
-                          <div style={{
-                            position:"absolute",left:0,right:0,bottom:0,
-                            height:3,background:stripeEnde,
-                          }}/>
-                        )}
-                      </div>
-                    </div>
+                    )}
                   </div>
                 );
               })}

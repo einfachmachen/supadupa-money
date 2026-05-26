@@ -70,7 +70,8 @@ function DashboardScreenV2() {
     // Wrapper: synct dashDrillOpen in FinanzApp für TopBar-zIndex
     const setDashDrill = (v) => { _setDashDrill(v); setDashDrillOpen(!!v); };
     const [detailsOpen, setDetailsOpen] = useState(false);
-    const [warningsExpanded, setWarningsExpanded] = useState(false);
+    // activePanel: null | "warnings" | "sparen" | "vormerkungen"
+    const [activePanel, setActivePanel] = useState(null);
     // Hero-Prognose-Drilldown: null | "Mitte" | "Ende"
     const [heroProgDrill, setHeroProgDrill] = useState(null);
     const [expandedSplitId, setExpandedSplitId] = useState(null);
@@ -774,33 +775,58 @@ function DashboardScreenV2() {
         })()}
         </div>
 
-        {/* ── Kontostand-Warnung (defaultmäßig kollabiert, dezenter Header) ── */}
-        <div style={{margin:"4px 10px 0"}}>
-          <div onClick={()=>setWarningsExpanded(v=>!v)}
-            style={{display:"flex",alignItems:"center",gap:8,
-              padding:"7px 10px",borderRadius:8,cursor:"pointer",
-              background:`${T.pos}10`,border:`1px solid ${T.pos}33`,
-              userSelect:"none"}}>
-            <div style={{width:24,height:24,borderRadius:6,
-              background:`${T.pos}22`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              {Li("shield-check",13,T.pos)}
+        {/* ── 3-Symbol-Zeile: Warnungen | Sparen | Vormerkungen ── */}
+        {(()=>{
+          const togglePanel = (key) => setActivePanel(p => p===key ? null : key);
+          const Card = ({panel, icon, label, badge, color}) => {
+            const isActive = activePanel === panel;
+            return (
+              <div onClick={()=>togglePanel(panel)}
+                style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",
+                  gap:4,padding:"10px 6px",borderRadius:10,cursor:"pointer",
+                  background: isActive ? color+"22" : (T.cat_bg||"rgba(255,255,255,0.04)"),
+                  border: `1px solid ${isActive ? color : T.bd}`,
+                  userSelect:"none",position:"relative"}}>
+                <div style={{width:30,height:30,borderRadius:8,
+                  background:color+"22",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  {Li(icon, 16, color)}
+                </div>
+                <div style={{color:isActive?color:T.txt,fontSize:10,fontWeight:600,
+                  textAlign:"center",lineHeight:1.2}}>
+                  {label}
+                </div>
+                {badge!=null && badge>0 && (
+                  <div style={{position:"absolute",top:6,right:6,
+                    minWidth:16,height:16,borderRadius:8,padding:"0 4px",
+                    background:color,color:T.bg||"#000",fontSize:9,fontWeight:800,
+                    display:"flex",alignItems:"center",justifyContent:"center"}}>
+                    {badge}
+                  </div>
+                )}
+              </div>
+            );
+          };
+          return (
+            <div style={{margin:"6px 10px 0",display:"flex",gap:6}}>
+              <Card panel="warnings"     icon="shield-check"  label="Warnungen"    badge={null}        color={T.pos}/>
+              <Card panel="sparen"       icon="piggy-bank"    label="Sparen"       badge={null}        color={T.blue}/>
+              <Card panel="vormerkungen" icon="clock"         label="Vormerkungen" badge={pTxs.length} color={T.gold}/>
             </div>
-            <div style={{flex:1,color:T.txt,fontSize:12,fontWeight:600}}>
-              Konto-Warnungen
-            </div>
-            <div style={{color:T.txt2}}>
-              {Li(warningsExpanded?"chevron-up":"chevron-down",14,T.txt2)}
-            </div>
-          </div>
-          {warningsExpanded && (
-            <div style={{marginTop:4}}>
-              <KontoWarnungWidget showFolgemonateToggle={true}/>
-            </div>
-          )}
-        </div>
+          );
+        })()}
 
-        {/* ── Tagesgeld-Transfer Widget ── */}
-        <TagesgeldWidget year={year} month={month}/>
+        {/* Dynamisch expandiertes Panel — zeigt das gewählte Widget */}
+        {activePanel === "warnings" && (
+          <div style={{margin:"4px 10px 0"}}>
+            <KontoWarnungWidget showFolgemonateToggle={true}/>
+          </div>
+        )}
+        {activePanel === "sparen" && (
+          <TagesgeldWidget year={year} month={month}/>
+        )}
+        {activePanel === "vormerkungen" && pTxs.length>0 && !window.MBT_DEBUG?.disable_pendinglist && (
+          <PendingList pTxs={pTxs} getCat={getCat} getSub={getSub} txType={txType} openEdit={openEdit} dayOf={dayOf} pendOpenAmt={pendOpenAmt}/>
+        )}
 
         {/* Vorzeichen-Fehlzuordnung-Warnung — einklappbar */}
         {mismatchTxs.length>0&&(
@@ -876,7 +902,7 @@ function DashboardScreenV2() {
           </div>
         )}
 
-        {pTxs.length>0&&!window.MBT_DEBUG?.disable_pendinglist&&<PendingList pTxs={pTxs} getCat={getCat} getSub={getSub} txType={txType} openEdit={openEdit} dayOf={dayOf} pendOpenAmt={pendOpenAmt}/>}
+
 
 
         {/* ── V2: Sort-Buttons + Datum (oben rechts) ── */}
