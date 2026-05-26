@@ -661,7 +661,7 @@ function DashboardScreenV2() {
               );
 
               return (
-                <div style={{padding:"12px 20px 6px"}}>
+                <div style={{padding:"12px 24px 6px"}}>
                   {/* Zeile 1: Konto-Name links klein + Saldo rechts groß */}
                   <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",
                     gap:12,userSelect:"none"}}>
@@ -684,18 +684,8 @@ function DashboardScreenV2() {
                     </div>
                   </div>
 
-                  {/* Prog.-Toggle mittig über der Mitte/Ende-Zeile */}
-                  <div onClick={()=>setHeroDetailOpen(v=>!v)}
-                    style={{textAlign:"center",cursor:"pointer",userSelect:"none",marginTop:6}}
-                    title={heroDetailOpen?"Details ausblenden":"Details anzeigen"}>
-                    <span style={{color:T.txt2,fontSize:11,fontWeight:600,
-                      display:"inline-flex",alignItems:"center",gap:2}}>
-                      Prog. {Li(heroDetailOpen?"chevron-up":"chevron-down",11,T.txt2)}
-                    </span>
-                  </div>
-
-                  {/* Zeile 2: MITTE / ENDE in 2 Spalten, fluchten exakt mit Cat-Pillen */}
-                  <div style={{display:"flex",gap:6,marginTop:4,alignItems:"flex-start"}}>
+                  {/* Zeile 2: MITTE / Prog.-Toggle / ENDE in 3 Spalten */}
+                  <div style={{display:"flex",gap:8,marginTop:10,alignItems:"flex-start"}}>
                     {/* Mitte-Spalte */}
                     <div onClick={()=>{
                         if(detailMitte) setDashDrill({...detailMitte, _isHeroDrill:true, label:"Prognose Mitte"});
@@ -707,6 +697,18 @@ function DashboardScreenV2() {
                       <div style={{color: prognoseMitte>=0?T.pos:T.neg,
                         fontSize:16,fontWeight:700,fontVariantNumeric:"tabular-nums"}}>
                         {prognoseMitte>=0?"":"−"}{fmtMoney(Math.abs(prognoseMitte||0))} €
+                      </div>
+                    </div>
+                    {/* Prog.-Toggle mittig (kein eigener Saldo, nur Toggle für Details) */}
+                    <div onClick={()=>setHeroDetailOpen(v=>!v)}
+                      style={{width:60,textAlign:"center",cursor:"pointer",
+                        padding:"6px 0",borderRadius:8,userSelect:"none"}}
+                      title={heroDetailOpen?"Details ausblenden":"Details anzeigen"}>
+                      <div style={{color:T.txt2,fontSize:10,fontWeight:700,
+                        letterSpacing:1,marginBottom:2,opacity:0}}>·</div>
+                      <div style={{color:T.txt2,fontSize:11,fontWeight:600,
+                        display:"flex",alignItems:"center",justifyContent:"center",gap:2}}>
+                        Prog. {Li(heroDetailOpen?"chevron-up":"chevron-down",11,T.txt2)}
                       </div>
                     </div>
                     {/* Ende-Spalte */}
@@ -922,9 +924,8 @@ function DashboardScreenV2() {
                 const stripeMitte = !isIncome && budgetMitte>0 ? trafficColor(iMitte, budgetMitte) : null;
                 const stripeEnde  = !isIncome && budgetEnde>0  ? trafficColor(iEnde,  budgetEnde)  : null;
 
-                // Großer Hauptbetrag rechts = AKTUELLER Verbrauch (real gebucht), gefärbt nach Ampel
-                // Mitte/Ende-Pillen zeigen die Prognose; oben zeigt der reale Stand.
-                const headColor = textColor(iAkt, budgetEnde, isIncome);
+                // Großer Hauptbetrag rechts = ENDE-Wert, gefärbt nach Ampel
+                const headColor = textColor(iEnde, budgetEnde, isIncome);
 
                 return (
                   <div key={cat.id}
@@ -971,7 +972,7 @@ function DashboardScreenV2() {
                         color:headColor,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",
                         flexShrink:0,
                       }}>
-                        {fmt(iAkt)}
+                        {fmt(iEnde)}
                       </div>
                     </div>
                     {/* Zeile 2: Mitte/Ende-Pillen mit Ampel-Strich unten — gleich groß wie Hauptbetrag, aber blasser */}
