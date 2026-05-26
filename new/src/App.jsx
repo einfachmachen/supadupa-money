@@ -2855,6 +2855,7 @@ Abbrechen = ${remoteName}-Stand laden`
         <MonthPickerModal
           year={year} month={month}
           setYear={setYear} setMonth={setMonth}
+          plusArretiert={plusArretiert}
           onClose={()=>setShowMonthPickerModal(false)}
           onSwitchToMore={()=>{ setShowMonthPickerModal(false); setShowMobilePicker(true); }}/>
       )}

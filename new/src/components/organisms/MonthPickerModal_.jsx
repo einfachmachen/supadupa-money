@@ -5,7 +5,7 @@ import { MonthPicker } from "../molecules/MonthPicker.jsx";
 import { theme as T } from "../../theme/activeTheme.js";
 import { Li } from "../../utils/icons.jsx";
 
-function MonthPickerModal({year, month, setYear, setMonth, onClose, onSwitchToMore, plusArretiert}) {
+function MonthPickerModal({year, month, setYear, setMonth, onClose, onSwitchToMore}) {
   const MONTHS_S_LOCAL = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
   const isLightTheme = (T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss");
   const arrowBtn = {
@@ -77,9 +77,7 @@ function MonthPickerModal({year, month, setYear, setMonth, onClose, onSwitchToMo
       onPointerCancel={onBdUp}
       style={{position:"fixed",inset:0,zIndex:1100,background:"transparent",
         display:"flex",alignItems:"flex-end",justifyContent:"center",
-        paddingBottom: plusArretiert
-          ? "calc(env(safe-area-inset-bottom, 0px) + 200px)"
-          : "calc(env(safe-area-inset-bottom, 0px) + 80px)",
+        paddingBottom:"calc(env(safe-area-inset-bottom, 0px) + 80px)",
         pointerEvents:"auto", touchAction:"none"}}>
       <div onClick={e=>e.stopPropagation()}
         onPointerDown={e=>e.stopPropagation()}
