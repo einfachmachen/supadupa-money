@@ -7,7 +7,8 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { MONTHS_S } from "../../utils/constants.js";
 import { fmt, pn } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
-import { saldoAt as saldoAtUtil } from "../../utils/saldo.js";
+import { restMitte, restEnde } from "../../utils/saldo.js";
+import { isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
 
 function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=false}) {
   if(window.MBT_DEBUG?.disable_warnings) return null;
@@ -111,6 +112,14 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
     // saldoAt-Kontext einmal über den ganzen Warnungs-Loop teilen, damit
     // _anchorCache/_txsById nicht je Monat neu aufgebaut wird.
     const _saldoCtx = { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth };
+    const _txsById = buildTxIdMap(txs || []);
+    const _tbReal2 = new Date();
+    const _curY = _tbReal2.getFullYear(), _curMo = _tbReal2.getMonth(), _curDay = _tbReal2.getDate();
+    const _signedAmount = (t) => {
+      const type = t._csvType || (t.totalAmount >= 0 ? "income" : "expense");
+      const abs = Math.abs(t.totalAmount || 0);
+      return type === "income" ? abs : -abs;
+    };
     allMonths.forEach(([y,m])=>{
       const prevY = m===0 ? y-1 : y, prevM = m===0 ? 11 : m-1;
       // Immer Giro-Saldo prüfen — Gesamtsaldo ist wegen Tagesgeld nie negativ.
@@ -181,14 +190,42 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
         });
         return total;
       };
-      // KONSISTENZ MIT HERO/MONAT: Tagessaldo direkt via saldoAt aus utils/saldo
-      // berechnen. Vorher hat die Warnung eine eigene Summen-Schleife gefahren,
-      // die _linkedTo-Transfers (z.B. Sparen·Tagesgeld) und Duplikate anders
-      // behandelt hat als ist()/saldoAt — daraus entstanden Phantom-Defizite.
+      // KONSISTENZ MIT HERO/MONAT: gleicher ist()-Filter wie saldoAt
+      //   - _budgetSubId raus
+      //   - isDuplCounterpart raus
+      //   - _linkedTo Sparen-Transfers BLEIBEN drin
+      // Kumulativ summieren (O(txs) statt O(txs*tage)), Budget-Sprünge nur
+      // exakt am 14. bzw. am letzten Tag und nur wenn dieser Tag heute oder
+      // in der Zukunft liegt.
+      const monthTxs = (txs||[]).filter(t=>{
+        if(t._budgetSubId) return false;
+        if(isDuplCounterpart(t, _txsById)) return false;
+        const acc = t.accountId || "acc-giro";
+        if(acc !== "acc-giro") return false;
+        const d = new Date(t.date);
+        return d.getFullYear()===y && d.getMonth()===m;
+      }).sort((a,b)=>a.date.localeCompare(b.date));
+      const isFutureDay = (d) => {
+        if(y > _curY) return true;
+        if(y < _curY) return false;
+        if(m > _curMo) return true;
+        if(m < _curMo) return false;
+        return d >= _curDay;
+      };
+      const sprungMitteVal = isFutureDay(14) ? restMitte(y, m, _saldoCtx) : 0;
+      const sprungEndeVal  = isFutureDay(lastDay) ? restEnde(y, m, _saldoCtx)  : 0;
       const saldoByDay = {};
+      let cumIst = 0, txIdx = 0;
       for(let day=1; day<=lastDay; day++) {
         const dayStr = `${pfx}${pad2(day)}`;
-        saldoByDay[dayStr] = saldoAtUtil(y, m, day, "acc-giro", _saldoCtx);
+        while(txIdx < monthTxs.length && monthTxs[txIdx].date <= dayStr) {
+          cumIst += _signedAmount(monthTxs[txIdx]);
+          txIdx++;
+        }
+        const sprung = (day===14) ? sprungMitteVal
+                     : (day===lastDay) ? sprungEndeVal
+                     : 0;
+        saldoByDay[dayStr] = baseSaldo + cumIst - sprung;
       }
       const saldoAt = (dayStr) => saldoByDay[dayStr] ?? baseSaldo;
       const dayStrs = Array.from({length:lastDay},(_,i)=>`${pfx}${pad2(i+1)}`);
