@@ -72,6 +72,11 @@ function DashboardScreenV2() {
     const [detailsOpen, setDetailsOpen] = useState(false);
     // activePanel: null | "warnings" | "sparen" | "vormerkungen"
     const [activePanel, setActivePanel] = useState(null);
+    const [warnCount, setWarnCount] = useState(0);
+    const isPastMonth = useMemo(()=>{
+      const t = new Date();
+      return year < t.getFullYear() || (year === t.getFullYear() && month < t.getMonth());
+    }, [year, month]);
     // Hero-Prognose-Drilldown: null | "Mitte" | "Ende"
     const [heroProgDrill, setHeroProgDrill] = useState(null);
     const [expandedSplitId, setExpandedSplitId] = useState(null);
@@ -775,10 +780,10 @@ function DashboardScreenV2() {
         })()}
         </div>
 
-        {/* ── 3-Symbol-Zeile: Warnungen | Sparen | Vormerkungen ── */}
-        {(()=>{
+        {/* ── 3-Symbol-Zeile: Warnungen | Sparen | Vormerkungen — nur aktueller/künftiger Monat ── */}
+        {!isPastMonth && (()=>{
           const togglePanel = (key) => setActivePanel(p => p===key ? null : key);
-          const Card = ({panel, icon, label, badge, color}) => {
+          const Card = ({panel, icon, badge, color}) => {
             const isActive = activePanel === panel;
             return (
               <div onClick={()=>togglePanel(panel)}
@@ -800,24 +805,26 @@ function DashboardScreenV2() {
           };
           return (
             <div style={{margin:"6px 10px 0",display:"flex",gap:6}}>
-              <Card panel="warnings"     icon="shield-check"  label="Warnungen"    badge={null}        color={T.pos}/>
-              <Card panel="sparen"       icon="piggy-bank"    label="Sparen"       badge={null}        color={T.blue}/>
-              <Card panel="vormerkungen" icon="clock"         label="Vormerkungen" badge={pTxs.length} color={T.gold}/>
+              <Card panel="warnings"     icon="shield-check" badge={warnCount}   color={warnCount>0 ? T.neg : T.pos}/>
+              <Card panel="sparen"       icon="piggy-bank"   badge={null}        color={T.blue}/>
+              <Card panel="vormerkungen" icon="clock"        badge={pTxs.length} color={T.gold}/>
             </div>
           );
         })()}
 
-        {/* Dynamisch expandiertes Panel — zeigt das gewählte Widget */}
-        {activePanel === "warnings" && (
+        {/* Warnungen-Widget: immer gemountet, damit der Badge-Zähler aktuell bleibt */}
+        {!isPastMonth && (
           <div style={{margin:"4px 10px 0"}}>
-            <KontoWarnungWidget showFolgemonateToggle={true}/>
+            <KontoWarnungWidget showFolgemonateToggle={true}
+              hidden={activePanel!=="warnings"}
+              onCountChange={setWarnCount}/>
           </div>
         )}
-        {activePanel === "sparen" && (
-          <TagesgeldWidget year={year} month={month}/>
+        {!isPastMonth && activePanel === "sparen" && (
+          <TagesgeldWidget year={year} month={month} initialCollapsed={false}/>
         )}
-        {activePanel === "vormerkungen" && pTxs.length>0 && !window.MBT_DEBUG?.disable_pendinglist && (
-          <PendingList pTxs={pTxs} getCat={getCat} getSub={getSub} txType={txType} openEdit={openEdit} dayOf={dayOf} pendOpenAmt={pendOpenAmt}/>
+        {!isPastMonth && activePanel === "vormerkungen" && pTxs.length>0 && !window.MBT_DEBUG?.disable_pendinglist && (
+          <PendingList pTxs={pTxs} getCat={getCat} getSub={getSub} txType={txType} openEdit={openEdit} dayOf={dayOf} pendOpenAmt={pendOpenAmt} initialCollapsed={false}/>
         )}
 
         {/* Vorzeichen-Fehlzuordnung-Warnung — einklappbar */}
