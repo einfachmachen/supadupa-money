@@ -23,7 +23,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
     return groupBudgetPairs([...base].sort(drillSort));
   }, [pTxs, search]);
   return (
-    <div style={{background:T.vorm_bg||T.tab_pend,border:`2px solid ${T.vorm_bd||"rgba(255,200,0,0.8)"}`,borderRadius:16,margin:"0 10px 4px",padding:"7px 10px"}}>
+    <div style={{background:T.vorm_bg||T.tab_pend,border:`2px solid ${T.vorm_bd||"rgba(255,200,0,0.8)"}`,borderRadius:16,margin:"4px 10px",padding:"7px 10px"}}>
       <div onClick={()=>setCollapsed(v=>!v)}
         style={{display:"flex",alignItems:"center",gap:6,marginBottom:collapsed?0:6,cursor:"pointer"}}>
         <span style={{color:T.gold,fontSize:11,fontWeight:700,display:"flex",alignItems:"center",gap:6,flex:1}}>
