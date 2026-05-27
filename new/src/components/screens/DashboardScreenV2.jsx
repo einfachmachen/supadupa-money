@@ -818,11 +818,9 @@ function DashboardScreenV2() {
 
         {/* Warnungen-Widget: immer gemountet, damit der Badge-Zähler aktuell bleibt */}
         {!isPastMonth && (
-          <div style={{margin:"4px 10px 0"}}>
-            <KontoWarnungWidget showFolgemonateToggle={true}
-              hidden={activePanel!=="warnings"}
-              onCountChange={setWarnCount}/>
-          </div>
+          <KontoWarnungWidget showFolgemonateToggle={true}
+            hidden={activePanel!=="warnings"}
+            onCountChange={setWarnCount}/>
         )}
         {!isPastMonth && activePanel === "sparen" && (
           <TagesgeldWidget year={year} month={month} initialCollapsed={false}/>
