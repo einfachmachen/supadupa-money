@@ -227,7 +227,7 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
   const MONTHS_S=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
 
   return (
-    <div style={{margin:"4px 10px 0"}}>
+    <div style={{margin:"4px 10px"}}>
       {warnings.slice(0, showFolgemonate ? warnings.length : 1).map((w,i)=>{
         const mKey = `${w.year}-${w.month}`;
         const isExpanded = expandedMonths.has(mKey);
