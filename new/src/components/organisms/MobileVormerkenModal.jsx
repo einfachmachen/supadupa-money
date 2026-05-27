@@ -26,6 +26,11 @@ function MobileVormerkenModal({onClose}) {
   const [note, setNote] = useState("");
   const [catId, setCatId] = useState("");
   const [subId, setSubId] = useState("");
+  // Umbuchung: zweite Kategorie für das Ziel-Konto
+  const [tgtCatId, setTgtCatId] = useState("");
+  const [tgtSubId, setTgtSubId] = useState("");
+  // Welche Seite wird in Schritt 2 gerade gewählt? "source" | "target" (nur relevant bei Umbuchung)
+  const [catSide, setCatSide] = useState("source");
   const [accId, setAccId] = useState(accounts?.[0]?.id||"acc-giro");
   const [catStep, setCatStep] = useState("cat"); // "cat" | "sub"
   const [selCat, setSelCat] = useState(null);
@@ -99,7 +104,7 @@ function MobileVormerkenModal({onClose}) {
         totalAmount:amt, pending:true, _csvType:"income",
         accountId:tgtAccId, _linkedTo:abgang.id, repeatMonths:1,
         note: note||undefined, valueDate: valueDate||undefined,
-        splits: [],
+        splits: tgtCatId ? [{id:uid(),catId:tgtCatId,subId:tgtSubId,amount:amt}] : [],
       };
       setTxs(p=>[...p, abgang, zugang]);
       setSaved(true);
@@ -296,55 +301,6 @@ function MobileVormerkenModal({onClose}) {
             })()}
           </>)}
 
-          {/* Kategorie-Schnellwahl — nur bei Ausgabe/Einnahme */}
-          {!isTransfer && (() => {
-            const chipStyle = (selected, color) => ({
-              aspectRatio:"1", borderRadius:S.radius, padding:4,
-              background: selected ? color+"22" : "rgba(255,255,255,0.06)",
-              border:`2px solid ${selected ? (color||T.blue) : T.bd}`,
-              color: selected ? (color||T.blue) : T.txt2,
-              cursor:"pointer", fontFamily:"inherit",
-              display:"flex", flexDirection:"column", alignItems:"center",
-              justifyContent:"center", gap:2, minWidth:0, overflow:"hidden",
-            });
-            const nameStyle = (selected) => ({
-              fontSize:S.fs-12, fontWeight:selected?700:500,
-              width:"100%", textAlign:"center",
-              overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
-              lineHeight:1.1,
-            });
-            return (
-              <>
-                <div style={{color:T.txt2,fontSize:S.fs-4,marginBottom:6,fontWeight:600}}>
-                  Kategorie
-                </div>
-                <div style={{display:"grid",
-                  gridTemplateColumns:"repeat(auto-fill, minmax(64px, 1fr))",
-                  gap:S.gap/2, marginBottom:S.gap}}>
-                  {shownCats.map(cat=>{
-                    const sel = catId===cat.id;
-                    const col = cat.color||T.blue;
-                    return (
-                      <button key={cat.id} onClick={()=>{
-                        setCatId(cat.id); setSubId("");
-                      }} style={chipStyle(sel,col)}>
-                        {Li(cat.icon||"tag", S.fs, sel?col:T.txt2)}
-                        <span style={nameStyle(sel)}>{cat.name}</span>
-                      </button>
-                    );
-                  })}
-                  <button onClick={()=>setStep(2)}
-                    style={{...chipStyle(false,T.blue),
-                      background:"rgba(74,159,212,0.06)",
-                      border:`1.5px dashed ${T.blue}66`, color:T.blue}}>
-                    {Li("plus", S.fs, T.blue)}
-                    <span style={{...nameStyle(false), color:T.blue}}>Kategorie</span>
-                  </button>
-                </div>
-              </>
-            );
-          })()}
-
           {/* Betrag — Placeholder statt Label, € nach Eingabe */}
           <div style={{position:"relative",marginBottom:S.gap}}>
             <input
@@ -421,6 +377,7 @@ function MobileVormerkenModal({onClose}) {
               const a=pn(amount.replace(",","."));
               if(a<=0) return;
               if(isTransfer && (!tgtAccId || tgtAccId===accId)) return;
+              setCatSide("source");
               setStep(2);
             }}
             disabled={!amount||pn(amount.replace(",","."))<= 0||(isTransfer&&(!tgtAccId||tgtAccId===accId))}
@@ -433,24 +390,54 @@ function MobileVormerkenModal({onClose}) {
       </>}
 
       {/* ── Schritt 2: Kategorie ── */}
-      {step===2&&<>
-        {header("Kategorie",fmt(pn(amount.replace(",","."))),2,()=>setStep(1))}
-        <div style={{flex:1,padding:S.padL,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
-          <MobileCatStep
-            csvType={csvType}
-            catId={catId} subId={subId}
-            onSelect={(cId,sId)=>{setCatId(cId);setSubId(sId);setStep(3);}}
-            S={S} btnBase={btnBase} btnCenter={btnCenter}
-          />
-          <button onClick={()=>{setCatId("");setSubId("");setStep(3);}}
-            style={{...btnBase,marginTop:S.gap*2,
-              background:"rgba(255,255,255,0.04)",
-              border:`1.5px dashed ${T.bd}`,color:T.txt2,fontWeight:400,
-              justifyContent:"center"}}>
-            Ohne Kategorie überspringen
-          </button>
-        </div>
-      </>}
+      {step===2&&(() => {
+        const isTgt = isTransfer && catSide==="target";
+        const sideAccId  = isTgt ? tgtAccId : accId;
+        const sideCsv    = isTgt ? "income" : csvType;
+        const sideCatId  = isTgt ? tgtCatId : catId;
+        const sideSubId  = isTgt ? tgtSubId : subId;
+        const title      = isTransfer
+          ? (isTgt ? "Kategorie – Ziel" : "Kategorie – Quelle")
+          : "Kategorie";
+        const sideAcc = (accounts||[]).find(a=>a.id===sideAccId);
+        const subtitle = isTransfer
+          ? `${fmt(pn(amount.replace(",",".")))} • ${sideAcc?.name || ""}`
+          : fmt(pn(amount.replace(",",".")));
+        const advance = (cId, sId) => {
+          if(isTgt) { setTgtCatId(cId); setTgtSubId(sId); setStep(3); }
+          else if(isTransfer) { setCatId(cId); setSubId(sId); setCatSide("target"); }
+          else { setCatId(cId); setSubId(sId); setStep(3); }
+        };
+        const skip = () => {
+          if(isTgt) { setTgtCatId(""); setTgtSubId(""); setStep(3); }
+          else if(isTransfer) { setCatId(""); setSubId(""); setCatSide("target"); }
+          else { setCatId(""); setSubId(""); setStep(3); }
+        };
+        const back = () => {
+          if(isTgt) setCatSide("source");
+          else setStep(1);
+        };
+        return (<>
+          {header(title, subtitle, 2, back)}
+          <div style={{flex:1,padding:S.padL,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+            <MobileCatStep
+              key={isTgt ? "tgt" : "src"}
+              csvType={sideCsv}
+              catId={sideCatId} subId={sideSubId}
+              accountId={sideAccId}
+              onSelect={advance}
+              S={S} btnBase={btnBase} btnCenter={btnCenter}
+            />
+            <button onClick={skip}
+              style={{...btnBase,marginTop:S.gap*2,
+                background:"rgba(255,255,255,0.04)",
+                border:`1.5px dashed ${T.bd}`,color:T.txt2,fontWeight:400,
+                justifyContent:"center"}}>
+              Ohne Kategorie überspringen
+            </button>
+          </div>
+        </>);
+      })()}
 
       {/* ── Schritt 3: Details ── */}
       {step===3&&<>
@@ -506,7 +493,12 @@ function MobileVormerkenModal({onClose}) {
             ["Betrag",         (isTransfer?"":(csvType==="expense"?"−":"+"))+fmt(pn(amount.replace(",",".")))],
             ["verursacht", valueDate?valueDate.split("-").reverse().join("."):"—"],
             ["Buchung am", date?date.split("-").reverse().join("."):"—"],
-            ["Kategorie",      catId?(getCat(catId)?.name||"?")+(subId?" / "+(getSub(catId,subId)?.name||""):""):"—"],
+            ...(isTransfer
+              ? [
+                  ["Kategorie Quelle", catId?(getCat(catId)?.name||"?")+(subId?" / "+(getSub(catId,subId)?.name||""):""):"—"],
+                  ["Kategorie Ziel",   tgtCatId?(getCat(tgtCatId)?.name||"?")+(tgtSubId?" / "+(getSub(tgtCatId,tgtSubId)?.name||""):""):"—"],
+                ]
+              : [["Kategorie", catId?(getCat(catId)?.name||"?")+(subId?" / "+(getSub(catId,subId)?.name||""):""):"—"]]),
             ["Beschreibung",   desc],
             ["Notiz",          note||"—"],
           ].map(([k,v])=>(

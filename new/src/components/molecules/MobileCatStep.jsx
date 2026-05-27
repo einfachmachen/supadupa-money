@@ -8,20 +8,56 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
-function MobileCatStep({csvType, catId, subId, onSelect, S, btnBase, btnCenter}) {
-  const { cats, setCats, groups, setGroups } = useContext(AppCtx);
+function MobileCatStep({csvType, catId, subId, accountId, onSelect, S, btnBase, btnCenter}) {
+  const { cats, setCats, groups, setGroups, accounts } = useContext(AppCtx);
   const [catStep,  setCatStep]  = React.useState("cat");
   const [selCat,   setSelCat]   = React.useState(null);
   const [newMode,  setNewMode]  = React.useState(null);
   const [newName,  setNewName]  = React.useState("");
   const [newType,  setNewType]  = React.useState(csvType==="income"?"income":"expense");
 
-  const shownCats = cats.filter(c=>csvType==="income"?c.type==="income":c.type!=="income");
+  // Behavior- und (optional) Konto-basierter Filter
+  const shownCats = cats.filter(c=>{
+    const grp = (groups||[]).find(g=>g.type===c.type);
+    const beh = grp?.behavior || c.type;
+    const behaviorMatch = csvType==="income"
+      ? (beh==="income" || beh==="tagesgeld")
+      : (beh==="expense" || beh==="tagesgeld");
+    if(!behaviorMatch) return false;
+    if(accountId == null) return true;
+    const grpAccId = grp?.accountId || "";
+    return grpAccId === accountId;
+  });
+
+  // Findet/erstellt eine Gruppe für (accountId, behavior) — analog zu MobileKategorienModal.
+  const ensureGroupForCat = (beh) => {
+    if(accountId == null) return beh; // ohne Konto-Bindung: Typ ist roh "expense"/"income"
+    const wantedAcc = accountId || "";
+    const exact = (groups||[]).find(g =>
+      (g.accountId||"") === wantedAcc &&
+      ((g.behavior||g.type) === beh || (beh==="income" && (g.behavior==="tagesgeld"||g.type==="tagesgeld")))
+    );
+    if(exact) return exact.type;
+    const newType = "grp-"+uid();
+    const accObj = (accounts||[]).find(a=>a.id===wantedAcc);
+    const accLabel = accObj?.name || "";
+    const label = accLabel
+      ? `${accLabel} ${beh==="income"?"Einnahmen":"Ausgaben"}`
+      : (beh==="income"?"Einnahmen":"Ausgaben");
+    setGroups(p=>[...p,{
+      id:"grp-"+uid(), type:newType, label,
+      icon: beh==="income"?"arrow-down-circle":"arrow-up-circle",
+      accent: beh==="income" ? T.pos : T.neg, blockColor:"aus",
+      behavior: beh, accountId: wantedAcc
+    }]);
+    return newType;
+  };
 
   const saveNewCatLocal = () => {
     if(!newName.trim()) return;
     const id="cat-"+uid();
-    const nc={id,name:newName.trim(),icon:"tag",color:T.blue,type:newType,subs:[]};
+    const type = ensureGroupForCat(newType);
+    const nc={id,name:newName.trim(),icon:"tag",color:T.blue,type,subs:[]};
     setCats(p=>[...p,nc]);
     setSelCat(nc); setCatStep("sub");
     setNewMode(null); setNewName("");
