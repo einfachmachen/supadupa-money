@@ -109,11 +109,22 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
       .slice(0, 24); // max 24 Monate prüfen
     allMonths.forEach(([y,m])=>{
       const prevY = m===0 ? y-1 : y, prevM = m===0 ? 11 : m-1;
-      // Immer Giro-Saldo prüfen — Gesamtsaldo ist wegen Tagesgeld nie negativ
-      const baseSaldo = (getProgEndeAccGlobal(prevY, prevM, "acc-giro")
-        ?? getKumulierterSaldo(prevY, prevM, "acc-giro")
-        ?? getProgEndeW(prevY, prevM)
-        ?? (m===0 ? getKumulierterSaldo(y-1,11) : getKumulierterSaldo(y,m-1)));
+      // Immer Giro-Saldo prüfen — Gesamtsaldo ist wegen Tagesgeld nie negativ.
+      // Konsistent mit saldoAt/Hero: für vergangenen Vormonat den ECHTEN
+      // Endsaldo via getKumulierterSaldo (ohne Vormerkungen). Sonst würden
+      // unerledigte Vormerkungen aus dem Vormonat den Basissaldo verschieben
+      // und Phantom-Defizite im aktuellen Monat erzeugen.
+      const _tbReal = new Date();
+      const prevIsPast = prevY < _tbReal.getFullYear() ||
+        (prevY === _tbReal.getFullYear() && prevM < _tbReal.getMonth());
+      const baseSaldo = prevIsPast
+        ? (getKumulierterSaldo(prevY, prevM, "acc-giro")
+            ?? getProgEndeAccGlobal(prevY, prevM, "acc-giro")
+            ?? getProgEndeW(prevY, prevM))
+        : (getProgEndeAccGlobal(prevY, prevM, "acc-giro")
+            ?? getKumulierterSaldo(prevY, prevM, "acc-giro")
+            ?? getProgEndeW(prevY, prevM)
+            ?? (m===0 ? getKumulierterSaldo(y-1,11) : getKumulierterSaldo(y,m-1)));
       if(baseSaldo===null||baseSaldo===undefined) return;
       const lastDay = new Date(y,m+1,0).getDate();
       const pad2 = n=>String(n).padStart(2,"0");
