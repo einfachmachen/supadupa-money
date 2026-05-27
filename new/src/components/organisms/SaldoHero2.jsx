@@ -680,7 +680,10 @@ function SaldoHero2({year, month,
           if(!ksAcc[selAcc] && ksAcc[selAcc] !== 0) return null; // Kein Ankerpunkt → keine Prognose
           const r=calcAcc(selAcc);
           if(!r) return null;
-          return <PrognoseRow pm={r.M} pe={r.E}/>;
+          // Single source of truth: vom Aufrufer (Dashboard/Monat) per saldoAt berechnete
+          // Werte bevorzugen, damit Hero und Buchungsliste konsistent bleiben. Die interne
+          // Budget-Floor-Logik aus calcAcc dient nur als Fallback, wenn kein Prop kommt.
+          return <PrognoseRow pm={prognoseMitte ?? r.M} pe={prognoseEnde ?? r.E}/>;
 
         })() : (selAcc && displayKs===null) ? null : <div style={{display:"flex",alignItems:"center"}}>
               <div style={{flex:2,textAlign:"center"}}>
