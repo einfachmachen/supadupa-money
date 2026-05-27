@@ -185,48 +185,62 @@ function MobileVormerkenModal({onClose}) {
               {isTransfer ? "Quelle" : "Konto"}
             </div>
           )}
-          <div style={{display:"flex",gap:S.gap/2,flexWrap:"wrap",marginBottom:S.gap}}>
-            {(accounts||[]).map(acc=>(
-              <button key={acc.id} onClick={()=>{
-                setAccId(acc.id);
-                // Bei Umbuchung: wenn Ziel == neue Quelle, Ziel umsetzen
-                if(isTransfer && tgtAccId===acc.id) {
-                  const other = (accounts||[]).find(a=>a.id!==acc.id);
-                  setTgtAccId(other?.id || "");
-                }
-              }}
-                style={{flex:"1 1 auto",padding:`${S.pad}px`,borderRadius:S.radius,
-                  background:accId===acc.id?acc.color+"22":"rgba(255,255,255,0.06)",
-                  border:`2px solid ${accId===acc.id?(acc.color||T.blue):T.bd}`,
-                  color:accId===acc.id?(acc.color||T.blue):T.txt2,
-                  cursor:"pointer",fontFamily:"inherit",
-                  display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                {acc.delayDays>0 ? (
-                  <div style={{display:"flex",alignItems:"center",gap:4}}>
-                    {Li(acc.icon||"landmark",S.fs+4,accId===acc.id?(acc.color||T.blue):T.txt2)}
-                    <span style={{fontSize:S.fs-8,color:T.gold,fontWeight:700,
-                      background:T.gold+"22",borderRadius:4,padding:"1px 5px"}}>
-                      +{acc.delayDays}
-                    </span>
-                  </div>
-                ) : <>
-                  {Li(acc.icon||"landmark",S.fs+4,accId===acc.id?(acc.color||T.blue):T.txt2)}
-                  <span style={{fontSize:S.fs-6,fontWeight:accId===acc.id?700:400}}>
-                    {acc.name||acc.id}
-                  </span>
-                </>}
-              </button>
-            ))}
-            <button onClick={()=>setShowNewAcc(true)}
-              style={{flex:"1 1 auto",padding:`${S.pad}px`,borderRadius:S.radius,
-                background:"rgba(74,159,212,0.06)",
-                border:`1.5px dashed ${T.blue}66`,color:T.blue,
-                cursor:"pointer",fontFamily:"inherit",
-                display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-              {Li("plus",S.fs,T.blue)}
-              <span style={{fontSize:S.fs-8}}>Konto</span>
-            </button>
-          </div>
+          {(() => {
+            const srcCount = (accounts||[]).length + 1; // +Konto button
+            const chipStyle = (selected, color) => ({
+              aspectRatio:"1", borderRadius:S.radius, padding:4,
+              background: selected ? color+"22" : "rgba(255,255,255,0.06)",
+              border:`2px solid ${selected ? (color||T.blue) : T.bd}`,
+              color: selected ? (color||T.blue) : T.txt2,
+              cursor:"pointer", fontFamily:"inherit", position:"relative",
+              display:"flex", flexDirection:"column", alignItems:"center",
+              justifyContent:"center", gap:2, minWidth:0, overflow:"hidden",
+            });
+            const nameStyle = (selected) => ({
+              fontSize:S.fs-12, fontWeight:selected?700:500,
+              width:"100%", textAlign:"center",
+              overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
+              lineHeight:1.1,
+            });
+            return (
+              <div style={{display:"grid",
+                gridTemplateColumns:`repeat(${srcCount}, 1fr)`,
+                gap:S.gap/2, marginBottom:S.gap}}>
+                {(accounts||[]).map(acc=>{
+                  const sel = accId===acc.id;
+                  const col = acc.color||T.blue;
+                  return (
+                    <button key={acc.id} onClick={()=>{
+                      setAccId(acc.id);
+                      if(isTransfer && tgtAccId===acc.id) {
+                        const other = (accounts||[]).find(a=>a.id!==acc.id);
+                        setTgtAccId(other?.id || "");
+                      }
+                    }} style={chipStyle(sel,col)}>
+                      {acc.delayDays>0 && (
+                        <span style={{position:"absolute", top:3, right:3,
+                          fontSize:S.fs-16, color:T.gold, fontWeight:700,
+                          background:T.gold+"22", borderRadius:4,
+                          padding:"0 3px", lineHeight:1.3,
+                          letterSpacing:"-0.5px"}}>
+                          +{acc.delayDays}
+                        </span>
+                      )}
+                      {Li(acc.icon||"landmark", S.fs, sel?col:T.txt2)}
+                      <span style={nameStyle(sel)}>{acc.name||acc.id}</span>
+                    </button>
+                  );
+                })}
+                <button onClick={()=>setShowNewAcc(true)}
+                  style={{...chipStyle(false,T.blue),
+                    background:"rgba(74,159,212,0.06)",
+                    border:`1.5px dashed ${T.blue}66`, color:T.blue}}>
+                  {Li("plus", S.fs, T.blue)}
+                  <span style={{...nameStyle(false), color:T.blue}}>Konto</span>
+                </button>
+              </div>
+            );
+          })()}
 
           {/* Bei Umbuchung: Zielkonto-Picker */}
           {isTransfer && (<>
@@ -234,22 +248,51 @@ function MobileVormerkenModal({onClose}) {
               {Li("arrow-down",S.fs-4,T.blue)}
               <span>Ziel</span>
             </div>
-            <div style={{display:"flex",gap:S.gap/2,flexWrap:"wrap",marginBottom:S.gap}}>
-              {(accounts||[]).filter(a=>a.id!==accId).map(acc=>(
-                <button key={acc.id} onClick={()=>setTgtAccId(acc.id)}
-                  style={{flex:"1 1 auto",padding:`${S.pad}px`,borderRadius:S.radius,
-                    background:tgtAccId===acc.id?acc.color+"22":"rgba(255,255,255,0.06)",
-                    border:`2px solid ${tgtAccId===acc.id?(acc.color||T.blue):T.bd}`,
-                    color:tgtAccId===acc.id?(acc.color||T.blue):T.txt2,
-                    cursor:"pointer",fontFamily:"inherit",
-                    display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                  {Li(acc.icon||"landmark",S.fs+4,tgtAccId===acc.id?(acc.color||T.blue):T.txt2)}
-                  <span style={{fontSize:S.fs-6,fontWeight:tgtAccId===acc.id?700:400}}>
-                    {acc.name||acc.id}
-                  </span>
-                </button>
-              ))}
-            </div>
+            {(() => {
+              const tgts = (accounts||[]).filter(a=>a.id!==accId);
+              const cols = Math.max(tgts.length, (accounts||[]).length + 1);
+              const chipStyle = (selected, color) => ({
+                aspectRatio:"1", borderRadius:S.radius, padding:4,
+                background: selected ? color+"22" : "rgba(255,255,255,0.06)",
+                border:`2px solid ${selected ? (color||T.blue) : T.bd}`,
+                color: selected ? (color||T.blue) : T.txt2,
+                cursor:"pointer", fontFamily:"inherit", position:"relative",
+                display:"flex", flexDirection:"column", alignItems:"center",
+                justifyContent:"center", gap:2, minWidth:0, overflow:"hidden",
+              });
+              const nameStyle = (selected) => ({
+                fontSize:S.fs-12, fontWeight:selected?700:500,
+                width:"100%", textAlign:"center",
+                overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
+                lineHeight:1.1,
+              });
+              return (
+                <div style={{display:"grid",
+                  gridTemplateColumns:`repeat(${cols}, 1fr)`,
+                  gap:S.gap/2, marginBottom:S.gap}}>
+                  {tgts.map(acc=>{
+                    const sel = tgtAccId===acc.id;
+                    const col = acc.color||T.blue;
+                    return (
+                      <button key={acc.id} onClick={()=>setTgtAccId(acc.id)}
+                        style={chipStyle(sel,col)}>
+                        {acc.delayDays>0 && (
+                          <span style={{position:"absolute", top:3, right:3,
+                            fontSize:S.fs-16, color:T.gold, fontWeight:700,
+                            background:T.gold+"22", borderRadius:4,
+                            padding:"0 3px", lineHeight:1.3,
+                            letterSpacing:"-0.5px"}}>
+                            +{acc.delayDays}
+                          </span>
+                        )}
+                        {Li(acc.icon||"landmark", S.fs, sel?col:T.txt2)}
+                        <span style={nameStyle(sel)}>{acc.name||acc.id}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </>)}
 
           {/* Betrag — Placeholder statt Label, € nach Eingabe */}
