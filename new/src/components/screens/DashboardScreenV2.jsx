@@ -780,8 +780,12 @@ function DashboardScreenV2() {
         })()}
         </div>
 
-        {/* ── 3-Symbol-Zeile: Warnungen | Sparen | Vormerkungen — nur aktueller/künftiger Monat ── */}
-        {!isPastMonth && (()=>{
+        {/* ── 3-Symbol-Zeile: Warnungen | Sparen | Vormerkungen ──
+            Vergangene Monate: nur Vormerkungen-Icon (und nur wenn echte, nicht-Budget-Vormerkungen offen) */}
+        {(()=>{
+          const visiblePTxs = isPastMonth ? pTxs.filter(t=>!t._budgetSubId) : pTxs;
+          const showRow = !isPastMonth || visiblePTxs.length>0;
+          if(!showRow) return null;
           const togglePanel = (key) => setActivePanel(p => p===key ? null : key);
           const Card = ({panel, icon, badge, color}) => {
             const isActive = activePanel === panel;
@@ -805,9 +809,9 @@ function DashboardScreenV2() {
           };
           return (
             <div style={{margin:"6px 10px 0",display:"flex",gap:6}}>
-              <Card panel="warnings"     icon="shield-check" badge={warnCount}   color={warnCount>0 ? T.neg : T.pos}/>
-              <Card panel="sparen"       icon="piggy-bank"   badge={null}        color={T.blue}/>
-              <Card panel="vormerkungen" icon="clock"        badge={pTxs.length} color={T.gold}/>
+              {!isPastMonth && <Card panel="warnings"     icon="shield-check" badge={warnCount}   color={warnCount>0 ? T.neg : T.pos}/>}
+              {!isPastMonth && <Card panel="sparen"       icon="piggy-bank"   badge={null}        color={T.blue}/>}
+              <Card panel="vormerkungen" icon="clock"        badge={visiblePTxs.length} color={T.gold}/>
             </div>
           );
         })()}
@@ -823,9 +827,13 @@ function DashboardScreenV2() {
         {!isPastMonth && activePanel === "sparen" && (
           <TagesgeldWidget year={year} month={month} initialCollapsed={false}/>
         )}
-        {!isPastMonth && activePanel === "vormerkungen" && pTxs.length>0 && !window.MBT_DEBUG?.disable_pendinglist && (
-          <PendingList pTxs={pTxs} getCat={getCat} getSub={getSub} txType={txType} openEdit={openEdit} dayOf={dayOf} pendOpenAmt={pendOpenAmt} initialCollapsed={false}/>
-        )}
+        {activePanel === "vormerkungen" && !window.MBT_DEBUG?.disable_pendinglist && (()=>{
+          const visiblePTxs = isPastMonth ? pTxs.filter(t=>!t._budgetSubId) : pTxs;
+          if(visiblePTxs.length===0) return null;
+          return (
+            <PendingList pTxs={visiblePTxs} getCat={getCat} getSub={getSub} txType={txType} openEdit={openEdit} dayOf={dayOf} pendOpenAmt={pendOpenAmt} initialCollapsed={false}/>
+          );
+        })()}
 
         {/* Vorzeichen-Fehlzuordnung-Warnung — einklappbar */}
         {mismatchTxs.length>0&&(
