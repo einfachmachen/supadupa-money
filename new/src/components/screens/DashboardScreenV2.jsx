@@ -782,21 +782,13 @@ function DashboardScreenV2() {
             const isActive = activePanel === panel;
             return (
               <div onClick={()=>togglePanel(panel)}
-                style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",
-                  gap:4,padding:"10px 6px",borderRadius:10,cursor:"pointer",
-                  background: isActive ? color+"22" : (T.cat_bg||"rgba(255,255,255,0.04)"),
-                  border: `1px solid ${isActive ? color : T.bd}`,
-                  userSelect:"none",position:"relative"}}>
-                <div style={{width:30,height:30,borderRadius:8,
-                  background:color+"22",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                  {Li(icon, 16, color)}
-                </div>
-                <div style={{color:isActive?color:T.txt,fontSize:10,fontWeight:600,
-                  textAlign:"center",lineHeight:1.2}}>
-                  {label}
-                </div>
+                style={{flex:1,display:"flex",alignItems:"center",
+                  justifyContent:"center",padding:"10px 6px",cursor:"pointer",
+                  userSelect:"none",position:"relative",
+                  opacity:isActive?1:0.7}}>
+                {Li(icon, 28, color)}
                 {badge!=null && badge>0 && (
-                  <div style={{position:"absolute",top:6,right:6,
+                  <div style={{position:"absolute",top:4,right:"calc(50% - 22px)",
                     minWidth:16,height:16,borderRadius:8,padding:"0 4px",
                     background:color,color:T.bg||"#000",fontSize:9,fontWeight:800,
                     display:"flex",alignItems:"center",justifyContent:"center"}}>
