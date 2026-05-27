@@ -2585,18 +2585,22 @@ Abbrechen = ${remoteName}-Stand laden`
             if(ref.consumed) return;
             // Joystick-Visualisierung — STRIKT auf gelockter Achse
             const clamp = (v, lim) => Math.max(-lim, Math.min(lim, v));
+            // Vertikal: solange klein/Bottom-Bar, kein Drag nach unten zulassen
+            const vyLow = plusArretiert ? -VISUAL_LIMIT : -VISUAL_LIMIT;
+            const vyHigh = plusArretiert ?  VISUAL_LIMIT : 0;
+            const clampY = (v) => Math.max(vyLow, Math.min(vyHigh, v));
             let visX = 0, visY = -14;
             if(ref.axisLocked === "x") {
               visX = clamp(dx, VISUAL_LIMIT);
               visY = -14;
             } else if(ref.axisLocked === "y") {
               visX = 0;
-              visY = clamp(dy, VISUAL_LIMIT) - 14;
+              visY = clampY(dy) - 14;
             }
             // Vor dem Snap (kleine Bewegung unter MOVE_TOLERANCE): noch frei, aber gedämpft
             if(!ref.axisLocked) {
               visX = clamp(dx, VISUAL_LIMIT);
-              visY = clamp(dy, VISUAL_LIMIT) - 14;
+              visY = clampY(dy) - 14;
             }
             // Live-Drag visuell: Translation relativ zur aktuellen Rest-Position
             // (arretiert: y-Offset -94, scale 1.5; sonst y-Offset -14, scale 1)
