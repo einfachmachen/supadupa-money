@@ -1,6 +1,6 @@
 // Auto-generated module (siehe app-src.jsx)
 
-import React, { useContext, useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import { MonatScreen } from "../screens/MonatScreen.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
@@ -8,7 +8,7 @@ import { MONTHS_S } from "../../utils/constants.js";
 import { fmt, pn } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
-function KontoWarnungWidget({showFolgemonateToggle=false}) {
+function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=false}) {
   if(window.MBT_DEBUG?.disable_warnings) return null;
   const { txs, cats, year, month, getKumulierterSaldo,  getCat, budgets, navigateToSparen, selAcc, getProgEndeAccGlobal, accounts } = useContext(AppCtx);
   const [folgemonate, setFolgemonate] = React.useState(false);
@@ -219,6 +219,9 @@ function KontoWarnungWidget({showFolgemonateToggle=false}) {
       return result;
   }, [txs, cats, getKumulierterSaldo, getCat, budgets, puffer, accounts]);
 
+  useEffect(()=>{ if(onCountChange) onCountChange(warnings.length); }, [warnings.length, onCountChange]);
+
+  if(hidden) return null;
   if(!warnings.length) return null;
 
   const MONTHS_S=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];

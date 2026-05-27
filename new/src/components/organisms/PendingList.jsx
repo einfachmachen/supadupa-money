@@ -8,11 +8,11 @@ import { dayOf, drillSort, fmt, pn } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 
-function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub}) {
+function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub, initialCollapsed=true}) {
   const _pendOpenAmt = pendOpenAmt || (t=>t.totalAmount);
   const [expandedId, setExpandedId] = React.useState(null);
   const [search, setSearch] = React.useState("");
-  const [collapsed, setCollapsed] = React.useState(true);
+  const [collapsed, setCollapsed] = React.useState(initialCollapsed);
   const filtered = React.useMemo(()=>{
     const base = pTxs.filter(t=>{
       if(!search) return true;
