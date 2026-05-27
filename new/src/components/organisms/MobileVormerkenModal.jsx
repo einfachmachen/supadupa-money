@@ -296,55 +296,6 @@ function MobileVormerkenModal({onClose}) {
             })()}
           </>)}
 
-          {/* Kategorie-Schnellwahl — nur bei Ausgabe/Einnahme */}
-          {!isTransfer && (() => {
-            const chipStyle = (selected, color) => ({
-              aspectRatio:"1", borderRadius:S.radius, padding:4,
-              background: selected ? color+"22" : "rgba(255,255,255,0.06)",
-              border:`2px solid ${selected ? (color||T.blue) : T.bd}`,
-              color: selected ? (color||T.blue) : T.txt2,
-              cursor:"pointer", fontFamily:"inherit",
-              display:"flex", flexDirection:"column", alignItems:"center",
-              justifyContent:"center", gap:2, minWidth:0, overflow:"hidden",
-            });
-            const nameStyle = (selected) => ({
-              fontSize:S.fs-12, fontWeight:selected?700:500,
-              width:"100%", textAlign:"center",
-              overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
-              lineHeight:1.1,
-            });
-            return (
-              <>
-                <div style={{color:T.txt2,fontSize:S.fs-4,marginBottom:6,fontWeight:600}}>
-                  Kategorie
-                </div>
-                <div style={{display:"grid",
-                  gridTemplateColumns:"repeat(auto-fill, minmax(64px, 1fr))",
-                  gap:S.gap/2, marginBottom:S.gap}}>
-                  {shownCats.map(cat=>{
-                    const sel = catId===cat.id;
-                    const col = cat.color||T.blue;
-                    return (
-                      <button key={cat.id} onClick={()=>{
-                        setCatId(cat.id); setSubId("");
-                      }} style={chipStyle(sel,col)}>
-                        {Li(cat.icon||"tag", S.fs, sel?col:T.txt2)}
-                        <span style={nameStyle(sel)}>{cat.name}</span>
-                      </button>
-                    );
-                  })}
-                  <button onClick={()=>setStep(2)}
-                    style={{...chipStyle(false,T.blue),
-                      background:"rgba(74,159,212,0.06)",
-                      border:`1.5px dashed ${T.blue}66`, color:T.blue}}>
-                    {Li("plus", S.fs, T.blue)}
-                    <span style={{...nameStyle(false), color:T.blue}}>Kategorie</span>
-                  </button>
-                </div>
-              </>
-            );
-          })()}
-
           {/* Betrag — Placeholder statt Label, € nach Eingabe */}
           <div style={{position:"relative",marginBottom:S.gap}}>
             <input
