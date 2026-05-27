@@ -7,10 +7,11 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { MONTHS_S } from "../../utils/constants.js";
 import { fmt, pn } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
+import { saldoAt as saldoAtUtil } from "../../utils/saldo.js";
 
 function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=false}) {
   if(window.MBT_DEBUG?.disable_warnings) return null;
-  const { txs, cats, year, month, getKumulierterSaldo,  getCat, budgets, navigateToSparen, selAcc, getProgEndeAccGlobal, accounts } = useContext(AppCtx);
+  const { txs, cats, year, month, getKumulierterSaldo,  getCat, budgets, navigateToSparen, selAcc, getProgEndeAccGlobal, accounts, getBudgetForMonth } = useContext(AppCtx);
   const [folgemonate, setFolgemonate] = React.useState(false);
   const [showFolgemonate, setShowFolgemonate] = React.useState(false);
   const [expandedMonths, setExpandedMonths] = React.useState(new Set());
@@ -107,6 +108,9 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
     const allMonths = [...monthSet.values()]
       .sort((a,b)=>a[0]*12+a[1]-(b[0]*12+b[1]))
       .slice(0, 24); // max 24 Monate prüfen
+    // saldoAt-Kontext einmal über den ganzen Warnungs-Loop teilen, damit
+    // _anchorCache/_txsById nicht je Monat neu aufgebaut wird.
+    const _saldoCtx = { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth };
     allMonths.forEach(([y,m])=>{
       const prevY = m===0 ? y-1 : y, prevM = m===0 ? 11 : m-1;
       // Immer Giro-Saldo prüfen — Gesamtsaldo ist wegen Tagesgeld nie negativ.
@@ -177,41 +181,14 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
         });
         return total;
       };
-      const openBudgetMitte = calcOpenBudget(14);
-      const openBudgetEnde  = calcOpenBudget(lastDay);
-      // Budget-Sprünge konsistent mit saldoAt: nur AM Tag 14 bzw. AM letzten Tag,
-      // und nur wenn dieser Tag noch in der Zukunft liegt. Vorher hat die Warnung
-      // ab Tag 14 *jeden* Folgetag das offene Mitte-Budget abgezogen — das hat zu
-      // viel pessimistischeren Tagessaldi geführt als Hero/Monat-Liste.
-      const _tb = new Date(), _tY=_tb.getFullYear(), _tM=_tb.getMonth(), _tD=_tb.getDate();
-      const isFutureDay = (d) => {
-        if(y > _tY) return true;
-        if(y < _tY) return false;
-        if(m > _tM) return true;
-        if(m < _tM) return false;
-        return d >= _tD;
-      };
-      const mitteSprungActive = isFutureDay(14);
-      const endeSprungActive  = isFutureDay(lastDay);
-      // OPTIMIERUNG: einmal alle Tx nach Datum sortieren und kumulativ summieren
-      // statt für jeden Tag erneut zu filtern (war O(tage*txs))
-      const sortedTxs = mTxs.filter(t=>!t._budgetSubId).slice().sort((a,b)=>a.date.localeCompare(b.date));
+      // KONSISTENZ MIT HERO/MONAT: Tagessaldo direkt via saldoAt aus utils/saldo
+      // berechnen. Vorher hat die Warnung eine eigene Summen-Schleife gefahren,
+      // die _linkedTo-Transfers (z.B. Sparen·Tagesgeld) und Duplikate anders
+      // behandelt hat als ist()/saldoAt — daraus entstanden Phantom-Defizite.
       const saldoByDay = {};
-      let cumReal = 0, cumPend = 0;
-      let txIdx = 0;
       for(let day=1; day<=lastDay; day++) {
         const dayStr = `${pfx}${pad2(day)}`;
-        // Alle txs mit date <= dayStr aufaddieren
-        while(txIdx<sortedTxs.length && sortedTxs[txIdx].date<=dayStr) {
-          const t = sortedTxs[txIdx];
-          const v = signed(t);
-          if(t.pending) cumPend += v; else cumReal += v;
-          txIdx++;
-        }
-        const budgetDeduct = (day===lastDay && endeSprungActive) ? -openBudgetEnde
-                           : (day===14 && mitteSprungActive) ? -openBudgetMitte
-                           : 0;
-        saldoByDay[dayStr] = baseSaldo + cumReal + cumPend + budgetDeduct;
+        saldoByDay[dayStr] = saldoAtUtil(y, m, day, "acc-giro", _saldoCtx);
       }
       const saldoAt = (dayStr) => saldoByDay[dayStr] ?? baseSaldo;
       const dayStrs = Array.from({length:lastDay},(_,i)=>`${pfx}${pad2(i+1)}`);
