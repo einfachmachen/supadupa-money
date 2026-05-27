@@ -99,10 +99,10 @@ function MobileActionPicker({onClose, onSelect, onSwitchToMonth}) {
                 <span style={{color:D,fontSize:10,lineHeight:"2",paddingRight:2}}>{">"}</span>
                 <span style={{color:D,fontSize:11,lineHeight:"2"}}> │</span>
               </button>
-              <div style={{color:D,fontSize:11,paddingLeft:4}}>
+              {sub && <div style={{color:D,fontSize:11,paddingLeft:4}}>
                 {"│   "}<span style={{color:D,fontSize:9}}>{sub}</span>
                 {"                        ".slice(sub.length)}{"│"}
-              </div>
+              </div>}
               {i<actions.length-1&&<div style={{color:D,fontSize:11}}>{"├"+"─".repeat(42)+"┤"}</div>}
             </div>
           ))}
