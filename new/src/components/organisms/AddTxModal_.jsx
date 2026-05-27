@@ -39,13 +39,7 @@ function AddTxModal() {
   const [csvType,        setCsvType]        = React.useState("expense");
   const [catId,          setCatId]          = React.useState("");
   const [subId,          setSubId]          = React.useState("");
-  // Für Typ "umbuchung" — Cat des Zugangs (Quellseite nutzt catId)
-  const [tgtCatId,       setTgtCatId]       = React.useState("");
-  const [tgtSubId,       setTgtSubId]       = React.useState("");
   const [accountId,      setAccountId]      = React.useState(accounts[0]?.id||"acc-giro");
-  // Für Typ "umbuchung" — Quell- und Zielkonto
-  const [srcAccountId,   setSrcAccountId]   = React.useState(accounts[0]?.id||"acc-giro");
-  const [tgtAccountId,   setTgtAccountId]   = React.useState(accounts[1]?.id||"");
   const [note,           setNote]           = React.useState("");
   const [startDate,      setStartDate]      = React.useState(today);
   const [endDate,        setEndDate]        = React.useState("");
@@ -134,8 +128,7 @@ function AddTxModal() {
   };
 
   // Validierung für Vormerken-Typen
-  const vormValid = amount.trim()&&desc.trim()&&startDate
-    &&(typ!=="umbuchung" || (srcAccountId && tgtAccountId && srcAccountId!==tgtAccountId));
+  const vormValid = amount.trim()&&desc.trim()&&startDate;
 
   // Speichern
   const handleSave = () => {
@@ -145,31 +138,6 @@ function AddTxModal() {
     if(!amt)          { setError("Bitte Betrag eingeben.");       return; }
     if(!desc.trim())  { setError("Bitte Beschreibung eingeben."); return; }
     if(!startDate)    { setError("Bitte Startdatum wählen.");     return; }
-
-    // --- UMBUCHUNG: Zwei verknüpfte Pending-Tx (Abgang + Zugang) ---
-    if(typ==="umbuchung") {
-      if(!srcAccountId)              { setError("Bitte Quellkonto wählen.");            return; }
-      if(!tgtAccountId)              { setError("Bitte Zielkonto wählen.");             return; }
-      if(srcAccountId===tgtAccountId){ setError("Quell- und Zielkonto sind identisch."); return; }
-      const absAmt = Math.abs(amt);
-      const abgang = {
-        id:"pend-"+uid(), date:startDate, desc:desc.trim(),
-        totalAmount:-absAmt, pending:true, _csvType:"expense",
-        accountId:srcAccountId, note:note||"",
-        splits:catId ? [{id:uid(),catId,subId:subId||"",amount:-absAmt}] : [],
-      };
-      const zugang = {
-        id:"pend-"+uid(), date:startDate, desc:desc.trim(),
-        totalAmount:absAmt, pending:true, _csvType:"income",
-        accountId:tgtAccountId, note:note||"",
-        _linkedTo:abgang.id,
-        splits:tgtCatId ? [{id:uid(),catId:tgtCatId,subId:tgtSubId||"",amount:absAmt}] : [],
-      };
-      setTxs(p=>[abgang, zugang, ...p]);
-      setSaved(true);
-      setTimeout(()=>{ setSaved(false); closeReset(); }, 1200);
-      return;
-    }
 
     const n = totalCount;
     const seriesId = (typ!=="einmalig"&&n>1) ? uid() : null;
@@ -212,7 +180,6 @@ function AddTxModal() {
   const TABS = [
     {id:"csv",          label:"Import",   icon:"download"},
     {id:"einmalig",     label:"vormerken", icon:"calendar"},
-    {id:"umbuchung",    label:"Umbuchen",  icon:"arrow-right-left"},
     {id:"wiederkehrend",label:"Wieder­k.", icon:"repeat"},
     {id:"finanzierung", label:"Finan­z.",  icon:"credit-card"},
     {id:"budget",       label:"Budget",    icon:"target"},
@@ -223,7 +190,6 @@ function AddTxModal() {
   const TAB_TITLES = {
     csv:          "CSV importieren",
     einmalig:     "neue Vormerkung",
-    umbuchung:    "neue Umbuchung",
     wiederkehrend:"wiederkehrend anlegen",
     finanzierung: "finanzierung anlegen",
     budget:       "budget festlegen",
@@ -256,7 +222,7 @@ function AddTxModal() {
         </div>
       </div>
 
-      {/* Ausgabe / Einnahme — unter den Tabs, nur für Vormerken-Typen (nicht Umbuchung) */}
+      {/* Ausgabe / Einnahme — unter den Tabs, nur für Vormerken-Typen */}
       {(typ==="einmalig"||typ==="wiederkehrend"||typ==="finanzierung")&&(
         <div style={{display:"flex",gap:4,marginBottom:10}}>
           {[["expense","− Ausgabe",T.neg],["income","+ Einnahme",T.pos]].map(([val,label,col])=>{
@@ -335,7 +301,7 @@ function AddTxModal() {
       )}
 
       {/* Datum + Beschreibung — nur für Vormerken-Typen */}
-      {(typ==="einmalig"||typ==="wiederkehrend"||typ==="finanzierung"||typ==="umbuchung")&&<>
+      {(typ==="einmalig"||typ==="wiederkehrend"||typ==="finanzierung")&&<>
         <div style={{display:"flex",gap:8,marginBottom:0}}>
           <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}
             style={{...INP,flex:"0 0 auto",width:"auto",colorScheme:isLight?"light":"dark"}}/>
@@ -343,77 +309,23 @@ function AddTxModal() {
             style={{...INP,flex:1}}/>
         </div>
 
-      {/* Zahlungsart — Standard für Vormerken/Wiederk./Finanz., bei Umbuchung Quelle+Ziel */}
-      {typ!=="umbuchung" ? (<>
-        <Lbl>Zahlungsart</Lbl>
-        <div style={{display:"flex",gap:6,marginBottom:8}}>
-          {accounts.map(acc=>{
-            const sel=accountId===acc.id;
-            return (
-              <button key={acc.id} onClick={()=>setAccountId(acc.id)}
-                style={{flex:1,padding:"8px 4px",borderRadius:10,border:`2px solid ${sel?acc.color:"transparent"}`,
-                  cursor:"pointer",fontSize:11,fontWeight:700,textAlign:"center",
-                  background:sel?acc.color+"22":"rgba(255,255,255,0.04)",
-                  color:sel?acc.color:T.txt2,fontFamily:"inherit"}}>
-                <div style={{marginBottom:1}}>{Li(acc.icon,18,T.txt)}</div>
-                {acc.name}{acc.delayDays>0&&<span style={{color:T.gold,fontSize:"0.8em",marginLeft:2}}>+{acc.delayDays}d</span>}
-              </button>
-            );
-          })}
-        </div>
-      </>) : (<>
-        {/* Umbuchung: Quellkonto → Zielkonto */}
-        <div style={{display:"flex",alignItems:"flex-end",gap:6,marginBottom:8}}>
-          <div style={{flex:1,minWidth:0}}>
-            <Lbl>Quelle</Lbl>
-            <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-              {accounts.map(acc=>{
-                const sel=srcAccountId===acc.id;
-                return (
-                  <button key={acc.id} onClick={()=>setSrcAccountId(acc.id)}
-                    style={{flex:"1 1 0",minWidth:0,padding:"6px 4px",borderRadius:8,
-                      border:`2px solid ${sel?acc.color:"transparent"}`,
-                      cursor:"pointer",fontSize:10,fontWeight:700,textAlign:"center",
-                      background:sel?acc.color+"22":"rgba(255,255,255,0.04)",
-                      color:sel?acc.color:T.txt2,fontFamily:"inherit",
-                      overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                    <div style={{marginBottom:1}}>{Li(acc.icon,14,T.txt)}</div>
-                    {acc.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <div style={{padding:"0 4px 14px",color:T.txt2,fontSize:18,fontWeight:700,
-            display:"flex",alignItems:"center",justifyContent:"center"}}>
-            {Li("arrow-right",18,T.txt2)}
-          </div>
-          <div style={{flex:1,minWidth:0}}>
-            <Lbl>Ziel</Lbl>
-            <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-              {accounts.map(acc=>{
-                const sel=tgtAccountId===acc.id;
-                const disabled=acc.id===srcAccountId;
-                return (
-                  <button key={acc.id} onClick={()=>{ if(!disabled) setTgtAccountId(acc.id); }}
-                    disabled={disabled}
-                    style={{flex:"1 1 0",minWidth:0,padding:"6px 4px",borderRadius:8,
-                      border:`2px solid ${sel?acc.color:"transparent"}`,
-                      cursor:disabled?"not-allowed":"pointer",fontSize:10,fontWeight:700,textAlign:"center",
-                      background:sel?acc.color+"22":"rgba(255,255,255,0.04)",
-                      color:disabled?T.txt2+"55":sel?acc.color:T.txt2,
-                      opacity:disabled?0.4:1,
-                      fontFamily:"inherit",
-                      overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                    <div style={{marginBottom:1}}>{Li(acc.icon,14,T.txt)}</div>
-                    {acc.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </>)}
+      {/* Zahlungsart */}
+      <Lbl>Zahlungsart</Lbl>
+      <div style={{display:"flex",gap:6,marginBottom:8}}>
+        {accounts.map(acc=>{
+          const sel=accountId===acc.id;
+          return (
+            <button key={acc.id} onClick={()=>setAccountId(acc.id)}
+              style={{flex:1,padding:"8px 4px",borderRadius:10,border:`2px solid ${sel?acc.color:"transparent"}`,
+                cursor:"pointer",fontSize:11,fontWeight:700,textAlign:"center",
+                background:sel?acc.color+"22":"rgba(255,255,255,0.04)",
+                color:sel?acc.color:T.txt2,fontFamily:"inherit"}}>
+              <div style={{marginBottom:1}}>{Li(acc.icon,18,T.txt)}</div>
+              {acc.name}{acc.delayDays>0&&<span style={{color:T.gold,fontSize:"0.8em",marginLeft:2}}>+{acc.delayDays}d</span>}
+            </button>
+          );
+        })}
+      </div>
 
       {/* Betrag */}
       <Lbl>{customFirstLast&&typ!=="sofort"&&typ!=="einmalig"?"Regelmäßiger Betrag (€)":"Betrag (€)"}</Lbl>
@@ -592,37 +504,19 @@ function AddTxModal() {
         )}
       </div>
 
-      {/* Kategorie — CatPicker. Bei Umbuchung zwei (Quelle/Ausgabe + Ziel/Einnahme). */}
-      {typ==="umbuchung" ? (<>
-        <Lbl>Kategorie Quelle (Ausgabe, optional)</Lbl>
-        <CatPicker
-          value={catId+"|"+subId}
-          onChange={(cId,sId)=>{ setCatId(cId); setSubId(sId); }}
-          filterType="expense"
-          placeholder="Kategorie für Ausgabe wählen (optional)…"
-        />
-        <div style={{height:6}}/>
-        <Lbl>Kategorie Ziel (Einnahme, optional)</Lbl>
-        <CatPicker
-          value={tgtCatId+"|"+tgtSubId}
-          onChange={(cId,sId)=>{ setTgtCatId(cId); setTgtSubId(sId); }}
-          filterType="income"
-          placeholder="Kategorie für Einnahme wählen (optional)…"
-        />
-      </>) : (
-        <CatPicker
-          value={(typ==="csv"||typ==="budget"||typ==="kategorie"||typ==="kontostand")
-            ? "|"
-            : (typ==="einmalig"||typ==="wiederkehrend"||typ==="finanzierung")
-              ? catId+"|"+subId
-              : (newTx.splits[0]?.catId||"")+"|"+(newTx.splits[0]?.subId||"")}
-          onChange={(cId,sId)=>{
-            setCatId(cId); setSubId(sId);
-          }}
-          filterType={csvType||"expense"}
-          placeholder="Kategorie wählen (optional)…"
-        />
-      )}
+      {/* Kategorie — CatPicker für alle Typen */}
+      <CatPicker
+        value={(typ==="csv"||typ==="budget"||typ==="kategorie"||typ==="kontostand")
+          ? "|"
+          : (typ==="einmalig"||typ==="wiederkehrend"||typ==="finanzierung")
+            ? catId+"|"+subId
+            : (newTx.splits[0]?.catId||"")+"|"+(newTx.splits[0]?.subId||"")}
+        onChange={(cId,sId)=>{
+          setCatId(cId); setSubId(sId);
+        }}
+        filterType={csvType||"expense"}
+        placeholder="Kategorie wählen (optional)…"
+      />
 
       {/* Notiz — volle Breite */}
       <Lbl>Notiz (optional)</Lbl>
