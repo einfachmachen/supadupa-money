@@ -2514,9 +2514,11 @@ Abbrechen = ${remoteName}-Stand laden`
 
           // GESTEN-NEUDESIGN:
           // - Single-Tap   → nichts (nur visuelles Feedback)
-          // - Double-Tap   → jumpToToday
-          // - Swipe-Up     → MonthPicker
-          // - Swipe-Down   → MobileActionPicker (Mehr-Übersicht)
+          // - Double-Tap   → jumpToToday + un-arretieren
+          // - Swipe-Up (klein)      → arretieren
+          // - Swipe-Up (arretiert)  → MobileActionPicker (Mehr)
+          // - Swipe-Down (klein)    → nichts
+          // - Swipe-Down (arretiert) → MonthPicker
           // - Swipe-L/R    → stepMonth
           // - Hold horizontal → jumpToTxEdge (first/last)
 
@@ -2634,15 +2636,16 @@ Abbrechen = ${remoteName}-Stand laden`
               // TOGGLE-LOGIK Vertikal:
               if(dy < 0) {
                 // Swipe-Up
-                if(showMonthPickerModal)      setShowMonthPickerModal(false);                                 // MonthPicker offen → schließen
-                else if(showMobilePicker)     { setShowMobilePicker(false); setShowMonthPickerModal(true); } // Mehr offen → wechseln
-                else if(!plusArretiert)       setPlusArretiert(true);                                         // 1. Hochziehen → nur arretieren
-                else                          setShowMonthPickerModal(true);                                  // schon arretiert → MonthPicker auf
+                if(showMobilePicker)          setShowMobilePicker(false);                                     // Mehr offen → schließen
+                else if(showMonthPickerModal) { setShowMonthPickerModal(false); doPlus(); }                  // MonthPicker offen → wechseln zu Mehr
+                else if(!plusArretiert)       setPlusArretiert(true);                                         // klein → nur arretieren
+                else                          doPlus();                                                       // arretiert → Mehr auf
               } else {
                 // Swipe-Down
-                if(showMobilePicker)          setShowMobilePicker(false);                                     // Mehr offen → schließen
-                else if(showMonthPickerModal) { setShowMonthPickerModal(false); doPlus(); }                  // MonthPicker offen → wechseln
-                else                          doPlus();                                                       // sonst → Mehr auf
+                if(showMonthPickerModal)      setShowMonthPickerModal(false);                                 // MonthPicker offen → schließen
+                else if(showMobilePicker)     { setShowMobilePicker(false); setShowMonthPickerModal(true); } // Mehr offen → wechseln zu MonthPicker
+                else if(plusArretiert)        setShowMonthPickerModal(true);                                  // arretiert → MonthPicker auf
+                // klein + Swipe-Down → nichts
               }
               return;
             }
