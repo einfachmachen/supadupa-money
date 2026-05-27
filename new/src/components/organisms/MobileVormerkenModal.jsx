@@ -168,7 +168,8 @@ function MobileVormerkenModal({onClose}) {
                     setCsvType(t);
                   }
                 }}
-                  style={{...btnCenter, padding:`${S.padL}px`,
+                  style={{...btnCenter, padding:`${S.padL}px ${S.pad}px`,
+                    minWidth:0,
                     background:active?c+"22":"rgba(255,255,255,0.06)",
                     border:`2px solid ${active?c:T.bd}`,
                     color:active?c:T.txt2, borderRadius:S.radius,
