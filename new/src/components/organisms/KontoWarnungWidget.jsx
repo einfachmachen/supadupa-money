@@ -168,6 +168,20 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
       };
       const openBudgetMitte = calcOpenBudget(14);
       const openBudgetEnde  = calcOpenBudget(lastDay);
+      // Budget-Sprünge konsistent mit saldoAt: nur AM Tag 14 bzw. AM letzten Tag,
+      // und nur wenn dieser Tag noch in der Zukunft liegt. Vorher hat die Warnung
+      // ab Tag 14 *jeden* Folgetag das offene Mitte-Budget abgezogen — das hat zu
+      // viel pessimistischeren Tagessaldi geführt als Hero/Monat-Liste.
+      const _tb = new Date(), _tY=_tb.getFullYear(), _tM=_tb.getMonth(), _tD=_tb.getDate();
+      const isFutureDay = (d) => {
+        if(y > _tY) return true;
+        if(y < _tY) return false;
+        if(m > _tM) return true;
+        if(m < _tM) return false;
+        return d >= _tD;
+      };
+      const mitteSprungActive = isFutureDay(14);
+      const endeSprungActive  = isFutureDay(lastDay);
       // OPTIMIERUNG: einmal alle Tx nach Datum sortieren und kumulativ summieren
       // statt für jeden Tag erneut zu filtern (war O(tage*txs))
       const sortedTxs = mTxs.filter(t=>!t._budgetSubId).slice().sort((a,b)=>a.date.localeCompare(b.date));
@@ -183,7 +197,9 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
           if(t.pending) cumPend += v; else cumReal += v;
           txIdx++;
         }
-        const budgetDeduct = day>=lastDay ? -openBudgetEnde : day>=14 ? -openBudgetMitte : 0;
+        const budgetDeduct = (day===lastDay && endeSprungActive) ? -openBudgetEnde
+                           : (day===14 && mitteSprungActive) ? -openBudgetMitte
+                           : 0;
         saldoByDay[dayStr] = baseSaldo + cumReal + cumPend + budgetDeduct;
       }
       const saldoAt = (dayStr) => saldoByDay[dayStr] ?? baseSaldo;
