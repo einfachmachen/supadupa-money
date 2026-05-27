@@ -16,9 +16,6 @@ function MobileVormerkenModal({onClose}) {
 
   const [step, setStep] = useState(1); // 1=Betrag, 2=Kategorie, 3=Details, 4=Bestätigung
   const [csvType, setCsvType] = useState("expense");
-  // Umbuchung-Modus: Quelle → Ziel, beide Konten erforderlich
-  const [isTransfer, setIsTransfer] = useState(false);
-  const [tgtAccId, setTgtAccId] = useState("");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(today);
   const [desc, setDesc] = useState("");
@@ -84,28 +81,6 @@ function MobileVormerkenModal({onClose}) {
   const doSave = () => {
     const amt = pn(amount.replace(",","."));
     if(amt<=0) return;
-    if(isTransfer) {
-      // Umbuchung: Abgang auf Quellkonto + verknüpfter Zugang auf Zielkonto
-      if(!tgtAccId || tgtAccId===accId) return;
-      const abgang = {
-        id:"pend-"+uid(), date, desc:desc||"Umbuchung",
-        totalAmount:-amt, pending:true, _csvType:"expense",
-        accountId:accId, repeatMonths:1,
-        note: note||undefined, valueDate: valueDate||undefined,
-        splits: catId ? [{id:uid(),catId,subId,amount:-amt}] : [],
-      };
-      const zugang = {
-        id:"pend-"+uid(), date, desc:desc||"Umbuchung",
-        totalAmount:amt, pending:true, _csvType:"income",
-        accountId:tgtAccId, _linkedTo:abgang.id, repeatMonths:1,
-        note: note||undefined, valueDate: valueDate||undefined,
-        splits: [],
-      };
-      setTxs(p=>[...p, abgang, zugang]);
-      setSaved(true);
-      setTimeout(()=>onClose(), 1200);
-      return;
-    }
     setTxs(p=>[...p,{
       id:uid(), date, desc:desc||"neue Buchung",
       totalAmount:amt, pending:true, _csvType:csvType,
@@ -145,56 +120,26 @@ function MobileVormerkenModal({onClose}) {
         {header("neue Vormerkung","Betrag & Typ",1)}
         <div style={{flex:1,padding:S.padL,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
 
-          {/* Ausgabe / Einnahme / Umbuchung */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:S.gap,marginBottom:S.gap}}>
-            {[
-              ["expense","Ausgabe",T.neg,false],
-              ["income","Einnahme",T.pos,false],
-              ["transfer","Umbuchung",T.blue,true],
-            ].map(([t,l,c,trans])=>{
-              const active = trans ? isTransfer : (!isTransfer && csvType===t);
-              return (
-                <button key={t} onClick={()=>{
-                  if(trans) {
-                    setIsTransfer(true);
-                    setCsvType("expense");
-                    // Default-Ziel: erstes anderes Konto
-                    if(!tgtAccId || tgtAccId===accId) {
-                      const other = (accounts||[]).find(a=>a.id!==accId);
-                      if(other) setTgtAccId(other.id);
-                    }
-                  } else {
-                    setIsTransfer(false);
-                    setCsvType(t);
-                  }
-                }}
-                  style={{...btnCenter, padding:`${S.padL}px`,
-                    background:active?c+"22":"rgba(255,255,255,0.06)",
-                    border:`2px solid ${active?c:T.bd}`,
-                    color:active?c:T.txt2, borderRadius:S.radius,
-                    fontSize:S.fs-4}}>
-                  {l}
-                </button>
-              );
-            })}
+          {/* Ausgabe / Einnahme */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:S.gap,marginBottom:S.gap}}>
+            {[["expense","Ausgabe",T.neg],["income","Einnahme",T.pos]].map(([t,l,c])=>(
+              <button key={t} onClick={()=>setCsvType(t)}
+                style={{...btnCenter, padding:`${S.padL}px`,
+                  background:csvType===t?c+"22":"rgba(255,255,255,0.06)",
+                  border:`2px solid ${csvType===t?c:T.bd}`,
+                  color:csvType===t?c:T.txt2, borderRadius:S.radius}}>
+                {l}
+              </button>
+            ))}
           </div>
 
-          {/* Konto — Label nur wenn kein Konto vorhanden, bei Umbuchung "Quelle" */}
-          {((accounts||[]).length===0 || isTransfer)&&(
-            <div style={{color:T.txt2,fontSize:S.fs-4,marginBottom:6,fontWeight:600}}>
-              {isTransfer ? "Quelle" : "Konto"}
-            </div>
+          {/* Konto — Label nur wenn kein Konto vorhanden */}
+          {(accounts||[]).length===0&&(
+            <div style={{color:T.txt2,fontSize:S.fs-4,marginBottom:6,fontWeight:600}}>Konto</div>
           )}
           <div style={{display:"flex",gap:S.gap/2,flexWrap:"wrap",marginBottom:S.gap}}>
             {(accounts||[]).map(acc=>(
-              <button key={acc.id} onClick={()=>{
-                setAccId(acc.id);
-                // Bei Umbuchung: wenn Ziel == neue Quelle, Ziel umsetzen
-                if(isTransfer && tgtAccId===acc.id) {
-                  const other = (accounts||[]).find(a=>a.id!==acc.id);
-                  setTgtAccId(other?.id || "");
-                }
-              }}
+              <button key={acc.id} onClick={()=>setAccId(acc.id)}
                 style={{flex:"1 1 auto",padding:`${S.pad}px`,borderRadius:S.radius,
                   background:accId===acc.id?acc.color+"22":"rgba(255,255,255,0.06)",
                   border:`2px solid ${accId===acc.id?(acc.color||T.blue):T.bd}`,
@@ -227,30 +172,6 @@ function MobileVormerkenModal({onClose}) {
               <span style={{fontSize:S.fs-8}}>Konto</span>
             </button>
           </div>
-
-          {/* Bei Umbuchung: Zielkonto-Picker */}
-          {isTransfer && (<>
-            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,color:T.txt2,fontSize:S.fs-4,fontWeight:600}}>
-              {Li("arrow-down",S.fs-4,T.blue)}
-              <span>Ziel</span>
-            </div>
-            <div style={{display:"flex",gap:S.gap/2,flexWrap:"wrap",marginBottom:S.gap}}>
-              {(accounts||[]).filter(a=>a.id!==accId).map(acc=>(
-                <button key={acc.id} onClick={()=>setTgtAccId(acc.id)}
-                  style={{flex:"1 1 auto",padding:`${S.pad}px`,borderRadius:S.radius,
-                    background:tgtAccId===acc.id?acc.color+"22":"rgba(255,255,255,0.06)",
-                    border:`2px solid ${tgtAccId===acc.id?(acc.color||T.blue):T.bd}`,
-                    color:tgtAccId===acc.id?(acc.color||T.blue):T.txt2,
-                    cursor:"pointer",fontFamily:"inherit",
-                    display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                  {Li(acc.icon||"landmark",S.fs+4,tgtAccId===acc.id?(acc.color||T.blue):T.txt2)}
-                  <span style={{fontSize:S.fs-6,fontWeight:tgtAccId===acc.id?700:400}}>
-                    {acc.name||acc.id}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </>)}
 
           {/* Betrag — Placeholder statt Label, € nach Eingabe */}
           <div style={{position:"relative",marginBottom:S.gap}}>
@@ -317,23 +238,11 @@ function MobileVormerkenModal({onClose}) {
                 fontSize:S.fs,padding:4}}>✕</button>}
           </div>
 
-          {/* Bei Umbuchung Hinweis, falls kein Ziel gewählt */}
-          {isTransfer && !tgtAccId && (
-            <div style={{color:T.gold,fontSize:S.fs-6,marginBottom:S.gap,textAlign:"center"}}>
-              Bitte Zielkonto wählen
-            </div>
-          )}
-
-          <button onClick={()=>{
-              const a=pn(amount.replace(",","."));
-              if(a<=0) return;
-              if(isTransfer && (!tgtAccId || tgtAccId===accId)) return;
-              setStep(2);
-            }}
-            disabled={!amount||pn(amount.replace(",","."))<= 0||(isTransfer&&(!tgtAccId||tgtAccId===accId))}
+          <button onClick={()=>{ const a=pn(amount.replace(",",".")); if(a>0) setStep(2); }}
+            disabled={!amount||pn(amount.replace(",","."))<= 0}
             style={{...btnCenter,
-              background:(amount&&pn(amount.replace(",","."))>0&&(!isTransfer||(tgtAccId&&tgtAccId!==accId)))?T.blue:"rgba(255,255,255,0.1)",
-              color:(amount&&pn(amount.replace(",","."))>0&&(!isTransfer||(tgtAccId&&tgtAccId!==accId)))?"#fff":T.txt2}}>
+              background:amount&&pn(amount.replace(",",".")>0)?T.blue:"rgba(255,255,255,0.1)",
+              color:amount&&pn(amount.replace(",",".")>0)?"#fff":T.txt2}}>
             Weiter → Kategorie
           </button>
         </div>
@@ -407,10 +316,9 @@ function MobileVormerkenModal({onClose}) {
         {header("bestätigen","Alles korrekt?",4,()=>setStep(3))}
         <div style={{flex:1,padding:S.padL,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
           {[
-            ["Typ",            isTransfer?"Umbuchung":(csvType==="expense"?"Ausgabe":"Einnahme")],
-            [isTransfer?"Quelle":"Konto",  (accounts||[]).find(a=>a.id===accId)?.name||accId],
-            ...(isTransfer ? [["Ziel", (accounts||[]).find(a=>a.id===tgtAccId)?.name||tgtAccId]] : []),
-            ["Betrag",         (isTransfer?"":(csvType==="expense"?"−":"+"))+fmt(pn(amount.replace(",",".")))],
+            ["Typ",            csvType==="expense"?"Ausgabe":"Einnahme"],
+            ["Konto",          (accounts||[]).find(a=>a.id===accId)?.name||accId],
+            ["Betrag",         (csvType==="expense"?"−":"+")+fmt(pn(amount.replace(",",".")))],
             ["verursacht", valueDate?valueDate.split("-").reverse().join("."):"—"],
             ["Buchung am", date?date.split("-").reverse().join("."):"—"],
             ["Kategorie",      catId?(getCat(catId)?.name||"?")+(subId?" / "+(getSub(catId,subId)?.name||""):""):"—"],
@@ -428,7 +336,7 @@ function MobileVormerkenModal({onClose}) {
 
           <button onClick={doSave}
             style={{...btnCenter,background:T.pos,color:"#fff",marginTop:S.gap*2}}>
-            ✓ {isTransfer?"Umbuchung speichern":"Vormerkung speichern"}
+            ✓ Vormerkung speichern
           </button>
           <button onClick={onClose}
             style={{...btnCenter,background:"transparent",
