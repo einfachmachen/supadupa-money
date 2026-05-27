@@ -26,6 +26,11 @@ function MobileVormerkenModal({onClose}) {
   const [note, setNote] = useState("");
   const [catId, setCatId] = useState("");
   const [subId, setSubId] = useState("");
+  // Umbuchung: zweite Kategorie für das Ziel-Konto
+  const [tgtCatId, setTgtCatId] = useState("");
+  const [tgtSubId, setTgtSubId] = useState("");
+  // Welche Seite wird in Schritt 2 gerade gewählt? "source" | "target" (nur relevant bei Umbuchung)
+  const [catSide, setCatSide] = useState("source");
   const [accId, setAccId] = useState(accounts?.[0]?.id||"acc-giro");
   const [catStep, setCatStep] = useState("cat"); // "cat" | "sub"
   const [selCat, setSelCat] = useState(null);
@@ -99,7 +104,7 @@ function MobileVormerkenModal({onClose}) {
         totalAmount:amt, pending:true, _csvType:"income",
         accountId:tgtAccId, _linkedTo:abgang.id, repeatMonths:1,
         note: note||undefined, valueDate: valueDate||undefined,
-        splits: [],
+        splits: tgtCatId ? [{id:uid(),catId:tgtCatId,subId:tgtSubId,amount:amt}] : [],
       };
       setTxs(p=>[...p, abgang, zugang]);
       setSaved(true);
@@ -372,6 +377,7 @@ function MobileVormerkenModal({onClose}) {
               const a=pn(amount.replace(",","."));
               if(a<=0) return;
               if(isTransfer && (!tgtAccId || tgtAccId===accId)) return;
+              setCatSide("source");
               setStep(2);
             }}
             disabled={!amount||pn(amount.replace(",","."))<= 0||(isTransfer&&(!tgtAccId||tgtAccId===accId))}
@@ -384,24 +390,54 @@ function MobileVormerkenModal({onClose}) {
       </>}
 
       {/* ── Schritt 2: Kategorie ── */}
-      {step===2&&<>
-        {header("Kategorie",fmt(pn(amount.replace(",","."))),2,()=>setStep(1))}
-        <div style={{flex:1,padding:S.padL,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
-          <MobileCatStep
-            csvType={csvType}
-            catId={catId} subId={subId}
-            onSelect={(cId,sId)=>{setCatId(cId);setSubId(sId);setStep(3);}}
-            S={S} btnBase={btnBase} btnCenter={btnCenter}
-          />
-          <button onClick={()=>{setCatId("");setSubId("");setStep(3);}}
-            style={{...btnBase,marginTop:S.gap*2,
-              background:"rgba(255,255,255,0.04)",
-              border:`1.5px dashed ${T.bd}`,color:T.txt2,fontWeight:400,
-              justifyContent:"center"}}>
-            Ohne Kategorie überspringen
-          </button>
-        </div>
-      </>}
+      {step===2&&(() => {
+        const isTgt = isTransfer && catSide==="target";
+        const sideAccId  = isTgt ? tgtAccId : accId;
+        const sideCsv    = isTgt ? "income" : csvType;
+        const sideCatId  = isTgt ? tgtCatId : catId;
+        const sideSubId  = isTgt ? tgtSubId : subId;
+        const title      = isTransfer
+          ? (isTgt ? "Kategorie – Ziel" : "Kategorie – Quelle")
+          : "Kategorie";
+        const sideAcc = (accounts||[]).find(a=>a.id===sideAccId);
+        const subtitle = isTransfer
+          ? `${fmt(pn(amount.replace(",",".")))} • ${sideAcc?.name || ""}`
+          : fmt(pn(amount.replace(",",".")));
+        const advance = (cId, sId) => {
+          if(isTgt) { setTgtCatId(cId); setTgtSubId(sId); setStep(3); }
+          else if(isTransfer) { setCatId(cId); setSubId(sId); setCatSide("target"); }
+          else { setCatId(cId); setSubId(sId); setStep(3); }
+        };
+        const skip = () => {
+          if(isTgt) { setTgtCatId(""); setTgtSubId(""); setStep(3); }
+          else if(isTransfer) { setCatId(""); setSubId(""); setCatSide("target"); }
+          else { setCatId(""); setSubId(""); setStep(3); }
+        };
+        const back = () => {
+          if(isTgt) setCatSide("source");
+          else setStep(1);
+        };
+        return (<>
+          {header(title, subtitle, 2, back)}
+          <div style={{flex:1,padding:S.padL,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+            <MobileCatStep
+              key={isTgt ? "tgt" : "src"}
+              csvType={sideCsv}
+              catId={sideCatId} subId={sideSubId}
+              accountId={sideAccId}
+              onSelect={advance}
+              S={S} btnBase={btnBase} btnCenter={btnCenter}
+            />
+            <button onClick={skip}
+              style={{...btnBase,marginTop:S.gap*2,
+                background:"rgba(255,255,255,0.04)",
+                border:`1.5px dashed ${T.bd}`,color:T.txt2,fontWeight:400,
+                justifyContent:"center"}}>
+              Ohne Kategorie überspringen
+            </button>
+          </div>
+        </>);
+      })()}
 
       {/* ── Schritt 3: Details ── */}
       {step===3&&<>
@@ -457,7 +493,12 @@ function MobileVormerkenModal({onClose}) {
             ["Betrag",         (isTransfer?"":(csvType==="expense"?"−":"+"))+fmt(pn(amount.replace(",",".")))],
             ["verursacht", valueDate?valueDate.split("-").reverse().join("."):"—"],
             ["Buchung am", date?date.split("-").reverse().join("."):"—"],
-            ["Kategorie",      catId?(getCat(catId)?.name||"?")+(subId?" / "+(getSub(catId,subId)?.name||""):""):"—"],
+            ...(isTransfer
+              ? [
+                  ["Kategorie Quelle", catId?(getCat(catId)?.name||"?")+(subId?" / "+(getSub(catId,subId)?.name||""):""):"—"],
+                  ["Kategorie Ziel",   tgtCatId?(getCat(tgtCatId)?.name||"?")+(tgtSubId?" / "+(getSub(tgtCatId,tgtSubId)?.name||""):""):"—"],
+                ]
+              : [["Kategorie", catId?(getCat(catId)?.name||"?")+(subId?" / "+(getSub(catId,subId)?.name||""):""):"—"]]),
             ["Beschreibung",   desc],
             ["Notiz",          note||"—"],
           ].map(([k,v])=>(
