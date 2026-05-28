@@ -147,7 +147,14 @@ function MobileCatStep({csvType, catId, subId, accountId, onSelect, S, btnBase, 
     <div>
       <div style={{color:T.txt2,fontSize:S.fs-4,marginBottom:S.gap}}>Kategorie wählen:</div>
       {shownCats.map(cat=>(
-        <button key={cat.id} onClick={()=>{setSelCat(cat);setCatStep("sub");}}
+        <button key={cat.id} onClick={()=>{
+          // Hat die Kategorie keine Unterkategorien (z.B. typischer Tagesgeld-Setup),
+          // direkt mit nur der Hauptkategorie weitergehen — sonst säße der User
+          // auf einem leeren Subkategorie-Schritt fest.
+          const subs = cat.subs || [];
+          if(subs.length === 0) onSelect(cat.id, "");
+          else { setSelCat(cat); setCatStep("sub"); }
+        }}
           style={{...btnBase,marginBottom:S.gap/2,
             background:"rgba(255,255,255,0.04)",
             border:`1.5px solid ${T.bd}`,color:T.txt,fontWeight:500}}>
