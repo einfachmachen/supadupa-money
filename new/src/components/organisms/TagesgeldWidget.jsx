@@ -77,6 +77,40 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     berechnen();
   }, [collapsed, result, sparPlanName, txs, computing]);
 
+  // Wenn unter dem aktuellen Plannamen bereits eine Sparplan-Series existiert,
+  // Kategorien / Zielkonto aus deren ersten Buchungen übernehmen. Sonst sieht
+  // der User auf einem fremden Browser leere Felder, obwohl die Info in den
+  // (gesyncten) txs liegt. Wir markieren pro Planname einmal als geladen, sobald
+  // die Series gefunden wurde — danach respektieren wir spätere User-Änderungen.
+  const lastLoadedPlanRef = React.useRef(null);
+  React.useEffect(() => {
+    if(lastLoadedPlanRef.current === sparPlanName) return;
+    const desc = buildSparDesc(sparPlanName);
+    const abgang = txs.find(t=>t.pending&&!t._linkedTo&&t.desc===desc&&t._seriesId&&t.accountId==="acc-giro");
+    if(!abgang) return; // warten bis txs geladen / Series existiert
+    lastLoadedPlanRef.current = sparPlanName;
+    const split = abgang.splits?.[0];
+    if(split?.catId && split.catId !== sparCatId) {
+      setSparCatId(split.catId); kvStore.setItem("mbt_spar_catid", split.catId);
+    }
+    if(split && (split.subId||"") !== sparSubId) {
+      setSparSubId(split.subId||""); kvStore.setItem("mbt_spar_subid", split.subId||"");
+    }
+    const zugang = txs.find(t=>t._linkedTo===abgang.id);
+    if(zugang) {
+      if(zugang.accountId && zugang.accountId !== sparAccId) {
+        setSparAccId(zugang.accountId); kvStore.setItem("mbt_spar_accid", zugang.accountId);
+      }
+      const tgt = zugang.splits?.[0];
+      if(tgt?.catId && tgt.catId !== sparTgtCatId) {
+        setSparTgtCatId(tgt.catId); kvStore.setItem("mbt_spar_tgt_catid", tgt.catId);
+      }
+      if(tgt && (tgt.subId||"") !== sparTgtSubId) {
+        setSparTgtSubId(tgt.subId||""); kvStore.setItem("mbt_spar_tgt_subid", tgt.subId||"");
+      }
+    }
+  }, [sparPlanName, txs]);
+
   if(!isCurr) return null;
 
   const getProgEndeW = (y, m) => {
@@ -593,45 +627,53 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
           <div style={{marginTop:8,background:"rgba(0,0,0,0.15)",borderRadius:10,padding:"10px 12px",
             display:"flex",flexDirection:"column",gap:8}}>
             <div style={{color:T.txt,fontSize:11,fontWeight:700}}>Vormerkungsserie anlegen</div>
-            {/* Abgangskategorie — Ausgabe vom Hauptkonto */}
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{color:T.txt2,fontSize:10,minWidth:70}}>Abgang</span>
-              <div style={{flex:1}}>
+            {/* Zeile 1 — Abgang: immer Giro (Konto fix), expense-Kategorie auf Giro */}
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <span style={{color:T.txt2,fontSize:10,minWidth:50}}>Abgang</span>
+              <span style={{color:T.txt2,fontSize:11,padding:"5px 8px",
+                background:T.surf2,border:`1px solid ${T.bd}`,borderRadius:8,
+                fontWeight:600,minWidth:90,textAlign:"center"}}>Giro</span>
+              <div style={{flex:1,minWidth:0}}>
                 <CatPicker
                   value={sparCatId+"|"+sparSubId}
                   onChange={(cId,sId)=>{setSparCatId(cId);setSparSubId(sId);kvStore.setItem("mbt_spar_catid",cId);kvStore.setItem("mbt_spar_subid",sId);}}
                   placeholder="— unkategorisiert —"
                   filterType="expense"
+                  accountId="acc-giro"
                 />
               </div>
             </div>
-            {/* Zielkonto */}
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <span style={{color:T.txt2,fontSize:10,minWidth:70}}>Zielkonto</span>
+            {/* Zeile 2 — Zugang: Konto wählen, dann income-Kategorie dieses Kontos */}
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <span style={{color:T.txt2,fontSize:10,minWidth:50}}>Zugang</span>
               <select value={sparAccId}
-                onChange={e=>{setSparAccId(e.target.value);kvStore.setItem("mbt_spar_accid",e.target.value);}}
-                style={{flex:1,background:T.surf2,color:T.txt,border:`1px solid ${T.bd}`,
-                  borderRadius:8,padding:"5px 8px",fontSize:11,fontFamily:"inherit"}}>
-                <option value="">— kein Zielkonto —</option>
+                onChange={e=>{
+                  const v = e.target.value;
+                  setSparAccId(v); kvStore.setItem("mbt_spar_accid",v);
+                  // Konto-Wechsel: bisherige Zugang-Kategorie verwirft (gehört zum alten Konto)
+                  if(v !== sparAccId) {
+                    setSparTgtCatId(""); kvStore.setItem("mbt_spar_tgt_catid","");
+                    setSparTgtSubId(""); kvStore.setItem("mbt_spar_tgt_subid","");
+                  }
+                }}
+                style={{background:T.surf2,color:T.txt,border:`1px solid ${T.bd}`,
+                  borderRadius:8,padding:"5px 8px",fontSize:11,fontFamily:"inherit",
+                  minWidth:90,maxWidth:130}}>
+                <option value="">— kein Konto —</option>
                 {accounts.filter(a=>a.id!=="acc-giro").map(a=>(
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
               </select>
-            </div>
-            {/* Zugangskategorie — Einnahme beim Zielkonto, nur wenn Zielkonto gewählt */}
-            {sparAccId&&(
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span style={{color:T.txt2,fontSize:10,minWidth:70}}>Zugang</span>
-                <div style={{flex:1}}>
-                  <CatPicker
-                    value={sparTgtCatId+"|"+sparTgtSubId}
-                    onChange={(cId,sId)=>{setSparTgtCatId(cId);setSparTgtSubId(sId);kvStore.setItem("mbt_spar_tgt_catid",cId);kvStore.setItem("mbt_spar_tgt_subid",sId);}}
-                    placeholder="— unkategorisiert —"
-                    filterType="income"
-                  />
-                </div>
+              <div style={{flex:1,minWidth:0,opacity:sparAccId?1:0.4,pointerEvents:sparAccId?"auto":"none"}}>
+                <CatPicker
+                  value={sparTgtCatId+"|"+sparTgtSubId}
+                  onChange={(cId,sId)=>{setSparTgtCatId(cId);setSparTgtSubId(sId);kvStore.setItem("mbt_spar_tgt_catid",cId);kvStore.setItem("mbt_spar_tgt_subid",sId);}}
+                  placeholder={sparAccId?"— unkategorisiert —":"— erst Konto wählen —"}
+                  filterType="income"
+                  accountId={sparAccId||null}
+                />
               </div>
-            )}
+            </div>
             {/* Button */}
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}>
               <div style={{color:T.txt2,fontSize:9}}>
