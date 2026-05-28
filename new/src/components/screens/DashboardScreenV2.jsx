@@ -973,7 +973,7 @@ function DashboardScreenV2() {
           };
 
           return (
-            <div style={{padding:"4px 10px 12px",display:"flex",flexDirection:"column",gap:4}}>
+            <div style={{padding:"0 10px 4px",display:"flex",flexDirection:"column",gap:2}}>
               {allCatsToShow.map(cat => {
                 const isIncome = _isCatIncomeOrTagesgeld(cat);
                 const iMitte = _catSumUpToDay(cat.id, 14);
@@ -1019,11 +1019,12 @@ function DashboardScreenV2() {
                       background: T.surf || (isLight?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.04)"),
                       border: `1px solid ${T.bd}`,
                       borderRadius: 10,
-                      padding: "8px 10px",
+                      padding: "4px 10px",
                       cursor: "pointer",
                     }}>
                     {/* Zeile 1: Icon + Name + Ende-Wert (groß, Ampel-gefärbt) */}
-                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,
+                      marginBottom: detailsOpen ? 6 : 0}}>
                       <div style={{
                         width:28,height:28,borderRadius:8,
                         background:catColor+"22",
