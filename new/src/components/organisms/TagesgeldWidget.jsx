@@ -8,6 +8,8 @@ import { INP } from "../../theme/palette.js";
 import { fmt, pn, uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
+import { restMitte, restEnde } from "../../utils/saldo.js";
+import { isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
 
 function TagesgeldWidget({year, month, initialCollapsed=true}) {
   const {  getKumulierterSaldo, txs, setTxs, cats, accounts, setAccounts, getAcc, budgets, getCat, getBudgetForMonth, selAcc, getProgEndeAccGlobal, resetProgEndeCache, sparOpenRequest } = useContext(AppCtx);
@@ -101,8 +103,16 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     const key = (Object.keys(virtualSpar).length===0 && !excludeSparDesc) ? `${y}-${m}-${effSelAcc||"all"}` : null;
     if(key && key in minTagCache.current) return minTagCache.current[key];
     const prevY=m===0?y-1:y, prevM=m===0?11:m-1;
+    // Konsistent mit saldoAt/Hero: vergangener Vormonat → echter Endsaldo
+    // via getKumulierterSaldo (ohne Vormerkungen). Sonst würden offene
+    // Vormerkungen aus dem Vormonat den Basissaldo verschieben.
+    const _tbReal = new Date();
+    const _prevIsPast = prevY < _tbReal.getFullYear()
+      || (prevY === _tbReal.getFullYear() && prevM < _tbReal.getMonth());
     const baseSaldo = effSelAcc
-      ? (getProgEndeAccGlobal(prevY, prevM, effSelAcc) ?? getKumulierterSaldo(prevY, prevM, effSelAcc))
+      ? (_prevIsPast
+          ? (getKumulierterSaldo(prevY, prevM, effSelAcc) ?? getProgEndeAccGlobal(prevY, prevM, effSelAcc))
+          : (getProgEndeAccGlobal(prevY, prevM, effSelAcc) ?? getKumulierterSaldo(prevY, prevM, effSelAcc)))
       : getProgEndeW(prevY, prevM);
     if(baseSaldo===null||baseSaldo===undefined) return {min:null, saldoEnde:null};
     // Wenn wir einen alten Plan ignorieren, müssen wir baseSaldo um die alten Sparraten der Vormonate korrigieren
@@ -127,8 +137,11 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     const pad2 = n=>String(n).padStart(2,"0");
     const pfx = `${y}-${pad2(m+1)}-`;
     const isAccTx = t => !effSelAcc || t.accountId===effSelAcc || (!t.accountId && effSelAcc==="acc-giro");
+    // Konsistent mit ist()/saldoAt: _linkedTo Sparen-Transfers BLEIBEN drin,
+    // CSV-Duplikate raus. _budgetSubId wird in den späteren Filtern abgezogen.
+    const _txsById = buildTxIdMap(txs || []);
     const mTxs = txs.filter(t=>{
-      if(t._linkedTo) return false;
+      if(isDuplCounterpart(t, _txsById)) return false;
       // Alte Sparplan-Buchungen ignorieren wenn excludeSparDesc gesetzt
       if(excludeSparDesc && t.pending && t.desc===excludeSparDesc) return false;
       const d=new Date(t.date);
@@ -161,13 +174,29 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
       return total;
     };
     const obMitte=calcOpenBudget(14), obEnde=calcOpenBudget(lastDay);
+    // Budget-Sprünge konsistent mit saldoAt/Hero: nur AM 14. bzw. AM letzten
+    // Tag, und nur wenn dieser Tag noch in der Zukunft liegt. Vorher hat das
+    // Widget ab Tag 14 das offene Mitte-Budget *jeden* Folgetag abgezogen, was
+    // den Tiefst-Saldo künstlich nach unten verschoben hat.
+    const isFutureDay = (d) => {
+      const tb=_tbReal, tY=tb.getFullYear(), tM=tb.getMonth(), tD=tb.getDate();
+      if(y > tY) return true;
+      if(y < tY) return false;
+      if(m > tM) return true;
+      if(m < tM) return false;
+      return d >= tD;
+    };
+    const bdMitte = isFutureDay(14)      ? -obMitte : 0;
+    const bdEnde  = isFutureDay(lastDay) ? -obEnde  : 0;
     const saldoAt = (dayStr) => {
       const dayNum=parseInt(dayStr.split("-")[2]);
       const real=mTxs.filter(t=>!t.pending&&!t._budgetSubId&&t.date<=dayStr).reduce((s,t)=>s+signed(t),0);
       const pend=mTxs.filter(t=>t.pending&&!t._budgetSubId&&t.date<=dayStr).reduce((s,t)=>s+signed(t),0);
       // Virtuelle Sparraten aus aktuellem Berechnungslauf einbeziehen
       const virt=Object.entries(virtualSpar).filter(([d])=>d<=dayStr).reduce((s,[,v])=>s+v,0);
-      const bd=dayNum>=lastDay?-obEnde:dayNum>=14?-obMitte:0;
+      const bd = (dayNum===lastDay) ? bdEnde
+               : (dayNum===14)      ? bdMitte
+               : 0;
       return baseSaldoEff+real+pend+virt+bd;
     };
     // Alle Tage mit Buchungen prüfen + synthetische Budget-Checkpoints am 14. und Monatsletzt
