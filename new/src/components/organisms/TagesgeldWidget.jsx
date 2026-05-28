@@ -8,6 +8,8 @@ import { INP } from "../../theme/palette.js";
 import { fmt, pn, uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
+import { restMitte, restEnde } from "../../utils/saldo.js";
+import { isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
 
 function TagesgeldWidget({year, month, initialCollapsed=true}) {
   const {  getKumulierterSaldo, txs, setTxs, cats, accounts, setAccounts, getAcc, budgets, getCat, getBudgetForMonth, selAcc, getProgEndeAccGlobal, resetProgEndeCache, sparOpenRequest } = useContext(AppCtx);
@@ -56,6 +58,25 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   React.useEffect(()=>{ minTagCache.current = {}; }, [txs, selAcc]);
   const [progress, setProgress] = useState(0);
 
+  // Auto-Recompute beim ersten Öffnen des Panels (oder nach Dropdown-Auswahl),
+  // wenn eine zum Plannamen passende Sparplan-Series in den Buchungen existiert,
+  // aber kein lokal gecachtes Ergebnis vorliegt. Tritt z.B. auf, wenn die App
+  // auf einem anderen Gerät / frischen Browser geöffnet wird — die Series-Daten
+  // sind in txs persistiert, die Vorschau-Ergebnis-Tabelle nur per kvStore lokal.
+  const didAutoLoadRef = React.useRef(false);
+  React.useEffect(() => {
+    if(collapsed) return;
+    if(didAutoLoadRef.current) return;
+    if(computing) return;
+    if(result) { didAutoLoadRef.current = true; return; }
+    const desc = `Sparen·${(sparPlanName||"").trim()}`;
+    const hasSeries = txs.some(t => t.pending && !t._linkedTo && t._seriesId
+      && t.accountId==="acc-giro" && t.desc===desc);
+    if(!hasSeries) return;
+    didAutoLoadRef.current = true;
+    berechnen();
+  }, [collapsed, result, sparPlanName, txs, computing]);
+
   if(!isCurr) return null;
 
   const getProgEndeW = (y, m) => {
@@ -101,8 +122,16 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     const key = (Object.keys(virtualSpar).length===0 && !excludeSparDesc) ? `${y}-${m}-${effSelAcc||"all"}` : null;
     if(key && key in minTagCache.current) return minTagCache.current[key];
     const prevY=m===0?y-1:y, prevM=m===0?11:m-1;
+    // Konsistent mit saldoAt/Hero: vergangener Vormonat → echter Endsaldo
+    // via getKumulierterSaldo (ohne Vormerkungen). Sonst würden offene
+    // Vormerkungen aus dem Vormonat den Basissaldo verschieben.
+    const _tbReal = new Date();
+    const _prevIsPast = prevY < _tbReal.getFullYear()
+      || (prevY === _tbReal.getFullYear() && prevM < _tbReal.getMonth());
     const baseSaldo = effSelAcc
-      ? (getProgEndeAccGlobal(prevY, prevM, effSelAcc) ?? getKumulierterSaldo(prevY, prevM, effSelAcc))
+      ? (_prevIsPast
+          ? (getKumulierterSaldo(prevY, prevM, effSelAcc) ?? getProgEndeAccGlobal(prevY, prevM, effSelAcc))
+          : (getProgEndeAccGlobal(prevY, prevM, effSelAcc) ?? getKumulierterSaldo(prevY, prevM, effSelAcc)))
       : getProgEndeW(prevY, prevM);
     if(baseSaldo===null||baseSaldo===undefined) return {min:null, saldoEnde:null};
     // Wenn wir einen alten Plan ignorieren, müssen wir baseSaldo um die alten Sparraten der Vormonate korrigieren
@@ -127,8 +156,11 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     const pad2 = n=>String(n).padStart(2,"0");
     const pfx = `${y}-${pad2(m+1)}-`;
     const isAccTx = t => !effSelAcc || t.accountId===effSelAcc || (!t.accountId && effSelAcc==="acc-giro");
+    // Konsistent mit ist()/saldoAt: _linkedTo Sparen-Transfers BLEIBEN drin,
+    // CSV-Duplikate raus. _budgetSubId wird in den späteren Filtern abgezogen.
+    const _txsById = buildTxIdMap(txs || []);
     const mTxs = txs.filter(t=>{
-      if(t._linkedTo) return false;
+      if(isDuplCounterpart(t, _txsById)) return false;
       // Alte Sparplan-Buchungen ignorieren wenn excludeSparDesc gesetzt
       if(excludeSparDesc && t.pending && t.desc===excludeSparDesc) return false;
       const d=new Date(t.date);
@@ -161,18 +193,45 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
       return total;
     };
     const obMitte=calcOpenBudget(14), obEnde=calcOpenBudget(lastDay);
+    // Budget-Sprünge konsistent mit saldoAt/Hero: nur AM 14. bzw. AM letzten
+    // Tag, und nur wenn dieser Tag noch in der Zukunft liegt. Vorher hat das
+    // Widget ab Tag 14 das offene Mitte-Budget *jeden* Folgetag abgezogen, was
+    // den Tiefst-Saldo künstlich nach unten verschoben hat.
+    const isFutureDay = (d) => {
+      const tb=_tbReal, tY=tb.getFullYear(), tM=tb.getMonth(), tD=tb.getDate();
+      if(y > tY) return true;
+      if(y < tY) return false;
+      if(m > tM) return true;
+      if(m < tM) return false;
+      return d >= tD;
+    };
+    const bdMitte = isFutureDay(14)      ? -obMitte : 0;
+    const bdEnde  = isFutureDay(lastDay) ? -obEnde  : 0;
     const saldoAt = (dayStr) => {
       const dayNum=parseInt(dayStr.split("-")[2]);
       const real=mTxs.filter(t=>!t.pending&&!t._budgetSubId&&t.date<=dayStr).reduce((s,t)=>s+signed(t),0);
       const pend=mTxs.filter(t=>t.pending&&!t._budgetSubId&&t.date<=dayStr).reduce((s,t)=>s+signed(t),0);
       // Virtuelle Sparraten aus aktuellem Berechnungslauf einbeziehen
       const virt=Object.entries(virtualSpar).filter(([d])=>d<=dayStr).reduce((s,[,v])=>s+v,0);
-      const bd=dayNum>=lastDay?-obEnde:dayNum>=14?-obMitte:0;
+      const bd = (dayNum===lastDay) ? bdEnde
+               : (dayNum===14)      ? bdMitte
+               : 0;
       return baseSaldoEff+real+pend+virt+bd;
     };
     // Alle Tage mit Buchungen prüfen + synthetische Budget-Checkpoints am 14. und Monatsletzt
-    const daysWithTxs=new Set(mTxs.map(t=>t.date));
-    [`${pfx}14`,`${pfx}${pad2(lastDay)}`].forEach(d=>daysWithTxs.add(d));
+    // Im AKTUELLEN Monat dürfen vergangene Tage (vor heute) NICHT in die Tiefst-Saldo-Suche
+    // einfließen — sie sind bereits geschehen und durch den heutigen Ist-Saldo abgegolten.
+    // Sonst zieht z.B. ein negativer Saldo am Monatsanfang (vor Gehaltseingang) das Minimum
+    // dauerhaft nach unten, obwohl das Gehalt längst da ist und der Saldo „ab heute" deutlich
+    // höher liegt.
+    const tbReal = _tbReal;
+    const isCurrentMonth = (y === tbReal.getFullYear() && m === tbReal.getMonth());
+    const firstRelevantDay = isCurrentMonth ? tbReal.getDate() : 1;
+    const firstRelevantStr = `${pfx}${pad2(firstRelevantDay)}`;
+    const daysWithTxs=new Set();
+    mTxs.forEach(t=>{ if(t.date>=firstRelevantStr) daysWithTxs.add(t.date); });
+    [`${pfx}14`,`${pfx}${pad2(lastDay)}`].forEach(d=>{ if(d>=firstRelevantStr) daysWithTxs.add(d); });
+    daysWithTxs.add(firstRelevantStr); // garantierter Checkpoint „heute" bzw. Monatsanfang
     const allDays=[...daysWithTxs].sort();
     let minVal=null;
     allDays.forEach(ds=>{
@@ -370,6 +429,10 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                     const name = e.target.value.replace(/^Sparen·/,"");
                     setSparPlanName(name);
                     kvStore.setItem("mbt_spar_planname", name);
+                    // Vorhandenes Vorschau-Ergebnis verwerfen und Auto-Recompute neu scharf machen,
+                    // damit die Tabelle für den neu ausgewählten Plan automatisch befüllt wird.
+                    setResult(null);
+                    didAutoLoadRef.current = false;
                     e.target.value = "";
                   }}
                   style={{background:T.surf2,color:T.txt2,border:`1px solid ${currentMatches?T.pos:T.bd}`,
