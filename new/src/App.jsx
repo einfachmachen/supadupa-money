@@ -2508,6 +2508,15 @@ Abbrechen = ${remoteName}-Stand laden`
           const isTerminal = T.themeName==="terminal";
           const monthNames = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
           const SIZE = 78;
+
+          // ── Override-Variante: Wizard hat den Knopf temporär übernommen ──
+          // Selbe Position, dieselbe Größe — nur Inhalt und Gestik ändern sich.
+          // Damit der Knopf trotz offenem Modal (zIndex 300) klickbar bleibt,
+          // setzen wir den Wrapper auf zIndex 500.
+          if(masterOverride) {
+            return <MasterOverrideSlot key={key} override={masterOverride}
+              SIZE={SIZE} T={T} plusArretiert={plusArretiert}/>;
+          }
           const DRAG_THRESHOLD = 30;   // ab so vielen Pixeln gilt als Geste
           const MOVE_TOLERANCE = 14;   // Finger-Jitter bis hier zählt noch als Tap
           const VISUAL_LIMIT = 15;     // Joystick darf max so weit wandern
@@ -2967,40 +2976,47 @@ Abbrechen = ${remoteName}-Stand laden`
         </div>
       )}
     </div>
-    {masterOverride && <MasterOverrideButton override={masterOverride} T={T}/>}
     <LiveColorPicker />
     </>
   </AppCtx.Provider>
   );
 }
 
-// ─ Master-Button-Override ──────────────────────────────────────────────
-// Wird über den Modals (zIndex 500) gerendert, wenn ein Mobile-Wizard aktiv
-// ist. Übernimmt den großen runden Plus-Knopf temporär:
-//   Tipp        → override.onConfirm()
-//   Wisch ←     → override.onBack()   (falls vorhanden)
-//   Wisch ↓     → override.onDismiss() (Modal schließen / Abbruch)
-// Visuell zeigt der Knopf das Label des Schritts statt „Mai 2026 / WISCHEN".
-function MasterOverrideButton({ override, T }) {
-  const SIZE = 78;
+// ── Master-Button-Override-Slot ────────────────────────────────────────
+// Belegt exakt denselben Platz im Bottom-Nav-Flex wie der reguläre
+// „Mai 2026 / WISCHEN"-Knopf (SIZE/Transform/Wrapper identisch). Während
+// ein Mobile-Wizard aktiv ist, ersetzt diese Variante den Inhalt:
+//   Tipp     → override.onConfirm()
+//   Wisch ←  → override.onBack()    (no-op falls onBack === null)
+//   Wisch ↓  → override.onDismiss()
+// Der Wrapper bekommt zIndex 500, damit der Knopf über dem Modal
+// (zIndex 300) sichtbar UND klickbar bleibt.
+function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
   const DRAG_THRESHOLD = 30;
   const MOVE_TOLERANCE = 14;
   const VISUAL_LIMIT = 18;
-  const ref = React.useRef({x:0,y:0,dx:0,dy:0,axisLocked:null,dragging:false,pointerId:null,moved:false,consumed:false});
+  const restingTransform = plusArretiert
+    ? "translate(0px, -94px) scale(1.5)"
+    : "translate(0px, -14px) scale(1)";
+  const restY = plusArretiert ? -94 : -14;
+  const baseScale = plusArretiert ? 1.5 : 1;
+  const dragScale = baseScale * 1.06;
+
+  const ref = React.useRef({x:0,y:0,dx:0,dy:0,axisLocked:null,dragging:false,
+    pointerId:null,moved:false});
   const btnRef = React.useRef(null);
 
-  const reset = () => {
+  const settle = () => {
     if(btnRef.current) {
       btnRef.current.style.transition = "transform 0.2s cubic-bezier(.34,1.4,.64,1)";
-      btnRef.current.style.transform  = "translate(0px, 0px) scale(1)";
+      btnRef.current.style.transform  = restingTransform;
     }
   };
-
   const onDown = (e) => {
     if(e.button !== undefined && e.button !== 0) return;
     try { e.currentTarget.setPointerCapture(e.pointerId); } catch(_) {}
-    ref.current = {x:e.clientX,y:e.clientY,dx:0,dy:0,axisLocked:null,dragging:true,
-      pointerId:e.pointerId,moved:false,consumed:false};
+    ref.current = {x:e.clientX,y:e.clientY,dx:0,dy:0,axisLocked:null,
+      dragging:true,pointerId:e.pointerId,moved:false};
   };
   const onMove = (e) => {
     const r = ref.current;
@@ -3012,24 +3028,19 @@ function MasterOverrideButton({ override, T }) {
     if(!r.axisLocked && (adx > MOVE_TOLERANCE || ady > MOVE_TOLERANCE)) {
       r.axisLocked = adx >= ady ? "x" : "y";
     }
-    // Visuelles Folgen — nur in „erlaubte" Richtungen (links bzw. nach unten),
-    // andere Richtungen werden gedämpft, damit klar wird, dass dort nichts passiert.
+    // Visuelles Folgen: nur in „erlaubte" Richtungen (← bzw. ↓) frei wandern,
+    // sonst gedämpft — damit der Nutzer fühlt, was geht.
     const clamp = (v,lim)=>Math.max(-lim,Math.min(lim,v));
     let vx = 0, vy = 0;
     if(r.axisLocked === "x") {
       const allowBack = !!override.onBack;
-      // Nur Wisch nach LINKS hat eine Aktion → andere Richtung dämpfen
       vx = dx < 0 ? clamp(dx, allowBack ? VISUAL_LIMIT : 6) : clamp(dx, 6);
     } else if(r.axisLocked === "y") {
-      // Nur Wisch nach UNTEN hat eine Aktion → nach oben dämpfen
       vy = dy > 0 ? clamp(dy, VISUAL_LIMIT) : clamp(dy, 6);
-    } else {
-      vx = clamp(dx, VISUAL_LIMIT);
-      vy = clamp(dy, VISUAL_LIMIT);
     }
     if(btnRef.current) {
       btnRef.current.style.transition = "none";
-      btnRef.current.style.transform  = `translate(${vx}px, ${vy}px) scale(1.06)`;
+      btnRef.current.style.transform  = `translate(${vx}px, ${vy + restY}px) scale(${dragScale})`;
     }
   };
   const onUp = (e) => {
@@ -3037,9 +3048,8 @@ function MasterOverrideButton({ override, T }) {
     if(!r.dragging || r.pointerId !== e.pointerId) return;
     r.dragging = false;
     try { e.currentTarget.releasePointerCapture(e.pointerId); } catch(_) {}
-    const {dx,dy,axisLocked,moved,consumed} = r;
-    reset();
-    if(consumed) return;
+    const {dx,dy,axisLocked,moved} = r;
+    settle();
     if(axisLocked === "x" && Math.abs(dx) > DRAG_THRESHOLD) {
       if(dx < 0 && override.onBack) override.onBack();
       return;
@@ -3053,30 +3063,28 @@ function MasterOverrideButton({ override, T }) {
       override.onConfirm();
     }
   };
-  const onCancel = () => { ref.current.dragging = false; reset(); };
+  const onCancel = () => { ref.current.dragging = false; settle(); };
 
-  // Label-Splitting für 2-Zeilen-Darstellung im runden Knopf
+  // Label-Aufteilung für zweizeilige Darstellung im runden Knopf
   const label = override.label || "OK";
-  const parts = label.split(/\s+→\s+|\s+/); // an "→" oder Leerzeichen brechen
-  let line1 = parts[0] || "";
-  let line2 = parts.slice(1).join(" ");
-  // Hat das Label ein „→" wird das als Trenner bevorzugt
+  let line1 = label, line2 = "";
   if(/→/.test(label)) {
     const m = label.split("→");
     line1 = (m[0] || "").trim() + " →";
     line2 = (m[1] || "").trim();
+  } else if(label.length > 10) {
+    const mid = Math.ceil(label.length/2);
+    const sp  = label.lastIndexOf(" ", mid);
+    if(sp > 0) { line2 = label.slice(sp+1); line1 = label.slice(0,sp); }
   }
-  // Fallback: keine sinnvolle Zweiteilung — zweite Zeile leer
-  if(!line2 && line1.length > 10) {
-    const mid = Math.ceil(line1.length/2);
-    const sp  = line1.lastIndexOf(" ", mid);
-    if(sp > 0) { line2 = line1.slice(sp+1); line1 = line1.slice(0,sp); }
-  }
-  const long = (line1.length > 9) || (line2.length > 9);
+  const longest = Math.max(line1.length, line2.length);
+  const fontSize = longest > 12 ? 9 : longest > 9 ? 11 : 13;
 
   return (
-    <div style={{position:"fixed",left:"50%",bottom:14,transform:"translateX(-50%)",
-      zIndex:500,pointerEvents:"none"}}>
+    <div style={{flex:"0 0 auto",display:"flex",alignItems:"center",
+      justifyContent:"center",overflow:"visible",
+      WebkitTapHighlightColor:"transparent",position:"relative",
+      width:90,zIndex:500}}>
       <button
         ref={btnRef}
         onPointerDown={onDown}
@@ -3085,26 +3093,29 @@ function MasterOverrideButton({ override, T }) {
         onPointerCancel={onCancel}
         disabled={override.disabled}
         style={{
-          pointerEvents:"auto",
-          width:SIZE,height:SIZE,borderRadius:"50%",
+          width:SIZE, height:SIZE, borderRadius:"50%",
           border:`3px solid ${T.surf}`,
           background: override.disabled
             ? "rgba(255,255,255,0.1)"
-            : `linear-gradient(135deg,#9CC800,#AADD00)`,
+            : "linear-gradient(135deg,#9CC800,#AADD00)",
           color: override.disabled ? T.txt2 : "#000",
           boxShadow:"0 -2px 14px rgba(0,0,0,0.4)",
           display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
-          touchAction:"none",userSelect:"none",cursor:override.disabled?"default":"pointer",
+          position:"relative",
+          transform: restingTransform,
+          transition:"transform 0.2s cubic-bezier(.34,1.4,.64,1)",
+          touchAction:"none",userSelect:"none",
+          cursor:override.disabled?"default":"pointer",
           WebkitTapHighlightColor:"transparent",padding:4,
-          fontFamily:"inherit",lineHeight:1.1,
-          opacity:override.disabled?0.55:1,
+          fontFamily:"inherit",lineHeight:1.15,
+          opacity: override.disabled ? 0.55 : 1,
         }}>
-        <div style={{fontSize: long ? 10 : 12, fontWeight:800,letterSpacing:-0.3,
+        <div style={{fontSize,fontWeight:800,letterSpacing:-0.3,
           whiteSpace:"nowrap",pointerEvents:"none",textAlign:"center"}}>
           {line1}
         </div>
         {line2 && (
-          <div style={{fontSize: long ? 10 : 12, fontWeight:800,letterSpacing:-0.3,
+          <div style={{fontSize,fontWeight:800,letterSpacing:-0.3,
             whiteSpace:"nowrap",pointerEvents:"none",textAlign:"center",marginTop:1}}>
             {line2}
           </div>
