@@ -219,8 +219,19 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
       return baseSaldoEff+real+pend+virt+bd;
     };
     // Alle Tage mit Buchungen prüfen + synthetische Budget-Checkpoints am 14. und Monatsletzt
-    const daysWithTxs=new Set(mTxs.map(t=>t.date));
-    [`${pfx}14`,`${pfx}${pad2(lastDay)}`].forEach(d=>daysWithTxs.add(d));
+    // Im AKTUELLEN Monat dürfen vergangene Tage (vor heute) NICHT in die Tiefst-Saldo-Suche
+    // einfließen — sie sind bereits geschehen und durch den heutigen Ist-Saldo abgegolten.
+    // Sonst zieht z.B. ein negativer Saldo am Monatsanfang (vor Gehaltseingang) das Minimum
+    // dauerhaft nach unten, obwohl das Gehalt längst da ist und der Saldo „ab heute" deutlich
+    // höher liegt.
+    const tbReal = _tbReal;
+    const isCurrentMonth = (y === tbReal.getFullYear() && m === tbReal.getMonth());
+    const firstRelevantDay = isCurrentMonth ? tbReal.getDate() : 1;
+    const firstRelevantStr = `${pfx}${pad2(firstRelevantDay)}`;
+    const daysWithTxs=new Set();
+    mTxs.forEach(t=>{ if(t.date>=firstRelevantStr) daysWithTxs.add(t.date); });
+    [`${pfx}14`,`${pfx}${pad2(lastDay)}`].forEach(d=>{ if(d>=firstRelevantStr) daysWithTxs.add(d); });
+    daysWithTxs.add(firstRelevantStr); // garantierter Checkpoint „heute" bzw. Monatsanfang
     const allDays=[...daysWithTxs].sort();
     let minVal=null;
     allDays.forEach(ds=>{
