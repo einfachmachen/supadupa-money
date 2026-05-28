@@ -499,15 +499,38 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
               </>);
             })()}</div>
           <div style={{flexShrink:0,display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end"}}>
-            <button onClick={()=>{ setResultOutdated(false); berechnen(); }} disabled={computing}
-              style={{padding:"8px 14px",borderRadius:10,border:"none",
-                background:computing?"rgba(255,255,255,0.1)":resultOutdated?T.gold:T.blue,
-                color:computing?T.txt2:"#fff",fontSize:12,fontWeight:700,
-                cursor:computing?"default":"pointer",
-                display:"flex",alignItems:"center",gap:6}}>
-              {Li(computing?"loader":"refresh-cw",13,computing?T.txt2:"#fff")}
-              {computing?`${progress}%`:resultOutdated?"⚠ Neu berechnen":"Neuberechnen"}
-            </button>
+            {(()=>{
+              const {seriesIds:_existingIds} = findExistingSeries(sparPlanName);
+              const hasExisting = _existingIds.length>0;
+              if(hasExisting) {
+                // Bestehender Plan: ein einziger Button „Auto" — rechnet neu UND
+                // überschreibt die Serie mit dem frischen Ergebnis.
+                return (
+                  <button onClick={autoAnpassen} disabled={computing}
+                    title="Neu berechnen und Sparplan automatisch anpassen"
+                    style={{padding:"8px 14px",borderRadius:10,border:"none",
+                      background:computing?"rgba(255,255,255,0.1)":T.pos,
+                      color:computing?T.txt2:"#000",fontSize:12,fontWeight:700,
+                      cursor:computing?"default":"pointer",
+                      display:"flex",alignItems:"center",gap:6}}>
+                    {Li(computing?"loader":"zap",13,computing?T.txt2:"#000")}
+                    {computing?`${progress}%`:"Auto"}
+                  </button>
+                );
+              }
+              // Neuer Plan: klassisches „Neuberechnen" (nur Vorschau, kein Speichern).
+              return (
+                <button onClick={()=>{ setResultOutdated(false); berechnen(); }} disabled={computing}
+                  style={{padding:"8px 14px",borderRadius:10,border:"none",
+                    background:computing?"rgba(255,255,255,0.1)":resultOutdated?T.gold:T.blue,
+                    color:computing?T.txt2:"#fff",fontSize:12,fontWeight:700,
+                    cursor:computing?"default":"pointer",
+                    display:"flex",alignItems:"center",gap:6}}>
+                  {Li(computing?"loader":"refresh-cw",13,computing?T.txt2:"#fff")}
+                  {computing?`${progress}%`:resultOutdated?"⚠ Neu berechnen":"Neuberechnen"}
+                </button>
+              );
+            })()}
             {computing&&(
               <div style={{width:120,height:3,borderRadius:2,background:"rgba(255,255,255,0.1)"}}>
                 <div style={{height:"100%",borderRadius:2,background:T.blue,
@@ -615,49 +638,15 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                 {result.filter(r=>r.zusaetzlich>0).length} Vormerkungen · am Monatsletzten
               </div>
               <div style={{display:"flex",gap:6}}>
-                {/* Sparplan aktualisieren — nur wenn bereits eine Spar-Serie existiert */}
                 {(()=>{
-                  const {desc:sparDesc, seriesIds} = findExistingSeries(sparPlanName);
-                  if(!seriesIds.length) return null;
-                  return (<div style={{display:"flex",gap:6}}>
-                    <button onClick={()=>{
-                      if(!result) { showToast("Bitte zuerst Neuberechnen klicken."); return; }
-                      const n = doAktualisieren(result, seriesIds[seriesIds.length-1], seriesIds[seriesIds.length-1]+"-tgt", sparDesc);
-                      if(n===0) showToast("Alte Vormerkungen entfernt — kein neuer Plan möglich");
-                      else showToast(`✓ Sparplan aktualisiert: ${n} Vormerkungen`);
-                    }} disabled={!result}
-                    style={{padding:"7px 14px",borderRadius:10,
-                      border:`1px solid ${result?T.blue:T.bd}`,
-                      background:result?"rgba(74,159,212,0.12)":"rgba(255,255,255,0.05)",
-                      color:result?T.blue:T.txt2,fontSize:12,fontWeight:700,
-                      cursor:result?"pointer":"default",
-                      opacity:result?1:0.5,
-                      display:"flex",alignItems:"center",gap:6,fontFamily:"inherit"}}>
-                      {Li("refresh-cw",14,result?T.blue:T.txt2)} Aktualisieren
-                    </button>
-                    <button onClick={autoAnpassen} disabled={computing}
-                      title="Neu berechnen und Sparplan automatisch anpassen"
-                      style={{padding:"7px 14px",borderRadius:10,
-                        border:`1px solid ${T.pos}`,
-                        background:"rgba(34,197,94,0.12)",
-                        color:T.pos,fontSize:12,fontWeight:700,
-                        cursor:computing?"default":"pointer",
-                        display:"flex",alignItems:"center",gap:6,fontFamily:"inherit",
-                        opacity:computing?0.5:1}}>
-                      {Li("zap",14,T.pos)} Auto
-                    </button>
-                  </div>);
-                })()}
-                <button onClick={()=>{
+                  const {seriesIds:_existingIds} = findExistingSeries(sparPlanName);
+                  // Bestehender Plan: kein „+ Anlegen" — die Aktualisierung läuft
+                  // über den „Auto"-Button oben rechts.
+                  if(_existingIds.length>0) return null;
+                  return (<button onClick={()=>{
                   const sparMonate = result ? result.filter(r=>r.zusaetzlich>0) : [];
                   if(!result) { showToast("Bitte zuerst Neuberechnen klicken."); return; }
                   if(!sparMonate.length) { showToast("Keine Sparraten möglich — Konto bereits voll genutzt oder unter Puffer."); return; }
-                  // Bestehende Serie? Dann Aktualisieren nutzen, nicht doppelt anlegen
-                  const {seriesIds:existingIds} = findExistingSeries(sparPlanName);
-                  if(existingIds.length>0) {
-                    showToast("Plan existiert bereits — bitte Aktualisieren statt Anlegen verwenden");
-                    return;
-                  }
                   const sparDesc = buildSparDesc(sparPlanName);
                   const seriesId = "series-"+uid();
                   const newTxs = sparMonate.flatMap((row, i) => {
@@ -696,7 +685,8 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                   opacity:!result?0.5:1,
                   display:"flex",alignItems:"center",gap:6}}>
                   {Li("plus-circle",14,!result?T.txt2:"#000")} Anlegen
-                </button>
+                </button>);
+                })()}
               </div>
             </div>
           </div>
