@@ -131,6 +131,11 @@ export default function FinanzApp() {
   }, [showMonthPickerModal, year, month]);
   const masterTouchRef = React.useRef({x:0,y:0,t:0,moved:false,zone:null});
   const masterLastTapRef = React.useRef({zone:null,t:0,timer:null});
+  // Master-Button-Override: wenn ein Mobile-Wizard (z.B. Vormerken) aktiv ist,
+  // übernimmt der Plus-Knopf dessen Bestätigungs-Aktion. Tipp = Bestätigen,
+  // Wisch ← = Zurück, Wisch ↓ = Modal schließen.
+  //   { label, onConfirm, onBack|null, onDismiss, disabled? }
+  const [masterOverride, setMasterOverride] = useState(null);
   const [dashDrillOpen, setDashDrillOpen] = useState(false);
   const [reviewQueue,   setReviewQueue]  = useState(null);
   const [customIcons,   setCustomIconsRaw] = useState(()=>{
@@ -2414,6 +2419,7 @@ Abbrechen = ${remoteName}-Stand laden`
     cfSaveOnClose, setCfSaveOnClose,
     dashDrillOpen, setDashDrillOpen,
     noBorders, setNoBorders,
+    masterOverride, setMasterOverride,
   };
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -2961,8 +2967,149 @@ Abbrechen = ${remoteName}-Stand laden`
         </div>
       )}
     </div>
+    {masterOverride && <MasterOverrideButton override={masterOverride} T={T}/>}
     <LiveColorPicker />
     </>
   </AppCtx.Provider>
+  );
+}
+
+// ─ Master-Button-Override ──────────────────────────────────────────────
+// Wird über den Modals (zIndex 500) gerendert, wenn ein Mobile-Wizard aktiv
+// ist. Übernimmt den großen runden Plus-Knopf temporär:
+//   Tipp        → override.onConfirm()
+//   Wisch ←     → override.onBack()   (falls vorhanden)
+//   Wisch ↓     → override.onDismiss() (Modal schließen / Abbruch)
+// Visuell zeigt der Knopf das Label des Schritts statt „Mai 2026 / WISCHEN".
+function MasterOverrideButton({ override, T }) {
+  const SIZE = 78;
+  const DRAG_THRESHOLD = 30;
+  const MOVE_TOLERANCE = 14;
+  const VISUAL_LIMIT = 18;
+  const ref = React.useRef({x:0,y:0,dx:0,dy:0,axisLocked:null,dragging:false,pointerId:null,moved:false,consumed:false});
+  const btnRef = React.useRef(null);
+
+  const reset = () => {
+    if(btnRef.current) {
+      btnRef.current.style.transition = "transform 0.2s cubic-bezier(.34,1.4,.64,1)";
+      btnRef.current.style.transform  = "translate(0px, 0px) scale(1)";
+    }
+  };
+
+  const onDown = (e) => {
+    if(e.button !== undefined && e.button !== 0) return;
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch(_) {}
+    ref.current = {x:e.clientX,y:e.clientY,dx:0,dy:0,axisLocked:null,dragging:true,
+      pointerId:e.pointerId,moved:false,consumed:false};
+  };
+  const onMove = (e) => {
+    const r = ref.current;
+    if(!r.dragging || r.pointerId !== e.pointerId) return;
+    const dx = e.clientX - r.x, dy = e.clientY - r.y;
+    r.dx = dx; r.dy = dy;
+    const adx = Math.abs(dx), ady = Math.abs(dy);
+    if(adx > MOVE_TOLERANCE || ady > MOVE_TOLERANCE) r.moved = true;
+    if(!r.axisLocked && (adx > MOVE_TOLERANCE || ady > MOVE_TOLERANCE)) {
+      r.axisLocked = adx >= ady ? "x" : "y";
+    }
+    // Visuelles Folgen — nur in „erlaubte" Richtungen (links bzw. nach unten),
+    // andere Richtungen werden gedämpft, damit klar wird, dass dort nichts passiert.
+    const clamp = (v,lim)=>Math.max(-lim,Math.min(lim,v));
+    let vx = 0, vy = 0;
+    if(r.axisLocked === "x") {
+      const allowBack = !!override.onBack;
+      // Nur Wisch nach LINKS hat eine Aktion → andere Richtung dämpfen
+      vx = dx < 0 ? clamp(dx, allowBack ? VISUAL_LIMIT : 6) : clamp(dx, 6);
+    } else if(r.axisLocked === "y") {
+      // Nur Wisch nach UNTEN hat eine Aktion → nach oben dämpfen
+      vy = dy > 0 ? clamp(dy, VISUAL_LIMIT) : clamp(dy, 6);
+    } else {
+      vx = clamp(dx, VISUAL_LIMIT);
+      vy = clamp(dy, VISUAL_LIMIT);
+    }
+    if(btnRef.current) {
+      btnRef.current.style.transition = "none";
+      btnRef.current.style.transform  = `translate(${vx}px, ${vy}px) scale(1.06)`;
+    }
+  };
+  const onUp = (e) => {
+    const r = ref.current;
+    if(!r.dragging || r.pointerId !== e.pointerId) return;
+    r.dragging = false;
+    try { e.currentTarget.releasePointerCapture(e.pointerId); } catch(_) {}
+    const {dx,dy,axisLocked,moved,consumed} = r;
+    reset();
+    if(consumed) return;
+    if(axisLocked === "x" && Math.abs(dx) > DRAG_THRESHOLD) {
+      if(dx < 0 && override.onBack) override.onBack();
+      return;
+    }
+    if(axisLocked === "y" && Math.abs(dy) > DRAG_THRESHOLD) {
+      if(dy > 0) override.onDismiss();
+      return;
+    }
+    if(!moved && !override.disabled) {
+      try { if(navigator.vibrate) navigator.vibrate(10); } catch(_) {}
+      override.onConfirm();
+    }
+  };
+  const onCancel = () => { ref.current.dragging = false; reset(); };
+
+  // Label-Splitting für 2-Zeilen-Darstellung im runden Knopf
+  const label = override.label || "OK";
+  const parts = label.split(/\s+→\s+|\s+/); // an "→" oder Leerzeichen brechen
+  let line1 = parts[0] || "";
+  let line2 = parts.slice(1).join(" ");
+  // Hat das Label ein „→" wird das als Trenner bevorzugt
+  if(/→/.test(label)) {
+    const m = label.split("→");
+    line1 = (m[0] || "").trim() + " →";
+    line2 = (m[1] || "").trim();
+  }
+  // Fallback: keine sinnvolle Zweiteilung — zweite Zeile leer
+  if(!line2 && line1.length > 10) {
+    const mid = Math.ceil(line1.length/2);
+    const sp  = line1.lastIndexOf(" ", mid);
+    if(sp > 0) { line2 = line1.slice(sp+1); line1 = line1.slice(0,sp); }
+  }
+  const long = (line1.length > 9) || (line2.length > 9);
+
+  return (
+    <div style={{position:"fixed",left:"50%",bottom:14,transform:"translateX(-50%)",
+      zIndex:500,pointerEvents:"none"}}>
+      <button
+        ref={btnRef}
+        onPointerDown={onDown}
+        onPointerMove={onMove}
+        onPointerUp={onUp}
+        onPointerCancel={onCancel}
+        disabled={override.disabled}
+        style={{
+          pointerEvents:"auto",
+          width:SIZE,height:SIZE,borderRadius:"50%",
+          border:`3px solid ${T.surf}`,
+          background: override.disabled
+            ? "rgba(255,255,255,0.1)"
+            : `linear-gradient(135deg,#9CC800,#AADD00)`,
+          color: override.disabled ? T.txt2 : "#000",
+          boxShadow:"0 -2px 14px rgba(0,0,0,0.4)",
+          display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+          touchAction:"none",userSelect:"none",cursor:override.disabled?"default":"pointer",
+          WebkitTapHighlightColor:"transparent",padding:4,
+          fontFamily:"inherit",lineHeight:1.1,
+          opacity:override.disabled?0.55:1,
+        }}>
+        <div style={{fontSize: long ? 10 : 12, fontWeight:800,letterSpacing:-0.3,
+          whiteSpace:"nowrap",pointerEvents:"none",textAlign:"center"}}>
+          {line1}
+        </div>
+        {line2 && (
+          <div style={{fontSize: long ? 10 : 12, fontWeight:800,letterSpacing:-0.3,
+            whiteSpace:"nowrap",pointerEvents:"none",textAlign:"center",marginTop:1}}>
+            {line2}
+          </div>
+        )}
+      </button>
+    </div>
   );
 }
