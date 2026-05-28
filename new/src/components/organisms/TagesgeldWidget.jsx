@@ -58,6 +58,25 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   React.useEffect(()=>{ minTagCache.current = {}; }, [txs, selAcc]);
   const [progress, setProgress] = useState(0);
 
+  // Auto-Recompute beim ersten Öffnen des Panels (oder nach Dropdown-Auswahl),
+  // wenn eine zum Plannamen passende Sparplan-Series in den Buchungen existiert,
+  // aber kein lokal gecachtes Ergebnis vorliegt. Tritt z.B. auf, wenn die App
+  // auf einem anderen Gerät / frischen Browser geöffnet wird — die Series-Daten
+  // sind in txs persistiert, die Vorschau-Ergebnis-Tabelle nur per kvStore lokal.
+  const didAutoLoadRef = React.useRef(false);
+  React.useEffect(() => {
+    if(collapsed) return;
+    if(didAutoLoadRef.current) return;
+    if(computing) return;
+    if(result) { didAutoLoadRef.current = true; return; }
+    const desc = `Sparen·${(sparPlanName||"").trim()}`;
+    const hasSeries = txs.some(t => t.pending && !t._linkedTo && t._seriesId
+      && t.accountId==="acc-giro" && t.desc===desc);
+    if(!hasSeries) return;
+    didAutoLoadRef.current = true;
+    berechnen();
+  }, [collapsed, result, sparPlanName, txs, computing]);
+
   if(!isCurr) return null;
 
   const getProgEndeW = (y, m) => {
@@ -399,6 +418,10 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                     const name = e.target.value.replace(/^Sparen·/,"");
                     setSparPlanName(name);
                     kvStore.setItem("mbt_spar_planname", name);
+                    // Vorhandenes Vorschau-Ergebnis verwerfen und Auto-Recompute neu scharf machen,
+                    // damit die Tabelle für den neu ausgewählten Plan automatisch befüllt wird.
+                    setResult(null);
+                    didAutoLoadRef.current = false;
                     e.target.value = "";
                   }}
                   style={{background:T.surf2,color:T.txt2,border:`1px solid ${currentMatches?T.pos:T.bd}`,
