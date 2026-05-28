@@ -10,7 +10,7 @@ import { fmt, pn, uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
 function MobileVormerkenModal({onClose}) {
-  const { cats, setCats, accounts, setAccounts, txs, setTxs, year, month, getCat, getSub } = useContext(AppCtx);
+  const { cats, setCats, accounts, setAccounts, txs, setTxs, year, month, getCat, getSub, setMasterOverride } = useContext(AppCtx);
   const pad = n => String(n).padStart(2,"0");
   const today = new Date().toISOString().split("T")[0];
 
@@ -123,6 +123,54 @@ function MobileVormerkenModal({onClose}) {
     setTimeout(()=>onClose(), 1200);
   };
 
+  // Master-Button-Override: Der große grüne Plus-Knopf am unteren Rand
+  // übernimmt die Schritt-Aktion (Tipp = bestätigen, Wisch ← = zurück,
+  // Wisch ↓ = abbrechen). Pro Schritt wird Label/Handler neu registriert.
+  React.useEffect(() => {
+    if(showNewAcc || saved) { setMasterOverride(null); return; }
+    const amt = pn(amount.replace(",","."));
+    const step1Ready = amt > 0 && (!isTransfer || (tgtAccId && tgtAccId !== accId));
+    let cfg;
+    if(step === 1) {
+      cfg = {
+        label: "Weiter → Kategorie",
+        onConfirm: () => { if(!step1Ready) return; setCatSide("source"); setStep(2); },
+        onBack: null,
+        onDismiss: onClose,
+        disabled: !step1Ready,
+      };
+    } else if(step === 2) {
+      const isTgt = isTransfer && catSide === "target";
+      cfg = {
+        label: "Ohne Kategorie überspringen",
+        onConfirm: () => {
+          if(isTgt)            { setTgtCatId(""); setTgtSubId(""); setStep(3); }
+          else if(isTransfer)  { setCatId(""); setSubId(""); setCatSide("target"); }
+          else                 { setCatId(""); setSubId(""); setStep(3); }
+        },
+        onBack: () => { if(isTgt) setCatSide("source"); else setStep(1); },
+        onDismiss: onClose,
+      };
+    } else if(step === 3) {
+      cfg = {
+        label: "Weiter → Bestätigen",
+        onConfirm: () => { if(desc.trim()) setStep(4); },
+        onBack: () => setStep(2),
+        onDismiss: onClose,
+        disabled: !desc.trim(),
+      };
+    } else if(step === 4) {
+      cfg = {
+        label: isTransfer ? "✓ Umbuchung speichern" : "✓ Vormerkung speichern",
+        onConfirm: doSave,
+        onBack: () => setStep(3),
+        onDismiss: onClose,
+      };
+    }
+    setMasterOverride(cfg);
+    return () => setMasterOverride(null);
+  }, [step, amount, desc, isTransfer, tgtAccId, accId, catSide, showNewAcc, saved]);
+
   if(showNewAcc) return (
     <MobileNewAccOverlay S={S} onClose={(newId)=>{
       setShowNewAcc(false);
@@ -148,7 +196,7 @@ function MobileVormerkenModal({onClose}) {
       {/* ── Schritt 1: Betrag ── */}
       {step===1&&<>
         {header("neue Vormerkung","Betrag & Typ",1)}
-        <div style={{flex:1,padding:S.padL,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+        <div style={{flex:1,padding:S.padL,paddingBottom:120,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
 
           {/* Ausgabe / Einnahme / Umbuchung */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:S.gap,marginBottom:S.gap}}>
@@ -373,19 +421,6 @@ function MobileVormerkenModal({onClose}) {
             </div>
           )}
 
-          <button onClick={()=>{
-              const a=pn(amount.replace(",","."));
-              if(a<=0) return;
-              if(isTransfer && (!tgtAccId || tgtAccId===accId)) return;
-              setCatSide("source");
-              setStep(2);
-            }}
-            disabled={!amount||pn(amount.replace(",","."))<= 0||(isTransfer&&(!tgtAccId||tgtAccId===accId))}
-            style={{...btnCenter,
-              background:(amount&&pn(amount.replace(",","."))>0&&(!isTransfer||(tgtAccId&&tgtAccId!==accId)))?T.blue:"rgba(255,255,255,0.1)",
-              color:(amount&&pn(amount.replace(",","."))>0&&(!isTransfer||(tgtAccId&&tgtAccId!==accId)))?"#fff":T.txt2}}>
-            Weiter → Kategorie
-          </button>
         </div>
       </>}
 
@@ -408,18 +443,13 @@ function MobileVormerkenModal({onClose}) {
           else if(isTransfer) { setCatId(cId); setSubId(sId); setCatSide("target"); }
           else { setCatId(cId); setSubId(sId); setStep(3); }
         };
-        const skip = () => {
-          if(isTgt) { setTgtCatId(""); setTgtSubId(""); setStep(3); }
-          else if(isTransfer) { setCatId(""); setSubId(""); setCatSide("target"); }
-          else { setCatId(""); setSubId(""); setStep(3); }
-        };
         const back = () => {
           if(isTgt) setCatSide("source");
           else setStep(1);
         };
         return (<>
           {header(title, subtitle, 2, back)}
-          <div style={{flex:1,padding:S.padL,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+          <div style={{flex:1,padding:S.padL,paddingBottom:120,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
             <MobileCatStep
               key={isTgt ? "tgt" : "src"}
               csvType={sideCsv}
@@ -428,13 +458,6 @@ function MobileVormerkenModal({onClose}) {
               onSelect={advance}
               S={S} btnBase={btnBase} btnCenter={btnCenter}
             />
-            <button onClick={skip}
-              style={{...btnBase,marginTop:S.gap*2,
-                background:"rgba(255,255,255,0.04)",
-                border:`1.5px dashed ${T.bd}`,color:T.txt2,fontWeight:400,
-                justifyContent:"center"}}>
-              Ohne Kategorie überspringen
-            </button>
           </div>
         </>);
       })()}
@@ -442,7 +465,7 @@ function MobileVormerkenModal({onClose}) {
       {/* ── Schritt 3: Details ── */}
       {step===3&&<>
         {header("details","Beschreibung & Notiz",3,()=>setStep(2))}
-        <div style={{flex:1,padding:S.padL,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+        <div style={{flex:1,padding:S.padL,paddingBottom:120,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
 
           {/* Beschreibung — auto-grow, Placeholder */}
           <textarea value={desc} onChange={e=>setDesc(e.target.value)}
@@ -472,20 +495,13 @@ function MobileVormerkenModal({onClose}) {
             onInput={e=>{e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
           />
 
-          <button onClick={()=>{ if(desc.trim()) setStep(4); }}
-            disabled={!desc.trim()}
-            style={{...btnCenter,
-              background:desc.trim()?T.blue:"rgba(255,255,255,0.1)",
-              color:desc.trim()?"#fff":T.txt2}}>
-            Weiter → Bestätigen
-          </button>
         </div>
       </>}
 
       {/* ── Schritt 4: Bestätigung ── */}
       {step===4&&<>
         {header("bestätigen","Alles korrekt?",4,()=>setStep(3))}
-        <div style={{flex:1,padding:S.padL,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+        <div style={{flex:1,padding:S.padL,paddingBottom:120,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
           {[
             ["Typ",            isTransfer?"Umbuchung":(csvType==="expense"?"Ausgabe":"Einnahme")],
             [isTransfer?"Quelle":"Konto",  (accounts||[]).find(a=>a.id===accId)?.name||accId],
@@ -511,16 +527,6 @@ function MobileVormerkenModal({onClose}) {
             </div>
           ))}
 
-          <button onClick={doSave}
-            style={{...btnCenter,background:T.pos,color:"#fff",marginTop:S.gap*2}}>
-            ✓ {isTransfer?"Umbuchung speichern":"Vormerkung speichern"}
-          </button>
-          <button onClick={onClose}
-            style={{...btnCenter,background:"transparent",
-              border:`1.5px solid ${T.bd}`,color:T.txt2,
-              marginTop:S.gap,fontWeight:400}}>
-            Abbrechen
-          </button>
         </div>
       </>}
 
