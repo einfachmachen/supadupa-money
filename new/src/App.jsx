@@ -3065,20 +3065,21 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
   };
   const onCancel = () => { ref.current.dragging = false; settle(); };
 
-  // Label-Aufteilung für zweizeilige Darstellung im runden Knopf
+  // Label-Aufteilung für mehrzeilige Darstellung im runden Knopf.
+  // Jedes Wort kommt auf eine eigene Zeile (max 4). „→" wird an die
+  // vorherige Zeile angehängt. Font-Size schrumpft, je länger das
+  // längste Segment, damit nichts seitlich überläuft.
   const label = override.label || "OK";
-  let line1 = label, line2 = "";
+  let lines;
   if(/→/.test(label)) {
     const m = label.split("→");
-    line1 = (m[0] || "").trim() + " →";
-    line2 = (m[1] || "").trim();
-  } else if(label.length > 10) {
-    const mid = Math.ceil(label.length/2);
-    const sp  = label.lastIndexOf(" ", mid);
-    if(sp > 0) { line2 = label.slice(sp+1); line1 = label.slice(0,sp); }
+    lines = [(m[0] || "").trim() + " →", (m[1] || "").trim()].filter(Boolean);
+  } else {
+    lines = label.split(/\s+/).filter(Boolean);
   }
-  const longest = Math.max(line1.length, line2.length);
-  const fontSize = longest > 12 ? 9 : longest > 9 ? 11 : 13;
+  if(lines.length > 4) lines = [lines.slice(0,3).join(" "), lines.slice(3).join(" ")];
+  const longest = Math.max(...lines.map(s=>s.length));
+  const fontSize = longest > 13 ? 8 : longest > 10 ? 9 : longest > 8 ? 10 : longest > 6 ? 12 : 13;
 
   return (
     <div style={{flex:"0 0 auto",display:"flex",alignItems:"center",
@@ -3110,16 +3111,13 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
           fontFamily:"inherit",lineHeight:1.15,
           opacity: override.disabled ? 0.55 : 1,
         }}>
-        <div style={{fontSize,fontWeight:800,letterSpacing:-0.3,
-          whiteSpace:"nowrap",pointerEvents:"none",textAlign:"center"}}>
-          {line1}
-        </div>
-        {line2 && (
-          <div style={{fontSize,fontWeight:800,letterSpacing:-0.3,
-            whiteSpace:"nowrap",pointerEvents:"none",textAlign:"center",marginTop:1}}>
-            {line2}
+        {lines.map((ln,i)=>(
+          <div key={i} style={{fontSize,fontWeight:800,letterSpacing:-0.3,
+            whiteSpace:"nowrap",pointerEvents:"none",textAlign:"center",
+            marginTop: i===0 ? 0 : 1}}>
+            {ln}
           </div>
-        )}
+        ))}
       </button>
     </div>
   );
