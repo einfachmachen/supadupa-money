@@ -13,7 +13,11 @@ import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 
 function MatchingScreen({onClose, onBack}) {
-  const { cats, groups, txs, setTxs, accounts, year, month, getCat, getSub, txType } = useContext(AppCtx);
+  const { cats, groups, txs, setTxs, accounts, year, month, getCat, getSub, txType, selAcc } = useContext(AppCtx);
+
+  // Konto-Filter: respektiert den globalen Konto-Filter (selAcc). null = Gesamt
+  // (alle Konten). Buchungen ohne accountId zählen als Giro (Default-Konto).
+  const isSelAcc = t => !selAcc || (t.accountId||"acc-giro")===selAcc;
 
   const [selMonth,  setSelMonth]  = useState(month);
   const [selYear,   setSelYear]   = useState(year);
@@ -22,23 +26,25 @@ function MatchingScreen({onClose, onBack}) {
   const [matched,   setMatched]   = useState([]);    // [{pendId, txId}]
   const [showNewPend,  setShowNewPend]  = useState(false);
   const [newPend,      setNewPend]      = useState({
-    desc:"", amount:"", catId:"", subId:"", accountId:"",
+    desc:"", amount:"", catId:"", subId:"", accountId:selAcc||"",
     date:`${selYear}-${String(selMonth+1).padStart(2,"0")}-01`,
     repeatMonths:1, csvType:"expense",
   });
 
-  // Vormerkungen des gewählten Monats
+  // Vormerkungen des gewählten Monats (im aktiven Konto)
   const pendingTxs = txs.filter(tx=>{
     if(!tx.pending) return false;
+    if(!isSelAcc(tx)) return false;
     const d=new Date(tx.date);
     return d.getFullYear()===selYear && d.getMonth()===selMonth;
   });
 
-  // Echte (nicht-pending) Buchungen des Monats
+  // Echte (nicht-pending) Buchungen des Monats (im aktiven Konto)
   // Buchungen die bereits vollständig einer Vormerkung zugeordnet sind ausblenden
   const realTxs = txs.filter(tx=>{
     if(tx.pending) return false;
     if(tx._linkedTo) return false; // vollständig verknüpft
+    if(!isSelAcc(tx)) return false;
     const d=new Date(tx.date);
     return d.getFullYear()===selYear && d.getMonth()===selMonth;
   });
@@ -132,7 +138,7 @@ function MatchingScreen({onClose, onBack}) {
       });
     }
     setTxs(p=>[...p,...newTxs]);
-    setNewPend({desc:"",amount:"",catId:"",subId:"",accountId:"",
+    setNewPend({desc:"",amount:"",catId:"",subId:"",accountId:selAcc||"",
       date:`${selYear}-${String(selMonth+1).padStart(2,"0")}-01`,repeatMonths:1});
     setShowNewPend(false);
   };
@@ -149,7 +155,7 @@ function MatchingScreen({onClose, onBack}) {
       flexDirection:"column",fontFamily:"'SF Pro Text',-apple-system,sans-serif"}}>
       {/* Header */}
       <MobileHeader title="Vormerkungen zuordnen" titleColor={T.blue}
-        subtitle="Buchungen mit Vormerkungen verknüpfen"
+        subtitle={selAcc ? `Konto: ${accounts.find(a=>a.id===selAcc)?.name||selAcc}` : "Buchungen mit Vormerkungen verknüpfen"}
         onBack={onBack||onClose} onClose={onClose}
         right={<MonthPicker month={selMonth} year={selYear}
           onMonth={setSelMonth} onYear={setSelYear} size="sm"/>}/>
