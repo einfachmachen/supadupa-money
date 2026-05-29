@@ -9,8 +9,11 @@ function VormVerknuepfenPanel({editVorm, txs, setTxs, onClose}) {
   const [showLink, setShowLink] = React.useState(false);
   const txMonth = new Date(editVorm.date).getMonth();
   const txYear  = new Date(editVorm.date).getFullYear();
+  // Nur Buchungen desselben Kontos wie die Vormerkung anbieten (Giro-Fallback).
+  const editAcc = editVorm.accountId || "acc-giro";
   const candidates = txs.filter(t=>{
     if(t.pending||t._linkedTo) return false;
+    if((t.accountId||"acc-giro")!==editAcc) return false;
     const d=new Date(t.date);
     return d.getFullYear()===txYear&&d.getMonth()===txMonth;
   }).sort((a,b)=>{

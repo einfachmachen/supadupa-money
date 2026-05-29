@@ -10,9 +10,15 @@ function VerknuepfenPanel({editTx, txs, setTxs, setEditTx, setShowVormHub, setEd
   if (!editTx) return null;
   const txMonth = new Date(editTx.date).getMonth();
   const txYear  = new Date(editTx.date).getFullYear();
+  // Nur Buchungen desselben Kontos als Zuordnungs-Kandidaten anbieten — eine
+  // Vormerkung wird durch eine Buchung auf DEMSELBEN Konto realisiert. Fehlende
+  // accountId faellt auf das Default-Konto acc-giro zurueck.
+  const editAcc = editTx.accountId || "acc-giro";
+  const sameAcc = t => (t.accountId || "acc-giro") === editAcc;
   if (editTx.pending) {
     const candidates = txs.filter(t=>{
       if(t.pending||t._linkedTo) return false;
+      if(!sameAcc(t)) return false;
       const d=new Date(t.date);
       return d.getFullYear()===txYear&&d.getMonth()===txMonth;
     }).sort((a,b)=>{
@@ -71,6 +77,7 @@ function VerknuepfenPanel({editTx, txs, setTxs, setEditTx, setShowVormHub, setEd
   } else {
     const candidates = txs.filter(t=>{
       if(!t.pending||t._linkedTo||t._budgetSubId) return false;
+      if(!sameAcc(t)) return false;
       const d=new Date(t.date);
       return d.getFullYear()===txYear&&d.getMonth()===txMonth;
     }).sort((a,b)=>{
