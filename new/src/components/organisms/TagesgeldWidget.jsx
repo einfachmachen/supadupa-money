@@ -410,6 +410,31 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   const maxTransfer = result?.[0]?.zusaetzlich ?? null;
   const col = maxTransfer===null?T.txt2:maxTransfer<=0?T.txt2:maxTransfer<500?T.warn:T.pos;
 
+  // Enddatum ↔ Monate: monate = Anzahl Folgemonate ab dem aktuellen Monat
+  // (Schleife in berechnen() startet bei nowY/nowM, läuft monate+1 Iterationen,
+  // letzte Iteration trifft genau den Endmonat). Obergrenze großzügig (50 Jahre).
+  const SPAR_MAX_MONATE = 600;
+  const monateToEndDate = (n) => {
+    const idx = nowM + n;
+    const y = nowY + Math.floor(idx/12);
+    const m = ((idx % 12) + 12) % 12;
+    const pad2 = x=>String(x).padStart(2,"0");
+    const lastDay = new Date(y, m+1, 0).getDate();
+    return `${y}-${pad2(m+1)}-${pad2(lastDay)}`;
+  };
+  const endDateToMonate = (iso) => {
+    if(!iso) return null;
+    const [y,m] = iso.split("-").map(Number);
+    if(!y||!m) return null;
+    const n = (y-nowY)*12 + ((m-1)-nowM);
+    return Math.max(1, Math.min(SPAR_MAX_MONATE, n));
+  };
+  const setMonatePersist = (v) => {
+    setMonate(v);
+    kvStore.setItem("mbt_sparen_monate", String(v));
+    if(result) setResultOutdated(true);
+  };
+
   return (
     <div id="sparplan-widget" style={{margin:"4px 10px",background:T.surf2,borderRadius:16,
       padding:"9px 12px",border:`1px solid ${T.bd}`}}>
@@ -487,9 +512,15 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
               style={{...INP,marginBottom:0,width:80,textAlign:"right",fontSize:12,padding:"4px 8px"}}/>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <span style={{color:T.txt2,fontSize:10,flex:1}}>Vorschau (Monate, max. 120)</span>
-            <input type="number" min="1" max="120" value={monate}
-              onChange={e=>{const v=Math.max(1,Math.min(120,parseInt(e.target.value)||3));setMonate(v);kvStore.setItem("mbt_sparen_monate",String(v));if(result) setResultOutdated(true);}}
+            <span style={{color:T.txt2,fontSize:10,flex:1}}>Vorschau bis (Enddatum)</span>
+            <input type="date" min={monateToEndDate(1)} value={monateToEndDate(monate)}
+              onChange={e=>{const n=endDateToMonate(e.target.value);if(n) setMonatePersist(n);}}
+              style={{...INP,marginBottom:0,width:140,textAlign:"right",fontSize:12,padding:"4px 8px",colorScheme:"dark"}}/>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{color:T.txt2,fontSize:10,flex:1}}>oder Anzahl Monate</span>
+            <input type="number" min="1" max={SPAR_MAX_MONATE} value={monate}
+              onChange={e=>{const v=Math.max(1,Math.min(SPAR_MAX_MONATE,parseInt(e.target.value)||3));setMonatePersist(v);}}
               style={{...INP,marginBottom:0,width:80,textAlign:"right",fontSize:12,padding:"4px 8px"}}/>
           </div>
         </div>
