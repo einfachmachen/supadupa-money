@@ -360,6 +360,50 @@ function CsvImportScreen({onClose, embedded=false, mobileMode=false}) {
 
   const setRowAssign = (i, catId, subId) => setAssign(p=>({...p,[i]:{catId,subId}}));
 
+  // Master-Button-Override: der große Plus-Knopf übernimmt die Schritt-Aktion
+  // (Tipp = bestätigen, Wisch ← = zurück, Wisch ↓ = abbrechen) — analog zu den
+  // Mobile-Wizards. Nur im mobileMode aktiv; embedded/Desktop nutzt die Inline-
+  // Buttons. Handler über Ref, damit immer die aktuellen Kategorie-Zuweisungen
+  // (assign) greifen, ohne den Effect bei jeder Auswahl neu zu registrieren.
+  const _csvHandlersRef = React.useRef({});
+  _csvHandlersRef.current = { doParse, doImport, onClose };
+  React.useEffect(() => {
+    if(!mobileMode || !setMasterOverride) return;
+    const H = () => _csvHandlersRef.current;
+    let cfg = null;
+    if(step === "input") {
+      cfg = {
+        label: parsed ? `Erneut prüfen (${parsed.newRows?.length||0} neu)` : "Vorschau anzeigen",
+        onConfirm: () => { if(csvText.trim()) H().doParse(); },
+        onBack: null,
+        onDismiss: () => H().onClose(),
+        disabled: !csvText.trim(),
+      };
+    } else if(step === "review") {
+      const n = parsed?.newRows?.length || 0;
+      cfg = n === 0 ? {
+        label: "Schließen",
+        onConfirm: () => H().onClose(),
+        onBack: () => setStep("input"),
+        onDismiss: () => H().onClose(),
+      } : {
+        label: `${n} importieren${showCatAssign ? " · mit Kategorien ✓" : ""}`,
+        onConfirm: () => H().doImport(),
+        onBack: () => setStep("input"),
+        onDismiss: () => H().onClose(),
+      };
+    } else if(step === "done") {
+      cfg = {
+        label: "✓ Fertig",
+        onConfirm: () => H().onClose(),
+        onBack: null,
+        onDismiss: () => H().onClose(),
+      };
+    }
+    setMasterOverride(cfg);
+    return () => setMasterOverride(null);
+  }, [step, csvText, parsed, showCatAssign, mobileMode]);
+
   // ── RENDER ──────────────────────────────────────────────────────────────────
   return (
     <div className={mobileMode?"mobile-modal":""} style={embedded
