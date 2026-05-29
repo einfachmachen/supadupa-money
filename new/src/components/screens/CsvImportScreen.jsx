@@ -13,7 +13,7 @@ import { matchAmount, matchSearch } from "../../utils/search.js";
 import { txFingerprint, txFingerprintNorm } from "../../utils/tx.js";
 
 function CsvImportScreen({onClose, embedded=false, mobileMode=false}) {
-  const { cats, groups, txs, setTxs, accounts, csvRules, setCsvRules, startBalances, setStartBalances } = useContext(AppCtx);
+  const { cats, groups, txs, setTxs, accounts, csvRules, setCsvRules, startBalances, setStartBalances, setMasterOverride } = useContext(AppCtx);
   const MFS = mobileMode ? 22 : 13; // mobile font size base
   const MFSl = mobileMode ? 18 : 11; // mobile font size small
   const MPad = mobileMode ? "14px 16px" : "8px 12px"; // mobile padding
