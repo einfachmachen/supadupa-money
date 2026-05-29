@@ -152,31 +152,27 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
                       const openAmt = b.budget - actual;
                       return (
                         <div key={idx} style={{marginBottom:6,background:"rgba(255,255,255,0.04)",borderRadius:8,padding:"5px 7px",border:`1px solid rgba(255,255,255,0.07)`}}>
-                          {/* Header: Datum + Name | Budget links, offen rechts */}
-                          <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:4}}>
+                          {/* Zeile 1: Datum + Icon + Name | offen rechts */}
+                          <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:2}}>
                             <span style={{color:T.txt2,fontSize:9,flexShrink:0,fontFamily:"monospace",width:28}}>{fmtD(b.date)}</span>
                             {Li(overBudget?"alert-triangle":"target",8,overBudget?T.neg:T.gold)}
-                            <div style={{flex:1,minWidth:0}}>
-                              <div style={{color:overBudget?T.neg:T.gold,fontSize:9,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{subName}</div>
-                              <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:6}}>
-                                <span style={{color:T.txt2,fontSize:8}}>Budget: −{fmt(b.budget)}</span>
-                                {overBudget ? (
-                                  <span style={{color:T.neg,fontSize:8,fontWeight:700,fontFamily:"monospace"}}>um {fmt(actual-b.budget)} über</span>
-                                ) : (
-                                  <span style={{display:"inline-flex",alignItems:"baseline",gap:4}}>
-                                    <span style={{color:T.txt2,fontSize:8}}>offen:</span>
-                                    <span style={{color:T.gold,fontSize:9,fontWeight:700,fontFamily:"monospace"}}>−{fmt(openAmt)}</span>
-                                  </span>
-                                )}
-                              </div>
-                            </div>
+                            <span style={{flex:1,minWidth:0,color:overBudget?T.neg:T.gold,fontSize:9,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{subName}</span>
+                            {overBudget ? (
+                              <span style={{color:T.neg,fontSize:8,fontWeight:700,fontFamily:"monospace",flexShrink:0}}>um {fmt(actual-b.budget)} über</span>
+                            ) : (
+                              <span style={{display:"inline-flex",alignItems:"baseline",gap:4,flexShrink:0}}>
+                                <span style={{color:T.txt2,fontSize:8}}>offen:</span>
+                                <span style={{color:T.gold,fontSize:9,fontWeight:700,fontFamily:"monospace"}}>−{fmt(openAmt)}</span>
+                              </span>
+                            )}
                           </div>
-                          {/* Zahlen-Block: nur "genutzt" */}
-                          <div style={{display:"flex",flexDirection:"column",gap:2,marginBottom:4}}>
-                            <div style={{display:"flex",justifyContent:"flex-end",alignItems:"baseline",gap:6}}>
+                          {/* Zeile 2: Budget links | genutzt rechts (unter dem Namen eingerückt) */}
+                          <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:6,marginBottom:4,paddingLeft:40}}>
+                            <span style={{color:T.txt2,fontSize:8}}>Budget: −{fmt(b.budget)}</span>
+                            <span style={{display:"inline-flex",alignItems:"baseline",gap:4}}>
                               <span style={{color:T.txt2,fontSize:8}}>genutzt:</span>
                               <span style={{color:actual===0?T.txt2:overBudget?T.neg:effCol,fontSize:9,fontWeight:700,fontFamily:"monospace"}}>{actual===0?"—":`−${fmt(actual)}`}</span>
-                            </div>
+                            </span>
                           </div>
                           {/* Trennstrich vor Einzelbuchungen */}
                           {(b.realTxs.length>0||b.concTxs.length>0)&&<div style={{borderTop:`1px solid rgba(255,255,255,0.08)`,margin:"2px 0 4px"}}/>}
