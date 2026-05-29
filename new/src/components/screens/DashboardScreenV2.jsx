@@ -12,7 +12,7 @@ import { SaldoPrognose } from "../organisms/SaldoPrognose.jsx";
 import { TagesgeldWidget } from "../organisms/TagesgeldWidget.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
-import { groupBudgetPairs } from "../../utils/budgets.js";
+import { groupBudgetPairs, budgetOpenRestFor } from "../../utils/budgets.js";
 import { dayOf, drillSort, fmt, pn, uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
@@ -179,6 +179,10 @@ function DashboardScreenV2() {
       return out;
     }, [_catTxMaps, accounts]);
     const pendOpenAmt = t => t.totalAmount;
+    // Offenes Restbudget pro Budget-Platzhalter (für die Offene-Vormerkungen-Liste).
+    const budgetOpenRest = React.useCallback(
+      (tx)=>budgetOpenRestFor(tx, txs, _txsById, year, month),
+      [txs, _txsById, year, month]);
     const totalIn = useMemo(()=>getTotalIncome(year, month),  [year,month,txs]);
     const totalOut= useMemo(()=>getTotalExpense(year, month), [year,month,txs]);
     const pTxsOut = useMemo(()=>pTxs.filter(t=>txType(t)==="expense"||(t._csvType==="expense"&&!txType(t)==="income")), [pTxs]);
@@ -829,7 +833,7 @@ function DashboardScreenV2() {
           const visiblePTxs = isPastMonth ? pTxs.filter(t=>!t._budgetSubId) : pTxs;
           if(visiblePTxs.length===0) return null;
           return (
-            <PendingList pTxs={visiblePTxs} getCat={getCat} getSub={getSub} txType={txType} openEdit={openEdit} dayOf={dayOf} pendOpenAmt={pendOpenAmt} initialCollapsed={false}/>
+            <PendingList pTxs={visiblePTxs} getCat={getCat} getSub={getSub} txType={txType} openEdit={openEdit} dayOf={dayOf} pendOpenAmt={pendOpenAmt} budgetOpenRest={budgetOpenRest} initialCollapsed={false}/>
           );
         })()}
 

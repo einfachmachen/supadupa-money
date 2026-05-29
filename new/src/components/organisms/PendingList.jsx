@@ -3,12 +3,11 @@
 import React, { useMemo, useState } from "react";
 import { SaldoHero2 } from "./SaldoHero2.jsx";
 import { theme as T } from "../../theme/activeTheme.js";
-import { groupBudgetPairs } from "../../utils/budgets.js";
-import { dayOf, drillSort, fmt, pn } from "../../utils/format.js";
+import { dayOf, fmt, pn } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 
-function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub, initialCollapsed=true}) {
+function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub, budgetOpenRest, initialCollapsed=true}) {
   const _pendOpenAmt = pendOpenAmt || (t=>t.totalAmount);
   const [expandedId, setExpandedId] = React.useState(null);
   const [search, setSearch] = React.useState("");
@@ -20,7 +19,14 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
       if(isAmtSearch) return matchAmount(Math.abs(t.totalAmount), search.replace(/^[+\-]/,""));
       return matchSearch(t.desc, search);
     });
-    return groupBudgetPairs([...base].sort(drillSort));
+    // Ende-Budget (Restbudget bis Monatsende) nach oben (Sektion 0); alles andere —
+    // inkl. Mitte-Budget (am 14.) und normale Vormerkungen — chronologisch absteigend.
+    const sectionOf = t => (t._budgetSubId && !t._budgetSubId.endsWith("_mitte")) ? 0 : 1;
+    return [...base].sort((a,b)=>{
+      const sa=sectionOf(a), sb=sectionOf(b);
+      if(sa!==sb) return sa-sb;
+      return b.date.localeCompare(a.date);
+    });
   }, [pTxs, search]);
   return (
     <div style={{background:T.vorm_bg||T.tab_pend,border:`2px solid ${T.vorm_bd||"rgba(255,200,0,0.8)"}`,borderRadius:16,margin:"4px 10px",padding:"7px 10px"}}>
@@ -53,29 +59,38 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
         const col = isIncome ? T.pos : T.neg;
         const isS = (tx.splits||[]).length>1;
         const isExpanded = expandedId===tx.id;
-        // Budget-Paar: Mitte + Ende als eine Zeile
-        if(tx._isBudgetPair) {
+        // Budget-Platzhalter: nur noch das offene Restbudget zeigen.
+        //   Ende (oben):  Restbudget bis Monatsletzter (Gesamtbudget − Ist Monat)
+        //   Mitte (chronologisch am 14.): Restbudget bis 14. (MitteBudget − Ist 1..14)
+        if(tx._budgetSubId) {
+          const isMitte = tx._budgetSubId.endsWith("_mitte");
+          const baseSubId = isMitte ? tx._budgetSubId.slice(0,-6) : tx._budgetSubId;
+          const sub = getSub ? getSub((tx.splits||[])[0]?.catId, baseSubId) : null;
+          const name = sub?.name || cat?.name || tx.desc || "Budget";
+          const rest = budgetOpenRest ? budgetOpenRest(tx) : null;
+          const over = rest!=null && rest < 0;
           return (
             <div key={tx.id}
               style={{borderBottom:"1px solid rgba(255,200,0,0.1)",
               background:T.surf3,borderRadius:6,marginBottom:2}}>
               <div onClick={()=>openEdit(tx)}
                 style={{display:"flex",alignItems:"center",gap:8,padding:"4px 4px",cursor:"pointer"}}>
-                <span>{(tx._budgetSubId?Li("target",16,T.gold):tx._seriesTyp==="finanzierung"?Li("credit-card",16,T.gold):tx._seriesId?Li("repeat",16,T.pos):Li("calendar",16,T.blue))}</span>
+                <span>{Li("target",16,T.gold)}</span>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{color:T.txt,fontSize:12,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tx.desc||cat?.name}</div>
-                  <div style={{color:T.txt2,fontSize:9}}>{tx.date.slice(0,7)}</div>
+                  <div style={{color:T.txt,fontSize:12,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>
+                  <div style={{color:T.txt2,fontSize:9}}>{isMitte?"Restbudget bis 14.":"Restbudget bis Monatsende"}</div>
                 </div>
-                <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
-                  <span style={{color:T.mid,fontSize:10}}>Mitte</span>
-                  <span style={{color:col,fontSize:12,fontWeight:700,fontFamily:"monospace"}}>
-                    {isIncome?"+":"−"}{fmt(tx._mitteAmt)}
+                <span style={{color:isMitte?T.mid:T.gold,fontSize:10,flexShrink:0}}>{isMitte?"Mitte":"Ende"}</span>
+                {rest==null ? (
+                  <span style={{color:T.txt2,fontSize:12,fontFamily:"monospace",flexShrink:0}}>—</span>
+                ) : over ? (
+                  <span style={{color:T.neg,fontSize:12,fontWeight:700,fontFamily:"monospace",flexShrink:0}}>{fmt(Math.abs(rest))} über</span>
+                ) : (
+                  <span style={{display:"inline-flex",alignItems:"baseline",gap:4,flexShrink:0}}>
+                    <span style={{color:T.txt2,fontSize:9}}>offen:</span>
+                    <span style={{color:T.gold,fontSize:12,fontWeight:700,fontFamily:"monospace"}}>−{fmt(rest)}</span>
                   </span>
-                  <span style={{color:T.gold,fontSize:10}}>Gesamt</span>
-                  <span style={{color:col,fontSize:12,fontWeight:700,fontFamily:"monospace"}}>
-                    {isIncome?"+":"−"}{fmt(tx._mitteAmt+tx._endeAmt)}
-                  </span>
-                </div>
+                )}
                 <span style={{color:T.txt2,flexShrink:0}}>{Li("chevron-right",12)}</span>
               </div>
             </div>
