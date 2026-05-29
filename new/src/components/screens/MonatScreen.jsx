@@ -65,7 +65,14 @@ function MonatScreen() {
       if(d.getFullYear()!==year||d.getMonth()!==month) return false;
       if(t._budgetSubId) return false;
       if(!_isSelAcc(t)) return false;
-      if(!selAcc && t._linkedTo) return false;
+      if(t._linkedTo) {
+        // CSV-Duplikat (zugeordnete Vormerkung ↔ Buchung auf demselben Konto):
+        // immer ausblenden, sonst erscheint die Buchung doppelt — auch konto-spezifisch.
+        if(_isDupl(t)) return false;
+        // Sparen-/Konten-Transfer (Partner auf anderem Konto): nur in der
+        // Gesamtansicht ausblenden, konto-spezifisch sichtbar lassen.
+        if(!selAcc) return false;
+      }
       return true;
     }).sort((a,b)=>new Date(b.date)-new Date(a.date));
     const filtByType = filt==="all" ? allMTxs : filt==="pending" ? allMTxs.filter(t=>t.pending) : filt==="uncat" ? allMTxs.filter(t=>(t.splits||[]).length===0||(t.splits||[]).every(s=>!s.catId)) : filt==="mismatch" ? allMTxs.filter(t=>{ const ct=t._csvType; if(!ct) return false; const tt=txType(t); return (ct==="expense"&&tt==="income")||(ct==="income"&&tt==="expense"); }) : allMTxs.filter(t=>!t.pending&&txType(t)===filt);
