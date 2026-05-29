@@ -595,7 +595,7 @@ function JahrScreen({forceSingle=false}) {
                         setTxs(p=>p.map(t=>{
                           if(t.id===tx.id) return {...t, splits:newSplits, linkedIds:(t.linkedIds||[]).includes(drilldown.linkPendId)?(t.linkedIds||[]):[...(t.linkedIds||[]), drilldown.linkPendId],
                             _amtMismatch: amtMismatch2 ? {pendId:drilldown.linkPendId, pendAmt:pendTotal, realAmt:tx.totalAmount} : undefined};
-                          if(t.id===drilldown.linkPendId) return {...t, pending:false, _linkedTo:tx.id};
+                          if(t.id===drilldown.linkPendId) return {...t, pending:false, _linkedTo:tx.id, accountId:tx.accountId};
                           return t;
                         }));
                         setDrilldown(p=>({...p, linkPendId:null,

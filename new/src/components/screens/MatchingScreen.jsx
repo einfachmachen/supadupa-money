@@ -102,7 +102,11 @@ function MatchingScreen({onClose, onBack}) {
         _amtMismatch: amtMismatch ? {pendId:selPend, pendAmt:pendTotal, realAmt:real.totalAmount} : undefined,
       };
       if(tx.id===selPend) return {
-        ...tx, pending:false, _linkedTo: selTx,
+        // Konto der echten Buchung übernehmen: eine Zuordnung realisiert die
+        // Vormerkung auf demselben Konto. Sonst hält die Dedup-Logik (tx.js)
+        // die Verknüpfung faelschlich fuer eine Konten-Umbuchung (Sparen) statt
+        // fuer ein Duplikat — der Betrag wuerde dann nicht absorbiert.
+        ...tx, pending:false, _linkedTo: selTx, accountId: real.accountId,
       };
       return tx;
     }));

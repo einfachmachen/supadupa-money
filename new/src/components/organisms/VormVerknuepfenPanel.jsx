@@ -34,7 +34,7 @@ function VormVerknuepfenPanel({editVorm, txs, setTxs, onClose}) {
           <div key={tx.id} onClick={()=>{
             setTxs(p=>p.map(t=>{
               if(t.id===tx.id) return {...t,linkedIds:[...(t.linkedIds||[]),editVorm.id],splits:(editVorm.splits||[]).length>0&&(editVorm.splits||[])[0]?.catId?[...editVorm.splits]:t.splits};
-              if(t.id===editVorm.id) return {...t,pending:false,_linkedTo:tx.id};
+              if(t.id===editVorm.id) return {...t,pending:false,_linkedTo:tx.id,accountId:tx.accountId};
               return t;
             }));
             onClose();

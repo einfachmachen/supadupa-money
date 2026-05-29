@@ -306,6 +306,25 @@ describe("saldoAt — Excel-Logik (User-Spec)", () => {
       expect(saldoAt(2026, 4, 20, "acc-giro", ctx)).toBe(900);
     });
 
+    it("Zuordnung auf Tagesgeld: Vormerkung mit Buchungs-Konto = Duplikat (absorbiert)", () => {
+      // Regression: Beim Zuordnen wird das Konto der echten Buchung uebernommen.
+      // Beide auf acc-tagesgeld → _linkedTo gilt als CSV-Duplikat (gleiches Konto),
+      // nicht als Sparen-Transfer. Der Betrag darf nur EINMAL zaehlen.
+      const ctx = buildCtx({
+        anchors: { "acc-tagesgeld": { "2026-3": 500 } },
+        today: new Date("2026-05-05"),
+        txs: [
+          { id: "realT", accountId: "acc-tagesgeld", date: "2026-05-10", totalAmount: -50, _csvType: "expense", pending: false },
+          // ehemals pending, jetzt zugeordnet → pending:false, _linkedTo + accountId der Buchung
+          { id: "pendT", accountId: "acc-tagesgeld", date: "2026-05-10", totalAmount: -50, _csvType: "expense",
+            pending: false, _linkedTo: "realT", desc: "Sparrate" },
+        ],
+      });
+      // Nur −50 (Duplikat absorbiert), nicht −100. Giro bleibt unberuehrt.
+      expect(saldoAt(2026, 4, 20, "acc-tagesgeld", ctx)).toBe(450);
+      expect(saldoAt(2026, 4, 20, "acc-giro",      ctx)).toBe(0);
+    });
+
     it("CSV-Duplikat mit Budget-Sub zählt nur EINMAL im Budget-Verbrauch", () => {
       // Regression: Eine Vormerkung, die mit einer Bank-Buchung verknüpft wurde,
       // hinterlässt zwei echte Buchungen mit derselben subId (eine davon _linkedTo).

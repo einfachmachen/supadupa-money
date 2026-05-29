@@ -50,7 +50,7 @@ function VerknuepfenPanel({editTx, txs, setTxs, setEditTx, setShowVormHub, setEd
                     splits: [...editTx.splits],
                   };
                 }
-                if(t.id===editTx.id) return {...t, pending:false, _linkedTo:tx.id};
+                if(t.id===editTx.id) return {...t, pending:false, _linkedTo:tx.id, accountId:tx.accountId};
                 return t;
               }));
               setEditTx(null);
@@ -103,7 +103,7 @@ function VerknuepfenPanel({editTx, txs, setTxs, setEditTx, setShowVormHub, setEd
                     splits: [...pend.splits],
                   };
                 }
-                if(t.id===pend.id) return {...t, pending:false, _linkedTo:editTx.id};
+                if(t.id===pend.id) return {...t, pending:false, _linkedTo:editTx.id, accountId:editTx.accountId};
                 return t;
               }));
               setEditTx(null);
