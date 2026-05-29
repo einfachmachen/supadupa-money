@@ -568,18 +568,17 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
               const {seriesIds:_existingIds} = findExistingSeries(sparPlanName);
               const hasExisting = _existingIds.length>0;
               if(hasExisting) {
-                // Bestehender Plan: ein einziger Button „Auto" — rechnet neu UND
-                // überschreibt die Serie mit dem frischen Ergebnis.
+                // Bestehender Plan: „Neuberechnen" — rechnet neu UND überschreibt
+                // die Serie mit dem frischen Ergebnis (z.B. nach geändertem Enddatum).
                 return (
                   <button onClick={autoAnpassen} disabled={computing}
-                    title="Neu berechnen und Sparplan automatisch anpassen"
                     style={{padding:"8px 14px",borderRadius:10,border:"none",
-                      background:computing?"rgba(255,255,255,0.1)":T.pos,
+                      background:computing?"rgba(255,255,255,0.1)":resultOutdated?T.gold:T.pos,
                       color:computing?T.txt2:"#000",fontSize:12,fontWeight:700,
                       cursor:computing?"default":"pointer",
                       display:"flex",alignItems:"center",gap:6}}>
-                    {Li(computing?"loader":"zap",13,computing?T.txt2:"#000")}
-                    {computing?`${progress}%`:"Auto"}
+                    {Li(computing?"loader":"refresh-cw",13,computing?T.txt2:"#000")}
+                    {computing?`${progress}%`:resultOutdated?"⚠ Neu berechnen":"Neuberechnen"}
                   </button>
                 );
               }
