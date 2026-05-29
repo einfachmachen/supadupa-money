@@ -191,7 +191,7 @@ function MobileWiederkehrendModal({onClose, typ="wiederkehrend"}) {
       {/* ── Schritt 1: Betrag & Rhythmus ── */}
       {step===1&&<>
         {header(isFinanz?"neue Finanzierung":"neue Wiederkehrende","Betrag & Rhythmus",1)}
-        <div style={{flex:1,padding:S.padL,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+        <div style={{flex:1,padding:S.padL,paddingBottom:120,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
 
           {/* Ausgabe / Einnahme */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:S.gap,marginBottom:S.gap}}>
@@ -206,45 +206,61 @@ function MobileWiederkehrendModal({onClose, typ="wiederkehrend"}) {
             ))}
           </div>
 
-          {/* Konto — Label nur wenn noch keins vorhanden */}
+          {/* Konto — Label nur wenn kein Konto vorhanden. Grid-Chip-Layout wie MobileVormerkenModal */}
           {(accounts||[]).length===0&&(
             <div style={{color:T.txt2,fontSize:S.fs-4,marginBottom:6,fontWeight:600}}>Konto</div>
           )}
-          <div style={{display:"flex",gap:S.gap/2,flexWrap:"wrap",marginBottom:S.gap}}>
-            {(accounts||[]).map(acc=>(
-              <button key={acc.id} onClick={()=>setAccId(acc.id)}
-                style={{flex:"1 1 auto",padding:`${S.pad}px`,borderRadius:S.radius,
-                  background:accId===acc.id?acc.color+"22":"rgba(255,255,255,0.06)",
-                  border:`2px solid ${accId===acc.id?(acc.color||T.blue):T.bd}`,
-                  color:accId===acc.id?(acc.color||T.blue):T.txt2,
-                  cursor:"pointer",fontFamily:"inherit",
-                  display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-                {acc.delayDays>0 ? (
-                  <div style={{display:"flex",alignItems:"center",gap:4}}>
-                    {Li(acc.icon||"landmark",S.fs+4,accId===acc.id?(acc.color||T.blue):T.txt2)}
-                    <span style={{fontSize:S.fs-8,color:T.gold,fontWeight:700,
-                      background:T.gold+"22",borderRadius:4,padding:"1px 5px"}}>
-                      +{acc.delayDays}
-                    </span>
-                  </div>
-                ) : <>
-                  {Li(acc.icon||"landmark",S.fs+4,accId===acc.id?(acc.color||T.blue):T.txt2)}
-                  <span style={{fontSize:S.fs-6,fontWeight:accId===acc.id?700:400}}>
-                    {acc.name||acc.id}
-                  </span>
-                </>}
-              </button>
-            ))}
-            <button onClick={()=>setShowNewAcc(true)}
-              style={{flex:"1 1 auto",padding:`${S.pad}px`,borderRadius:S.radius,
-                background:"rgba(74,159,212,0.06)",
-                border:`1.5px dashed ${T.blue}66`,color:T.blue,
-                cursor:"pointer",fontFamily:"inherit",
-                display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-              {Li("plus",S.fs,T.blue)}
-              <span style={{fontSize:S.fs-8}}>Konto</span>
-            </button>
-          </div>
+          {(() => {
+            const srcCount = (accounts||[]).length + 1; // +Konto button
+            const chipStyle = (selected, color) => ({
+              aspectRatio:"1", borderRadius:S.radius, padding:4,
+              background: selected ? color+"22" : "rgba(255,255,255,0.06)",
+              border:`2px solid ${selected ? (color||T.blue) : T.bd}`,
+              color: selected ? (color||T.blue) : T.txt2,
+              cursor:"pointer", fontFamily:"inherit", position:"relative",
+              display:"flex", flexDirection:"column", alignItems:"center",
+              justifyContent:"center", gap:2, minWidth:0, overflow:"hidden",
+            });
+            const nameStyle = (selected) => ({
+              fontSize:S.fs-12, fontWeight:selected?700:500,
+              width:"100%", textAlign:"center",
+              overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
+              lineHeight:1.1,
+            });
+            return (
+              <div style={{display:"grid",
+                gridTemplateColumns:`repeat(${srcCount}, 1fr)`,
+                gap:S.gap/2, marginBottom:S.gap}}>
+                {(accounts||[]).map(acc=>{
+                  const sel = accId===acc.id;
+                  const col = acc.color||T.blue;
+                  return (
+                    <button key={acc.id} onClick={()=>setAccId(acc.id)}
+                      style={chipStyle(sel,col)}>
+                      {acc.delayDays>0 && (
+                        <span style={{position:"absolute", top:3, right:3,
+                          fontSize:S.fs-16, color:T.gold, fontWeight:700,
+                          background:T.gold+"22", borderRadius:4,
+                          padding:"0 3px", lineHeight:1.3,
+                          letterSpacing:"-0.5px"}}>
+                          +{acc.delayDays}
+                        </span>
+                      )}
+                      {Li(acc.icon||"landmark", S.fs, sel?col:T.txt2)}
+                      <span style={nameStyle(sel)}>{acc.name||acc.id}</span>
+                    </button>
+                  );
+                })}
+                <button onClick={()=>setShowNewAcc(true)}
+                  style={{...chipStyle(false,T.blue),
+                    background:"rgba(74,159,212,0.06)",
+                    border:`1.5px dashed ${T.blue}66`, color:T.blue}}>
+                  {Li("plus", S.fs, T.blue)}
+                  <span style={{...nameStyle(false), color:T.blue}}>Konto</span>
+                </button>
+              </div>
+            );
+          })()}
 
           {/* Betrag — Placeholder statt Label */}
           <input type="text" inputMode="decimal" value={amount}
@@ -351,32 +367,19 @@ function MobileWiederkehrendModal({onClose, typ="wiederkehrend"}) {
             {gesamtbetrag&&<>{" · "}Gesamt: {gesamtbetrag}</>}
             {startDate&&<>{" · "}ab {startDate.split("-").reverse().join(".")}</>}
           </div>
-
-          <button onClick={()=>{const a=amt();if(a>0) setStep(2);}}
-            style={{...btnCenter,
-              background:amount&&amt()>0?T.blue:"rgba(255,255,255,0.1)",
-              color:amount&&amt()>0?"#fff":T.txt2}}>
-            Weiter → Kategorie
-          </button>
         </div>
       </>}
 
       {/* ── Schritt 2: Kategorie ── */}
       {step===2&&<>
         {header("Kategorie",fmt(amt()),2,()=>setStep(1))}
-        <div style={{flex:1,padding:S.padL,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+        <div style={{flex:1,padding:S.padL,paddingBottom:120,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
           <MobileCatStep
             csvType={csvType}
             catId={catId} subId={subId}
             onSelect={(cId,sId)=>{setCatId(cId);setSubId(sId);setStep(3);}}
             S={S} btnBase={btnBase} btnCenter={btnCenter}
           />
-          <button onClick={()=>{setCatId("");setSubId("");setStep(3);}}
-            style={{...btnCenter,marginTop:S.gap*2,
-              background:"rgba(255,255,255,0.04)",
-              border:`1.5px dashed ${T.bd}`,color:T.txt2,fontWeight:400}}>
-            Ohne Kategorie überspringen
-          </button>
         </div>
       </>}
 
@@ -384,7 +387,7 @@ function MobileWiederkehrendModal({onClose, typ="wiederkehrend"}) {
       {/* ── Schritt 3: Beschreibung, Datum ── */}
       {step===3&&<>
         {header("details","Beschreibung & Startdatum",3,()=>setStep(2))}
-        <div style={{flex:1,padding:S.padL,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+        <div style={{flex:1,padding:S.padL,paddingBottom:120,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
 
           {/* Beschreibung — auto-grow, Placeholder */}
           <textarea value={desc} onChange={e=>setDesc(e.target.value)}
@@ -473,20 +476,13 @@ function MobileWiederkehrendModal({onClose, typ="wiederkehrend"}) {
             <input type="date" value={giltFuerDate} onChange={e=>setGiltFuerDate(e.target.value)}
               style={{...inp({colorScheme:"dark",marginBottom:S.gap})}}/>
           )}
-
-          <button onClick={()=>{if(desc.trim()) setStep(4);}}
-            disabled={!desc.trim()}
-            style={{...btnCenter,background:desc.trim()?T.blue:"rgba(255,255,255,0.1)",
-              color:desc.trim()?"#fff":T.txt2}}>
-            Weiter → Bestätigen
-          </button>
         </div>
       </>}
 
       {/* ── Schritt 4: Bestätigung ── */}
       {step===4&&<>
         {header("bestätigen","Alles korrekt?",4,()=>setStep(3))}
-        <div style={{flex:1,padding:S.padL,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+        <div style={{flex:1,padding:S.padL,paddingBottom:120,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
           {[
             ["Art",        csvType==="expense"?"Ausgabe":"Einnahme"],
             ["Konto",      (accounts||[]).find(a=>a.id===accId)?.name||accId],
@@ -512,16 +508,6 @@ function MobileWiederkehrendModal({onClose, typ="wiederkehrend"}) {
                 textAlign:"right",flex:1,wordBreak:"break-word"}}>{v}</span>
             </div>
           ))}
-          <button onClick={doSave}
-            style={{...btnCenter,background:T.pos,color:"#fff",marginTop:S.gap*2}}>
-            ✓ {totalCount}× {isFinanz?"Finanzierung":"wiederkehrend"} anlegen
-          </button>
-          <button onClick={onClose}
-            style={{...btnCenter,background:"transparent",
-              border:`1.5px solid ${T.bd}`,color:T.txt2,
-              marginTop:S.gap,fontWeight:400}}>
-            Abbrechen
-          </button>
         </div>
       </>}
 
