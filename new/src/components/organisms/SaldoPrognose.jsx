@@ -10,6 +10,11 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
   if(window.MBT_DEBUG?.disable_drilldown) return null;
   const { selAcc, accounts } = React.useContext(AppCtx);
   const [drillOpen, setDrillOpen] = React.useState(initialOpen);
+  // Im Hero-Modus steuert der Aufrufer über initialOpen, welcher Drilldown offen
+  // ist (Tipp auf PrognoseMitte/-Ende). Die Komponente bleibt dabei gemountet,
+  // daher muss der interne State dem wechselnden initialOpen folgen — sonst zeigt
+  // der Drilldown weiter den alten Wert, während der Hero den neuen hervorhebt.
+  React.useEffect(()=>{ if(initialOpen) setDrillOpen(initialOpen); }, [initialOpen]);
   const drill = drillOpen==="Mitte" ? detailMitte : drillOpen==="Ende" ? detailEnde : null;
   const fmtD = iso=>{const[,m,d]=iso.split("-");return `${d}.${m}.`;};
   return (
