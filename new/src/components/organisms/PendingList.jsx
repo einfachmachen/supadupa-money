@@ -13,7 +13,13 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
   const [search, setSearch] = React.useState("");
   const [collapsed, setCollapsed] = React.useState(initialCollapsed);
   const filtered = React.useMemo(()=>{
+    const now = new Date();
+    const todayISO = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
     const base = pTxs.filter(t=>{
+      // Mitte-Restbudget ausblenden, sobald der 14. des betreffenden Monats vorbei
+      // ist — ab dann zählt nur noch das Gesamtbudget (Ende inkl. Rollover Mitte).
+      // Für laufende (≤14.) und künftige Monate bleibt Mitte chronologisch sichtbar.
+      if(t._budgetSubId && t._budgetSubId.endsWith("_mitte") && todayISO > t.date.slice(0,7)+"-14") return false;
       if(!search) return true;
       const isAmtSearch = /^[+\-=<>]?[\d.,]+$/.test(search.trim());
       if(isAmtSearch) return matchAmount(Math.abs(t.totalAmount), search.replace(/^[+\-]/,""));
