@@ -12,7 +12,7 @@ import { fmt, pn, uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
 function MobileWiederkehrendModal({onClose, typ="wiederkehrend"}) {
-  const { cats, setCats, accounts, setAccounts, setTxs, getCat, getSub } = useContext(AppCtx);
+  const { cats, setCats, accounts, setAccounts, setTxs, getCat, getSub, setMasterOverride } = useContext(AppCtx);
   const today = new Date().toISOString().split("T")[0];
   const S = {fs:26, pad:10, padL:14, radius:16, gap:14};
   const isFinanz = typ==="finanzierung";
@@ -125,6 +125,49 @@ function MobileWiederkehrendModal({onClose, typ="wiederkehrend"}) {
     setSaved(true);
     setTimeout(()=>onClose(), 1200);
   };
+
+  // Master-Button-Override: Der große Plus-Knopf am unteren Rand übernimmt
+  // die Schritt-Aktion (Tipp = bestätigen, Wisch ← = zurück, Wisch ↓ = abbrechen).
+  // Pro Schritt wird Label/Handler neu registriert — parallel zu MobileVormerkenModal.
+  // MUSS vor den Early-Returns stehen, damit die Hook-Reihenfolge stabil bleibt.
+  React.useEffect(() => {
+    if(showNewAcc || saved) { setMasterOverride(null); return; }
+    const a = amt();
+    let cfg;
+    if(step === 1) {
+      cfg = {
+        label: "Weiter → Kategorie",
+        onConfirm: () => { if(a > 0) setStep(2); },
+        onBack: null,
+        onDismiss: onClose,
+        disabled: !(a > 0),
+      };
+    } else if(step === 2) {
+      cfg = {
+        label: "Ohne Kategorie überspringen",
+        onConfirm: () => { setCatId(""); setSubId(""); setStep(3); },
+        onBack: () => setStep(1),
+        onDismiss: onClose,
+      };
+    } else if(step === 3) {
+      cfg = {
+        label: "Weiter → Bestätigen",
+        onConfirm: () => { if(desc.trim()) setStep(4); },
+        onBack: () => setStep(2),
+        onDismiss: onClose,
+        disabled: !desc.trim(),
+      };
+    } else if(step === 4) {
+      cfg = {
+        label: `✓ ${totalCount}× ${isFinanz ? "Finanzierung" : "wiederkehrend"} anlegen`,
+        onConfirm: doSave,
+        onBack: () => setStep(3),
+        onDismiss: onClose,
+      };
+    }
+    setMasterOverride(cfg);
+    return () => setMasterOverride(null);
+  }, [step, amount, desc, showNewAcc, saved, totalCount, isFinanz]);
 
   if(showNewAcc) return (
     <MobileNewAccOverlay S={S} onClose={(newId)=>{
