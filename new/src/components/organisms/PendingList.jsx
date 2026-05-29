@@ -90,7 +90,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
                 {rest==null ? (
                   <span style={{color:T.txt2,fontSize:12,fontFamily:"monospace",flexShrink:0}}>—</span>
                 ) : over ? (
-                  <span style={{color:T.neg,fontSize:12,fontWeight:700,fontFamily:"monospace",flexShrink:0}}>{fmt(Math.abs(rest))} über</span>
+                  <span style={{color:T.neg,fontSize:12,fontWeight:700,fontFamily:"monospace",flexShrink:0}}>{fmt(Math.abs(rest))} drüber</span>
                 ) : (
                   <span style={{display:"inline-flex",alignItems:"baseline",gap:4,flexShrink:0}}>
                     <span style={{color:T.txt2,fontSize:9}}>offen:</span>

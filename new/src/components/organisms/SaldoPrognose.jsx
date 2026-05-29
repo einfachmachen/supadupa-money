@@ -163,7 +163,7 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
                             {Li(overBudget?"alert-triangle":"target",8,overBudget?T.neg:T.gold)}
                             <span style={{flex:1,minWidth:0,color:overBudget?T.neg:T.gold,fontSize:9,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{subName}</span>
                             {overBudget ? (
-                              <span style={{color:T.neg,fontSize:8,fontWeight:700,fontFamily:"monospace",flexShrink:0}}>um {fmt(actual-b.budget)} über</span>
+                              <span style={{color:T.neg,fontSize:8,fontWeight:700,fontFamily:"monospace",flexShrink:0}}>um {fmt(actual-b.budget)} drüber</span>
                             ) : (
                               <span style={{display:"inline-flex",alignItems:"baseline",gap:4,flexShrink:0}}>
                                 <span style={{color:T.txt2,fontSize:8}}>offen:</span>

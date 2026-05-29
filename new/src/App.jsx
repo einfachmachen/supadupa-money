@@ -1637,8 +1637,10 @@ Abbrechen = ${remoteName}-Stand laden`
         const totalActual = realBis14 + realAb15 + concForSub;
         if(totalActual > totalBudget) {
           const cat = getCat((repTx.splits||[])[0]?.catId);
+          const sub = cat ? getSub(cat.id, baseSubId) : null;
+          const catName = cat?.name || repTx.desc || baseSubId;
           overBudgetWarnings.push({
-            subId:baseSubId, name:cat?.name||repTx.desc||baseSubId,
+            subId:baseSubId, name: sub?.name ? `${catName} / ${sub.name}` : catName,
             budget:totalBudget, actual:totalActual,
           });
         }
@@ -1653,8 +1655,10 @@ Abbrechen = ${remoteName}-Stand laden`
 
         if(realForSub + concreteForSub > budget) {
           const cat = getCat((repTx.splits||[])[0]?.catId);
+          const sub = cat ? getSub(cat.id, baseSubId) : null;
+          const catName = cat?.name || repTx.desc || baseSubId;
           overBudgetWarnings.push({
-            subId:baseSubId, name:cat?.name||repTx.desc||baseSubId,
+            subId:baseSubId, name: sub?.name ? `${catName} / ${sub.name}` : catName,
             budget, actual:realForSub+concreteForSub,
           });
         }
