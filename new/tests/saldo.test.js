@@ -305,6 +305,30 @@ describe("saldoAt — Excel-Logik (User-Spec)", () => {
       });
       expect(saldoAt(2026, 4, 20, "acc-giro", ctx)).toBe(900);
     });
+
+    it("CSV-Duplikat mit Budget-Sub zählt nur EINMAL im Budget-Verbrauch", () => {
+      // Regression: Eine Vormerkung, die mit einer Bank-Buchung verknüpft wurde,
+      // hinterlässt zwei echte Buchungen mit derselben subId (eine davon _linkedTo).
+      // istForSub (und analog die Budget-Aufschlüsselung in App.jsx) darf den
+      // _linkedTo-Duplikat NICHT mitzählen, sonst wird "genutzt" doppelt so hoch.
+      const ctx = buildCtx({
+        anchors: { "acc-giro": { "2026-3": 1000 } },
+        today: new Date("2026-05-05"),
+        txs: [
+          { id: "real1", accountId: "acc-giro", date: "2026-05-10", totalAmount: -120, _csvType: "expense",
+            pending: false, splits: [{ catId: "c-essen", subId: "s-essen", amount: -120 }] },
+          // verknüpftes Duplikat (gleiche subId, gleiches Konto) → muss ausgefiltert werden
+          { id: "dup1", accountId: "acc-giro", date: "2026-05-10", totalAmount: -120, _csvType: "expense",
+            pending: false, _linkedTo: "real1", desc: "Penny",
+            splits: [{ catId: "c-essen", subId: "s-essen", amount: -120 }] },
+          ...budgetPlaceholders(2026, 4, "s-essen", 100, 200),
+        ],
+      });
+      // Verbrauch s-essen = 120 (NICHT 240). Budget_H2 = 300-120 = 180, Rest = 180.
+      // ist(ganzer Monat, ohne Dupl) = -120.  Saldo = 1000 - 120 - 180 = 700.
+      // Bei Doppelzählung wäre Budget_H2 = 60 → Saldo 820.
+      expect(saldoAt(2026, 4, 31, "acc-giro", ctx)).toBe(700);
+    });
   });
 
   describe("Mitte/Ende Wrapper", () => {

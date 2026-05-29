@@ -1597,8 +1597,11 @@ Abbrechen = ${remoteName}-Stand laden`
       (repTx?.splits||[]).forEach(sp=>{ if(sp.catId) budgetSubIds.add(sp.catId); });
 
       // Echte Buchungen bis cutDay für diese Unterkategorie (cutDay=14 für Mitte, 31 für Ende)
+      // _isDupl ausschließen: eine CSV-verknüpfte Buchung (Vormerkung ↔ Bank-Buchung)
+      // hinterlässt ZWEI echte Buchungen mit derselben subId — die _linkedTo-Seite ist
+      // ein Duplikat und darf nicht doppelt zählen (konsistent mit saldo.js istForSub).
       const realTxsForSub = realTxs.filter(r=>
-        (r.splits||[]).some(sp=>sp.subId===baseSubId)
+        !_isDupl(r) && (r.splits||[]).some(sp=>sp.subId===baseSubId)
       );
       realTxsForSub.forEach(r=>budgetedRealTxIds.add(r.id));
 
@@ -1705,7 +1708,7 @@ Abbrechen = ${remoteName}-Stand laden`
     Object.entries(budgetBySubId).forEach(([baseSubId, {mitteTx, endeTx}])=>{
       const repTx = endeTx || mitteTx;
       const isInc = getTxType(repTx)==="income";
-      const realTxsForSub2 = realTxs.filter(r=>(r.splits||[]).some(sp=>sp.subId===baseSubId));
+      const realTxsForSub2 = realTxs.filter(r=>!_isDupl(r)&&(r.splits||[]).some(sp=>sp.subId===baseSubId));
       const concForSub2 = concretePend.filter(c=>(c.splits||[]).some(sp=>sp.subId===baseSubId));
 
       let budget, effektiv, displayDate;

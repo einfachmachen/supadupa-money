@@ -123,10 +123,22 @@ function MonatScreen() {
       // eine Sub-Kategorie haben.
       const filterBudgetEntry = (be) => {
         if(!be) return be;
+        const realTxs = (be.realTxs || []).filter(accMatchOrAny).filter(dropDuplReal);
+        const concTxs = (be.concTxs || []).filter(accMatchOrAny).filter(dropLinkedPend);
+        // realAmt/concAmt aus den GEFILTERTEN Listen neu berechnen, sonst zeigt
+        // "genutzt" (= realAmt+concAmt) eine andere Summe als die darunter
+        // aufgelisteten Buchungen (z.B. nach Konto-Filter oder Duplikat-Drop).
+        // Gleiche Pro-Split-Logik wie in App.jsx und SaldoPrognose.TxRow.
+        const sumFor = (list) => list.reduce((s,t)=>{
+          const sp = (t.splits||[]).find(sp=>sp.subId===be.baseSubId);
+          const amt = sp?.amount!=null && sp.amount!==0 ? Math.abs(sp.amount) : Math.abs(t.totalAmount);
+          return s + amt;
+        }, 0);
         return {
           ...be,
-          realTxs: (be.realTxs || []).filter(accMatchOrAny).filter(dropDuplReal),
-          concTxs: (be.concTxs || []).filter(accMatchOrAny).filter(dropLinkedPend),
+          realTxs, concTxs,
+          realAmt: sumFor(realTxs),
+          concAmt: sumFor(concTxs),
         };
       };
       const budgetEntries = sa && sa !== "acc-giro"
