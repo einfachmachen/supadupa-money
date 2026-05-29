@@ -2,6 +2,7 @@
 
 import React, { useContext, useState } from "react";
 import { CatPicker } from "../molecules/CatPicker.jsx";
+import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { MonthPicker } from "../molecules/MonthPicker.jsx";
 import { QuickBtnsBar } from "../molecules/QuickBtnsBar.jsx";
 import { AppCtx } from "../../state/AppContext.js";
@@ -11,7 +12,7 @@ import { fmt, pn, uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 
-function MatchingScreen({onClose}) {
+function MatchingScreen({onClose, onBack}) {
   const { cats, groups, txs, setTxs, accounts, year, month, getCat, getSub, txType } = useContext(AppCtx);
 
   const [selMonth,  setSelMonth]  = useState(month);
@@ -143,19 +144,11 @@ function MatchingScreen({onClose}) {
     <div style={{position:"fixed",inset:0,background:T.bg,zIndex:15,display:"flex",
       flexDirection:"column",fontFamily:"'SF Pro Text',-apple-system,sans-serif"}}>
       {/* Header */}
-      <div style={{background:T.surf,borderBottom:`1px solid ${T.bds}`,
-        padding:"10px 14px",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
-        <button onClick={onClose}
-          style={{background:"rgba(255,255,255,0.08)",border:"none",color:T.txt,
-            borderRadius:9,width:32,height:32,cursor:"pointer",fontSize:16}}>{Li("arrow-left",13)}</button>
-        <div style={{flex:1}}>
-          <div style={{color:T.blue,fontSize:15,fontWeight:700}}><span style={{display:"flex",alignItems:"center",gap:6}}>{Li("arrow-left-right",15)}Vormerkungen zuordnen</span></div>
-          <div style={{color:T.txt2,fontSize:10}}>Buchungen mit Vormerkungen verknüpfen</div>
-        </div>
-        {/* Monat/Jahr Wähler */}
-        <MonthPicker month={selMonth} year={selYear}
-          onMonth={setSelMonth} onYear={setSelYear} size="sm"/>
-      </div>
+      <MobileHeader title="Vormerkungen zuordnen" titleColor={T.blue}
+        subtitle="Buchungen mit Vormerkungen verknüpfen"
+        onBack={onBack||onClose} onClose={onClose}
+        right={<MonthPicker month={selMonth} year={selYear}
+          onMonth={setSelMonth} onYear={setSelYear} size="sm"/>}/>
 
       {/* Anleitung */}
       <div style={{padding:"8px 14px",background:"rgba(74,159,212,0.06)",

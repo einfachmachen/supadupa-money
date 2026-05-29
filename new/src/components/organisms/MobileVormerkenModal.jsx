@@ -6,11 +6,15 @@ import { MobileNewAccOverlay } from "../molecules/MobileNewAccOverlay.jsx";
 import { MobileWiederkehrendModal } from "./MobileWiederkehrendModal.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
+import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { fmt, pn, uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
-function MobileVormerkenModal({onClose}) {
+function MobileVormerkenModal({onClose, onBack}) {
   const { cats, setCats, accounts, setAccounts, txs, setTxs, year, month, getCat, getSub, setMasterOverride } = useContext(AppCtx);
+  // Zurück eine Ebene hoch (ins "Mehr"-Menü). Fallback auf onClose, falls der
+  // Screen ohne onBack geöffnet wurde.
+  const goBack = onBack || onClose;
   const pad = n => String(n).padStart(2,"0");
   const today = new Date().toISOString().split("T")[0];
 
@@ -64,26 +68,8 @@ function MobileVormerkenModal({onClose}) {
 
 
   const header = (title, sub, stepNum, onBack) => (
-    <div style={{background:T.surf,borderBottom:`1px solid ${T.bd}`,
-      padding:`12px ${S.padL}px`,display:"flex",alignItems:"center",
-      gap:12,flexShrink:0}}>
-      <button onClick={onBack||onClose}
-        style={{background:"rgba(255,255,255,0.08)",border:"none",color:T.txt2,
-          width:44,height:44,borderRadius:S.radius,cursor:"pointer",
-          fontSize:20,display:"flex",alignItems:"center",justifyContent:"center",
-          flexShrink:0}}>
-        ←
-      </button>
-      <div style={{flex:1,minWidth:0}}>
-        <div style={{color:T.txt,fontSize:S.fs+2,fontWeight:700,
-          whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{title}</div>
-        <div style={{color:T.txt2,fontSize:S.fs-6,marginTop:2,
-          display:"flex",alignItems:"center",gap:8}}>
-          <span style={{color:T.blue,fontWeight:700}}>{stepNum}v4</span>
-          <span>{sub}</span>
-        </div>
-      </div>
-    </div>
+    <MobileHeader title={title} onBack={onBack} onClose={onClose}
+      subtitle={<><span style={{color:T.blue,fontWeight:700}}>{stepNum}v4</span><span>{sub}</span></>}/>
   );
 
   const doSave = () => {
@@ -135,7 +121,7 @@ function MobileVormerkenModal({onClose}) {
       cfg = {
         label: "Weiter → Kategorie",
         onConfirm: () => { if(!step1Ready) return; setCatSide("source"); setStep(2); },
-        onBack: null,
+        onBack: goBack, // erste Stufe → zurück ins Mehr-Menü
         onDismiss: onClose,
         disabled: !step1Ready,
       };
@@ -195,7 +181,7 @@ function MobileVormerkenModal({onClose}) {
 
       {/* ── Schritt 1: Betrag ── */}
       {step===1&&<>
-        {header("neue Vormerkung","Betrag & Typ",1)}
+        {header("neue Vormerkung","Betrag & Typ",1,goBack)}
         <div style={{flex:1,padding:S.padL,paddingBottom:120,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
 
           {/* Ausgabe / Einnahme / Umbuchung */}

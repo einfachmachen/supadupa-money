@@ -6,9 +6,9 @@ import { MobileVormerkenModal } from "./MobileVormerkenModal.jsx";
 import { theme as T } from "../../theme/activeTheme.js";
 import { Li } from "../../utils/icons.jsx";
 
-function MobileActionPicker({onClose, onSelect, onSwitchToMonth}) {
+function MobileActionPicker({onClose, onSelect, onSwitchToMonth, initialScreen="main"}) {
   const fs = 26;
-  const [screen, setScreen] = React.useState("main");
+  const [screen, setScreen] = React.useState(initialScreen);
   const isDaten = screen==="daten";
 
   // TOGGLE-GESTE auf Header:

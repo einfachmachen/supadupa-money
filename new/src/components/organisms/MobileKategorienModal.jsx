@@ -5,10 +5,12 @@ import { SubNameField } from "../atoms/SubNameField.jsx";
 import { IconPickerDialog } from "./IconPickerDialog.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
+import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { fmt, pn, uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
-function MobileKategorienModal({onClose, onKonten, onKategorienErweitert}) {
+function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert}) {
+  const goBack = onBack || onClose; // zurück eine Ebene hoch (Mehr-Menü)
   const { cats, setCats, groups, setGroups, budgets, setBudgets, txs, setTxs, accounts,
     getBudgetForMonth, year, setYear, month, setMonth, selAcc, csvRules, setCsvRules } = useContext(AppCtx);
   const S = {fs:26, pad:10, padL:14, radius:16, gap:14};
@@ -85,15 +87,10 @@ function MobileKategorienModal({onClose, onKonten, onKategorienErweitert}) {
 
   const COLORS = [T.blue,T.pos,T.neg,T.gold,"#9b59b6","#1abc9c","#e67e22","#e91e63","#00bcd4","#ff5722"];
 
+  // onBack ist hier IMMER gesetzt (entweder zur Listenansicht oder, im Root, ins
+  // Mehr-Menü) — der Button zeigt also stets den Zurück-Pfeil.
   const header = (title, onBack) => (
-    <div style={{background:T.surf,borderBottom:`1px solid ${T.bd}`,
-      padding:`12px ${S.padL}px`,display:"flex",alignItems:"center",gap:12,flexShrink:0}}>
-      <button onClick={onBack||onClose}
-        style={{background:"rgba(255,255,255,0.08)",border:"none",color:T.txt2,
-          width:44,height:44,borderRadius:S.radius,cursor:"pointer",fontSize:20,
-          display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>←</button>
-      <div style={{color:T.txt,fontSize:S.fs+2,fontWeight:700,flex:1}}>{title}</div>
-    </div>
+    <MobileHeader title={title} onBack={onBack||onClose} onClose={onClose}/>
   );
 
 
@@ -228,7 +225,7 @@ function MobileKategorienModal({onClose, onKonten, onKategorienErweitert}) {
   return (
     <div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,
       zIndex:300,display:"flex",flexDirection:"column","--mob-fs":S.fs+"px"}}>
-      {header("Kategorien & Budget")}
+      {header("Kategorien & Budget",goBack)}
       <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",
         padding:`${S.gap}px ${S.padL}px ${S.padL}px`}}>
 

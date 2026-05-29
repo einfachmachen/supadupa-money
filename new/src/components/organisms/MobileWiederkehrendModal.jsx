@@ -7,12 +7,14 @@ import { MobileNewAccOverlay } from "../molecules/MobileNewAccOverlay.jsx";
 import { MobileKategorienModal } from "./MobileKategorienModal.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
+import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { isoAddMonths } from "../../utils/date.js";
 import { fmt, pn, uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
-function MobileWiederkehrendModal({onClose, typ="wiederkehrend"}) {
+function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
   const { cats, setCats, accounts, setAccounts, setTxs, getCat, getSub, setMasterOverride } = useContext(AppCtx);
+  const goBack = onBack || onClose; // zurück eine Ebene hoch (Mehr-Menü)
   const today = new Date().toISOString().split("T")[0];
   const S = {fs:26, pad:10, padL:14, radius:16, gap:14};
   const isFinanz = typ==="finanzierung";
@@ -82,21 +84,8 @@ function MobileWiederkehrendModal({onClose, typ="wiederkehrend"}) {
     border:`2px solid ${T.bd}`,...extra});
 
   const header = (title,sub,stepNum,onBack) => (
-    <div style={{background:T.surf,borderBottom:`1px solid ${T.bd}`,
-      padding:`12px ${S.padL}px`,display:"flex",alignItems:"center",gap:12,flexShrink:0}}>
-      <button onClick={onBack||onClose}
-        style={{background:"rgba(255,255,255,0.08)",border:"none",color:T.txt2,
-          width:44,height:44,borderRadius:S.radius,cursor:"pointer",fontSize:20,
-          display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>←</button>
-      <div style={{flex:1,minWidth:0}}>
-        <div style={{color:T.txt,fontSize:S.fs+2,fontWeight:700,
-          whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{title}</div>
-        <div style={{color:T.txt2,fontSize:S.fs-6,marginTop:2,display:"flex",gap:8}}>
-          <span style={{color:T.blue,fontWeight:700}}>{stepNum}v4</span>
-          <span>{sub}</span>
-        </div>
-      </div>
-    </div>
+    <MobileHeader title={title} onBack={onBack} onClose={onClose}
+      subtitle={<><span style={{color:T.blue,fontWeight:700}}>{stepNum}v4</span><span>{sub}</span></>}/>
   );
 
   const doSave = () => {
@@ -138,7 +127,7 @@ function MobileWiederkehrendModal({onClose, typ="wiederkehrend"}) {
       cfg = {
         label: "Weiter → Kategorie",
         onConfirm: () => { if(a > 0) setStep(2); },
-        onBack: null,
+        onBack: goBack, // erste Stufe → zurück ins Mehr-Menü
         onDismiss: onClose,
         disabled: !(a > 0),
       };
@@ -190,7 +179,7 @@ function MobileWiederkehrendModal({onClose, typ="wiederkehrend"}) {
 
       {/* ── Schritt 1: Betrag & Rhythmus ── */}
       {step===1&&<>
-        {header(isFinanz?"neue Finanzierung":"neue Wiederkehrende","Betrag & Rhythmus",1)}
+        {header(isFinanz?"neue Finanzierung":"neue Wiederkehrende","Betrag & Rhythmus",1,goBack)}
         <div style={{flex:1,padding:S.padL,paddingBottom:120,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
 
           {/* Ausgabe / Einnahme */}

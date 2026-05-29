@@ -3,12 +3,13 @@
 import React, { createElement, useContext, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
+import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { INP } from "../../theme/palette.js";
 import { THEMES } from "../../theme/themes.js";
 import { Li } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
 
-function DataManagerDialog({onClose}) {
+function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   const { cats, groups, accounts, txs, setTxs, csvRules, startBalances,
     setStartBalances, setCats, setGroups, setAccounts, setCsvRules } = useContext(AppCtx);
 
@@ -363,16 +364,31 @@ function DataManagerDialog({onClose}) {
     </div>
   );
 
+  // Mobile: Vollbild mit einheitlichem Header (Zurück → Daten-Untermenü).
+  // Desktop: zentriertes Overlay-Dialog wie bisher.
+  const Wrapper = mobileMode
+    ? ({children}) => (
+        <div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,
+          zIndex:300,display:"flex",flexDirection:"column"}}>{children}</div>
+      )
+    : ({children}) => (
+        <div onClick={onClose}
+          style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",
+            zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"}}>
+          <div onClick={e=>e.stopPropagation()}
+            style={{background:T.surf,borderRadius:20,width:"100%",maxWidth:480,
+              maxHeight:"85vh",display:"flex",flexDirection:"column",
+              border:`1px solid ${T.bds}`,boxShadow:"0 8px 40px rgba(0,0,0,0.5)"}}>{children}</div>
+        </div>
+      );
   return (
-    <div onClick={onClose}
-      style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",
-        zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"}}>
-      <div onClick={e=>e.stopPropagation()}
-        style={{background:T.surf,borderRadius:20,width:"100%",maxWidth:480,
-          maxHeight:"85vh",display:"flex",flexDirection:"column",
-          border:`1px solid ${T.bds}`,boxShadow:"0 8px 40px rgba(0,0,0,0.5)"}}>
+    <Wrapper>
 
         {/* Header */}
+        {mobileMode ? (
+          <MobileHeader title="Daten-Manager" subtitle="Exportieren · Importieren · Löschen"
+            onBack={onBack||onClose} onClose={onClose}/>
+        ) : (
         <div style={{display:"flex",alignItems:"center",gap:8,padding:"14px 16px 0",flexShrink:0}}>
           <div style={{width:34,height:34,borderRadius:10,background:"rgba(170,204,0,0.12)",
             display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -386,6 +402,7 @@ function DataManagerDialog({onClose}) {
             style={{background:"rgba(255,255,255,0.07)",border:"none",color:T.txt2,
               borderRadius:8,padding:"6px 10px",cursor:"pointer",fontSize:12}}>✕</button>
         </div>
+        )}
 
         {/* Tabs */}
         <div style={{display:"flex",gap:4,padding:"10px 16px 0",flexShrink:0}}>
@@ -555,8 +572,7 @@ function DataManagerDialog({onClose}) {
           </>)}
 
         </div>
-      </div>
-    </div>
+    </Wrapper>
   );
 }
 

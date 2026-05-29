@@ -2,6 +2,7 @@
 
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { CatPicker } from "../molecules/CatPicker.jsx";
+import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { AnchorSection } from "../organisms/AnchorSection.jsx";
 import { QuickPicker } from "../organisms/QuickPicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
@@ -12,7 +13,7 @@ import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { txFingerprint, txFingerprintNorm } from "../../utils/tx.js";
 
-function CsvImportScreen({onClose, embedded=false, mobileMode=false}) {
+function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const { cats, groups, txs, setTxs, accounts, csvRules, setCsvRules, startBalances, setStartBalances, setMasterOverride } = useContext(AppCtx);
   const MFS = mobileMode ? 22 : 13; // mobile font size base
   const MFSl = mobileMode ? 18 : 11; // mobile font size small
@@ -414,14 +415,22 @@ function CsvImportScreen({onClose, embedded=false, mobileMode=false}) {
          // und überdeckt sonst den Footer mit dem "Buchungen importieren"-Button.
          paddingBottom:"calc(60px + env(safe-area-inset-bottom, 0px))"}}>
       {/* Header */}
-      {!embedded&&<div style={{background:T.surf,borderBottom:`1px solid ${T.bds}`,padding:MPad,display:"flex",alignItems:"center",gap:12,flexShrink:0}}>
-        <button onClick={onClose} style={{background:"rgba(255,255,255,0.08)",border:"none",color:T.txt,borderRadius:10,width:mobileMode?44:34,height:mobileMode?44:34,cursor:"pointer",fontSize:18}}>{Li("arrow-left",mobileMode?20:13)}</button>
-        <div style={{flex:1}}>
-          <div style={{color:T.blue,fontSize:mobileMode?24:16,fontWeight:700}}>{Li("upload-cloud",mobileMode?22:16,T.blue)} CSV-Import</div>
-          <div style={{color:T.txt2,fontSize:MFSl}}>DKB · Finanzblick · beliebiges Format</div>
+      {!embedded && (mobileMode ? (
+        // Mobile: einheitlicher Header. Zurück führt review/done → input, input → Mehr-Menü.
+        <MobileHeader title="CSV-Import" titleColor={T.blue}
+          subtitle={step==="review"&&parsed?.format ? parsed.format : "DKB · Finanzblick · beliebiges Format"}
+          onBack={step!=="input" ? ()=>setStep("input") : (onBack||onClose)}
+          onClose={onClose}/>
+      ) : (
+        <div style={{background:T.surf,borderBottom:`1px solid ${T.bds}`,padding:MPad,display:"flex",alignItems:"center",gap:12,flexShrink:0}}>
+          <button onClick={onClose} style={{background:"rgba(255,255,255,0.08)",border:"none",color:T.txt,borderRadius:10,width:34,height:34,cursor:"pointer",fontSize:18}}>{Li("arrow-left",13)}</button>
+          <div style={{flex:1}}>
+            <div style={{color:T.blue,fontSize:16,fontWeight:700}}>{Li("upload-cloud",16,T.blue)} CSV-Import</div>
+            <div style={{color:T.txt2,fontSize:MFSl}}>DKB · Finanzblick · beliebiges Format</div>
+          </div>
+          {step==="review"&&<div style={{color:T.txt2,fontSize:MFSl}}>{parsed?.format}</div>}
         </div>
-        {step==="review"&&<div style={{color:T.txt2,fontSize:MFSl}}>{parsed?.format}</div>}
-      </div>}
+      ))}
 
       {/* ── Kontoauswahl — immer sichtbar, auf allen Steps ── */}
       {accounts.length>0&&(
