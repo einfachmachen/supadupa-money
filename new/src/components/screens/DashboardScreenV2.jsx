@@ -1208,8 +1208,8 @@ function DashboardScreenV2() {
                 {dashSearch&&<button onClick={()=>setDashSearch("")}
                   style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",fontSize:14}}>{Li("x",14)}</button>}
               </div>
-              {/* Fixe Spaltenueberschrift Mitte/Ende/aktuell — nur bei Kategorie-Drilldown mit Unterkategorien */}
-              {dashDrill.cat&&!dashSearch&&!dashDrill.isIncome&&(dashDrill.cat.subs||[]).length>0&&(
+              {/* Fixe Spaltenueberschrift Mitte/Ende/aktuell — bei Kategorie-Drilldown mit Unterkategorien (Einnahmen wie Ausgaben) */}
+              {dashDrill.cat&&!dashSearch&&(dashDrill.cat.subs||[]).length>0&&(
                 <div style={{display:"flex",gap:4,padding:"6px 14px 6px",flexShrink:0,
                   background:"rgba(0,0,0,0.12)",borderTop:`1px solid ${T.bd}`}}>
                   <div style={{flex:1,textAlign:"center",color:T.txt2,fontSize:12,fontWeight:700,letterSpacing:0.3}}>Mitte</div>
