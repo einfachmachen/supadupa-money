@@ -766,9 +766,9 @@ function MonatScreen() {
             // Hat dieser Tag Vormerkungen?
             const hasDayPend = dayTxs.some(t=>t.pending);
             return (
-              <div key={date} style={{margin:"3px 8px 0"}}>
+              <div key={date} style={{margin:"12px 8px 0",border:`1px solid ${T.bd}`,borderRadius:12,overflow:"hidden"}}>
                 <div style={{display:"flex",alignItems:"center",
-                  padding:"5px 4px 3px",gap:8}}>
+                  padding:"6px 8px 5px",gap:8}}>
                   <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
                     <span style={{color:T.txt,fontSize:12,fontWeight:700}}>{fmtD(date)}</span>
                     <span style={{color:T.txt2,fontSize:10}}>{dayName(date)}</span>
@@ -872,9 +872,9 @@ function MonatScreen() {
                   const needsHatch = effE!==""&&vD!==""&&normE!==normD;
                   const fulfilled  = effE!==""&&vD!==""&&normE===normD;
                   return (
-                    <div key={tx.id} style={{borderRadius:10,marginBottom:2,overflow:"hidden",background:fulfilled?T.pos+"11":"transparent",borderBottom:`1px solid ${T.bd}`,position:"relative"}}>
+                    <div key={tx.id} style={{borderRadius:0,marginBottom:0,overflow:"hidden",background:fulfilled?T.pos+"11":"transparent",borderTop:`1px solid ${T.bd}`,position:"relative"}}>
                       <div style={{position:"relative",zIndex:1}}>
-                        <div style={{display:"flex",alignItems:"center",gap:0,padding:"9px 8px"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:0,padding:"7px 8px"}}>
                           <div style={{position:"relative",width:32,height:32,flexShrink:0,marginRight:8}}>
                             <div onClick={e=>{e.stopPropagation();setTxIconPickM(txIconPickM===tx.id?null:tx.id);}}
                               style={{width:32,height:32,borderRadius:9,cursor:"pointer",background:displayColor+"22",border:`1px solid ${txIconPickM===tx.id?displayColor+"66":T.bd}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -924,8 +924,8 @@ function MonatScreen() {
                     const signedBudget = isIncome ? budget : -budget;
                     const fmtSigned = v => (v<0?"-":"+") + fmt(Math.abs(v));
                     return (
-                      <div key={"rb-"+name} style={{borderRadius:10,marginBottom:2,overflow:"hidden",background:"transparent",borderBottom:`1px solid ${T.bd}`}}>
-                        <div style={{display:"flex",alignItems:"center",gap:0,padding:"9px 8px"}}>
+                      <div key={"rb-"+name} style={{borderRadius:0,marginBottom:0,overflow:"hidden",background:"transparent",borderTop:`1px solid ${T.bd}`}}>
+                        <div style={{display:"flex",alignItems:"center",gap:0,padding:"7px 8px"}}>
                           <div style={{width:32,height:32,borderRadius:9,flexShrink:0,marginRight:8,background:accentCol+"22",border:`1px solid ${T.bd}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
                             {Li(isOverspent?"alert-triangle":"target",16,accentCol)}
                           </div>
@@ -990,9 +990,9 @@ function MonatScreen() {
 
                   return (
                     <div key={tx.id} style={{
-                      borderRadius:10, marginBottom:2, overflow:"hidden",
+                      borderRadius:0, marginBottom:0, overflow:"hidden",
                       background: fulfilled ? T.pos+"11" : "transparent",
-                      borderBottom:`1px solid ${T.bd}`,
+                      borderTop:`1px solid ${T.bd}`,
                       position:"relative",
                     }}>
                       
