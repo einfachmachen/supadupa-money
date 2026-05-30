@@ -212,8 +212,8 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
         if(m < _curMo) return false;
         return d >= _curDay;
       };
-      const sprungMitteVal = isFutureDay(14) ? restMitte(y, m, _saldoCtx) : 0;
-      const sprungEndeVal  = isFutureDay(lastDay) ? restEnde(y, m, _saldoCtx)  : 0;
+      const sprungMitteVal = restMitte(y, m, _saldoCtx);
+      const sprungEndeVal  = restEnde(y, m, _saldoCtx);
       const saldoByDay = {};
       let cumIst = 0, txIdx = 0;
       for(let day=1; day<=lastDay; day++) {
@@ -222,9 +222,13 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
           cumIst += _signedAmount(monthTxs[txIdx]);
           txIdx++;
         }
-        const sprung = (day===14) ? sprungMitteVal
-                     : (day===lastDay) ? sprungEndeVal
-                     : 0;
+        // "nach Budget": Reservierung gilt durchgehend für ihren Geltungszeitraum
+        // (RestMitte Tag 1..14, RestEnde Tag 15..letzter), nur für heutige/
+        // zukünftige Tage. Konsistent mit saldo.js/saldoAt und der Monatsansicht,
+        // damit die Puffer-Prüfung den "Tagessaldo nach Budget" verwendet (nicht
+        // den reinen Ist).
+        const sprung = !isFutureDay(day) ? 0
+                     : (day >= 15 ? sprungEndeVal : sprungMitteVal);
         saldoByDay[dayStr] = baseSaldo + cumIst - sprung;
       }
       const saldoAt = (dayStr) => saldoByDay[dayStr] ?? baseSaldo;

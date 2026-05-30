@@ -204,33 +204,16 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
       const ct=t._csvType||(()=>{const s=(t.splits||[]).filter(sp=>sp.catId);if(s.length>0){const c=getCat(s[0].catId);if(c)return(c.type==="income"||c.type==="tagesgeld")?"income":"expense";}return t.totalAmount>=0?"income":"expense";})();
       return ct==="income"?+Math.abs(t.totalAmount):-Math.abs(t.totalAmount);
     };
-    // openBudget einmalig für Mitte + Ende — nur für Gesamt/Giro
-    const calcOpenBudget = (maxDay) => {
-      if(effSelAcc && effSelAcc !== "acc-giro") return 0;
-      let total=0;
-      const dayStr=`${pfx}${pad2(maxDay)}`;
-      cats.filter(c=>c.type==="expense"||c.type==="income").forEach(cat=>{
-        (cat.subs||[]).forEach(sub=>{
-          const mittePx=txs.find(t=>t.pending&&t._budgetSubId===sub.id+"_mitte"&&t.date.startsWith(pfx));
-          const hasAnyMittePx=txs.some(t=>t.pending&&t._budgetSubId===sub.id+"_mitte");
-          const mitteAmt=mittePx?Math.abs(pn(mittePx.totalAmount)):(hasAnyMittePx?0:(pn(budgets?.[sub.id+"_mitte"]?.amount)||0));
-          const hasSplit=mitteAmt>0;
-          let bgt=0;
-          if(maxDay===14){if(!hasSplit)return;bgt=mitteAmt;}
-          else{if(hasSplit){const endePx=txs.find(t=>t.pending&&t._budgetSubId===sub.id&&t.date.startsWith(pfx));const hasAnyEndePx=txs.some(t=>t.pending&&t._budgetSubId===sub.id);bgt=mitteAmt+(endePx?Math.abs(pn(endePx.totalAmount)):(hasAnyEndePx?0:(pn(budgets?.[sub.id]?.amount)||0)));}else{const px=txs.find(t=>t.pending&&t._budgetSubId===sub.id&&t.date.startsWith(pfx));const hasAnyPx=txs.some(t=>t.pending&&t._budgetSubId===sub.id);bgt=px?Math.abs(pn(px.totalAmount)):(hasAnyPx?0:(pn(budgets?.[sub.id]?.amount)||0));}}
-          if(bgt<=0)return;
-          const spent=mTxs.filter(t=>!t.pending&&!t._linkedTo&&!t._budgetSubId&&t.date<=dayStr&&(t.splits||[]).some(sp=>sp.subId===sub.id)).reduce((s,t)=>s+Math.abs((t.splits||[]).find(sp=>sp.subId===sub.id)?.amount||0),0);
-          const pendS=mTxs.filter(t=>t.pending&&!t._linkedTo&&!t._budgetSubId&&t.date<=dayStr&&(t.splits||[]).some(sp=>sp.subId===sub.id)).reduce((s,t)=>s+Math.abs((t.splits||[]).find(sp=>sp.subId===sub.id)?.amount||Math.abs(t.totalAmount)),0);
-          if(cat.type==="expense") total+=Math.max(0,bgt-spent-pendS);
-        });
-      });
-      return total;
-    };
-    const obMitte=calcOpenBudget(14), obEnde=calcOpenBudget(lastDay);
-    // Budget-Sprünge konsistent mit saldoAt/Hero: nur AM 14. bzw. AM letzten
-    // Tag, und nur wenn dieser Tag noch in der Zukunft liegt. Vorher hat das
-    // Widget ab Tag 14 das offene Mitte-Budget *jeden* Folgetag abgezogen, was
-    // den Tiefst-Saldo künstlich nach unten verschoben hat.
+    // Offene Budgets "nach Budget" konsistent mit saldo.js: RestMitte (Tag
+    // 1..14) bzw. RestEnde (Tag 15..letzter). Budgets liegen nur auf Giro.
+    const _saldoCtx = { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth };
+    const istGiroView = !effSelAcc || effSelAcc === "acc-giro";
+    const obMitte = istGiroView ? restMitte(y, m, _saldoCtx) : 0;
+    const obEnde  = istGiroView ? restEnde(y, m, _saldoCtx)  : 0;
+    // Reservierung gilt durchgehend für ihren Geltungszeitraum (nicht nur am
+    // 14./letzten Tag), nur für heutige/zukünftige Tage. So bleibt der für den
+    // Sparplan geprüfte Tiefst-Saldo der "Tagessaldo nach Budget" — der Sweep
+    // schöpft also nie Geld ab, das noch fürs Budget reserviert ist.
     const isFutureDay = (d) => {
       const tb=_tbReal, tY=tb.getFullYear(), tM=tb.getMonth(), tD=tb.getDate();
       if(y > tY) return true;
@@ -239,17 +222,14 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
       if(m < tM) return false;
       return d >= tD;
     };
-    const bdMitte = isFutureDay(14)      ? -obMitte : 0;
-    const bdEnde  = isFutureDay(lastDay) ? -obEnde  : 0;
     const saldoAt = (dayStr) => {
       const dayNum=parseInt(dayStr.split("-")[2]);
       const real=mTxs.filter(t=>!t.pending&&!t._budgetSubId&&t.date<=dayStr).reduce((s,t)=>s+signed(t),0);
       const pend=mTxs.filter(t=>t.pending&&!t._budgetSubId&&t.date<=dayStr).reduce((s,t)=>s+signed(t),0);
       // Virtuelle Sparraten aus aktuellem Berechnungslauf einbeziehen
       const virt=Object.entries(virtualSpar).filter(([d])=>d<=dayStr).reduce((s,[,v])=>s+v,0);
-      const bd = (dayNum===lastDay) ? bdEnde
-               : (dayNum===14)      ? bdMitte
-               : 0;
+      const bd = !isFutureDay(dayNum) ? 0
+               : (dayNum >= 15 ? -obEnde : -obMitte);
       return baseSaldoEff+real+pend+virt+bd;
     };
     // Alle Tage mit Buchungen prüfen + synthetische Budget-Checkpoints am 14. und Monatsletzt
@@ -264,7 +244,10 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     const firstRelevantStr = `${pfx}${pad2(firstRelevantDay)}`;
     const daysWithTxs=new Set();
     mTxs.forEach(t=>{ if(t.date>=firstRelevantStr) daysWithTxs.add(t.date); });
-    [`${pfx}14`,`${pfx}${pad2(lastDay)}`].forEach(d=>{ if(d>=firstRelevantStr) daysWithTxs.add(d); });
+    // Checkpoints an den Phasengrenzen: 14. (Ende Mitte-Phase), 15. (Start
+    // Ende-Reservierung) und Monatsletzter — damit der Tiefst-Saldo den Sprung
+    // der Reservierung am 14.→15. erfasst.
+    [`${pfx}14`,`${pfx}15`,`${pfx}${pad2(lastDay)}`].forEach(d=>{ if(d>=firstRelevantStr) daysWithTxs.add(d); });
     daysWithTxs.add(firstRelevantStr); // garantierter Checkpoint „heute" bzw. Monatsanfang
     const allDays=[...daysWithTxs].sort();
     let minVal=null;
