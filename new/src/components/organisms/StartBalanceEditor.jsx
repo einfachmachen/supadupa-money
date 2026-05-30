@@ -5,6 +5,7 @@ import { KontostandImportButton } from "../buttons/KontostandImportButton.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { Li } from "../../utils/icons.jsx";
+import { anchorValue, anchorDay } from "../../utils/anchors.js";
 
 function StartBalanceEditor() {
   const { accounts, startBalances, setStartBalances, txs } = useContext(AppCtx);
@@ -27,11 +28,16 @@ function StartBalanceEditor() {
             label:`31.12.${y-1} (Anfang ${y})`});
         } else if(!isNaN(Number(k)) && typeof v === "object") {
           const mo = Number(k);
-          Object.entries(v).forEach(([accId, val])=>{
-            if(typeof val === "number") {
+          Object.entries(v).forEach(([accId, raw])=>{
+            const val = anchorValue(raw);
+            if(val != null) {
+              const day = anchorDay(raw);
               const accName = accounts.find(a=>a.id===accId)?.name || accId;
-              result.push({year:y, month:mo, value:val, accId, key:`${y}/${mo}/${accId}`,
-                label:`${String(mo+1).padStart(2,"0")}.${y} · ${accName}`});
+              const datePart = day != null
+                ? `${String(day).padStart(2,"0")}.${String(mo+1).padStart(2,"0")}.${y}`
+                : `${String(mo+1).padStart(2,"0")}.${y}`;
+              result.push({year:y, month:mo, value:val, day, accId, key:`${y}/${mo}/${accId}`,
+                label:`${datePart} · ${accName}`});
             }
           });
         }
