@@ -77,8 +77,8 @@ function budgetPlaceholders(year, month, subId, mitte, ende, catId = "c-essen") 
 }
 
 describe("saldoAt — Excel-Logik (User-Spec)", () => {
-  describe("Phase 1: Tag 1-13 (kein Budget-Abzug)", () => {
-    it("Tagessaldo zeigt reine Ist-Werte", () => {
+  describe("Phase 1: Tag 1-14 (Mitte-Reservierung gilt durchgehend)", () => {
+    it("Vergangener Tag zeigt reines Ist, künftiger Tag reserviert RestMitte", () => {
       const ctx = buildCtx({
         anchors: { "acc-giro": { "2026-3": 1000 } },
         today: new Date("2026-05-05"),
@@ -88,8 +88,11 @@ describe("saldoAt — Excel-Logik (User-Spec)", () => {
           ...budgetPlaceholders(2026, 4, "s-essen", 100, 200),
         ],
       });
+      // Tag 3 ist vergangen (heute 5.) → reines Ist
       expect(saldoAt(2026, 4, 3, "acc-giro", ctx)).toBe(950);
-      expect(saldoAt(2026, 4, 13, "acc-giro", ctx)).toBe(950);
+      // Tag 13 ist künftig → RestMitte = max(0, 100-50) = 50 wird reserviert
+      // Saldo = 1000 - 50 (Ist) - 50 (RestMitte) = 900
+      expect(saldoAt(2026, 4, 13, "acc-giro", ctx)).toBe(900);
     });
   });
 
@@ -137,8 +140,8 @@ describe("saldoAt — Excel-Logik (User-Spec)", () => {
     });
   });
 
-  describe("Phase 3: Tag 15..letzter-1 (kein Budget-Abzug)", () => {
-    it("Tagessaldo zeigt wieder reine Ist-Werte", () => {
+  describe("Phase 3: Tag 15..letzter (Ende-Reservierung gilt durchgehend)", () => {
+    it("Künftiger Tag in der 2. Hälfte reserviert RestEnde (kein Hochspringen am 15.)", () => {
       const ctx = buildCtx({
         anchors: { "acc-giro": { "2026-3": 1000 } },
         today: new Date("2026-05-05"),
@@ -150,8 +153,12 @@ describe("saldoAt — Excel-Logik (User-Spec)", () => {
           ...budgetPlaceholders(2026, 4, "s-essen", 100, 200),
         ],
       });
-      expect(saldoAt(2026, 4, 20, "acc-giro", ctx)).toBe(930);
-      expect(saldoAt(2026, 4, 30, "acc-giro", ctx)).toBe(930);
+      // Tag 20 (künftig, 2. Hälfte): RestEnde mit Roll-Over.
+      // Budget_H2 = max(0, 300-30) = 270, Rest = max(0, 270-40) = 230.
+      // Saldo = 1000 - 30 - 40 - 230 = 700 — KEIN Sprung zurück auf 930.
+      expect(saldoAt(2026, 4, 20, "acc-giro", ctx)).toBe(700);
+      // Tag 30: gleiche RestEnde, gleiches Ist → 700 (Reservierung bleibt bestehen)
+      expect(saldoAt(2026, 4, 30, "acc-giro", ctx)).toBe(700);
     });
   });
 
@@ -205,6 +212,37 @@ describe("saldoAt — Excel-Logik (User-Spec)", () => {
       // Budget_H2 = 300-200 = 100, Rest = 100-150 < 0 → 0
       // Saldo = 1000 - 200 - 150 = 650
       expect(saldoAt(2026, 4, 31, "acc-giro", ctx)).toBe(650);
+    });
+  });
+
+  describe("Zukunftsmonat: Reservierung verfällt nicht am Kalenderwechsel", () => {
+    it("Reiner Zukunftsmonat: 13.→14.→15. springt nicht zurück, Anker trägt Ende weiter", () => {
+      // Heute = 5. Mai, Juni = reiner Zukunftsmonat.
+      const ctx = buildCtx({
+        anchors: { "acc-giro": { "2026-3": 1000 } },
+        today: new Date("2026-05-05"),
+        txs: [
+          // Mai-Ende = 1000 (kein Ist, kein Budget im Mai) → Juni-Anker = 1000
+          // Juni: Budget 100/200 (gesamt 300), eine Buchung -60 am 20.6.
+          { id: "t1", accountId: "acc-giro", date: "2026-06-20", totalAmount: -60, _csvType: "expense",
+            splits: [{ catId: "c-essen", subId: "s-essen", amount: -60 }] },
+          ...budgetPlaceholders(2026, 5, "s-essen", 100, 200),
+        ],
+      });
+      // 1. Hälfte (kein Ist 1..14): RestMitte = max(0, 100-0) = 100
+      //   Tag 13 = 1000 - 0 - 100 = 900
+      //   Tag 14 = 1000 - 0 - 100 = 900
+      expect(saldoAt(2026, 5, 13, "acc-giro", ctx)).toBe(900);
+      expect(saldoAt(2026, 5, 14, "acc-giro", ctx)).toBe(900);
+      // 2. Hälfte: RestEnde mit Roll-Over.
+      //   Budget_H2 = max(0, 300-0) = 300, Rest = max(0, 300-60) = 240
+      //   Tag 15 (vor der Buchung am 20.): Ist 0 → 1000 - 0 - 240 = 760
+      //   → KEIN Hochspringen auf 1000, Reservierung bleibt
+      expect(saldoAt(2026, 5, 15, "acc-giro", ctx)).toBe(760);
+      //   letzter Tag (30.): Ist -60 → 1000 - 60 - 240 = 700
+      expect(saldoAt(2026, 5, 30, "acc-giro", ctx)).toBe(700);
+      // Ende-Reservierung trägt als Anker in den Juli (Folgemonat)
+      expect(saldoAnchor(2026, 6, "acc-giro", ctx)).toBe(700);
     });
   });
 

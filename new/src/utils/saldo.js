@@ -9,12 +9,23 @@
 //  Eine Besonderheit ist ein untermonatliches, dynamisches Roll-Over-
 //  Verfahren beim Erreichen von Meilensteinen."
 //
-// ── Phasen ───────────────────────────────────────────────────────────
+// ── Phasen (für heutige/zukünftige Tage) ─────────────────────────────
 //
-// Phase 1 (Tag 1-13):   Tagessaldo = Anker + Ist(1..X)
-// Phase 2 (Tag 14):     Tagessaldo = Anker + Ist(1..14) − RestMitte
-// Phase 3 (Tag 15..letzter-1): Tagessaldo = Anker + Ist(1..X)
-// Phase 4 (letzter):    Tagessaldo = Anker + Ist(1..letzter) − RestEnde
+// Eine Budget-Reservierung gilt für ihren GESAMTEN Geltungszeitraum,
+// nicht nur am Meilenstein-Tag:
+//   Mitte-Budget gilt Tag 1..14, Ende-/Gesamt-Budget gilt Tag 15..letzter.
+//
+// Erste Hälfte (Tag 1..14):       Tagessaldo = Anker + Ist(1..X) − RestMitte
+// Zweite Hälfte (Tag 15..letzter): Tagessaldo = Anker + Ist(1..X) − RestEnde
+//
+// Eine Reservierung wird beim Übergang 14.→15. bzw. Monatsletzter→1. des
+// Folgemonats NUR dann freigegeben, wenn der reale heutige Tag den
+// jeweiligen Stichtag bereits überschritten hat. Für reine Zukunftsmonate
+// bleibt sie also durchgehend bestehen (kein Hochspringen am 15.), und der
+// Monatsend-Stand trägt korrekt als Anker in den Folgemonat.
+//
+// Für VERGANGENE Tage (vor heute) zeigt der Tagessaldo das reine Ist —
+// dort wurde real gebucht, eine Reservierung ergäbe keinen Sinn.
 //
 // Wobei (pro Budget-Kategorie K, dann summiert):
 //   RestMitte = Σ_K max(0, BudgetMitte_K − Ist1bis14_K)
@@ -238,15 +249,16 @@ function restEnde(year, month, ctx) {
 
 // ── Sollte am gefragten Tag der Budget-Abzug greifen? ─────────────────
 //
-// Sprünge sind nur "Live-Effekte" am Meilenstein-Tag selbst:
-//   - Mitte-Sprung wirkt am 14., aber NUR solange der 14. noch nicht
-//     überschritten ist (live).
-//   - Ende-Sprung wirkt am letzten Tag, aber NUR solange er nicht
-//     überschritten ist.
+// Die Reservierung gilt für ihren gesamten Geltungszeitraum, solange der
+// abgefragte Tag heute oder in der Zukunft liegt:
+//   - Mitte-Reservierung (RestMitte) auf jedem Tag 1..14.
+//   - Ende-Reservierung (RestEnde)  auf jedem Tag 15..letzter.
 //
-// Sobald der Tag vorbei ist (auch im aktuellen Monat), zeigt der
-// Tagessaldo rückwirkend wieder das reine Ist. Die Restbudgets sind
-// in die nächste Phase gewandert (Roll-Over).
+// Liegt der abgefragte Tag dagegen in der VERGANGENHEIT (vor heute), zeigt
+// der Tagessaldo das reine Ist — dort wurde real gebucht. Damit wird eine
+// Reservierung erst dann freigegeben, wenn der reale heutige Tag den
+// jeweiligen Tag überschritten hat (nie allein durch den Kalenderwechsel
+// 14.→15. oder Monatsletzter→1.).
 //
 // "Heute" wird aus ctx.today oder real ermittelt (für deterministische Tests).
 function isFuture(year, month, day, ctx) {
@@ -260,15 +272,14 @@ function isFuture(year, month, day, ctx) {
   return day >= tD;
 }
 function shouldApplyMitteSprung(year, month, day, ctx) {
-  if(day !== 14) return false;
-  // Tag 14 muss noch in der Zukunft liegen (oder heute sein)
-  return isFuture(year, month, 14, ctx);
+  if(day > 14) return false;
+  // Tag muss heute oder in der Zukunft liegen
+  return isFuture(year, month, day, ctx);
 }
 function shouldApplyEndeSprung(year, month, day, ctx) {
-  const lastDay = new Date(year, month+1, 0).getDate();
-  if(day !== lastDay) return false;
-  // Letzter Tag muss noch in der Zukunft liegen (oder heute sein)
-  return isFuture(year, month, lastDay, ctx);
+  if(day < 15) return false;
+  // Tag muss heute oder in der Zukunft liegen
+  return isFuture(year, month, day, ctx);
 }
 
 // ── HAUPTFUNKTION ─────────────────────────────────────────────────────
@@ -291,8 +302,9 @@ export function saldoAt(year, month, day, accId, ctx) {
   const anker = saldoAnchor(year, month, accId, ctx);
   const istV = ist(year, month, day, accId, ctx);
 
-  // Budget-Sprünge wirken nur am 14. und am letzten Tag, und nur für acc-giro
-  // (Budgets liegen auf Giro; Tagesgeld hat keinen Sprung)
+  // Reservierung gilt erste Hälfte (RestMitte) bzw. zweite Hälfte (RestEnde),
+  // nur für heutige/zukünftige Tage und nur für acc-giro
+  // (Budgets liegen auf Giro; Tagesgeld hat keine Reservierung)
   let sprung = 0;
   if(accId === "acc-giro") {
     if(shouldApplyMitteSprung(year, month, day, ctx)) {
