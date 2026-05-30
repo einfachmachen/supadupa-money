@@ -524,6 +524,74 @@ describe("saldoAt — Excel-Logik (User-Spec)", () => {
     });
   });
 
+  describe("Tanken-Beispiel (User-Spec): 100 €, jeden Tag nutzbar", () => {
+    // nur ein Ende-/Gesamt-Budget (kein Mitte-Anteil) für Juni
+    function tankenCtx(today) {
+      return buildCtx({
+        cats: [{ id: "c-tanken", type: "expense", subs: [{ id: "s-tanken" }] }],
+        anchors: { "acc-giro": { "2026-3": 1000 } },
+        today,
+        txs: [
+          { id: "bt", accountId: "acc-giro", pending: true, _budgetSubId: "s-tanken",
+            _csvType: "expense", date: "2026-06-30", totalAmount: 100,
+            splits: [{ catId: "c-tanken", subId: "s-tanken", amount: 100 }] },
+        ],
+      });
+    }
+
+    it("Regel 3: nur Ende-Budget gilt als Gesamt 1.–Letzter (durchgehend 100 reserviert)", () => {
+      const ctx = tankenCtx(new Date("2026-05-15")); // Juni = Zukunftsmonat
+      [1, 7, 14, 15, 20, 30].forEach(d => {
+        expect(saldoAt(2026, 5, d, "acc-giro", ctx)).toBe(900);
+      });
+    });
+
+    it("Reservierung schrumpft mit Nutzung, bleibt aber den ganzen Monat bestehen", () => {
+      const ctx = tankenCtx(new Date("2026-05-15"));
+      // 40 € am 5.6. getankt → Reservierung = max(0, 100-40) = 60, bereits 40 ausgegeben
+      ctx.txs.push({ id: "t", accountId: "acc-giro", date: "2026-06-05", totalAmount: -40,
+        _csvType: "expense", splits: [{ catId: "c-tanken", subId: "s-tanken", amount: -40 }] });
+      // Vor und nach dem 15.: durchgehend 1000 - 40 - 60 = 900
+      expect(saldoAt(2026, 5, 10, "acc-giro", ctx)).toBe(900);
+      expect(saldoAt(2026, 5, 20, "acc-giro", ctx)).toBe(900);
+    });
+
+    it("Regel 2: Anker trägt Reservierung weiter, solange Juni nicht vergangen", () => {
+      const ctx = tankenCtx(new Date("2026-05-15")); // Juni Zukunft
+      // Juni-Ende-Prognose = 900 → Juli-Anker = 900
+      expect(saldoAnchor(2026, 6, "acc-giro", ctx)).toBe(900);
+    });
+
+    it("Regel 2: unbenutztes Budget fällt erst am 1. des Folgemonats weg", () => {
+      // Heute Juli → Juni ist vergangen, kein realer Verbrauch → Juni-Endstand = 1000
+      const ctx = tankenCtx(new Date("2026-07-15"));
+      expect(saldoAnchor(2026, 6, "acc-giro", ctx)).toBe(1000);
+    });
+  });
+
+  describe("Roll-Over (User-Spec Regel 1): ungenutztes Mitte rollt in die 2. Hälfte", () => {
+    it("Mitte 40 / Ende 60: ungenutztes Mitte erhöht den 2.-Hälfte-Topf", () => {
+      const ctx = buildCtx({
+        anchors: { "acc-giro": { "2026-3": 1000 } },
+        today: new Date("2026-05-15"), // Juni Zukunft
+        txs: [
+          // 10 € in der 1. Hälfte verbraucht
+          { id: "t1", accountId: "acc-giro", date: "2026-06-05", totalAmount: -10, _csvType: "expense",
+            splits: [{ catId: "c-essen", subId: "s-essen", amount: -10 }] },
+          ...budgetPlaceholders(2026, 5, "s-essen", 40, 60),
+        ],
+      });
+      // Tag 14 (1. Hälfte): nur Mitte gilt. RestMitte = max(0, 40-10) = 30.
+      //   Saldo = 1000 - 10 - 30 = 960
+      expect(saldoAt(2026, 5, 14, "acc-giro", ctx)).toBe(960);
+      // Tag 15 (2. Hälfte): Ende greift + ungenutztes Mitte rollt dazu.
+      //   Budget_H2 = max(0, 100-10) = 90 (= 60 Ende + 30 ungenutztes Mitte), Rest = 90.
+      //   Saldo = 1000 - 10 - 90 = 900
+      expect(saldoAt(2026, 5, 15, "acc-giro", ctx)).toBe(900);
+      expect(saldoAt(2026, 5, 30, "acc-giro", ctx)).toBe(900);
+    });
+  });
+
   describe("Mehrere Monate (Rekursion)", () => {
     it("Saldo zieht sich korrekt durch Monate", () => {
       const ctx = buildCtx({
