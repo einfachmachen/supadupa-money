@@ -1294,7 +1294,12 @@ function DashboardScreenV2() {
                             {budget>0&&<span style={{fontWeight:700}}>{fmt(budget)}</span>}
                           </button>
                           </div>
-                          {/* Mitte / Ende / aktuell — eigene Zeile, volle Breite */}
+                          {/* Mitte / Ende / aktuell — fixe Spaltenkoepfe + Werte-Zeile */}
+                          <div style={{display:"flex",gap:4,width:"100%",marginBottom:2}}>
+                            <div style={{flex:1,textAlign:"center",color:T.txt2,fontSize:9,fontWeight:700,letterSpacing:0.3}}>Mitte</div>
+                            <div style={{flex:1,textAlign:"center",color:T.txt2,fontSize:9,fontWeight:700,letterSpacing:0.3}}>Ende</div>
+                            <div style={{flex:1,textAlign:"center",color:T.txt2,fontSize:9,fontWeight:700,letterSpacing:0.3}}>aktuell</div>
+                          </div>
                           <div style={{display:"flex",gap:4,width:"100%"}}>
                             {(()=>{
                               // Budget je Halbmonat
@@ -1340,9 +1345,7 @@ function DashboardScreenV2() {
                                     border:`1px solid ${onlyPend?T.gold:T.bd}`,
                                     position:"relative",overflow:"hidden",
                                     display:"flex",flexDirection:"column",gap:1}}>
-                                    {/* Label */}
-                                    <div style={{color:T.txt2,fontSize:9,fontWeight:700}}>{lbl}</div>
-                                    {/* Betrag */}
+                                    {/* Betrag (Label steht als fixe Spaltenueberschrift darueber) */}
                                     <div style={{color:valCol,fontSize:16,
                                       fontWeight:800,fontFamily:"monospace",whiteSpace:"nowrap"}}>
                                       {val>0?(cat.type==="income"?`+${fmt(val)}`:`−${fmt(val)}`):"—"}
