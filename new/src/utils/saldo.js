@@ -296,7 +296,12 @@ function shouldApplyEndeSprung(year, month, day, ctx) {
 }
 
 // ── HAUPTFUNKTION ─────────────────────────────────────────────────────
-export function saldoAt(year, month, day, accId, ctx) {
+//
+// withReservation = true  → Tagessaldo "nach Budget" (inkl. RestMitte/RestEnde)
+// withReservation = false → reiner Ist-Verlauf (Anker + Buchungen, ohne
+//                           Reservierung). Diese Linie springt nicht am
+//                           14.→15., weil sie keine Reservierung enthält.
+function _saldo(year, month, day, accId, ctx, withReservation) {
   // Index aufbauen falls nicht vorhanden (für isDuplCounterpart)
   if(!ctx._txsById) {
     ctx._txsById = buildTxIdMap(ctx.txs || []);
@@ -306,7 +311,7 @@ export function saldoAt(year, month, day, accId, ctx) {
   if(!accId) {
     let sum = 0;
     (ctx.accounts || []).forEach(acc => {
-      sum += saldoAt(year, month, day, acc.id, ctx);
+      sum += _saldo(year, month, day, acc.id, ctx, withReservation);
     });
     return sum;
   }
@@ -319,7 +324,7 @@ export function saldoAt(year, month, day, accId, ctx) {
   // nur für heutige/zukünftige Tage und nur für acc-giro
   // (Budgets liegen auf Giro; Tagesgeld hat keine Reservierung)
   let sprung = 0;
-  if(accId === "acc-giro") {
+  if(withReservation && accId === "acc-giro") {
     if(shouldApplyMitteSprung(year, month, day, ctx)) {
       sprung = restMitte(year, month, ctx);
     } else if(shouldApplyEndeSprung(year, month, day, ctx)) {
@@ -328,6 +333,18 @@ export function saldoAt(year, month, day, accId, ctx) {
   }
 
   return anker + istV - sprung;
+}
+
+// Tagessaldo "nach Budget" — inkl. Budget-Reservierung (Single Source of Truth)
+export function saldoAt(year, month, day, accId, ctx) {
+  return _saldo(year, month, day, accId, ctx, true);
+}
+
+// Reiner Ist-Verlauf — Anker + Buchungen, OHNE Budget-Reservierung.
+// Verläuft glatt (kein Sprung am 14.→15.), zeigt den tatsächlichen
+// Kontostand-Verlauf aus realen + vorgemerkten Buchungen.
+export function saldoIst(year, month, day, accId, ctx) {
+  return _saldo(year, month, day, accId, ctx, false);
 }
 
 // ── Convenience-Wrapper ───────────────────────────────────────────────

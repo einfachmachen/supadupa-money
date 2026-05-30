@@ -15,7 +15,7 @@ import { dayOf, fmt, pn, uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
-import { saldoAt, saldoMitte, saldoEnde } from "../../utils/saldo.js";
+import { saldoAt, saldoIst, saldoMitte, saldoEnde } from "../../utils/saldo.js";
 
 function MonatScreen() {
   const { cats,setCats,groups,setGroups,txs,setTxs,accounts,setAccounts,
@@ -426,6 +426,14 @@ function MonatScreen() {
       const v = saldoAt(yYear, yMonth, dayNum, selAcc, _saldoCtx);
       return (v == null || isNaN(v)) ? null : v;
     };
+    // Reiner Ist-Verlauf (ohne Budget-Reservierung) — verläuft glatt, kein
+    // Sprung am 14.→15. Headline-Wert; "nach Budget" (getDaySaldo) wird als
+    // Annotation darunter gezeigt, wenn sich beide unterscheiden.
+    const getDayIst = (isoDate) => {
+      const [yy, mm, dd] = isoDate.split("-").map(Number);
+      const v = saldoIst(yy, mm - 1, dd, selAcc, _saldoCtx);
+      return (v == null || isNaN(v)) ? null : v;
+    };
     // Für die Minus-Warnung: ersten zukünftigen Tag mit positivem Saldo finden
     // (= Datum an dem z.B. das Gehalt eingeht und den Saldo dreht)
     const warningDates = new Map(); // isoDate → {deficit, nextPosDate, nextPosName, neededAmount}
@@ -762,7 +770,11 @@ function MonatScreen() {
               return aInc - bInc;
             });
             const dayNet = dayTxs.reduce((s,t)=>t.pending?s:txType(t)==="expense"?s-t.totalAmount:s+t.totalAmount,0);
-            const daySaldo = getDaySaldo(date);
+            const daySaldo = getDaySaldo(date);         // nach Budget (inkl. Reservierung)
+            const dayIst   = getDayIst(date);            // reiner Ist-Verlauf (Headline)
+            // "nach Budget" nur zeigen, wenn eine Reservierung greift (Wert weicht ab)
+            const hasReservierung = dayIst!==null && daySaldo!==null && Math.round(dayIst*100)!==Math.round(daySaldo*100);
+            const headSaldo = dayIst!==null ? dayIst : daySaldo;   // Headline = Ist
             // Hat dieser Tag Vormerkungen?
             const hasDayPend = dayTxs.some(t=>t.pending);
             return (
@@ -775,17 +787,23 @@ function MonatScreen() {
                     {dayOf(date)<=14&&<span style={{color:T.mid,fontSize:9,fontWeight:700,
                       background:"rgba(103,232,249,0.1)",borderRadius:5,padding:"1px 5px"}}>Mitte</span>}
                   </div>
-                  {/* Verbindungs-Linie in grün (positiver) / rot (negativer Tagessaldo) */}
+                  {/* Verbindungs-Linie in grün (positiver) / rot (negativer Ist-Saldo) */}
                   <div style={{flex:1,height:2,
-                    background:(daySaldo!==null?daySaldo:dayNet)>=0?T.pos:T.neg,
+                    background:(headSaldo!==null?headSaldo:dayNet)>=0?T.pos:T.neg,
                     opacity:0.85,borderRadius:1,minWidth:10}}/>
-                  {daySaldo!==null ? (
+                  {headSaldo!==null ? (
                     <div style={{textAlign:"right",flexShrink:0}}>
                       <span style={{
-                        color:daySaldo>=0?T.pos:T.neg,
+                        color:headSaldo>=0?T.pos:T.neg,
                         fontSize:14,fontWeight:800,fontFamily:"monospace"}}>
-                        {daySaldo>=0?"+":"−"}{fmt(Math.abs(daySaldo))}
+                        {headSaldo>=0?"+":"−"}{fmt(Math.abs(headSaldo))}
                       </span>
+                      {hasReservierung&&(
+                        <div style={{color:daySaldo>=0?T.txt2:T.neg,fontSize:8,lineHeight:1.3,
+                          textAlign:"right",fontFamily:"monospace",opacity:0.9}}>
+                          nach Budget {daySaldo>=0?"+":"−"}{fmt(Math.abs(daySaldo))}
+                        </div>
+                      )}
                       {hasDayPend&&(()=>{
                         const pendUpToDay = txs.filter(t=>{
                           if(!t.pending||t._linkedTo||t._budgetSubId) return false;
@@ -810,6 +828,10 @@ function MonatScreen() {
                 {(()=>{
                   const w = warningDates.get(date);
                   if(!w) return null;
+                  // Ist-Saldo ≥ 0, aber "nach Budget" im Minus → nur das
+                  // eingeplante Budget zieht ins Minus (kein echter Überzug).
+                  const wIst = getDayIst(date);
+                  const nurBudget = wIst!==null && wIst>=0;
                   const [,wm,wd] = (w.nextPos?.date||"").split("-");
                   const nextLabel = w.nextPos
                     ? `${parseInt(wd)}.${parseInt(wm)}.`
@@ -829,7 +851,7 @@ function MonatScreen() {
                       </div>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{color:T.neg,fontSize:12,fontWeight:700,lineHeight:1.3}}>
-                          Kontostand im Minus: −{fmt(w.deficit)} €
+                          {nurBudget ? "Nach Budget im Minus" : "Kontostand im Minus"}: −{fmt(w.deficit)} €
                         </div>
                         <div style={{color:T.txt2,fontSize:10,marginTop:2,lineHeight:1.4}}>
                           {w.nextPos

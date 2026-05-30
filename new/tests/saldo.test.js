@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { saldoAt, saldoMitte, saldoEnde, saldoAnchor, restMitte, restEnde, collectBudgets } from "../src/utils/saldo.js";
+import { saldoAt, saldoIst, saldoMitte, saldoEnde, saldoAnchor, restMitte, restEnde, collectBudgets } from "../src/utils/saldo.js";
 
 // ── Test-Fixture ─────────────────────────────────────────────────────
 function buildCtx(overrides = {}) {
@@ -589,6 +589,46 @@ describe("saldoAt — Excel-Logik (User-Spec)", () => {
       //   Saldo = 1000 - 10 - 90 = 900
       expect(saldoAt(2026, 5, 15, "acc-giro", ctx)).toBe(900);
       expect(saldoAt(2026, 5, 30, "acc-giro", ctx)).toBe(900);
+    });
+  });
+
+  describe("saldoIst: reiner Ist-Verlauf ohne Reservierung", () => {
+    it("verläuft glatt — kein Sprung am 14.→15. (Zukunftsmonat)", () => {
+      const ctx = buildCtx({
+        anchors: { "acc-giro": { "2026-3": 1000 } },
+        today: new Date("2026-05-15"), // Juni Zukunft
+        txs: [
+          { id: "t1", accountId: "acc-giro", date: "2026-06-10", totalAmount: -60, _csvType: "expense",
+            splits: [{ catId: "c-essen", subId: "s-essen", amount: -60 }] },
+          ...budgetPlaceholders(2026, 5, "s-essen", 100, 200),
+        ],
+      });
+      // saldoAt (nach Budget) springt: Tag 14 = 1000-60-40=900 (RestMitte=max(0,100-60)=40)
+      //   Tag 15 = 1000-60-RestEnde; RestEnde=max(0,300-60)=240 → 700  → Sprung 900→700
+      expect(saldoAt(2026, 5, 14, "acc-giro", ctx)).toBe(900);
+      expect(saldoAt(2026, 5, 15, "acc-giro", ctx)).toBe(700);
+      // saldoIst (ohne Reservierung): durchgehend 1000-60 = 940, KEIN Sprung
+      expect(saldoIst(2026, 5, 14, "acc-giro", ctx)).toBe(940);
+      expect(saldoIst(2026, 5, 15, "acc-giro", ctx)).toBe(940);
+      expect(saldoIst(2026, 5, 30, "acc-giro", ctx)).toBe(940);
+    });
+
+    it("Differenz saldoAt↔saldoIst = Reservierung; vergangene Tage gleich", () => {
+      const ctx = buildCtx({
+        anchors: { "acc-giro": { "2026-3": 1000 } },
+        today: new Date("2026-05-18"), // Mai aktuell, Tag 18
+        txs: [
+          { id: "t1", accountId: "acc-giro", date: "2026-05-10", totalAmount: -30, _csvType: "expense",
+            splits: [{ catId: "c-essen", subId: "s-essen", amount: -30 }] },
+          ...budgetPlaceholders(2026, 4, "s-essen", 100, 200),
+        ],
+      });
+      // Tag 14 ist vergangen → keine Reservierung → Ist == nach Budget
+      expect(saldoIst(2026, 4, 14, "acc-giro", ctx)).toBe(970);
+      expect(saldoAt (2026, 4, 14, "acc-giro", ctx)).toBe(970);
+      // Tag 31 künftig → Reservierung greift: saldoAt 700, saldoIst 970
+      expect(saldoIst(2026, 4, 31, "acc-giro", ctx)).toBe(970);
+      expect(saldoAt (2026, 4, 31, "acc-giro", ctx)).toBe(700);
     });
   });
 
