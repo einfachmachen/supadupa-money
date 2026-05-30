@@ -69,6 +69,27 @@ function DashboardScreenV2() {
     const [dashDrill, _setDashDrill] = useState(null);
     // Wrapper: synct dashDrillOpen in FinanzApp für TopBar-zIndex
     const setDashDrill = (v) => { _setDashDrill(v); setDashDrillOpen(!!v); };
+    // Verknüpfte-Vormerkung-Badge(s) für eine echte Buchung — identisch in allen
+    // Drilldown-Zeilen, damit eine zugeordnete Vormerkung ueberall erkennbar ist
+    // (auch bei Tagesgeld-Kategorien ohne Unterkategorien).
+    const LinkBadges = ({tx}) => {
+      if(!(tx.linkedIds||[]).length) return null;
+      return (tx.linkedIds||[]).map(lid=>{
+        const lt=txs.find(t=>t.id===lid);
+        if(!lt||lt.pending) return null;
+        const sTotal = lt._seriesTotal;
+        const sIdx = lt._seriesIdx;
+        return (
+          <span key={lid} style={{display:"inline-flex",alignItems:"center",gap:3,
+            background:"rgba(74,159,212,0.12)",border:`1px solid ${T.blue}33`,
+            borderRadius:5,padding:"1px 5px",fontSize:9,color:T.blue}}>
+            {Li("link",9,T.blue)}
+            {lt.desc||"Vormerkung"}
+            {sTotal>1&&` · ${sIdx}/${sTotal}`}
+          </span>
+        );
+      });
+    };
     const [detailsOpen, setDetailsOpen] = useState(false);
     // activePanel: null | "warnings" | "sparen" | "vormerkungen"
     const [activePanel, setActivePanel] = useState(null);
@@ -1209,9 +1230,10 @@ function DashboardScreenV2() {
                             background:tx.pending?"rgba(245,166,35,0.06)":"transparent"}}>
                           <div style={{flex:1,minWidth:0}}>
                             <div style={{color:T.txt,fontSize:11,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tx.desc}</div>
-                            <div style={{color:T.txt2,fontSize:9,display:"flex",gap:6}}>
+                            <div style={{color:T.txt2,fontSize:9,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
                               <span>{tx.date}</span>
                               {tx.pending&&<span style={{color:T.gold,fontSize:8,fontWeight:700}}>{tx._seriesId?"wiederkehrend":"vorgemerkt"}</span>}
+                              <LinkBadges tx={tx}/>
                             </div>
                           </div>
                           <span style={{color:tx.pending?T.gold:(cat.type==="income"?T.pos:T.neg),fontSize:12,fontWeight:700,fontFamily:"monospace",flexShrink:0}}>{cat.type==="income"?"+":"−"}{fmt(amt)}</span>
@@ -1390,11 +1412,12 @@ function DashboardScreenV2() {
                                   textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                                   {tx.desc||sub.name}
                                 </div>
-                                <div style={{color:T.txt2,fontSize:9,display:"flex",gap:6}}>
+                                <div style={{color:T.txt2,fontSize:9,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
                                   <span>{tx.date}</span>
                                   {tx.pending&&<span style={{color:T.gold,fontSize:8,fontWeight:700}}>
                                     {tx._seriesId?"wiederkehrend":"vorgemerkt"}
                                   </span>}
+                                  <LinkBadges tx={tx}/>
                                 </div>
                               </div>
                               <span style={{color:tx.pending?T.gold:(cat.type==="income"?T.pos:T.neg),fontSize:12,
