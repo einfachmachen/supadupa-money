@@ -18,6 +18,11 @@
 // Erste Hälfte (Tag 1..14):       Tagessaldo = Anker + Ist(1..X) − RestMitte
 // Zweite Hälfte (Tag 15..letzter): Tagessaldo = Anker + Ist(1..X) − RestEnde
 //
+// Sonderfall „nur Gesamt-Budget" (kein Mitte-Anteil): Da es keinen
+// Mitte-Anteil gibt, der allein die erste Hälfte abdeckt, wird das volle
+// Gesamt-Budget bereits ab Tag 1 reserviert (RestMitte fällt pro Kategorie
+// auf das Gesamt-Budget zurück).
+//
 // Eine Reservierung wird beim Übergang 14.→15. bzw. Monatsletzter→1. des
 // Folgemonats NUR dann freigegeben, wenn der reale heutige Tag den
 // jeweiligen Stichtag bereits überschritten hat. Für reine Zukunftsmonate
@@ -28,7 +33,8 @@
 // dort wurde real gebucht, eine Reservierung ergäbe keinen Sinn.
 //
 // Wobei (pro Budget-Kategorie K, dann summiert):
-//   RestMitte = Σ_K max(0, BudgetMitte_K − Ist1bis14_K)
+//   RestMitte = Σ_K max(0, Ref_K − Ist1bis14_K)
+//     Ref_K = BudgetMitte_K (falls Mitte-Anteil gesetzt), sonst BudgetGesamt_K
 //   Budget_H2_K = max(0, BudgetEnde_K − Ist1bis14_K)         (dynamisches Roll-Over)
 //   RestEnde = Σ_K max(0, Budget_H2_K − Ist15bisLetzter_K)
 //
@@ -218,14 +224,21 @@ function istForSub(year, month, fromDay, toDay, baseSubId, ctx) {
   return sum;
 }
 
-// ── RestMitte: Σ_K max(0, BudgetMitte_K − Ist1bis14_K) ────────────────
+// ── RestMitte: Reservierung der ersten Monatshälfte (Tag 1..14) ───────
+//   Pro Kategorie K wird der Mitte-Anteil reserviert, falls gesetzt;
+//   ist NUR ein Gesamt-Budget gesetzt (kein Mitte-Anteil), wird das volle
+//   Gesamt-Budget bereits ab Tag 1 reserviert — es gibt dann keinen
+//   Mitte-Anteil, der nur die erste Hälfte abdecken würde.
+//     Ref_K = BudgetMitte_K  (falls Mitte-Anteil > 0)  sonst BudgetGesamt_K
+//     RestMitte = Σ_K max(0, Ref_K − Ist1bis14_K)
 function restMitte(year, month, ctx) {
   const budgets = collectBudgets(year, month, ctx);
   let rest = 0;
   Object.entries(budgets).forEach(([subId, b]) => {
-    if(b.mitte <= 0) return;
+    const ref = b.mitte > 0 ? b.mitte : b.gesamt;
+    if(ref <= 0) return;
     const istK = istForSub(year, month, 1, 14, subId, ctx);
-    rest += Math.max(0, b.mitte - istK);
+    rest += Math.max(0, ref - istK);
   });
   return rest;
 }

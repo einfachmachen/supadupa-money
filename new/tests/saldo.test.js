@@ -472,13 +472,55 @@ describe("saldoAt — Excel-Logik (User-Spec)", () => {
           // Tanken: keine Platzhalter, kein Ist
         ],
       });
-      // Tag 14: Essen Mitte-Sprung = max(0, 100-30) = 70. Tanken keine Mitte → 0.
-      // Saldo = 1000 - 30 - 70 = 900
-      expect(saldoAt(2026, 4, 14, "acc-giro", ctx)).toBe(900);
+      // Tag 14: Essen Mitte = max(0, 100-30) = 70. Tanken hat NUR Gesamt (kein
+      // Mitte) → volles Gesamt schon ab Tag 1 reserviert = max(0, 100-0) = 100.
+      // Saldo = 1000 - 30 - 70 - 100 = 800
+      expect(saldoAt(2026, 4, 14, "acc-giro", ctx)).toBe(800);
       // Tag 31: Essen Budget_H2 = max(0, 300-30) = 270. Rest = 270-0 = 270.
       // Tanken: Budget 100, Ist 0 → Budget_H2 = 100, Rest = 100. ABGEZOGEN!
       // Saldo = 1000 - 30 - 270 - 100 = 600
       expect(saldoAt(2026, 4, 31, "acc-giro", ctx)).toBe(600);
+    });
+  });
+
+  describe("Nur Gesamt-Budget (kein Mitte-Anteil)", () => {
+    it("volles Gesamt-Budget schon ab Tag 1 reserviert, durchgehend", () => {
+      // Zukunftsmonat Juni, nur Ende-/Gesamt-Platzhalter (mitte=0), Gesamt 300
+      const ctx = buildCtx({
+        anchors: { "acc-giro": { "2026-3": 1000 } },
+        today: new Date("2026-05-05"),
+        txs: [
+          { id: "be", accountId: "acc-giro", pending: true, _budgetSubId: "s-essen",
+            _csvType: "expense", date: "2026-06-30", totalAmount: 300,
+            splits: [{ catId: "c-essen", subId: "s-essen", amount: 300 }] },
+        ],
+      });
+      // Kein Ist. RestMitte fällt auf Gesamt zurück = 300, RestEnde = 300.
+      expect(restMitte(2026, 5, ctx)).toBe(300);
+      expect(restEnde(2026, 5, ctx)).toBe(300);
+      // Tag 1..14 (1. Hälfte): 1000 - 300 = 700
+      expect(saldoAt(2026, 5, 1,  "acc-giro", ctx)).toBe(700);
+      expect(saldoAt(2026, 5, 14, "acc-giro", ctx)).toBe(700);
+      // Tag 15..letzter (2. Hälfte): 1000 - 300 = 700 — kein Sprung
+      expect(saldoAt(2026, 5, 15, "acc-giro", ctx)).toBe(700);
+      expect(saldoAt(2026, 5, 30, "acc-giro", ctx)).toBe(700);
+    });
+
+    it("mit Ist: Reservierung schrumpft korrekt (max(0, Gesamt-Ist))", () => {
+      const ctx = buildCtx({
+        anchors: { "acc-giro": { "2026-3": 1000 } },
+        today: new Date("2026-05-05"),
+        txs: [
+          { id: "t1", accountId: "acc-giro", date: "2026-06-05", totalAmount: -50, _csvType: "expense",
+            splits: [{ catId: "c-essen", subId: "s-essen", amount: -50 }] },
+          { id: "be", accountId: "acc-giro", pending: true, _budgetSubId: "s-essen",
+            _csvType: "expense", date: "2026-06-30", totalAmount: 300,
+            splits: [{ catId: "c-essen", subId: "s-essen", amount: 300 }] },
+        ],
+      });
+      // Tag 10 (1. Hälfte): RestMitte = max(0, 300-50) = 250, Ist(1..10)=-50
+      //   Saldo = 1000 - 50 - 250 = 700
+      expect(saldoAt(2026, 5, 10, "acc-giro", ctx)).toBe(700);
     });
   });
 
