@@ -4,6 +4,8 @@ import React, { useMemo, useState } from "react";
 import { KontostandImportButton } from "../buttons/KontostandImportButton.jsx";
 import { theme as T } from "../../theme/activeTheme.js";
 import { Li } from "../../utils/icons.jsx";
+// alias-Import: lokaler State heisst ebenfalls anchorValue
+import { anchorValue as readAnchorVal, anchorDay as readAnchorDay, makeAnchorEntry } from "../../utils/anchors.js";
 
 function AnchorSection({selAccId, accounts, startBalances, setStartBalances, mobileMode, MFSl}) {
   const [anchorOpen,  setAnchorOpen]  = useState(false);
@@ -23,11 +25,16 @@ function AnchorSection({selAccId, accounts, startBalances, setStartBalances, mob
             label:`31.12.${y-1} (Anfang ${y})`});
         } else if(!isNaN(Number(k)) && typeof v === "object") {
           const mo = Number(k);
-          Object.entries(v).forEach(([accId, val])=>{
-            if(typeof val === "number") {
+          Object.entries(v).forEach(([accId, raw])=>{
+            const val = readAnchorVal(raw);
+            if(val != null) {
+              const day = readAnchorDay(raw);
               const accName = accounts.find(a=>a.id===accId)?.name || accId;
-              result.push({year:y, month:mo, value:val, accId, key:`${y}/${mo}/${accId}`,
-                label:`${String(mo+1).padStart(2,"0")}.${y} · ${accName}`});
+              const datePart = day != null
+                ? `${String(day).padStart(2,"0")}.${String(mo+1).padStart(2,"0")}.${y}`
+                : `${String(mo+1).padStart(2,"0")}.${y}`;
+              result.push({year:y, month:mo, value:val, day, accId, key:`${y}/${mo}/${accId}`,
+                label:`${datePart} · ${accName}`});
             }
           });
         }
@@ -124,12 +131,13 @@ function AnchorSection({selAccId, accounts, startBalances, setStartBalances, mob
             onImport={(saldo, date)=>{
               if(!date) return;
               const parts = date.split("-").map(Number);
-              const iY = parts[0], iM = parts[1]-1;
+              const iY = parts[0], iM = parts[1]-1, iD = parts[2];
               const targetAccId = selAccId || accounts[0]?.id || "acc-giro";
+              const entry = makeAnchorEntry(saldo, iY, iM, iD);
               setStartBalances(prev=>({
                 ...prev,
                 [iY]: { ...(prev?.[iY]||{}),
-                  [iM]: { ...((prev?.[iY]?.[iM])||{}), [targetAccId]: saldo }
+                  [iM]: { ...((prev?.[iY]?.[iM])||{}), [targetAccId]: entry }
                 }
               }));
             }}/>

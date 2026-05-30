@@ -34,6 +34,7 @@ import { getTheme } from "./theme/themes.js";
 import { BASE_ROWS, CUR_YEAR, INIT_ACCOUNTS, INIT_CATS } from "./utils/constants.js";
 import { kvStore } from "./utils/kvStore.js";
 import { isoAddMonths } from "./utils/date.js";
+import { anchorValue, anchorDay } from "./utils/anchors.js";
 import { pn, uid } from "./utils/format.js";
 import { Li } from "./utils/icons.jsx";
 import { makeYearData } from "./utils/yearData.js";
@@ -1341,19 +1342,20 @@ Abbrechen = ${remoteName}-Stand laden`
       if(!yearVal || typeof yearVal !== "object") return;
       Object.entries(yearVal).forEach(([k, v])=>{
         if(k === "acc-giro" && typeof v === "number") {
-          // Altes Format
+          // Altes Format (Jahres-Anker = Ende Vorjahr)
           if(!accFilter || accFilter === "acc-giro")
-            anchors.push({year:y, month:-1, value:v, accId:"acc-giro"});
+            anchors.push({year:y, month:-1, value:v, day:null, accId:"acc-giro"});
         } else if(!isNaN(Number(k)) && typeof v === "object") {
           const mo = Number(k);
           if(accFilter) {
-            // Konto-spezifisch
-            const val = v[accFilter];
-            if(typeof val === "number") anchors.push({year:y, month:mo, value:val, accId:accFilter});
+            // Konto-spezifisch — Wert kann Zahl (Monats-Ende) oder {v,day} (taggenau) sein
+            const val = anchorValue(v[accFilter]);
+            if(val != null) anchors.push({year:y, month:mo, value:val, day:anchorDay(v[accFilter]), accId:accFilter});
           } else {
             // Gesamt: alle Konten summieren
-            Object.entries(v).forEach(([aId, val])=>{
-              if(typeof val === "number") anchors.push({year:y, month:mo, value:val, accId:aId});
+            Object.entries(v).forEach(([aId, raw])=>{
+              const val = anchorValue(raw);
+              if(val != null) anchors.push({year:y, month:mo, value:val, day:anchorDay(raw), accId:aId});
             });
           }
         }
@@ -1374,8 +1376,15 @@ Abbrechen = ${remoteName}-Stand laden`
 
       const anchor = eligible[0];
       let saldo = anchor.value;
-      let startY = anchor.year, startM = anchor.month + 1;
-      if(startM > 11) { startM = 0; startY++; }
+      // Taggenauer Anker: im Anker-Monat selbst zaehlen nur Buchungen NACH dem
+      // Anker-Tag (bis inkl. Anker-Tag steckt bereits im Anker-Wert). Monats-Ende-
+      // Anker (day=null) → aDay = letzter Tag → Anker-Monat traegt nichts bei
+      // (identisch zum alten Verhalten "ab Folgemonat"). Jahres-Anker (month=-1)
+      // startet im Januar.
+      const aDay = anchor.day == null
+        ? (anchor.month >= 0 ? new Date(anchor.year, anchor.month+1, 0).getDate() : 0)
+        : anchor.day;
+      const startY = anchor.year, startM = anchor.month >= 0 ? anchor.month : 0;
 
       const signedAmt = t => {
         const type = t._csvType || (t.totalAmount>=0?"income":"expense");
@@ -1384,11 +1393,13 @@ Abbrechen = ${remoteName}-Stand laden`
       for(let y = startY; y <= toYear; y++) {
         const maxM = (y===toYear)?toMonth:11, minM=(y===startY)?startM:0;
         for(let m = minM; m <= maxM; m++) {
+          const isAnchorMonth = (y===anchor.year && m===anchor.month);
           const accTxs = txs.filter(t=>{
             if(t.pending||t._linkedTo) return false;
             const d=new Date(t.date);
-            return d.getFullYear()===y && d.getMonth()===m &&
-              (t.accountId===accFilter || (!t.accountId && accFilter==="acc-giro"));
+            if(d.getFullYear()!==y || d.getMonth()!==m) return false;
+            if(isAnchorMonth && d.getDate() <= aDay) return false;
+            return (t.accountId===accFilter || (!t.accountId && accFilter==="acc-giro"));
           });
           saldo += accTxs.reduce((s,t)=>s+signedAmt(t), 0);
         }
@@ -1436,17 +1447,22 @@ Abbrechen = ${remoteName}-Stand laden`
 
         const anchor = accAnchors[0];
         let saldo = anchor.value;
-        let startY = anchor.year, startM = anchor.month+1;
-        if(startM>11){startM=0;startY++;}
+        // Taggenauer Anker (siehe Konto-spezifischen Zweig oben)
+        const aDay = anchor.day == null
+          ? (anchor.month >= 0 ? new Date(anchor.year, anchor.month+1, 0).getDate() : 0)
+          : anchor.day;
+        const startY = anchor.year, startM = anchor.month >= 0 ? anchor.month : 0;
 
         for(let y=startY; y<=toYear; y++){
           const maxM=(y===toYear)?toMonth:11, minM=(y===startY)?startM:0;
           for(let m=minM; m<=maxM; m++){
+            const isAnchorMonth = (y===anchor.year && m===anchor.month);
             const accTxs = txs.filter(t=>{
               if(t.pending||t._linkedTo) return false;
               const d=new Date(t.date);
-              return d.getFullYear()===y && d.getMonth()===m &&
-                (t.accountId===aId || (!t.accountId && aId==="acc-giro"));
+              if(d.getFullYear()!==y || d.getMonth()!==m) return false;
+              if(isAnchorMonth && d.getDate() <= aDay) return false;
+              return (t.accountId===aId || (!t.accountId && aId==="acc-giro"));
             });
             saldo += accTxs.reduce((s,t)=>s+signedAmt(t),0);
           }
