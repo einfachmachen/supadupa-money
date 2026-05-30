@@ -600,7 +600,7 @@ export default function FinanzApp() {
       }
     }
     if(allTxs.length > 0) {
-      const migrated = migrateBudgetDates(migrateSeries(allTxs.map(t=>({...t, splits:Array.isArray(t.splits)?t.splits:[]}))));
+      const migrated = migrateBudgetDates(stripBudgetSeries(migrateSeries(allTxs.map(t=>({...t, splits:Array.isArray(t.splits)?t.splits:[]})))));
       // Migration: alle Buchungen ohne accountId → acc-giro
       const migratedWithAcc = migrated.map(t => t.accountId ? t : {...t, accountId:"acc-giro"});
       setTxs(migratedWithAcc);
@@ -683,8 +683,11 @@ export default function FinanzApp() {
 
   // Migration: erkennt zusammengehörige Vormerkungen und vergibt _seriesId
   const migrateSeries = (txList) => {
-    // Nur pending ohne bestehende seriesId
-    const needsMigration = txList.filter(t=>t.pending && !t._seriesId);
+    // Nur pending ohne bestehende seriesId. Budget-Platzhalter (_budgetSubId)
+    // sind KEINE wiederkehrende Nutzer-Serie (eigene Mechanik) und werden
+    // ausgeschlossen — sonst werden konstante monatliche Budgets (z.B. Tanken
+    // 100 €) fälschlich als Serie markiert.
+    const needsMigration = txList.filter(t=>t.pending && !t._seriesId && !t._budgetSubId);
     if(needsMigration.length === 0) return txList;
 
     // Gruppiere nach desc + betrag + catId
@@ -721,6 +724,23 @@ export default function FinanzApp() {
     return txList.map(t => updates[t.id] ? {...t, ...updates[t.id]} : t);
   };
 
+  // Bereinigung: Budget-Platzhalter (_budgetSubId) dürfen keine Serien-Felder
+  // tragen. Ein früherer migrateSeries-Lauf hat konstante monatliche
+  // Platzhalter (z.B. Tanken 100 €) fälschlich als Serie markiert ("⚠ alt").
+  // Wir entfernen _seriesId/_seriesIdx/_seriesTotal von allen Budget-Platzhaltern.
+  const stripBudgetSeries = (txList) => {
+    let changed = false;
+    const out = txList.map(t => {
+      if(t._budgetSubId && (t._seriesId || t._seriesIdx || t._seriesTotal)) {
+        changed = true;
+        const { _seriesId, _seriesIdx, _seriesTotal, ...rest } = t;
+        return rest;
+      }
+      return t;
+    });
+    return changed ? out : txList;
+  };
+
   // Migration: Budget-Platzhalter-Daten korrigieren
   // Betrifft NUR Buchungen mit _budgetSubId (=Budget-Platzhalter), niemals echte Buchungen.
   // Alter Code setzte Mitte auf 01. und Ende auf 15. — korrekt wäre 14. bzw. Monatsletzter.
@@ -750,7 +770,7 @@ export default function FinanzApp() {
     if(!d) return;
     if(Array.isArray(d.cats)     && d.cats.length)     setCats(d.cats.map(c=>({...c,subs:Array.isArray(c.subs)?c.subs:[],icon:c.icon||"tag",color:c.color||T.blue})));
     if(Array.isArray(d.groups)   && d.groups.length)   setGroups(d.groups);
-    if(Array.isArray(d.txs)      && d.txs.length)      setTxs(migrateBudgetDates(migrateSeries(d.txs.map(t=>({...t,splits:Array.isArray(t.splits)?t.splits:[]})))));
+    if(Array.isArray(d.txs)      && d.txs.length)      setTxs(migrateBudgetDates(stripBudgetSeries(migrateSeries(d.txs.map(t=>({...t,splits:Array.isArray(t.splits)?t.splits:[]}))))));
     if(Array.isArray(d.accounts) && d.accounts.length) {
       // Migration: alten Puffer ins Giro-Konto übernehmen
       const oldPuffer = parseInt(kvStore.getItem("mbt_tagesgeld_puffer")||"0");
