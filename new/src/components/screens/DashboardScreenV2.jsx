@@ -830,7 +830,13 @@ function DashboardScreenV2() {
         {/* ── 3-Symbol-Zeile: Warnungen | Sparen | Vormerkungen ──
             Vergangene Monate: nur Vormerkungen-Icon (und nur wenn echte, nicht-Budget-Vormerkungen offen) */}
         {(()=>{
-          const visiblePTxs = isPastMonth ? pTxs.filter(t=>!t._budgetSubId) : pTxs;
+          const visiblePTxs = (()=>{
+            const now=new Date();
+            const todayISO=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+            const base = isPastMonth ? pTxs.filter(t=>!t._budgetSubId) : pTxs;
+            // identisch zur PendingList: Mitte-Restbudget ausblenden, sobald der 14. vorbei ist
+            return base.filter(t=>!(t._budgetSubId && t._budgetSubId.endsWith("_mitte") && todayISO > t.date.slice(0,7)+"-14"));
+          })();
           const showRow = !isPastMonth || visiblePTxs.length>0;
           if(!showRow) return null;
           const togglePanel = (key) => setActivePanel(p => p===key ? null : key);
@@ -873,7 +879,12 @@ function DashboardScreenV2() {
           <TagesgeldWidget year={year} month={month} initialCollapsed={false}/>
         )}
         {activePanel === "vormerkungen" && !window.MBT_DEBUG?.disable_pendinglist && (()=>{
-          const visiblePTxs = isPastMonth ? pTxs.filter(t=>!t._budgetSubId) : pTxs;
+          const visiblePTxs = (()=>{
+            const now=new Date();
+            const todayISO=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+            const base = isPastMonth ? pTxs.filter(t=>!t._budgetSubId) : pTxs;
+            return base.filter(t=>!(t._budgetSubId && t._budgetSubId.endsWith("_mitte") && todayISO > t.date.slice(0,7)+"-14"));
+          })();
           if(visiblePTxs.length===0) return null;
           return (
             <PendingList pTxs={visiblePTxs} getCat={getCat} getSub={getSub} txType={txType} openEdit={openEdit} dayOf={dayOf} pendOpenAmt={pendOpenAmt} budgetOpenRest={budgetOpenRest} initialCollapsed={false}/>
@@ -1152,45 +1163,60 @@ function DashboardScreenV2() {
         {dashDrill&&(
           <div onClick={()=>setDashDrill(null)}
             style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",
-              zIndex:65,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+              zIndex:65,display:"flex",alignItems:"flex-start",justifyContent:"center",padding:0}}>
             <div onClick={e=>e.stopPropagation()}
-              style={{background:T.surf2,borderRadius:20,width:"100%",maxWidth:480,
-                maxHeight:"80vh",display:"flex",flexDirection:"column",
-                border:`1px solid ${T.bds}`,boxShadow:"0 8px 40px rgba(0,0,0,0.7)"}}>
+              style={{background:T.surf2,borderRadius:0,width:"100%",maxWidth:560,
+                height:"100dvh",maxHeight:"100dvh",display:"flex",flexDirection:"column",
+                border:"none",boxShadow:"0 8px 40px rgba(0,0,0,0.7)"}}>
               {/* Header */}
-              <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px 8px",flexShrink:0}}>
-                {dashDrill.cat&&<div style={{width:36,height:36,borderRadius:11,background:dashDrill.cat.color+"33",
-                  display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>
-                  {Li(dashDrill.cat.icon,16,dashDrill.cat.color||T.txt2)}
+              <div style={{display:"flex",alignItems:"center",gap:8,padding:"12px 12px 8px",flexShrink:0}}>
+                {/* Zurueck-Pfeil links (spaeter auch per + bedienbar) */}
+                <button onClick={()=>setDashDrill(null)}
+                  style={{background:"rgba(255,255,255,0.08)",border:"none",color:T.txt,
+                    borderRadius:10,width:36,height:36,cursor:"pointer",flexShrink:0,
+                    display:"flex",alignItems:"center",justifyContent:"center"}}>{Li("arrow-left",18)}</button>
+                {dashDrill.cat&&<div style={{width:38,height:38,borderRadius:11,background:dashDrill.cat.color+"33",
+                  display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                  {Li(dashDrill.cat.icon,18,dashDrill.cat.color||T.txt2)}
                 </div>}
-                <div style={{flex:1}}>
+                <div style={{flex:1,minWidth:0}}>
                   <div style={{color:dashDrill.cat ? T.blue : dashDrill.isIncome ? T.pos : "#EA4025",
-                    fontSize:15,fontWeight:700}}>{dashDrill.label||dashDrill.cat?.name}</div>
-                  <div style={{color:T.txt2,fontSize:11,display:"flex",gap:8,alignItems:"center"}}>
+                    fontSize:19,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{dashDrill.label||dashDrill.cat?.name}</div>
+                  <div style={{color:T.txt2,fontSize:13,display:"flex",gap:8,alignItems:"center"}}>
                     {dashDrill.cat ? (()=>{
                       const live = txs.filter(t=>{const d=new Date(t.date);return d.getFullYear()===year&&d.getMonth()===month&&(t.splits||[]).some(sp=>sp.catId===dashDrill.cat.id);});
                       return <span>{live.length} Buchung{live.length!==1?"en":""}</span>;
                     })() : <span>{(dashDrill.txList||[]).length} Buchung{(dashDrill.txList||[]).length!==1?"en":""}</span>}
-                    {dashDrill.total!=null&&<span style={{color:dashDrill.isIncome?T.pos:T.neg,fontWeight:700}}>
-                      {dashDrill.isIncome?"+":"−"}{fmt(dashDrill.total)}
+                    {dashDrill.total!=null&&<span style={{color:dashDrill.isIncome?T.pos:T.neg,fontWeight:700,fontSize:15}}>
+                      {fmt(dashDrill.total)}
                     </span>}
                   </div>
                 </div>
                 <button onClick={()=>setDashDrill(null)}
                   style={{background:"rgba(255,255,255,0.08)",border:"none",color:T.txt,
-                    borderRadius:10,width:32,height:32,cursor:"pointer",fontSize:16}}>{Li("x",13)}</button>
+                    borderRadius:10,width:36,height:36,cursor:"pointer",flexShrink:0,
+                    display:"flex",alignItems:"center",justifyContent:"center"}}>{Li("x",16)}</button>
               </div>
               {/* Suchfeld */}
               <div style={{padding:"8px 14px",borderTop:`1px solid ${T.bd}`,flexShrink:0,
                 display:"flex",alignItems:"center",gap:6,background:"rgba(0,0,0,0.15)"}}>
-                {Li("search",14,T.txt2)}
+                {Li("search",16,T.txt2)}
                 <input value={dashSearch} onChange={e=>setDashSearch(e.target.value)}
                   placeholder="suchen…"
                   style={{flex:1,background:"transparent",border:"none",color:T.txt,
-                    fontSize:12,outline:"none"}}/>
+                    fontSize:14,outline:"none"}}/>
                 {dashSearch&&<button onClick={()=>setDashSearch("")}
-                  style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",fontSize:12}}>{Li("x",13)}</button>}
+                  style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",fontSize:14}}>{Li("x",14)}</button>}
               </div>
+              {/* Fixe Spaltenueberschrift Mitte/Ende/aktuell — nur bei Kategorie-Drilldown mit Unterkategorien */}
+              {dashDrill.cat&&!dashSearch&&!dashDrill.isIncome&&(dashDrill.cat.subs||[]).length>0&&(
+                <div style={{display:"flex",gap:4,padding:"6px 14px 6px",flexShrink:0,
+                  background:"rgba(0,0,0,0.12)",borderTop:`1px solid ${T.bd}`}}>
+                  <div style={{flex:1,textAlign:"center",color:T.txt2,fontSize:12,fontWeight:700,letterSpacing:0.3}}>Mitte</div>
+                  <div style={{flex:1,textAlign:"center",color:T.txt2,fontSize:12,fontWeight:700,letterSpacing:0.3}}>Ende</div>
+                  <div style={{flex:1,textAlign:"center",color:T.txt2,fontSize:12,fontWeight:700,letterSpacing:0.3}}>aktuell</div>
+                </div>
+              )}
               <div style={{flex:1,overflowY:"auto"}}>
                 {/* Unterkategorie-Ansicht wenn Kategorie-Drill und keine Suche */}
                 {dashDrill.cat&&!dashSearch&&(()=>{
@@ -1251,15 +1277,15 @@ function DashboardScreenV2() {
                             cursor:"pointer",display:"flex",flexDirection:"column",gap:3,
                             background:tx.pending?"rgba(245,166,35,0.06)":"transparent"}}>
                           {/* Zeile 1: Buchungstext (ausklappbar) */}
-                          {renderDesc(tx,{color:T.txt,size:12,weight:600,fallback:cat?.name||"Buchung"})}
+                          {renderDesc(tx,{color:T.txt,size:15,weight:600,fallback:cat?.name||"Buchung"})}
                           {/* Zeile 2: Datum + Status links, Betrag rechts (volle Breite) */}
                           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
-                            <div style={{color:T.txt2,fontSize:9,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",minWidth:0}}>
+                            <div style={{color:T.txt2,fontSize:12,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",minWidth:0}}>
                               <span>{tx.date}</span>
-                              {tx.pending&&<span style={{color:T.gold,fontSize:8,fontWeight:700}}>{tx._seriesId?"wiederkehrend":"vorgemerkt"}</span>}
+                              {tx.pending&&<span style={{color:T.gold,fontSize:11,fontWeight:700}}>{tx._seriesId?"wiederkehrend":"vorgemerkt"}</span>}
                               <LinkBadges tx={tx}/>
                             </div>
-                            <span style={{color:tx.pending?T.gold:(cat.type==="income"?T.pos:T.neg),fontSize:14,fontWeight:700,fontFamily:"monospace",flexShrink:0}}>{cat.type==="income"?"+":"−"}{fmt(amt)}</span>
+                            <span style={{color:tx.pending?T.gold:(cat.type==="income"?T.pos:T.neg),fontSize:17,fontWeight:700,fontFamily:"monospace",flexShrink:0}}>{fmt(amt)}</span>
                           </div>
                         </div>
                       );
@@ -1274,12 +1300,12 @@ function DashboardScreenV2() {
                           <div style={{display:"flex",alignItems:"center",gap:8}}>
                           <div onClick={()=>setDrillExpandedSub(isExp(sub.id)?null:sub.id)}
                             style={{flex:1,minWidth:0,cursor:"pointer"}}>
-                            <div style={{color:T.txt,fontSize:12,fontWeight:700,
+                            <div style={{color:T.txt,fontSize:15,fontWeight:700,
                               overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                               {sub.name}
                             </div>
-                            {pend>0&&<div style={{color:T.gold,fontSize:10,marginTop:1}}>
-                              {Li("clock",9,T.gold)} {cat.type==="income"?"+":"−"}{fmt(pend)} vorgemerkt
+                            {pend>0&&<div style={{color:T.gold,fontSize:11,marginTop:1}}>
+                              {Li("clock",10,T.gold)} {fmt(pend)} vorgemerkt
                             </div>}
                           </div>
                           {/* Budget-Button */}
@@ -1294,12 +1320,7 @@ function DashboardScreenV2() {
                             {budget>0&&<span style={{fontWeight:700}}>{fmt(budget)}</span>}
                           </button>
                           </div>
-                          {/* Mitte / Ende / aktuell — fixe Spaltenkoepfe + Werte-Zeile */}
-                          <div style={{display:"flex",gap:4,width:"100%",marginBottom:2}}>
-                            <div style={{flex:1,textAlign:"center",color:T.txt2,fontSize:9,fontWeight:700,letterSpacing:0.3}}>Mitte</div>
-                            <div style={{flex:1,textAlign:"center",color:T.txt2,fontSize:9,fontWeight:700,letterSpacing:0.3}}>Ende</div>
-                            <div style={{flex:1,textAlign:"center",color:T.txt2,fontSize:9,fontWeight:700,letterSpacing:0.3}}>aktuell</div>
-                          </div>
+                          {/* Werte-Zeile (Spaltenkoepfe stehen fix oben im Modal) */}
                           <div style={{display:"flex",gap:4,width:"100%"}}>
                             {(()=>{
                               // Budget je Halbmonat
@@ -1345,10 +1366,10 @@ function DashboardScreenV2() {
                                     border:`1px solid ${onlyPend?T.gold:T.bd}`,
                                     position:"relative",overflow:"hidden",
                                     display:"flex",flexDirection:"column",gap:1}}>
-                                    {/* Betrag (Label steht als fixe Spaltenueberschrift darueber) */}
-                                    <div style={{color:valCol,fontSize:16,
+                                    {/* Betrag (Label steht als fixe Spaltenueberschrift darueber; Vorzeichen weggelassen, Farbe codiert) */}
+                                    <div style={{color:valCol,fontSize:18,
                                       fontWeight:800,fontFamily:"monospace",whiteSpace:"nowrap"}}>
-                                      {val>0?(cat.type==="income"?`+${fmt(val)}`:`−${fmt(val)}`):"—"}
+                                      {val>0?fmt(val):"—"}
                                     </div>
                                     {/* Budget-Balken direkt in Zelle */}
                                     {bgt>0&&(
@@ -1431,18 +1452,18 @@ function DashboardScreenV2() {
                                 background:tx.pending
                                   ?"rgba(245,166,35,0.07)":"rgba(0,0,0,0.15)",
                                 cursor:"pointer",display:"flex",flexDirection:"column",gap:3}}>
-                              {renderDesc(tx,{color:T.txt,size:12,weight:600,fallback:sub.name})}
+                              {renderDesc(tx,{color:T.txt,size:15,weight:600,fallback:sub.name})}
                               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
-                                <div style={{color:T.txt2,fontSize:9,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",minWidth:0}}>
+                                <div style={{color:T.txt2,fontSize:12,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",minWidth:0}}>
                                   <span>{tx.date}</span>
-                                  {tx.pending&&<span style={{color:T.gold,fontSize:8,fontWeight:700}}>
+                                  {tx.pending&&<span style={{color:T.gold,fontSize:11,fontWeight:700}}>
                                     {tx._seriesId?"wiederkehrend":"vorgemerkt"}
                                   </span>}
                                   <LinkBadges tx={tx}/>
                                 </div>
-                                <span style={{color:tx.pending?T.gold:(cat.type==="income"?T.pos:T.neg),fontSize:14,
+                                <span style={{color:tx.pending?T.gold:(cat.type==="income"?T.pos:T.neg),fontSize:17,
                                   fontWeight:700,fontFamily:"monospace",flexShrink:0}}>
-                                  {cat.type==="income"?"+":"−"}{fmt(amt)}
+                                  {fmt(amt)}
                                 </span>
                               </div>
                             </div>
@@ -1552,34 +1573,34 @@ function DashboardScreenV2() {
                         {/* Zeile 1: Buchungstext (ausklappbar) + ggf. Split-Chevron */}
                         <div style={{display:"flex",alignItems:"center",gap:8}}>
                           <div style={{flex:1,minWidth:0}}>
-                            {renderDesc(tx,{color:T.txt,size:12,weight:600,fallback:dashDrill.cat?.name||"Buchung"})}
+                            {renderDesc(tx,{color:T.txt,size:15,weight:600,fallback:dashDrill.cat?.name||"Buchung"})}
                           </div>
                           {!isUncat&&isS&&<span style={{color:T.txt2,fontSize:16,flexShrink:0}}>{Li(isExpanded?"chevron-up":"chevron-down",14)}</span>}
                         </div>
                         {/* Zeile 2: Datum + Status/Badges links, Betrag rechts (volle Breite) */}
                         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
-                          <div style={{color:T.txt2,fontSize:10,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",minWidth:0}}>
+                          <div style={{color:T.txt2,fontSize:12,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",minWidth:0}}>
                             <span style={{color:"rgba(220,90,20,0.9)"}}>{tx.date}</span>
                             {tx.pending&&<span style={{
                               background:tx._seriesTyp==="finanzierung"?"rgba(245,166,35,0.2)":tx._seriesId?"rgba(170,204,0,0.15)":"rgba(74,159,212,0.15)",
                               color:tx._seriesTyp==="finanzierung"?T.gold:tx._seriesId?T.pos:T.blue,
-                              borderRadius:4,padding:"0 4px",fontSize:9,fontWeight:700,
+                              borderRadius:4,padding:"1px 5px",fontSize:10,fontWeight:700,
                               display:"inline-flex",alignItems:"center",gap:3}}>
-                              {tx._seriesTyp==="finanzierung"?Li("credit-card",8,T.gold):tx._seriesId?Li("repeat",8,T.pos):Li("calendar",8,T.blue)}
+                              {tx._seriesTyp==="finanzierung"?Li("credit-card",9,T.gold):tx._seriesId?Li("repeat",9,T.pos):Li("calendar",9,T.blue)}
                               {tx._seriesTyp==="finanzierung"?"Finanzierung":tx._seriesId?"wiederkehrend":"vorgemerkt"}
                             </span>}
-                            {tx._seriesId&&tx._seriesTotal>1&&tx._seriesIdx&&tx._seriesTyp==="finanzierung"&&<span style={{color:T.gold,fontSize:9,fontWeight:700,
+                            {tx._seriesId&&tx._seriesTotal>1&&tx._seriesIdx&&tx._seriesTyp==="finanzierung"&&<span style={{color:T.gold,fontSize:10,fontWeight:700,
                               background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.15)":"rgba(245,166,35,0.12)",borderRadius:4,padding:"0 4px"}}>
                               {tx._seriesIdx} / {tx._seriesTotal}
                             </span>}
                             <LinkBadges tx={tx}/>
                             {isS&&<span style={{background:"rgba(137,196,244,0.15)",color:T.blue,
-                              borderRadius:4,padding:"0 4px",fontSize:9,fontWeight:700}}>Split</span>}
-                            {sub&&!isUncat&&!isS&&<span style={{color:cat?.color||dashDrill.cat?.color||T.txt2,fontSize:10}}>{sub.name}</span>}
-                            {isUncat&&<span style={{color:T.neg,fontSize:9,fontWeight:700}}>unkategorisiert</span>}
+                              borderRadius:4,padding:"0 4px",fontSize:10,fontWeight:700}}>Split</span>}
+                            {sub&&!isUncat&&!isS&&<span style={{color:cat?.color||dashDrill.cat?.color||T.txt2,fontSize:12}}>{sub.name}</span>}
+                            {isUncat&&<span style={{color:T.neg,fontSize:10,fontWeight:700}}>unkategorisiert</span>}
                           </div>
-                          <div style={{color:dashDrill.isIncome?T.pos:T.neg,fontSize:14,fontWeight:700,fontFamily:"monospace",flexShrink:0}}>
-                            {dashDrill.isIncome?"+":"−"}{fmt(amt)}
+                          <div style={{color:dashDrill.isIncome?T.pos:T.neg,fontSize:17,fontWeight:700,fontFamily:"monospace",flexShrink:0}}>
+                            {fmt(amt)}
                           </div>
                         </div>
                       </div>

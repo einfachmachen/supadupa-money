@@ -38,7 +38,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
     <div style={{background:T.vorm_bg||T.tab_pend,border:`2px solid ${T.vorm_bd||"rgba(255,200,0,0.8)"}`,borderRadius:16,margin:"4px 10px",padding:"7px 10px"}}>
       <div onClick={()=>setCollapsed(v=>!v)}
         style={{display:"flex",alignItems:"center",gap:6,marginBottom:collapsed?0:6,cursor:"pointer"}}>
-        <span style={{color:T.gold,fontSize:11,fontWeight:700,display:"flex",alignItems:"center",gap:6,flex:1}}>
+        <span style={{color:T.gold,fontSize:14,fontWeight:700,display:"flex",alignItems:"center",gap:6,flex:1}}>
           <div style={{width:30,height:30,borderRadius:9,background:`${T.gold}22`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
             {Li("clock",15,T.gold)}
           </div>
@@ -78,26 +78,26 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
           return (
             <div key={tx.id}
               style={{borderBottom:"1px solid rgba(255,200,0,0.1)",
-              background:T.surf3,borderRadius:6,marginBottom:2}}>
+              background:T.surf3,borderRadius:6,marginBottom:1}}>
               <div onClick={()=>openEdit(tx)}
-                style={{display:"flex",alignItems:"center",gap:8,padding:"4px 4px",cursor:"pointer"}}>
-                <span>{Li("target",16,T.gold)}</span>
+                style={{display:"flex",alignItems:"center",gap:8,padding:"5px 6px",cursor:"pointer"}}>
+                <span>{Li("target",18,T.gold)}</span>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{color:T.txt,fontSize:12,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>
-                  <div style={{color:T.txt2,fontSize:9}}>{isMitte?"Restbudget bis 14.":"Restbudget bis Monatsende"}</div>
+                  <div style={{color:T.txt,fontSize:14,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>
+                  <div style={{color:T.txt2,fontSize:11}}>{isMitte?"Restbudget bis 14.":"Restbudget bis Monatsende"}</div>
                 </div>
-                <span style={{color:isMitte?T.mid:T.gold,fontSize:10,flexShrink:0}}>{isMitte?"Mitte":"Ende"}</span>
+                <span style={{color:isMitte?T.mid:T.gold,fontSize:11,flexShrink:0}}>{isMitte?"Mitte":"Ende"}</span>
                 {rest==null ? (
-                  <span style={{color:T.txt2,fontSize:12,fontFamily:"monospace",flexShrink:0}}>—</span>
+                  <span style={{color:T.txt2,fontSize:15,fontFamily:"monospace",flexShrink:0}}>—</span>
                 ) : over ? (
-                  <span style={{color:T.neg,fontSize:12,fontWeight:700,fontFamily:"monospace",flexShrink:0}}>{fmt(Math.abs(rest))} drüber</span>
+                  <span style={{color:T.neg,fontSize:15,fontWeight:700,fontFamily:"monospace",flexShrink:0}}>{fmt(Math.abs(rest))} drüber</span>
                 ) : (
                   <span style={{display:"inline-flex",alignItems:"baseline",gap:4,flexShrink:0}}>
-                    <span style={{color:T.txt2,fontSize:9}}>offen:</span>
-                    <span style={{color:T.gold,fontSize:12,fontWeight:700,fontFamily:"monospace"}}>−{fmt(rest)}</span>
+                    <span style={{color:T.txt2,fontSize:10}}>offen:</span>
+                    <span style={{color:T.gold,fontSize:15,fontWeight:700,fontFamily:"monospace"}}>{fmt(rest)}</span>
                   </span>
                 )}
-                <span style={{color:T.txt2,flexShrink:0}}>{Li("chevron-right",12)}</span>
+                <span style={{color:T.txt2,flexShrink:0}}>{Li("chevron-right",14)}</span>
               </div>
             </div>
           );
@@ -106,19 +106,19 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
           <div key={tx.id}
             style={{borderBottom:"1px solid rgba(255,200,0,0.1)",
             background:T.surf3,
-            borderRadius:6,marginBottom:2,overflow:"hidden"}}>
+            borderRadius:6,marginBottom:1,overflow:"hidden"}}>
             <div onClick={()=>{ if(isS){setExpandedId(isExpanded?null:tx.id);}else{openEdit(tx);} }}
-              style={{display:"flex",alignItems:"center",gap:8,padding:"4px 4px",cursor:"pointer"}}>
-              <span>{(tx._budgetSubId?Li("target",16,T.gold):tx._seriesTyp==="finanzierung"?Li("credit-card",16,T.gold):tx._seriesId?Li("repeat",16,T.pos):Li("calendar",16,T.blue))}</span>
+              style={{display:"flex",alignItems:"center",gap:8,padding:"5px 6px",cursor:"pointer"}}>
+              <span>{(tx._budgetSubId?Li("target",18,T.gold):tx._seriesTyp==="finanzierung"?Li("credit-card",18,T.gold):tx._seriesId?Li("repeat",18,T.pos):Li("calendar",18,T.blue))}</span>
               <div style={{flex:1,minWidth:0}}>
-                <div style={{color:T.txt,fontSize:12,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tx.desc||cat?.name}</div>
-                <div style={{color:T.txt2,fontSize:9}}>{tx.date}{tx._seriesId&&tx._seriesTotal>1&&tx._seriesIdx&&tx._seriesTyp==="finanzierung"?` · ${tx._seriesIdx}/${tx._seriesTotal}`:""}</div>
+                <div style={{color:T.txt,fontSize:14,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tx.desc||cat?.name}</div>
+                <div style={{color:T.txt2,fontSize:11}}>{tx.date}{tx._seriesId&&tx._seriesTotal>1&&tx._seriesIdx&&tx._seriesTyp==="finanzierung"?` · ${tx._seriesIdx}/${tx._seriesTotal}`:""}</div>
               </div>
-              <span style={{color:day<=14?T.mid:T.gold,fontSize:10,flexShrink:0}}>{day<=14?"Mitte":"Ende"}</span>
-              <span style={{color:col,fontSize:12,fontWeight:700,fontFamily:"monospace",flexShrink:0}}>
-                {isIncome?"+":"−"}{fmt(_pendOpenAmt(tx))}
+              <span style={{color:day<=14?T.mid:T.gold,fontSize:11,flexShrink:0}}>{day<=14?"Mitte":"Ende"}</span>
+              <span style={{color:col,fontSize:15,fontWeight:700,fontFamily:"monospace",flexShrink:0}}>
+                {fmt(_pendOpenAmt(tx))}
               </span>
-              <span style={{color:T.txt2,flexShrink:0}}>{Li(isS?(isExpanded?"chevron-up":"chevron-down"):"chevron-right",12)}</span>
+              <span style={{color:T.txt2,flexShrink:0}}>{Li(isS?(isExpanded?"chevron-up":"chevron-down"):"chevron-right",14)}</span>
             </div>
             {isS&&isExpanded&&(
               <div style={{padding:"4px 8px 6px",display:"flex",flexDirection:"column",gap:3}}>
