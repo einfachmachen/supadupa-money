@@ -1314,9 +1314,9 @@ function DashboardScreenV2() {
                             style={{background:budget>0?`${T.gold}22`:"none",
                               border:`1px solid ${budget>0?T.gold+"66":"transparent"}`,
                               color:budget>0?T.gold:T.txt2,cursor:"pointer",
-                              borderRadius:7,padding:"3px 6px",flexShrink:0,
-                              display:"flex",alignItems:"center",gap:3,fontSize:10}}>
-                            {Li("target",12,budget>0?T.gold:T.txt2)}
+                              borderRadius:7,padding:"4px 8px",flexShrink:0,
+                              display:"flex",alignItems:"center",gap:4,fontSize:13}}>
+                            {Li("target",14,budget>0?T.gold:T.txt2)}
                             {budget>0&&<span style={{fontWeight:700}}>{fmt(budget)}</span>}
                           </button>
                           </div>
@@ -1383,7 +1383,7 @@ function DashboardScreenV2() {
                                     )}
                                     {/* Budget-Zahl */}
                                     {bgt>0&&(
-                                      <div style={{color:T.txt2,fontSize:9,fontWeight:600,
+                                      <div style={{color:T.txt2,fontSize:11,fontWeight:600,
                                         whiteSpace:"nowrap",opacity:0.8}}>
                                         {fmt(bgt)}
                                       </div>
