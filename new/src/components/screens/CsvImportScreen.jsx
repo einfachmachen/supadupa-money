@@ -8,6 +8,7 @@ import { QuickPicker } from "../organisms/QuickPicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { parseCSV } from "../../utils/csv.js";
+import { anchorFromDetectedBalance } from "../../utils/anchors.js";
 import { fmt, pn, uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
@@ -279,19 +280,24 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
       : (parsed.detectedBalance ? [parsed.detectedBalance] : []);
     if(balancesToStore.length > 0) {
       const targetAccId = selAccId || accounts[0]?.id || "acc-giro";
+      // Kontostand "am Datum" korrekt in einen Monats-ENDE-Anker umrechnen
+      // (siehe utils/anchors.js): ein Datum mitten im Monat wird auf das
+      // Vormonats-Ende verschoben, damit getKumulierterSaldo die Buchungen
+      // dieses Monats NICHT verschluckt. Basis für den Abzug sind die bereits
+      // bestehenden Buchungen PLUS die gerade importierten.
+      const allTxsForCalc = [...txs, ...newTxs];
       setStartBalances(prev=>{
         let next = {...(prev||{})};
         for(const db of balancesToStore) {
-          if(!db || !db.date) continue;
-          const parts = db.date.split("-").map(Number);
-          const iY = parts[0], iM = parts[1]-1; // 0-basiert
+          const a = anchorFromDetectedBalance(db, allTxsForCalc, targetAccId);
+          if(!a) continue;
           next = {
             ...next,
-            [iY]: {
-              ...(next?.[iY]||{}),
-              [iM]: {
-                ...((next?.[iY]?.[iM])||{}),
-                [targetAccId]: db.saldo,
+            [a.year]: {
+              ...(next?.[a.year]||{}),
+              [a.month]: {
+                ...((next?.[a.year]?.[a.month])||{}),
+                [targetAccId]: a.value,
               },
             }
           };
