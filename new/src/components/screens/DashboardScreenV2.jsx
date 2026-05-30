@@ -91,6 +91,28 @@ function DashboardScreenV2() {
       });
     };
     const [detailsOpen, setDetailsOpen] = useState(false);
+    // Ausklappbarer Buchungstext im Drilldown (iPhone-13-mini: Text wird sonst
+    // abgeschnitten). Nur Anfang zeigen, auf Tipp den vollen Text anzeigen.
+    const [expandedDescIds, setExpandedDescIds] = useState(()=>new Set());
+    const toggleDesc = (id) => setExpandedDescIds(prev=>{ const n=new Set(prev); n.has(id)?n.delete(id):n.add(id); return n; });
+    const renderDesc = (tx, {color=T.txt, size=12, weight=600, fallback="Buchung"}={}) => {
+      const full = tx.desc || fallback;
+      const isLong = full.length > 26;
+      const exp = expandedDescIds.has(tx.id);
+      if(!isLong) return (
+        <div style={{color,fontSize:size,fontWeight:weight,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{full}</div>
+      );
+      return (
+        <div onClick={(e)=>{e.stopPropagation();toggleDesc(tx.id);}}
+          style={{display:"flex",alignItems:exp?"flex-start":"center",gap:4,cursor:"pointer"}}>
+          <div style={{flex:1,minWidth:0,color,fontSize:size,fontWeight:weight,
+            ...(exp?{whiteSpace:"normal",wordBreak:"break-word"}:{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"})}}>
+            {full}
+          </div>
+          <span style={{flexShrink:0,display:"inline-flex"}}>{Li(exp?"chevron-up":"chevron-down",12,T.blue)}</span>
+        </div>
+      );
+    };
     // activePanel: null | "warnings" | "sparen" | "vormerkungen"
     const [activePanel, setActivePanel] = useState(null);
     const [warnCount, setWarnCount] = useState(0);
@@ -1321,8 +1343,8 @@ function DashboardScreenV2() {
                                     {/* Label */}
                                     <div style={{color:T.txt2,fontSize:9,fontWeight:700}}>{lbl}</div>
                                     {/* Betrag */}
-                                    <div style={{color:valCol,fontSize:13,
-                                      fontWeight:700,fontFamily:"monospace",whiteSpace:"nowrap"}}>
+                                    <div style={{color:valCol,fontSize:16,
+                                      fontWeight:800,fontFamily:"monospace",whiteSpace:"nowrap"}}>
                                       {val>0?(cat.type==="income"?`+${fmt(val)}`:`−${fmt(val)}`):"—"}
                                     </div>
                                     {/* Budget-Balken direkt in Zelle */}
@@ -1341,11 +1363,6 @@ function DashboardScreenV2() {
                                         whiteSpace:"nowrap",opacity:0.8}}>
                                         {fmt(bgt)}
                                       </div>
-                                    )}
-                                    {/* Goldener Strich ganz unten wenn gemischt */}
-                                    {pnd>0&&real>0&&(
-                                      <div style={{position:"absolute",bottom:0,left:0,right:0,
-                                        height:2,background:T.gold}}/>
                                     )}
                                   </div>
                                 );

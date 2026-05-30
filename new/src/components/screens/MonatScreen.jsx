@@ -766,9 +766,9 @@ function MonatScreen() {
             // Hat dieser Tag Vormerkungen?
             const hasDayPend = dayTxs.some(t=>t.pending);
             return (
-              <div key={date} style={{margin:"12px 8px 0",border:`1px solid ${T.bd}`,borderRadius:12,overflow:"hidden"}}>
+              <div key={date} style={{margin:"14px 8px 0",border:`1px solid ${T.bd}`,borderRadius:12,overflow:"hidden",background:T.surf||"rgba(255,255,255,0.03)"}}>
                 <div style={{display:"flex",alignItems:"center",
-                  padding:"6px 8px 5px",gap:8}}>
+                  padding:"7px 10px 6px",gap:8,background:"rgba(255,255,255,0.04)"}}>
                   <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
                     <span style={{color:T.txt,fontSize:12,fontWeight:700}}>{fmtD(date)}</span>
                     <span style={{color:T.txt2,fontSize:10}}>{dayName(date)}</span>
