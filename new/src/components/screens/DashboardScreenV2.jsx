@@ -1226,17 +1226,19 @@ function DashboardScreenV2() {
                       return (
                         <div key={"u-"+tx.id} onClick={()=>{setDashDrill(null);openEdit(tx);}}
                           style={{padding:"8px 14px",borderBottom:`1px solid ${T.bd}`,
-                            cursor:"pointer",display:"flex",alignItems:"center",gap:8,
+                            cursor:"pointer",display:"flex",flexDirection:"column",gap:3,
                             background:tx.pending?"rgba(245,166,35,0.06)":"transparent"}}>
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{color:T.txt,fontSize:11,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tx.desc}</div>
-                            <div style={{color:T.txt2,fontSize:9,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+                          {/* Zeile 1: Buchungstext (ausklappbar) */}
+                          {renderDesc(tx,{color:T.txt,size:12,weight:600,fallback:cat?.name||"Buchung"})}
+                          {/* Zeile 2: Datum + Status links, Betrag rechts (volle Breite) */}
+                          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+                            <div style={{color:T.txt2,fontSize:9,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",minWidth:0}}>
                               <span>{tx.date}</span>
                               {tx.pending&&<span style={{color:T.gold,fontSize:8,fontWeight:700}}>{tx._seriesId?"wiederkehrend":"vorgemerkt"}</span>}
                               <LinkBadges tx={tx}/>
                             </div>
+                            <span style={{color:tx.pending?T.gold:(cat.type==="income"?T.pos:T.neg),fontSize:14,fontWeight:700,fontFamily:"monospace",flexShrink:0}}>{cat.type==="income"?"+":"−"}{fmt(amt)}</span>
                           </div>
-                          <span style={{color:tx.pending?T.gold:(cat.type==="income"?T.pos:T.neg),fontSize:12,fontWeight:700,fontFamily:"monospace",flexShrink:0}}>{cat.type==="income"?"+":"−"}{fmt(amt)}</span>
                         </div>
                       );
                     })}
@@ -1246,7 +1248,8 @@ function DashboardScreenV2() {
                         {/* Unterkategorie Header */}
                         <div style={{padding:"9px 14px",borderBottom:`1px solid ${T.bd}`,
                             background:isExp(sub.id)?"rgba(74,159,212,0.08)":"transparent",
-                            display:"flex",alignItems:"center",gap:8}}>
+                            display:"flex",flexDirection:"column",gap:6}}>
+                          <div style={{display:"flex",alignItems:"center",gap:8}}>
                           <div onClick={()=>setDrillExpandedSub(isExp(sub.id)?null:sub.id)}
                             style={{flex:1,minWidth:0,cursor:"pointer"}}>
                             <div style={{color:T.txt,fontSize:12,fontWeight:700,
@@ -1268,8 +1271,9 @@ function DashboardScreenV2() {
                             {Li("target",12,budget>0?T.gold:T.txt2)}
                             {budget>0&&<span style={{fontWeight:700}}>{fmt(budget)}</span>}
                           </button>
-                          {/* Mitte / Ende / aktuell */}
-                          <div style={{display:"flex",gap:3,flexShrink:0}}>
+                          </div>
+                          {/* Mitte / Ende / aktuell — eigene Zeile, volle Breite */}
+                          <div style={{display:"flex",gap:4,width:"100%"}}>
                             {(()=>{
                               // Budget je Halbmonat
                               const budgetMitteS = (()=>{
@@ -1309,15 +1313,15 @@ function DashboardScreenV2() {
                                 return (
                                   <div key={lbl} onClick={e=>{e.stopPropagation();if(val>0)onCellClick();}}
                                     style={{textAlign:"center",cursor:val>0?"pointer":"default",
-                                    minWidth:50,padding:"3px 5px",borderRadius:7,
+                                    flex:1,minWidth:0,padding:"5px 4px",borderRadius:7,
                                     background:T.cat_bg?"rgba(255,255,255,0.10)":(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.04)",
                                     border:`1px solid ${onlyPend?T.gold:T.bd}`,
                                     position:"relative",overflow:"hidden",
                                     display:"flex",flexDirection:"column",gap:1}}>
                                     {/* Label */}
-                                    <div style={{color:T.txt2,fontSize:7,fontWeight:700}}>{lbl}</div>
+                                    <div style={{color:T.txt2,fontSize:9,fontWeight:700}}>{lbl}</div>
                                     {/* Betrag */}
-                                    <div style={{color:valCol,fontSize:10,
+                                    <div style={{color:valCol,fontSize:13,
                                       fontWeight:700,fontFamily:"monospace",whiteSpace:"nowrap"}}>
                                       {val>0?(cat.type==="income"?`+${fmt(val)}`:`−${fmt(val)}`):"—"}
                                     </div>
@@ -1333,7 +1337,7 @@ function DashboardScreenV2() {
                                     )}
                                     {/* Budget-Zahl */}
                                     {bgt>0&&(
-                                      <div style={{color:T.txt2,fontSize:7,fontWeight:600,
+                                      <div style={{color:T.txt2,fontSize:9,fontWeight:600,
                                         whiteSpace:"nowrap",opacity:0.8}}>
                                         {fmt(bgt)}
                                       </div>
