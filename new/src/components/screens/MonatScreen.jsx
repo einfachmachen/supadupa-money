@@ -874,7 +874,7 @@ function MonatScreen() {
                   return (
                     <div key={tx.id} style={{borderRadius:0,marginBottom:0,overflow:"hidden",background:fulfilled?T.pos+"11":"transparent",borderTop:`1px solid ${T.bd}`,position:"relative"}}>
                       <div style={{position:"relative",zIndex:1}}>
-                        <div style={{display:"flex",alignItems:"center",gap:0,padding:"7px 8px"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px"}}>
                           <div style={{position:"relative",width:32,height:32,flexShrink:0,marginRight:8}}>
                             <div onClick={e=>{e.stopPropagation();setTxIconPickM(txIconPickM===tx.id?null:tx.id);}}
                               style={{width:32,height:32,borderRadius:9,cursor:"pointer",background:displayColor+"22",border:`1px solid ${txIconPickM===tx.id?displayColor+"66":T.bd}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -925,7 +925,7 @@ function MonatScreen() {
                     const fmtSigned = v => (v<0?"-":"+") + fmt(Math.abs(v));
                     return (
                       <div key={"rb-"+name} style={{borderRadius:0,marginBottom:0,overflow:"hidden",background:"transparent",borderTop:`1px solid ${T.bd}`}}>
-                        <div style={{display:"flex",alignItems:"center",gap:0,padding:"7px 8px"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px"}}>
                           <div style={{width:32,height:32,borderRadius:9,flexShrink:0,marginRight:8,background:accentCol+"22",border:`1px solid ${T.bd}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
                             {Li(isOverspent?"alert-triangle":"target",16,accentCol)}
                           </div>
@@ -999,7 +999,7 @@ function MonatScreen() {
 
                       <div style={{position:"relative",zIndex:1}}>
                         {/* Main row */}
-                        <div style={{display:"flex",alignItems:"center",gap:0,padding:"9px 8px"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px"}}>
                           {/* Icon — immer Icon-Picker */}
                           <div style={{position:"relative",width:32,height:32,flexShrink:0,marginRight:8}}>
                             <div onClick={e=>{e.stopPropagation();setTxIconPickM(txIconPickM===tx.id?null:tx.id);}}
