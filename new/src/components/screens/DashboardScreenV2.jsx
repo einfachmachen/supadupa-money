@@ -1410,25 +1410,21 @@ function DashboardScreenV2() {
                                 borderBottom:`1px solid ${T.bd}`,
                                 background:tx.pending
                                   ?"rgba(245,166,35,0.07)":"rgba(0,0,0,0.15)",
-                                cursor:"pointer",display:"flex",alignItems:"center",gap:8}}>
-                              <div style={{flex:1,minWidth:0}}>
-                                <div style={{color:T.txt,fontSize:11,overflow:"hidden",
-                                  textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                                  {tx.desc||sub.name}
-                                </div>
-                                <div style={{color:T.txt2,fontSize:9,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+                                cursor:"pointer",display:"flex",flexDirection:"column",gap:3}}>
+                              {renderDesc(tx,{color:T.txt,size:12,weight:600,fallback:sub.name})}
+                              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+                                <div style={{color:T.txt2,fontSize:9,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",minWidth:0}}>
                                   <span>{tx.date}</span>
                                   {tx.pending&&<span style={{color:T.gold,fontSize:8,fontWeight:700}}>
                                     {tx._seriesId?"wiederkehrend":"vorgemerkt"}
                                   </span>}
                                   <LinkBadges tx={tx}/>
                                 </div>
+                                <span style={{color:tx.pending?T.gold:(cat.type==="income"?T.pos:T.neg),fontSize:14,
+                                  fontWeight:700,fontFamily:"monospace",flexShrink:0}}>
+                                  {cat.type==="income"?"+":"−"}{fmt(amt)}
+                                </span>
                               </div>
-                              <span style={{color:tx.pending?T.gold:(cat.type==="income"?T.pos:T.neg),fontSize:12,
-                                fontWeight:700,fontFamily:"monospace",flexShrink:0}}>
-                                {cat.type==="income"?"+":"−"}{fmt(amt)}
-                              </span>
-
                             </div>
                           );
                         })}
@@ -1526,19 +1522,23 @@ function DashboardScreenV2() {
                     <div key={tx.id}
                       style={{padding:"10px 18px",borderBottom:`1px solid ${T.bd}`,
                         background:tx.pending?T.surf3:"transparent"}}>
-                      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:(isUncat||isExpanded)?6:0,
+                      <div style={{display:"flex",flexDirection:"column",gap:3,marginBottom:(isUncat||isExpanded)?6:0,
                         cursor:isUncat?"default":"pointer"}}
                         onClick={()=>{
                           if(isUncat) return;
                           if(isS) { setExpandedSplitId(isExpanded?null:tx.id); return; }
                           setDashDrill(null); openEdit(tx);
                         }}>
-                        <div style={{flex:1,minWidth:0}}>
-                          <div style={{color:T.txt,fontSize:12,fontWeight:600,
-                            overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                            {tx.desc||dashDrill.cat?.name||"Buchung"}
+                        {/* Zeile 1: Buchungstext (ausklappbar) + ggf. Split-Chevron */}
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <div style={{flex:1,minWidth:0}}>
+                            {renderDesc(tx,{color:T.txt,size:12,weight:600,fallback:dashDrill.cat?.name||"Buchung"})}
                           </div>
-                          <div style={{color:T.txt2,fontSize:10,marginTop:1,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+                          {!isUncat&&isS&&<span style={{color:T.txt2,fontSize:16,flexShrink:0}}>{Li(isExpanded?"chevron-up":"chevron-down",14)}</span>}
+                        </div>
+                        {/* Zeile 2: Datum + Status/Badges links, Betrag rechts (volle Breite) */}
+                        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+                          <div style={{color:T.txt2,fontSize:10,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",minWidth:0}}>
                             <span style={{color:"rgba(220,90,20,0.9)"}}>{tx.date}</span>
                             {tx.pending&&<span style={{
                               background:tx._seriesTyp==="finanzierung"?"rgba(245,166,35,0.2)":tx._seriesId?"rgba(170,204,0,0.15)":"rgba(74,159,212,0.15)",
@@ -1552,33 +1552,16 @@ function DashboardScreenV2() {
                               background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.15)":"rgba(245,166,35,0.12)",borderRadius:4,padding:"0 4px"}}>
                               {tx._seriesIdx} / {tx._seriesTotal}
                             </span>}
-                            {(tx.linkedIds||[]).map(lid=>{
-                              const lt=txs.find(t=>t.id===lid);
-                              if(!lt||lt.pending) return null;
-                              const sTotal = lt._seriesTotal;
-                              const sIdx = lt._seriesIdx;
-                              return (
-                                <span key={lid} style={{display:"inline-flex",alignItems:"center",gap:3,
-                                  background:"rgba(74,159,212,0.12)",border:`1px solid ${T.blue}33`,
-                                  borderRadius:5,padding:"1px 5px",fontSize:9,color:T.blue}}>
-                                  {Li("link",9,T.blue)}
-                                  {lt.desc||"Vormerkung"}
-                                  {sTotal>1&&` · ${sIdx}/${sTotal}`}
-                                </span>
-                              );
-                            })}
+                            <LinkBadges tx={tx}/>
                             {isS&&<span style={{background:"rgba(137,196,244,0.15)",color:T.blue,
                               borderRadius:4,padding:"0 4px",fontSize:9,fontWeight:700}}>Split</span>}
                             {sub&&!isUncat&&!isS&&<span style={{color:cat?.color||dashDrill.cat?.color||T.txt2,fontSize:10}}>{sub.name}</span>}
                             {isUncat&&<span style={{color:T.neg,fontSize:9,fontWeight:700}}>unkategorisiert</span>}
                           </div>
-                        </div>
-                        <div style={{textAlign:"right",flexShrink:0}}>
-                          <div style={{color:dashDrill.isIncome?T.pos:T.neg,fontSize:13,fontWeight:700,fontFamily:"monospace"}}>
+                          <div style={{color:dashDrill.isIncome?T.pos:T.neg,fontSize:14,fontWeight:700,fontFamily:"monospace",flexShrink:0}}>
                             {dashDrill.isIncome?"+":"−"}{fmt(amt)}
                           </div>
                         </div>
-                        {!isUncat&&isS&&<span style={{color:T.txt2,fontSize:16,flexShrink:0}}>{Li(isExpanded?"chevron-up":"chevron-down",14)}</span>}
                       </div>
                       {/* Aufgeklappte Split-Kategorien für alle Splitbuchungen */}
                       {isS&&isExpanded&&(
