@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { saldoEnde } from "../src/utils/saldo.js";
+import { saldoEnde, saldoMitte, saldoAnchor } from "../src/utils/saldo.js";
 import { pn } from "../src/utils/format.js";
 
 // ─────────────────────────────────────────────────────────────────────
@@ -168,6 +168,112 @@ function bothEqual(cfg, y, m, accId) {
   const neu = saldoEnde(y, m, accId, buildCtx(cfg)); // frischer ctx (eigener Cache)
   return { old, neu };
 }
+
+// ── 1:1-Portierung des Giro-Mitte-Zweigs aus SaldoHero2.calcAcc (Stand vor ──
+// Konsolidierung), nur für laufenden/künftigen Monat (mitteAbg2=false). base =
+// Anker = saldoEnde(Vormonat); Bewegungen bis Tag 14 mit Budget-Floor (Mitte).
+function oldCalcAccMitteGiro(y, m, P) {
+  const ctx = P._ctx;
+  const { txs, cats, budgets, getBudgetForMonth } = P;
+  const accId = "acc-giro";
+  // base = Anker des laufenden Monats. Im Original calcAcc war das
+  // getProgEndeAcc(Vormonat) — für einen vergangenen Vormonat identisch zu
+  // saldoAnchor(currentMonth) (= getKumulierterSaldo(Vormonat)).
+  const base = saldoAnchor(y, m, accId, P._freshCtx());
+  const isAcc2 = t => t.accountId===accId||(!t.accountId&&accId==="acc-giro");
+  const inc=(cats||[]).filter(c=>c.type==="income"||c.type==="tagesgeld").reduce((s,cat)=>{
+    return s+(txs||[]).filter(t=>{
+      if(t._linkedTo||t._budgetSubId)return false;
+      if(!isAcc2(t))return false;
+      const d=new Date(t.date);
+      return d.getFullYear()===y&&d.getMonth()===m&&d.getDate()<=14&&(t.splits||[]).some(sp=>sp.catId===cat.id);
+    }).reduce((ss,t)=>ss+(t.splits||[]).filter(sp=>sp.catId===cat.id).reduce((sss,sp)=>sss+Math.abs(pn(sp.amount)),0),0);
+  },0);
+  const out=(cats||[]).filter(c=>c.type==="expense").reduce((s,cat)=>{
+    const subIds=new Set((cat.subs||[]).map(s=>s.id));
+    const subTotal=(cat.subs||[]).reduce((cs,sub)=>{
+      const bG=getBudgetForMonth(sub.id+"_mitte",y,m)||0;
+      const budgetAccId2=(budgets||{})[sub.id+"_mitte"]?.accountId||(budgets||{})[sub.id]?.accountId||"acc-giro";
+      const effectiveBG2=(bG>0&&budgetAccId2===accId)?bG:0;
+      const real=(txs||[]).filter(t=>{if(t.pending||t._linkedTo||t._budgetSubId)return false;if(!isAcc2(t))return false;const d=new Date(t.date);return d.getFullYear()===y&&d.getMonth()===m&&d.getDate()<=14&&(t.splits||[]).some(sp=>sp.catId===cat.id&&sp.subId===sub.id);}).reduce((ss,t)=>ss+Math.abs((t.splits||[]).find(sp=>sp.subId===sub.id)?.amount||0),0);
+      const pend=(txs||[]).filter(t=>{if(!t.pending||t._linkedTo||t._budgetSubId)return false;if(!isAcc2(t))return false;const d=new Date(t.date);return d.getFullYear()===y&&d.getMonth()===m&&d.getDate()<=14&&(t.splits||[]).some(sp=>sp.catId===cat.id&&sp.subId===sub.id);}).reduce((ss,t)=>ss+Math.abs((t.splits||[]).find(sp=>sp.subId===sub.id)?.amount||t.totalAmount),0);
+      return cs+(effectiveBG2>0?Math.max(effectiveBG2,real+pend):real+pend);
+    },0);
+    const pendNoSub=(txs||[]).filter(t=>{if(!t.pending||t._linkedTo||t._budgetSubId)return false;if(!isAcc2(t))return false;const d=new Date(t.date);return d.getFullYear()===y&&d.getMonth()===m&&d.getDate()<=14&&(t.splits||[]).some(sp=>sp.catId===cat.id&&(!sp.subId||!subIds.has(sp.subId)));}).reduce((ss,t)=>ss+Math.abs(t.totalAmount),0);
+    const realNoSub=(txs||[]).filter(t=>{if(t.pending||t._linkedTo||t._budgetSubId)return false;if(!isAcc2(t))return false;const d=new Date(t.date);return d.getFullYear()===y&&d.getMonth()===m&&d.getDate()<=14&&(t.splits||[]).some(sp=>sp.catId===cat.id&&(!sp.subId||!subIds.has(sp.subId)));}).reduce((ss,t)=>ss+Math.abs((t.splits||[]).filter(sp=>sp.catId===cat.id).reduce((sss,sp)=>sss+Math.abs(pn(sp.amount)),0)),0);
+    return s+subTotal+pendNoSub+realNoSub;
+  },0);
+  return base + inc - out;
+}
+
+describe("Mitte-Konsolidierung: calcAcc-Mitte (Giro) vs saldoMitte", () => {
+  function bothMitte(cfg, y, m) {
+    const P = { _ctx: buildCtx(cfg), _freshCtx: () => buildCtx(cfg), txs: cfg.txs||[], cats: cfg.cats||CATS, budgets: cfg.budgets||{}, getBudgetForMonth: buildCtx(cfg).getBudgetForMonth };
+    const old = oldCalcAccMitteGiro(y, m, P);
+    const neu = saldoMitte(y, m, "acc-giro", buildCtx(cfg));
+    return { old, neu };
+  }
+
+  it("Mitte+Ende-Split, Ausgabe in erster Hälfte unter Mitte-Budget", () => {
+    const cfg = { accounts: ACCOUNTS, cats: CATS, anchors: { "acc-giro": { "2026-3": 1000 } }, today: new Date("2026-05-05"),
+      budgets: { "s-essen": { amount: 300 }, "s-essen_mitte": { amount: 100 } }, txs: [
+        { id: "t1", accountId: "acc-giro", date: "2026-05-08", totalAmount: -40, _csvType: "expense", splits: [{ catId: "c-essen", subId: "s-essen", amount: -40 }] },
+        ...placeholders(2026, 4, "s-essen", 100, 200),
+      ]};
+    const { old, neu } = bothMitte(cfg, 2026, 4);
+    expect(neu).toBe(old);
+  });
+
+  it("Mitte-Budget überschritten in erster Hälfte", () => {
+    const cfg = { accounts: ACCOUNTS, cats: CATS, anchors: { "acc-giro": { "2026-3": 1000 } }, today: new Date("2026-05-05"),
+      budgets: { "s-essen": { amount: 300 }, "s-essen_mitte": { amount: 100 } }, txs: [
+        { id: "t1", accountId: "acc-giro", date: "2026-05-08", totalAmount: -130, _csvType: "expense", splits: [{ catId: "c-essen", subId: "s-essen", amount: -130 }] },
+        ...placeholders(2026, 4, "s-essen", 100, 200),
+      ]};
+    const { old, neu } = bothMitte(cfg, 2026, 4);
+    expect(neu).toBe(old);
+  });
+
+  it("1000 zufällige Giro-Mitte-Szenarien MIT Mitte-Anteil: identisch", () => {
+    function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;};}
+    const rnd = mulberry32(99);
+    const pick = arr => arr[Math.floor(rnd()*arr.length)];
+    let mismatches = [];
+    for(let i=0;i<1000;i++){
+      const budM = pick([50,100,150]);          // Mitte-Anteil IMMER > 0 (sonst Spec-Divergenz, s.u.)
+      const budE = pick([0,50,100,200]);
+      const subs = pick(["s-essen","s-baecker"]);
+      const catId = subs==="s-essen"?"c-essen":"c-baecker";
+      const txs = [...placeholders(2026,4,subs,budM,budE,catId)];
+      const nTx = Math.floor(rnd()*4);
+      for(let k=0;k<nTx;k++){
+        const day = 1+Math.floor(rnd()*28);
+        const amt = -(5+Math.floor(rnd()*120));
+        const pending = rnd()<0.4;
+        txs.push({ id:`r${i}-${k}`, accountId:"acc-giro", pending, date:`2026-05-${String(day).padStart(2,"0")}`, totalAmount:amt, _csvType:"expense", splits:[{catId, subId:subs, amount:amt}] });
+      }
+      if(rnd()<0.3){ const amt=100+Math.floor(rnd()*2000); txs.push({id:`r${i}-inc`,accountId:"acc-giro",pending:rnd()<0.3,date:`2026-05-${String(1+Math.floor(rnd()*13)).padStart(2,"0")}`,totalAmount:amt,_csvType:"income",splits:[{catId:"c-gehalt",subId:"s-gehalt",amount:amt}]}); }
+      const cfg = { accounts:ACCOUNTS, cats:CATS, anchors:{ "acc-giro":{ "2026-3": 1000 } }, today:new Date("2026-05-05"), budgets: { [subs]: { amount: budM+budE }, [subs+"_mitte"]: { amount: budM } }, txs };
+      const { old, neu } = bothMitte(cfg, 2026, 4);
+      if(Math.abs((old??0)-(neu??0)) > 1e-6) mismatches.push({ i, old, neu });
+    }
+    expect(mismatches.length).toBe(0);
+  });
+
+  it("Dokumentierte Divergenz: NUR Gesamtbudget (kein Mitte-Anteil)", () => {
+    // Spec: ohne Mitte-Anteil reserviert saldoMitte bereits ab Tag 1 das volle
+    // Gesamtbudget. Die alte calcAcc-Mitte nutzte nur getBudgetForMonth(sub_mitte)
+    // (=0) → kein Floor. saldoMitte ist hier der korrekte (Spec-)Wert.
+    const cfg = { accounts: ACCOUNTS, cats: CATS, anchors: { "acc-giro": { "2026-3": 1000 } }, today: new Date("2026-05-05"),
+      budgets: { "s-essen": { amount: 200 } }, txs: [
+        { id: "t1", accountId: "acc-giro", date: "2026-05-08", totalAmount: -30, _csvType: "expense", splits: [{ catId: "c-essen", subId: "s-essen", amount: -30 }] },
+        ...placeholders(2026, 4, "s-essen", 0, 200), // mitte=0 → nur Gesamt
+      ]};
+    const { old, neu } = bothMitte(cfg, 2026, 4);
+    expect(old).toBe(970);  // ALT: kein Mitte-Floor → nur Ist (-30)
+    expect(neu).toBe(800);  // NEU (Spec-korrekt): volles Gesamtbudget 200 ab Tag 1 reserviert
+  });
+});
 
 describe("Prognose-Konsolidierung: getProgEndeAcc vs saldoEnde", () => {
   describe("Giro — algebraische Äquivalenz (Budget-Floor ⇔ RestEnde)", () => {

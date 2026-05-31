@@ -6,9 +6,9 @@ import { DashboardScreen } from "../screens/DashboardScreen.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { THEMES } from "../../theme/themes.js";
-import { fmt, pn } from "../../utils/format.js";
+import { fmt } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
-import { saldoEnde as calcSaldoEnde } from "../../utils/saldo.js";
+import { saldoEnde as calcSaldoEnde, saldoMitte as calcSaldoMitte } from "../../utils/saldo.js";
 
 function SaldoHero2({year, month,
   buchInM, buchOutM, buchInE, buchOutE,
@@ -17,7 +17,7 @@ function SaldoHero2({year, month,
   prognoseMitte, prognoseEnde, detailMitte, detailEnde, saldoMitte, saldoEnde,
   onDrillBuchIn, onDrillBuchOut, onDrillPendIn, onDrillPendOut,
   onDrillUncatIn, onDrillUncatOut, onDrill}) {
-  const { getKumulierterSaldo, accounts, startBalances, txs, cats, getBudgetForMonth, budgets, selAcc, setSelAcc } = useContext(AppCtx);
+  const { getKumulierterSaldo, accounts, startBalances, txs, cats, getBudgetForMonth, selAcc, setSelAcc } = useContext(AppCtx);
   const ks = getKumulierterSaldo(year, month);
   const [showDetail, setShowDetail] = React.useState(false);
 
@@ -502,110 +502,20 @@ function SaldoHero2({year, month,
           </div>
         </div>
         {showPrognose ? (()=>{
-          const prevY=month===0?year-1:year, prevM=month===0?11:month-1;
-          const linkedChIds = new Set(); (txs||[]).forEach(t=>(t.linkedIds||[]).forEach(id=>linkedChIds.add(id)));
-          const todayD3=new Date().getDate();
-          const mitteAbg2=(isCurrent&&todayD3>14)||(!isCurrent&&!isFuture);
-          const signAmt2=t=>{const type=t._csvType||(t.totalAmount>=0?"income":"expense");return type==="income"?Math.abs(t.totalAmount):-Math.abs(t.totalAmount);};
-          const calcAcc=(aId)=>{
-            const E=getProgEndeAcc(year,month,aId);
-            if(E===null||E===undefined) return null;
-            const base=getProgEndeAcc(prevY,prevM,aId);
-            if(base===null||base===undefined) return null;
-            const isAcc2 = t => t.accountId===aId||(!t.accountId&&aId==="acc-giro");
-            // Vergangene Monate: einfache direkte Summe ohne Budget-Logik (alle Konten)
-            const isPastMonth = !isCurrent && !isFuture;
-            if(isPastMonth) {
-              const pad2=n=>String(n).padStart(2,"0");
-              const start=`${year}-${pad2(month+1)}-01`;
-              const mid=`${year}-${pad2(month+1)}-14`;
-              const lD=new Date(year,month+1,0).getDate();
-              const end=`${year}-${pad2(month+1)}-${pad2(lD)}`;
-              const monthTxs=(txs||[]).filter(t=>!t.pending&&!t._linkedTo&&!t._budgetSubId&&isAcc2(t)&&
-                t.date>=start&&t.date<=end);
-              const sumUntil=(cutoff)=>monthTxs.filter(t=>t.date<=cutoff).reduce((s,t)=>s+signAmt2(t),0);
-              const M=base+sumUntil(mid);
-              const all=(txs||[]).filter(t=>{if(t._linkedTo||t._budgetSubId||linkedChIds.has(t.id))return false;if(!isAcc2(t))return false;const d=new Date(t.date);return d.getFullYear()===year&&d.getMonth()===month;});
-              return {base,mSum:M-base,eSum:E-base,M,E,count:all.length,txs:all};
-            }
-            // Für Nicht-Giro: einfache direkte Summen ohne Budget-Logik, _linkedTo einbeziehen
-            if(aId !== "acc-giro") {
-              const signAmt = t => {
-                const type=t._csvType||(t.totalAmount>=0?"income":"expense");
-                return type==="income"?Math.abs(t.totalAmount):-Math.abs(t.totalAmount);
-              };
-              // Bis Mitte (Tag<=14): real + pending wenn nicht abgelaufen
-              const accTxsM = (txs||[]).filter(t=>{
-                if(t._budgetSubId) return false;
-                if(mitteAbg2&&t.pending) return false;
-                if(!isAcc2(t)) return false;
-                const d=new Date(t.date);
-                return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()<=14;
-              });
-              const accTxsAll = (txs||[]).filter(t=>{
-                if(t._budgetSubId) return false;
-                if(!isAcc2(t)) return false;
-                const d=new Date(t.date);
-                return d.getFullYear()===year&&d.getMonth()===month;
-              });
-              const incM = accTxsM.filter(t=>signAmt(t)>0).reduce((s,t)=>s+Math.abs(t.totalAmount),0);
-              const outM = accTxsM.filter(t=>signAmt(t)<0).reduce((s,t)=>s+Math.abs(t.totalAmount),0);
-              const realIn  = accTxsAll.filter(t=>!t.pending&&signAmt(t)>0).reduce((s,t)=>s+Math.abs(t.totalAmount),0);
-              const realOut = accTxsAll.filter(t=>!t.pending&&signAmt(t)<0).reduce((s,t)=>s+Math.abs(t.totalAmount),0);
-              const pendIn  = accTxsAll.filter(t=> t.pending&&signAmt(t)>0).reduce((s,t)=>s+Math.abs(t.totalAmount),0);
-              const pendOut = accTxsAll.filter(t=> t.pending&&signAmt(t)<0).reduce((s,t)=>s+Math.abs(t.totalAmount),0);
-              return {
-                M: base+incM-outM,
-                E,
-                bIM: realIn,  bOM: realOut,
-                bIE: realIn,  bOE: realOut,
-                pIM: 0,       pOM: 0,
-                pIE: pendIn,  pOE: pendOut,
-                uIM: 0, uOM: 0, uIE: 0, uOE: 0,
-              };
-            }
-            // PrognoseM: base + inc bis 14 - out bis 14 (mit Budget-Mitte-Logic) — nur Giro
-            const inc=(cats||[]).filter(c=>c.type==="income"||c.type==="tagesgeld").reduce((s,cat)=>{
-              return s+(txs||[]).filter(t=>{
-                if(t._linkedTo||t._budgetSubId)return false;
-                if(mitteAbg2&&t.pending)return false;
-                if(!isAcc2(t))return false;
-                const d=new Date(t.date);
-                return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()<=14&&(t.splits||[]).some(sp=>sp.catId===cat.id);
-              }).reduce((ss,t)=>ss+(t.splits||[]).filter(sp=>sp.catId===cat.id).reduce((sss,sp)=>sss+Math.abs(pn(sp.amount)),0),0);
-            },0);
-            const out=(cats||[]).filter(c=>c.type==="expense").reduce((s,cat)=>{
-              if(mitteAbg2){
-                return s+(txs||[]).filter(t=>{if(t._linkedTo||t._budgetSubId)return false;if(t.pending&&t._seriesTyp!=="finanzierung")return false;if(!isAcc2(t))return false;const d=new Date(t.date);return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()<=14&&(t.splits||[]).some(sp=>sp.catId===cat.id);}).reduce((ss,t)=>ss+(t.splits||[]).filter(sp=>sp.catId===cat.id).reduce((sss,sp)=>sss+Math.abs(pn(sp.amount)),0),0);
-              }
-              const subIds=new Set((cat.subs||[]).map(s=>s.id));
-              const subTotal=(cat.subs||[]).reduce((cs,sub)=>{
-                const bG=getBudgetForMonth(sub.id+"_mitte",year,month)||0;
-                const budgetAccId2=(budgets||{})[sub.id+"_mitte"]?.accountId||(budgets||{})[sub.id]?.accountId||"acc-giro";
-                const effectiveBG2=(bG>0&&budgetAccId2===aId)?bG:0;
-                const real=(txs||[]).filter(t=>{if(t.pending||t._linkedTo||t._budgetSubId)return false;if(!isAcc2(t))return false;const d=new Date(t.date);return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()<=14&&(t.splits||[]).some(sp=>sp.catId===cat.id&&sp.subId===sub.id);}).reduce((ss,t)=>ss+Math.abs((t.splits||[]).find(sp=>sp.subId===sub.id)?.amount||0),0);
-                const pend=(txs||[]).filter(t=>{if(!t.pending||t._linkedTo||t._budgetSubId)return false;if(!isAcc2(t))return false;const d=new Date(t.date);return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()<=14&&(t.splits||[]).some(sp=>sp.catId===cat.id&&sp.subId===sub.id);}).reduce((ss,t)=>ss+Math.abs((t.splits||[]).find(sp=>sp.subId===sub.id)?.amount||t.totalAmount),0);
-                return cs+(effectiveBG2>0?Math.max(effectiveBG2,real+pend):real+pend);
-              },0);
-              const pendNoSub=(txs||[]).filter(t=>{if(!t.pending||t._linkedTo||t._budgetSubId)return false;if(!isAcc2(t))return false;const d=new Date(t.date);return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()<=14&&(t.splits||[]).some(sp=>sp.catId===cat.id&&(!sp.subId||!subIds.has(sp.subId)));}).reduce((ss,t)=>ss+Math.abs(t.totalAmount),0);
-              const realNoSub=(txs||[]).filter(t=>{if(t.pending||t._linkedTo||t._budgetSubId)return false;if(!isAcc2(t))return false;const d=new Date(t.date);return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()<=14&&(t.splits||[]).some(sp=>sp.catId===cat.id&&(!sp.subId||!subIds.has(sp.subId)));}).reduce((ss,t)=>ss+Math.abs((t.splits||[]).filter(sp=>sp.catId===cat.id).reduce((sss,sp)=>sss+Math.abs(pn(sp.amount)),0)),0);
-              return s+subTotal+pendNoSub+realNoSub;
-            },0);
-            const M=base+inc-out;
-            const all=(txs||[]).filter(t=>{if(t._linkedTo||t._budgetSubId||linkedChIds.has(t.id))return false;if(!t.accountId&&aId==="acc-giro"){}else if(t.accountId!==aId)return false;const d=new Date(t.date);return d.getFullYear()===year&&d.getMonth()===month;});
-            return {base,mSum:inc-out,eSum:E-base,M,E,count:all.length,txs:all};
-          };
           if(!selAcc) {
-            // Gesamt: accProg liefert die korrekten Gesamt-Werte (Giro-Mitte + Endwerte der anderen Konten)
+            // Gesamt: accProg liefert die korrekten Gesamt-Werte (Σ saldoAt je Konto)
             return <PrognoseRow pm={accProg.M ?? prognoseMitte} pe={accProg.E ?? prognoseEnde}/>;
           }
           if(!ksAcc[selAcc] && ksAcc[selAcc] !== 0) return null; // Kein Ankerpunkt → keine Prognose
-          const r=calcAcc(selAcc);
-          if(!r) return null;
-          // Single source of truth: vom Aufrufer (Dashboard/Monat) per saldoAt berechnete
-          // Werte bevorzugen, damit Hero und Buchungsliste konsistent bleiben. Die interne
-          // Budget-Floor-Logik aus calcAcc dient nur als Fallback, wenn kein Prop kommt.
-          return <PrognoseRow pm={prognoseMitte ?? r.M} pe={prognoseEnde ?? r.E}/>;
+          // Konto-spezifische Fallback-Werte aus der zentralen Engine (saldoMitte/
+          // saldoEnde, Single Source of Truth). Props vom Aufrufer (Dashboard/Monat)
+          // haben Vorrang, damit Hero und Buchungsliste konsistent bleiben. Früher:
+          // lokale calcAcc-Reimplementierung — Äquivalenz/Divergenzen dokumentiert in
+          // tests/prognose_equivalence.test.js.
+          const rE = calcSaldoEnde(year, month, selAcc, _saldoCtx);
+          if(rE===null||rE===undefined) return null;
+          const rM = calcSaldoMitte(year, month, selAcc, _saldoCtx);
+          return <PrognoseRow pm={prognoseMitte ?? rM} pe={prognoseEnde ?? rE}/>;
 
         })() : (selAcc && displayKs===null) ? null : <div style={{display:"flex",alignItems:"center"}}>
               <div style={{flex:2,textAlign:"center"}}>
