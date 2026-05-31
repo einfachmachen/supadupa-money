@@ -12,7 +12,7 @@ import { isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
 
 function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=false}) {
   if(window.MBT_DEBUG?.disable_warnings) return null;
-  const { txs, cats, year, month, getKumulierterSaldo,  getCat, budgets, navigateToSparen, selAcc, getProgEndeAccGlobal, accounts, getBudgetForMonth } = useContext(AppCtx);
+  const { txs, cats, year, month, getKumulierterSaldo,  getCat, budgets, navigateToSparen, selAcc, accounts, getBudgetForMonth } = useContext(AppCtx);
   const [folgemonate, setFolgemonate] = React.useState(false);
   const [showFolgemonate, setShowFolgemonate] = React.useState(false);
   const [expandedMonths, setExpandedMonths] = React.useState(new Set());
@@ -51,47 +51,6 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
         budgetTxByKey.set(k, t);
       }
     });
-    // Gleiche PrognoseE-Logik wie Dashboard (getProgEnde) — mit Cache
-    const _cache = {};
-    const getProgEndeW = (y, m) => {
-      const ck=`${y}-${m}`;
-      if(ck in _cache) return _cache[ck];
-      const tb = new Date();
-      if(y<tb.getFullYear()||(y===tb.getFullYear()&&m<tb.getMonth())) {
-        const v=getKumulierterSaldo(y,m); _cache[ck]=v; return v;
-      }
-      const pY=m===0?y-1:y, pM=m===0?11:m-1;
-      const prev = getProgEndeW(pY, pM);
-      if(prev===null||prev===undefined) return null;
-      const lastD=new Date(y,m+1,0).getDate();
-      const todayY=tb.getFullYear(),todayM=tb.getMonth(),todayD=tb.getDate();
-      const isCur=y===todayY&&m===todayM,isPastM=y<todayY||(y===todayY&&m<todayM);
-      const endeAbg=isPastM||(isCur&&todayD>=lastD);
-      // Indices nutzen statt cats-Loop × txs.filter
-      const monthTxs = txsByMonthGiro.get(`${y}-${m}`) || [];
-      const inc = monthTxs.reduce((s,t)=>{
-        if(t._budgetSubId) return s;
-        if(endeAbg && t.pending) return s;
-        const sa = (t.splits||[]).filter(sp=>{
-          const c = sp.catId ? cats.find(c=>c.id===sp.catId) : null;
-          return c && (c.type==="income"||c.type==="tagesgeld");
-        }).reduce((a,sp)=>a+Math.abs(pn(sp.amount)),0);
-        return s+sa;
-      },0);
-      const out = monthTxs.reduce((s,t)=>{
-        if(t._budgetSubId) return s;
-        if(t.pending && t._seriesTyp!=="finanzierung" && endeAbg) return s;
-        const sa = (t.splits||[]).filter(sp=>{
-          const c = sp.catId ? cats.find(c=>c.id===sp.catId) : null;
-          return c && c.type==="expense";
-        }).reduce((a,sp)=>a+Math.abs(pn(sp.amount)),0);
-        return s+sa;
-      },0);
-      const v = prev+inc-out;
-      _cache[ck]=v;
-      return v;
-    };
-
     const result = [];
     // Immer vom echten aktuellen Monat ausgehen (unabhängig vom angezeigten Monat)
     const todayReal = new Date();
