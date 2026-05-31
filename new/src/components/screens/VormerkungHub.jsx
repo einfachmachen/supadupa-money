@@ -593,9 +593,10 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
     setTxs(p=>[...p,...newTxs]);
     setSaved(true); setTimeout(()=>setSaved(false),2000);
     setDesc(""); setAmount(""); setCatId(""); setSubId(""); setCount(""); setEndDate(""); setNote("");
-    // Datums-Defaults zurücksetzen: Umbuchung → heute, sonst → nächster Banktag.
+    // Datums-Defaults zurücksetzen: Buchung bei Umbuchung → heute, sonst →
+    // nächster Banktag. "verursacht" immer heute.
     setStartDate(transferToAcc ? today : nextBankWorkday(today));
-    setValueDate(transferToAcc ? "" : today);
+    setValueDate(today);
     setStartDateManual(false);
   };
 
@@ -815,8 +816,9 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
                             // (kein "verursacht"-Versatz); ohne Umbuchung → nächster
                             // Banktag. Nur beim Neuanlegen und ohne manuelle Eingabe.
                             if(!isEdit && !startDateManual) {
-                              if(newVal) { setStartDate(today); setValueDate(""); }
-                              else       { setStartDate(nextBankWorkday(today)); setValueDate(today); }
+                              // verursacht immer heute; nur das Buchungsdatum unterscheidet sich
+                              setValueDate(today);
+                              setStartDate(newVal ? today : nextBankWorkday(today));
                             }
                             // Bei Konto-Wechsel: Zielkategorie zurücksetzen falls sie zum vorherigen Konto gehörte
                             if(newVal !== transferToAcc) {

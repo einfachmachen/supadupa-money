@@ -204,9 +204,9 @@ function MobileVormerkenModal({onClose, onBack}) {
                   if(trans) {
                     setIsTransfer(true);
                     setCsvType("expense");
-                    // Umbuchung Giro→Tagesgeld bucht sofort → Buchung = heute,
-                    // kein "verursacht"-Versatz.
-                    if(!dateTouched) { setDate(today); setValueDate(""); }
+                    // Umbuchung Giro→Tagesgeld bucht sofort → Buchung = heute.
+                    // "verursacht" trotzdem mit heute vorbelegen (anpassbar).
+                    if(!dateTouched) { setDate(today); setValueDate(today); }
                     // Default-Ziel: erstes anderes Konto
                     if(!tgtAccId || tgtAccId===accId) {
                       const other = (accounts||[]).find(a=>a.id!==accId);
