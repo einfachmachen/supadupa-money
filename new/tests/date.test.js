@@ -1,0 +1,42 @@
+import { describe, it, expect } from "vitest";
+import { nextBankWorkday, isBankWorkday } from "../src/utils/date.js";
+
+describe("nextBankWorkday — TARGET2-Banktage", () => {
+  it("normaler Werktag → Folgetag", () => {
+    // Di 9.6.2026 → Mi 10.6.2026
+    expect(nextBankWorkday("2026-06-09")).toBe("2026-06-10");
+  });
+
+  it("Freitag → Montag (Wochenende übersprungen)", () => {
+    // Fr 12.6.2026 → Mo 15.6.2026
+    expect(nextBankWorkday("2026-06-12")).toBe("2026-06-15");
+  });
+
+  it("vor Karfreitag → Dienstag nach Ostern (Karfr + WE + Ostermontag)", () => {
+    // Do 2.4.2026 → Karfr 3.4., Sa 4., So 5. (Ostersonntag), Ostermo 6. → Di 7.4.
+    expect(nextBankWorkday("2026-04-02")).toBe("2026-04-07");
+  });
+
+  it("vor 1. Mai → Montag (1.5. Feiertag + WE)", () => {
+    // Do 30.4.2026 → Fr 1.5. (Feiertag), Sa 2., So 3. → Mo 4.5.
+    expect(nextBankWorkday("2026-04-30")).toBe("2026-05-04");
+  });
+
+  it("Heiligabend → 1. Werktag nach Weihnachten", () => {
+    // Do 24.12.2026 → Fr 25. (Feiertag), Sa 26. (Feiertag), So 27. → Mo 28.12.
+    expect(nextBankWorkday("2026-12-24")).toBe("2026-12-28");
+  });
+
+  it("Silvester → Neujahr übersprungen", () => {
+    // Do 31.12.2026 → Fr 1.1.2027 (Neujahr), Sa 2., So 3. → Mo 4.1.2027
+    expect(nextBankWorkday("2026-12-31")).toBe("2027-01-04");
+  });
+
+  it("isBankWorkday: Wochenende und Feiertage sind keine Banktage", () => {
+    expect(isBankWorkday(new Date(2026,5,13))).toBe(false); // Sa 13.6.
+    expect(isBankWorkday(new Date(2026,5,14))).toBe(false); // So 14.6.
+    expect(isBankWorkday(new Date(2026,4,1))).toBe(false);  // 1. Mai
+    expect(isBankWorkday(new Date(2026,3,3))).toBe(false);  // Karfreitag 3.4.2026
+    expect(isBankWorkday(new Date(2026,5,15))).toBe(true);  // Mo 15.6.
+  });
+});

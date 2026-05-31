@@ -8,6 +8,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { fmt, pn, uid } from "../../utils/format.js";
+import { nextBankWorkday } from "../../utils/date.js";
 import { Li } from "../../utils/icons.jsx";
 
 function MobileVormerkenModal({onClose, onBack}) {
@@ -24,9 +25,15 @@ function MobileVormerkenModal({onClose, onBack}) {
   const [isTransfer, setIsTransfer] = useState(false);
   const [tgtAccId, setTgtAccId] = useState("");
   const [amount, setAmount] = useState("");
-  const [date, setDate] = useState(today);
+  // Default für normale Buchungen: "verursacht am" = heute, Buchung = nächster
+  // Banktag (eine heute ausgelöste Buchung bucht frühestens am nächsten
+  // Geschäftstag). Bei Umbuchungen Giro→Tagesgeld bucht die Bank sofort →
+  // Buchung = heute (siehe Umschalter unten). dateTouched verhindert, dass eine
+  // manuelle Datumseingabe beim Typ-Wechsel überschrieben wird.
+  const [date, setDate] = useState(nextBankWorkday(today));
+  const [dateTouched, setDateTouched] = useState(false);
   const [desc, setDesc] = useState("");
-  const [valueDate, setValueDate] = useState(""); // Verursacherdatum
+  const [valueDate, setValueDate] = useState(today); // Verursacherdatum
   const [note, setNote] = useState("");
   const [catId, setCatId] = useState("");
   const [subId, setSubId] = useState("");
@@ -197,6 +204,9 @@ function MobileVormerkenModal({onClose, onBack}) {
                   if(trans) {
                     setIsTransfer(true);
                     setCsvType("expense");
+                    // Umbuchung Giro→Tagesgeld bucht sofort → Buchung = heute,
+                    // kein "verursacht"-Versatz.
+                    if(!dateTouched) { setDate(today); setValueDate(""); }
                     // Default-Ziel: erstes anderes Konto
                     if(!tgtAccId || tgtAccId===accId) {
                       const other = (accounts||[]).find(a=>a.id!==accId);
@@ -205,6 +215,8 @@ function MobileVormerkenModal({onClose, onBack}) {
                   } else {
                     setIsTransfer(false);
                     setCsvType(t);
+                    // Normale Buchung: verursacht = heute, Buchung = nächster Banktag
+                    if(!dateTouched) { setDate(nextBankWorkday(today)); setValueDate(today); }
                   }
                 }}
                   style={{...btnCenter, padding:`${S.padL}px ${S.pad}px`,
@@ -378,23 +390,21 @@ function MobileVormerkenModal({onClose, onBack}) {
           {/* Buchung am — nächster Banktag als Default */}
           <div style={{position:"relative",marginBottom:S.gap}}>
             {!date&&<div onClick={()=>{
-              // Nächster Banktag: Mo-Fr, kein Wochenende
-              const d=new Date(); d.setDate(d.getDate()+1);
-              while(d.getDay()===0||d.getDay()===6) d.setDate(d.getDate()+1);
-              setDate(d.toISOString().split("T")[0]);
+              // Nächster Banktag (inkl. TARGET2-Feiertage)
+              setDate(nextBankWorkday(today)); setDateTouched(true);
             }} style={{position:"absolute",inset:0,display:"flex",alignItems:"center",
                 paddingLeft:S.padL,color:T.txt2,fontSize:S.fs-4,
                 cursor:"pointer",borderRadius:S.radius,zIndex:1}}>
               {Li("calendar",S.fs-4,T.txt2)}
               <span style={{marginLeft:8}}>Buchung am — tippe für nächsten Banktag</span>
             </div>}
-            <input type="date" value={date} onChange={e=>setDate(e.target.value)}
+            <input type="date" value={date} onChange={e=>{setDate(e.target.value);setDateTouched(true);}}
               style={{width:"100%",boxSizing:"border-box",padding:`${S.padL}px`,
                 borderRadius:S.radius,border:`2px solid ${date?T.blue:T.bd}`,
                 background:"rgba(255,255,255,0.06)",
                 color:date?T.txt:"transparent",
                 fontSize:S.fs,fontFamily:"inherit",outline:"none",colorScheme:"dark"}}/>
-            {date&&<button onClick={()=>setDate("")}
+            {date&&<button onClick={()=>{setDate("");setDateTouched(true);}}
               style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",
                 background:"none",border:"none",color:T.txt2,cursor:"pointer",
                 fontSize:S.fs,padding:4}}>✕</button>}
