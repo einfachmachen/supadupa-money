@@ -5,7 +5,7 @@ import { CatPicker } from "../molecules/CatPicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
-import { fmt, pn, uid } from "../../utils/format.js";
+import { fmt, uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
 import { restMitte, restEnde, phaseStillReachable } from "../../utils/saldo.js";
@@ -52,8 +52,6 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   const isCurr = year===nowY && month===nowM;
 
   // ── Caches — müssen vor jedem return stehen (React Hook-Regel) ────────
-  const progEndeCache = React.useRef({});
-  React.useEffect(()=>{ progEndeCache.current = {}; }, [txs]);
   const minTagCache = React.useRef({});
   React.useEffect(()=>{ minTagCache.current = {}; }, [txs, selAcc]);
   const [progress, setProgress] = useState(0);
@@ -113,40 +111,6 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
 
   if(!isCurr) return null;
 
-  const getProgEndeW = (y, m) => {
-    const key = `${y}-${m}`;
-    if(key in progEndeCache.current) return progEndeCache.current[key];
-    const tb = new Date();
-    if(y<tb.getFullYear()||(y===tb.getFullYear()&&m<tb.getMonth()))
-      return getKumulierterSaldo(y, m);
-    const pY=m===0?y-1:y, pM=m===0?11:m-1;
-    const prev = getProgEndeW(pY, pM);
-    if(prev===null||prev===undefined) return null;
-    const lastD=new Date(y,m+1,0).getDate();
-    const todayY=tb.getFullYear(),todayM=tb.getMonth(),todayD=tb.getDate();
-    const isCr=y===todayY&&m===todayM,isPstM=y<todayY||(y===todayY&&m<todayM);
-    const endeAbg=isPstM||(isCr&&todayD>=lastD);
-    const inc=cats.filter(c=>c.type==="income"||c.type==="tagesgeld").reduce((s,cat)=>
-      s+txs.filter(t=>{
-        if(t._linkedTo||t._budgetSubId)return false;
-        if(endeAbg&&t.pending)return false;
-        const d=new Date(t.date);
-        return d.getFullYear()===y&&d.getMonth()===m&&(t.splits||[]).some(sp=>sp.catId===cat.id);
-      }).reduce((ss,t)=>ss+(t.splits||[]).filter(sp=>sp.catId===cat.id).reduce((sss,sp)=>sss+Math.abs(pn(sp.amount)),0),0)
-    ,0);
-    const out=cats.filter(c=>c.type==="expense").reduce((s,cat)=>{
-      if(endeAbg)return s+txs.filter(t=>{if(t._linkedTo||t._budgetSubId)return false;if(t.pending&&t._seriesTyp!=="finanzierung")return false;const d=new Date(t.date);return d.getFullYear()===y&&d.getMonth()===m&&(t.splits||[]).some(sp=>sp.catId===cat.id);}).reduce((ss,t)=>ss+(t.splits||[]).filter(sp=>sp.catId===cat.id).reduce((sss,sp)=>sss+Math.abs(pn(sp.amount)),0),0);
-      const subIds=new Set((cat.subs||[]).map(s=>s.id));
-      const st=(cat.subs||[]).reduce((cs,sub)=>{const bG=getBudgetForMonth(sub.id,y,m);const r=txs.filter(t=>{if(t.pending||t._linkedTo||t._budgetSubId)return false;const d=new Date(t.date);return d.getFullYear()===y&&d.getMonth()===m&&(t.splits||[]).some(sp=>sp.catId===cat.id&&sp.subId===sub.id);}).reduce((ss,t)=>ss+Math.abs((t.splits||[]).find(sp=>sp.subId===sub.id)?.amount||0),0);const p=txs.filter(t=>{if(!t.pending||t._linkedTo||t._budgetSubId)return false;const d=new Date(t.date);return d.getFullYear()===y&&d.getMonth()===m&&(t.splits||[]).some(sp=>sp.catId===cat.id&&sp.subId===sub.id);}).reduce((ss,t)=>ss+Math.abs((t.splits||[]).find(sp=>sp.subId===sub.id)?.amount||t.totalAmount),0);return cs+(bG>0?Math.max(bG,r+p):r+p);},0);
-      const pNS=txs.filter(t=>{if(!t.pending||t._linkedTo||t._budgetSubId)return false;const d=new Date(t.date);return d.getFullYear()===y&&d.getMonth()===m&&(t.splits||[]).some(sp=>sp.catId===cat.id&&(!sp.subId||!subIds.has(sp.subId)));}).reduce((ss,t)=>ss+Math.abs(t.totalAmount),0);
-      const rNS=txs.filter(t=>{if(t.pending||t._linkedTo||t._budgetSubId)return false;const d=new Date(t.date);return d.getFullYear()===y&&d.getMonth()===m&&(t.splits||[]).some(sp=>sp.catId===cat.id&&(!sp.subId||!subIds.has(sp.subId)));}).reduce((ss,t)=>ss+(t.splits||[]).filter(sp=>sp.catId===cat.id).reduce((sss,sp)=>sss+Math.abs(pn(sp.amount)),0),0);
-      return s+st+pNS+rNS;
-    },0);
-    const val = prev+inc-out;
-    progEndeCache.current[key] = val;
-    return val;
-  };
-
   // Tagesgenauen Minimalsaldo eines Monats berechnen
   // excludeSparDesc: wenn gesetzt, werden Sparplan-Buchungen mit diesem desc ignoriert
   // (für Neuberechnung eines bestehenden Sparplans)
@@ -162,11 +126,19 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     const _tbReal = new Date();
     const _prevIsPast = prevY < _tbReal.getFullYear()
       || (prevY === _tbReal.getFullYear() && prevM < _tbReal.getMonth());
+    // Basis = Vormonats-Endsaldo. Vergangener Vormonat → echter Endstand
+    // (getKumulierterSaldo, ohne Vormerkungen); aktueller/künftiger Vormonat →
+    // zentrale Prognose getProgEndeAccGlobal (= saldoEnde). Global (kein Konto)
+    // spiegelt denselben Aufbau mit accId=undefined (Summe aller Konten).
+    // Früher: lokale getProgEndeW-Reimplementierung — Äquivalenz/Divergenzen
+    // belegt in tests/prognose_equivalence.test.js.
     const baseSaldo = effSelAcc
       ? (_prevIsPast
           ? (getKumulierterSaldo(prevY, prevM, effSelAcc) ?? getProgEndeAccGlobal(prevY, prevM, effSelAcc))
           : (getProgEndeAccGlobal(prevY, prevM, effSelAcc) ?? getKumulierterSaldo(prevY, prevM, effSelAcc)))
-      : getProgEndeW(prevY, prevM);
+      : (_prevIsPast
+          ? getKumulierterSaldo(prevY, prevM)
+          : getProgEndeAccGlobal(prevY, prevM));
     if(baseSaldo===null||baseSaldo===undefined) return {min:null, saldoEnde:null};
     // Wenn wir einen alten Plan ignorieren, müssen wir baseSaldo um die alten Sparraten der Vormonate korrigieren
     let baseSaldoEff = baseSaldo;
@@ -309,7 +281,6 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     setResult(null);
     setProgress(0);
     minTagCache.current = {}; // Cache leeren — stellt sicher dass Plan-1-Vormerkungen einbezogen werden
-    progEndeCache.current = {}; // Auch lokalen Prognose-Cache leeren
     resetProgEndeCache(); // Globalen AppCtx Prognose-Cache leeren
     // Wenn ein Sparplan mit diesem Namen existiert, alte Raten ignorieren — sonst rechnen wir mit reduziertem Saldo
     const sparDesc = buildSparDesc(sparPlanName);
@@ -381,7 +352,6 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     const savedSelAcc = selAcc;
     // Berechnung mit acc-giro erzwingen: minTagCache leeren und mit Giro-Kontext rechnen
     minTagCache.current = {};
-    progEndeCache.current = {};
     resetProgEndeCache();
     berechnen((rows)=>{
       const anzahl = doAktualisieren(rows, seriesId, seriesId+"-tgt", sparDesc);

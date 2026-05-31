@@ -275,6 +275,112 @@ describe("Mitte-Konsolidierung: calcAcc-Mitte (Giro) vs saldoMitte", () => {
   });
 });
 
+// ── Globale Ende-Prognose: TagesgeldWidget.getProgEndeW vs saldoEnde(…, null) ──
+function oldProgEndeWGlobal(y, m, P) {
+  const { today, getKumulierterSaldo, txs, cats, getBudgetForMonth } = P;
+  const tb = today || new Date();
+  if(y<tb.getFullYear()||(y===tb.getFullYear()&&m<tb.getMonth()))
+    return getKumulierterSaldo(y, m);
+  const pY=m===0?y-1:y, pM=m===0?11:m-1;
+  const prev = oldProgEndeWGlobal(pY, pM, P);
+  if(prev===null||prev===undefined) return null;
+  const lastD=new Date(y,m+1,0).getDate();
+  const todayY=tb.getFullYear(),todayM=tb.getMonth(),todayD=tb.getDate();
+  const isCr=y===todayY&&m===todayM,isPstM=y<todayY||(y===todayY&&m<todayM);
+  const endeAbg=isPstM||(isCr&&todayD>=lastD);
+  const inc=cats.filter(c=>c.type==="income"||c.type==="tagesgeld").reduce((s,cat)=>
+    s+txs.filter(t=>{ if(t._linkedTo||t._budgetSubId)return false; if(endeAbg&&t.pending)return false; const d=new Date(t.date); return d.getFullYear()===y&&d.getMonth()===m&&(t.splits||[]).some(sp=>sp.catId===cat.id); }).reduce((ss,t)=>ss+(t.splits||[]).filter(sp=>sp.catId===cat.id).reduce((sss,sp)=>sss+Math.abs(pn(sp.amount)),0),0)
+  ,0);
+  const out=cats.filter(c=>c.type==="expense").reduce((s,cat)=>{
+    if(endeAbg)return s+txs.filter(t=>{if(t._linkedTo||t._budgetSubId)return false;if(t.pending&&t._seriesTyp!=="finanzierung")return false;const d=new Date(t.date);return d.getFullYear()===y&&d.getMonth()===m&&(t.splits||[]).some(sp=>sp.catId===cat.id);}).reduce((ss,t)=>ss+(t.splits||[]).filter(sp=>sp.catId===cat.id).reduce((sss,sp)=>sss+Math.abs(pn(sp.amount)),0),0);
+    const subIds=new Set((cat.subs||[]).map(s=>s.id));
+    const st=(cat.subs||[]).reduce((cs,sub)=>{const bG=getBudgetForMonth(sub.id,y,m);const r=txs.filter(t=>{if(t.pending||t._linkedTo||t._budgetSubId)return false;const d=new Date(t.date);return d.getFullYear()===y&&d.getMonth()===m&&(t.splits||[]).some(sp=>sp.catId===cat.id&&sp.subId===sub.id);}).reduce((ss,t)=>ss+Math.abs((t.splits||[]).find(sp=>sp.subId===sub.id)?.amount||0),0);const p=txs.filter(t=>{if(!t.pending||t._linkedTo||t._budgetSubId)return false;const d=new Date(t.date);return d.getFullYear()===y&&d.getMonth()===m&&(t.splits||[]).some(sp=>sp.catId===cat.id&&sp.subId===sub.id);}).reduce((ss,t)=>ss+Math.abs((t.splits||[]).find(sp=>sp.subId===sub.id)?.amount||t.totalAmount),0);return cs+(bG>0?Math.max(bG,r+p):r+p);},0);
+    const pNS=txs.filter(t=>{if(!t.pending||t._linkedTo||t._budgetSubId)return false;const d=new Date(t.date);return d.getFullYear()===y&&d.getMonth()===m&&(t.splits||[]).some(sp=>sp.catId===cat.id&&(!sp.subId||!subIds.has(sp.subId)));}).reduce((ss,t)=>ss+Math.abs(t.totalAmount),0);
+    const rNS=txs.filter(t=>{if(t.pending||t._linkedTo||t._budgetSubId)return false;const d=new Date(t.date);return d.getFullYear()===y&&d.getMonth()===m&&(t.splits||[]).some(sp=>sp.catId===cat.id&&(!sp.subId||!subIds.has(sp.subId)));}).reduce((ss,t)=>ss+(t.splits||[]).filter(sp=>sp.catId===cat.id).reduce((sss,sp)=>sss+Math.abs(pn(sp.amount)),0),0);
+    return s+st+pNS+rNS;
+  },0);
+  return prev+inc-out;
+}
+
+describe("Globale Prognose: getProgEndeW vs saldoEnde(…, null)", () => {
+  function bothGlobal(cfg, y, m) {
+    const P = { today: cfg.today, getKumulierterSaldo: buildCtx(cfg).getKumulierterSaldo, txs: cfg.txs||[], cats: cfg.cats||CATS, getBudgetForMonth: buildCtx(cfg).getBudgetForMonth };
+    const old = oldProgEndeWGlobal(y, m, P);
+    const neu = saldoEnde(y, m, null, buildCtx(cfg)); // accId=null → global
+    return { old, neu };
+  }
+  const base = { accounts: ACCOUNTS, cats: CATS, anchors: { "acc-giro": { "2026-3": 1000 }, "acc-tagesgeld": { "2026-3": 5000 } }, today: new Date("2026-05-05") };
+
+  it("Giro-Ausgaben unter Budget + Einnahmen, Tagesgeld unberührt", () => {
+    const cfg = { ...base, budgets: { "s-essen": { amount: 200 } }, txs: [
+      { id: "t1", accountId: "acc-giro", date: "2026-05-10", totalAmount: -50, _csvType: "expense", splits: [{ catId: "c-essen", subId: "s-essen", amount: -50 }] },
+      { id: "t2", accountId: "acc-giro", date: "2026-05-25", totalAmount: 2500, _csvType: "income", splits: [{ catId: "c-gehalt", subId: "s-gehalt", amount: 2500 }] },
+      { id: "t3", accountId: "acc-tagesgeld", date: "2026-05-12", totalAmount: 80, _csvType: "income", splits: [{ catId: "c-gehalt", subId: "s-gehalt", amount: 80 }] },
+      ...placeholders(2026, 4, "s-essen", 0, 200),
+    ]};
+    const { old, neu } = bothGlobal(cfg, 2026, 4);
+    expect(neu).toBe(old);
+  });
+
+  it("Giro-Ausgaben über Budget", () => {
+    const cfg = { ...base, budgets: { "s-essen": { amount: 200 } }, txs: [
+      { id: "t1", accountId: "acc-giro", date: "2026-05-10", totalAmount: -260, _csvType: "expense", splits: [{ catId: "c-essen", subId: "s-essen", amount: -260 }] },
+      ...placeholders(2026, 4, "s-essen", 0, 200),
+    ]};
+    const { old, neu } = bothGlobal(cfg, 2026, 4);
+    expect(neu).toBe(old);
+  });
+
+  it("Sparen-Transfer Giro→Tagesgeld nettet global auf 0", () => {
+    const cfg = { ...base, budgets: {}, txs: [
+      { id: "g1", accountId: "acc-giro", date: "2026-05-10", totalAmount: -100, _csvType: "expense", _linkedTo: "tg1", splits: [] },
+      { id: "tg1", accountId: "acc-tagesgeld", date: "2026-05-10", totalAmount: 100, _csvType: "income", _linkedTo: "g1", splits: [] },
+    ]};
+    const { old, neu } = bothGlobal(cfg, 2026, 4);
+    expect(neu).toBe(old);
+    expect(neu).toBe(6000); // 1000 + 5000, Transfer hebt sich auf
+  });
+
+  it("1000 zufällige globale Szenarien (Giro-Budgets, Ausgaben auf Giro): identisch", () => {
+    function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;};}
+    const rnd = mulberry32(2027);
+    const pick = arr => arr[Math.floor(rnd()*arr.length)];
+    let mismatches = [];
+    for(let i=0;i<1000;i++){
+      const budE = pick([0,50,100,200]);
+      const subs = pick(["s-essen","s-baecker"]);
+      const catId = subs==="s-essen"?"c-essen":"c-baecker";
+      const txs = [...placeholders(2026,4,subs,0,budE,catId)];
+      const nTx = Math.floor(rnd()*4);
+      for(let k=0;k<nTx;k++){
+        const day=1+Math.floor(rnd()*28), amt=-(5+Math.floor(rnd()*120)), pending=rnd()<0.4;
+        txs.push({ id:`r${i}-${k}`, accountId:"acc-giro", pending, date:`2026-05-${String(day).padStart(2,"0")}`, totalAmount:amt, _csvType:"expense", splits:[{catId, subId:subs, amount:amt}] });
+      }
+      // Tagesgeld-Einnahmen ohne Budget (Budgets/Ausgaben liegen per App-Design auf Giro;
+      // budgetierte Ausgaben auf Nicht-Giro sind ein dokumentierter Divergenzfall, s.u.)
+      if(rnd()<0.5){ const amt=50+Math.floor(rnd()*500); txs.push({id:`r${i}-tg`,accountId:"acc-tagesgeld",pending:rnd()<0.3,date:`2026-05-${String(1+Math.floor(rnd()*28)).padStart(2,"0")}`,totalAmount:amt,_csvType:"income",splits:[{catId:"c-gehalt",subId:"s-gehalt",amount:amt}]}); }
+      if(rnd()<0.3){ const amt=100+Math.floor(rnd()*2000); txs.push({id:`r${i}-inc`,accountId:"acc-giro",pending:rnd()<0.3,date:`2026-05-${String(1+Math.floor(rnd()*28)).padStart(2,"0")}`,totalAmount:amt,_csvType:"income",splits:[{catId:"c-gehalt",subId:"s-gehalt",amount:amt}]}); }
+      const cfg = { ...base, budgets: { [subs]: { amount: budE } }, txs };
+      const { old, neu } = bothGlobal(cfg, 2026, 4);
+      if(Math.abs((old??0)-(neu??0)) > 1e-6) mismatches.push({ i, old, neu });
+    }
+    expect(mismatches.length).toBe(0);
+  });
+
+  it("Dokumentierte Divergenz: Ausgaben-Budget auf Tagesgeld-Buchung", () => {
+    // getProgEndeW floored die globale Ausgabensumme gegen das (Giro-)Budget,
+    // unabhängig vom Konto. saldoEnde reserviert Budget nur auf Giro. Hier liegt
+    // die budgetierte Ausgabe auf Tagesgeld → saldoEnde reserviert dort nichts.
+    const cfg = { ...base, budgets: { "s-essen": { amount: 200 } }, txs: [
+      { id: "t1", accountId: "acc-tagesgeld", date: "2026-05-10", totalAmount: -50, _csvType: "expense", splits: [{ catId: "c-essen", subId: "s-essen", amount: -50 }] },
+      ...placeholders(2026, 4, "s-essen", 0, 200),
+    ]};
+    const { old, neu } = bothGlobal(cfg, 2026, 4);
+    expect(old).toBe(5800); // ALT: 6000 − max(200,50)=200 (globaler Floor, kontounabhängig)
+    expect(neu).toBe(5750); // NEU: Giro 1000−200(RestEnde, kein Giro-Ist) + Tagesgeld 5000−50
+  });
+});
+
 describe("Prognose-Konsolidierung: getProgEndeAcc vs saldoEnde", () => {
   describe("Giro — algebraische Äquivalenz (Budget-Floor ⇔ RestEnde)", () => {
     const base = { accounts: ACCOUNTS, cats: CATS, anchors: { "acc-giro": { "2026-3": 1000 } }, today: new Date("2026-05-05") };
