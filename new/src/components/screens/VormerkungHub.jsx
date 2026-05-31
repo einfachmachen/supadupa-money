@@ -9,7 +9,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
 import { MONTHS_F } from "../../utils/constants.js";
-import { isoAddMonths } from "../../utils/date.js";
+import { isoAddMonths, nextBankWorkday } from "../../utils/date.js";
 import { fmt, pn, uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
@@ -109,13 +109,17 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
       if(firstTx) return firstTx.date;
     }
     if(editVorm?.date) return editVorm.date;
-    // Neu-Anlegen: heute als Default (nicht der angezeigte Monat!)
-    const now = new Date();
-    const pad2 = n=>String(n).padStart(2,"0");
-    return `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}`;
+    // Neu-Anlegen: Buchung am NÄCHSTEN Banktag (eine heute ausgelöste Buchung
+    // bucht frühestens am nächsten Geschäftstag; nicht der angezeigte Monat).
+    // Bei Umbuchungen Giro→Tagesgeld bucht die Bank sofort → heute (siehe unten).
+    return nextBankWorkday(today);
   });
   const [endDate,   setEndDate]   = useState("");
-  const [valueDate, setValueDate] = useState(editVorm?.valueDate||"");
+  // "verursacht am": beim Neuanlegen heute, beim Bearbeiten der gespeicherte Wert.
+  const [valueDate, setValueDate] = useState(editVorm ? (editVorm.valueDate||"") : today);
+  // Verhindert, dass eine manuelle Datumseingabe beim Typ-/Umbuchungs-Wechsel
+  // überschrieben wird.
+  const [startDateManual, setStartDateManual] = useState(false);
   const [interval,  setInterval_] = useState(()=>{
     if(!editVorm) return 1;
     // Aus repeatMonths wenn gesetzt
@@ -588,7 +592,11 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
     }
     setTxs(p=>[...p,...newTxs]);
     setSaved(true); setTimeout(()=>setSaved(false),2000);
-    setDesc(""); setAmount(""); setCatId(""); setSubId(""); setCount(""); setEndDate(""); setStartDate(today); setValueDate(""); setNote("");
+    setDesc(""); setAmount(""); setCatId(""); setSubId(""); setCount(""); setEndDate(""); setNote("");
+    // Datums-Defaults zurücksetzen: Umbuchung → heute, sonst → nächster Banktag.
+    setStartDate(transferToAcc ? today : nextBankWorkday(today));
+    setValueDate(transferToAcc ? "" : today);
+    setStartDateManual(false);
   };
 
   const handleDelete = () => {
@@ -786,7 +794,11 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
                       {Li("arrow-right-left",12,umbBlue)}
                       <span style={{color:T.txt2,fontSize:10,fontWeight:700}}>Umbuchung auf eigenes Konto (optional)</span>
                       {transferToAcc&&(
-                        <button onClick={()=>{setTransferToAcc("");setTransferToCat("");setTransferToSub("");}}
+                        <button onClick={()=>{
+                          setTransferToAcc("");setTransferToCat("");setTransferToSub("");
+                          // Keine Umbuchung mehr → Buchung wieder auf nächsten Banktag
+                          if(!isEdit && !startDateManual) { setStartDate(nextBankWorkday(today)); setValueDate(today); }
+                        }}
                           style={{marginLeft:"auto",background:"none",border:"none",color:T.txt2,cursor:"pointer",fontSize:10,padding:"2px 6px",fontFamily:"inherit"}}>
                           Entfernen
                         </button>
@@ -799,6 +811,13 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
                           <button key={tgt.id} onClick={()=>{
                             const newVal = sel?"":tgt.id;
                             setTransferToAcc(newVal);
+                            // Umbuchung Giro→Tagesgeld bucht sofort → Buchung = heute
+                            // (kein "verursacht"-Versatz); ohne Umbuchung → nächster
+                            // Banktag. Nur beim Neuanlegen und ohne manuelle Eingabe.
+                            if(!isEdit && !startDateManual) {
+                              if(newVal) { setStartDate(today); setValueDate(""); }
+                              else       { setStartDate(nextBankWorkday(today)); setValueDate(today); }
+                            }
                             // Bei Konto-Wechsel: Zielkategorie zurücksetzen falls sie zum vorherigen Konto gehörte
                             if(newVal !== transferToAcc) {
                               setTransferToCat("");
@@ -880,6 +899,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
                     const [y,m] = startDate.split("-").map(Number);
                     const lastDay = new Date(y, m, 0).getDate();
                     setStartDate(`${y}-${String(m).padStart(2,"0")}-${String(lastDay).padStart(2,"0")}`);
+                    setStartDateManual(true);
                   }
                   // fromDate immer mitaktualisieren wenn nicht manuell gesetzt
                   if(!fromDateManual) {
@@ -944,7 +964,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
                     {Li("calendar",10,T.txt2)} verursacht
                   </div>
                   <div style={{display:"flex",gap:2,alignItems:"center"}}>
-                    <input type="date" value={valueDate} onChange={e=>setValueDate(e.target.value)}
+                    <input type="date" value={valueDate} onChange={e=>{setValueDate(e.target.value);setStartDateManual(true);}}
                       style={{...INP,marginBottom:0,flex:1,
                         colorScheme:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"light":"dark"}}/>
                     {valueDate&&<button onClick={()=>setValueDate("")}
@@ -957,7 +977,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
                   <div style={{color:T.txt2,fontSize:10,marginBottom:3}}>
                     {typ==="einmalig"?"Buchung am":"Startdatum"}
                   </div>
-                  <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}
+                  <input type="date" value={startDate} onChange={e=>{setStartDate(e.target.value);setStartDateManual(true);}}
                     style={{...INP,marginBottom:0,width:"100%",boxSizing:"border-box",
                       colorScheme:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"light":"dark"}}/>
                 </div>
