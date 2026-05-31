@@ -632,6 +632,46 @@ describe("saldoAt — Excel-Logik (User-Spec)", () => {
     });
   });
 
+  describe("Restbudget-Freigabe nach Banktag-Logik (Option A)", () => {
+    // Mai 2026 endet So 31.; letzter Banktag Fr 29. Buchung am Fr 29. würde Mo
+    // 1.6. landen → ab Fr 29. ist die Ende-Reservierung nicht mehr verbrauchbar.
+    function maiCtx(today) {
+      return buildCtx({
+        anchors: { "acc-giro": { "2026-3": 1000 } },
+        today,
+        txs: [
+          { id: "t1", accountId: "acc-giro", date: "2026-05-10", totalAmount: -30, _csvType: "expense",
+            splits: [{ catId: "c-essen", subId: "s-essen", amount: -30 }] },
+          ...budgetPlaceholders(2026, 4, "s-essen", 100, 200),
+        ],
+      });
+    }
+    // RestEnde = max(0, 300-30) = 270 → mit Reservierung 1000-30-270 = 700
+    it("Do 28.5.: nächste Buchung Fr 29. (noch Mai) → Reservierung bleibt", () => {
+      expect(saldoAt(2026, 4, 31, "acc-giro", maiCtx(new Date("2026-05-28")))).toBe(700);
+    });
+    it("Fr 29.5.: nächste Buchung Mo 1.6. → Reservierung freigegeben", () => {
+      expect(saldoAt(2026, 4, 31, "acc-giro", maiCtx(new Date("2026-05-29")))).toBe(970);
+    });
+    it("So 31.5.: freigegeben → echter Ist-Stand", () => {
+      expect(saldoAt(2026, 4, 31, "acc-giro", maiCtx(new Date("2026-05-31")))).toBe(970);
+    });
+    it("Zukunftsmonat bleibt unberührt (Reservierung aktiv)", () => {
+      // Juni aus Mai-Sicht: Ende-Reservierung weiter aktiv
+      const ctx = buildCtx({
+        anchors: { "acc-giro": { "2026-3": 1000 } },
+        today: new Date("2026-05-31"),
+        txs: [
+          { id: "t1", accountId: "acc-giro", date: "2026-06-10", totalAmount: -30, _csvType: "expense",
+            splits: [{ catId: "c-essen", subId: "s-essen", amount: -30 }] },
+          ...budgetPlaceholders(2026, 5, "s-essen", 100, 200),
+        ],
+      });
+      // RestEnde Juni = 270 → 1000-30-270 = 700 (nicht freigegeben)
+      expect(saldoAt(2026, 5, 30, "acc-giro", ctx)).toBe(700);
+    });
+  });
+
   describe("Mehrere Monate (Rekursion)", () => {
     it("Saldo zieht sich korrekt durch Monate", () => {
       const ctx = buildCtx({

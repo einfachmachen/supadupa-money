@@ -7,7 +7,7 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { MONTHS_S } from "../../utils/constants.js";
 import { fmt, pn } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
-import { restMitte, restEnde } from "../../utils/saldo.js";
+import { restMitte, restEnde, phaseStillReachable } from "../../utils/saldo.js";
 import { isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
 
 function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=false}) {
@@ -212,8 +212,10 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
         if(m < _curMo) return false;
         return d >= _curDay;
       };
-      const sprungMitteVal = restMitte(y, m, _saldoCtx);
-      const sprungEndeVal  = restEnde(y, m, _saldoCtx);
+      // Reservierung nur solange die Phase noch verbrauchbar ist (eine heute
+      // ausgelöste Buchung würde noch innerhalb der Phase buchen).
+      const sprungMitteVal = phaseStillReachable(y, m, 14, _saldoCtx)      ? restMitte(y, m, _saldoCtx) : 0;
+      const sprungEndeVal  = phaseStillReachable(y, m, lastDay, _saldoCtx) ? restEnde(y, m, _saldoCtx)  : 0;
       const saldoByDay = {};
       let cumIst = 0, txIdx = 0;
       for(let day=1; day<=lastDay; day++) {

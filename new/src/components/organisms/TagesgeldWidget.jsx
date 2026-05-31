@@ -8,7 +8,7 @@ import { INP } from "../../theme/palette.js";
 import { fmt, pn, uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
-import { restMitte, restEnde } from "../../utils/saldo.js";
+import { restMitte, restEnde, phaseStillReachable } from "../../utils/saldo.js";
 import { isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
 
 function TagesgeldWidget({year, month, initialCollapsed=true}) {
@@ -208,8 +208,9 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     // 1..14) bzw. RestEnde (Tag 15..letzter). Budgets liegen nur auf Giro.
     const _saldoCtx = { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth };
     const istGiroView = !effSelAcc || effSelAcc === "acc-giro";
-    const obMitte = istGiroView ? restMitte(y, m, _saldoCtx) : 0;
-    const obEnde  = istGiroView ? restEnde(y, m, _saldoCtx)  : 0;
+    // Reservierung nur solange die Phase noch verbrauchbar ist.
+    const obMitte = (istGiroView && phaseStillReachable(y, m, 14, _saldoCtx))      ? restMitte(y, m, _saldoCtx) : 0;
+    const obEnde  = (istGiroView && phaseStillReachable(y, m, lastDay, _saldoCtx)) ? restEnde(y, m, _saldoCtx)  : 0;
     // Reservierung gilt durchgehend für ihren Geltungszeitraum (nicht nur am
     // 14./letzten Tag), nur für heutige/zukünftige Tage. So bleibt der für den
     // Sparplan geprüfte Tiefst-Saldo der "Tagessaldo nach Budget" — der Sweep

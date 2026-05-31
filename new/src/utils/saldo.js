@@ -55,6 +55,7 @@
 
 import { buildTxIdMap, isDuplCounterpart } from "./tx.js";
 import { pn } from "./format.js";
+import { nextBankWorkday } from "./date.js";
 
 // ── Helper: signed amount ─────────────────────────────────────────────
 function signedAmount(t) {
@@ -284,15 +285,28 @@ function isFuture(year, month, day, ctx) {
   if(month < tM) return false;
   return day >= tD;
 }
+// Ist das Restbudget einer Phase überhaupt noch verbrauchbar?
+// Eine HEUTE ausgelöste Buchung bucht erst am nächsten Banktag. Sobald dieser
+// über das Phasenende (14. bzw. Monatsletzter) hinausreicht, kann das Budget
+// nicht mehr in dieser Phase verbraucht werden → Reservierung entfällt schon
+// VOR dem Kalender-Stichtag (z.B. am Wochenende/Feiertag am Monatsende).
+function phaseStillReachable(year, month, phaseEndDay, ctx) {
+  const today = ctx.today || new Date();
+  const pad = n => String(n).padStart(2,"0");
+  const todayIso = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
+  const phaseEndIso = `${year}-${pad(month+1)}-${pad(phaseEndDay)}`;
+  // ISO-Strings vergleichen sich chronologisch
+  return nextBankWorkday(todayIso) <= phaseEndIso;
+}
 function shouldApplyMitteSprung(year, month, day, ctx) {
   if(day > 14) return false;
-  // Tag muss heute oder in der Zukunft liegen
-  return isFuture(year, month, day, ctx);
+  // Tag muss heute/Zukunft sein UND die Phase noch verbrauchbar
+  return isFuture(year, month, day, ctx) && phaseStillReachable(year, month, 14, ctx);
 }
 function shouldApplyEndeSprung(year, month, day, ctx) {
   if(day < 15) return false;
-  // Tag muss heute oder in der Zukunft liegen
-  return isFuture(year, month, day, ctx);
+  const lastDay = new Date(year, month+1, 0).getDate();
+  return isFuture(year, month, day, ctx) && phaseStillReachable(year, month, lastDay, ctx);
 }
 
 // ── HAUPTFUNKTION ─────────────────────────────────────────────────────
@@ -357,4 +371,4 @@ export function saldoEnde(year, month, accId, ctx) {
   return saldoAt(year, month, lastDay, accId, ctx);
 }
 
-export { saldoAnchor, restMitte, restEnde, collectBudgets };
+export { saldoAnchor, restMitte, restEnde, collectBudgets, phaseStillReachable };
