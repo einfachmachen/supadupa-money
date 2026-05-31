@@ -15,7 +15,7 @@ import { dayOf, fmt, pn, uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
-import { saldoAt, saldoIst, saldoMitte, saldoEnde } from "../../utils/saldo.js";
+import { saldoAt, saldoIst, saldoMitte, saldoEnde, phaseStillReachable } from "../../utils/saldo.js";
 
 function MonatScreen() {
   const { cats,setCats,groups,setGroups,txs,setTxs,accounts,setAccounts,
@@ -259,6 +259,11 @@ function MonatScreen() {
       // Budgets nur für Gesamt oder Giro anzeigen — andere Konten haben keine Budgets
       // Aber: Kategorieübersicht zeigen auch für Tagesgeld (einfach nur ohne Budgets)
       if(selAcc && selAcc !== "acc-giro") return { items:[], totalOpen:0 };
+      // Restbudget freigeben, sobald die Phase nicht mehr erreichbar ist (nächster
+      // Banktag liegt hinter Phasenende: 14. für Mitte, Monatsletzter für Ende).
+      // Dann fallen die Restbudget-Zeilen dieses Tages komplett weg — konsistent
+      // zu Hero/Vormerkungen, wo die Reservierung ebenfalls entfällt.
+      if(!phaseStillReachable(year, month, maxDay, {})) return { items:[], totalOpen:0 };
       const items = [];
       let totalOpen = 0;
       cats.filter(c=>c.type==="expense"||c.type==="income").forEach(cat=>{

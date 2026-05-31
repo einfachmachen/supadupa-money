@@ -298,6 +298,18 @@ function phaseStillReachable(year, month, phaseEndDay, ctx) {
   // ISO-Strings vergleichen sich chronologisch
   return nextBankWorkday(todayIso) <= phaseEndIso;
 }
+// Ist ein Budget-Platzhalter (pending tx mit _budgetSubId) noch "aktiv", d. h.
+// seine Phase noch erreichbar? Sonst ist das Restbudget freigegeben (die nächste
+// Phase gilt bereits) und der Platzhalter soll nirgends mehr auftauchen — weder
+// in den Offenen Vormerkungen (inkl. Badge), noch in Monat oder Buchungen.
+// Nicht-Budget-Buchungen liefern immer true (bleiben unberührt).
+function budgetPlaceholderActive(tx, ctx = {}) {
+  if(!tx || !tx._budgetSubId) return true;
+  const [y, mo] = tx.date.split("-").map(Number); // mo: 1-basiert
+  const isMitte = tx._budgetSubId.endsWith("_mitte");
+  const phaseEndDay = isMitte ? 14 : new Date(y, mo, 0).getDate();
+  return phaseStillReachable(y, mo - 1, phaseEndDay, ctx);
+}
 function shouldApplyMitteSprung(year, month, day, ctx) {
   if(day > 14) return false;
   // Tag muss heute/Zukunft sein UND die Phase noch verbrauchbar
@@ -371,4 +383,4 @@ export function saldoEnde(year, month, accId, ctx) {
   return saldoAt(year, month, lastDay, accId, ctx);
 }
 
-export { saldoAnchor, restMitte, restEnde, collectBudgets, phaseStillReachable };
+export { saldoAnchor, restMitte, restEnde, collectBudgets, phaseStillReachable, budgetPlaceholderActive };

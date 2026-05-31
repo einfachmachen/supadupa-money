@@ -6,6 +6,7 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { dayOf, fmt, pn } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
+import { budgetPlaceholderActive } from "../../utils/saldo.js";
 
 function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub, budgetOpenRest, initialCollapsed=true}) {
   const _pendOpenAmt = pendOpenAmt || (t=>t.totalAmount);
@@ -13,13 +14,11 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
   const [search, setSearch] = React.useState("");
   const [collapsed, setCollapsed] = React.useState(initialCollapsed);
   const filtered = React.useMemo(()=>{
-    const now = new Date();
-    const todayISO = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
     const base = pTxs.filter(t=>{
-      // Mitte-Restbudget ausblenden, sobald der 14. des betreffenden Monats vorbei
-      // ist — ab dann zählt nur noch das Gesamtbudget (Ende inkl. Rollover Mitte).
-      // Für laufende (≤14.) und künftige Monate bleibt Mitte chronologisch sichtbar.
-      if(t._budgetSubId && t._budgetSubId.endsWith("_mitte") && todayISO > t.date.slice(0,7)+"-14") return false;
+      // Freigegebene Restbudgets ausblenden: sobald die nächste Phase gilt
+      // (nächster Banktag liegt hinter Phasenende), entfällt die Reservierung —
+      // dann verschwindet der Platzhalter (Mitte wie Ende) auch aus dieser Liste.
+      if(t._budgetSubId && !budgetPlaceholderActive(t)) return false;
       if(!search) return true;
       const isAmtSearch = /^[+\-=<>]?[\d.,]+$/.test(search.trim());
       if(isAmtSearch) return matchAmount(Math.abs(t.totalAmount), search.replace(/^[+\-]/,""));
@@ -42,7 +41,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
           <div style={{width:30,height:30,borderRadius:9,background:`${T.gold}22`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
             {Li("clock",15,T.gold)}
           </div>
-          Offene Vormerkungen ({pTxs.length})
+          Offene Vormerkungen ({pTxs.filter(t=>budgetPlaceholderActive(t)).length})
         </span>
         {Li(collapsed?"chevron-down":"chevron-up",12,T.gold)}
         <div style={{display:"flex",alignItems:"center",gap:4,background:"rgba(0,0,0,0.2)",borderRadius:7,padding:"3px 7px"}}>

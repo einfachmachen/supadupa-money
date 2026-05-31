@@ -17,7 +17,7 @@ import { dayOf, drillSort, fmt, pn, uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { txFingerprint, isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
-import { saldoAt } from "../../utils/saldo.js";
+import { saldoAt, budgetPlaceholderActive } from "../../utils/saldo.js";
 
 function DashboardScreenV2() {
   const { cats,setCats,groups,setGroups,txs,setTxs,accounts,setAccounts,
@@ -831,11 +831,10 @@ function DashboardScreenV2() {
             Vergangene Monate: nur Vormerkungen-Icon (und nur wenn echte, nicht-Budget-Vormerkungen offen) */}
         {(()=>{
           const visiblePTxs = (()=>{
-            const now=new Date();
-            const todayISO=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
             const base = isPastMonth ? pTxs.filter(t=>!t._budgetSubId) : pTxs;
-            // identisch zur PendingList: Mitte-Restbudget ausblenden, sobald der 14. vorbei ist
-            return base.filter(t=>!(t._budgetSubId && t._budgetSubId.endsWith("_mitte") && todayISO > t.date.slice(0,7)+"-14"));
+            // identisch zur PendingList: freigegebene Restbudgets (Mitte wie Ende)
+            // ausblenden, sobald die nächste Phase gilt → auch das Badge schrumpft.
+            return base.filter(t=>budgetPlaceholderActive(t));
           })();
           const showRow = !isPastMonth || visiblePTxs.length>0;
           if(!showRow) return null;
@@ -880,10 +879,8 @@ function DashboardScreenV2() {
         )}
         {activePanel === "vormerkungen" && !window.MBT_DEBUG?.disable_pendinglist && (()=>{
           const visiblePTxs = (()=>{
-            const now=new Date();
-            const todayISO=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
             const base = isPastMonth ? pTxs.filter(t=>!t._budgetSubId) : pTxs;
-            return base.filter(t=>!(t._budgetSubId && t._budgetSubId.endsWith("_mitte") && todayISO > t.date.slice(0,7)+"-14"));
+            return base.filter(t=>budgetPlaceholderActive(t));
           })();
           if(visiblePTxs.length===0) return null;
           return (

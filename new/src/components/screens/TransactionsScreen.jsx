@@ -12,6 +12,7 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
+import { budgetPlaceholderActive } from "../../utils/saldo.js";
 
 function TransactionsScreen() {
   const { cats,setCats,groups,setGroups,txs,setTxs,accounts,setAccounts,
@@ -93,6 +94,9 @@ function TransactionsScreen() {
       if(filtAcc) list = list.filter(t=>t.accountId===filtAcc);
       // Erledigte Vormerkungen (zugeordnet) immer ausblenden
       list = list.filter(t=>!t._linkedTo);
+      // Freigegebene Restbudget-Platzhalter ausblenden: gilt schon die nächste
+      // Phase, ist die Reservierung weg — dann auch nicht mehr in den Buchungen.
+      list = list.filter(t=>budgetPlaceholderActive(t));
       if(hideLinked && !search.trim()) list = list.filter(t=>!linkedChildIds.has(t.id));
       // Neueste zuerst
       list = [...list].sort((a,b)=>b.date.localeCompare(a.date));
