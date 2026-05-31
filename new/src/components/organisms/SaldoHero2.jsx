@@ -8,6 +8,7 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { THEMES } from "../../theme/themes.js";
 import { fmt, pn } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
+import { saldoEnde as calcSaldoEnde } from "../../utils/saldo.js";
 
 function SaldoHero2({year, month,
   buchInM, buchOutM, buchInE, buchOutE,
@@ -20,96 +21,17 @@ function SaldoHero2({year, month,
   const ks = getKumulierterSaldo(year, month);
   const [showDetail, setShowDetail] = React.useState(false);
 
-  // Konto-spezifische Prognose-Ende Berechnung mit Budget-Floor-Logik
-  const getProgEndeAcc = (y, m, accId) => {
-    const tb = new Date();
-    // Vergangener Monat: echter Kontostand für dieses Konto
-    if(y < tb.getFullYear() || (y === tb.getFullYear() && m < tb.getMonth()))
-      return getKumulierterSaldo(y, m, accId);
-    // Aktueller/zukünftiger Monat: rekursiv
-    const pY = m===0?y-1:y, pM = m===0?11:m-1;
-    const prevEnde = getProgEndeAcc(pY, pM, accId);
-    if(prevEnde===null||prevEnde===undefined) return null;
-    const lastD = new Date(y,m+1,0).getDate();
-    const todayY=tb.getFullYear(), todayM=tb.getMonth(), todayD=tb.getDate();
-    const isCur=y===todayY&&m===todayM, isPastM=y<todayY||(y===todayY&&m<todayM);
-    const endeAbg=isPastM; // aktueller Monat: immer volle Prognose inkl. Vormerkungen
-    // Filter: Buchung gehört zu diesem Konto
-    const isAcc = t => t.accountId===accId || (!t.accountId && accId==="acc-giro");
-    const signAmt = t => {
-      const type = t._csvType||(t.totalAmount>=0?"income":"expense");
-      return type==="income" ? Math.abs(t.totalAmount) : -Math.abs(t.totalAmount);
-    };
-    // Unkategorisierte Buchungen direkt zählen (z.B. CSV-importierte Tagesgeld-Buchungen)
-    const uncatTxs = (txs||[]).filter(t=>{
-      if(t._linkedTo||t._budgetSubId) return false;
-      if(endeAbg&&t.pending) return false;
-      if(!isAcc(t)) return false;
-      const d=new Date(t.date);
-      if(d.getFullYear()!==y||d.getMonth()!==m) return false;
-      return (t.splits||[]).length===0 || (t.splits||[]).every(sp=>!sp.catId);
-    });
-    const uncatSum = uncatTxs.reduce((s,t)=>s+signAmt(t), 0);
-    // Für Nicht-Giro-Konten: alle Buchungen direkt über signAmt zählen (kein Kategorie-Filter)
-    // _linkedTo einbeziehen damit Sparplan-Zugänge sichtbar sind
-    if(accId !== "acc-giro") {
-      const allAccTxs = (txs||[]).filter(t=>{
-        if(t._budgetSubId) return false; // nur Budget-Platzhalter ausschließen
-        if(endeAbg&&t.pending) return false;
-        if(!isAcc(t)) return false;
-        const d=new Date(t.date);
-        return d.getFullYear()===y && d.getMonth()===m;
-      });
-      return prevEnde + allAccTxs.reduce((s,t)=>s+signAmt(t), 0);
-    }
-    // Einnahmen für Giro: income-Kategorien
-    const inc = (cats||[]).filter(c=>c.type==="income").reduce((s,cat)=>{
-      return s+(txs||[]).filter(t=>{
-        if(t._linkedTo||t._budgetSubId) return false;
-        if(endeAbg&&t.pending) return false;
-        if(!isAcc(t)) return false;
-        const d=new Date(t.date);
-        return d.getFullYear()===y&&d.getMonth()===m&&(t.splits||[]).some(sp=>sp.catId===cat.id);
-      }).reduce((ss,t)=>{
-        const spAmt=(t.splits||[]).filter(sp=>sp.catId===cat.id).reduce((a,sp)=>a+Math.abs(pn(sp.amount)),0);
-        return ss+(spAmt>0?spAmt:Math.abs(t.totalAmount));
-      },0);
-    },0);
-    // Ausgaben: Budget-Floor-Logik nur für Giro, andere Konten nur echte Buchungen
-    const out = (cats||[]).filter(c=>c.type==="expense").reduce((s,cat)=>{
-      if(endeAbg) {
-        return s+(txs||[]).filter(t=>{
-          if(t._linkedTo||t._budgetSubId) return false;
-          if(t.pending&&t._seriesTyp!=="finanzierung") return false;
-          if(!isAcc(t)) return false;
-          const d=new Date(t.date);
-          return d.getFullYear()===y&&d.getMonth()===m&&(t.splits||[]).some(sp=>sp.catId===cat.id);
-        }).reduce((ss,t)=>ss+(t.splits||[]).filter(sp=>sp.catId===cat.id)
-          .reduce((sss,sp)=>sss+Math.abs(pn(sp.amount)),0),0);
-      }
-      // Budget-Floor nur für Giro-Konto
-      if(accId !== "acc-giro") {
-        // Nur echte Buchungen + Vormerkungen, kein Budget-Floor
-        const real=(txs||[]).filter(t=>{if(t.pending||t._linkedTo||t._budgetSubId)return false;if(!isAcc(t))return false;const d=new Date(t.date);return d.getFullYear()===y&&d.getMonth()===m&&(t.splits||[]).some(sp=>sp.catId===cat.id);}).reduce((ss,t)=>{const sa=(t.splits||[]).filter(sp=>sp.catId===cat.id).reduce((a,sp)=>a+Math.abs(pn(sp.amount)),0);return ss+(sa>0?sa:Math.abs(t.totalAmount));},0);
-        const pend=(txs||[]).filter(t=>{if(!t.pending||t._linkedTo||t._budgetSubId)return false;if(!isAcc(t))return false;const d=new Date(t.date);return d.getFullYear()===y&&d.getMonth()===m&&(t.splits||[]).some(sp=>sp.catId===cat.id);}).reduce((ss,t)=>{const sa=(t.splits||[]).filter(sp=>sp.catId===cat.id).reduce((a,sp)=>a+Math.abs(pn(sp.amount)),0);return ss+(sa>0?sa:Math.abs(t.totalAmount));},0);
-        return s+real+pend;
-      }
-      const subIds=new Set((cat.subs||[]).map(sub=>sub.id));
-      const subTotal=(cat.subs||[]).reduce((catSum,sub)=>{
-        const bG=getBudgetForMonth(sub.id,y,m);
-        // Budget-Floor nur wenn das Budget für dieses Konto gilt
-        const budgetAccId = (budgets||{})[sub.id]?.accountId || "acc-giro";
-        const effectiveBG = (bG>0 && budgetAccId===accId) ? bG : 0;
-        const real=(txs||[]).filter(t=>{if(t.pending||t._linkedTo||t._budgetSubId)return false;if(!isAcc(t))return false;const d=new Date(t.date);return d.getFullYear()===y&&d.getMonth()===m&&(t.splits||[]).some(sp=>sp.catId===cat.id&&sp.subId===sub.id);}).reduce((ss,t)=>ss+Math.abs((t.splits||[]).find(sp=>sp.subId===sub.id)?.amount||0),0);
-        const pend=(txs||[]).filter(t=>{if(!t.pending||t._linkedTo||t._budgetSubId)return false;if(!isAcc(t))return false;const d=new Date(t.date);return d.getFullYear()===y&&d.getMonth()===m&&(t.splits||[]).some(sp=>sp.catId===cat.id&&sp.subId===sub.id);}).reduce((ss,t)=>ss+Math.abs((t.splits||[]).find(sp=>sp.subId===sub.id)?.amount||t.totalAmount),0);
-        return catSum+(effectiveBG>0?Math.max(effectiveBG,real+pend):real+pend);
-      },0);
-      const pendNoSub=(txs||[]).filter(t=>{if(!t.pending||t._linkedTo||t._budgetSubId)return false;if(!isAcc(t))return false;const d=new Date(t.date);return d.getFullYear()===y&&d.getMonth()===m&&(t.splits||[]).some(sp=>sp.catId===cat.id&&(!sp.subId||!subIds.has(sp.subId)));}).reduce((ss,t)=>ss+(t.splits||[]).filter(sp=>sp.catId===cat.id&&(!sp.subId||!subIds.has(sp.subId))).reduce((sss,sp)=>sss+Math.abs(pn(sp.amount)||t.totalAmount),0),0);
-      const realNoSub=(txs||[]).filter(t=>{if(t.pending||t._linkedTo||t._budgetSubId)return false;if(!isAcc(t))return false;const d=new Date(t.date);return d.getFullYear()===y&&d.getMonth()===m&&(t.splits||[]).some(sp=>sp.catId===cat.id&&(!sp.subId||!subIds.has(sp.subId)));}).reduce((ss,t)=>ss+(t.splits||[]).filter(sp=>sp.catId===cat.id&&(!sp.subId||!subIds.has(sp.subId))).reduce((sss,sp)=>sss+Math.abs(pn(sp.amount)),0),0);
-      return s+subTotal+pendNoSub+realNoSub;
-    },0);
-    return prevEnde + inc - out + uncatSum;
-  };
+  // Konto-spezifische Prognose-Ende: delegiert an die zentrale saldoEnde()
+  // (Single Source of Truth — utils/saldo.js). Früher eine lokale Budget-Floor-
+  // Reimplementierung; im Giro-Standardfall beweisbar äquivalent (siehe
+  // tests/prognose_equivalence.test.js), aber sie ignorierte ausgehende Sparen-
+  // Umbuchungen und zählte CSV-Dubletten doppelt. saldoEnde rechnet das korrekt
+  // und identisch zum Haupt-Hero (dessen prognose-Props bereits über saldoEnde
+  // laufen) — keine Divergenz mehr zwischen Hero, Drilldown und Konto-Umschalter.
+  const _saldoCtx = React.useMemo(
+    () => ({ txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth }),
+    [txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth]);
+  const getProgEndeAcc = (y, m, accId) => calcSaldoEnde(y, m, accId, _saldoCtx);
 
   // SICHERHEIT: Alle Konten aus accounts zeigen, die mindestens EINE Buchung haben.
   // Konten ohne jegliche Buchung werden ausgeblendet (z.B. unused Bar/PayPal).
