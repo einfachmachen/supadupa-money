@@ -1,4 +1,18 @@
-*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif; }
+/* Questrial — selbst gehostete, geometrische Sans für Geldbeträge.
+   Garantiert auf allen Systemen (iOS/iPadOS/macOS/Linux/Windows) identisch,
+   da als Modul-Asset gebündelt (Vite rewritet die URL inkl. Base-Pfad). */
+@font-face {
+  font-family: "Questrial";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/questrial-latin-400.woff2") format("woff2");
+}
+/* Beträge laufen in Questrial (nur Schnitt 400). Synthetisches Fett global
+   abschalten → Geldbeträge rendern dezent/regulär statt faux-bold (das fett
+   wirkende fontWeight:700 läuft so ins Leere). Systemschriften mit echtem
+   Bold-/Italic-Schnitt bleiben unberührt; echtes Kursiv funktioniert weiter. */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif; font-synthesis: none; }
     body { background:#2C3035; overflow:hidden; }
     #root { height:100vh; }
     body { overflow: hidden; }

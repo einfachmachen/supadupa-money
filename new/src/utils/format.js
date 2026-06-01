@@ -1,9 +1,12 @@
 // Auto-generated module (siehe app-src.jsx)
 
-// Schriftart für Geldbeträge: geometrische, runde Sans im Stil von Century Gothic.
-// Bevorzugt Century Gothic (Windows) bzw. Futura (nativ auf iOS/macOS) — beide
-// ohne Download/Lizenzfrage; danach freie/Systemfallbacks.
-const NUM_FONT = '"Century Gothic","Futura","Avenir Next","Questrial",system-ui,sans-serif';
+// Schriftart für Geldbeträge: "Questrial" — selbst gehostete, geometrische Sans
+// (siehe @font-face in theme/css/base.css). Garantiert auf allen Systemen
+// identisch; danach Systemfallbacks (Century Gothic/Futura) bis der Font geladen ist.
+// Beträge laufen bewusst OHNE Fett (dezenter). Questrial liefert nur einen
+// Schnitt (400); synthetisches Fett ist global abgeschaltet (font-synthesis in
+// base.css), daher rendern alle Beträge automatisch regulär.
+const NUM_FONT = '"Questrial","Century Gothic","Futura","Avenir Next",system-ui,sans-serif';
 
 const fmt = v => {
   if (v===""||v==null) return "";
