@@ -124,6 +124,9 @@ function DashboardScreenV2() {
     const [heroProgDrill, setHeroProgDrill] = useState(null);
     const [expandedSplitId, setExpandedSplitId] = useState(null);
     const [drillExpandedSub, setDrillExpandedSub] = useState(null);
+    // Inline ausgeklappte Hauptkategorien (Home-Karten) → zeigt Unterkategorien direkt
+    const [expandedCats, setExpandedCats] = useState(()=>new Set());
+    const toggleCatExpand = (id) => setExpandedCats(prev=>{ const n=new Set(prev); n.has(id)?n.delete(id):n.add(id); return n; });
     const [budgetEditSub, setBudgetEditSub] = useState(null);
     const [budgetEditKey, setBudgetEditKey] = useState(0);
     const openBudgetEdit = (sub) => { setBudgetEditSub(sub); setBudgetEditKey(k=>k+1); };
@@ -1027,6 +1030,26 @@ function DashboardScreenV2() {
             return c || T.txt;
           };
 
+          // Clean-Pille (Mitte/Ende) mit Ampel-Strich, optional klickbar → Buchungs-Drilldown
+          const valuePill = (val, bgt, isInc, onClick, opts={}) => {
+            const stripe = !isInc && bgt>0 ? trafficColor(val, bgt) : null;
+            const clickable = !!onClick && val>0;
+            return (
+              <div onClick={clickable?(e=>{e.stopPropagation();onClick();}):undefined}
+                style={{flex:1,position:"relative",textAlign:"center",
+                  padding:"5px 0",borderRadius:7,background:cellBg,
+                  color:textColor(val,bgt,isInc),
+                  fontSize:opts.size||20,fontWeight:700,fontVariantNumeric:"tabular-nums",
+                  opacity:opts.dim?0.55:0.9,overflow:"hidden",
+                  cursor:clickable?"pointer":"default"}}>
+                {val>0 ? fmt(val) : "—"}
+                {stripe && (
+                  <div style={{position:"absolute",left:0,right:0,bottom:0,height:3,background:stripe}}/>
+                )}
+              </div>
+            );
+          };
+
           return (
             <div style={{padding:"0 10px 4px",display:"flex",flexDirection:"column",gap:2}}>
               {allCatsToShow.map(cat => {
@@ -1057,97 +1080,134 @@ function DashboardScreenV2() {
                 // Mitte/Ende-Pillen zeigen die Prognose; oben zeigt der reale Stand.
                 const headColor = textColor(iAkt, budgetEnde, isIncome);
 
+                const isExpanded = expandedCats.has(cat.id);
+                const showPills  = detailsOpen || isExpanded;
+
+                // Alle (echten + vorgemerkten, ohne Budget-Platzhalter) Buchungen dieser Cat im Monat
+                const monthCatTxs = (_catTxMaps.realByCat.get(cat.id)||[])
+                  .concat(_catTxMaps.pendByCat.get(cat.id)||[]);
+
+                // Oeffnet direkt die Buchungsliste (kein Sub-Modal) fuer einen Zeitraum
+                const openCatDrill = (maxDay, lbl, val, realOnly) => {
+                  const list = monthCatTxs.filter(t =>
+                    (realOnly ? !t.pending : true) && new Date(t.date).getDate() <= maxDay);
+                  setDashDrill({ cat:null, label:`${cat.name} — ${lbl}`, txList:list,
+                    isIncome, total:val, _subDrillNoBudget:true });
+                  setDashSearch("");
+                };
+                const openSubInlineDrill = (sub, subTxs, maxDay, lbl, val, realOnly) => {
+                  const list = subTxs.filter(t =>
+                    !(t.pending&&t._budgetSubId) &&
+                    (realOnly ? !t.pending : true) &&
+                    new Date(t.date).getDate() <= maxDay);
+                  setDashDrill({ cat:null, label:`${cat.name} / ${sub.name} — ${lbl}`, txList:list,
+                    isIncome, total:val, _subDrillNoBudget:true });
+                  setDashSearch("");
+                };
+
                 return (
                   <div key={cat.id}
-                    onClick={()=>{
-                      const drill = {
-                        cat,
-                        label: `${cat.name} \u2013 Ende`,
-                        txList: (_catTxMaps.realByCat.get(cat.id)||[]).concat(_catTxMaps.pendByCat.get(cat.id)||[]),
-                        isIncome,
-                        total: iEnde,
-                        cutDay: lastDay,
-                      };
-                      setDashDrill(drill);
-                    }}
                     style={{
                       background: T.surf || (isLight?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.04)"),
                       border: `1px solid ${T.bd}`,
                       borderRadius: 10,
                       padding: "4px 10px",
-                      cursor: "pointer",
                     }}>
-                    {/* Zeile 1: Icon + Name + Ende-Wert (groß, Ampel-gefärbt) */}
+                    {/* Zeile 1: [Chevron+Icon+Name -> ausklappen]  +  aktuell (-> Buchungs-Drilldown) */}
                     <div style={{display:"flex",alignItems:"center",gap:8,
-                      marginBottom: detailsOpen ? 6 : 0}}>
-                      <div style={{
-                        width:28,height:28,borderRadius:8,
-                        background:catColor+"22",
-                        display:"flex",alignItems:"center",justifyContent:"center",
-                        flexShrink:0,
-                      }}>
-                        {Li(cat.icon||"folder", 16, catColor)}
-                      </div>
-                      <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
+                      marginBottom: showPills ? 6 : 0}}>
+                      <div onClick={()=>toggleCatExpand(cat.id)}
+                        style={{display:"flex",alignItems:"center",gap:8,flex:1,minWidth:0,
+                          cursor:"pointer"}}>
+                        <span style={{flexShrink:0,display:"inline-flex"}}>
+                          {Li(isExpanded?"chevron-down":"chevron-right", 16, T.txt2)}
+                        </span>
                         <div style={{
-                          color:T.txt,fontSize:15,fontWeight:600,
-                          overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
-                        }}>{cat.name}</div>
-                        {accLabel && (
-                          <div style={{color:T.lbl,fontSize:10,fontWeight:500,marginTop:1}}>
-                            ({accLabel})
-                          </div>
-                        )}
+                          width:28,height:28,borderRadius:8,
+                          background:catColor+"22",
+                          display:"flex",alignItems:"center",justifyContent:"center",
+                          flexShrink:0,
+                        }}>
+                          {Li(cat.icon||"folder", 16, catColor)}
+                        </div>
+                        <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
+                          <div style={{
+                            color:T.txt,fontSize:15,fontWeight:600,
+                            overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
+                          }}>{cat.name}</div>
+                          {accLabel && (
+                            <div style={{color:T.lbl,fontSize:10,fontWeight:500,marginTop:1}}>
+                              ({accLabel})
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <div style={{
-                        color:headColor,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",
-                        flexShrink:0,
-                      }}>
+                      <div onClick={e=>{e.stopPropagation(); if(iAkt>0) openCatDrill(lastDay,"aktuell",iAkt,true);}}
+                        style={{
+                          color:headColor,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",
+                          flexShrink:0, cursor:iAkt>0?"pointer":"default",
+                        }}>
                         {fmt(iAkt)}
                       </div>
                     </div>
-                    {/* Zeile 2: Mitte/Ende-Pillen — nur sichtbar wenn Toggle "Prog." aktiviert */}
-                    {detailsOpen && (
+                    {/* Zeile 2: Mitte/Ende-Pillen (global per Toggle ODER wenn Zeile ausgeklappt) */}
+                    {showPills && (
                       <div style={{display:"flex",gap:6,marginTop:6}}>
-                        {/* Mitte */}
-                        <div style={{
-                          flex:1,position:"relative",textAlign:"center",
-                          padding:"5px 0",borderRadius:7,
-                          background:cellBg,
-                          color: textColor(iMitte, budgetMitte, isIncome),
-                          fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",
-                          opacity:0.55,
-                          overflow:"hidden",
-                        }}>
-                          {iMitte>0 ? fmt(iMitte) : "\u2014"}
-                          {/* Ampel-Strich an der Unterkante */}
-                          {stripeMitte && (
-                            <div style={{
-                              position:"absolute",left:0,right:0,bottom:0,
-                              height:3,background:stripeMitte,
-                            }}/>
-                          )}
-                        </div>
-                        {/* Ende */}
-                        <div style={{
-                          flex:1,position:"relative",textAlign:"center",
-                          padding:"5px 0",borderRadius:7,
-                          background:cellBg,
-                          color: textColor(iEnde, budgetEnde, isIncome),
-                          fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",
-                          opacity:0.55,
-                          overflow:"hidden",
-                        }}>
-                          {iEnde>0 ? fmt(iEnde) : "\u2014"}
-                          {stripeEnde && (
-                            <div style={{
-                              position:"absolute",left:0,right:0,bottom:0,
-                              height:3,background:stripeEnde,
-                            }}/>
-                          )}
-                        </div>
+                        {valuePill(iMitte, budgetMitte, isIncome,
+                          ()=>openCatDrill(14,"Mitte",iMitte,false), {dim:true})}
+                        {valuePill(iEnde, budgetEnde, isIncome,
+                          ()=>openCatDrill(lastDay,"Ende",iEnde,false), {dim:true})}
                       </div>
                     )}
+                    {/* Inline-Unterkategorien (gleiches 2-Zeilen-Format wie die Hauptzeile) */}
+                    {isExpanded && (cat.subs||[]).map(sub => {
+                      const subTxs = monthCatTxs.filter(t =>
+                        (t.splits||[]).some(sp => sp.subId===sub.id || sp.catId===sub.id));
+                      const subBudget = !isIncome ? (getBudgetForMonth(sub.id,year,month)||0) : 0;
+                      if(subTxs.length===0 && !(subBudget>0)) return null;
+                      const amtOf = t => Math.abs(
+                        (t.splits||[]).find(sp=>sp.subId===sub.id||sp.catId===sub.id)?.amount
+                        || (t.pending ? Math.abs(t.totalAmount) : 0));
+                      const sReal = (mx)=>subTxs.filter(t=>!t.pending && new Date(t.date).getDate()<=mx)
+                        .reduce((s,t)=>s+amtOf(t),0);
+                      const sPend = (mx)=>subTxs.filter(t=>t.pending && !t._budgetSubId && new Date(t.date).getDate()<=mx)
+                        .reduce((s,t)=>s+amtOf(t),0);
+                      const sAkt   = sReal(lastDay);
+                      const sMitte = sReal(14) + sPend(14);
+                      const sEnde  = sReal(lastDay) + sPend(lastDay);
+                      const sBudMitte = (()=>{ const g=getBudgetForMonth(sub.id,year,month)||0,
+                        m=getBudgetForMonth(sub.id+"_mitte",year,month)||0; return (m>0&&m<g)?m:0; })();
+                      const sHead = textColor(sAkt, subBudget, isIncome);
+                      return (
+                        <div key={sub.id}
+                          style={{marginTop:6,marginLeft:18,paddingLeft:10,
+                            borderLeft:`2px solid ${T.bd}`}}>
+                          {/* Sub Zeile 1: Name + aktuell (-> Buchungs-Drilldown) */}
+                          <div onClick={e=>{e.stopPropagation(); if(sAkt>0) openSubInlineDrill(sub,subTxs,lastDay,"aktuell",sAkt,true);}}
+                            style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,
+                              cursor:sAkt>0?"pointer":"default"}}>
+                            <span style={{flexShrink:0,display:"inline-flex"}}>
+                              {Li("corner-down-right",13,T.txt2)}
+                            </span>
+                            <div style={{flex:1,minWidth:0,color:T.txt,fontSize:14,fontWeight:600,
+                              overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                              {sub.name}
+                            </div>
+                            <div style={{color:sHead,fontSize:17,fontWeight:700,
+                              fontVariantNumeric:"tabular-nums",flexShrink:0}}>
+                              {sAkt>0?fmt(sAkt):"—"}
+                            </div>
+                          </div>
+                          {/* Sub Zeile 2: Mitte/Ende-Pillen (-> Buchungs-Drilldown) */}
+                          <div style={{display:"flex",gap:6}}>
+                            {valuePill(sMitte, sBudMitte, isIncome,
+                              ()=>openSubInlineDrill(sub,subTxs,14,"Mitte",sMitte,false), {size:16})}
+                            {valuePill(sEnde, subBudget, isIncome,
+                              ()=>openSubInlineDrill(sub,subTxs,lastDay,"Ende",sEnde,false), {size:16})}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })}
