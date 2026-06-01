@@ -159,6 +159,10 @@ function DashboardScreenV2() {
       const sumPendByCat= new Map();
       const sumByDayCat = new Map();
       const accIdsByCat = new Map();   // catId → Set<accountId> (für "Konto in Klammern")
+      // Pro-Sub aggregierte Ist-Summen (real + konkrete VM, ohne Budget-Platzhalter)
+      // für die budget-bewusste Mitte/Ende-Prognose (restMitte/restEnde je Cat).
+      const sumSub14   = new Map();    // subId → Ist(1..14)
+      const sumSubAll  = new Map();    // subId → Ist(1..Monatsletzter)
       const monthTxs = _txsInMonth(year, month);
       for(const t of monthTxs) {
         if(_isDupl(t)) continue;
@@ -193,8 +197,15 @@ function DashboardScreenV2() {
           const k = cid + "|" + day;
           sumByDayCat.set(k, (sumByDayCat.get(k)||0) + amt);
         }
+        // Pro-Sub-Ist (für budget-bewusste Reservierung); gleiche Quelle wie sumByDayCat
+        for(const sp of splits) {
+          if(!sp.subId) continue;
+          const a = Math.abs(pn(sp.amount));
+          sumSubAll.set(sp.subId, (sumSubAll.get(sp.subId)||0) + a);
+          if(day<=14) sumSub14.set(sp.subId, (sumSub14.get(sp.subId)||0) + a);
+        }
       }
-      return { realByCat, pendByCat, sumRealByCat, sumPendByCat, sumByDayCat, accIdsByCat };
+      return { realByCat, pendByCat, sumRealByCat, sumPendByCat, sumByDayCat, accIdsByCat, sumSub14, sumSubAll };
     }, [txs, year, month, selAcc]);
 
     // Schneller calcIncome(maxDay)-Lookup pro Cat — Ersatz für die teure
@@ -1004,6 +1015,26 @@ function DashboardScreenV2() {
           const lastDay = new Date(year, month+1, 0).getDate();
           const allCatsToShow = [...incomeTotals, ...catTotals];
           if(allCatsToShow.length===0) return null;
+
+          // Budget-Vormerkungen (reserviertes Restbudget) in Mitte/Ende einrechnen.
+          // Phase noch erreichbar? (gleiche Logik wie budgetPlaceholderActive/Hero)
+          const _mm = String(month+1).padStart(2,"0");
+          const mitteReach = budgetPlaceholderActive({_budgetSubId:"_mitte", date:`${year}-${_mm}-14`});
+          const endeReach  = budgetPlaceholderActive({_budgetSubId:"x",       date:`${year}-${_mm}-${String(lastDay).padStart(2,"0")}`});
+          const budgetApplies = (selAcc===null || selAcc==="acc-giro");
+          // restMitte/restEnde je Cat (vgl. utils/saldo.js): Σ max(0, Budget − Ist)
+          const resMitte = (cat) => (!budgetApplies||!mitteReach) ? 0 : (cat.subs||[]).reduce((s,sub)=>{
+            const g = getBudgetForMonth(sub.id,year,month)||0;
+            const m = getBudgetForMonth(sub.id+"_mitte",year,month)||0;
+            const ref = m>0 ? m : g;                 // nur Mitte-Anteil, sonst volles Budget
+            if(ref<=0) return s;
+            return s + Math.max(0, ref - (_catTxMaps.sumSub14.get(sub.id)||0));
+          },0);
+          const resEnde = (cat) => (!budgetApplies||!endeReach) ? 0 : (cat.subs||[]).reduce((s,sub)=>{
+            const g = getBudgetForMonth(sub.id,year,month)||0;
+            if(g<=0) return s;
+            return s + Math.max(0, g - (_catTxMaps.sumSubAll.get(sub.id)||0));
+          },0);
           const isLight = (T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss");
           const cellBg = T.cat_bg ? "rgba(255,255,255,0.10)" : isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)";
 
@@ -1032,13 +1063,16 @@ function DashboardScreenV2() {
 
           // Clean-Pille (Mitte/Ende) mit Ampel-Strich, optional klickbar → Buchungs-Drilldown
           const valuePill = (val, bgt, isInc, onClick, opts={}) => {
-            const stripe = !isInc && bgt>0 ? trafficColor(val, bgt) : null;
+            // Anzeige = val (inkl. reserviertem Budget); Ampelfarbe nach tatsächlichem
+            // Verbrauch (opts.colorVal), damit nicht alles dauerhaft auf ~100% steht.
+            const cb = opts.colorVal!=null ? opts.colorVal : val;
+            const stripe = !isInc && bgt>0 ? trafficColor(cb, bgt) : null;
             const clickable = !!onClick && val>0;
             return (
               <div onClick={clickable?(e=>{e.stopPropagation();onClick();}):undefined}
                 style={{flex:1,position:"relative",textAlign:"center",
                   padding:"5px 0",borderRadius:7,background:cellBg,
-                  color:textColor(val,bgt,isInc),
+                  color:textColor(isInc?val:cb,bgt,isInc),
                   fontSize:opts.size||20,fontWeight:700,fontVariantNumeric:"tabular-nums",
                   opacity:opts.dim?0.55:0.9,overflow:"hidden",
                   cursor:clickable?"pointer":"default"}}>
@@ -1054,8 +1088,12 @@ function DashboardScreenV2() {
             <div style={{padding:"0 10px 4px",display:"flex",flexDirection:"column",gap:2}}>
               {allCatsToShow.map(cat => {
                 const isIncome = _isCatIncomeOrTagesgeld(cat);
-                const iMitte = _catSumUpToDay(cat.id, 14);
-                const iEnde  = _catSumUpToDay(cat.id, lastDay);
+                // Ist (real + konkrete VM) — auch Basis für die Ampelfarbe
+                const istMitte = _catSumUpToDay(cat.id, 14);
+                const istEnde  = _catSumUpToDay(cat.id, lastDay);
+                // Mitte/Ende = Ist + reserviertes Restbudget (Budget-Vormerkungen)
+                const iMitte = istMitte + (isIncome?0:resMitte(cat));
+                const iEnde  = istEnde  + (isIncome?0:resEnde(cat));
                 const iAkt   = _catTxMaps.sumRealByCat.get(cat.id) || 0;
                 const catColor = cat.color || (isIncome ? T.pos : T.neg);
                 const accLabel = !selAcc ? _accLabelByCat.get(cat.id) : null;
@@ -1071,10 +1109,6 @@ function DashboardScreenV2() {
                     budgetEnde  += gesamt;
                   });
                 }
-
-                // Striche unter den Pillen
-                const stripeMitte = !isIncome && budgetMitte>0 ? trafficColor(iMitte, budgetMitte) : null;
-                const stripeEnde  = !isIncome && budgetEnde>0  ? trafficColor(iEnde,  budgetEnde)  : null;
 
                 // Großer Hauptbetrag rechts = AKTUELLER Verbrauch (real gebucht), gefärbt nach Ampel
                 // Mitte/Ende-Pillen zeigen die Prognose; oben zeigt der reale Stand.
@@ -1151,9 +1185,9 @@ function DashboardScreenV2() {
                     {showPills && (
                       <div style={{display:"flex",gap:6,marginTop:6}}>
                         {valuePill(iMitte, budgetMitte, isIncome,
-                          ()=>openCatDrill(14,"Mitte",iMitte,false), {dim:true})}
+                          ()=>openCatDrill(14,"Mitte",iMitte,false), {dim:true, colorVal:istMitte})}
                         {valuePill(iEnde, budgetEnde, isIncome,
-                          ()=>openCatDrill(lastDay,"Ende",iEnde,false), {dim:true})}
+                          ()=>openCatDrill(lastDay,"Ende",iEnde,false), {dim:true, colorVal:istEnde})}
                       </div>
                     )}
                     {/* Inline-Unterkategorien (gleiches 2-Zeilen-Format wie die Hauptzeile) */}
@@ -1169,9 +1203,16 @@ function DashboardScreenV2() {
                         .reduce((s,t)=>s+amtOf(t),0);
                       const sPend = (mx)=>subTxs.filter(t=>t.pending && !t._budgetSubId && new Date(t.date).getDate()<=mx)
                         .reduce((s,t)=>s+amtOf(t),0);
-                      const sAkt   = sReal(lastDay);
-                      const sMitte = sReal(14) + sPend(14);
-                      const sEnde  = sReal(lastDay) + sPend(lastDay);
+                      const sAkt    = sReal(lastDay);
+                      const _ist14  = sReal(14) + sPend(14);
+                      const _istAll = sReal(lastDay) + sPend(lastDay);
+                      // Mitte/Ende = max(Ist, Budget): reserviertes Restbudget (Budget-Vormerkungen)
+                      const _refM   = (()=>{ const g=getBudgetForMonth(sub.id,year,month)||0,
+                        m=getBudgetForMonth(sub.id+"_mitte",year,month)||0; return m>0?m:g; })();
+                      const sMitte = (!isIncome && budgetApplies && mitteReach && _refM>0)
+                        ? Math.max(_ist14, _refM) : _ist14;
+                      const sEnde  = (!isIncome && budgetApplies && endeReach && subBudget>0)
+                        ? Math.max(_istAll, subBudget) : _istAll;
                       const sBudMitte = (()=>{ const g=getBudgetForMonth(sub.id,year,month)||0,
                         m=getBudgetForMonth(sub.id+"_mitte",year,month)||0; return (m>0&&m<g)?m:0; })();
                       const sHead = textColor(sAkt, subBudget, isIncome);
@@ -1198,9 +1239,9 @@ function DashboardScreenV2() {
                           {/* Sub Zeile 2: Mitte/Ende-Pillen (-> Buchungs-Drilldown) */}
                           <div style={{display:"flex",gap:6}}>
                             {valuePill(sMitte, sBudMitte, isIncome,
-                              ()=>openSubInlineDrill(sub,subTxs,14,"Mitte",sMitte,false), {size:16})}
+                              ()=>openSubInlineDrill(sub,subTxs,14,"Mitte",sMitte,false), {size:16, colorVal:_ist14})}
                             {valuePill(sEnde, subBudget, isIncome,
-                              ()=>openSubInlineDrill(sub,subTxs,lastDay,"Ende",sEnde,false), {size:16})}
+                              ()=>openSubInlineDrill(sub,subTxs,lastDay,"Ende",sEnde,false), {size:16, colorVal:_istAll})}
                           </div>
                         </div>
                       );
