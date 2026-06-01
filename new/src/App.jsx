@@ -20,7 +20,6 @@ import { CsvImportScreen } from "./components/screens/CsvImportScreen.jsx";
 import { DashboardScreen } from "./components/screens/DashboardScreen.jsx";
 import { DashboardScreenV2 } from "./components/screens/DashboardScreenV2.jsx";
 import { JahrScreen } from "./components/screens/JahrScreen.jsx";
-import { LiveColorPicker } from "./components/screens/LiveColorPicker.jsx";
 import { ManagementScreen } from "./components/screens/ManagementScreen.jsx";
 import { MatchingScreen } from "./components/screens/MatchingScreen.jsx";
 import { MonatScreen } from "./components/screens/MonatScreen.jsx";
@@ -3050,7 +3049,6 @@ Abbrechen = ${remoteName}-Stand laden`
         </div>
       )}
     </div>
-    <LiveColorPicker />
     </>
   </AppCtx.Provider>
   );
