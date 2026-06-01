@@ -231,8 +231,8 @@ function DashboardScreenV2() {
       [txs, _txsById, year, month]);
     const totalIn = useMemo(()=>getTotalIncome(year, month),  [year,month,txs]);
     const totalOut= useMemo(()=>getTotalExpense(year, month), [year,month,txs]);
-    const pTxsOut = useMemo(()=>pTxs.filter(t=>txType(t)==="expense"||(t._csvType==="expense"&&!txType(t)==="income")), [pTxs]);
-    const pTxsIn  = useMemo(()=>pTxs.filter(t=>txType(t)==="income"||(t._csvType==="income")), [pTxs]);
+    const pTxsOut = useMemo(()=>pTxs.filter(t=>budgetPlaceholderActive(t)&&(txType(t)==="expense"||(t._csvType==="expense"&&!txType(t)==="income"))), [pTxs]);
+    const pTxsIn  = useMemo(()=>pTxs.filter(t=>budgetPlaceholderActive(t)&&(txType(t)==="income"||(t._csvType==="income"))), [pTxs]);
     const pendingOut= useMemo(()=>pTxsOut.reduce((s,t)=>s+pendOpenAmt(t),0), [pTxsOut]);
     const pendingIn = useMemo(()=>pTxsIn.reduce((s,t)=>s+pendOpenAmt(t),0),  [pTxsIn]);
 
