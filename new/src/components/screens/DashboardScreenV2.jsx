@@ -1113,15 +1113,12 @@ function DashboardScreenV2() {
                       borderRadius: 10,
                       padding: "4px 10px",
                     }}>
-                    {/* Zeile 1: [Chevron+Icon+Name -> ausklappen]  +  aktuell (-> Buchungs-Drilldown) */}
+                    {/* Zeile 1: [Icon+Name -> ausklappen]  +  aktuell (-> Buchungs-Drilldown) */}
                     <div style={{display:"flex",alignItems:"center",gap:8,
                       marginBottom: showPills ? 6 : 0}}>
                       <div onClick={()=>toggleCatExpand(cat.id)}
                         style={{display:"flex",alignItems:"center",gap:8,flex:1,minWidth:0,
                           cursor:"pointer"}}>
-                        <span style={{flexShrink:0,display:"inline-flex"}}>
-                          {Li(isExpanded?"chevron-down":"chevron-right", 16, T.txt2)}
-                        </span>
                         <div style={{
                           width:28,height:28,borderRadius:8,
                           background:catColor+"22",
