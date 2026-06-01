@@ -7,7 +7,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
 import { isoAddMonths } from "../../utils/date.js";
-import { fmt, pn, uid } from "../../utils/format.js";
+import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
 function EditPopup() {
@@ -343,7 +343,7 @@ function EditPopup() {
                 onChange={e=>!editTx._readOnlyAmount&&setEditTx(p=>({...p,totalAmount:e.target.value,splits:(p.splits||[]).length===1?p.splits.map(sp=>({...sp,amount:e.target.value})):p.splits}))}
                 style={{opacity:editTx._readOnlyAmount?0.5:1,width:"100%",background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bds}`,
                   borderRadius:11,padding:"6px 10px",color:T.txt,fontSize:14,fontWeight:700,
-                  fontFamily:"monospace",textAlign:"right",outline:"none",boxSizing:"border-box"}}
+                  fontFamily:NUM_FONT,textAlign:"right",outline:"none",boxSizing:"border-box"}}
                 inputMode="decimal" placeholder="0,00"/>
             </div>)}
           </div>
@@ -362,7 +362,7 @@ function EditPopup() {
                     return (
                       <div key={sp.id} style={{display:"flex",alignItems:"center",gap:6}}>
                         <span style={{width:7,height:7,borderRadius:"50%",background:spCat?.color||T.txt2,flexShrink:0,display:"inline-block"}}/>
-                        <span style={{color:spCat?.color||T.txt2,fontSize:11,fontWeight:700,fontFamily:"monospace",minWidth:52,textAlign:"right"}}>{fmt(pn(sp.amount))}</span>
+                        <span style={{color:spCat?.color||T.txt2,fontSize:11,fontWeight:700,fontFamily:NUM_FONT,minWidth:52,textAlign:"right"}}>{fmt(pn(sp.amount))}</span>
                         <span style={{color:T.txt2,fontSize:10}}>{spSub?.name||spCat?.name||<span style={{color:"rgba(255,255,255,0.3)"}}>unkategorisiert</span>}</span>
                       </div>
                     );
@@ -455,7 +455,7 @@ function EditPopup() {
                 {isMulti&&(
                   <div style={{display:"flex",gap:8,alignItems:"center"}}>
                     <input value={sp.amount} readOnly={!!editTx._readOnlyAmount} onChange={e=>!editTx._readOnlyAmount&&updEditSplit(sp.id,"amount",e.target.value)} style={{opacity:editTx._readOnlyAmount?0.5:1,flex:1,background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bd}`,borderRadius:8,
-                        padding:"6px 8px",color:T.txt,fontSize:13,fontFamily:"monospace",textAlign:"right",outline:"none"}}
+                        padding:"6px 8px",color:T.txt,fontSize:13,fontFamily:NUM_FONT,textAlign:"right",outline:"none"}}
                       inputMode="decimal" placeholder="0,00"/>
                     <button onClick={()=>setEditTx(p=>({...p,splits:p.splits.filter(s=>s.id!==sp.id)}))}
                       style={{background:"rgba(224,80,96,0.12)",border:"1px solid rgba(239,68,68,0.25)",color:T.neg,borderRadius:7,width:28,height:28,cursor:"pointer",fontSize:14,flexShrink:0}}>−</button>
@@ -466,7 +466,7 @@ function EditPopup() {
           })}
           {isMulti&&(
             <div style={{textAlign:"right",marginBottom:10}}>
-              <span style={{color:Math.abs(diff)<0.01?T.pos:T.neg,fontSize:12,fontFamily:"monospace",fontWeight:700}}>
+              <span style={{color:Math.abs(diff)<0.01?T.pos:T.neg,fontSize:12,fontFamily:NUM_FONT,fontWeight:700}}>
                 {(()=>{const d=Math.round(diff*100)/100; return `Diff: ${d>0?"+":d<0?"−":""}${fmt(Math.abs(d))}`;})()}
               </span>
             </div>
@@ -487,7 +487,7 @@ function EditPopup() {
                   onChange={e=>setEditTx(p=>({...p,totalAmount:e.target.value}))}
                   style={{width:"100%",background:"rgba(255,255,255,0.06)",border:`1px solid ${T.gold}66`,
                     borderRadius:9,padding:"8px 10px",color:T.txt,fontSize:14,fontWeight:700,
-                    fontFamily:"monospace",textAlign:"right",outline:"none",boxSizing:"border-box"}}
+                    fontFamily:NUM_FONT,textAlign:"right",outline:"none",boxSizing:"border-box"}}
                   inputMode="decimal" placeholder="0,00"/>
               </div>
             )}
@@ -544,7 +544,7 @@ function EditPopup() {
                         }}
                         style={{width:"100%",background:"rgba(255,255,255,0.06)",border:`1px solid ${T.gold}44`,
                           borderRadius:8,padding:"6px 8px",color:T.mid,fontSize:13,fontWeight:700,
-                          fontFamily:"monospace",textAlign:"right",outline:"none",boxSizing:"border-box"}}
+                          fontFamily:NUM_FONT,textAlign:"right",outline:"none",boxSizing:"border-box"}}
                         inputMode="decimal" placeholder="0,00"/>
                     </div>
                     <div style={{flex:1}}>
@@ -566,7 +566,7 @@ function EditPopup() {
                         }}
                         style={{width:"100%",background:"rgba(255,255,255,0.06)",border:`1px solid ${T.gold}44`,
                           borderRadius:8,padding:"6px 8px",color:T.gold,fontSize:13,fontWeight:700,
-                          fontFamily:"monospace",textAlign:"right",outline:"none",boxSizing:"border-box"}}
+                          fontFamily:NUM_FONT,textAlign:"right",outline:"none",boxSizing:"border-box"}}
                         inputMode="decimal" placeholder="0,00"/>
                     </div>
                   </div>
@@ -582,7 +582,7 @@ function EditPopup() {
                     onChange={e=>setEditTx(p=>({...p,totalAmount:e.target.value,splits:(p.splits||[]).map((sp,i)=>i===0?{...sp,amount:e.target.value}:sp)}))}
                     style={{width:"100%",background:"rgba(255,255,255,0.06)",border:`1px solid ${T.gold}66`,
                       borderRadius:9,padding:"8px 10px",color:T.txt,fontSize:14,fontWeight:700,
-                      fontFamily:"monospace",textAlign:"right",outline:"none",boxSizing:"border-box"}}
+                      fontFamily:NUM_FONT,textAlign:"right",outline:"none",boxSizing:"border-box"}}
                     inputMode="decimal" placeholder="0,00"/>
                 </>
               )}
@@ -631,7 +631,7 @@ function EditPopup() {
                       readOnly
                       style={{width:90,background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bds}`,
                         borderRadius:7,padding:"4px 8px",color:T.gold,fontSize:12,fontWeight:700,
-                        fontFamily:"monospace",textAlign:"right",outline:"none"}}/>
+                        fontFamily:NUM_FONT,textAlign:"right",outline:"none"}}/>
                     <span style={{color:T.txt2,fontSize:10}}>€</span>
                   </div>
                 )}
@@ -647,12 +647,12 @@ function EditPopup() {
                       {paid>0&&<div style={{flex:1,background:"rgba(170,204,0,0.08)",border:`1px solid ${T.pos}33`,
                         borderRadius:8,padding:"5px 8px",textAlign:"center"}}>
                         <div style={{color:T.pos,fontSize:10,fontWeight:700}}>{paid} bezahlt</div>
-                        <div style={{color:T.pos,fontSize:11,fontWeight:700,fontFamily:"monospace"}}>{fmt(paidAmt)}</div>
+                        <div style={{color:T.pos,fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(paidAmt)}</div>
                       </div>}
                       {open>0&&<div style={{flex:1,background:"rgba(234,64,37,0.08)",border:`1px solid ${T.neg}33`,
                         borderRadius:8,padding:"5px 8px",textAlign:"center"}}>
                         <div style={{color:T.neg,fontSize:10,fontWeight:700}}>{open} offen</div>
-                        <div style={{color:T.neg,fontSize:11,fontWeight:700,fontFamily:"monospace"}}>{fmt(openAmt)}</div>
+                        <div style={{color:T.neg,fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(openAmt)}</div>
                       </div>}
                     </div>
                   );

@@ -10,7 +10,7 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
 import { MONTHS_F } from "../../utils/constants.js";
 import { isoAddMonths, nextBankWorkday } from "../../utils/date.js";
-import { fmt, pn, uid } from "../../utils/format.js";
+import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
 function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}) {
@@ -1105,7 +1105,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
                           {s.count>1&&sections.length>1&&
                             <span style={{color:T.txt2,opacity:0.6}}> ({s.count}×)</span>}
                         </span>
-                        <span style={{color:T.pos,fontWeight:700,fontFamily:"monospace"}}>
+                        <span style={{color:T.pos,fontWeight:700,fontFamily:NUM_FONT}}>
                           {fmt(s.amt)} €
                         </span>
                       </div>
@@ -1119,7 +1119,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
                             ? fmtMY(ex.dates[0])
                             : `${fmtMY(ex.dates[0])} · ${ex.dates.length}×`}
                         </span>
-                        <span style={{color:T.gold,fontWeight:700,fontFamily:"monospace"}}>
+                        <span style={{color:T.gold,fontWeight:700,fontFamily:NUM_FONT}}>
                           {fmt(ex.amt)} €
                         </span>
                       </div>

@@ -11,7 +11,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { PAL } from "../../theme/palette.js";
 import { MONTHS_F } from "../../utils/constants.js";
-import { dayOf, fmt, pn, uid } from "../../utils/format.js";
+import { dayOf, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
@@ -800,12 +800,12 @@ function MonatScreen() {
                     <div style={{textAlign:"right",flexShrink:0}}>
                       <span style={{
                         color:headSaldo>=0?T.pos:T.neg,
-                        fontSize:14,fontWeight:800,fontFamily:"monospace"}}>
+                        fontSize:14,fontWeight:800,fontFamily:NUM_FONT}}>
                         {headSaldo>=0?"+":"−"}{fmt(Math.abs(headSaldo))}
                       </span>
                       {hasReservierung&&(
                         <div style={{color:daySaldo>=0?T.txt2:T.neg,fontSize:8,lineHeight:1.3,
-                          textAlign:"right",fontFamily:"monospace",opacity:0.9}}>
+                          textAlign:"right",fontFamily:NUM_FONT,opacity:0.9}}>
                           nach Budget {daySaldo>=0?"+":"−"}{fmt(Math.abs(daySaldo))}
                         </div>
                       )}
@@ -824,7 +824,7 @@ function MonatScreen() {
                     </div>
                   ) : (
                     <span style={{color:dayNet>=0?T.pos:T.neg,fontSize:14,fontWeight:800,
-                      fontFamily:"monospace",flexShrink:0}}>
+                      fontFamily:NUM_FONT,flexShrink:0}}>
                       {dayNet>=0?"+":"−"}{fmt(Math.abs(dayNet))}
                     </span>
                   )}
@@ -862,11 +862,11 @@ function MonatScreen() {
                           {w.nextPos
                             ? <>Fehlbetrag ausgleichen bis <span style={{color:T.gold,fontWeight:700}}>{nextLabel}</span>
                               {w.nextPos.name&&<span> ({w.nextPos.name})</span>}
-                              {" — mindestens "}<span style={{color:T.neg,fontWeight:700,fontFamily:"monospace"}}>
+                              {" — mindestens "}<span style={{color:T.neg,fontWeight:700,fontFamily:NUM_FONT}}>
                                 {fmt(w.deficit)} €
                               </span>{" einplanen"}</>
                             : <>Kein positiver Saldo-Tag im Monat gefunden — mindestens{" "}
-                              <span style={{color:T.neg,fontWeight:700,fontFamily:"monospace"}}>
+                              <span style={{color:T.neg,fontWeight:700,fontFamily:NUM_FONT}}>
                                 {fmt(w.deficit)} €
                               </span>{" fehlen"}</>
                           }
@@ -919,7 +919,7 @@ function MonatScreen() {
                             </div>
                           </div>
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
-                            <div style={{color:pal.val,fontSize:14,fontWeight:800,fontFamily:"monospace"}}>+{fmt(tx.totalAmount)}</div>
+                            <div style={{color:pal.val,fontSize:14,fontWeight:800,fontFamily:NUM_FONT}}>+{fmt(tx.totalAmount)}</div>
                             {fulfilled&&<div style={{color:T.pos,fontSize:9}}>{Li("check",9,T.pos)} erfüllt</div>}
                             {needsHatch&&<div style={{color:pal.hdr,fontSize:9}}>{Li("alert-circle",9,T.gold)} offen</div>}
                           </div>
@@ -969,16 +969,16 @@ function MonatScreen() {
                             {isOverspent ? (<>
                               <div style={{color:T.neg,fontSize:10,fontWeight:700}}>{fmtSigned(signedBudget)} um {fmt(Math.abs(open))} überschritten</div>
                               <div style={{borderTop:`1px solid ${T.neg}44`,margin:"3px 0"}}/>
-                              <div style={{color:T.neg,fontSize:13,fontWeight:800,fontFamily:"monospace"}}>{fmtSigned(-spent)}</div>
+                              <div style={{color:T.neg,fontSize:13,fontWeight:800,fontFamily:NUM_FONT}}>{fmtSigned(-spent)}</div>
                             </>) : (<>
                               <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"baseline"}}>
                                 <span style={{color:T.txt2,fontSize:10}}>offenes Budget:</span>
-                                <span style={{color:open>0?T.gold:T.txt2,fontSize:11,fontWeight:700,fontFamily:"monospace"}}>{fmtSigned(signedOpen)}</span>
+                                <span style={{color:open>0?T.gold:T.txt2,fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>{fmtSigned(signedOpen)}</span>
                               </div>
                               <div style={{borderTop:`1px solid ${T.bd}`,margin:"3px 0"}}/>
                               <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"baseline"}}>
                                 <span style={{color:T.txt2,fontSize:10}}>genutzt:</span>
-                                <span style={{color:spent===0?T.txt2:accentCol,fontSize:13,fontWeight:800,fontFamily:"monospace"}}>{spent===0?"—":fmtSigned(-spent)}</span>
+                                <span style={{color:spent===0?T.txt2:accentCol,fontSize:13,fontWeight:800,fontFamily:NUM_FONT}}>{spent===0?"—":fmtSigned(-spent)}</span>
                               </div>
                             </>)}
                           </div>
@@ -1069,7 +1069,7 @@ function MonatScreen() {
                           </div>
                           {/* Amount */}
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
-                            <div style={{color:pal.val,fontSize:14,fontWeight:800,fontFamily:"monospace"}}>
+                            <div style={{color:pal.val,fontSize:14,fontWeight:800,fontFamily:NUM_FONT}}>
                               {type==="income"?"+":"−"}{fmt(tx.totalAmount)}
                             </div>
                             {isS&&(
@@ -1079,7 +1079,7 @@ function MonatScreen() {
                                   return (
                                     <div key={sp.id} style={{display:"flex",alignItems:"center",gap:3,justifyContent:"flex-end",marginBottom:1}}>
                                       <span style={{width:6,height:6,borderRadius:"50%",background:spCat?.color||T.txt2,flexShrink:0,display:"inline-block"}}/>
-                                      <span style={{color:spCat?.color||T.txt2,fontSize:9,fontFamily:"monospace",fontWeight:700}}>{fmt(pn(sp.amount))}</span>
+                                      <span style={{color:spCat?.color||T.txt2,fontSize:9,fontFamily:NUM_FONT,fontWeight:700}}>{fmt(pn(sp.amount))}</span>
                                     </div>
                                   );
                                 })}
@@ -1138,7 +1138,7 @@ function MonatScreen() {
                 <span style={{color:T.txt2,fontSize:9,fontWeight:700,letterSpacing:1,textTransform:"uppercase"}}>
                   Ankerpunkt ({label}){accName?` · ${accName}`:""}
                 </span>
-                <span style={{color:T.txt,fontSize:13,fontWeight:700,fontFamily:"monospace"}}>
+                <span style={{color:T.txt,fontSize:13,fontWeight:700,fontFamily:NUM_FONT}}>
                   {progVal!==null?(progVal>=0?"+":"")+fmt(progVal)+" €":"—"}
                 </span>
                 <span style={{color:T.txt2,fontSize:9}}>{ankLabel}</span>

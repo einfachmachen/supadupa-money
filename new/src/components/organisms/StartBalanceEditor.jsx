@@ -1,6 +1,7 @@
 // Auto-generated module (siehe app-src.jsx)
 
 import React, { useContext, useMemo, useState } from "react";
+import { NUM_FONT } from "../../utils/format.js";
 import { KontostandImportButton } from "../buttons/KontostandImportButton.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
@@ -109,7 +110,7 @@ function StartBalanceEditor() {
               background:"rgba(255,255,255,0.04)",borderRadius:8,padding:"5px 8px",marginBottom:3,
               border:`1px solid ${T.bd}`}}>
               <span style={{color:T.txt2,fontSize:10,flex:1}}>{a.label}</span>
-              <span style={{color:T.pos,fontSize:12,fontWeight:700,fontFamily:"monospace"}}>
+              <span style={{color:T.pos,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>
                 {a.value>=0?"+":""}{a.value.toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})} €
               </span>
               <button onClick={()=>deleteAnchor(a)}
@@ -180,7 +181,7 @@ function StartBalanceEditor() {
               placeholder="0,00" inputMode="decimal"
               style={{width:"100%",background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bds}`,
                 borderRadius:8,padding:"6px 8px",color:T.txt,fontSize:13,fontWeight:700,
-                textAlign:"right",outline:"none",fontFamily:"monospace",boxSizing:"border-box"}}/>
+                textAlign:"right",outline:"none",fontFamily:NUM_FONT,boxSizing:"border-box"}}/>
           </div>
           <button onClick={saveAnchor}
             style={{padding:"7px 12px",borderRadius:8,border:"none",

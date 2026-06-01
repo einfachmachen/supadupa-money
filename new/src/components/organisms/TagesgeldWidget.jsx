@@ -5,7 +5,7 @@ import { CatPicker } from "../molecules/CatPicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
-import { fmt, uid } from "../../utils/format.js";
+import { fmt, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
 import { restMitte, restEnde, phaseStillReachable } from "../../utils/saldo.js";
@@ -496,14 +496,14 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                 <div style={{color:T.txt2,fontSize:9,marginBottom:4}}>
                   Heute sicher sparen (Monat 1):
                 </div>
-                <div style={{color:col,fontSize:26,fontWeight:800,fontFamily:"monospace",letterSpacing:-0.5}}>
+                <div style={{color:col,fontSize:26,fontWeight:800,fontFamily:NUM_FONT,letterSpacing:-0.5}}>
                   {computing?"…":maxTransfer===null?"—":maxTransfer<=0?"0":fmt(maxTransfer)} €
                 </div>
                 {result&&!keinSpielraum&&<div style={{color:T.pos,fontSize:9,marginTop:2}}>
-                  ∑ {monate+1} Monate: <span style={{fontWeight:700,fontFamily:"monospace"}}>
+                  ∑ {monate+1} Monate: <span style={{fontWeight:700,fontFamily:NUM_FONT}}>
                     {fmt(totalKumuliert)} €
                   </span>
-                  {" · "}Ø <span style={{fontWeight:700,fontFamily:"monospace"}}>{fmt(Math.round(durchschnitt))} €</span>/Monat
+                  {" · "}Ø <span style={{fontWeight:700,fontFamily:NUM_FONT}}>{fmt(Math.round(durchschnitt))} €</span>/Monat
                 </div>}
                 {keinSpielraum&&(
                   <div style={{marginTop:4,background:"rgba(234,64,37,0.12)",border:`1px solid ${T.neg}44`,
@@ -586,18 +586,18 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                     <span style={{color:isCurM?T.blue:T.txt,fontSize:10,fontWeight:700}}>{MONTHS_G[m]}</span>
                     <span style={{color:T.txt2,fontSize:8,marginLeft:3}}>{String(y).slice(2)}</span>
                   </div>
-                  <div style={{flex:1,textAlign:"right",color:minTag===null?T.txt2:minTag<puffer?T.neg:T.txt2,fontSize:9,fontFamily:"monospace"}}>
+                  <div style={{flex:1,textAlign:"right",color:minTag===null?T.txt2:minTag<puffer?T.neg:T.txt2,fontSize:9,fontFamily:NUM_FONT}}>
                     {minTag!==null?(minTag>=0?"+":"−")+fmt(Math.abs(minTag)):"—"}
                   </div>
-                  <div style={{flex:1,textAlign:"right",fontSize:9,fontFamily:"monospace",fontWeight:700,
+                  <div style={{flex:1,textAlign:"right",fontSize:9,fontFamily:NUM_FONT,fontWeight:700,
                     color:minNach===null?T.txt2:minNach<puffer?T.neg:T.pos}}>
                     {minNach!==null?(minNach>=0?"+":"−")+fmt(Math.abs(minNach)):"—"}
                     {kritisch&&<span style={{color:T.neg,fontSize:7}}> ⚠</span>}
                   </div>
-                  <div style={{flex:1,textAlign:"right",color:zusCol,fontSize:10,fontWeight:700,fontFamily:"monospace"}}>
+                  <div style={{flex:1,textAlign:"right",color:zusCol,fontSize:10,fontWeight:700,fontFamily:NUM_FONT}}>
                     {zusaetzlich>0?"+"+fmt(zusaetzlich):"—"}
                   </div>
-                  <div style={{flex:1,textAlign:"right",color:kumuliert>0?T.pos:T.txt2,fontSize:11,fontWeight:800,fontFamily:"monospace"}}>
+                  <div style={{flex:1,textAlign:"right",color:kumuliert>0?T.pos:T.txt2,fontSize:11,fontWeight:800,fontFamily:NUM_FONT}}>
                     {kumuliert>0?fmt(kumuliert):"—"}
                   </div>
                 </div>

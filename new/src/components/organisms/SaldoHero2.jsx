@@ -6,7 +6,7 @@ import { DashboardScreen } from "../screens/DashboardScreen.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { THEMES } from "../../theme/themes.js";
-import { fmt } from "../../utils/format.js";
+import { fmt, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { saldoEnde as calcSaldoEnde, saldoMitte as calcSaldoMitte } from "../../utils/saldo.js";
 
@@ -129,20 +129,20 @@ function SaldoHero2({year, month,
         <span style={{color:D,fontSize:10,minWidth:88,letterSpacing:0.5}}>{label}</span>
         <span onClick={vIn>0&&onIn?onIn:undefined}
           style={{color:cIn||G,fontSize:12,fontWeight:700,flex:1,textAlign:"right",
-            fontFamily:"monospace",cursor:vIn>0&&onIn?"pointer":"default"}}>
+            fontFamily:NUM_FONT,cursor:vIn>0&&onIn?"pointer":"default"}}>
           {vIn>0?"+"+fmtT(vIn):fmtT(0)}
         </span>
         <span style={{color:D,fontSize:10,padding:"0 8px"}}>/</span>
         <span onClick={vOut>0&&onOut?onOut:undefined}
           style={{color:cOut||R,fontSize:12,fontWeight:700,flex:1,textAlign:"right",
-            fontFamily:"monospace",cursor:vOut>0&&onOut?"pointer":"default"}}>
+            fontFamily:NUM_FONT,cursor:vOut>0&&onOut?"pointer":"default"}}>
           {vOut>0?"-"+fmtT(vOut):fmtT(0)}
         </span>
       </div>
     );
 
     return (
-      <div style={{margin:"0",background:"#0D0D0D",fontFamily:"monospace"}}>
+      <div style={{margin:"0",background:"#0D0D0D",fontFamily:NUM_FONT}}>
         {/* Saldo-Block — eigener dunkler Hintergrund, keine Umrandung */}
         <div style={{background:"#111",padding:"10px 12px 8px",
           borderBottom:`1px solid ${G}22`}}>
@@ -183,7 +183,7 @@ function SaldoHero2({year, month,
                 <div style={{color:D,fontSize:9,letterSpacing:1,marginBottom:2}}>MITTE</div>
                 <div onClick={displayPrognoseMitte!==null?()=>setProgDrill(v=>v==="Mitte"?null:"Mitte"):undefined}
                   style={{color:saldoColor(displayPrognoseMitte),fontSize:16,fontWeight:700,
-                    fontFamily:"monospace",cursor:displayPrognoseMitte!==null?"pointer":"default"}}>
+                    fontFamily:NUM_FONT,cursor:displayPrognoseMitte!==null?"pointer":"default"}}>
                   {displayPrognoseMitte!==null?(displayPrognoseMitte>=0?"+":"-")+fmt(Math.abs(displayPrognoseMitte))+"€":"─"}
                 </div>
               </div>
@@ -192,7 +192,7 @@ function SaldoHero2({year, month,
                 <div style={{color:D,fontSize:9,letterSpacing:1,marginBottom:2}}>ENDE</div>
                 <div onClick={displayPrognoseEnde!==null?()=>setProgDrill(v=>v==="Ende"?null:"Ende"):undefined}
                   style={{color:saldoColor(displayPrognoseEnde),fontSize:16,fontWeight:700,
-                    fontFamily:"monospace",cursor:displayPrognoseEnde!==null?"pointer":"default"}}>
+                    fontFamily:NUM_FONT,cursor:displayPrognoseEnde!==null?"pointer":"default"}}>
                   {displayPrognoseEnde!==null?(displayPrognoseEnde>=0?"+":"-")+fmt(Math.abs(displayPrognoseEnde))+"€":"─"}
                 </div>
               </div>
@@ -211,7 +211,7 @@ function SaldoHero2({year, month,
           <div style={{background:"#111",borderTop:`1px solid ${G}22`,
             padding:"6px 12px",display:"flex",alignItems:"baseline",gap:8}}>
             <span style={{color:D,fontSize:9,letterSpacing:2}}>MONATS-SALDO</span>
-            <span style={{color:ms>=0?G:R,fontSize:16,fontWeight:700,fontFamily:"monospace",marginLeft:"auto"}}>
+            <span style={{color:ms>=0?G:R,fontSize:16,fontWeight:700,fontFamily:NUM_FONT,marginLeft:"auto"}}>
               {(ms>=0?"+":"-")+fmt(Math.abs(ms))+" EUR"}
             </span>
           </div>
@@ -237,7 +237,7 @@ function SaldoHero2({year, month,
           flex:grow||1,minWidth:0,cursor:onClick?"pointer":"default"}}>
         <div style={{fontSize:8,fontWeight:900,color:col==="#fff"?BK+"88":BK+"66",
           letterSpacing:1,textTransform:"uppercase",marginBottom:3}}>{label}</div>
-        <div style={{fontSize:16,fontWeight:900,color:col||BK,fontFamily:"monospace",lineHeight:1}}>{val||"—"}</div>
+        <div style={{fontSize:16,fontWeight:900,color:col||BK,fontFamily:NUM_FONT,lineHeight:1}}>{val||"—"}</div>
       </div>
     );
 
@@ -250,7 +250,7 @@ function SaldoHero2({year, month,
           <span style={{color:BY,fontWeight:900,fontSize:10,letterSpacing:2}}>
             BUDGET {MONTHS_ABBR[month]} {year}
           </span>
-          <span style={{color:saldoC===BR?BR:BY,fontWeight:900,fontSize:22,fontFamily:"monospace"}}>
+          <span style={{color:saldoC===BR?BR:BY,fontWeight:900,fontSize:22,fontFamily:NUM_FONT}}>
             {(saldo>=0?"+":"-")+fmt(Math.abs(saldo))+" €"}
           </span>
         </div>

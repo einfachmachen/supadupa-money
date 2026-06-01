@@ -4,7 +4,7 @@ import React, { useContext, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
-import { fmt, pn, uid } from "../../utils/format.js";
+import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
 function BudgetEditorModal({sub, cat, accountId="acc-giro", onClose}) {
@@ -221,7 +221,7 @@ function BudgetEditorModal({sub, cat, accountId="acc-giro", onClose}) {
         {amtG>0&&(
           <div style={{display:"flex",gap:12,marginBottom:10,
             background:"rgba(255,255,255,0.04)",borderRadius:7,padding:"6px 10px",
-            fontSize:12,fontFamily:"monospace"}}>
+            fontSize:12,fontFamily:NUM_FONT}}>
             <span><span style={{color:T.txt2,fontFamily:"inherit",fontSize:11}}>Mitte: </span>
               <span style={{color:T.mid,fontWeight:700}}>{fmt(amtM||0)}</span></span>
             <span style={{color:T.txt2}}>·</span>

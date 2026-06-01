@@ -8,7 +8,7 @@ import { QuickBtnsBar } from "../molecules/QuickBtnsBar.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { isoAddMonths } from "../../utils/date.js";
-import { fmt, pn, uid } from "../../utils/format.js";
+import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 
@@ -224,7 +224,7 @@ function MatchingScreen({onClose, onBack}) {
                   </div>
                   <div style={{color:T.txt2,fontSize:9}}>{cat?.name||"unkategorisiert"}</div>
                 </div>
-                <div style={{color:T.gold,fontSize:11,fontWeight:700,fontFamily:"monospace",flexShrink:0}}>
+                <div style={{color:T.gold,fontSize:11,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
                   {fmt(tx.totalAmount)}
                 </div>
               </div>
@@ -402,7 +402,7 @@ function MatchingScreen({onClose, onBack}) {
                 style={rowS(isActive,col)}>
                 {/* Betrag LINKS — zum schnellen Vergleich mit Vormerkungsbetrag */}
                 <div style={{color:col,fontSize:12,fontWeight:800,
-                  fontFamily:"monospace",flexShrink:0,minWidth:64,textAlign:"right",
+                  fontFamily:NUM_FONT,flexShrink:0,minWidth:64,textAlign:"right",
                   paddingRight:6,
                   background: matchAmt&&selectedPendAmt!==null&&Math.abs(Math.abs(tx.totalAmount)-selectedPendAmt)<0.01
                     ? `${col}22` : "transparent",

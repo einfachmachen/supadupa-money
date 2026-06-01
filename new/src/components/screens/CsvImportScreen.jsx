@@ -9,7 +9,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { parseCSV } from "../../utils/csv.js";
 import { anchorFromDetectedBalance, makeAnchorEntry } from "../../utils/anchors.js";
-import { fmt, pn, uid } from "../../utils/format.js";
+import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { txFingerprint, txFingerprintNorm } from "../../utils/tx.js";
@@ -832,7 +832,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                             </span>}
                           </div>
                         </div>
-                        <div style={{color:isPos?T.pos:T.neg,fontSize:MFS,fontWeight:700,fontFamily:"monospace",flexShrink:0,whiteSpace:"nowrap"}}>
+                        <div style={{color:isPos?T.pos:T.neg,fontSize:MFS,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0,whiteSpace:"nowrap"}}>
                           {isPos?"+ ":"− "}{Math.abs(r.amount).toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})} €
                         </div>
                       </div>
@@ -899,7 +899,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                       <span style={{color:T.txt,fontWeight:700}}>
                         {dbs[0].date.split("-").reverse().join(".")}
                       </span>{" "}
-                      (<span style={{color:T.pos,fontFamily:"monospace",fontWeight:700}}>
+                      (<span style={{color:T.pos,fontFamily:NUM_FONT,fontWeight:700}}>
                         {dbs[0].saldo.toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})} €
                       </span>) automatisch als Ankerpunkt gespeichert.
                     </>)}
@@ -909,7 +909,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                       {dbs.map((db,i)=>(
                         <div key={i} style={{display:"flex",justifyContent:"space-between",gap:8,fontSize:MFSl}}>
                           <span style={{color:T.txt,fontWeight:600}}>{db.date.split("-").reverse().join(".")}</span>
-                          <span style={{color:T.pos,fontFamily:"monospace",fontWeight:700}}>
+                          <span style={{color:T.pos,fontFamily:NUM_FONT,fontWeight:700}}>
                             {db.saldo.toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})} €
                           </span>
                         </div>

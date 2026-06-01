@@ -13,7 +13,7 @@ import { TagesgeldWidget } from "../organisms/TagesgeldWidget.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { groupBudgetPairs, budgetOpenRestFor } from "../../utils/budgets.js";
-import { dayOf, drillSort, fmt, pn, uid } from "../../utils/format.js";
+import { dayOf, drillSort, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { txFingerprint, isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
@@ -604,7 +604,7 @@ function DashboardScreenV2() {
                           <span style={{color:(t.splits||[]).some(s=>s.catId)?T.pos:T.txt2,fontSize:9,flexShrink:0}}>
                             {(t.splits||[]).some(s=>s.catId)?"✓ kat.":"unkategorisiert"}
                           </span>
-                          <span style={{color:T.neg,fontSize:10,fontFamily:"monospace",flexShrink:0}}>{fmt(Math.abs(t.totalAmount))}</span>
+                          <span style={{color:T.neg,fontSize:10,fontFamily:NUM_FONT,flexShrink:0}}>{fmt(Math.abs(t.totalAmount))}</span>
                         </div>
                       ))}
                     </div>
@@ -718,13 +718,13 @@ function DashboardScreenV2() {
                   <div style={{flex:1,textAlign:"center",cursor:vOut>0&&onTapOut?"pointer":"default",padding:"2px 0",opacity:dim?0.65:1}}
                     onClick={vOut>0&&onTapOut?()=>onTapOut(isMitte):undefined}>
                     {vOut>0
-                      ? <span style={{color:clrOut||T.neg,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums"}}>{fmt(vOut)}</span>
+                      ? <span style={{color:clrOut||T.neg,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>{fmt(vOut)}</span>
                       : <span style={{color:T.txt2,fontSize:20}}>—</span>}
                   </div>
                   <div style={{flex:1,textAlign:"center",cursor:vIn>0&&onTapIn?"pointer":"default",padding:"2px 0",opacity:dim?0.65:1}}
                     onClick={vIn>0&&onTapIn?()=>onTapIn(isMitte):undefined}>
                     {vIn>0
-                      ? <span style={{color:clrIn||T.pos,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums"}}>{fmt(vIn)}</span>
+                      ? <span style={{color:clrIn||T.pos,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>{fmt(vIn)}</span>
                       : <span style={{color:T.txt2,fontSize:20}}>—</span>}
                   </div>
                 </div>
@@ -758,7 +758,7 @@ function DashboardScreenV2() {
                     </div>
                     <div style={{
                       color: saldo>=0 ? T.pos : T.neg,
-                      fontSize:32,fontWeight:700,fontVariantNumeric:"tabular-nums",
+                      fontSize:32,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
                       letterSpacing:-0.5,lineHeight:1.1,
                       textAlign:"right",minWidth:0,flexShrink:0,
                     }}>
@@ -777,7 +777,7 @@ function DashboardScreenV2() {
                       <div style={{color:T.mid||T.txt2,fontSize:10,fontWeight:700,
                         letterSpacing:1,marginBottom:2}}>MITTE</div>
                       <div style={{color: prognoseMitte>=0?T.pos:T.neg,
-                        fontSize:20,fontWeight:500,fontVariantNumeric:"tabular-nums"}}>
+                        fontSize:20,fontWeight:500,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
                         {prognoseMitte>=0?"":"−"}{fmtMoney(Math.abs(prognoseMitte||0))}
                       </div>
                     </div>
@@ -797,7 +797,7 @@ function DashboardScreenV2() {
                       <div style={{color:T.gold||T.txt2,fontSize:10,fontWeight:700,
                         letterSpacing:1,marginBottom:2}}>ENDE</div>
                       <div style={{color: prognoseEnde>=0?T.pos:T.neg,
-                        fontSize:20,fontWeight:500,fontVariantNumeric:"tabular-nums"}}>
+                        fontSize:20,fontWeight:500,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
                         {prognoseEnde>=0?"":"−"}{fmtMoney(Math.abs(prognoseEnde||0))}
                       </div>
                     </div>
@@ -958,7 +958,7 @@ function DashboardScreenV2() {
                       <span style={{color:T.txt,fontSize:11,flex:1,overflow:"hidden",
                         textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.desc}</span>
                       <span style={{color:t.totalAmount<0?T.neg:T.pos,fontSize:11,
-                        fontFamily:"monospace",flexShrink:0,fontWeight:700}}>
+                        fontFamily:NUM_FONT,flexShrink:0,fontWeight:700}}>
                         {t.totalAmount<0?"−":"+"}{fmt(Math.abs(t.totalAmount))}
                       </span>
                     </div>
@@ -1002,7 +1002,7 @@ function DashboardScreenV2() {
               </div>
               {dateStr && (
                 <div style={{color:T.lbl||T.txt2,fontSize:11,fontWeight:600,
-                  fontVariantNumeric:"tabular-nums",flexShrink:0}}>
+                  fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,flexShrink:0}}>
                   {dateStr}
                 </div>
               )}
@@ -1073,7 +1073,7 @@ function DashboardScreenV2() {
                 style={{flex:1,position:"relative",textAlign:"center",
                   padding:"5px 0",borderRadius:7,background:cellBg,
                   color:textColor(isInc?val:cb,bgt,isInc),
-                  fontSize:opts.size||20,fontWeight:700,fontVariantNumeric:"tabular-nums",
+                  fontSize:opts.size||20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
                   opacity:opts.dim?0.55:0.9,overflow:"hidden",
                   cursor:clickable?"pointer":"default"}}>
                 {val>0 ? fmt(val) : "—"}
@@ -1175,7 +1175,7 @@ function DashboardScreenV2() {
                       </div>
                       <div onClick={e=>{e.stopPropagation(); if(iAkt>0) openCatDrill(lastDay,"aktuell",iAkt,true);}}
                         style={{
-                          color:headColor,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",
+                          color:headColor,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
                           flexShrink:0, cursor:iAkt>0?"pointer":"default",
                         }}>
                         {fmt(iAkt)}
@@ -1232,7 +1232,7 @@ function DashboardScreenV2() {
                               {sub.name}
                             </div>
                             <div style={{color:sHead,fontSize:17,fontWeight:700,
-                              fontVariantNumeric:"tabular-nums",flexShrink:0}}>
+                              fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,flexShrink:0}}>
                               {sAkt>0?fmt(sAkt):"—"}
                             </div>
                           </div>
@@ -1380,7 +1380,7 @@ function DashboardScreenV2() {
                               {tx.pending&&<span style={{color:T.gold,fontSize:11,fontWeight:700}}>{tx._seriesId?"wiederkehrend":"vorgemerkt"}</span>}
                               <LinkBadges tx={tx}/>
                             </div>
-                            <span style={{color:tx.pending?T.gold:(cat.type==="income"?T.pos:T.neg),fontSize:17,fontWeight:700,fontFamily:"monospace",flexShrink:0}}>{fmt(amt)}</span>
+                            <span style={{color:tx.pending?T.gold:(cat.type==="income"?T.pos:T.neg),fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>{fmt(amt)}</span>
                           </div>
                         </div>
                       );
@@ -1463,7 +1463,7 @@ function DashboardScreenV2() {
                                     display:"flex",flexDirection:"column",gap:1}}>
                                     {/* Betrag (Label steht als fixe Spaltenueberschrift darueber; Vorzeichen weggelassen, Farbe codiert) */}
                                     <div style={{color:valCol,fontSize:18,
-                                      fontWeight:800,fontFamily:"monospace",whiteSpace:"nowrap"}}>
+                                      fontWeight:800,fontFamily:NUM_FONT,whiteSpace:"nowrap"}}>
                                       {val>0?fmt(val):"—"}
                                     </div>
                                     {/* Budget-Balken direkt in Zelle */}
@@ -1516,10 +1516,10 @@ function DashboardScreenV2() {
                               <div style={{display:"flex",justifyContent:"space-between",
                                 alignItems:"center",gap:8}}>
                                 <div style={{fontSize:9,color:T.txt2}}>
-                                  <span style={{color:T.neg,fontWeight:700,fontFamily:"monospace"}}>
+                                  <span style={{color:T.neg,fontWeight:700,fontFamily:NUM_FONT}}>
                                     −{fmt(realAmt)}
                                   </span>
-                                  {pendAmt>0&&<span style={{color:T.gold,fontFamily:"monospace"}}>
+                                  {pendAmt>0&&<span style={{color:T.gold,fontFamily:NUM_FONT}}>
                                     {" "}+<span style={{color:T.gold}}>{cat.type==="income"?"+":"−"}{fmt(pendAmt)} vorgem.</span>
                                   </span>}
                                   <span style={{color:T.txt2}}> / {cat.type==="income"?"+":"−"}{fmt(budget)}</span>
@@ -1557,7 +1557,7 @@ function DashboardScreenV2() {
                                   <LinkBadges tx={tx}/>
                                 </div>
                                 <span style={{color:tx.pending?T.gold:(cat.type==="income"?T.pos:T.neg),fontSize:17,
-                                  fontWeight:700,fontFamily:"monospace",flexShrink:0}}>
+                                  fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
                                   {fmt(amt)}
                                 </span>
                               </div>
@@ -1615,9 +1615,9 @@ function DashboardScreenV2() {
                           </div>
                           <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
                             <span style={{color:T.mid,fontSize:10}}>Mitte</span>
-                            <span style={{color:col2,fontSize:12,fontWeight:700,fontFamily:"monospace"}}>−{fmt(tx._mitteAmt)}</span>
+                            <span style={{color:col2,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(tx._mitteAmt)}</span>
                             <span style={{color:T.gold,fontSize:10}}>Gesamt</span>
-                            <span style={{color:col2,fontSize:12,fontWeight:700,fontFamily:"monospace"}}>−{fmt(tx._mitteAmt+tx._endeAmt)}</span>
+                            <span style={{color:col2,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(tx._mitteAmt+tx._endeAmt)}</span>
                           </div>
                         </div>
                       </div>
@@ -1637,9 +1637,9 @@ function DashboardScreenV2() {
                           </div>
                           <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
                             {isMitte&&<><span style={{color:T.mid,fontSize:10}}>Mitte</span>
-                            <span style={{color:col2,fontSize:12,fontWeight:700,fontFamily:"monospace"}}>−{fmt(tx.totalAmount)}</span></>}
+                            <span style={{color:col2,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(tx.totalAmount)}</span></>}
                             <span style={{color:T.gold,fontSize:10}}>Gesamt</span>
-                            <span style={{color:col2,fontSize:12,fontWeight:700,fontFamily:"monospace"}}>−{fmt(tx.totalAmount)}</span>
+                            <span style={{color:col2,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(tx.totalAmount)}</span>
                           </div>
                         </div>
                       </div>
@@ -1694,7 +1694,7 @@ function DashboardScreenV2() {
                             {sub&&!isUncat&&!isS&&<span style={{color:cat?.color||dashDrill.cat?.color||T.txt2,fontSize:12}}>{sub.name}</span>}
                             {isUncat&&<span style={{color:T.neg,fontSize:10,fontWeight:700}}>unkategorisiert</span>}
                           </div>
-                          <div style={{color:dashDrill.isIncome?T.pos:T.neg,fontSize:17,fontWeight:700,fontFamily:"monospace",flexShrink:0}}>
+                          <div style={{color:dashDrill.isIncome?T.pos:T.neg,fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
                             {fmt(amt)}
                           </div>
                         </div>
@@ -1722,7 +1722,7 @@ function DashboardScreenV2() {
                                   {Li("link",9,T.blue)} zugeordnet
                                 </span>}
                                 <span style={{color:isLinked?T.txt2:dashDrill.isIncome?T.pos:T.neg,
-                                  fontSize:11,fontWeight:700,fontFamily:"monospace",flexShrink:0,
+                                  fontSize:11,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0,
                                   opacity:isLinked?0.5:1}}>
                                   {dashDrill.isIncome?"+":"−"}{fmt(pn(s.amount))}
                                 </span>

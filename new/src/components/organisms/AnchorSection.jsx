@@ -1,6 +1,7 @@
 // Auto-generated module (siehe app-src.jsx)
 
 import React, { useMemo, useState } from "react";
+import { NUM_FONT } from "../../utils/format.js";
 import { KontostandImportButton } from "../buttons/KontostandImportButton.jsx";
 import { theme as T } from "../../theme/activeTheme.js";
 import { Li } from "../../utils/icons.jsx";
@@ -114,7 +115,7 @@ function AnchorSection({selAccId, accounts, startBalances, setStartBalances, mob
                     {aAcc&&<span style={{background:(aAcc.color||T.blue)+"22",color:aAcc.color||T.blue,
                       borderRadius:4,padding:"1px 5px",fontSize:mobileMode?11:9,fontWeight:700}}>{aAcc.name}</span>}
                     <span style={{color:T.txt2,fontSize:mobileMode?13:10,flex:1}}>{a.label}</span>
-                    <span style={{color:T.pos,fontSize:mobileMode?14:12,fontWeight:700,fontFamily:"monospace"}}>
+                    <span style={{color:T.pos,fontSize:mobileMode?14:12,fontWeight:700,fontFamily:NUM_FONT}}>
                       {a.value>=0?"+":""}{a.value.toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})} €
                     </span>
                     <button onClick={()=>deleteAnchor(a)}
@@ -167,7 +168,7 @@ function AnchorSection({selAccId, accounts, startBalances, setStartBalances, mob
                   placeholder="0,00" inputMode="decimal"
                   style={{width:"100%",background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bds}`,
                     borderRadius:8,padding:"6px 8px",color:T.txt,fontSize:mobileMode?16:13,fontWeight:700,
-                    textAlign:"right",outline:"none",fontFamily:"monospace",boxSizing:"border-box"}}/>
+                    textAlign:"right",outline:"none",fontFamily:NUM_FONT,boxSizing:"border-box"}}/>
               </div>
               <button onClick={saveAnchor}
                 style={{padding:mobileMode?"10px 16px":"7px 12px",borderRadius:8,border:"none",

@@ -14,7 +14,7 @@ import { SettingsInline } from "./SettingsInline.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
-import { uid } from "../../utils/format.js";
+import { uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
 function ManagementScreen({activeTab="kategorien"}) {
@@ -227,7 +227,7 @@ function ManagementScreen({activeTab="kategorien"}) {
                     }}
                     style={{width:54,padding:"3px 5px",borderRadius:6,
                       border:`1px solid ${T.bd}`,background:"rgba(255,255,255,0.05)",
-                      color:T.txt,fontSize:11,fontFamily:"monospace",textAlign:"right",outline:"none"}}/>
+                      color:T.txt,fontSize:11,fontFamily:NUM_FONT,textAlign:"right",outline:"none"}}/>
                   <span style={{color:T.txt2,fontSize:10}}>€</span>
                 </div>
                 <button onClick={()=>setAccounts(p=>p.filter(a=>a.id!==acc.id))}

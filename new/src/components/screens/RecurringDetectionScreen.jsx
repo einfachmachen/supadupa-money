@@ -7,7 +7,7 @@ import { VormerkungHub } from "./VormerkungHub.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { isoAddMonths } from "../../utils/date.js";
-import { pn, uid } from "../../utils/format.js";
+import { pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount } from "../../utils/search.js";
 
@@ -495,7 +495,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
                       </div>
                       <div style={{color:T.txt2,fontSize:10,marginTop:2,display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
                         {v.repeatedAmounts.map(({amount,count},i)=>(
-                          <span key={i} style={{color:v.isIncome?T.pos:T.neg,fontFamily:"monospace",fontSize:10,
+                          <span key={i} style={{color:v.isIncome?T.pos:T.neg,fontFamily:NUM_FONT,fontSize:10,
                             background:"rgba(255,255,255,0.05)",borderRadius:4,padding:"1px 5px"}}>
                             {count}× {v.isIncome?"+":"−"}{fmt2(amount)}
                           </span>
@@ -514,7 +514,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
                         <div style={{fontSize:9,color:T.txt2,marginBottom:6,padding:"4px 6px",
                           background:"rgba(74,159,212,0.08)",borderRadius:6}}>
                           {Li("info",9,T.blue)} Kein gleichbleibender Betrag erkannt — verwende letzten Betrag:
-                          <span style={{color:T.txt,fontFamily:"monospace",fontWeight:700,marginLeft:4}}>
+                          <span style={{color:T.txt,fontFamily:NUM_FONT,fontWeight:700,marginLeft:4}}>
                             {(()=>{const last=v.txList.sort((a,b)=>b.date.localeCompare(a.date))[0];return `${v.isIncome?"+":"−"}${fmt2(last?.totalAmount||0)} €`;})()}
                           </span>
                         </div>
@@ -539,7 +539,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
                                   display:"flex",alignItems:"center",justifyContent:"center"}}>
                                 {isSel&&Li("check",9,T.on_accent)}
                               </div>
-                              <span style={{color:v.isIncome?T.pos:T.neg,fontSize:12,fontWeight:700,fontFamily:"monospace"}}>
+                              <span style={{color:v.isIncome?T.pos:T.neg,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>
                                 {v.isIncome?"+":"−"}{fmt2(amount)} €
                               </span>
                               <span style={{color:T.txt2,fontSize:9}}>{count}×</span>
@@ -780,7 +780,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
                             <span key={i} style={{
                               background:amount===pn(get(s.id,"amount")||s.amount)?"rgba(170,204,0,0.15)":"rgba(255,255,255,0.06)",
                               border:amount===pn(get(s.id,"amount")||s.amount)?`1px solid ${T.pos}44`:"1px solid transparent",
-                              borderRadius:5,padding:"2px 6px",fontSize:10,fontFamily:"monospace",
+                              borderRadius:5,padding:"2px 6px",fontSize:10,fontFamily:NUM_FONT,
                               color:isIncome?T.pos:T.neg,fontWeight:amount===pn(get(s.id,"amount")||s.amount)?700:400}}>
                               {count}× {isIncome?"+":"−"}{fmt2(amount)}
                             </span>
@@ -793,7 +793,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
                           onChange={e=>set_(s.id,"amount",e.target.value)} inputMode="decimal"
                           style={{width:88,background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bds}`,
                             borderRadius:7,padding:"4px 6px",color:isIncome?T.pos:T.neg,
-                            fontSize:13,fontWeight:700,fontFamily:"monospace",textAlign:"right",outline:"none"}}/>
+                            fontSize:13,fontWeight:700,fontFamily:NUM_FONT,textAlign:"right",outline:"none"}}/>
                       </div>
                     </div>
                     <div style={{display:"flex",gap:6,alignItems:"flex-start"}}>
@@ -942,7 +942,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
                           {v.firstDate.split("-").reverse().join(".")} – {v.lastDate.split("-").reverse().join(".")}
                         </span>
                         {v.repeatedAmounts.map(({amount,count},i)=>(
-                          <span key={i} style={{color:v.isIncome?T.pos:T.neg,fontFamily:"monospace",fontSize:10,
+                          <span key={i} style={{color:v.isIncome?T.pos:T.neg,fontFamily:NUM_FONT,fontSize:10,
                             background:"rgba(255,255,255,0.05)",borderRadius:4,padding:"1px 5px"}}>
                             {count}× {v.isIncome?"+":"−"}{fmt2(amount)}
                           </span>
@@ -971,7 +971,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
                                   display:"flex",alignItems:"center",justifyContent:"center"}}>
                                 {isSel&&Li("check",9,"#fff")}
                               </div>
-                              <span style={{color:v.isIncome?T.pos:T.neg,fontSize:12,fontWeight:700,fontFamily:"monospace"}}>
+                              <span style={{color:v.isIncome?T.pos:T.neg,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>
                                 {v.isIncome?"+":"−"}{fmt2(amount)} €
                               </span>
                               <span style={{color:T.txt2,fontSize:9}}>{count}×</span>
@@ -1085,7 +1085,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
                     <span>{v.count}× Buchungen</span>
                     <span>{v.firstDate.split("-").reverse().join(".")} – {v.lastDate.split("-").reverse().join(".")}</span>
                     {v.repeatedAmounts.map(({amount,count},i)=>(
-                      <span key={i} style={{color:v.isIncome?T.pos:T.neg,fontFamily:"monospace",fontSize:10}}>
+                      <span key={i} style={{color:v.isIncome?T.pos:T.neg,fontFamily:NUM_FONT,fontSize:10}}>
                         {count}× {v.isIncome?"+":"−"}{fmt2(amount)}
                       </span>
                     ))}

@@ -9,7 +9,7 @@ import { WerkzeugeSection } from "../organisms/WerkzeugeSection.jsx";
 import { MonatScreen } from "./MonatScreen.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
-import { fmt, uid } from "../../utils/format.js";
+import { fmt, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { budgetPlaceholderActive } from "../../utils/saldo.js";
@@ -551,7 +551,7 @@ function TransactionsScreen() {
                         {/* Betrag */}
                         <div style={{textAlign:"right",flexShrink:0}}>
                           <div style={{color:tx.pending?T.gold:type==="income"?T.pos:T.neg,
-                            fontSize:12,fontWeight:700,fontFamily:"monospace",whiteSpace:"nowrap"}}>
+                            fontSize:12,fontWeight:700,fontFamily:NUM_FONT,whiteSpace:"nowrap"}}>
                             {type==="income"?"+":"−"}{fmt(tx.totalAmount)}
                           </div>
                         </div>

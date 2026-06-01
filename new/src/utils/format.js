@@ -1,5 +1,10 @@
 // Auto-generated module (siehe app-src.jsx)
 
+// Schriftart für Geldbeträge: geometrische, runde Sans im Stil von Century Gothic.
+// Bevorzugt Century Gothic (Windows) bzw. Futura (nativ auf iOS/macOS) — beide
+// ohne Download/Lizenzfrage; danach freie/Systemfallbacks.
+const NUM_FONT = '"Century Gothic","Futura","Avenir Next","Questrial",system-ui,sans-serif';
+
 const fmt = v => {
   if (v===""||v==null) return "";
   const n = parseFloat(String(v).replace(",","."));
@@ -29,4 +34,4 @@ const drillSort = (a, b) => {
   return b.date.localeCompare(a.date);
 };
 
-export { fmt, pn, uid, dayOf, drillSort };
+export { fmt, pn, uid, dayOf, drillSort, NUM_FONT };

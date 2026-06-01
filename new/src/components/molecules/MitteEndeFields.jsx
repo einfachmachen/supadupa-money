@@ -3,7 +3,7 @@
 import React, { useContext, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
-import { fmt, pn } from "../../utils/format.js";
+import { fmt, pn, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
 function MitteEndeFields({tx, pal, fulfilled, needsHatch, effE=""}) {
@@ -79,7 +79,7 @@ function MitteEndeFields({tx, pal, fulfilled, needsHatch, effE=""}) {
                 <div style={{padding:"0 5px 5px"}}>
                   {col!=="D"&&hasItems
                     ? <div onClick={()=>setOpenCol(isExpanded?null:col)}
-                        style={{textAlign:"right",color:pal.val,fontSize:12,fontWeight:700,fontFamily:"monospace",
+                        style={{textAlign:"right",color:pal.val,fontSize:12,fontWeight:700,fontFamily:NUM_FONT,
                           padding:"4px 5px",borderRadius:7,background:bg,minHeight:24,
                           display:"flex",alignItems:"center",justifyContent:"flex-end",cursor:"pointer"}}>
                         {fmt(autoSum)}
@@ -93,7 +93,7 @@ function MitteEndeFields({tx, pal, fulfilled, needsHatch, effE=""}) {
                         inputMode="decimal"
                         style={{background:bg,border:`1px solid ${isGold&&stored?T.gold+"55":stored?pal.bd:"transparent"}`,
                           outline:"none",color:stored?pal.val:"rgba(150,160,175,0.35)",
-                          fontSize:12,fontFamily:"monospace",fontWeight:600,textAlign:"right",width:"100%",
+                          fontSize:12,fontFamily:NUM_FONT,fontWeight:600,textAlign:"right",width:"100%",
                           padding:"4px 5px",borderRadius:7,boxSizing:"border-box",minHeight:24}}
                       />
                   }
@@ -115,14 +115,14 @@ function MitteEndeFields({tx, pal, fulfilled, needsHatch, effE=""}) {
                           onChange={e => updatePendingAmount(item.txId, e.target.value)}
                           inputMode="decimal"
                           style={{background:"rgba(255,255,255,0.06)",border:`1px solid ${pal.bd}`,outline:"none",
-                            color:pal.val,fontSize:12,fontFamily:"monospace",fontWeight:700,textAlign:"right",
+                            color:pal.val,fontSize:12,fontFamily:NUM_FONT,fontWeight:700,textAlign:"right",
                             width:"100%",padding:"4px 6px",borderRadius:7,boxSizing:"border-box"}}
                         />
                       </div>
                     ))}
                     <div style={{borderTop:`1px solid ${pal.bd}`,marginTop:4,paddingTop:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                       <span style={{color:"rgba(200,210,230,0.4)",fontSize:9}}>Summe</span>
-                      <span style={{color:pal.val,fontSize:12,fontWeight:800,fontFamily:"monospace"}}>{fmt(sumOf(col))}</span>
+                      <span style={{color:pal.val,fontSize:12,fontWeight:800,fontFamily:NUM_FONT}}>{fmt(sumOf(col))}</span>
                     </div>
                   </div>
                 )}

@@ -6,7 +6,7 @@ import { IconPickerDialog } from "./IconPickerDialog.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
-import { fmt, pn, uid } from "../../utils/format.js";
+import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
 function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert}) {
@@ -503,7 +503,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                             value={budgetEdits[sub.id+"_M"]||""}
                             onChange={e=>setBudgetEdits(p=>({...p,[sub.id+"_M"]:e.target.value.replace(/[^0-9,.]/g,"")}))}
                             placeholder="0,00"
-                            style={{...inp({fontWeight:700,textAlign:"right",fontFamily:"monospace",marginBottom:0})}}/>
+                            style={{...inp({fontWeight:700,textAlign:"right",fontFamily:NUM_FONT,marginBottom:0})}}/>
                         </div>
                         <div style={{flex:1}}>
                           <div style={{color:T.txt2,fontSize:S.fs-8,marginBottom:3}}>Gesamt</div>
@@ -511,7 +511,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                             value={budgetEdits[sub.id+"_G"]||""}
                             onChange={e=>setBudgetEdits(p=>({...p,[sub.id+"_G"]:e.target.value.replace(/[^0-9,.]/g,"")}))}
                             placeholder="0,00"
-                            style={{...inp({fontWeight:700,textAlign:"right",fontFamily:"monospace",marginBottom:0})}}/>
+                            style={{...inp({fontWeight:700,textAlign:"right",fontFamily:NUM_FONT,marginBottom:0})}}/>
                         </div>
                       </div>
                       {amtG>0&&<div style={{color:T.txt2,fontSize:S.fs-8,marginBottom:S.gap/2,textAlign:"right"}}>

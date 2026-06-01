@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { SaldoHero2 } from "./SaldoHero2.jsx";
 import { theme as T } from "../../theme/activeTheme.js";
-import { dayOf, fmt, pn } from "../../utils/format.js";
+import { dayOf, fmt, pn, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { budgetPlaceholderActive } from "../../utils/saldo.js";
@@ -87,13 +87,13 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
                 </div>
                 <span style={{color:isMitte?T.mid:T.gold,fontSize:11,flexShrink:0}}>{isMitte?"Mitte":"Ende"}</span>
                 {rest==null ? (
-                  <span style={{color:T.txt2,fontSize:15,fontFamily:"monospace",flexShrink:0}}>—</span>
+                  <span style={{color:T.txt2,fontSize:15,fontFamily:NUM_FONT,flexShrink:0}}>—</span>
                 ) : over ? (
-                  <span style={{color:T.neg,fontSize:15,fontWeight:700,fontFamily:"monospace",flexShrink:0}}>{fmt(Math.abs(rest))} drüber</span>
+                  <span style={{color:T.neg,fontSize:15,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>{fmt(Math.abs(rest))} drüber</span>
                 ) : (
                   <span style={{display:"inline-flex",alignItems:"baseline",gap:4,flexShrink:0}}>
                     <span style={{color:T.txt2,fontSize:10}}>offen:</span>
-                    <span style={{color:T.gold,fontSize:15,fontWeight:700,fontFamily:"monospace"}}>{fmt(rest)}</span>
+                    <span style={{color:T.gold,fontSize:15,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(rest)}</span>
                   </span>
                 )}
                 <span style={{color:T.txt2,flexShrink:0}}>{Li("chevron-right",14)}</span>
@@ -114,7 +114,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
                 <div style={{color:T.txt2,fontSize:11}}>{tx.date}{tx._seriesId&&tx._seriesTotal>1&&tx._seriesIdx&&tx._seriesTyp==="finanzierung"?` · ${tx._seriesIdx}/${tx._seriesTotal}`:""}</div>
               </div>
               <span style={{color:day<=14?T.mid:T.gold,fontSize:11,flexShrink:0}}>{day<=14?"Mitte":"Ende"}</span>
-              <span style={{color:col,fontSize:15,fontWeight:700,fontFamily:"monospace",flexShrink:0}}>
+              <span style={{color:col,fontSize:15,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
                 {fmt(_pendOpenAmt(tx))}
               </span>
               <span style={{color:T.txt2,flexShrink:0}}>{Li(isS?(isExpanded?"chevron-up":"chevron-down"):"chevron-right",14)}</span>
@@ -133,7 +133,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
                         overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                         {sSub?.name||sCat?.name||"?"}
                       </span>
-                      <span style={{color:col,fontSize:11,fontWeight:700,fontFamily:"monospace",flexShrink:0}}>
+                      <span style={{color:col,fontSize:11,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
                         {isIncome?"+":"−"}{fmt(pn(s.amount))}
                       </span>
                     </div>

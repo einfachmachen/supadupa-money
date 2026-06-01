@@ -7,7 +7,7 @@ import { MobileWiederkehrendModal } from "./MobileWiederkehrendModal.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
-import { fmt, pn, uid } from "../../utils/format.js";
+import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { nextBankWorkday } from "../../utils/date.js";
 import { Li } from "../../utils/icons.jsx";
 
@@ -358,7 +358,7 @@ function MobileVormerkenModal({onClose, onBack}) {
                 borderRadius:S.radius,
                 border:`2px solid ${amount?T.blue:T.bd}`,
                 background:"rgba(255,255,255,0.06)",color:T.txt,
-                fontSize:S.fs,fontWeight:700,fontFamily:"monospace",
+                fontSize:S.fs,fontWeight:700,fontFamily:NUM_FONT,
                 textAlign:"right",outline:"none"}}
             />
             {amount&&<span style={{position:"absolute",right:S.padL,top:"50%",

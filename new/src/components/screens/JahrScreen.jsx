@@ -6,7 +6,7 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { getBC } from "../../theme/palette.js";
 import { groupBudgetPairs } from "../../utils/budgets.js";
 import { BASE_ROWS, CUR_YEAR, MONTHS_F, MONTHS_S } from "../../utils/constants.js";
-import { drillSort, fmt, pn, uid } from "../../utils/format.js";
+import { drillSort, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { saldoAt, saldoMitte, saldoEnde } from "../../utils/saldo.js";
 
@@ -303,7 +303,7 @@ function JahrScreen({forceSingle=false}) {
                   position:"relative",
                   ...(rowHatch ? {backgroundImage:"repeating-linear-gradient(45deg,rgba(0,0,0,0.06) 0,rgba(0,0,0,0.06) 2px,transparent 0,transparent 50%)",backgroundSize:"6px 6px"} : {}),
                 }}>
-                <span style={{fontSize:7,fontFamily:"monospace",
+                <span style={{fontSize:7,fontFamily:NUM_FONT,
                   fontWeight:["result","highlight","auto","pending"].includes(row.type)?700:500,
                   color: textCol,
                   whiteSpace:"nowrap",
@@ -335,14 +335,14 @@ function JahrScreen({forceSingle=false}) {
                           }))}
                           inputMode="decimal"
                           style={{background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bds}`,outline:"none",
-                            color:T.txt,fontSize:10,fontFamily:"monospace",fontWeight:700,textAlign:"right",
+                            color:T.txt,fontSize:10,fontFamily:NUM_FONT,fontWeight:700,textAlign:"right",
                             width:"100%",padding:"3px 6px",borderRadius:6,boxSizing:"border-box"}}
                         />
                       </div>
                     ))}
                     <div style={{borderTop:"1px solid rgba(61,126,170,0.15)",marginTop:4,paddingTop:4,display:"flex",justifyContent:"space-between"}}>
                       <span style={{color:T.txt2,fontSize:8}}>Σ</span>
-                      <span style={{color:T.txt,fontSize:10,fontWeight:800,fontFamily:"monospace"}}>{fmt(pendItems.reduce((s,i)=>s+pn(i.amount),0))}</span>
+                      <span style={{color:T.txt,fontSize:10,fontWeight:800,fontFamily:NUM_FONT}}>{fmt(pendItems.reduce((s,i)=>s+pn(i.amount),0))}</span>
                     </div>
                   </div>
                 )}
@@ -375,7 +375,7 @@ function JahrScreen({forceSingle=false}) {
               {/* Current value display */}
               <div style={{background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"7px 10px",marginBottom:14,border:"1px solid rgba(61,126,170,0.15)"}}>
                 <div style={{color:T.txt2,fontSize:10,marginBottom:2}}>Aktueller Wert</div>
-                <div style={{color:popup.sub==="D"?T.gold:T.txt,fontSize:22,fontWeight:800,fontFamily:"monospace",textAlign:"right"}}>
+                <div style={{color:popup.sub==="D"?T.gold:T.txt,fontSize:22,fontWeight:800,fontFamily:NUM_FONT,textAlign:"right"}}>
                   {popup.val ? fmt(pn(popup.val)) : "–"}
                 </div>
               </div>
@@ -402,7 +402,7 @@ function JahrScreen({forceSingle=false}) {
                 placeholder="0,00"
                 style={{width:"100%",background:"rgba(170,204,0,0.08)",border:`1px solid ${T.bds}`,
                   borderRadius:11,padding:"13px 14px",color:T.txt,fontSize:18,fontWeight:700,
-                  outline:"none",textAlign:"right",boxSizing:"border-box",fontFamily:"monospace",
+                  outline:"none",textAlign:"right",boxSizing:"border-box",fontFamily:NUM_FONT,
                   marginBottom:12}}
               />
               {/* Quick buttons */}
@@ -527,7 +527,7 @@ function JahrScreen({forceSingle=false}) {
                             borderTop:i===3?`1px solid ${T.bds}`:undefined,
                             paddingTop:i===3?3:0}}>
                             <span style={{color:T.txt2}}>{label}</span>
-                            <span style={{color:col,fontFamily:"monospace",fontWeight:i===3?700:400}}>
+                            <span style={{color:col,fontFamily:NUM_FONT,fontWeight:i===3?700:400}}>
                               {val>=0?"+":"−"}{fmt(Math.abs(val))}
                             </span>
                           </div>
@@ -562,9 +562,9 @@ function JahrScreen({forceSingle=false}) {
                           </div>
                           <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
                             <span style={{color:T.mid,fontSize:10}}>Mitte</span>
-                            <span style={{color:col2,fontSize:11,fontWeight:700,fontFamily:"monospace"}}>−{fmt(tx._mitteAmt)}</span>
+                            <span style={{color:col2,fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(tx._mitteAmt)}</span>
                             <span style={{color:T.gold,fontSize:10}}>Gesamt</span>
-                            <span style={{color:col2,fontSize:11,fontWeight:700,fontFamily:"monospace"}}>−{fmt(tx._mitteAmt+tx._endeAmt)}</span>
+                            <span style={{color:col2,fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(tx._mitteAmt+tx._endeAmt)}</span>
                           </div>
                         </div>
                       );
@@ -662,18 +662,18 @@ function JahrScreen({forceSingle=false}) {
                         </div>
                         {/* Betrag */}
                         <div style={{textAlign:"right",flexShrink:0}}>
-                          <div style={{color:txType(tx)==="income"?T.pos:T.neg,fontSize:13,fontWeight:700,fontFamily:"monospace"}}>
+                          <div style={{color:txType(tx)==="income"?T.pos:T.neg,fontSize:13,fontWeight:700,fontFamily:NUM_FONT}}>
                             {txType(tx)==="income"?"+":"−"}{fmt(amt)}
                           </div>
                           {isS&&(
                             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1,marginTop:2}}>
-                              <div style={{color:T.txt2,fontSize:9,fontFamily:"monospace",whiteSpace:"nowrap"}}>
+                              <div style={{color:T.txt2,fontSize:9,fontFamily:NUM_FONT,whiteSpace:"nowrap"}}>
                                 {Li("arrow-left-right",8,T.blue)} Gesamt: {fmt(tx.totalAmount)}
                               </div>
                               {(tx.splits||[]).filter(sp=>sp.catId&&sp.subId!==drilldown.subId).map(sp=>{
                                 const oCat=getCat(sp.catId), oSub=getSub(sp.catId,sp.subId);
                                 return (
-                                  <div key={sp.id} style={{color:T.txt2,fontSize:9,fontFamily:"monospace",whiteSpace:"nowrap"}}>
+                                  <div key={sp.id} style={{color:T.txt2,fontSize:9,fontFamily:NUM_FONT,whiteSpace:"nowrap"}}>
                                     <span style={{color:oCat?.color||T.txt2}}>{oSub?.name||oCat?.name||"?"}</span>: {fmt(pn(sp.amount))}
                                   </div>
                                 );

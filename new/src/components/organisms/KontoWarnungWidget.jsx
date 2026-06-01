@@ -5,7 +5,7 @@ import { MonatScreen } from "../screens/MonatScreen.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { MONTHS_S } from "../../utils/constants.js";
-import { fmt, pn } from "../../utils/format.js";
+import { fmt, pn, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { restMitte, restEnde, phaseStillReachable, saldoAnchor } from "../../utils/saldo.js";
 import { isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
@@ -257,7 +257,7 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
                   }
                 </div>
                 {!hasMultiple&&<div style={{color:T.txt2,fontSize:10,marginTop:2}}>
-                  {w.nextPos?(()=>{const[,wm,wd]=(w.nextPos.date||"").split("-");return<>Ausgleichen bis <span style={{color:T.gold,fontWeight:700}}>{parseInt(wd)}.{parseInt(wm)}.</span>{w.nextPos.name&&` (${w.nextPos.name})`} — mindestens <span style={{color:T.neg,fontWeight:700,fontFamily:"monospace"}}>{fmt(w.deficit)} €</span> einplanen</>})():<>Kein Ausgleich — mindestens <span style={{color:T.neg,fontWeight:700,fontFamily:"monospace"}}>{fmt(w.deficit)} €</span> fehlen</>}
+                  {w.nextPos?(()=>{const[,wm,wd]=(w.nextPos.date||"").split("-");return<>Ausgleichen bis <span style={{color:T.gold,fontWeight:700}}>{parseInt(wd)}.{parseInt(wm)}.</span>{w.nextPos.name&&` (${w.nextPos.name})`} — mindestens <span style={{color:T.neg,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(w.deficit)} €</span> einplanen</>})():<>Kein Ausgleich — mindestens <span style={{color:T.neg,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(w.deficit)} €</span> fehlen</>}
                 </div>}
               </div>
               {hasMultiple&&<div style={{color:T.txt2,fontSize:10,flexShrink:0}}>
@@ -278,7 +278,7 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
                   </div>
                   <div style={{color:T.txt2,fontSize:10}}>
                     {nextLabel
-                      ? <>Ausgleichen bis <span style={{color:T.gold,fontWeight:700}}>{nextLabel}</span>{d.nextPos?.name&&` (${d.nextPos.name})`} — mindestens <span style={{color:T.neg,fontWeight:700,fontFamily:"monospace"}}>{fmt(d.deficit)} €</span></>
+                      ? <>Ausgleichen bis <span style={{color:T.gold,fontWeight:700}}>{nextLabel}</span>{d.nextPos?.name&&` (${d.nextPos.name})`} — mindestens <span style={{color:T.neg,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(d.deficit)} €</span></>
                       : <>Kein Ausgleich im Monat</>}
                   </div>
                 </div>
