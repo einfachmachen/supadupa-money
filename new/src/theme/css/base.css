@@ -11,8 +11,14 @@
 /* Beträge laufen in Questrial (nur Schnitt 400). Synthetisches Fett global
    abschalten → Geldbeträge rendern dezent/regulär statt faux-bold (das fett
    wirkende fontWeight:700 läuft so ins Leere). Systemschriften mit echtem
-   Bold-/Italic-Schnitt bleiben unberührt; echtes Kursiv funktioniert weiter. */
-*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif; font-synthesis: none; }
+   Bold-/Italic-Schnitt bleiben unberührt; echtes Kursiv funktioniert weiter.
+   Zusätzlich: ALLE Texte regulär (font-weight 400) — Fett nur dort, wo es
+   explizit per .heroAmt wieder eingeschaltet wird. */
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif; font-synthesis: none; font-weight: 400 !important; }
+/* Ausnahme: Kontostand sowie Mitte-/Ende-Betrag im Hero fett.
+   font-synthesis:weight erlaubt das (faux-)Fett für die single-weight Questrial;
+   höhere Spezifität als der *-Selektor → gewinnt trotz beider !important. */
+.heroAmt { font-weight: 700 !important; font-synthesis: weight; }
     body { background:#2C3035; overflow:hidden; }
     #root { height:100vh; }
     body { overflow: hidden; }

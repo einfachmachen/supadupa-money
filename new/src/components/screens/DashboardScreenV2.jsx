@@ -756,7 +756,7 @@ function DashboardScreenV2() {
                       }}>
                       {accLabel}
                     </div>
-                    <div style={{
+                    <div className="heroAmt" style={{
                       color: saldo>=0 ? T.pos : T.neg,
                       fontSize:32,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
                       letterSpacing:-0.5,lineHeight:1.1,
@@ -776,7 +776,7 @@ function DashboardScreenV2() {
                         background: heroProgDrill==="Mitte" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
                       <div style={{color:T.mid||T.txt2,fontSize:10,fontWeight:700,
                         letterSpacing:1,marginBottom:2}}>MITTE</div>
-                      <div style={{color: prognoseMitte>=0?T.pos:T.neg,
+                      <div className="heroAmt" style={{color: prognoseMitte>=0?T.pos:T.neg,
                         fontSize:20,fontWeight:500,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
                         {prognoseMitte>=0?"":"−"}{fmtMoney(Math.abs(prognoseMitte||0))}
                       </div>
@@ -796,7 +796,7 @@ function DashboardScreenV2() {
                         background: heroProgDrill==="Ende" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
                       <div style={{color:T.gold||T.txt2,fontSize:10,fontWeight:700,
                         letterSpacing:1,marginBottom:2}}>ENDE</div>
-                      <div style={{color: prognoseEnde>=0?T.pos:T.neg,
+                      <div className="heroAmt" style={{color: prognoseEnde>=0?T.pos:T.neg,
                         fontSize:20,fontWeight:500,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
                         {prognoseEnde>=0?"":"−"}{fmtMoney(Math.abs(prognoseEnde||0))}
                       </div>
