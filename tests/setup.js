@@ -1,28 +1,80 @@
 // Globales Test-Setup.
 //
-// Stellt sicher, dass das globale `localStorage` auf jsdoms echte
-// Implementierung (`window.localStorage`) zeigt – unabhaengig von der
-// Node-Version. Node >= 22 bringt ein eigenes Web-Storage mit, das ohne
-// `--localstorage-file` deaktiviert ist und das globale `localStorage`
-// ueberschattet. Ohne diesen Shim scheitern die Tests sonst mit
+// Stellt ein vollwertiges, deterministisches `localStorage` bereit –
+// unabhaengig von der Node-Version. Node >= 22 bringt ein eigenes Web-Storage
+// mit, das ohne `--localstorage-file` deaktiviert ist und sowohl das globale
+// `localStorage` als auch jsdoms `window.localStorage` unbrauchbar macht.
+// Ohne diesen Shim scheitern die Tests mit
 // "Cannot read properties of undefined (reading 'clear')".
 //
-// Wir biegen das globale `localStorage` bewusst auf `window.localStorage`,
-// damit Tests (globales `localStorage`) und App-Code (ggf. `window.localStorage`)
-// denselben Speicher benutzen.
+// Wichtig: Der Ersatz verhaelt sich wie echtes localStorage – insbesondere
+// liefert `Object.keys(localStorage)` die gespeicherten Schluessel (kvStore.js
+// nutzt das fuer die Migration). Daher liegen die Werte als eigene,
+// enumerierbare Properties auf dem Objekt, die Methoden sind non-enumerable.
 
-if (typeof window !== "undefined" && window.localStorage) {
+function createStorage() {
+  const s = {};
+  Object.defineProperties(s, {
+    getItem: {
+      value(key) {
+        const k = String(key);
+        return Object.prototype.hasOwnProperty.call(s, k) ? s[k] : null;
+      },
+      enumerable: false,
+    },
+    setItem: {
+      value(key, value) {
+        s[String(key)] = String(value);
+      },
+      enumerable: false,
+    },
+    removeItem: {
+      value(key) {
+        delete s[String(key)];
+      },
+      enumerable: false,
+    },
+    clear: {
+      value() {
+        for (const k of Object.keys(s)) delete s[k];
+      },
+      enumerable: false,
+    },
+    key: {
+      value(index) {
+        return Object.keys(s)[index] ?? null;
+      },
+      enumerable: false,
+    },
+    length: {
+      get() {
+        return Object.keys(s).length;
+      },
+      enumerable: false,
+    },
+  });
+  return s;
+}
+
+const storage = createStorage();
+
+function install(target) {
+  if (!target) return;
   try {
-    Object.defineProperty(globalThis, "localStorage", {
-      value: window.localStorage,
+    Object.defineProperty(target, "localStorage", {
+      value: storage,
       configurable: true,
       writable: true,
     });
   } catch {
     try {
-      globalThis.localStorage = window.localStorage;
+      target.localStorage = storage;
     } catch {
-      /* read-only Global – nicht ueberschreibbar, ignorieren */
+      /* nicht ueberschreibbar – ignorieren */
     }
   }
 }
+
+install(globalThis);
+if (typeof window !== "undefined") install(window);
+if (typeof global !== "undefined") install(global);
