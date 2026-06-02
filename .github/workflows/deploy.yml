@@ -26,20 +26,18 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
-          cache-dependency-path: new/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        working-directory: ./new
         run: npm ci --no-audit --no-fund
 
       - name: Build app
-        working-directory: ./new
         run: npm run build -- --base=/${{ github.event.repository.name }}/
 
       - name: Assemble site
         run: |
           mkdir -p _site
-          cp -r new/dist/* _site/
+          cp -r dist/* _site/
           echo "── Site-Inhalt ──"
           find _site -maxdepth 2 -type f | head -30
 

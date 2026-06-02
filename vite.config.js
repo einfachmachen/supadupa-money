@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 
 // Base-URL für Deploy:
 //   • lokal:                       base = "/"          (Standard)
-//   • GitHub Pages /supadupa/new/:  base = "/supadupa/new/"
+//   • GitHub Pages (Projektseite):  base = "/<repo-name>/" (autom. via deploy.yml)
 // Wird gesetzt via Env-Var VITE_BASE oder beim Build via --base=...
 export default defineConfig(() => ({
   plugins: [react()],
