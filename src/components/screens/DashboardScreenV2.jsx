@@ -742,28 +742,19 @@ function DashboardScreenV2() {
 
               return (
                 <div style={{padding:"12px 20px 6px"}}>
-                  {/* Zeile 1: Konto-Name links klein + Saldo rechts groß */}
-                  <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",
-                    gap:12,userSelect:"none"}}>
-                    <div onClick={cycleAcc}
-                      style={{
-                        color:selAcc===null ? T.txt2 : T.blue,
-                        fontSize:32,fontWeight:700,
-                        lineHeight:1.1,
-                        cursor:"pointer",
-                        minWidth:0,
-                        overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
-                      }}>
-                      {accLabel}
-                    </div>
-                    <div className="heroAmt" style={{
+                  {/* Zeile 1: aktueller Kontostand groß & zentriert (wie klassisches
+                      Layout). Tippen wechselt durch die Konten. Der Kontoname sitzt
+                      jetzt klein/zentriert in der MITTE/ENDE-Zeile (siehe unten). */}
+                  <div onClick={allAccIds.length>1?cycleAcc:undefined}
+                    style={{textAlign:"center",userSelect:"none",
+                      cursor:allAccIds.length>1?"pointer":"default"}}>
+                    <span className="heroAmt" style={{
                       color: saldo>=0 ? T.pos : T.neg,
-                      fontSize:32,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
+                      fontSize:38,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
                       letterSpacing:-0.5,lineHeight:1.1,
-                      textAlign:"right",minWidth:0,flexShrink:0,
                     }}>
                       {saldo>=0?"":"−"}{fmtMoney(Math.abs(saldo||0))} €
-                    </div>
+                    </span>
                   </div>
 
                   {/* Zeile 2: MITTE | ENDE-Pillen (gleiche Schriftgröße wie Cat-Pillen)
@@ -798,15 +789,26 @@ function DashboardScreenV2() {
                         {prognoseEnde>=0?"":"−"}{fmtMoney(Math.abs(prognoseEnde||0))}
                       </div>
                     </div>
-                    {/* Caret-Toggle: absolut mittig überlagert (keine Spaltenbreite) */}
+                    {/* Mittig überlagert (beansprucht keine Spaltenbreite, damit die
+                        MITTE/ENDE-Beträge weiter exakt über den Kategorie-Pillen fluchten):
+                        Kontoname klein & zentriert + Caret-Toggle darunter. */}
                     <div style={{position:"absolute",left:0,right:0,top:0,bottom:0,
-                      display:"flex",alignItems:"center",justifyContent:"center",
-                      pointerEvents:"none"}}>
+                      display:"flex",flexDirection:"column",alignItems:"center",
+                      justifyContent:"center",gap:1,pointerEvents:"none"}}>
+                      <span onClick={allAccIds.length>1?cycleAcc:undefined}
+                        title={allAccIds.length>1?"Konto wechseln":undefined}
+                        style={{pointerEvents:"auto",userSelect:"none",
+                          cursor:allAccIds.length>1?"pointer":"default",
+                          color:selAcc===null ? T.txt2 : T.blue,
+                          fontSize:11,fontWeight:700,letterSpacing:0.5,
+                          maxWidth:96,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                        {accLabel}
+                      </span>
                       <span onClick={()=>setDetailsOpen(v=>!v)}
                         title={detailsOpen?"Details ausblenden":"Details anzeigen"}
                         style={{pointerEvents:"auto",cursor:"pointer",userSelect:"none",opacity:0.7,
-                          display:"inline-flex",alignItems:"center",justifyContent:"center",padding:"0 8px"}}>
-                        {Li(detailsOpen?"chevron-up":"chevron-down",22,T.txt2)}
+                          display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
+                        {Li(detailsOpen?"chevron-up":"chevron-down",18,T.txt2)}
                       </span>
                     </div>
                   </div>
