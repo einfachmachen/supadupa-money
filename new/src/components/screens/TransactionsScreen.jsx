@@ -1,6 +1,6 @@
 // Auto-generated module (siehe app-src.jsx)
 
-import React, { useContext, useMemo, useRef, useState } from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { CatPicker } from "../molecules/CatPicker.jsx";
 import { AddTxModal } from "../organisms/AddTxModal.jsx";
 import { BudgetEditorModal } from "../organisms/BudgetEditorModal.jsx";
@@ -39,6 +39,11 @@ function TransactionsScreen() {
     const [bulkAccId, setBulkAccId] = useState("");
     const [filtAcc, setFiltAcc] = useState("");
     const [hideLinked, setHideLinked] = useState(true);
+    // PERFORMANCE: nur die ersten N Treffer rendern (jede Zeile mit Verknüpfungen
+    // macht sonst txs.filter → O(txs) pro Zeile). Auswahl/Zähler bleiben über die
+    // volle Liste; nur das DOM ist gedeckelt. Bei Filter-/Suchwechsel zurücksetzen.
+    const PAGE = 80;
+    const [visibleCount, setVisibleCount] = useState(PAGE);
     const [showAllCats, setShowAllCats] = useState(false);
     const [activeCatTxId, setActiveCatTxId] = useState(null);
     const pendingCatsRef = useRef({});
@@ -102,6 +107,10 @@ function TransactionsScreen() {
       list = [...list].sort((a,b)=>b.date.localeCompare(a.date));
       return list;
     },[txs,filt,search,cats,groups,filtAcc,hideLinked,linkedChildIds]);
+
+    // Sichtbare Anzahl bei Filter-/Suchwechsel zurücksetzen
+    useEffect(()=>{ setVisibleCount(PAGE); }, [filt,search,filtAcc,hideLinked]);
+    const shownList = filteredList.slice(0, visibleCount);
 
     const allSelected = filteredList.length>0 && filteredList.every(t=>selected.has(t.id));
     const toggleAll   = () => setSelected(allSelected
@@ -402,7 +411,7 @@ function TransactionsScreen() {
               </div>
             : <div style={{background:"rgba(255,255,255,0.04)",borderRadius:18,
                 padding:"4px 14px",border:`1px solid ${T.bd}`}}>
-                {filteredList.map((tx,i)=>{
+                {shownList.map((tx,i)=>{
                   const cat=getCat((tx.splits||[])[0]?.catId);
                   const type=txType(tx);
                   const isS=(tx.splits||[]).length>1;
@@ -427,7 +436,7 @@ function TransactionsScreen() {
                     : rawDesc;
                   return (
                     <div key={tx.id}
-                      style={{borderBottom:i<filteredList.length-1?"1px solid rgba(255,255,255,0.05)":"none",
+                      style={{borderBottom:i<shownList.length-1?"1px solid rgba(255,255,255,0.05)":"none",
                         background:isSel?"rgba(74,159,212,0.06)":"transparent",
                         borderRadius:isSel?8:0,margin:isSel?"2px -4px":"0",
                         padding:"1px 0"}}>
@@ -581,6 +590,13 @@ function TransactionsScreen() {
                     </div>
                   );
                 })}
+                {filteredList.length>visibleCount && (
+                  <div onClick={()=>setVisibleCount(c=>c+PAGE*4)}
+                    style={{textAlign:"center",padding:"12px",cursor:"pointer",
+                      color:T.blue,fontSize:13,borderTop:`1px solid ${T.bd}`}}>
+                    + {filteredList.length-visibleCount} weitere anzeigen
+                  </div>
+                )}
               </div>
           }
         </div>

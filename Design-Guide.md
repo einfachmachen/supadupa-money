@@ -212,7 +212,38 @@ reservierten Prognosewert (siehe `valuePill(..., {colorVal})` in V2).
 
 ---
 
-## 11. Konventionen
+## 11. Performance (Konventionen + bekannte Hotspots)
+
+Die App hält bis zu 10.000+ Buchungen im Context. Daraus folgen verbindliche Regeln:
+
+- **Lange Listen deckeln/virtualisieren.** Nie tausende Zeilen direkt rendern.
+  `TransactionsScreen` rendert nur die ersten `PAGE` (80) Treffer + „mehr
+  anzeigen" (Auswahl/Zähler laufen über die volle Liste). Gilt analog für künftige
+  große Listen.
+- **Teure Aggregationen in `useMemo`** mit minimalen Deps (i. d. R.
+  `[txs, year, month, selAcc]`). Pro-Kategorie/Sub-Summen einmal als Map bauen
+  (`_catTxMaps`), nicht je Zeile neu filtern.
+- **Kein O(txs) pro Zeile.** Innerhalb von `.map()` über Kategorien/Tage/Zeilen
+  keine `txs.filter/find/some` (sonst O(Zeilen × txs)). Stattdessen vorindizierte
+  Map nutzen.
+- **Datumsvergleich per ISO-String statt `new Date()`** in heißen Schleifen:
+  `t.date.slice(0,7)===\`${y}-${mm}\`` bzw. `t.date.localeCompare(b.date)` zum
+  Sortieren. `new Date(t.date)` in Filtern über alle txs ist teuer (und
+  zeitzonenanfällig).
+- **Zentrale Helfer statt Eigenrechnung:** Salden über `utils/saldo.js`, Summen
+  über vorhandene Maps; nicht in der UI duplizieren.
+
+**Noch offene Beschleunigungspotenziale (Stand 2026-06, priorisiert):**
+1. `AppCtx.Provider value={cx}` ist ein **frisches Objekt pro Render** und kein
+   Screen ist `React.memo` → bei jeder Interaktion rendert nahezu der ganze Baum.
+   Größter Hebel; erfordert `useMemo` für `cx` **und** `React.memo` auf den Screens
+   zusammen (sonst wirkungslos). Sorgfältig + testen.
+2. `MonatScreen` rendert alle Tage/Buchungen eines Monats ohne Windowing; pro
+   Tages-Header laufen `txs.filter` mit `new Date` → ISO-Vergleich + Vorgruppierung.
+3. Restliche `new Date()`-Schleifen (DashboardScreen v1, Budget-Helfer) auf
+   ISO-String-Ops umstellen.
+
+## 12. Konventionen
 
 - **UI-Sprache: Deutsch.** Code/Token/Props in Englisch.
 - Viele Dateien tragen den Kopf „Auto-generated module" — sie werden **direkt**
