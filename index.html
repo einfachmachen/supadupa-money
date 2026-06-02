@@ -7,11 +7,12 @@
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
   <meta name="theme-color" content="#2C3035">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="MyBudgetTracker">
-  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon.svg">
 
   <script>
     // Service Worker
@@ -35,7 +36,8 @@
   <div id="root"></div>
   <div id="loading">
     <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#AACC00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:12px">
-      <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+      <path d="M2 20 L6.2 16 L10.4 18.9 L14.6 11.5 L18.8 14.4 L22 4"/>
+      <circle cx="22" cy="4" r="1.5" fill="#AACC00" stroke="none"/>
     </svg>
     <div style="font-size:16px;font-weight:700;letter-spacing:0.5px">MyBudgetTracker</div>
     <div style="font-size:12px;margin-top:4px;opacity:0.6">lädt…</div>
