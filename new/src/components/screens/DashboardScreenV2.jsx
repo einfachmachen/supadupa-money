@@ -767,8 +767,13 @@ function DashboardScreenV2() {
                   </div>
 
                   {/* Zeile 2: MITTE | ENDE-Pillen (gleiche Schriftgröße wie Cat-Pillen)
-                      mit Caret-Toggle für Buch./VM-Details rechts */}
-                  <div style={{display:"flex",gap:6,marginTop:10,alignItems:"stretch"}}>
+                      mit Caret-Toggle für Buch./VM-Details.
+                      Geometrie exakt wie die Kategorie-Pillen: zwei flex:1-Hälften,
+                      6px-Gap, 21px-Rand (Wrapper 20px + 1px) → die Beträge fluchten
+                      pixelgenau über den Mitte-/Ende-Pillen. Der Caret liegt absolut
+                      mittig darüber und beansprucht keine Spaltenbreite. */}
+                  <div style={{display:"flex",gap:6,marginTop:10,padding:"0 1px",
+                    alignItems:"stretch",position:"relative"}}>
                     {/* Mitte-Spalte */}
                     <div onClick={()=>setHeroProgDrill(v=>v==="Mitte"?null:"Mitte")}
                       style={{flex:1,textAlign:"center",cursor:"pointer",
@@ -781,14 +786,6 @@ function DashboardScreenV2() {
                         {prognoseMitte>=0?"":"−"}{fmtMoney(Math.abs(prognoseMitte||0))}
                       </div>
                     </div>
-                    {/* Caret-Toggle zentral zwischen Mitte und Ende */}
-                    <div onClick={()=>setDetailsOpen(v=>!v)}
-                      style={{display:"flex",alignItems:"center",justifyContent:"center",
-                        cursor:"pointer",userSelect:"none",padding:"0 6px",
-                        opacity:0.7}}
-                      title={detailsOpen?"Details ausblenden":"Details anzeigen"}>
-                      {Li(detailsOpen?"chevron-up":"chevron-down",22,T.txt2)}
-                    </div>
                     {/* Ende-Spalte */}
                     <div onClick={()=>setHeroProgDrill(v=>v==="Ende"?null:"Ende")}
                       style={{flex:1,textAlign:"center",cursor:"pointer",
@@ -800,6 +797,17 @@ function DashboardScreenV2() {
                         fontSize:20,fontWeight:500,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
                         {prognoseEnde>=0?"":"−"}{fmtMoney(Math.abs(prognoseEnde||0))}
                       </div>
+                    </div>
+                    {/* Caret-Toggle: absolut mittig überlagert (keine Spaltenbreite) */}
+                    <div style={{position:"absolute",left:0,right:0,top:0,bottom:0,
+                      display:"flex",alignItems:"center",justifyContent:"center",
+                      pointerEvents:"none"}}>
+                      <span onClick={()=>setDetailsOpen(v=>!v)}
+                        title={detailsOpen?"Details ausblenden":"Details anzeigen"}
+                        style={{pointerEvents:"auto",cursor:"pointer",userSelect:"none",opacity:0.7,
+                          display:"inline-flex",alignItems:"center",justifyContent:"center",padding:"0 8px"}}>
+                        {Li(detailsOpen?"chevron-up":"chevron-down",22,T.txt2)}
+                      </span>
                     </div>
                   </div>
 
