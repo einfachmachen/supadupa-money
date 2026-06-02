@@ -1218,8 +1218,7 @@ function DashboardScreenV2() {
                       const sHead = textColor(sAkt, subBudget, isIncome);
                       return (
                         <div key={sub.id}
-                          style={{marginTop:6,marginLeft:18,paddingLeft:10,
-                            borderLeft:`2px solid ${T.bd}`}}>
+                          style={{marginTop:6}}>
                           {/* Sub Zeile 1: Name + aktuell (-> Buchungs-Drilldown) */}
                           <div onClick={e=>{e.stopPropagation(); if(sAkt>0) openSubInlineDrill(sub,subTxs,lastDay,"aktuell",sAkt,true);}}
                             style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,
