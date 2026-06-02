@@ -344,26 +344,8 @@ function SaldoHero2({year, month,
       {/* Drei-Spalten-Zeile: MITTE | GESAMT/GIRO | ENDE */}
       <div style={{display:"flex",alignItems:"baseline"}}>
         <div style={{flex:1,textAlign:"center",color:T.mid,fontSize:9,fontWeight:700,letterSpacing:2,opacity:0.7}}>MITTE</div>
-        <div style={{flex:1,textAlign:"center"}}>
-          <span style={{display:"inline-flex",alignItems:"center",gap:3}}>
-            <span onClick={()=>setShowDetail(v=>!v)}
-              style={{color:accLabelColor,fontSize:11,fontWeight:700,letterSpacing:0.5,
-                cursor:"pointer",userSelect:"none"}}
-              title={showDetail?"Details ausblenden":"Details anzeigen"}>
-              {accLabel}
-            </span>
-            {allAccIds.length>1 && (
-              <span onClick={()=>{
-                const idx = allAccIds.indexOf(selAcc);
-                setSelAcc(allAccIds[(idx+1)%allAccIds.length]);
-              }}
-              style={{cursor:"pointer",display:"inline-flex",alignItems:"center",padding:"2px"}}
-              title="Konto wechseln">
-                {Li("refresh-cw",9,accLabelColor)}
-              </span>
-            )}
-          </span>
-        </div>
+        {/* Kontoname + Umschalter sind jetzt in der ersten Zeile (oben) — Mitte bleibt frei */}
+        <div style={{flex:1}}/>
         <div style={{flex:1,textAlign:"center",color:T.gold,fontSize:9,fontWeight:700,letterSpacing:2,opacity:0.7}}>ENDE</div>
       </div>
       {/* Werte-Zeile: PrognoseM | Prog. (Toggle) | PrognoseE */}
@@ -488,18 +470,25 @@ function SaldoHero2({year, month,
   return (
     <div style={{margin:"0",background:T.hero_bg,
       borderRadius:0,padding:"0",position:"relative",overflow:"hidden"}}>
-      <div style={{position:"relative",textAlign:"center",margin:"0",padding:"2px 14px 4px"}}>
-        {/* Großer Kontostand zentriert */}
-        <div style={{display:"flex",alignItems:"baseline",justifyContent:"center"}}>
-          <div onClick={()=>{
-              if(allAccIds.length<=1) return;
-              const idx = allAccIds.indexOf(selAcc);
-              setSelAcc(allAccIds[(idx+1)%allAccIds.length]);
-            }}
-            style={{fontSize:40,fontWeight:800,letterSpacing:-1,color:ksColor,
-              position:"relative",zIndex:1,cursor:"pointer",userSelect:"none"}}>
+      <div style={{position:"relative",margin:"0",padding:"2px 14px 4px"}}>
+        {/* Erste Zeile (wie im alten Hero): Kontoname links, aktueller Kontostand
+            rechts. Tippen auf die Zeile wechselt direkt durch die Konten. */}
+        <div onClick={()=>{
+            if(allAccIds.length<=1) return;
+            const idx = allAccIds.indexOf(selAcc);
+            setSelAcc(allAccIds[(idx+1)%allAccIds.length]);
+          }}
+          style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:12,
+            cursor:allAccIds.length>1?"pointer":"default",userSelect:"none"}}
+          title={allAccIds.length>1?"Konto wechseln":undefined}>
+          <span style={{fontSize:28,fontWeight:800,letterSpacing:0.5,color:accLabelColor,
+            whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",minWidth:0}}>
+            {accLabel}
+          </span>
+          <span style={{fontSize:40,fontWeight:800,letterSpacing:-1,color:ksColor,
+            whiteSpace:"nowrap",flexShrink:0}}>
             {displayKs!==null ? fmt(Math.abs(displayKs))+" €" : selAcc ? "—" : fmt(Math.abs(ms))+" €"}
-          </div>
+          </span>
         </div>
         {showPrognose ? (()=>{
           if(!selAcc) {
