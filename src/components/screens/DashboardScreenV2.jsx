@@ -695,6 +695,10 @@ function DashboardScreenV2() {
                 ? getKumulierterSaldo(year, month)
                 : getKumulierterSaldo(year, month, selAcc);
               const fmtMoney = v => v==null||v===undefined ? "—" : fmt(v);
+              // Farbsystem wie im klassischen Hero (SaldoHero2): nicht nur grün/rot,
+              // sondern nach Schwellwerten <0 neg · ≤500 warn · ≤1000 gold · sonst pos.
+              const heroColor = v => v==null?T.txt :v<0?T.cond_neg:v<=500?T.cond_warn:v<=1000?T.cond_gold:T.cond_pos;
+              const saldoCol  = v => v==null?T.txt2:v<0?T.cond_neg:v<=500?T.cond_warn:v<=1000?T.cond_gold:T.cond_pos;
 
               // Detail-Werte für Buch/VM/unkat
               const buchInM  = _sum(_realInM),  buchOutM = _sum(_realOutM);
@@ -749,7 +753,7 @@ function DashboardScreenV2() {
                     style={{textAlign:"center",userSelect:"none",
                       cursor:allAccIds.length>1?"pointer":"default"}}>
                     <span className="heroAmt" style={{
-                      color: saldo>=0 ? T.pos : T.neg,
+                      color: heroColor(saldo),
                       fontSize:38,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
                       letterSpacing:-0.5,lineHeight:1.1,
                     }}>
@@ -772,7 +776,7 @@ function DashboardScreenV2() {
                         background: heroProgDrill==="Mitte" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
                       <div style={{color:T.mid||T.txt2,fontSize:10,fontWeight:700,
                         letterSpacing:1,marginBottom:2}}>MITTE</div>
-                      <div className="heroAmt" style={{color: prognoseMitte>=0?T.pos:T.neg,
+                      <div className="heroAmt" style={{color: saldoCol(prognoseMitte),
                         fontSize:20,fontWeight:500,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
                         {prognoseMitte>=0?"":"−"}{fmtMoney(Math.abs(prognoseMitte||0))}
                       </div>
@@ -784,7 +788,7 @@ function DashboardScreenV2() {
                         background: heroProgDrill==="Ende" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
                       <div style={{color:T.gold||T.txt2,fontSize:10,fontWeight:700,
                         letterSpacing:1,marginBottom:2}}>ENDE</div>
-                      <div className="heroAmt" style={{color: prognoseEnde>=0?T.pos:T.neg,
+                      <div className="heroAmt" style={{color: saldoCol(prognoseEnde),
                         fontSize:20,fontWeight:500,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
                         {prognoseEnde>=0?"":"−"}{fmtMoney(Math.abs(prognoseEnde||0))}
                       </div>
