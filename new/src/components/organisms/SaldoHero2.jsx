@@ -341,11 +341,15 @@ function SaldoHero2({year, month,
 
   const PrognoseRow = ({pm, pe}) => (
     <>
-      {/* Drei-Spalten-Zeile: MITTE | GESAMT/GIRO | ENDE */}
-      <div style={{display:"flex",alignItems:"baseline"}}>
+      {/* Drei-Spalten-Zeile: MITTE | GESAMT/GIRO (mittig überlagert) | ENDE
+          MITTE/ENDE sind zwei 50/50-Hälften (gleicher 6px-Gap + 21px-Rand wie die
+          Kategorie-Pillen unten), damit die Beträge exakt über den Pillen fluchten.
+          Das Konto-Label liegt absolut zentriert darüber und beansprucht keine Spaltenbreite. */}
+      <div style={{display:"flex",alignItems:"baseline",gap:6,padding:"0 7px",position:"relative"}}>
         <div style={{flex:1,textAlign:"center",color:T.mid,fontSize:9,fontWeight:700,letterSpacing:2,opacity:0.7}}>MITTE</div>
-        <div style={{flex:1,textAlign:"center"}}>
-          <span style={{display:"inline-flex",alignItems:"center",gap:3}}>
+        <div style={{flex:1,textAlign:"center",color:T.gold,fontSize:9,fontWeight:700,letterSpacing:2,opacity:0.7}}>ENDE</div>
+        <div style={{position:"absolute",left:0,right:0,top:0,bottom:0,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none"}}>
+          <span style={{display:"inline-flex",alignItems:"center",gap:3,pointerEvents:"auto"}}>
             <span onClick={()=>setShowDetail(v=>!v)}
               style={{color:accLabelColor,fontSize:11,fontWeight:700,letterSpacing:0.5,
                 cursor:"pointer",userSelect:"none"}}
@@ -364,28 +368,28 @@ function SaldoHero2({year, month,
             )}
           </span>
         </div>
-        <div style={{flex:1,textAlign:"center",color:T.gold,fontSize:9,fontWeight:700,letterSpacing:2,opacity:0.7}}>ENDE</div>
       </div>
-      {/* Werte-Zeile: PrognoseM | Prog. (Toggle) | PrognoseE */}
-      <div style={{display:"flex",alignItems:"baseline"}}>
+      {/* Werte-Zeile: PrognoseM | Prog.-Toggle (mittig überlagert) | PrognoseE
+          Gleiche 50/50-Geometrie wie die Label-Zeile → die Beträge fluchten mit den Pillen. */}
+      <div style={{display:"flex",alignItems:"baseline",gap:6,padding:"0 7px",position:"relative"}}>
         <div style={{flex:1,textAlign:"center",padding:"2px 0",cursor:pm!==null?"pointer":"default"}}
           onClick={()=>{if(pm!==null)setProgDrill(v=>v==="Mitte"?null:"Mitte");}}>
           <span style={{color:saldoColor(pm),fontSize:17,fontWeight:800}}>
             {pm!==null?fmt(pm)+" €":"–"}
           </span>
         </div>
-        <div style={{flex:1,textAlign:"center",cursor:"pointer"}}
-          onClick={()=>setShowDetail(v=>!v)}
-          title={showDetail?"Details ausblenden":"Details anzeigen"}>
-          <span style={{color:T.txt2,fontSize:10,fontWeight:700,
-            display:"inline-flex",alignItems:"center",gap:3,userSelect:"none"}}>
-            Prog. {Li(showDetail?"chevron-up":"chevron-down",10,T.txt2)}
-          </span>
-        </div>
         <div style={{flex:1,textAlign:"center",padding:"2px 0",cursor:pe!==null?"pointer":"default"}}
           onClick={()=>{if(pe!==null)setProgDrill(v=>v==="Ende"?null:"Ende");}}>
           <span style={{color:saldoColor(pe),fontSize:17,fontWeight:800}}>
             {pe!==null?fmt(pe)+" €":"–"}
+          </span>
+        </div>
+        <div style={{position:"absolute",left:0,right:0,top:0,bottom:0,display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none"}}>
+          <span onClick={()=>setShowDetail(v=>!v)}
+            title={showDetail?"Details ausblenden":"Details anzeigen"}
+            style={{color:T.txt2,fontSize:10,fontWeight:700,cursor:"pointer",pointerEvents:"auto",
+              display:"inline-flex",alignItems:"center",gap:3,userSelect:"none"}}>
+            Prog. {Li(showDetail?"chevron-up":"chevron-down",10,T.txt2)}
           </span>
         </div>
       </div>
