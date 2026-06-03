@@ -1035,7 +1035,7 @@ function DashboardScreenV2() {
                         </div>
                         <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
                           <div style={{
-                            color:T.txt,fontSize:15,fontWeight:600,
+                            color:T.txt,fontSize:20,fontWeight:600,
                             overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
                           }}>{cat.name}</div>
                           {accLabel && (
@@ -1098,7 +1098,7 @@ function DashboardScreenV2() {
                             <span style={{flexShrink:0,display:"inline-flex"}}>
                               {Li("corner-down-right",13,T.txt2)}
                             </span>
-                            <div style={{flex:1,minWidth:0,color:T.txt,fontSize:14,fontWeight:600,
+                            <div style={{flex:1,minWidth:0,color:T.txt,fontSize:17,fontWeight:600,
                               overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                               {sub.name}
                             </div>
