@@ -102,11 +102,10 @@ function SaldoHeroV2({
         {/* Mitte-Spalte — Klickfläche nur um den Text (inline-block), damit sie
             nicht bis zum mittigen Ausklapp-Chevron reicht. Spaltenbreite, Text-
             position und der Highlight bleiben unverändert. */}
-        <div style={{flex:1,textAlign:"center",
-            padding:"2px 0 4px",borderRadius:8,
-            background: progDrill==="Mitte" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
+        <div style={{flex:1,textAlign:"center",padding:"2px 0 4px"}}>
           <div onClick={()=>setProgDrill(v=>v==="Mitte"?null:"Mitte")}
-            style={{display:"inline-block",cursor:"pointer"}}>
+            style={{display:"inline-block",cursor:"pointer",borderRadius:8,padding:"0 10px",
+              background: progDrill==="Mitte" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
             <div style={{color:T.mid||T.txt2,fontSize:9,fontWeight:700,
               letterSpacing:2,opacity:0.7,marginBottom:2}}>MITTE</div>
             <div className="heroAmt" style={{color: saldoCol(prognoseMitte),
@@ -116,11 +115,10 @@ function SaldoHeroV2({
           </div>
         </div>
         {/* Ende-Spalte — Klickfläche analog nur um den Text. */}
-        <div style={{flex:1,textAlign:"center",
-            padding:"2px 0 4px",borderRadius:8,
-            background: progDrill==="Ende" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
+        <div style={{flex:1,textAlign:"center",padding:"2px 0 4px"}}>
           <div onClick={()=>setProgDrill(v=>v==="Ende"?null:"Ende")}
-            style={{display:"inline-block",cursor:"pointer"}}>
+            style={{display:"inline-block",cursor:"pointer",borderRadius:8,padding:"0 10px",
+              background: progDrill==="Ende" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
             <div style={{color:T.gold||T.txt2,fontSize:9,fontWeight:700,
               letterSpacing:2,opacity:0.7,marginBottom:2}}>ENDE</div>
             <div className="heroAmt" style={{color: saldoCol(prognoseEnde),
