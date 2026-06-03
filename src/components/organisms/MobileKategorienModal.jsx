@@ -346,15 +346,19 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                 cursor:"pointer",fontFamily:"inherit",padding:0,lineHeight:0}}>
                 {cat.icon ? Li(cat.icon,S.fs-2,cat.color||T.blue) : null}
               </button>
-              <span style={{flex:1,color:T.txt,fontSize:S.fs,fontWeight:700}}>{cat.name}</span>
-              <span style={{color:T.txt2,fontSize:S.fs-8,
-                background:"rgba(255,255,255,0.08)",borderRadius:8,padding:"2px 10px"}}>
-                {(()=>{
-                  const grp = (groups||[]).find(g=>g.type===cat.type);
-                  const beh = grp?.behavior || cat.type;
-                  return beh==="income" ? "Einnahme" : "Ausgabe";
-                })()}
-              </span>
+              <span style={{flex:1,minWidth:0,color:T.txt,fontSize:S.fs,fontWeight:700,
+                overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{cat.name}</span>
+              {(()=>{
+                const grp = (groups||[]).find(g=>g.type===cat.type);
+                const isInc = (grp?.behavior || cat.type)==="income";
+                return (
+                  <span style={{color:isInc?T.pos:T.neg,fontSize:S.fs-2,fontWeight:800,
+                    background:"rgba(255,255,255,0.08)",borderRadius:8,padding:"2px 12px",
+                    flexShrink:0,lineHeight:1}}>
+                    {isInc ? "+" : "−"}
+                  </span>
+                );
+              })()}
               <button onClick={()=>{
                 const grp = (groups||[]).find(g=>g.type===cat.type);
                 const beh = grp?.behavior || cat.type;
