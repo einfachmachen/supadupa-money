@@ -24,7 +24,6 @@ function SettingsInline() {
     syncStatus, setSyncStatus, syncError,
     themeName, setThemeName, setThemeRev,
     handedness, setHandedness,
-    dashboardVariant, setDashboardVariant,
     debugFlags, setDebugFlag, setDebugFlags,
     confirmReset, setConfirmReset,
     cats, setCats, groups, setGroups, txs, setTxs, yearData, setYearData,
@@ -35,26 +34,6 @@ function SettingsInline() {
 
   return (
     <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 14px 24px"}}>
-
-      {/* Dashboard-Variante */}
-      <div style={{marginBottom:14}}>
-        <div style={{color:T.lbl||T.txt2,fontSize:11,fontWeight:600,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
-          {Li("layout",13,T.blue)} Dashboard-Stil
-        </div>
-        <div style={{display:"flex",gap:6}}>
-          {[["v1","Klassisch","Bestehendes Layout"],["v2","Clean","Neue, kompakte Variante"]].map(([key,label,desc])=>(
-            <button key={key} onClick={()=>setDashboardVariant(key)}
-              style={{flex:1,padding:"10px 8px",borderRadius:12,cursor:"pointer",fontFamily:"inherit",
-                border:`2px solid ${dashboardVariant===key?T.blue:T.bd}`,
-                background:dashboardVariant===key?T.blue+"22":"transparent",
-                color:T.txt,
-                display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-              <div style={{fontSize:13,fontWeight:700,color:dashboardVariant===key?T.blue:T.txt}}>{label}</div>
-              <div style={{fontSize:10,color:T.lbl||T.txt2,textAlign:"center"}}>{desc}</div>
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* Theme-Auswahl */}
       <div style={{marginBottom:14}}>

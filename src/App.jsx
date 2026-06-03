@@ -17,7 +17,6 @@ import { MobileVormerkenModal } from "./components/organisms/MobileVormerkenModa
 import { MobileWiederkehrendModal } from "./components/organisms/MobileWiederkehrendModal.jsx";
 import { MonthPickerModal } from "./components/organisms/MonthPickerModal.jsx";
 import { CsvImportScreen } from "./components/screens/CsvImportScreen.jsx";
-import { DashboardScreen } from "./components/screens/DashboardScreen.jsx";
 import { DashboardScreenV2 } from "./components/screens/DashboardScreenV2.jsx";
 import { JahrScreen } from "./components/screens/JahrScreen.jsx";
 import { ManagementScreen } from "./components/screens/ManagementScreen.jsx";
@@ -49,12 +48,6 @@ export default function FinanzApp() {
   const [noBorders, setNoBorders] = useState(()=>kvStore.getItem("mbt_noborders")==="0" ? false : true);
   const [themeRev, setThemeRev] = useState(0); // incremented to force re-render on same theme
   const [handedness, setHandedness] = useState(()=>kvStore.getItem("mbt_handedness")||"right");
-  const [_dashboardVariant, _setDashboardVariant] = useState(()=>kvStore.getItem("mbt_dashboard_variant")||"v1");
-  const dashboardVariant = _dashboardVariant;
-  const setDashboardVariant = (v) => {
-    _setDashboardVariant(v);
-    try { kvStore.setItem("mbt_dashboard_variant", v); } catch(_) {}
-  };
   // T als reaktive Variable — alle Komponenten die T nutzen re-rendern durch Context
   setActiveTheme(themeName, { _rev: themeRev });
   const [showHamburger, setShowHamburger] = useState(false);
@@ -2460,7 +2453,6 @@ Abbrechen = ${remoteName}-Stand laden`
     themeName, setThemeName, setThemeRev,
     hideEmptyRows, setHideEmptyRows,
     handedness, setHandedness,
-    dashboardVariant, setDashboardVariant,
     debugFlags, setDebugFlag, setDebugFlags,
     cfActive, cfSave, cfLoad, cfStatus, setCfStatus, cfUrl, cfSecret, setCfUrl, setCfSecret,
     syncStatus, setSyncStatus, syncError,
@@ -2518,9 +2510,7 @@ Abbrechen = ${remoteName}-Stand laden`
         {/* Hinweis: year/month im Context sind frozenYear/frozenMonth, solange das
             Monatswähler-Modal offen ist — verhindert teure Re-Renders. */}
         {mainTab==="erfassen"&&subTab==="dashboard"&&(
-          dashboardVariant==="v2"
-            ? <ErrorBoundary name="DashboardScreenV2"><DashboardScreenV2/></ErrorBoundary>
-            : <ErrorBoundary name="DashboardScreen"><DashboardScreen/></ErrorBoundary>
+          <ErrorBoundary name="DashboardScreenV2"><DashboardScreenV2/></ErrorBoundary>
         )}
         {mainTab==="erfassen"&&subTab==="monat"    &&<ErrorBoundary name="MonatScreen"><MonatScreen/></ErrorBoundary>}
         {mainTab==="erfassen"&&subTab==="jahr"      &&<ErrorBoundary name="JahrScreen"><JahrScreen forceSingle={false}/></ErrorBoundary>}

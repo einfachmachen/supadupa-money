@@ -7,8 +7,7 @@ import { BudgetEditorModal } from "../organisms/BudgetEditorModal.jsx";
 import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
 import { KontoWarnungWidget } from "../organisms/KontoWarnungWidget.jsx";
 import { PendingList } from "../organisms/PendingList.jsx";
-import { SaldoHero2 } from "../organisms/SaldoHero2.jsx";
-import { SaldoPrognose } from "../organisms/SaldoPrognose.jsx";
+import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
 import { TagesgeldWidget } from "../organisms/TagesgeldWidget.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
@@ -121,7 +120,7 @@ function DashboardScreenV2() {
       return year < t.getFullYear() || (year === t.getFullYear() && month < t.getMonth());
     }, [year, month]);
     // Hero-Prognose-Drilldown: null | "Mitte" | "Ende"
-    const [heroProgDrill, setHeroProgDrill] = useState(null);
+    // heroProgDrill ist jetzt intern in SaldoHeroV2
     const [expandedSplitId, setExpandedSplitId] = useState(null);
     const [drillExpandedSub, setDrillExpandedSub] = useState(null);
     // Inline ausgeklappte Hauptkategorien (Home-Karten) → zeigt Unterkategorien direkt
@@ -675,32 +674,9 @@ function DashboardScreenV2() {
             const _uInM2    = _mitteAbg ? [] : _uIn.filter(_h2txM);
             const _uOutM2   = _mitteAbg ? [] : _uOut.filter(_h2txM);
             return (()=>{
-              // V2-Hero — eigene clean Variante
-              const accLabel = selAcc===null
-                ? "GESAMT"
-                : (accounts.find(a=>a.id===selAcc)?.name?.toUpperCase() || "");
-              // Nur Konten mit mindestens einer Buchung im Toggle anbieten
-              const usedAccIds = (()=>{
-                const s = new Set();
-                (txs||[]).forEach(t => { if(t.accountId) s.add(t.accountId); });
-                return s;
-              })();
-              const filteredAccs = (accounts||[]).filter(a => usedAccIds.has(a.id));
-              const allAccIds = [null, ...filteredAccs.map(a => a.id)];
-              const cycleAcc = () => {
-                const idx = allAccIds.findIndex(a => a===selAcc);
-                setSelAcc(allAccIds[(idx+1) % allAccIds.length]);
-              };
-              const saldo = selAcc === null
-                ? getKumulierterSaldo(year, month)
-                : getKumulierterSaldo(year, month, selAcc);
-              const fmtMoney = v => v==null||v===undefined ? "—" : fmt(v);
-              // Farbsystem wie im klassischen Hero (SaldoHero2): nicht nur grün/rot,
-              // sondern nach Schwellwerten <0 neg · ≤500 warn · ≤1000 gold · sonst pos.
-              const heroColor = v => v==null?T.txt :v<0?T.cond_neg:v<=500?T.cond_warn:v<=1000?T.cond_gold:T.cond_pos;
-              const saldoCol  = v => v==null?T.txt2:v<0?T.cond_neg:v<=500?T.cond_warn:v<=1000?T.cond_gold:T.cond_pos;
+              // Konto-Umschalter, Saldo & Farbsystem liegen jetzt in SaldoHeroV2.
 
-              // Detail-Werte für Buch/VM/unkat
+              // Detail-Werte für Buch/VM/unkat (als Props an SaldoHeroV2)
               const buchInM  = _sum(_realInM),  buchOutM = _sum(_realOutM);
               const buchInE  = _sum(_realIn),   buchOutE = _sum(_realOut);
               const pendInM  = _sum(_pTxsInM),  pendOutM = _sum(_pTxsOutM);
@@ -716,151 +692,21 @@ function DashboardScreenV2() {
               const drillUncatIn = (isMitte)=>{const l=isMitte?_uInM2 :_uIn; setDashDrill({label:"Einnahmen \u2013 unkat."+(isMitte?" bis 14.":""),txList:l,isIncome:true, uncatCount:l.length,cat:null,total:null});setDashSearch("");};
               const drillUncatOut= (isMitte)=>{const l=isMitte?_uOutM2:_uOut;setDashDrill({label:"Ausgaben \u2013 unkat." +(isMitte?" bis 14.":""),txList:l,isIncome:false,uncatCount:l.length,cat:null,total:null});setDashSearch("");};
 
-              // Mini-Zelle für Detail-Werte (Out|In Paar)
-              const HalfCell = ({vIn, vOut, clrIn, clrOut, dim, isMitte, onTapIn, onTapOut}) => (
-                <div style={{flex:1,display:"flex",alignItems:"baseline"}}>
-                  <div style={{flex:1,textAlign:"center",cursor:vOut>0&&onTapOut?"pointer":"default",padding:"2px 0",opacity:dim?0.65:1}}
-                    onClick={vOut>0&&onTapOut?()=>onTapOut(isMitte):undefined}>
-                    {vOut>0
-                      ? <span style={{color:clrOut||T.neg,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>{fmt(vOut)}</span>
-                      : <span style={{color:T.txt2,fontSize:20}}>—</span>}
-                  </div>
-                  <div style={{flex:1,textAlign:"center",cursor:vIn>0&&onTapIn?"pointer":"default",padding:"2px 0",opacity:dim?0.65:1}}
-                    onClick={vIn>0&&onTapIn?()=>onTapIn(isMitte):undefined}>
-                    {vIn>0
-                      ? <span style={{color:clrIn||T.pos,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>{fmt(vIn)}</span>
-                      : <span style={{color:T.txt2,fontSize:20}}>—</span>}
-                  </div>
-                </div>
-              );
-              const DetailRow = ({label, mIn, mOut, eIn, eOut, clrIn, clrOut, onTapIn, onTapOut}) => (
-                <div style={{display:"flex",alignItems:"center",marginBottom:4}}>
-                  <HalfCell vIn={mIn} vOut={mOut} clrIn={clrIn} clrOut={clrOut}
-                    dim={true} isMitte={true} onTapIn={onTapIn} onTapOut={onTapOut}/>
-                  <div style={{width:44,flexShrink:0,textAlign:"center",
-                    color:T.txt2,fontSize:10,fontWeight:600,letterSpacing:0.3}}>{label}</div>
-                  <HalfCell vIn={eIn} vOut={eOut} clrIn={clrIn} clrOut={clrOut}
-                    dim={false} isMitte={false} onTapIn={onTapIn} onTapOut={onTapOut}/>
-                </div>
-              );
-
               return (
-                <div style={{padding:"12px 20px 6px"}}>
-                  {/* Zeile 1: aktueller Kontostand groß & zentriert (wie klassisches
-                      Layout). Tippen wechselt durch die Konten. Der Kontoname sitzt
-                      jetzt klein/zentriert in der MITTE/ENDE-Zeile (siehe unten). */}
-                  <div onClick={allAccIds.length>1?cycleAcc:undefined}
-                    style={{textAlign:"center",userSelect:"none",
-                      cursor:allAccIds.length>1?"pointer":"default"}}>
-                    <span className="heroAmt" style={{
-                      color: heroColor(saldo),
-                      fontSize:48,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
-                      letterSpacing:-1,lineHeight:1.1,
-                      WebkitTextStroke:"0.8px currentColor",
-                    }}>
-                      {saldo>=0?"":"−"}{fmtMoney(Math.abs(saldo||0))} €
-                    </span>
-                  </div>
-
-                  {/* Zeile 2: MITTE | ENDE-Pillen (gleiche Schriftgröße wie Cat-Pillen)
-                      mit Caret-Toggle für Buch./VM-Details.
-                      Geometrie exakt wie die Kategorie-Pillen: zwei flex:1-Hälften,
-                      6px-Gap, 21px-Rand (Wrapper 20px + 1px) → die Beträge fluchten
-                      pixelgenau über den Mitte-/Ende-Pillen. Der Caret liegt absolut
-                      mittig darüber und beansprucht keine Spaltenbreite. */}
-                  <div style={{display:"flex",gap:6,marginTop:2,padding:"0 1px",
-                    alignItems:"stretch",position:"relative"}}>
-                    {/* Mitte-Spalte */}
-                    <div onClick={()=>setHeroProgDrill(v=>v==="Mitte"?null:"Mitte")}
-                      style={{flex:1,textAlign:"center",cursor:"pointer",
-                        padding:"2px 0 4px",borderRadius:8,
-                        background: heroProgDrill==="Mitte" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
-                      <div style={{color:T.mid||T.txt2,fontSize:9,fontWeight:700,
-                        letterSpacing:2,opacity:0.7,marginBottom:2}}>MITTE</div>
-                      <div className="heroAmt" style={{color: saldoCol(prognoseMitte),
-                        fontSize:20,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
-                        {prognoseMitte>=0?"":"−"}{fmtMoney(Math.abs(prognoseMitte||0))}
-                      </div>
-                    </div>
-                    {/* Ende-Spalte */}
-                    <div onClick={()=>setHeroProgDrill(v=>v==="Ende"?null:"Ende")}
-                      style={{flex:1,textAlign:"center",cursor:"pointer",
-                        padding:"2px 0 4px",borderRadius:8,
-                        background: heroProgDrill==="Ende" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
-                      <div style={{color:T.gold||T.txt2,fontSize:9,fontWeight:700,
-                        letterSpacing:2,opacity:0.7,marginBottom:2}}>ENDE</div>
-                      <div className="heroAmt" style={{color: saldoCol(prognoseEnde),
-                        fontSize:20,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
-                        {prognoseEnde>=0?"":"−"}{fmtMoney(Math.abs(prognoseEnde||0))}
-                      </div>
-                    </div>
-                    {/* Mittig überlagert (beansprucht keine Spaltenbreite, damit die
-                        MITTE/ENDE-Beträge weiter exakt über den Kategorie-Pillen fluchten):
-                        Kontoname klein & zentriert + Caret-Toggle darunter. */}
-                    <div style={{position:"absolute",left:0,right:0,top:0,bottom:0,
-                      display:"flex",flexDirection:"column",alignItems:"center",
-                      padding:"2px 0 4px",pointerEvents:"none"}}>
-                      {/* Label-Zeile: Kontoname + ⟳-Symbol (Größen wie klassischer Hero) */}
-                      <span style={{display:"inline-flex",alignItems:"center",gap:3,
-                        marginBottom:2,pointerEvents:"auto"}}>
-                        <span onClick={allAccIds.length>1?cycleAcc:undefined}
-                          title={allAccIds.length>1?"Konto wechseln":undefined}
-                          style={{userSelect:"none",
-                            cursor:allAccIds.length>1?"pointer":"default",
-                            color:selAcc===null ? T.txt2 : T.blue,
-                            fontSize:11,fontWeight:700,letterSpacing:0.5,
-                            maxWidth:118,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                          {accLabel}
-                        </span>
-                        {allAccIds.length>1 && (
-                          <span onClick={cycleAcc} title="Konto wechseln"
-                            style={{cursor:"pointer",display:"inline-flex",alignItems:"center",padding:"2px"}}>
-                            {Li("refresh-cw",9, selAcc===null ? T.txt2 : T.blue)}
-                          </span>
-                        )}
-                      </span>
-                      {/* Werte-Zeile: Prog.-Toggle (öffnet Buch./VM-Details) */}
-                      <span onClick={()=>setDetailsOpen(v=>!v)}
-                        title={detailsOpen?"Details ausblenden":"Details anzeigen"}
-                        style={{pointerEvents:"auto",cursor:"pointer",userSelect:"none",opacity:0.75,
-                          display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
-                        {Li(detailsOpen?"chevron-up":"chevron-down",26,T.txt2)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Detail-Block: Buch / VM / unkat — drei Zeilen mit Drill-Pfaden */}
-                  {detailsOpen && (
-                    <div style={{marginTop:2,paddingTop:6,borderTop:`1px solid ${T.bd}`}}>
-                      <DetailRow label="Buch."
-                        mIn={buchInM} mOut={buchOutM} eIn={buchInE} eOut={buchOutE}
-                        onTapIn={drillBuchIn} onTapOut={drillBuchOut}/>
-                      {(pendInE2>0||pendOutE2>0) && (
-                        <DetailRow label="VM"
-                          mIn={pendInM} mOut={pendOutM} eIn={pendInE2} eOut={pendOutE2}
-                          clrIn={T.pos+"aa"} clrOut={T.neg+"aa"}
-                          onTapIn={drillPendIn} onTapOut={drillPendOut}/>
-                      )}
-                      {(uInEv>0||uOutEv>0) && (
-                        <DetailRow label="unkat."
-                          mIn={uInM2v} mOut={uOutM2v} eIn={uInEv} eOut={uOutEv}
-                          clrIn={T.gold} clrOut={T.gold}
-                          onTapIn={drillUncatIn} onTapOut={drillUncatOut}/>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Prognose-Drilldown (Mitte oder Ende): inline wie in V1 */}
-                  {heroProgDrill && (
-                    <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${T.bd}`}}>
-                      <SaldoPrognose year={year} month={month} txs={[]}
-                        detailMitte={detailMitte} detailEnde={detailEnde}
-                        saldoMitte={saldoMitte} saldoEnde={saldoEnde}
-                        getCat={getCat} getSub={getSub}
-                        initialOpen={heroProgDrill}/>
-                    </div>
-                  )}
-                </div>
+                <SaldoHeroV2 year={year} month={month}
+                  buchInM={buchInM}  buchOutM={buchOutM}
+                  buchInE={buchInE}  buchOutE={buchOutE}
+                  pendInM={pendInM}  pendOutM={pendOutM}
+                  pendInE={pendInE2} pendOutE={pendOutE2}
+                  uInM={uInM2v}      uOutM={uOutM2v}
+                  uInE={uInEv}       uOutE={uOutEv}
+                  prognoseMitte={prognoseMitte} prognoseEnde={prognoseEnde}
+                  detailMitte={detailMitte} detailEnde={detailEnde}
+                  saldoMitte={saldoMitte}   saldoEnde={saldoEnde}
+                  onDrillBuchIn={drillBuchIn}   onDrillBuchOut={drillBuchOut}
+                  onDrillPendIn={drillPendIn}   onDrillPendOut={drillPendOut}
+                  onDrillUncatIn={drillUncatIn} onDrillUncatOut={drillUncatOut}
+                  detailsOpen={detailsOpen} setDetailsOpen={setDetailsOpen}/>
               );
             })();
           }
