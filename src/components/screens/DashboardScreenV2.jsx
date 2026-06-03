@@ -851,14 +851,9 @@ function DashboardScreenV2() {
 
 
 
-        {/* ── V2: Sort-Buttons + Datum (oben rechts) ── */}
-        {(incomeTotals.length>0||catTotals.length>0)&&(()=>{
-          // Datum nur im aktuellen Monat anzeigen
-          const today = new Date();
-          const isCurrentMonth = today.getFullYear()===year && today.getMonth()===month;
-          const dateStr = isCurrentMonth
-            ? `${String(today.getDate()).padStart(2,"0")}.${String(today.getMonth()+1).padStart(2,"0")}.`
-            : null;
+        {/* ── V2: Sort-Buttons — nur sichtbar, wenn die Details (Hero-Chevron)
+              ausgeklappt sind. Datum entfernt (Tag steht jetzt im + Button). ── */}
+        {detailsOpen && (incomeTotals.length>0||catTotals.length>0)&&(()=>{
           return (
             <div style={{padding:"6px 12px 4px",display:"flex",alignItems:"center",gap:8}}>
               <div style={{display:"flex",gap:6,flex:1,minWidth:0,alignItems:"center"}}>
@@ -872,12 +867,6 @@ function DashboardScreenV2() {
                   </button>
                 ))}
               </div>
-              {dateStr && (
-                <div style={{color:T.lbl||T.txt2,fontSize:11,fontWeight:600,
-                  fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,flexShrink:0}}>
-                  {dateStr}
-                </div>
-              )}
             </div>
           );
         })()}

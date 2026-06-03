@@ -146,7 +146,7 @@ function SettingsInline() {
                     fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
                   {cfStatus==="saving"
                     ?<>{Li("loader",14,T.on_accent)} Speichert…</>
-                    :<>{Li("upload-cloud",14,T.on_accent)} ⬆ Lokal → Cloudflare speichern</>}
+                    :<>{Li("upload-cloud",14,T.on_accent)} Lokal → Cloudflare</>}
                 </button>
               );
             })()}
@@ -166,7 +166,7 @@ function SettingsInline() {
             border:`2px solid ${T.blue}`,background:`${T.blue}11`,color:T.blue,
             fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
             display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-            {Li("download-cloud",14,T.blue)} ⬇ Cloudflare → Lokal laden
+            {Li("download-cloud",14,T.blue)} Cloudflare → Lokal
           </button>
         )}
         {/* Sync-Status + Fehleranzeige */}
