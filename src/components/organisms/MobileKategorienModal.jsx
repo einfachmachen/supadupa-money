@@ -227,6 +227,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
       zIndex:300,display:"flex",flexDirection:"column","--mob-fs":S.fs+"px"}}>
       {header("Kategorien & Budget",goBack)}
       <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",
+        transform:"translateZ(0)",willChange:"transform",
         padding:`${S.gap}px ${S.padL}px ${S.padL}px`}}>
 
         <button onClick={()=>{setNewName("");setNewColor(T.blue);setView("newCat");}}
