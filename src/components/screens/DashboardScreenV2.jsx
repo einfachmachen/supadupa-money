@@ -754,8 +754,8 @@ function DashboardScreenV2() {
                       cursor:allAccIds.length>1?"pointer":"default"}}>
                     <span className="heroAmt" style={{
                       color: heroColor(saldo),
-                      fontSize:38,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
-                      letterSpacing:-0.5,lineHeight:1.1,
+                      fontSize:40,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
+                      letterSpacing:-1,lineHeight:1.1,
                     }}>
                       {saldo>=0?"":"−"}{fmtMoney(Math.abs(saldo||0))} €
                     </span>
@@ -767,29 +767,29 @@ function DashboardScreenV2() {
                       6px-Gap, 21px-Rand (Wrapper 20px + 1px) → die Beträge fluchten
                       pixelgenau über den Mitte-/Ende-Pillen. Der Caret liegt absolut
                       mittig darüber und beansprucht keine Spaltenbreite. */}
-                  <div style={{display:"flex",gap:6,marginTop:10,padding:"0 1px",
+                  <div style={{display:"flex",gap:6,marginTop:2,padding:"0 1px",
                     alignItems:"stretch",position:"relative"}}>
                     {/* Mitte-Spalte */}
                     <div onClick={()=>setHeroProgDrill(v=>v==="Mitte"?null:"Mitte")}
                       style={{flex:1,textAlign:"center",cursor:"pointer",
-                        padding:"4px 0 6px",borderRadius:8,
+                        padding:"2px 0 4px",borderRadius:8,
                         background: heroProgDrill==="Mitte" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
-                      <div style={{color:T.mid||T.txt2,fontSize:10,fontWeight:700,
-                        letterSpacing:1,marginBottom:2}}>MITTE</div>
+                      <div style={{color:T.mid||T.txt2,fontSize:9,fontWeight:700,
+                        letterSpacing:2,opacity:0.7,marginBottom:2}}>MITTE</div>
                       <div className="heroAmt" style={{color: saldoCol(prognoseMitte),
-                        fontSize:20,fontWeight:500,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
+                        fontSize:17,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
                         {prognoseMitte>=0?"":"−"}{fmtMoney(Math.abs(prognoseMitte||0))}
                       </div>
                     </div>
                     {/* Ende-Spalte */}
                     <div onClick={()=>setHeroProgDrill(v=>v==="Ende"?null:"Ende")}
                       style={{flex:1,textAlign:"center",cursor:"pointer",
-                        padding:"4px 0 6px",borderRadius:8,
+                        padding:"2px 0 4px",borderRadius:8,
                         background: heroProgDrill==="Ende" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
-                      <div style={{color:T.gold||T.txt2,fontSize:10,fontWeight:700,
-                        letterSpacing:1,marginBottom:2}}>ENDE</div>
+                      <div style={{color:T.gold||T.txt2,fontSize:9,fontWeight:700,
+                        letterSpacing:2,opacity:0.7,marginBottom:2}}>ENDE</div>
                       <div className="heroAmt" style={{color: saldoCol(prognoseEnde),
-                        fontSize:20,fontWeight:500,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
+                        fontSize:17,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
                         {prognoseEnde>=0?"":"−"}{fmtMoney(Math.abs(prognoseEnde||0))}
                       </div>
                     </div>
@@ -798,21 +798,33 @@ function DashboardScreenV2() {
                         Kontoname klein & zentriert + Caret-Toggle darunter. */}
                     <div style={{position:"absolute",left:0,right:0,top:0,bottom:0,
                       display:"flex",flexDirection:"column",alignItems:"center",
-                      justifyContent:"center",gap:1,pointerEvents:"none"}}>
-                      <span onClick={allAccIds.length>1?cycleAcc:undefined}
-                        title={allAccIds.length>1?"Konto wechseln":undefined}
-                        style={{pointerEvents:"auto",userSelect:"none",
-                          cursor:allAccIds.length>1?"pointer":"default",
-                          color:selAcc===null ? T.txt2 : T.blue,
-                          fontSize:11,fontWeight:700,letterSpacing:0.5,
-                          maxWidth:96,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                        {accLabel}
+                      padding:"2px 0 4px",pointerEvents:"none"}}>
+                      {/* Label-Zeile: Kontoname + ⟳-Symbol (Größen wie klassischer Hero) */}
+                      <span style={{display:"inline-flex",alignItems:"center",gap:3,
+                        marginBottom:2,pointerEvents:"auto"}}>
+                        <span onClick={allAccIds.length>1?cycleAcc:undefined}
+                          title={allAccIds.length>1?"Konto wechseln":undefined}
+                          style={{userSelect:"none",
+                            cursor:allAccIds.length>1?"pointer":"default",
+                            color:selAcc===null ? T.txt2 : T.blue,
+                            fontSize:11,fontWeight:700,letterSpacing:0.5,
+                            maxWidth:118,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                          {accLabel}
+                        </span>
+                        {allAccIds.length>1 && (
+                          <span onClick={cycleAcc} title="Konto wechseln"
+                            style={{cursor:"pointer",display:"inline-flex",alignItems:"center",padding:"2px"}}>
+                            {Li("refresh-cw",9, selAcc===null ? T.txt2 : T.blue)}
+                          </span>
+                        )}
                       </span>
+                      {/* Werte-Zeile: Prog.-Toggle (öffnet Buch./VM-Details) */}
                       <span onClick={()=>setDetailsOpen(v=>!v)}
                         title={detailsOpen?"Details ausblenden":"Details anzeigen"}
-                        style={{pointerEvents:"auto",cursor:"pointer",userSelect:"none",opacity:0.7,
-                          display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
-                        {Li(detailsOpen?"chevron-up":"chevron-down",18,T.txt2)}
+                        style={{pointerEvents:"auto",cursor:"pointer",userSelect:"none",
+                          color:T.txt2,fontSize:10,fontWeight:700,
+                          display:"inline-flex",alignItems:"center",gap:3}}>
+                        Prog. {Li(detailsOpen?"chevron-up":"chevron-down",10,T.txt2)}
                       </span>
                     </div>
                   </div>
