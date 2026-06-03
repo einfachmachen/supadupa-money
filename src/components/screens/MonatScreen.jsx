@@ -6,7 +6,7 @@ import { CategoryChart } from "../molecules/CategoryChart.jsx";
 import { MitteEndeFields } from "../molecules/MitteEndeFields.jsx";
 import { BudgetEditorModal } from "../organisms/BudgetEditorModal.jsx";
 import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
-import { SaldoHero2 } from "../organisms/SaldoHero2.jsx";
+import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { PAL } from "../../theme/palette.js";
@@ -40,6 +40,7 @@ function MonatScreen() {
     const _txsById = useMemo(()=>buildTxIdMap(txs), [txs]);
     const _isDupl  = t => isDuplCounterpart(t, _txsById);
     const [filt,     setFilt]     = useState("all");
+    const [heroDetailsOpen, setHeroDetailsOpen] = useState(false);
     const [showAllCats, setShowAllCats] = useState(false);
     const [activeCatTxId, setActiveCatTxId] = useState(null);
     const pendingCatsRef = useRef({});
@@ -481,7 +482,7 @@ function MonatScreen() {
     return (<>
       <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",position:"relative"}} onTouchStart={onTS} onTouchEnd={onTE}>
 
-        {/* Hero — SaldoHero2 wie Dashboard */}
+        {/* Hero — SaldoHeroV2 (gemeinsamer Hero mit dem Dashboard) */}
         <div style={window.MBT_DEBUG?.disable_sticky?{}:{position:"sticky",top:0,zIndex:10,background:T.hero_bg}}>
         {(()=>{
           const _tb=new Date(),_todayY=_tb.getFullYear(),_todayM=_tb.getMonth(),_todayD=_tb.getDate();
@@ -561,7 +562,7 @@ function MonatScreen() {
           const pendingIn2 = pTxsIn2.reduce((s,t)=>s+t.totalAmount, 0);
           const pendingOut2= pTxsOut2.reduce((s,t)=>s+t.totalAmount, 0);
           return (
-            <SaldoHero2 year={year} month={month}
+            <SaldoHeroV2 year={year} month={month}
               buchInM={_sum(_realInM)}  buchOutM={_sum(_realOutM)}
               buchInE={_sum(_realIn)}   buchOutE={_sum(_realOut)}
               pendInM={_sum(_pTxsInM)}  pendOutM={_sum(_pTxsOutM)}
@@ -577,6 +578,7 @@ function MonatScreen() {
               onDrillPendOut={(isMitte)=>setFilt("pending")}
               onDrillUncatIn ={(isMitte)=>setFilt("uncat")}
               onDrillUncatOut={(isMitte)=>setFilt("uncat")}
+              detailsOpen={heroDetailsOpen} setDetailsOpen={setHeroDetailsOpen}
             />
           );
         })()}

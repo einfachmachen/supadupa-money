@@ -1,7 +1,6 @@
 // Auto-generated module (siehe app-src.jsx)
 
 import React, { useMemo, useState } from "react";
-import { SaldoHero2 } from "./SaldoHero2.jsx";
 import { theme as T } from "../../theme/activeTheme.js";
 import { dayOf, fmt, pn, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
