@@ -8,11 +8,11 @@ import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { budgetPlaceholderActive } from "../../utils/saldo.js";
 
-function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub, budgetOpenRest, initialCollapsed=true}) {
+function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub, budgetOpenRest, initialCollapsed=true, noCollapse=false}) {
   const _pendOpenAmt = pendOpenAmt || (t=>t.totalAmount);
   const [expandedId, setExpandedId] = React.useState(null);
   const [search, setSearch] = React.useState("");
-  const [collapsed, setCollapsed] = React.useState(initialCollapsed);
+  const [collapsed, setCollapsed] = React.useState(noCollapse ? false : initialCollapsed);
   const filtered = React.useMemo(()=>{
     const base = pTxs.filter(t=>{
       // Freigegebene Restbudgets ausblenden: sobald die nächste Phase gilt
@@ -35,15 +35,15 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
   }, [pTxs, search]);
   return (
     <div style={{background:T.vorm_bg||T.tab_pend,border:`2px solid ${T.vorm_bd||"rgba(255,200,0,0.8)"}`,borderRadius:16,margin:"4px 10px",padding:"7px 10px"}}>
-      <div onClick={()=>setCollapsed(v=>!v)}
-        style={{display:"flex",alignItems:"center",gap:6,marginBottom:collapsed?0:6,cursor:"pointer"}}>
+      <div onClick={noCollapse?undefined:()=>setCollapsed(v=>!v)}
+        style={{display:"flex",alignItems:"center",gap:6,marginBottom:collapsed?0:6,cursor:noCollapse?"default":"pointer"}}>
         <span style={{color:T.gold,fontSize:14,fontWeight:700,display:"flex",alignItems:"center",gap:6,flex:1}}>
           <div style={{width:30,height:30,borderRadius:9,background:`${T.gold}22`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
             {Li("clock",15,T.gold)}
           </div>
           Offene Vormerkungen ({pTxs.filter(t=>budgetPlaceholderActive(t)).length})
         </span>
-        {Li(collapsed?"chevron-down":"chevron-up",12,T.gold)}
+        {!noCollapse && Li(collapsed?"chevron-down":"chevron-up",12,T.gold)}
         <div style={{display:"flex",alignItems:"center",gap:4,background:"rgba(0,0,0,0.2)",borderRadius:7,padding:"3px 7px"}}>
           {Li("search",11,T.txt2)}
           <input value={search} onChange={e=>setSearch(e.target.value)}

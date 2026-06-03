@@ -831,7 +831,7 @@ function DashboardScreenV2() {
 
                   {/* Detail-Block: Buch / VM / unkat — drei Zeilen mit Drill-Pfaden */}
                   {detailsOpen && (
-                    <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${T.bd}`}}>
+                    <div style={{marginTop:2,paddingTop:6,borderTop:`1px solid ${T.bd}`}}>
                       <DetailRow label="Buch."
                         mIn={buchInM} mOut={buchOutM} eIn={buchInE} eOut={buchOutE}
                         onTapIn={drillBuchIn} onTapOut={drillBuchOut}/>
@@ -884,7 +884,7 @@ function DashboardScreenV2() {
             return (
               <div onClick={()=>togglePanel(panel)}
                 style={{flex:1,display:"flex",alignItems:"center",
-                  justifyContent:"center",padding:"10px 6px",cursor:"pointer",
+                  justifyContent:"center",padding:"4px 6px",cursor:"pointer",
                   userSelect:"none",position:"relative",
                   opacity:isActive?1:0.7}}>
                 {Li(icon, 28, color)}
@@ -900,7 +900,7 @@ function DashboardScreenV2() {
             );
           };
           return (
-            <div style={{margin:"6px 10px 0",display:"flex",gap:6}}>
+            <div style={{margin:"2px 10px 0",display:"flex",gap:6}}>
               {!isPastMonth && <Card panel="warnings"     icon="shield-check" badge={warnCount}   color={warnCount>0 ? T.neg : T.pos}/>}
               {!isPastMonth && <Card panel="sparen"       icon="piggy-bank"   badge={null}        color={T.blue}/>}
               <Card panel="vormerkungen" icon="clock"        badge={visiblePTxs.length} color={T.gold}/>
@@ -924,7 +924,7 @@ function DashboardScreenV2() {
           })();
           if(visiblePTxs.length===0) return null;
           return (
-            <PendingList pTxs={visiblePTxs} getCat={getCat} getSub={getSub} txType={txType} openEdit={openEdit} dayOf={dayOf} pendOpenAmt={pendOpenAmt} budgetOpenRest={budgetOpenRest} initialCollapsed={false}/>
+            <PendingList pTxs={visiblePTxs} getCat={getCat} getSub={getSub} txType={txType} openEdit={openEdit} dayOf={dayOf} pendOpenAmt={pendOpenAmt} budgetOpenRest={budgetOpenRest} initialCollapsed={false} noCollapse={true}/>
           );
         })()}
 
