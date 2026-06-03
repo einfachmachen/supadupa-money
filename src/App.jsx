@@ -2587,14 +2587,19 @@ Abbrechen = ${remoteName}-Stand laden`
               ref.consumed = true;
               if(ref.dx < 0) jumpToTxEdge("first");
               else jumpToTxEdge("last");
-              // Visuelles Feedback: Button kurz "pulsen"
+              // Visuelles Feedback: Button kurz "pulsen" — auf der AKTUELLEN
+              // Rest-Position/-Größe (arretiert: y -94, scale 1,5), damit er beim
+              // Links/Rechts-Hold nicht erst verkleinert und wieder vergrößert wird.
               if(btn) {
+                const restY = plusArretiert ? -94 : -14;
+                const base  = plusArretiert ? 1.5 : 1;
+                const dir   = ref.dx < 0 ? -1 : 1;
                 btn.style.transition = "transform 0.15s ease-out";
-                btn.style.transform = `translate(${ref.dx<0?-VISUAL_LIMIT-4:VISUAL_LIMIT+4}px, -14px) scale(1.18)`;
+                btn.style.transform = `translate(${dir*(VISUAL_LIMIT+4)}px, ${restY}px) scale(${base*1.1})`;
                 setTimeout(()=>{
                   if(btn && ref.dragging) {
                     btn.style.transition = "none";
-                    btn.style.transform = `translate(${ref.dx<0?-VISUAL_LIMIT:VISUAL_LIMIT}px, -14px) scale(1.08)`;
+                    btn.style.transform = `translate(${dir*VISUAL_LIMIT}px, ${restY}px) scale(${base*1.05})`;
                   }
                 }, 150);
               }
