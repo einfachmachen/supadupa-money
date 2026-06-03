@@ -2546,6 +2546,10 @@ Abbrechen = ${remoteName}-Stand laden`
           const isTerminal = T.themeName==="terminal";
           const monthNames = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
           const SIZE = 78;
+          // Heutiger Tag — nur wenn der angezeigte Monat der aktuelle ist (oben im + Button)
+          const _nowMB = new Date();
+          const _dayStr = (_nowMB.getFullYear()===year && _nowMB.getMonth()===month)
+            ? `${_nowMB.getDate()}.` : null;
 
           // ── Override-Variante: Wizard hat den Knopf temporär übernommen ──
           // Selbe Position, dieselbe Größe — nur Inhalt und Gestik ändern sich.
@@ -2820,6 +2824,11 @@ Abbrechen = ${remoteName}-Stand laden`
                   touchAction:"none",userSelect:"none",cursor:"pointer",
                   WebkitTapHighlightColor:"transparent",padding:0,
                   fontFamily:"inherit",lineHeight:1}}>
+                {_dayStr && (
+                  <div style={{fontSize:12,fontWeight:800,color:fg,lineHeight:1,pointerEvents:"none"}}>
+                    {_dayStr}
+                  </div>
+                )}
                 <div style={{fontSize:13,fontWeight:800,color:fg,letterSpacing:-0.3,whiteSpace:"nowrap",pointerEvents:"none"}}>
                   {monthNames[month]} {year}
                 </div>
