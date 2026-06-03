@@ -352,9 +352,8 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                 const grp = (groups||[]).find(g=>g.type===cat.type);
                 const isInc = (grp?.behavior || cat.type)==="income";
                 return (
-                  <span style={{color:isInc?T.pos:T.neg,fontSize:S.fs-2,fontWeight:800,
-                    background:"rgba(255,255,255,0.08)",borderRadius:8,padding:"2px 12px",
-                    flexShrink:0,lineHeight:1}}>
+                  <span style={{color:isInc?T.pos:T.neg,fontSize:S.fs,fontWeight:800,
+                    flexShrink:0,lineHeight:1,padding:"0 2px"}}>
                     {isInc ? "+" : "−"}
                   </span>
                 );
@@ -369,7 +368,8 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                 setView("editCat");
               }} style={{background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bd}`,
                 borderRadius:S.radius/2,color:T.txt2,cursor:"pointer",
-                padding:"4px 10px",flexShrink:0}}>
+                width:38,height:38,minWidth:38,minHeight:38,padding:0,flexShrink:0,
+                display:"flex",alignItems:"center",justifyContent:"center"}}>
                 {Li("edit-2",S.fs-6,T.txt2)}
               </button>
             </div>
