@@ -2570,6 +2570,7 @@ Abbrechen = ${remoteName}-Stand laden`
           const VISUAL_LIMIT = 15;     // Joystick darf max so weit wandern
           const HOLD_MS = 600;         // wie lange in einer Richtung halten für Edge-Jump
           const DOUBLE_TAP_MS = 350;   // Fenster für Doppel-Tap → jumpToToday
+          const GROW_TRAVEL = 60;      // Finger-Weg nach oben bis volle 1,5×-Größe erreicht ist
           // Plus-Button-Rest-Position: Bottom-Bar oder arretiert (80px höher, 1,5× größer)
           const restingTransform = plusArretiert
             ? "translate(0px, -94px) scale(1.5)"
@@ -2638,6 +2639,22 @@ Abbrechen = ${remoteName}-Stand laden`
             if(absDx>MOVE_TOLERANCE || absDy>MOVE_TOLERANCE) {
               ref.moved = true;
             }
+            // ── START-ZUSTAND: Nur die Bewegung nach oben wirkt. Der Button wächst
+            //    dabei fingerfolgend direkt auf 1,5× (kein Clamp, keine seitliche/
+            //    abwärts Reaktion) → nichts ruckelt/hakt. ──
+            if(!plusArretiert) {
+              if(ref.consumed) return;
+              const upPx = Math.max(0, -dy);                    // nur nach oben (dy<0)
+              const progress = Math.min(1, upPx / GROW_TRAVEL); // 0..1
+              const y = -14 - 80 * progress;                    // -14 → -94
+              const scale = 1 + 0.5 * progress;                 // 1 → 1,5
+              if(e.currentTarget) {
+                e.currentTarget.style.transition = "none";
+                e.currentTarget.style.transform = `translate(0px, ${y}px) scale(${scale})`;
+              }
+              clearHoldTimer(ref);
+              return;
+            }
             // ACHSEN-SNAPPING: Sobald die Bewegung MOVE_TOLERANCE überschreitet,
             // wird die dominante Achse "gelockt". Visualisierung folgt nur dieser Achse,
             // damit sich der Button nie diagonal/schwammig anfühlt.
@@ -2687,6 +2704,34 @@ Abbrechen = ${remoteName}-Stand laden`
             clearHoldTimer(ref);
             const dx = ref.dx, dy = ref.dy;
             const dt = Date.now() - ref.t;
+            // ── START-ZUSTAND: Nur Swipe-Up arretiert (Button bleibt direkt auf
+            //    1,5×). Seitlich/abwärts/zu-kurz → zurück in die Bottom-Bar. Beim
+            //    Arretieren NICHT erst nach unten zurücksnappen → kein Haken. ──
+            if(!plusArretiert) {
+              if(e.currentTarget) e.currentTarget.style.transition = "transform 0.2s cubic-bezier(.34,1.4,.64,1)";
+              const upPx = Math.max(0, -dy);
+              if(upPx > DRAG_THRESHOLD && !ref.consumed) {
+                ref.consumed = true;
+                if(e.currentTarget) e.currentTarget.style.transform = "translate(0px, -94px) scale(1.5)";
+                setPlusArretiert(true);
+              } else {
+                if(e.currentTarget) e.currentTarget.style.transform = "translate(0px, -14px) scale(1)";
+                // Doppel-Tap (jumpToToday) bleibt möglich
+                if(!ref.moved && dt < 700) {
+                  const now = Date.now();
+                  const lt = masterLastTapRef.current;
+                  if(lt.t && (now - lt.t) < DOUBLE_TAP_MS) {
+                    masterLastTapRef.current = {zone:null, t:0, timer:null};
+                    try { if(navigator.vibrate) navigator.vibrate(15); } catch(_) {}
+                    jumpToToday();
+                  } else {
+                    masterLastTapRef.current = {zone:"center", t:now, timer:null};
+                  }
+                }
+              }
+              try { e.currentTarget.releasePointerCapture(e.pointerId); } catch(err) {}
+              return;
+            }
             const wasConsumed = ref.consumed;
             const axis = ref.axisLocked;
             // Visuell zurück
