@@ -99,28 +99,34 @@ function SaldoHeroV2({
           Beträge über den Kategorie-Pillen fluchten). */}
       <div style={{display:"flex",gap:6,marginTop:2,padding:"0 1px",
         alignItems:"stretch",position:"relative"}}>
-        {/* Mitte-Spalte */}
-        <div onClick={()=>setProgDrill(v=>v==="Mitte"?null:"Mitte")}
-          style={{flex:1,textAlign:"center",cursor:"pointer",
+        {/* Mitte-Spalte — Klickfläche nur um den Text (inline-block), damit sie
+            nicht bis zum mittigen Ausklapp-Chevron reicht. Spaltenbreite, Text-
+            position und der Highlight bleiben unverändert. */}
+        <div style={{flex:1,textAlign:"center",
             padding:"2px 0 4px",borderRadius:8,
             background: progDrill==="Mitte" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
-          <div style={{color:T.mid||T.txt2,fontSize:9,fontWeight:700,
-            letterSpacing:2,opacity:0.7,marginBottom:2}}>MITTE</div>
-          <div className="heroAmt" style={{color: saldoCol(prognoseMitte),
-            fontSize:20,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
-            {prognoseMitte>=0?"":"−"}{fmtMoney(Math.abs(prognoseMitte||0))}
+          <div onClick={()=>setProgDrill(v=>v==="Mitte"?null:"Mitte")}
+            style={{display:"inline-block",cursor:"pointer"}}>
+            <div style={{color:T.mid||T.txt2,fontSize:9,fontWeight:700,
+              letterSpacing:2,opacity:0.7,marginBottom:2}}>MITTE</div>
+            <div className="heroAmt" style={{color: saldoCol(prognoseMitte),
+              fontSize:20,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
+              {prognoseMitte>=0?"":"−"}{fmtMoney(Math.abs(prognoseMitte||0))}
+            </div>
           </div>
         </div>
-        {/* Ende-Spalte */}
-        <div onClick={()=>setProgDrill(v=>v==="Ende"?null:"Ende")}
-          style={{flex:1,textAlign:"center",cursor:"pointer",
+        {/* Ende-Spalte — Klickfläche analog nur um den Text. */}
+        <div style={{flex:1,textAlign:"center",
             padding:"2px 0 4px",borderRadius:8,
             background: progDrill==="Ende" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
-          <div style={{color:T.gold||T.txt2,fontSize:9,fontWeight:700,
-            letterSpacing:2,opacity:0.7,marginBottom:2}}>ENDE</div>
-          <div className="heroAmt" style={{color: saldoCol(prognoseEnde),
-            fontSize:20,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
-            {prognoseEnde>=0?"":"−"}{fmtMoney(Math.abs(prognoseEnde||0))}
+          <div onClick={()=>setProgDrill(v=>v==="Ende"?null:"Ende")}
+            style={{display:"inline-block",cursor:"pointer"}}>
+            <div style={{color:T.gold||T.txt2,fontSize:9,fontWeight:700,
+              letterSpacing:2,opacity:0.7,marginBottom:2}}>ENDE</div>
+            <div className="heroAmt" style={{color: saldoCol(prognoseEnde),
+              fontSize:20,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
+              {prognoseEnde>=0?"":"−"}{fmtMoney(Math.abs(prognoseEnde||0))}
+            </div>
           </div>
         </div>
         {/* Mittiges Overlay: Kontoname + ⟳-Symbol (Label-Zeile) und großes
