@@ -243,34 +243,52 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
 
         {/* Hinweis: Symbole und Farben können durch Antippen geändert werden */}
 
-        {/* Konto-Filter */}
-        {accounts.length>1 && (
-          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:S.gap,
-            paddingBottom:S.gap,borderBottom:`1px solid ${T.bd}`}}>
-            <button onClick={()=>setCatAccFilter(null)}
-              style={{padding:"8px 14px",borderRadius:S.radius/2,fontSize:S.fs-10,fontWeight:700,
-                border:`2px solid ${catAccFilter===null?T.blue:T.bd}`,
-                background:catAccFilter===null?"rgba(74,159,212,0.18)":"rgba(255,255,255,0.04)",
-                color:catAccFilter===null?T.blue:T.txt2,cursor:"pointer",fontFamily:"inherit"}}>
-              Alle
-            </button>
-            {accounts.map(acc=>{
-              const sel = catAccFilter===acc.id;
-              return (
-                <button key={acc.id} onClick={()=>setCatAccFilter(acc.id)}
-                  style={{padding:"8px 14px",borderRadius:S.radius/2,fontSize:S.fs-10,fontWeight:700,
-                    border:`2px solid ${sel?(acc.color||T.blue):T.bd}`,
-                    background:sel?(acc.color||T.blue)+"22":"rgba(255,255,255,0.04)",
-                    color:sel?(acc.color||T.blue):T.txt2,cursor:"pointer",fontFamily:"inherit",
-                    display:"inline-flex",alignItems:"center",gap:5}}>
-                  {Li(acc.icon||"credit-card",S.fs-12,sel?(acc.color||T.blue):T.txt2)}
-                  {acc.name}
-                  {acc.delayDays>0 && <span style={{color:T.gold,fontSize:"0.75em",fontWeight:700,marginLeft:2}}>+{acc.delayDays}d</span>}
-                </button>
-              );
-            })}
-          </div>
-        )}
+        {/* Konto-Filter — kompakte Kacheln wie in den Vormerken-Dialogen */}
+        {accounts.length>1 && (()=>{
+          const count = accounts.length + 1; // + "Alle"
+          const chipStyle = (selected, color) => ({
+            aspectRatio:"1", borderRadius:S.radius, padding:4,
+            background: selected ? color+"22" : "rgba(255,255,255,0.06)",
+            border:`2px solid ${selected ? (color||T.blue) : T.bd}`,
+            color: selected ? (color||T.blue) : T.txt2,
+            cursor:"pointer", fontFamily:"inherit", position:"relative",
+            display:"flex", flexDirection:"column", alignItems:"center",
+            justifyContent:"center", gap:2, minWidth:0, overflow:"hidden",
+          });
+          const nameStyle = (selected) => ({
+            fontSize:S.fs-12, fontWeight:selected?700:500,
+            width:"100%", textAlign:"center",
+            overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
+            lineHeight:1.1,
+          });
+          return (
+            <div style={{display:"grid", gridTemplateColumns:`repeat(${count}, 1fr)`,
+              gap:S.gap/2, marginBottom:S.gap, paddingBottom:S.gap, borderBottom:`1px solid ${T.bd}`}}>
+              <button onClick={()=>setCatAccFilter(null)} style={chipStyle(catAccFilter===null, T.blue)}>
+                {Li("layers", S.fs, catAccFilter===null?T.blue:T.txt2)}
+                <span style={nameStyle(catAccFilter===null)}>Alle</span>
+              </button>
+              {accounts.map(acc=>{
+                const sel = catAccFilter===acc.id;
+                const col = acc.color||T.blue;
+                return (
+                  <button key={acc.id} onClick={()=>setCatAccFilter(acc.id)} style={chipStyle(sel,col)}>
+                    {acc.delayDays>0 && (
+                      <span style={{position:"absolute", top:3, right:3,
+                        fontSize:S.fs-16, color:T.gold, fontWeight:700,
+                        background:T.gold+"22", borderRadius:4,
+                        padding:"0 3px", lineHeight:1.3, letterSpacing:"-0.5px"}}>
+                        +{acc.delayDays}
+                      </span>
+                    )}
+                    {Li(acc.icon||"landmark", S.fs, sel?col:T.txt2)}
+                    <span style={nameStyle(sel)}>{acc.name||acc.id}</span>
+                  </button>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {/* Kategorie-Zuordnungen anzeigen */}
         <button onClick={()=>{
