@@ -754,8 +754,9 @@ function DashboardScreenV2() {
                       cursor:allAccIds.length>1?"pointer":"default"}}>
                     <span className="heroAmt" style={{
                       color: heroColor(saldo),
-                      fontSize:40,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
+                      fontSize:48,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
                       letterSpacing:-1,lineHeight:1.1,
+                      WebkitTextStroke:"0.8px currentColor",
                     }}>
                       {saldo>=0?"":"−"}{fmtMoney(Math.abs(saldo||0))} €
                     </span>
@@ -777,7 +778,7 @@ function DashboardScreenV2() {
                       <div style={{color:T.mid||T.txt2,fontSize:9,fontWeight:700,
                         letterSpacing:2,opacity:0.7,marginBottom:2}}>MITTE</div>
                       <div className="heroAmt" style={{color: saldoCol(prognoseMitte),
-                        fontSize:17,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
+                        fontSize:20,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
                         {prognoseMitte>=0?"":"−"}{fmtMoney(Math.abs(prognoseMitte||0))}
                       </div>
                     </div>
@@ -789,7 +790,7 @@ function DashboardScreenV2() {
                       <div style={{color:T.gold||T.txt2,fontSize:9,fontWeight:700,
                         letterSpacing:2,opacity:0.7,marginBottom:2}}>ENDE</div>
                       <div className="heroAmt" style={{color: saldoCol(prognoseEnde),
-                        fontSize:17,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
+                        fontSize:20,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
                         {prognoseEnde>=0?"":"−"}{fmtMoney(Math.abs(prognoseEnde||0))}
                       </div>
                     </div>
@@ -821,10 +822,9 @@ function DashboardScreenV2() {
                       {/* Werte-Zeile: Prog.-Toggle (öffnet Buch./VM-Details) */}
                       <span onClick={()=>setDetailsOpen(v=>!v)}
                         title={detailsOpen?"Details ausblenden":"Details anzeigen"}
-                        style={{pointerEvents:"auto",cursor:"pointer",userSelect:"none",
-                          color:T.txt2,fontSize:10,fontWeight:700,
-                          display:"inline-flex",alignItems:"center",gap:3}}>
-                        Prog. {Li(detailsOpen?"chevron-up":"chevron-down",10,T.txt2)}
+                        style={{pointerEvents:"auto",cursor:"pointer",userSelect:"none",opacity:0.75,
+                          display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
+                        {Li(detailsOpen?"chevron-up":"chevron-down",26,T.txt2)}
                       </span>
                     </div>
                   </div>
