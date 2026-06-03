@@ -151,13 +151,14 @@
      mit z-index:9999. Sie überdeckt im Mobile-Modus die unteren ~57px
      jedes Modals. Wir reservieren diese Höhe + Safe-Area als padding-bottom,
      damit sticky-Footer-Buttons sichtbar bleiben.
-     - 100dvh = dynamic viewport height für iOS Safari Bottom-Bar
+     - 100svh = small viewport height: stabil (kein Nachrechnen beim Scrollen →
+       kein Wackeln), beruecksichtigt aber die iOS-Safari-Bottom-Bar
      - calc(57px + safe-area-inset-bottom) = nav-bottom + iPhone Home-Indicator */
   .mobile-modal {
     font-size: 18px;
     top: 0 !important;
     height: 100vh !important;
-    height: 100dvh !important;
+    height: 100svh !important;
     padding-bottom: calc(57px + env(safe-area-inset-bottom, 0px)) !important;
     box-sizing: border-box;
   }
