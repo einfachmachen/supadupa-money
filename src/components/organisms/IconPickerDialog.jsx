@@ -1,6 +1,7 @@
 // Auto-generated module (siehe app-src.jsx)
 
 import React, { useContext, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { Overlay } from "../atoms/Overlay.jsx";
 import { ColorPickerPopup } from "../molecules/ColorPickerPopup.jsx";
 import { BankIconsGrid } from "./BankIconsGrid.jsx";
@@ -145,7 +146,7 @@ function IconPickerDialog({selectedIcon, selectedColor, onSelect, onSelectColor,
     </div>
   );
   // Portal: direkt in document.body rendern um Stacking-Context-Probleme zu vermeiden
-  return ReactDOM.createPortal(content, document.body);
+  return createPortal(content, document.body);
 }
 
 // ══════════════════════════════════════════════════════════════════════
