@@ -2677,11 +2677,10 @@ Abbrechen = ${remoteName}-Stand laden`
               visX = 0;
               visY = clampY(dy) - 14;
             }
-            // Vor dem Snap (kleine Bewegung unter MOVE_TOLERANCE): noch frei, aber gedämpft
-            if(!ref.axisLocked) {
-              visX = clamp(dx, VISUAL_LIMIT);
-              visY = clampY(dy) - 14;
-            }
+            // Vor dem Achsen-Lock bleibt der Button bewusst stehen (visX=0, visY=-14).
+            // So gibt es KEIN diagonales Wackeln nach links/rechts beim Hochziehen —
+            // Bewegung beginnt erst, wenn genau eine Achse (hoch/runter ODER links/
+            // rechts) gelockt ist, und folgt dann strikt nur dieser einen Achse.
             // Live-Drag visuell: Translation relativ zur aktuellen Rest-Position
             // (arretiert: y-Offset -94, scale 1.5; sonst y-Offset -14, scale 1)
             const restY = plusArretiert ? -94 : -14;
