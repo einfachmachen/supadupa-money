@@ -141,7 +141,7 @@ export default function FinanzApp() {
   React.useEffect(() => {
     if(mainTab==="struktur" && activeStructurTab==="einstellungen") {
       setMasterOverride({
-        label: "↓ schließen",
+        label: "←zurück ↓schließen",
         onConfirm: () => {},                               // Tipp: bewusst ohne Aktion
         onBack: () => reopenMobilePicker("main"),          // Wisch ← : zurück ins Mehr-Menü
         onDismiss: () => { setMainTab("erfassen"); setSubTab("dashboard"); }, // Wisch ↓ : Home
