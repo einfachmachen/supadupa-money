@@ -1,4 +1,4 @@
-# Design-Guide — MyBudgetTracker
+# Design-Guide — SupaDupa Money
 
 > Stand: 2026-06 · Abgeleitet aus dem aktuellen Code (`new/src`). Diese Datei
 > beschreibt das gelebte Design-System der App, nicht einen Wunschzustand.

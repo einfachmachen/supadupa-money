@@ -1,6 +1,6 @@
 {
-  "name": "MyBudgetTracker",
-  "short_name": "MyBudgetTracker",
+  "name": "SupaDupa Money",
+  "short_name": "SupaDupa Money",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#2C3035",
