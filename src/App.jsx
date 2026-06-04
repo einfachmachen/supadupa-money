@@ -144,7 +144,7 @@ export default function FinanzApp() {
         label: "←zurück ↓schließen",
         onConfirm: () => {},                               // Tipp: bewusst ohne Aktion
         onBack: () => reopenMobilePicker("main"),          // Wisch ← : zurück ins Mehr-Menü
-        onDismiss: () => { setMainTab("erfassen"); setSubTab("dashboard"); }, // Wisch ↓ : Home
+        onDismiss: () => { setShowMobilePicker(false); setMobilePickerScreen("main"); setMainTab("erfassen"); setSubTab("dashboard"); }, // Wisch ↓ : Home (Mehr-Menü mitschließen)
       });
       return () => setMasterOverride(null);
     }
