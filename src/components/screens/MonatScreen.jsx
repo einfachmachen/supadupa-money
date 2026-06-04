@@ -15,7 +15,7 @@ import { dayOf, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
-import { saldoAt, saldoIst, saldoMitte, saldoEnde, phaseStillReachable } from "../../utils/saldo.js";
+import { saldoAt, saldoIst, saldoMitte, saldoEnde, phaseStillReachable, budgetPlaceholderActive } from "../../utils/saldo.js";
 
 function MonatScreen() {
   const { cats,setCats,groups,setGroups,txs,setTxs,accounts,setAccounts,
@@ -547,16 +547,21 @@ function MonatScreen() {
           // Bei Gesamt-Sicht (selAcc=null): null, damit Drill drill.saldo nutzt.
           const saldoMitte = selAcc ? prognoseMitte : null;
           const saldoEnde  = selAcc ? prognoseEnde  : null;
-          const _realIn =allMTxs.filter(t=>!t.pending&&txType(t)==="income");
-          const _realOut=allMTxs.filter(t=>!t.pending&&txType(t)==="expense");
-          const _uIn =allMTxs.filter(t=>txType(t)==="income" &&((t.splits||[]).length===0||(t.splits||[]).every(s=>!s.catId)));
-          const _uOut=allMTxs.filter(t=>txType(t)==="expense"&&((t.splits||[]).length===0||(t.splits||[]).every(s=>!s.catId)));
+          // Hero-Detailwerte (Buch./VM/unkat) EXAKT wie im Home-Dashboard berechnen,
+          // sonst weichen die Werte im aufgeklappten Hero ab. Eigene, von der Monats-
+          // Kategorieliste unabhaengige Filter — identisch zu DashboardScreenV2.
+          const _heroLinkedChildIds = (()=>{ const s=new Set(); txs.forEach(t=>(t.linkedIds||[]).forEach(id=>s.add(id))); return s; })();
+          const _heroMTxs = txs.filter(t=>{ const d=new Date(t.date); return d.getFullYear()===year&&d.getMonth()===month&&!t.pending&&!_isDupl(t)&&!_heroLinkedChildIds.has(t.id)&&_isSelAcc(t); });
+          const _heroPTxs = txs.filter(t=>{ const d=new Date(t.date); return d.getFullYear()===year&&d.getMonth()===month&&t.pending&&_isSelAcc(t); });
+          const _uncat = t => ((t.splits||[]).length===0||(t.splits||[]).every(s=>!s.catId));
+          const _realIn  = _heroMTxs.filter(t=>txType(t)==="income" &&!_heroLinkedChildIds.has(t.id));
+          const _realOut = _heroMTxs.filter(t=>txType(t)==="expense"&&!_heroLinkedChildIds.has(t.id));
+          const _uIn     = _heroMTxs.filter(t=>txType(t)==="income" &&!_heroLinkedChildIds.has(t.id)&&_uncat(t));
+          const _uOut    = _heroMTxs.filter(t=>txType(t)==="expense"&&!_heroLinkedChildIds.has(t.id)&&_uncat(t));
           const _sum=arr=>arr.reduce((s,t)=>s+Math.abs(t.totalAmount||0),0);
           const _realInM =_realIn.filter(_h2),_realOutM=_realOut.filter(_h2);
-          // Exakt wie Dashboard: pTxs aus txs (ohne _budgetSubId-Filter), pendOpenAmt = totalAmount
-          const _pTxs    = txs.filter(t=>{ const d=new Date(t.date); return d.getFullYear()===year&&d.getMonth()===month&&t.pending; });
-          const pTxsOut2 = _pTxs.filter(t=>txType(t)==="expense"||(t._csvType==="expense"&&!txType(t)==="income"));
-          const pTxsIn2  = _pTxs.filter(t=>txType(t)==="income"||(t._csvType==="income"));
+          const pTxsOut2 = _heroPTxs.filter(t=>budgetPlaceholderActive(t)&&(txType(t)==="expense"||(t._csvType==="expense"&&!txType(t)==="income")));
+          const pTxsIn2  = _heroPTxs.filter(t=>budgetPlaceholderActive(t)&&(txType(t)==="income"||(t._csvType==="income")));
           const _pTxsInM =_mitteAbg?[]:pTxsIn2.filter(t=>_h2(t)&&(!t._budgetSubId||t._budgetSubId.endsWith("_mitte"))),_pTxsOutM=_mitteAbg?[]:pTxsOut2.filter(t=>_h2(t)&&(!t._budgetSubId||t._budgetSubId.endsWith("_mitte")));
           const _uInM2=_mitteAbg?[]:_uIn.filter(_h2),_uOutM2=_mitteAbg?[]:_uOut.filter(_h2);
           const pendingIn2 = pTxsIn2.reduce((s,t)=>s+t.totalAmount, 0);
