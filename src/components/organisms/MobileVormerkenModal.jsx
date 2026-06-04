@@ -118,11 +118,14 @@ function MobileVormerkenModal({onClose, onBack}) {
 
   // Master-Button-Override: Der große grüne Plus-Knopf am unteren Rand
   // übernimmt die Schritt-Aktion (Tipp = bestätigen, Wisch ← = zurück,
-  // Wisch ↓ = abbrechen). Pro Schritt wird Label/Handler neu registriert.
+  // Wisch ↓ = abbrechen). WICHTIG: Der Effekt darf NICHT pro Tastendruck feuern —
+  // setMasterOverride löst App-weite Re-Renders aus (Tipp-Lag). Daher hängt er nur
+  // an Bool-Readiness (Betrag>0 / Text vorhanden), nicht an den Rohtexten.
+  const _amt = pn(amount.replace(",","."));
+  const step1Ready = _amt > 0 && (!isTransfer || (tgtAccId && tgtAccId !== accId));
+  const descReady = !!desc.trim();
   React.useEffect(() => {
     if(showNewAcc || saved) { setMasterOverride(null); return; }
-    const amt = pn(amount.replace(",","."));
-    const step1Ready = amt > 0 && (!isTransfer || (tgtAccId && tgtAccId !== accId));
     let cfg;
     if(step === 1) {
       cfg = {
@@ -147,10 +150,10 @@ function MobileVormerkenModal({onClose, onBack}) {
     } else if(step === 3) {
       cfg = {
         label: "Weiter → Bestätigen",
-        onConfirm: () => { if(desc.trim()) setStep(4); },
+        onConfirm: () => { if(descReady) setStep(4); },
         onBack: () => setStep(2),
         onDismiss: onClose,
-        disabled: !desc.trim(),
+        disabled: !descReady,
       };
     } else if(step === 4) {
       cfg = {
@@ -162,7 +165,7 @@ function MobileVormerkenModal({onClose, onBack}) {
     }
     setMasterOverride(cfg);
     return () => setMasterOverride(null);
-  }, [step, amount, desc, isTransfer, tgtAccId, accId, catSide, showNewAcc, saved]);
+  }, [step, step1Ready, descReady, isTransfer, catSide, showNewAcc, saved]);
 
   if(showNewAcc) return (
     <MobileNewAccOverlay S={S} onClose={(newId)=>{

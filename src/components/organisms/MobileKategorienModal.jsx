@@ -88,8 +88,14 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
   const COLORS = [T.blue,T.pos,T.neg,T.gold,"#9b59b6","#1abc9c","#e67e22","#e91e63","#00bcd4","#ff5722"];
 
   // ── Hauptaktionen je View (auch vom + Button genutzt) ──
+  // liveRef hält die aktuellen Eingabewerte, damit die Save-Handler sie immer
+  // frisch lesen — so muss der Override-Effekt NICHT pro Tastendruck neu
+  // registriert werden (sonst App-weite Re-Renders → Tipp-Lag).
+  const liveRef = React.useRef({});
+  liveRef.current = { newName, newColor, newType, editName, editColor, editType, selCat, catAccFilter };
   const openNewCat = () => { setNewName(""); setNewColor(T.blue); setView("newCat"); };
   const saveEditCat = () => {
+    const { editName, editColor, editType, selCat, catAccFilter } = liveRef.current;
     if(!editName.trim() || !selCat) return;
     const curGrp = (groups||[]).find(g=>g.type===selCat.type);
     const curAcc = curGrp?.accountId || catAccFilter || "";
@@ -99,6 +105,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
     setView("list");
   };
   const saveNewCat = () => {
+    const { newName, newColor, newType, catAccFilter } = liveRef.current;
     if(!newName.trim()) return;
     const newCatType = ensureGroupForCat(catAccFilter || "", newType);
     setCats(p=>[...p,{id:"cat-"+uid(),name:newName.trim(),
@@ -106,6 +113,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
     setNewName(""); setView("list");
   };
   const saveNewSub = () => {
+    const { newName, selCat } = liveRef.current;
     if(!newName.trim() || !selCat) return;
     setCats(p=>p.map(c=>c.id===selCat.id
       ?{...c,subs:[...(c.subs||[]),{id:"sub-"+uid(),name:newName.trim(),icon:""}]}:c));
@@ -113,26 +121,29 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
   };
 
   // ── + Button steuert den Dialog: Tipp = Hauptaktion der aktuellen View,
-  //    Wisch ← = Zurück (eine Ebene), Wisch ↓ = Abbrechen (schließen). ──
+  //    Wisch ← = Zurück (eine Ebene), Wisch ↓ = Abbrechen (schließen).
+  //    Deps nur view + Readiness-Booleans → kein Neu-Registrieren pro Tastendruck. ──
+  const newNameReady = !!newName.trim();
+  const editNameReady = !!editName.trim();
   React.useEffect(() => {
     if(iconPickFor) { setMasterOverride(null); return; }
     let cfg;
     if(view==="newCat") {
       cfg = { label:"✓ Kategorie anlegen", onConfirm:saveNewCat,
-        onBack:()=>setView("list"), onDismiss:onClose, disabled:!newName.trim() };
+        onBack:()=>setView("list"), onDismiss:onClose, disabled:!newNameReady };
     } else if(view==="newSub") {
       cfg = { label:"✓ Unterkategorie anlegen", onConfirm:saveNewSub,
-        onBack:()=>setView("list"), onDismiss:onClose, disabled:!newName.trim() };
+        onBack:()=>setView("list"), onDismiss:onClose, disabled:!newNameReady };
     } else if(view==="editCat") {
       cfg = { label:"✓ Speichern", onConfirm:saveEditCat,
-        onBack:()=>setView("list"), onDismiss:onClose, disabled:!editName.trim() };
+        onBack:()=>setView("list"), onDismiss:onClose, disabled:!editNameReady };
     } else {
       cfg = { label:"+ neue Kategorie", onConfirm:openNewCat,
         onBack:goBack, onDismiss:onClose };
     }
     setMasterOverride(cfg);
     return () => setMasterOverride(null);
-  }, [view, newName, newType, newColor, editName, editType, editColor, selCat, catAccFilter, iconPickFor]);
+  }, [view, newNameReady, editNameReady, iconPickFor]);
 
   // onBack ist hier IMMER gesetzt (entweder zur Listenansicht oder, im Root, ins
   // Mehr-Menü) — der Button zeigt also stets den Zurück-Pfeil.
