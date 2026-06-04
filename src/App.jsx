@@ -2825,7 +2825,7 @@ Abbrechen = ${remoteName}-Stand laden`
                   WebkitTapHighlightColor:"transparent",padding:0,
                   fontFamily:"inherit",lineHeight:1}}>
                 {_dayStr && (
-                  <div style={{fontSize:12,fontWeight:800,color:fg,lineHeight:1,pointerEvents:"none"}}>
+                  <div style={{fontSize:24,fontWeight:800,color:fg,lineHeight:1,pointerEvents:"none"}}>
                     {_dayStr}
                   </div>
                 )}

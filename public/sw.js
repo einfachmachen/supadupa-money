@@ -1,5 +1,5 @@
 // Minimaler PWA Service Worker
-const CACHE = "mybudgettracker-v1";
+const CACHE = "supadupa-money-v1";
 
 self.addEventListener("install", e => {
   self.skipWaiting();

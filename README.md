@@ -1,4 +1,4 @@
-# MyBudgetTracker — modularisiert
+# SupaDupa Money — modularisiert
 
 Vollständige Modularisierung der ursprünglichen Single-File-PWA (24.454 Zeilen `index.html`) zu einer Vite-basierten React-App mit atomic design.
 

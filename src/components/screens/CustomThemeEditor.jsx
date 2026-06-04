@@ -286,7 +286,7 @@ function CustomThemeEditor() {
                   <div style={{background:edit.surf,padding:"5px 8px",display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${edit.bd}`}}>
                     <div style={{display:"flex",alignItems:"center",gap:4}}>
                       <div style={{width:5,height:5,borderRadius:"50%",background:edit.blue}}/>
-                      <div style={{color:edit.txt,fontWeight:700,fontSize:8}}>MyBudgetTracker</div>
+                      <div style={{color:edit.txt,fontWeight:700,fontSize:8}}>SupaDupa Money</div>
                     </div>
                     <div style={{color:edit.txt2,fontSize:7}}>Apr 2026</div>
                   </div>
