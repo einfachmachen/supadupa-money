@@ -205,8 +205,8 @@ function ManagementScreen({activeTab="kategorien"}) {
                     style={{background:"none",border:"none",color:ai===_accounts.length-1?"rgba(255,255,255,0.1)":T.txt2,cursor:ai===_accounts.length-1?"default":"pointer",fontSize:11,padding:"1px 3px",lineHeight:1}}>{Li("chevron-down",10)}</button>
                 </div>
                 <button onClick={()=>setAccIconPick(acc.id)}
-                  style={{width:28,height:28,borderRadius:7,border:`1px solid ${T.bd}`,background:"rgba(255,255,255,0.06)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                  {Li(acc.icon,16,acc.color||T.txt)}
+                  style={{width:34,height:34,borderRadius:9,border:`1.5px solid ${(acc.color||T.blue)}55`,background:`${acc.color||T.blue}22`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0}}>
+                  {Li(acc.icon,18,acc.color||T.blue)}
                 </button>
                 {accIconPick===acc.id&&<IconPickerDialog selectedIcon={acc.icon} selectedColor={acc.color||T.blue}
                   onSelect={ic=>{setAccounts(p=>p.map(a=>a.id===acc.id?{...a,icon:ic}:a));setAccIconPick(null);}}
@@ -284,26 +284,33 @@ function ManagementScreen({activeTab="kategorien"}) {
           {_accounts.length>0&&(
             <div style={{marginBottom:8}}>
               <div style={{color:T.txt2,fontSize:10,marginBottom:4,fontWeight:600}}>1. Konto</div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                <button onClick={()=>setNewGroup(p=>({...p,accountId:""}))}
-                  style={{padding:"5px 10px",borderRadius:9,fontSize:11,fontWeight:600,cursor:"pointer",
-                    border:`2px solid ${!newGroup.accountId?T.blue:"transparent"}`,
-                    background:!newGroup.accountId?"rgba(74,159,212,0.15)":"rgba(255,255,255,0.05)",
-                    color:!newGroup.accountId?T.blue:T.txt2,fontFamily:"inherit"}}>
-                  Kein Konto
-                </button>
-                {_accounts.map(a=>(
-                  <button key={a.id} onClick={()=>setNewGroup(p=>({...p,accountId:a.id}))}
-                    style={{padding:"5px 10px",borderRadius:9,fontSize:11,fontWeight:600,cursor:"pointer",
-                      border:`2px solid ${newGroup.accountId===a.id?(a.color||T.blue):"transparent"}`,
-                      background:newGroup.accountId===a.id?(a.color||T.blue)+"22":"rgba(255,255,255,0.05)",
-                      color:newGroup.accountId===a.id?(a.color||T.blue):T.txt2,fontFamily:"inherit",
-                      display:"flex",alignItems:"center",gap:5}}>
-                    {Li(a.icon||"landmark",12,newGroup.accountId===a.id?(a.color||T.blue):T.txt2)}
-                    {a.name}
-                  </button>
-                ))}
-              </div>
+              {(()=>{
+                const chip = (sel,color)=>({aspectRatio:"1",borderRadius:12,padding:4,position:"relative",
+                  background:sel?(color||T.blue)+"22":"rgba(255,255,255,0.06)",
+                  border:`2px solid ${sel?(color||T.blue):T.bd}`,color:sel?(color||T.blue):T.txt2,
+                  cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column",
+                  alignItems:"center",justifyContent:"center",gap:2,minWidth:0,overflow:"hidden"});
+                const nm = sel=>({fontSize:10,fontWeight:sel?700:500,width:"100%",textAlign:"center",
+                  overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:1.1});
+                return (
+                  <div style={{display:"grid",gridTemplateColumns:`repeat(${_accounts.length+1}, 1fr)`,gap:5}}>
+                    <button onClick={()=>setNewGroup(p=>({...p,accountId:""}))} style={chip(!newGroup.accountId,T.blue)}>
+                      {Li("ban",22,!newGroup.accountId?T.blue:T.txt2)}
+                      <span style={nm(!newGroup.accountId)}>Kein</span>
+                    </button>
+                    {_accounts.map(a=>{
+                      const sel=newGroup.accountId===a.id; const col=a.color||T.blue;
+                      return (
+                        <button key={a.id} onClick={()=>setNewGroup(p=>({...p,accountId:a.id}))} style={chip(sel,col)}>
+                          {a.delayDays>0 && (<span style={{position:"absolute",top:3,right:3,fontSize:9,color:T.gold,fontWeight:700,background:T.gold+"22",borderRadius:4,padding:"0 3px",lineHeight:1.3,letterSpacing:"-0.5px"}}>+{a.delayDays}</span>)}
+                          {Li(a.icon||"landmark",22,sel?col:T.txt2)}
+                          <span style={nm(sel)}>{a.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           )}
 

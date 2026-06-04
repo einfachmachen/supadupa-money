@@ -135,6 +135,20 @@ export default function FinanzApp() {
   // Wisch ← = Zurück, Wisch ↓ = Modal schließen.
   //   { label, onConfirm, onBack|null, onDismiss, disabled? }
   const [masterOverride, setMasterOverride] = useState(null);
+
+  // + Button in den Einstellungen: nur Navigations-Gesten (keine Hauptaktion).
+  // Wisch ↓ = zurück zu Home, Wisch ← = zurück ins Mehr-Menü, Tipp = nichts.
+  React.useEffect(() => {
+    if(mainTab==="struktur" && activeStructurTab==="einstellungen") {
+      setMasterOverride({
+        label: "↓ schließen",
+        onConfirm: () => {},                               // Tipp: bewusst ohne Aktion
+        onBack: () => reopenMobilePicker("main"),          // Wisch ← : zurück ins Mehr-Menü
+        onDismiss: () => { setMainTab("erfassen"); setSubTab("dashboard"); }, // Wisch ↓ : Home
+      });
+      return () => setMasterOverride(null);
+    }
+  }, [mainTab, activeStructurTab]);
   const [dashDrillOpen, setDashDrillOpen] = useState(false);
   const [reviewQueue,   setReviewQueue]  = useState(null);
   const [customIcons,   setCustomIconsRaw] = useState(()=>{
