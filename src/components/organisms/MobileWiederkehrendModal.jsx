@@ -119,17 +119,20 @@ function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
   // die Schritt-Aktion (Tipp = bestätigen, Wisch ← = zurück, Wisch ↓ = abbrechen).
   // Pro Schritt wird Label/Handler neu registriert — parallel zu MobileVormerkenModal.
   // MUSS vor den Early-Returns stehen, damit die Hook-Reihenfolge stabil bleibt.
+  // Effekt darf NICHT pro Tastendruck feuern (setMasterOverride -> App-Re-Render
+  // -> Tipp-Lag). Daher nur Bool-Readiness in den Deps statt amount/desc roh.
+  const aReady = amt() > 0;
+  const descReady = !!desc.trim();
   React.useEffect(() => {
     if(showNewAcc || saved) { setMasterOverride(null); return; }
-    const a = amt();
     let cfg;
     if(step === 1) {
       cfg = {
         label: "Weiter → Kategorie",
-        onConfirm: () => { if(a > 0) setStep(2); },
+        onConfirm: () => { if(aReady) setStep(2); },
         onBack: goBack, // erste Stufe → zurück ins Mehr-Menü
         onDismiss: onClose,
-        disabled: !(a > 0),
+        disabled: !aReady,
       };
     } else if(step === 2) {
       cfg = {
@@ -141,10 +144,10 @@ function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
     } else if(step === 3) {
       cfg = {
         label: "Weiter → Bestätigen",
-        onConfirm: () => { if(desc.trim()) setStep(4); },
+        onConfirm: () => { if(descReady) setStep(4); },
         onBack: () => setStep(2),
         onDismiss: onClose,
-        disabled: !desc.trim(),
+        disabled: !descReady,
       };
     } else if(step === 4) {
       cfg = {
@@ -156,7 +159,7 @@ function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
     }
     setMasterOverride(cfg);
     return () => setMasterOverride(null);
-  }, [step, amount, desc, showNewAcc, saved, totalCount, isFinanz]);
+  }, [step, aReady, descReady, showNewAcc, saved, totalCount, isFinanz]);
 
   if(showNewAcc) return (
     <MobileNewAccOverlay S={S} onClose={(newId)=>{
