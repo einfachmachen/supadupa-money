@@ -12,7 +12,7 @@ import { Li } from "../../utils/icons.jsx";
 function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert}) {
   const goBack = onBack || onClose; // zurück eine Ebene hoch (Mehr-Menü)
   const { cats, setCats, groups, setGroups, budgets, setBudgets, txs, setTxs, accounts,
-    getBudgetForMonth, year, setYear, month, setMonth, selAcc, csvRules, setCsvRules } = useContext(AppCtx);
+    getBudgetForMonth, year, setYear, month, setMonth, selAcc, csvRules, setCsvRules, setMasterOverride } = useContext(AppCtx);
   const S = {fs:26, pad:10, padL:14, radius:16, gap:14};
   const MONTHS = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
 
@@ -87,6 +87,53 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
 
   const COLORS = [T.blue,T.pos,T.neg,T.gold,"#9b59b6","#1abc9c","#e67e22","#e91e63","#00bcd4","#ff5722"];
 
+  // ── Hauptaktionen je View (auch vom + Button genutzt) ──
+  const openNewCat = () => { setNewName(""); setNewColor(T.blue); setView("newCat"); };
+  const saveEditCat = () => {
+    if(!editName.trim() || !selCat) return;
+    const curGrp = (groups||[]).find(g=>g.type===selCat.type);
+    const curAcc = curGrp?.accountId || catAccFilter || "";
+    const newCatType = ensureGroupForCat(curAcc, editType);
+    setCats(p=>p.map(c=>c.id===selCat.id
+      ?{...c,name:editName.trim(),color:editColor,type:newCatType}:c));
+    setView("list");
+  };
+  const saveNewCat = () => {
+    if(!newName.trim()) return;
+    const newCatType = ensureGroupForCat(catAccFilter || "", newType);
+    setCats(p=>[...p,{id:"cat-"+uid(),name:newName.trim(),
+      icon:"tag",color:newColor,type:newCatType,subs:[]}]);
+    setNewName(""); setView("list");
+  };
+  const saveNewSub = () => {
+    if(!newName.trim() || !selCat) return;
+    setCats(p=>p.map(c=>c.id===selCat.id
+      ?{...c,subs:[...(c.subs||[]),{id:"sub-"+uid(),name:newName.trim(),icon:""}]}:c));
+    setNewName(""); setView("list");
+  };
+
+  // ── + Button steuert den Dialog: Tipp = Hauptaktion der aktuellen View,
+  //    Wisch ← = Zurück (eine Ebene), Wisch ↓ = Abbrechen (schließen). ──
+  React.useEffect(() => {
+    if(iconPickFor) { setMasterOverride(null); return; }
+    let cfg;
+    if(view==="newCat") {
+      cfg = { label:"✓ Kategorie anlegen", onConfirm:saveNewCat,
+        onBack:()=>setView("list"), onDismiss:onClose, disabled:!newName.trim() };
+    } else if(view==="newSub") {
+      cfg = { label:"✓ Unterkategorie anlegen", onConfirm:saveNewSub,
+        onBack:()=>setView("list"), onDismiss:onClose, disabled:!newName.trim() };
+    } else if(view==="editCat") {
+      cfg = { label:"✓ Speichern", onConfirm:saveEditCat,
+        onBack:()=>setView("list"), onDismiss:onClose, disabled:!editName.trim() };
+    } else {
+      cfg = { label:"+ neue Kategorie", onConfirm:openNewCat,
+        onBack:goBack, onDismiss:onClose };
+    }
+    setMasterOverride(cfg);
+    return () => setMasterOverride(null);
+  }, [view, newName, newType, newColor, editName, editType, editColor, selCat, catAccFilter, iconPickFor]);
+
   // onBack ist hier IMMER gesetzt (entweder zur Listenansicht oder, im Root, ins
   // Mehr-Menü) — der Button zeigt also stets den Zurück-Pfeil.
   const header = (title, onBack) => (
@@ -124,16 +171,8 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                 cursor:"pointer",border:`3px solid ${editColor===c?"#fff":"transparent"}`,flexShrink:0}}/>
           ))}
         </div>
-        <button onClick={()=>{
-          if(!editName.trim()) return;
-          // Aktuelles Konto der Kategorie ermitteln, um Konto-Bindung zu erhalten
-          const curGrp = (groups||[]).find(g=>g.type===selCat.type);
-          const curAcc = curGrp?.accountId || catAccFilter || "";
-          const newCatType = ensureGroupForCat(curAcc, editType);
-          setCats(p=>p.map(c=>c.id===selCat.id
-            ?{...c,name:editName.trim(),color:editColor,type:newCatType}:c));
-          setView("list");
-        }} style={{...btnCenter,background:editName.trim()?T.blue:"rgba(255,255,255,0.1)",
+        <button onClick={saveEditCat}
+          style={{...btnCenter,background:editName.trim()?T.blue:"rgba(255,255,255,0.1)",
           color:editName.trim()?"#fff":T.txt2,marginBottom:S.gap}}>
           ✓ Speichern
         </button>
@@ -180,13 +219,8 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                 cursor:"pointer",border:`3px solid ${newColor===c?"#fff":"transparent"}`,flexShrink:0}}/>
           ))}
         </div>
-        <button onClick={()=>{
-          if(!newName.trim()) return;
-          const newCatType = ensureGroupForCat(catAccFilter || "", newType);
-          setCats(p=>[...p,{id:"cat-"+uid(),name:newName.trim(),
-            icon:"tag",color:newColor,type:newCatType,subs:[]}]);
-          setNewName(""); setView("list");
-        }} style={{...btnCenter,background:newName.trim()?T.pos:"rgba(255,255,255,0.1)",
+        <button onClick={saveNewCat}
+          style={{...btnCenter,background:newName.trim()?T.pos:"rgba(255,255,255,0.1)",
           color:newName.trim()?"#fff":T.txt2}}>
           ✓ Kategorie anlegen
         </button>
@@ -208,12 +242,8 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
         <div style={{color:T.txt2,fontSize:S.fs-4,marginBottom:6,fontWeight:600}}>Name</div>
         <input value={newName} onChange={e=>setNewName(e.target.value)}
           placeholder="z.B. Restaurant" autoFocus style={{...inp(),marginBottom:S.gap}}/>
-        <button onClick={()=>{
-          if(!newName.trim()) return;
-          setCats(p=>p.map(c=>c.id===selCat.id
-            ?{...c,subs:[...(c.subs||[]),{id:"sub-"+uid(),name:newName.trim(),icon:""}]}:c));
-          setNewName(""); setView("list");
-        }} style={{...btnCenter,background:newName.trim()?T.pos:"rgba(255,255,255,0.1)",
+        <button onClick={saveNewSub}
+          style={{...btnCenter,background:newName.trim()?T.pos:"rgba(255,255,255,0.1)",
           color:newName.trim()?"#fff":T.txt2}}>
           ✓ Unterkategorie anlegen
         </button>
@@ -229,7 +259,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",touchAction:"pan-y",WebkitOverflowScrolling:"touch",
         padding:`${S.gap}px ${S.padL}px ${S.padL}px`}}>
 
-        <button onClick={()=>{setNewName("");setNewColor(T.blue);setView("newCat");}}
+        <button onClick={openNewCat}
           style={{...btnCenter,background:"rgba(74,159,212,0.1)",
             border:`2px dashed ${T.blue}`,color:T.blue,marginBottom:S.gap}}>
           {Li("plus",S.fs,T.blue)} neue Kategorie
