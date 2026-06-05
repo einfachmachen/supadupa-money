@@ -875,9 +875,9 @@ function DashboardScreenV2() {
         {/* ── V2: Betrag-Anzeige je Kategorie umschalten (immer sichtbar) ──
               Ist = nur gebuchte; inkl. VM = Gesamt inkl. Vormerkungen/Restbudget. */}
         {(incomeTotals.length>0||catTotals.length>0) && (
-          <div style={{display:"flex",gap:6,padding:"2px 12px 4px",alignItems:"center"}}>
+          <div style={{display:"flex",gap:6,padding:"2px 12px 4px",alignItems:"center",flexWrap:"wrap"}}>
             <span style={{color:T.txt2,fontSize:10,fontWeight:600,marginRight:2}}>Betrag:</span>
-            {[["ist","Ist"],["gesamt","inkl. VM"]].map(([m,lbl])=>(
+            {[["ist","Ist"],["gesamt","inkl. VM"],["beide","beide"]].map(([m,lbl])=>(
               <button key={m} onClick={()=>setCatAmountMode(m)}
                 style={{padding:"3px 12px",borderRadius:14,fontSize:11,fontWeight:600,cursor:"pointer",
                   border:`1px solid ${catAmountMode===m?T.blue:T.bd}`,
@@ -892,6 +892,8 @@ function DashboardScreenV2() {
         {/* ── V2: Kategorie-Karten (clean) ── */}
         {(()=>{
           const lastDay = new Date(year, month+1, 0).getDate();
+          // Beträge platzsparend: ",00" weglassen (nur ganze Euro).
+          const fmtShort = v => { const s = fmt(v); return s.endsWith(",00") ? s.slice(0,-3) : s; };
           const allCatsToShow = [...incomeTotals, ...catTotals];
           if(allCatsToShow.length===0) return null;
 
@@ -1053,9 +1055,21 @@ function DashboardScreenV2() {
                         </div>
                       </div>
                       {(()=>{
+                        const gesamtClr = textColor(istEnde, budgetEnde, isIncome);
+                        if(catAmountMode==="beide") {
+                          return (
+                            <div onClick={e=>{e.stopPropagation(); if(iEnde>0) openCatDrill(lastDay,"inkl. VM",iEnde,false);}}
+                              style={{flexShrink:0,display:"flex",alignItems:"baseline",gap:5,
+                                fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,cursor:iEnde>0?"pointer":"default"}}>
+                              <span style={{color:T.txt2,fontSize:14,fontWeight:600}}>{fmtShort(iAkt)}</span>
+                              <span style={{color:T.txt2,fontSize:11,opacity:0.55}}>·</span>
+                              <span style={{color:gesamtClr,fontSize:20,fontWeight:700}}>{fmtShort(iEnde)}</span>
+                            </div>
+                          );
+                        }
                         const gesamt = catAmountMode==="gesamt";
                         const headVal = gesamt ? iEnde : iAkt;
-                        const headClr = gesamt ? textColor(istEnde, budgetEnde, isIncome) : headColor;
+                        const headClr = gesamt ? gesamtClr : headColor;
                         return (
                           <div onClick={e=>{e.stopPropagation();
                               if(gesamt){ if(iEnde>0) openCatDrill(lastDay,"inkl. VM",iEnde,false); }
@@ -1064,7 +1078,7 @@ function DashboardScreenV2() {
                               color:headClr,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
                               flexShrink:0, cursor:headVal>0?"pointer":"default",
                             }}>
-                            {fmt(headVal)}
+                            {fmtShort(headVal)}
                           </div>
                         );
                       })()}
