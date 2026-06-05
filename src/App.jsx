@@ -39,7 +39,7 @@ import { makeYearData } from "./utils/yearData.js";
 import { isDuplCounterpart, buildTxIdMap } from "./utils/tx.js";
 import { saldoAt, saldoEnde, saldoMitte } from "./utils/saldo.js";
 
-export default function FinanzApp() {
+export default function SupaDupaMoney() {
   const [mainTab,       setMainTab]      = useState("erfassen"); // erfassen|buchungen|struktur|mehr
   const [sparOpenRequest, setSparOpenRequest] = useState(0);
   const [activeStructurTab, setActiveStructurTab] = useState("einstellungen");

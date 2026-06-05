@@ -2,7 +2,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import * as LucideIcons from "lucide-react";
-import FinanzApp from "./App.jsx";
+import SupaDupaMoney from "./App.jsx";
 import {
   installLegacyBridge,
   migrateLegacyLocalStorage,
@@ -33,5 +33,5 @@ kvStore.init().finally(() => {
   if (loading) loading.style.display = "none";
 
   const root = ReactDOM.createRoot(document.getElementById("root"));
-  root.render(<FinanzApp />);
+  root.render(<SupaDupaMoney />);
 });

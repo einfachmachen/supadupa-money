@@ -8,7 +8,8 @@ describe("kvStore Integration", () => {
   beforeEach(async () => {
     // jsdom hat eigenes localStorage — leeren
     localStorage.clear();
-    // fake-indexeddb reset
+    // fake-indexeddb reset (neuer + alter Name)
+    indexedDB.deleteDatabase("supadupa-money");
     indexedDB.deleteDatabase("mybudgettracker");
     // Warte kurz auf Async-Delete
     await new Promise(r => setTimeout(r, 50));
