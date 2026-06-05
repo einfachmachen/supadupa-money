@@ -877,7 +877,7 @@ function DashboardScreenV2() {
         {(incomeTotals.length>0||catTotals.length>0) && (
           <div style={{display:"flex",gap:6,padding:"2px 12px 4px",alignItems:"center",flexWrap:"wrap"}}>
             <span style={{color:T.txt2,fontSize:10,fontWeight:600,marginRight:2}}>Betrag:</span>
-            {[["ist","Ist"],["gesamt","inkl. VM"],["beide","beide"]].map(([m,lbl])=>(
+            {[["ist","Ist"],["gesamt","inkl. VM"],["beide","beide"],["balken","Balken"]].map(([m,lbl])=>(
               <button key={m} onClick={()=>setCatAmountMode(m)}
                 style={{padding:"3px 12px",borderRadius:14,fontSize:11,fontWeight:600,cursor:"pointer",
                   border:`1px solid ${catAmountMode===m?T.blue:T.bd}`,
@@ -1030,7 +1030,7 @@ function DashboardScreenV2() {
                     }}>
                     {/* Zeile 1: [Icon+Name -> ausklappen]  +  aktuell (-> Buchungs-Drilldown) */}
                     <div style={{display:"flex",alignItems:"center",gap:8,
-                      marginBottom: showPills ? 6 : 0}}>
+                      marginBottom: (showPills && catAmountMode!=="balken") ? 6 : 0}}>
                       <div onClick={()=>toggleCatExpand(cat.id)}
                         style={{display:"flex",alignItems:"center",gap:8,flex:1,minWidth:0,
                           cursor:"pointer"}}>
@@ -1055,6 +1055,7 @@ function DashboardScreenV2() {
                         </div>
                       </div>
                       {(()=>{
+                        if(catAmountMode==="balken") return null; // Balken kommt als eigene Zeile darunter
                         const gesamtClr = textColor(istEnde, budgetEnde, isIncome);
                         // "beide" zeigt das Paar nur, wenn es VM/offenes Budget gibt
                         // (iEnde > iAkt). Sonst fällt es auf die einzelne Ist-Zahl zurück.
@@ -1085,8 +1086,37 @@ function DashboardScreenV2() {
                         );
                       })()}
                     </div>
+                    {/* Zeile 2 (Balken-Modus): Betrags-Skala 0→Ende mit Füll-Hintergrund
+                        bis IST (Budgetnutzung), Mitte als Markierung. IST in Namensgröße. */}
+                    {catAmountMode==="balken" && (()=>{
+                      const scale = Math.max(iEnde, iAkt, 1);
+                      const istP = Math.min(1, iAkt/scale), mitP = Math.min(1, iMitte/scale);
+                      const fillClr = textColor(iAkt, budgetEnde, isIncome);
+                      const eq = Math.round(iAkt*100) >= Math.round(iEnde*100); // IST = Ende → nichts offen
+                      const istPct = istP*100, mitPct = mitP*100;
+                      const istLeft = istP < 0.55; // Label links/rechts der Füllkante verankern
+                      return (
+                        <div onClick={e=>{e.stopPropagation(); if(iEnde>0) openCatDrill(lastDay,"inkl. VM",iEnde,false);}}
+                          style={{position:"relative",height:26,marginTop:3,borderRadius:7,overflow:"hidden",
+                            background:"rgba(255,255,255,0.06)",cursor:iEnde>0?"pointer":"default",
+                            fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
+                          <div style={{position:"absolute",left:0,top:0,bottom:0,width:`${istPct}%`,background:fillClr+"33"}}/>
+                          <span style={{position:"absolute",left:6,top:"50%",transform:"translateY(-50%)",color:T.txt2,fontSize:9}}>0</span>
+                          <span style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",
+                            color:eq?fillClr:T.txt2,fontSize:eq?20:11,fontWeight:700}}>{fmtShort(iEnde)}</span>
+                          {!eq && (<>
+                            <div style={{position:"absolute",left:`${mitPct}%`,top:3,bottom:3,width:2,background:T.txt2,opacity:0.45}}/>
+                            <span style={{position:"absolute",left:`${mitPct}%`,top:"50%",transform:"translate(-50%,-50%)",
+                              color:T.txt2,fontSize:11,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(iMitte)}</span>
+                            <span style={{position:"absolute",top:"50%",transform:"translateY(-50%)",whiteSpace:"nowrap",
+                              color:fillClr,fontSize:20,fontWeight:700,
+                              ...(istLeft ? {left:`calc(${istPct}% + 4px)`} : {right:`calc(${100-istPct}% + 4px)`})}}>{fmtShort(iAkt)}</span>
+                          </>)}
+                        </div>
+                      );
+                    })()}
                     {/* Zeile 2: Mitte/Ende-Pillen (global per Toggle ODER wenn Zeile ausgeklappt) */}
-                    {showPills && (
+                    {showPills && catAmountMode!=="balken" && (
                       <div style={{display:"flex",gap:6,marginTop:6}}>
                         {valuePill(iMitte, budgetMitte, isIncome,
                           ()=>openCatDrill(14,"Mitte",iMitte,false), {dim:true, colorVal:istMitte})}
