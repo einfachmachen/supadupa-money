@@ -131,6 +131,7 @@ function DashboardScreenV2() {
     const openBudgetEdit = (sub) => { setBudgetEditSub(sub); setBudgetEditKey(k=>k+1); };
     const [dashIconPick, setDashIconPick] = useState(null);
     const [catSortMode, setCatSortMode] = useState("custom"); // "desc" | "asc" | "custom"
+    const [catAmountMode, setCatAmountMode] = useState("ist"); // "ist" = nur gebucht | "gesamt" = inkl. Vormerkungen/Budget
     const [dragCatId,   setDragCatId]   = useState(null);
     const [dragOver,    setDragOver]    = useState(null);
     const [dashSearch, setDashSearch] = useState("");
@@ -871,6 +872,23 @@ function DashboardScreenV2() {
           );
         })()}
 
+        {/* ── V2: Betrag-Anzeige je Kategorie umschalten (immer sichtbar) ──
+              Ist = nur gebuchte; inkl. VM = Gesamt inkl. Vormerkungen/Restbudget. */}
+        {(incomeTotals.length>0||catTotals.length>0) && (
+          <div style={{display:"flex",gap:6,padding:"2px 12px 4px",alignItems:"center"}}>
+            <span style={{color:T.txt2,fontSize:10,fontWeight:600,marginRight:2}}>Betrag:</span>
+            {[["ist","Ist"],["gesamt","inkl. VM"]].map(([m,lbl])=>(
+              <button key={m} onClick={()=>setCatAmountMode(m)}
+                style={{padding:"3px 12px",borderRadius:14,fontSize:11,fontWeight:600,cursor:"pointer",
+                  border:`1px solid ${catAmountMode===m?T.blue:T.bd}`,
+                  background:catAmountMode===m?T.blue:"transparent",
+                  color:catAmountMode===m?(T.on_accent||"#000"):T.txt2,fontFamily:"inherit"}}>
+                {lbl}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* ── V2: Kategorie-Karten (clean) ── */}
         {(()=>{
           const lastDay = new Date(year, month+1, 0).getDate();
@@ -1034,13 +1052,22 @@ function DashboardScreenV2() {
                           )}
                         </div>
                       </div>
-                      <div onClick={e=>{e.stopPropagation(); if(iAkt>0) openCatDrill(lastDay,"aktuell",iAkt,true);}}
-                        style={{
-                          color:headColor,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
-                          flexShrink:0, cursor:iAkt>0?"pointer":"default",
-                        }}>
-                        {fmt(iAkt)}
-                      </div>
+                      {(()=>{
+                        const gesamt = catAmountMode==="gesamt";
+                        const headVal = gesamt ? iEnde : iAkt;
+                        const headClr = gesamt ? textColor(istEnde, budgetEnde, isIncome) : headColor;
+                        return (
+                          <div onClick={e=>{e.stopPropagation();
+                              if(gesamt){ if(iEnde>0) openCatDrill(lastDay,"inkl. VM",iEnde,false); }
+                              else { if(iAkt>0) openCatDrill(lastDay,"aktuell",iAkt,true); }}}
+                            style={{
+                              color:headClr,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
+                              flexShrink:0, cursor:headVal>0?"pointer":"default",
+                            }}>
+                            {fmt(headVal)}
+                          </div>
+                        );
+                      })()}
                     </div>
                     {/* Zeile 2: Mitte/Ende-Pillen (global per Toggle ODER wenn Zeile ausgeklappt) */}
                     {showPills && (
