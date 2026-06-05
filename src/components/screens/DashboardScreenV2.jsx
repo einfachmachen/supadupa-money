@@ -1056,7 +1056,9 @@ function DashboardScreenV2() {
                       </div>
                       {(()=>{
                         const gesamtClr = textColor(istEnde, budgetEnde, isIncome);
-                        if(catAmountMode==="beide") {
+                        // "beide" zeigt das Paar nur, wenn es VM/offenes Budget gibt
+                        // (iEnde > iAkt). Sonst fällt es auf die einzelne Ist-Zahl zurück.
+                        if(catAmountMode==="beide" && Math.round(iEnde*100) > Math.round(iAkt*100)) {
                           return (
                             <div onClick={e=>{e.stopPropagation(); if(iEnde>0) openCatDrill(lastDay,"inkl. VM",iEnde,false);}}
                               style={{flexShrink:0,display:"flex",alignItems:"baseline",gap:5,
