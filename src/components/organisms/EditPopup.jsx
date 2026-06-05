@@ -696,7 +696,7 @@ function EditPopup() {
                           ...(editTx._seriesTyp?{_seriesTyp:editTx._seriesTyp}:{}),
                         };
                       });
-                      // changedTxIds/deletedTxIds nur in FinanzApp verfügbar — hier nicht nötig
+                      // changedTxIds/deletedTxIds nur in SupaDupa Money verfügbar — hier nicht nötig
                       return [...prevTxs.filter(t=>t._seriesId!==editTx._seriesId),...rebuilt];
                     });
                     setEditTx(null);

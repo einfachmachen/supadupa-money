@@ -66,7 +66,7 @@ function DashboardScreenV2() {
     const _isCatExpense = (c) => _catBehavior(c)==="expense";
     const _isDupl  = t => isDuplCounterpart(t, _txsById);
     const [dashDrill, _setDashDrill] = useState(null);
-    // Wrapper: synct dashDrillOpen in FinanzApp für TopBar-zIndex
+    // Wrapper: synct dashDrillOpen in SupaDupa Money für TopBar-zIndex
     const setDashDrill = (v) => { _setDashDrill(v); setDashDrillOpen(!!v); };
     // Verknüpfte-Vormerkung-Badge(s) für eine echte Buchung — identisch in allen
     // Drilldown-Zeilen, damit eine zugeordnete Vormerkung ueberall erkennbar ist
