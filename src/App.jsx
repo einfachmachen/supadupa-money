@@ -2097,6 +2097,8 @@ Abbrechen = ${remoteName}-Stand laden`
           else delete upd2._seriesIdx;
           if(editTx._seriesTotal) upd2._seriesTotal = editTx._seriesTotal;
           else delete upd2._seriesTotal;
+          if(editTx._potSubId) upd2._potSubId = editTx._potSubId;
+          else delete upd2._potSubId;
           return upd2;
         });
       });
@@ -2123,6 +2125,9 @@ Abbrechen = ${remoteName}-Stand laden`
         else delete upd3._seriesIdx;
         if(editTx._seriesTotal) upd3._seriesTotal = editTx._seriesTotal;
         else delete upd3._seriesTotal;
+        // Flexibler Topf: "aus Unvorhergesehenes" übernehmen (kann gelöscht werden)
+        if(editTx._potSubId) upd3._potSubId = editTx._potSubId;
+        else delete upd3._potSubId;
         return upd3;
       }));
       changedTxIds.current.add(editTx.id);

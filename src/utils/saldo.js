@@ -212,6 +212,12 @@ function istForSub(year, month, fromDay, toDay, baseSubId, ctx) {
     if(d.getFullYear() !== year || d.getMonth() !== month) return;
     const dd = d.getDate();
     if(dd < fromDay || dd > toDay) return;
+    // Flexibler Topf: Buchungen mit _potSubId zählen budgetmäßig KOMPLETT gegen
+    // die Topf-Sub (und NICHT gegen ihre echte Sub). Greift nur, wenn gesetzt.
+    if(t._potSubId) {
+      if(t._potSubId === baseSubId) sum += Math.abs(pn(t.totalAmount) || 0);
+      return;
+    }
     // Splits dieser Sub
     const splits = (t.splits || []).filter(sp => sp.subId === baseSubId);
     if(splits.length === 0) return;

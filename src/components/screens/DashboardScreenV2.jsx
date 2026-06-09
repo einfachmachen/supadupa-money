@@ -197,12 +197,20 @@ function DashboardScreenV2() {
           const k = cid + "|" + day;
           sumByDayCat.set(k, (sumByDayCat.get(k)||0) + amt);
         }
-        // Pro-Sub-Ist (für budget-bewusste Reservierung); gleiche Quelle wie sumByDayCat
-        for(const sp of splits) {
-          if(!sp.subId) continue;
-          const a = Math.abs(pn(sp.amount));
-          sumSubAll.set(sp.subId, (sumSubAll.get(sp.subId)||0) + a);
-          if(day<=14) sumSub14.set(sp.subId, (sumSub14.get(sp.subId)||0) + a);
+        // Pro-Sub-Ist (für budget-bewusste Reservierung). Flexibler Topf:
+        // Buchungen mit _potSubId zählen budgetmäßig komplett gegen die Topf-Sub,
+        // nicht gegen ihre echte Sub (Anzeige/Summen bleiben davon unberührt).
+        if(t._potSubId) {
+          const a = Math.abs(pn(t.totalAmount));
+          sumSubAll.set(t._potSubId, (sumSubAll.get(t._potSubId)||0) + a);
+          if(day<=14) sumSub14.set(t._potSubId, (sumSub14.get(t._potSubId)||0) + a);
+        } else {
+          for(const sp of splits) {
+            if(!sp.subId) continue;
+            const a = Math.abs(pn(sp.amount));
+            sumSubAll.set(sp.subId, (sumSubAll.get(sp.subId)||0) + a);
+            if(day<=14) sumSub14.set(sp.subId, (sumSub14.get(sp.subId)||0) + a);
+          }
         }
       }
       return { realByCat, pendByCat, sumRealByCat, sumPendByCat, sumByDayCat, accIdsByCat, sumSub14, sumSubAll };
@@ -1124,8 +1132,11 @@ function DashboardScreenV2() {
                       const sPend = (mx)=>subTxs.filter(t=>t.pending && !t._budgetSubId && new Date(t.date).getDate()<=mx)
                         .reduce((s,t)=>s+amtOf(t),0);
                       const sAkt    = sReal(lastDay);
-                      const _ist14  = sReal(14) + sPend(14);
-                      const _istAll = sReal(lastDay) + sPend(lastDay);
+                      // Budget-Verbrauch (inkl. VM) aus den ggf. zum flexiblen Topf
+                      // umgeleiteten Pro-Sub-Summen → konsistent mit der Reservierung.
+                      // (sAkt oben bleibt reine Anzeige des real Gebuchten.)
+                      const _ist14  = _catTxMaps.sumSub14.get(sub.id)  || 0;
+                      const _istAll = _catTxMaps.sumSubAll.get(sub.id) || 0;
                       // Mitte/Ende = max(Ist, Budget): reserviertes Restbudget (Budget-Vormerkungen)
                       const _refM   = (()=>{ const g=getBudgetForMonth(sub.id,year,month)||0,
                         m=getBudgetForMonth(sub.id+"_mitte",year,month)||0; return m>0?m:g; })();
