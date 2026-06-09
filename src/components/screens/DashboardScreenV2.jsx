@@ -877,7 +877,7 @@ function DashboardScreenV2() {
         {(incomeTotals.length>0||catTotals.length>0) && (
           <div style={{display:"flex",gap:6,padding:"2px 12px 4px",alignItems:"center",flexWrap:"wrap"}}>
             <span style={{color:T.txt2,fontSize:10,fontWeight:600,marginRight:2}}>Betrag:</span>
-            {[["ist","Ist"],["gesamt","inkl. VM"],["beide","beide"],["pegel","Pegel"]].map(([m,lbl])=>(
+            {[["ist","Ist"],["pegel","Pegel"]].map(([m,lbl])=>(
               <button key={m} onClick={()=>setCatAmountMode(m)}
                 style={{padding:"3px 12px",borderRadius:14,fontSize:11,fontWeight:600,cursor:"pointer",
                   border:`1px solid ${catAmountMode===m?T.blue:T.bd}`,
@@ -978,6 +978,11 @@ function DashboardScreenV2() {
                 const iAkt   = _catTxMaps.sumRealByCat.get(cat.id) || 0;
                 const catColor = cat.color || (isIncome ? T.pos : T.neg);
                 const accLabel = !selAcc ? _accLabelByCat.get(cat.id) : null;
+                // Konten dieser Kategorie (für kleines Konto-Symbol neben dem Namen,
+                // wie in den Vormerken-Dialogen). Nur wenn kein Konto-Filter aktiv.
+                const accList = !selAcc
+                  ? [...(_catTxMaps.accIdsByCat.get(cat.id)||[])].map(getAcc).filter(Boolean)
+                  : [];
 
                 // Budget je Halbmonat aus den Subs aggregieren (nur für Ausgaben-Cats relevant)
                 let budgetMitte = 0, budgetEnde = 0;
@@ -1044,16 +1049,17 @@ function DashboardScreenV2() {
                         {/* obere Zeile: Name  +  aktuelles Gesamt (-> Buchungs-Drilldown) */}
                         <div style={{display:"flex",alignItems:"center",gap:8}}>
                           <div onClick={()=>toggleCatExpand(cat.id)}
-                            style={{flex:1,minWidth:0,overflow:"hidden",cursor:"pointer"}}>
-                            <div style={{
-                              color:T.txt,fontSize:20,fontWeight:600,
+                            style={{flex:1,minWidth:0,display:"flex",alignItems:"center",gap:5,cursor:"pointer"}}>
+                            <span style={{
+                              color:T.txt,fontSize:20,fontWeight:600,minWidth:0,
                               overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
-                            }}>{cat.name}</div>
-                            {accLabel && (
-                              <div style={{color:T.lbl,fontSize:10,fontWeight:500,marginTop:1}}>
-                                ({accLabel})
-                              </div>
-                            )}
+                            }}>{cat.name}</span>
+                            {/* kleines Konto-Symbol rechts neben dem Namen (wie im Vormerken-Dialog) */}
+                            {accList.map(a => (
+                              <span key={a.id} style={{flexShrink:0,display:"inline-flex",alignItems:"center"}}>
+                                {Li(a.icon||"landmark", 13, a.color||T.blue)}
+                              </span>
+                            ))}
                           </div>
                           {(()=>{
                             if(catAmountMode==="pegel") {
@@ -1111,21 +1117,28 @@ function DashboardScreenV2() {
                           const showMitte = rM !== rA && rM !== rE;
                           // Ende nur, wenn ≠ aktuellem Gesamt (sonst steht es schon rechts).
                           const showEnde  = rE !== rA;
+                          // Punkte statt Striche; Grundlinie auf y=6 (Mitte der Höhe 16).
+                          const dot = (key, leftCalc, size, bg, opacity=1) => (
+                            <div key={key} style={{position:"absolute",left:leftCalc,top:6-size/2,
+                              width:size,height:size,borderRadius:"50%",background:bg,opacity,
+                              transform:"translateX(-50%)"}}/>
+                          );
                           return (
                             <div onClick={e=>{e.stopPropagation(); if(iEnde>0) openCatDrill(lastDay,"aktuell + Vormerkungen",iAkt,false);}}
-                              style={{position:"relative",height:16,marginTop:1,cursor:iEnde>0?"pointer":"default",
+                              style={{position:"relative",height:15,marginTop:0,cursor:iEnde>0?"pointer":"default",
                                 fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
                               {/* Grundlinie 0→Ende */}
-                              <div style={{position:"absolute",left:2,right:1,top:5,height:1.5,background:T.bd}}/>
-                              {/* inkl. Vormerkungen genutzt (grau) */}
-                              {hasVM && <div style={{position:"absolute",left:at(usedPct),top:1,height:9,width:2,background:T.txt2,opacity:0.7,transform:"translateX(-1px)"}}/>}
-                              {/* aktuelles Gesamt (Ampelfarbe) */}
-                              <div style={{position:"absolute",left:at(istPct),top:0,height:11,width:2.5,background:actClr,transform:"translateX(-1.25px)",borderRadius:1}}/>
-                              {/* Mitte-Markierung + Wert klein */}
-                              {showMitte && <div style={{position:"absolute",left:at(mitPct),top:3,height:5,width:1,background:T.mid||T.txt2,opacity:0.6}}/>}
-                              {showMitte && <span style={{position:"absolute",left:at(mitPct),top:8,transform:"translateX(-50%)",color:T.mid||T.txt2,fontSize:8,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(iMitte)}</span>}
+                              <div style={{position:"absolute",left:2,right:1,top:5.25,height:1.5,background:T.bd}}/>
+                              {/* Mitte-Punkt (klein) */}
+                              {showMitte && dot("m", at(mitPct), 4, T.mid||T.txt2, 0.6)}
+                              {/* inkl. Vormerkungen genutzt (grauer Punkt) */}
+                              {hasVM && dot("v", at(usedPct), 6, T.txt2, 0.7)}
+                              {/* aktuelles Gesamt (Ampelfarben-Punkt) */}
+                              {dot("a", at(istPct), 8, actClr)}
+                              {/* Mitte-Wert klein */}
+                              {showMitte && <span style={{position:"absolute",left:at(mitPct),top:9,transform:"translateX(-50%)",color:T.mid||T.txt2,fontSize:8,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(iMitte)}</span>}
                               {/* Ende-Wert klein rechts */}
-                              {showEnde && <span style={{position:"absolute",right:0,top:8,color:T.gold||T.txt2,fontSize:8,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(iEnde)}</span>}
+                              {showEnde && <span style={{position:"absolute",right:0,top:9,color:T.gold||T.txt2,fontSize:8,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(iEnde)}</span>}
                             </div>
                           );
                         })()}
