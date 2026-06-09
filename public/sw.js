@@ -1,14 +1,37 @@
-// Minimaler PWA Service Worker
-const CACHE = "supadupa-money-v1";
+// Service Worker — "network-first" für Seiten-Navigationen, damit IMMER die
+// frische index.html geladen wird (verhindert den alten Ladebildschirm aus dem
+// Cache). Offline gibt es einen Fallback auf die zuletzt gesehene Version.
+// JS/CSS sind content-gehasht und laufen über den normalen Browser-Cache.
+const CACHE = "supadupa-money-v2";
 
 self.addEventListener("install", e => {
-  self.skipWaiting();
+  self.skipWaiting(); // neue Version sofort übernehmen
 });
 
 self.addEventListener("activate", e => {
-  e.waitUntil(self.clients.claim());
+  e.waitUntil((async () => {
+    // alte Caches aufräumen
+    const keys = await caches.keys();
+    await Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)));
+    await self.clients.claim();
+  })());
 });
 
 self.addEventListener("fetch", e => {
-  // Pass-through, kein offline-Cache
+  const req = e.request;
+  // Nur Seiten-Navigationen (index.html) behandeln — network-first.
+  if (req.mode === "navigate") {
+    e.respondWith((async () => {
+      try {
+        const res = await fetch(req);
+        try { const c = await caches.open(CACHE); await c.put(req, res.clone()); } catch (_) {}
+        return res;
+      } catch (_) {
+        const cached = await caches.match(req);
+        return cached || (await caches.match("./")) || Response.error();
+      }
+    })());
+    return;
+  }
+  // alles andere: Pass-through (Browser-/HTTP-Cache, Assets sind content-hashed)
 });

@@ -14,6 +14,15 @@
   <meta name="apple-mobile-web-app-title" content="SupaDupa Money">
   <link rel="apple-touch-icon" href="icon.svg">
 
+  <!-- Ladebildschirm sofort korrekt stylen (bevor das gebündelte CSS lädt) —
+       sonst blitzt er weiß/Serif auf. -->
+  <style>
+    html,body{margin:0;background:#2C3035;}
+    #loading{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;
+      justify-content:center;gap:4px;background:#2C3035;color:#AACC00;z-index:9999;
+      font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;}
+  </style>
+
   <script>
     // Service Worker
     if ('serviceWorker' in navigator) {
