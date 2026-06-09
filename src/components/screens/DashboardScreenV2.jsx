@@ -1069,6 +1069,14 @@ function DashboardScreenV2() {
                           const showMitte = rM !== rA && rM !== rE;
                           // Ende nur, wenn ≠ aktuellem Gesamt (sonst steht es schon rechts).
                           const showEnde  = rE !== rA;
+                          // Mitte-Punkt UND -Wert teilen sich dieselbe (ggf. nach links
+                          // geklemmte) Mitte → der Punkt sitzt immer zentriert über dem
+                          // Betrag, und beide halten Sicherheitsabstand zum Ende-Wert.
+                          const _mfr      = Math.min(100,Math.max(0,mitPct))/100;
+                          const _mitW     = fmtShort(iMitte).length*4.6;
+                          const _endeW    = showEnde ? fmtShort(iEnde).length*4.6 : 0;
+                          const _reserveR = Math.round(_endeW + 8 + _mitW/2);
+                          const mitLeft   = `min(2px + (100% - 3px) * ${_mfr}, 100% - ${_reserveR}px)`;
                           // Punkte statt Striche; Grundlinie auf y=6 (Mitte der Höhe 16).
                           const dot = (key, leftCalc, size, bg, opacity=1) => (
                             <div key={key} style={{position:"absolute",left:leftCalc,top:6-size/2,
@@ -1081,25 +1089,15 @@ function DashboardScreenV2() {
                                 fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
                               {/* Grundlinie 0→Ende */}
                               <div style={{position:"absolute",left:2,right:1,top:5.25,height:1.5,background:T.bd}}/>
-                              {/* Mitte-Punkt (klein) */}
-                              {showMitte && dot("m", at(mitPct), 4, T.mid||T.txt2, 0.6)}
+                              {/* Mitte-Punkt (klein) — zentriert über dem Mitte-Wert */}
+                              {showMitte && dot("m", mitLeft, 4, T.mid||T.txt2, 0.6)}
                               {/* inkl. Vormerkungen genutzt (grauer Punkt) */}
                               {hasVM && dot("v", at(usedPct), 6, T.txt2, 0.7)}
                               {/* aktuelles Gesamt (Ampelfarben-Punkt) */}
                               {dot("a", at(istPct), 8, actClr)}
-                              {/* Mitte-Wert klein. Normal mittig unter dem Punkt; rückt aber
-                                  nach links, sobald er dem (rechtsbündigen) Ende-Wert zu nahe
-                                  käme — Sicherheitsabstand, damit sich nichts überlagert. */}
-                              {showMitte && (()=>{
-                                const mfr = Math.min(100,Math.max(0,mitPct))/100;
-                                // Platz, den der Ende-Wert rechts beansprucht (+ Lücke).
-                                const endeReserve = showEnde ? Math.round(fmtShort(iEnde).length*4.6 + 12) : 6;
-                                const nearRight = mitPct > 58;
-                                const pos = nearRight
-                                  ? { right:`max(${endeReserve}px, 100% - (2px + (100% - 3px) * ${mfr}))` }
-                                  : { left:at(mitPct), transform:"translateX(-50%)" };
-                                return <span style={{position:"absolute",top:9,...pos,color:T.mid||T.txt2,fontSize:8,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(iMitte)}</span>;
-                              })()}
+                              {/* Mitte-Wert klein — mittig unter dem Mitte-Punkt (gleiche,
+                                  ggf. nach links geklemmte Position → Sicherheitsabstand zum Ende-Wert). */}
+                              {showMitte && <span style={{position:"absolute",left:mitLeft,top:9,transform:"translateX(-50%)",color:T.mid||T.txt2,fontSize:8,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(iMitte)}</span>}
                               {/* Ende-Wert klein rechts */}
                               {showEnde && <span style={{position:"absolute",right:0,top:9,color:T.gold||T.txt2,fontSize:8,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(iEnde)}</span>}
                             </div>
