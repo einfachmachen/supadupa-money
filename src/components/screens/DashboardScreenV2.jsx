@@ -1087,8 +1087,19 @@ function DashboardScreenV2() {
                               {hasVM && dot("v", at(usedPct), 6, T.txt2, 0.7)}
                               {/* aktuelles Gesamt (Ampelfarben-Punkt) */}
                               {dot("a", at(istPct), 8, actClr)}
-                              {/* Mitte-Wert klein */}
-                              {showMitte && <span style={{position:"absolute",left:at(mitPct),top:9,transform:"translateX(-50%)",color:T.mid||T.txt2,fontSize:8,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(iMitte)}</span>}
+                              {/* Mitte-Wert klein. Normal mittig unter dem Punkt; rückt aber
+                                  nach links, sobald er dem (rechtsbündigen) Ende-Wert zu nahe
+                                  käme — Sicherheitsabstand, damit sich nichts überlagert. */}
+                              {showMitte && (()=>{
+                                const mfr = Math.min(100,Math.max(0,mitPct))/100;
+                                // Platz, den der Ende-Wert rechts beansprucht (+ Lücke).
+                                const endeReserve = showEnde ? Math.round(fmtShort(iEnde).length*4.6 + 12) : 6;
+                                const nearRight = mitPct > 58;
+                                const pos = nearRight
+                                  ? { right:`max(${endeReserve}px, 100% - (2px + (100% - 3px) * ${mfr}))` }
+                                  : { left:at(mitPct), transform:"translateX(-50%)" };
+                                return <span style={{position:"absolute",top:9,...pos,color:T.mid||T.txt2,fontSize:8,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(iMitte)}</span>;
+                              })()}
                               {/* Ende-Wert klein rechts */}
                               {showEnde && <span style={{position:"absolute",right:0,top:9,color:T.gold||T.txt2,fontSize:8,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(iEnde)}</span>}
                             </div>
