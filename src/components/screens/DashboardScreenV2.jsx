@@ -723,7 +723,8 @@ function DashboardScreenV2() {
             // ausblenden, sobald die nächste Phase gilt → auch das Badge schrumpft.
             return base.filter(t=>budgetPlaceholderActive(t));
           })();
-          const showRow = !isPastMonth || visiblePTxs.length>0;
+          // Standardmäßig zugeklappt — erst sichtbar, wenn die Details (Hero-Pfeil) offen sind.
+          const showRow = detailsOpen && (!isPastMonth || visiblePTxs.length>0);
           if(!showRow) return null;
           const togglePanel = (key) => setActivePanel(p => p===key ? null : key);
           const Card = ({panel, icon, badge, color}) => {
@@ -872,24 +873,8 @@ function DashboardScreenV2() {
           );
         })()}
 
-        {/* ── V2: Betrag-Anzeige je Kategorie umschalten (immer sichtbar) ──
-              Ist = nur gebuchte; inkl. VM = Gesamt inkl. Vormerkungen/Restbudget. */}
-        {(incomeTotals.length>0||catTotals.length>0) && (
-          <div style={{display:"flex",gap:6,padding:"2px 12px 4px",alignItems:"center",flexWrap:"wrap"}}>
-            <span style={{color:T.txt2,fontSize:10,fontWeight:600,marginRight:2}}>Betrag:</span>
-            {[["ist","Ist"],["pegel","Pegel"]].map(([m,lbl])=>(
-              <button key={m} onClick={()=>setCatAmountMode(m)}
-                style={{padding:"3px 12px",borderRadius:14,fontSize:11,fontWeight:600,cursor:"pointer",
-                  border:`1px solid ${catAmountMode===m?T.blue:T.bd}`,
-                  background:catAmountMode===m?T.blue:"transparent",
-                  color:catAmountMode===m?(T.on_accent||"#000"):T.txt2,fontFamily:"inherit"}}>
-                {lbl}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* ── V2: Kategorie-Karten (clean) ── */}
+        {/* ── V2: Kategorie-Karten (clean). Der Pegel wird pro Kategorie per
+              Tippen ein-/ausgeblendet (kein globaler Umschalter mehr). ── */}
         {(()=>{
           const lastDay = new Date(year, month+1, 0).getDate();
           // Beträge platzsparend: ",00" weglassen (nur ganze Euro).
@@ -1033,9 +1018,9 @@ function DashboardScreenV2() {
                       borderRadius: 10,
                       padding: "4px 10px",
                     }}>
-                    {/* Zeile 1 (+ Pegel-Zeile): Icon links vor BEIDEN Zeilen. */}
+                    {/* Zeile 1 (+ Pegel-Zeile bei Tap): Icon links vor BEIDEN Zeilen. */}
                     <div style={{display:"flex",alignItems:"center",gap:8,
-                      marginBottom: (showPills && catAmountMode!=="pegel") ? 6 : 0}}>
+                      marginBottom: isExpanded ? 4 : 0}}>
                       <div onClick={()=>toggleCatExpand(cat.id)}
                         style={{
                           width:30,height:30,borderRadius:8,
@@ -1061,52 +1046,19 @@ function DashboardScreenV2() {
                               </span>
                             ))}
                           </div>
-                          {(()=>{
-                            if(catAmountMode==="pegel") {
-                              // Rechts das aktuelle Gesamt (gebucht). Klick: Buchungen + Vormerkungen.
-                              return (
-                                <div onClick={e=>{e.stopPropagation(); if(iAkt>0||iEnde>0) openCatDrill(lastDay,"aktuell + Vormerkungen",iAkt,false);}}
-                                  style={{color:headColor,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
-                                    flexShrink:0, cursor:(iAkt>0||iEnde>0)?"pointer":"default"}}>
-                                  {fmtShort(iAkt)}
-                                </div>
-                              );
-                            }
-                            const gesamtClr = textColor(istEnde, budgetEnde, isIncome);
-                            // "beide" zeigt das Paar nur, wenn es VM/offenes Budget gibt
-                            // (iEnde > iAkt). Sonst fällt es auf die einzelne Ist-Zahl zurück.
-                            if(catAmountMode==="beide" && Math.round(iEnde*100) > Math.round(iAkt*100)) {
-                              return (
-                                <div onClick={e=>{e.stopPropagation(); if(iEnde>0) openCatDrill(lastDay,"inkl. VM",iEnde,false);}}
-                                  style={{flexShrink:0,display:"flex",alignItems:"baseline",gap:5,
-                                    fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,cursor:iEnde>0?"pointer":"default"}}>
-                                  <span style={{color:T.txt2,fontSize:14,fontWeight:600}}>{fmtShort(iAkt)}</span>
-                                  <span style={{color:T.txt2,fontSize:11,opacity:0.55}}>·</span>
-                                  <span style={{color:gesamtClr,fontSize:20,fontWeight:700}}>{fmtShort(iEnde)}</span>
-                                </div>
-                              );
-                            }
-                            const gesamt = catAmountMode==="gesamt";
-                            const headVal = gesamt ? iEnde : iAkt;
-                            const headClr = gesamt ? gesamtClr : headColor;
-                            return (
-                              <div onClick={e=>{e.stopPropagation();
-                                  if(gesamt){ if(iEnde>0) openCatDrill(lastDay,"inkl. VM",iEnde,false); }
-                                  else { if(iAkt>0) openCatDrill(lastDay,"aktuell",iAkt,true); }}}
-                                style={{
-                                  color:headClr,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
-                                  flexShrink:0, cursor:headVal>0?"pointer":"default",
-                                }}>
-                                {fmtShort(headVal)}
-                              </div>
-                            );
-                          })()}
+                          {/* Rechts immer das aktuelle Gesamt (gebucht, IST). Klick öffnet
+                              die Buchungen inkl. Vormerkungen. */}
+                          <div onClick={e=>{e.stopPropagation(); if(iAkt>0||iEnde>0) openCatDrill(lastDay,"aktuell + Vormerkungen",iAkt,false);}}
+                            style={{color:headColor,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
+                              flexShrink:0, cursor:(iAkt>0||iEnde>0)?"pointer":"default"}}>
+                            {fmtShort(iAkt)}
+                          </div>
                         </div>
-                        {/* untere Zeile (Pegel-Modus): dünne Linie 0→Ende. Farbiger Pegel =
-                            aktuelles Gesamt (gebucht), grauer Pegel = inkl. Vormerkungen
+                        {/* untere Zeile (per Tap eingeblendet): dünne Linie 0→Ende. Farbiger
+                            Punkt = aktuelles Gesamt (gebucht), grauer Punkt = inkl. Vormerkungen
                             genutzt; Mitte/Ende klein als Prognose (PrognoseM/E). Werte
                             werden NICHT doppelt gezeigt (= aktuelles Gesamt → weglassen). */}
-                        {catAmountMode==="pegel" && (()=>{
+                        {isExpanded && (()=>{
                           const scale = Math.max(iEnde, iAkt, 1);
                           const at = pct => `calc(2px + (100% - 3px) * ${Math.min(100,Math.max(0,pct))/100})`;
                           const actClr = textColor(iAkt, budgetEnde, isIncome);
@@ -1144,15 +1096,6 @@ function DashboardScreenV2() {
                         })()}
                       </div>
                     </div>
-                    {/* Zeile 2: Mitte/Ende-Pillen (global per Toggle ODER wenn Zeile ausgeklappt) */}
-                    {showPills && catAmountMode!=="pegel" && (
-                      <div style={{display:"flex",gap:6,marginTop:6}}>
-                        {valuePill(iMitte, budgetMitte, isIncome,
-                          ()=>openCatDrill(14,"Mitte",iMitte,false), {dim:true, colorVal:istMitte})}
-                        {valuePill(iEnde, budgetEnde, isIncome,
-                          ()=>openCatDrill(lastDay,"Ende",iEnde,false), {dim:true, colorVal:istEnde})}
-                      </div>
-                    )}
                     {/* Inline-Unterkategorien (gleiches 2-Zeilen-Format wie die Hauptzeile) */}
                     {isExpanded && (cat.subs||[]).map(sub => {
                       const subTxs = monthCatTxs.filter(t =>
