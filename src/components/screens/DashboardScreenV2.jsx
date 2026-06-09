@@ -1087,10 +1087,11 @@ function DashboardScreenV2() {
                           // Mitte-Punkt UND -Wert teilen sich dieselbe (ggf. nach links
                           // geklemmte) Mitte → der Punkt sitzt immer zentriert über dem
                           // Betrag, und beide halten Sicherheitsabstand zum Ende-Wert.
+                          // Zeichenbreite ~9.2px bei fontSize 16 (tabular nums).
                           const _mfr      = Math.min(100,Math.max(0,mitPct))/100;
-                          const _mitW     = fmtShort(iMitte).length*4.6;
-                          const _endeW    = showEnde ? fmtShort(iEnde).length*4.6 : 0;
-                          const _reserveR = Math.round(_endeW + 8 + _mitW/2);
+                          const _mitW     = fmtShort(iMitte).length*9.2;
+                          const _endeW    = showEnde ? fmtShort(iEnde).length*9.2 : 0;
+                          const _reserveR = Math.round(_endeW + 10 + _mitW/2);
                           const mitLeft   = `min(2px + (100% - 3px) * ${_mfr}, 100% - ${_reserveR}px)`;
                           // Punkte statt Striche; Grundlinie auf y=6 (Mitte der Höhe 16).
                           const dot = (key, leftCalc, size, bg, opacity=1) => (
@@ -1100,7 +1101,7 @@ function DashboardScreenV2() {
                           );
                           return (
                             <div onClick={e=>{e.stopPropagation(); if(iEnde>0) openCatDrill(lastDay,"aktuell + Vormerkungen",iAkt,false);}}
-                              style={{position:"relative",height:15,marginTop:7,marginLeft:38,cursor:iEnde>0?"pointer":"default",
+                              style={{position:"relative",height:(showMitte||showEnde)?30:14,marginTop:1,marginLeft:38,cursor:iEnde>0?"pointer":"default",
                                 fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
                               {/* Grundlinie 0→Ende */}
                               <div style={{position:"absolute",left:2,right:1,top:5.25,height:1.5,background:T.bd}}/>
@@ -1110,11 +1111,12 @@ function DashboardScreenV2() {
                               {hasVM && dot("v", at(usedPct), 6, T.txt2, 0.7)}
                               {/* aktuelles Gesamt (Ampelfarben-Punkt) */}
                               {dot("a", at(istPct), 8, actClr)}
-                              {/* Mitte-Wert klein — mittig unter dem Mitte-Punkt (gleiche,
-                                  ggf. nach links geklemmte Position → Sicherheitsabstand zum Ende-Wert). */}
-                              {showMitte && <span style={{position:"absolute",left:mitLeft,top:9,transform:"translateX(-50%)",color:T.mid||T.txt2,fontSize:8,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(iMitte)}</span>}
-                              {/* Ende-Wert klein rechts */}
-                              {showEnde && <span style={{position:"absolute",right:0,top:9,color:T.gold||T.txt2,fontSize:8,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(iEnde)}</span>}
+                              {/* Mitte-Wert — gleiche Schriftgröße wie die Sub-Pillen (16),
+                                  mittig unter dem Mitte-Punkt (gleiche, ggf. nach links
+                                  geklemmte Position → Sicherheitsabstand zum Ende-Wert). */}
+                              {showMitte && <span style={{position:"absolute",left:mitLeft,top:10,transform:"translateX(-50%)",color:T.mid||T.txt2,fontSize:16,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(iMitte)}</span>}
+                              {/* Ende-Wert rechts — gleiche Schriftgröße wie die Sub-Pillen */}
+                              {showEnde && <span style={{position:"absolute",right:0,top:10,color:T.gold||T.txt2,fontSize:16,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(iEnde)}</span>}
                             </div>
                           );
                         })()}
@@ -1619,6 +1621,12 @@ function DashboardScreenV2() {
                               {tx._seriesIdx} / {tx._seriesTotal}
                             </span>}
                             <LinkBadges tx={tx}/>
+                            {/* Flexibler Topf: Buchung belastet nicht die eigene Kategorie */}
+                            {tx._potSubId&&<span style={{background:"rgba(245,166,35,0.15)",color:T.gold,
+                              borderRadius:4,padding:"1px 5px",fontSize:10,fontWeight:700,
+                              display:"inline-flex",alignItems:"center",gap:3}}>
+                              {Li("corner-up-right",9,T.gold)} aus Unvorh.
+                            </span>}
                             {isS&&<span style={{background:"rgba(137,196,244,0.15)",color:T.blue,
                               borderRadius:4,padding:"0 4px",fontSize:10,fontWeight:700}}>Split</span>}
                             {sub&&!isUncat&&!isS&&<span style={{color:cat?.color||dashDrill.cat?.color||T.txt2,fontSize:12}}>{sub.name}</span>}
