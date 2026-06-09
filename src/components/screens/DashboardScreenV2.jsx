@@ -934,18 +934,27 @@ function DashboardScreenV2() {
             const cb = opts.colorVal!=null ? opts.colorVal : val;
             const stripe = !isInc && bgt>0 ? trafficColor(cb, bgt) : null;
             const clickable = !!onClick && val>0;
+            // Budget-Kategorien: ein Punkt auf einer feinen Linie zeigt (ohne Zahl),
+            // wieviel des Budgets (val) inkl. Vormerkungen schon verbraucht ist (cb).
+            const usedFrac = stripe && val>0 ? Math.min(1, Math.max(0, cb/val)) : null;
             return (
               <div onClick={clickable?(e=>{e.stopPropagation();onClick();}):undefined}
                 style={{flex:1,position:"relative",textAlign:"center",
-                  padding:"5px 0",borderRadius:7,background:cellBg,
+                  padding: stripe!=null ? "5px 0 9px" : "5px 0",borderRadius:7,background:cellBg,
                   color:textColor(isInc?val:cb,bgt,isInc),
                   fontSize:opts.size||20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
                   opacity:opts.dim?0.55:0.9,overflow:"hidden",
                   cursor:clickable?"pointer":"default"}}>
                 {val>0 ? fmt(val) : "—"}
-                {stripe && (
-                  <div style={{position:"absolute",left:0,right:0,bottom:0,height:3,background:stripe}}/>
-                )}
+                {usedFrac!=null && (<>
+                  {/* feine Verbrauchs-Linie 0→Budget */}
+                  <div style={{position:"absolute",left:8,right:8,bottom:4,height:1.5,
+                    background:T.bd,borderRadius:1}}/>
+                  {/* Punkt = verbrauchtes Budget (inkl. Vormerkungen), Ampelfarbe */}
+                  <div style={{position:"absolute",left:`calc(8px + (100% - 16px) * ${usedFrac})`,
+                    bottom:1.75,width:6,height:6,borderRadius:"50%",background:stripe,
+                    transform:"translateX(-50%)"}}/>
+                </>)}
               </div>
             );
           };
