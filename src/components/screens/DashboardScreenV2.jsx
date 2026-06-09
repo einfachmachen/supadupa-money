@@ -1018,9 +1018,10 @@ function DashboardScreenV2() {
                       borderRadius: 10,
                       padding: "4px 10px",
                     }}>
-                    {/* Zeile 1 (+ Pegel-Zeile bei Tap): Icon links vor BEIDEN Zeilen. */}
-                    <div style={{display:"flex",alignItems:"center",gap:8,
-                      marginBottom: isExpanded ? 4 : 0}}>
+                    {/* Header: Icon + Name + aktuelles Gesamt. Diese Zeile bleibt beim
+                        Ausklappen exakt an derselben Position — der Pegel kommt als
+                        eigene Zeile darunter (Icon-Zentrierung hängt nicht mehr am Pegel). */}
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
                       <div onClick={()=>toggleCatExpand(cat.id)}
                         style={{
                           width:30,height:30,borderRadius:8,
@@ -1030,35 +1031,32 @@ function DashboardScreenV2() {
                         }}>
                         {Li(cat.icon||"folder", 18, catColor)}
                       </div>
-                      <div style={{flex:1,minWidth:0}}>
-                        {/* obere Zeile: Name  +  aktuelles Gesamt (-> Buchungs-Drilldown) */}
-                        <div style={{display:"flex",alignItems:"center",gap:8}}>
-                          <div onClick={()=>toggleCatExpand(cat.id)}
-                            style={{flex:1,minWidth:0,display:"flex",alignItems:"center",gap:5,cursor:"pointer"}}>
-                            <span style={{
-                              color:T.txt,fontSize:20,fontWeight:600,minWidth:0,
-                              overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
-                            }}>{cat.name}</span>
-                            {/* kleines Konto-Symbol rechts neben dem Namen (wie im Vormerken-Dialog) */}
-                            {accList.map(a => (
-                              <span key={a.id} style={{flexShrink:0,display:"inline-flex",alignItems:"center"}}>
-                                {Li(a.icon||"landmark", 13, a.color||T.blue)}
-                              </span>
-                            ))}
-                          </div>
-                          {/* Rechts immer das aktuelle Gesamt (gebucht, IST). Klick öffnet
-                              die Buchungen inkl. Vormerkungen. */}
-                          <div onClick={e=>{e.stopPropagation(); if(iAkt>0||iEnde>0) openCatDrill(lastDay,"aktuell + Vormerkungen",iAkt,false);}}
-                            style={{color:headColor,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
-                              flexShrink:0, cursor:(iAkt>0||iEnde>0)?"pointer":"default"}}>
-                            {fmtShort(iAkt)}
-                          </div>
-                        </div>
-                        {/* untere Zeile (per Tap eingeblendet): dünne Linie 0→Ende. Farbiger
-                            Punkt = aktuelles Gesamt (gebucht), grauer Punkt = inkl. Vormerkungen
-                            genutzt; Mitte/Ende klein als Prognose (PrognoseM/E). Werte
-                            werden NICHT doppelt gezeigt (= aktuelles Gesamt → weglassen). */}
-                        {isExpanded && (()=>{
+                      <div onClick={()=>toggleCatExpand(cat.id)}
+                        style={{flex:1,minWidth:0,display:"flex",alignItems:"center",gap:5,cursor:"pointer"}}>
+                        <span style={{
+                          color:T.txt,fontSize:20,fontWeight:600,minWidth:0,
+                          overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
+                        }}>{cat.name}</span>
+                        {/* kleines Konto-Symbol rechts neben dem Namen (wie im Vormerken-Dialog) */}
+                        {accList.map(a => (
+                          <span key={a.id} style={{flexShrink:0,display:"inline-flex",alignItems:"center"}}>
+                            {Li(a.icon||"landmark", 13, a.color||T.blue)}
+                          </span>
+                        ))}
+                      </div>
+                      {/* Rechts immer das aktuelle Gesamt (gebucht, IST). Klick öffnet
+                          die Buchungen inkl. Vormerkungen. */}
+                      <div onClick={e=>{e.stopPropagation(); if(iAkt>0||iEnde>0) openCatDrill(lastDay,"aktuell + Vormerkungen",iAkt,false);}}
+                        style={{color:headColor,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
+                          flexShrink:0, cursor:(iAkt>0||iEnde>0)?"pointer":"default"}}>
+                        {fmtShort(iAkt)}
+                      </div>
+                    </div>
+                    {/* Pegel-Zeile (per Tap eingeblendet): eigene Zeile UNTER dem Header,
+                        eingerückt unter den Namen. Dünne Linie 0→Ende; farbiger Punkt =
+                        aktuelles Gesamt (gebucht), grauer Punkt = inkl. Vormerkungen genutzt;
+                        Mitte/Ende klein als Prognose. */}
+                    {isExpanded && (()=>{
                           const scale = Math.max(iEnde, iAkt, 1);
                           const at = pct => `calc(2px + (100% - 3px) * ${Math.min(100,Math.max(0,pct))/100})`;
                           const actClr = textColor(iAkt, budgetEnde, isIncome);
@@ -1085,7 +1083,7 @@ function DashboardScreenV2() {
                           );
                           return (
                             <div onClick={e=>{e.stopPropagation(); if(iEnde>0) openCatDrill(lastDay,"aktuell + Vormerkungen",iAkt,false);}}
-                              style={{position:"relative",height:15,marginTop:0,cursor:iEnde>0?"pointer":"default",
+                              style={{position:"relative",height:15,marginTop:7,marginLeft:38,cursor:iEnde>0?"pointer":"default",
                                 fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
                               {/* Grundlinie 0→Ende */}
                               <div style={{position:"absolute",left:2,right:1,top:5.25,height:1.5,background:T.bd}}/>
@@ -1103,8 +1101,6 @@ function DashboardScreenV2() {
                             </div>
                           );
                         })()}
-                      </div>
-                    </div>
                     {/* Inline-Unterkategorien (gleiches 2-Zeilen-Format wie die Hauptzeile) */}
                     {isExpanded && (cat.subs||[]).map(sub => {
                       const subTxs = monthCatTxs.filter(t =>
