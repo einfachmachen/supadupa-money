@@ -1072,6 +1072,14 @@ function MonatScreen() {
                             {tx.accountId&&tx.accountId!=="acc-giro"&&(()=>{const a=getAcc(tx.accountId);return(
                                 <span style={{background:a.color+"22",color:a.color,borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>{Li(a.icon,9,a.color)} {a.name}</span>
                               )})()}
+                            {/* Flexibler Topf: belastet nicht das Budget der eigenen Kategorie */}
+                            {tx._potSubId&&(
+                              <span style={{background:"rgba(245,166,35,0.15)",color:T.gold,
+                                borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0,
+                                display:"inline-flex",alignItems:"center",gap:3}}>
+                                {Li("corner-up-right",8,T.gold)} aus Unvorh.
+                              </span>
+                            )}
                             </div>
                           </div>
                           {/* Amount */}

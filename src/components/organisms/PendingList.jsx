@@ -110,7 +110,17 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
               <span>{(tx._budgetSubId?Li("target",18,T.gold):tx._seriesTyp==="finanzierung"?Li("credit-card",18,T.gold):tx._seriesId?Li("repeat",18,T.pos):Li("calendar",18,T.blue))}</span>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{color:T.txt,fontSize:14,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tx.desc||cat?.name}</div>
-                <div style={{color:T.txt2,fontSize:11}}>{tx.date}{tx._seriesId&&tx._seriesTotal>1&&tx._seriesIdx&&tx._seriesTyp==="finanzierung"?` · ${tx._seriesIdx}/${tx._seriesTotal}`:""}</div>
+                <div style={{color:T.txt2,fontSize:11,display:"flex",alignItems:"center",gap:5}}>
+                  <span>{tx.date}{tx._seriesId&&tx._seriesTotal>1&&tx._seriesIdx&&tx._seriesTyp==="finanzierung"?` · ${tx._seriesIdx}/${tx._seriesTotal}`:""}</span>
+                  {/* Flexibler Topf: belastet nicht das Budget der eigenen Kategorie */}
+                  {tx._potSubId&&(
+                    <span style={{background:"rgba(245,166,35,0.15)",color:T.gold,
+                      borderRadius:4,padding:"0 4px",fontSize:9,fontWeight:700,flexShrink:0,
+                      display:"inline-flex",alignItems:"center",gap:3}}>
+                      {Li("corner-up-right",8,T.gold)} aus Unvorh.
+                    </span>
+                  )}
+                </div>
               </div>
               <span style={{color:day<=14?T.mid:T.gold,fontSize:11,flexShrink:0}}>{day<=14?"Mitte":"Ende"}</span>
               <span style={{color:col,fontSize:15,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
