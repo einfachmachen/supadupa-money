@@ -54,6 +54,14 @@ function MobileVormerkenModal({onClose, onBack}) {
   const [newAccIcon, setNewAccIcon] = useState("landmark");
   const [newAccColor,setNewAccColor]= useState(T.blue);
   const [newAccDelay,setNewAccDelay]= useState("");
+  // Flexibler Topf "Unvorhergesehenes": diese Buchung aus dem Topf-Budget bezahlen.
+  const [potOn, setPotOn] = useState(false);
+  const _potSub = (()=>{
+    for(const c of (cats||[])) for(const s of (c.subs||[]))
+      if((s.name||"").trim().toLowerCase()==="unvorhergesehenes") return s;
+    return null;
+  })();
+  const _showPotToggle = !isTransfer && csvType==="expense" && _potSub && subId !== _potSub.id;
 
   const S = {fs:26, fsL:64, pad:10, padL:14, radius:16, gap:14};
   const expCats = cats.filter(c=>c.type==="expense"||c.type==="tagesgeld");
@@ -111,6 +119,7 @@ function MobileVormerkenModal({onClose, onBack}) {
       note: note||undefined,
       valueDate: valueDate||undefined,
       splits:[{id:uid(),catId,subId,amount:amt}],
+      _potSubId: (_showPotToggle && potOn && _potSub) ? _potSub.id : undefined,
     }]);
     setSaved(true);
     setTimeout(()=>onClose(), 1200);
@@ -493,6 +502,28 @@ function MobileVormerkenModal({onClose, onBack}) {
               minHeight:S.fs*1.5+S.padL*2}}
             onInput={e=>{e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
           />
+
+          {/* Flexibler Topf: diese Ausgabe aus dem Unvorhergesehenes-Budget bezahlen.
+              Kategorie & Betrag bleiben, nur die Budget-Anrechnung wandert in den Topf. */}
+          {_showPotToggle&&(
+            <div style={{background:"rgba(255,255,255,0.06)",borderRadius:S.radius,
+              padding:`${S.padL}px`,marginBottom:S.gap}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <span style={{color:T.txt,fontSize:S.fs-6}}>aus Unvorhergesehenes</span>
+                <div onClick={()=>setPotOn(v=>!v)}
+                  style={{width:52,height:30,borderRadius:15,flexShrink:0,
+                    background:potOn?T.gold:"rgba(255,255,255,0.12)",cursor:"pointer",
+                    position:"relative",transition:"background 0.2s"}}>
+                  <div style={{position:"absolute",top:3,left:potOn?25:3,width:24,height:24,
+                    borderRadius:"50%",background:"#fff",transition:"left 0.2s",
+                    boxShadow:"0 1px 4px rgba(0,0,0,0.3)"}}/>
+                </div>
+              </div>
+              <div style={{color:T.txt2,fontSize:S.fs-13,marginTop:6,lineHeight:1.35}}>
+                Betrag bleibt in dieser Kategorie, wird aber vom Unvorhergesehenes-Budget abgezogen.
+              </div>
+            </div>
+          )}
 
         </div>
       </>}

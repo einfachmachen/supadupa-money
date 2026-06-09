@@ -30,6 +30,15 @@ function EditPopup() {
     const isMulti = (editTx.splits||[]).length > 1;
     const editSplitTotal = (editTx.splits||[]).reduce((s,sp)=>s+pn(sp.amount),0);
     const diff = pn(editTx.totalAmount) - editSplitTotal;
+    // Flexibler Topf "Unvorhergesehenes" (per Name erkannt). Schalter nur bei
+    // Ausgaben anzeigen und nicht, wenn die Buchung selbst im Topf liegt.
+    const _potSub = (()=>{
+      for(const c of (cats||[])) for(const s of (c.subs||[]))
+        if((s.name||"").trim().toLowerCase()==="unvorhergesehenes") return s;
+      return null;
+    })();
+    const _showPotToggle = !editTx._budgetSubId && _potSub && txType(editTx)==="expense"
+      && (editTx.splits||[])[0]?.subId !== _potSub.id;
     return (
       <div onClick={()=>setEditTx(null)}
         style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",backdropFilter:"blur(8px)",zIndex:80,display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -491,6 +500,21 @@ function EditPopup() {
                   inputMode="decimal" placeholder="0,00"/>
               </div>
             )}
+          </div>)}
+          {/* Flexibler Topf: diese Buchung aus dem Unvorhergesehenes-Budget bezahlen.
+              Kategorie/Betrag bleiben unverändert; nur die Budget-Anrechnung wandert
+              in den Topf. */}
+          {_showPotToggle&&(<div style={{background:"rgba(255,255,255,0.04)",borderRadius:11,padding:"6px 10px",marginBottom:16}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <span style={{color:T.txt,fontSize:13}}>aus Unvorhergesehenes</span>
+              <div onClick={()=>setEditTx(p=>({...p,_potSubId:p._potSubId?undefined:_potSub.id}))}
+                style={{width:44,height:26,borderRadius:13,background:editTx._potSubId?T.gold:"rgba(255,255,255,0.1)",cursor:"pointer",position:"relative",transition:"background 0.2s"}}>
+                <div style={{position:"absolute",top:3,left:editTx._potSubId?21:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 4px rgba(0,0,0,0.3)"}}/>
+              </div>
+            </div>
+            <div style={{color:T.txt2,fontSize:10,marginTop:5,lineHeight:1.35}}>
+              Betrag bleibt in dieser Kategorie, wird aber vom Unvorhergesehenes-Budget abgezogen.
+            </div>
           </div>)}
           {/* Budget-Platzhalter: Betrag editierbar + Toggle zum Lösen der Budget-Bindung */}
           {editTx._budgetSubId&&editTx.pending&&(()=>{
