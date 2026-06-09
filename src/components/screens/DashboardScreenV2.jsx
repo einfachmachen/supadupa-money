@@ -1028,103 +1028,111 @@ function DashboardScreenV2() {
                       borderRadius: 10,
                       padding: "4px 10px",
                     }}>
-                    {/* Zeile 1: [Icon+Name -> ausklappen]  +  aktuell (-> Buchungs-Drilldown) */}
+                    {/* Zeile 1 (+ Pegel-Zeile): Icon links vor BEIDEN Zeilen. */}
                     <div style={{display:"flex",alignItems:"center",gap:8,
-                      marginBottom: (showPills && catAmountMode!=="balken") ? 6 : 0}}>
+                      marginBottom: (showPills && catAmountMode!=="pegel") ? 6 : 0}}>
                       <div onClick={()=>toggleCatExpand(cat.id)}
-                        style={{display:"flex",alignItems:"center",gap:8,flex:1,minWidth:0,
-                          cursor:"pointer"}}>
-                        <div style={{
+                        style={{
                           width:30,height:30,borderRadius:8,
                           background:catColor+"22",
                           display:"flex",alignItems:"center",justifyContent:"center",
-                          flexShrink:0,
+                          flexShrink:0,cursor:"pointer",
                         }}>
-                          {Li(cat.icon||"folder", 18, catColor)}
-                        </div>
-                        <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
-                          <div style={{
-                            color:T.txt,fontSize:20,fontWeight:600,
-                            overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
-                          }}>{cat.name}</div>
-                          {accLabel && (
-                            <div style={{color:T.lbl,fontSize:10,fontWeight:500,marginTop:1}}>
-                              ({accLabel})
-                            </div>
-                          )}
-                        </div>
+                        {Li(cat.icon||"folder", 18, catColor)}
                       </div>
-                      {(()=>{
-                        if(catAmountMode==="pegel") {
-                          // Rechts das aktuelle Gesamt (gebucht). Klick: Buchungen + Vormerkungen.
-                          return (
-                            <div onClick={e=>{e.stopPropagation(); if(iAkt>0||iEnde>0) openCatDrill(lastDay,"aktuell + Vormerkungen",iAkt,false);}}
-                              style={{color:headColor,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
-                                flexShrink:0, cursor:(iAkt>0||iEnde>0)?"pointer":"default"}}>
-                              {fmtShort(iAkt)}
-                            </div>
-                          );
-                        }
-                        const gesamtClr = textColor(istEnde, budgetEnde, isIncome);
-                        // "beide" zeigt das Paar nur, wenn es VM/offenes Budget gibt
-                        // (iEnde > iAkt). Sonst fällt es auf die einzelne Ist-Zahl zurück.
-                        if(catAmountMode==="beide" && Math.round(iEnde*100) > Math.round(iAkt*100)) {
-                          return (
-                            <div onClick={e=>{e.stopPropagation(); if(iEnde>0) openCatDrill(lastDay,"inkl. VM",iEnde,false);}}
-                              style={{flexShrink:0,display:"flex",alignItems:"baseline",gap:5,
-                                fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,cursor:iEnde>0?"pointer":"default"}}>
-                              <span style={{color:T.txt2,fontSize:14,fontWeight:600}}>{fmtShort(iAkt)}</span>
-                              <span style={{color:T.txt2,fontSize:11,opacity:0.55}}>·</span>
-                              <span style={{color:gesamtClr,fontSize:20,fontWeight:700}}>{fmtShort(iEnde)}</span>
-                            </div>
-                          );
-                        }
-                        const gesamt = catAmountMode==="gesamt";
-                        const headVal = gesamt ? iEnde : iAkt;
-                        const headClr = gesamt ? gesamtClr : headColor;
-                        return (
-                          <div onClick={e=>{e.stopPropagation();
-                              if(gesamt){ if(iEnde>0) openCatDrill(lastDay,"inkl. VM",iEnde,false); }
-                              else { if(iAkt>0) openCatDrill(lastDay,"aktuell",iAkt,true); }}}
-                            style={{
-                              color:headClr,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
-                              flexShrink:0, cursor:headVal>0?"pointer":"default",
-                            }}>
-                            {fmtShort(headVal)}
+                      <div style={{flex:1,minWidth:0}}>
+                        {/* obere Zeile: Name  +  aktuelles Gesamt (-> Buchungs-Drilldown) */}
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <div onClick={()=>toggleCatExpand(cat.id)}
+                            style={{flex:1,minWidth:0,overflow:"hidden",cursor:"pointer"}}>
+                            <div style={{
+                              color:T.txt,fontSize:20,fontWeight:600,
+                              overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
+                            }}>{cat.name}</div>
+                            {accLabel && (
+                              <div style={{color:T.lbl,fontSize:10,fontWeight:500,marginTop:1}}>
+                                ({accLabel})
+                              </div>
+                            )}
                           </div>
-                        );
-                      })()}
-                    </div>
-                    {/* Zeile 2 (Pegel-Modus): dünne Linie 0→Ende. Farbiger Pegel =
-                        aktuelles Gesamt (gebucht), grauer Pegel = inkl. Vormerkungen
-                        genutzt; Mitte/Ende klein als Prognose (PrognoseM/E). */}
-                    {catAmountMode==="pegel" && (()=>{
-                      const scale = Math.max(iEnde, iAkt, 1);
-                      const at = pct => `calc(8px + (100% - 9px) * ${Math.min(100,Math.max(0,pct))/100})`;
-                      const actClr = textColor(iAkt, budgetEnde, isIncome);
-                      const istPct = (iAkt/scale)*100, usedPct = (istEnde/scale)*100, mitPct = (iMitte/scale)*100;
-                      const hasVM = Math.round(istEnde*100) > Math.round(iAkt*100);
-                      return (
-                        <div onClick={e=>{e.stopPropagation(); if(iEnde>0) openCatDrill(lastDay,"aktuell + Vormerkungen",iAkt,false);}}
-                          style={{position:"relative",height:16,marginTop:1,cursor:iEnde>0?"pointer":"default",
-                            fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
-                          {/* Grundlinie 0→Ende */}
-                          <div style={{position:"absolute",left:8,right:1,top:5,height:1.5,background:T.bd}}/>
-                          <span style={{position:"absolute",left:0,top:1,color:T.txt2,fontSize:8}}>0</span>
-                          {/* inkl. Vormerkungen genutzt (grau) */}
-                          {hasVM && <div style={{position:"absolute",left:at(usedPct),top:1,height:9,width:2,background:T.txt2,opacity:0.7,transform:"translateX(-1px)"}}/>}
-                          {/* aktuelles Gesamt (Ampelfarbe) */}
-                          <div style={{position:"absolute",left:at(istPct),top:0,height:11,width:2.5,background:actClr,transform:"translateX(-1.25px)",borderRadius:1}}/>
-                          {/* Mitte-Markierung + Wert klein */}
-                          <div style={{position:"absolute",left:at(mitPct),top:3,height:5,width:1,background:T.mid||T.txt2,opacity:0.6}}/>
-                          <span style={{position:"absolute",left:at(mitPct),top:8,transform:"translateX(-50%)",color:T.mid||T.txt2,fontSize:8,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(iMitte)}</span>
-                          {/* Ende-Wert klein rechts */}
-                          <span style={{position:"absolute",right:0,top:8,color:T.gold||T.txt2,fontSize:8,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(iEnde)}</span>
+                          {(()=>{
+                            if(catAmountMode==="pegel") {
+                              // Rechts das aktuelle Gesamt (gebucht). Klick: Buchungen + Vormerkungen.
+                              return (
+                                <div onClick={e=>{e.stopPropagation(); if(iAkt>0||iEnde>0) openCatDrill(lastDay,"aktuell + Vormerkungen",iAkt,false);}}
+                                  style={{color:headColor,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
+                                    flexShrink:0, cursor:(iAkt>0||iEnde>0)?"pointer":"default"}}>
+                                  {fmtShort(iAkt)}
+                                </div>
+                              );
+                            }
+                            const gesamtClr = textColor(istEnde, budgetEnde, isIncome);
+                            // "beide" zeigt das Paar nur, wenn es VM/offenes Budget gibt
+                            // (iEnde > iAkt). Sonst fällt es auf die einzelne Ist-Zahl zurück.
+                            if(catAmountMode==="beide" && Math.round(iEnde*100) > Math.round(iAkt*100)) {
+                              return (
+                                <div onClick={e=>{e.stopPropagation(); if(iEnde>0) openCatDrill(lastDay,"inkl. VM",iEnde,false);}}
+                                  style={{flexShrink:0,display:"flex",alignItems:"baseline",gap:5,
+                                    fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,cursor:iEnde>0?"pointer":"default"}}>
+                                  <span style={{color:T.txt2,fontSize:14,fontWeight:600}}>{fmtShort(iAkt)}</span>
+                                  <span style={{color:T.txt2,fontSize:11,opacity:0.55}}>·</span>
+                                  <span style={{color:gesamtClr,fontSize:20,fontWeight:700}}>{fmtShort(iEnde)}</span>
+                                </div>
+                              );
+                            }
+                            const gesamt = catAmountMode==="gesamt";
+                            const headVal = gesamt ? iEnde : iAkt;
+                            const headClr = gesamt ? gesamtClr : headColor;
+                            return (
+                              <div onClick={e=>{e.stopPropagation();
+                                  if(gesamt){ if(iEnde>0) openCatDrill(lastDay,"inkl. VM",iEnde,false); }
+                                  else { if(iAkt>0) openCatDrill(lastDay,"aktuell",iAkt,true); }}}
+                                style={{
+                                  color:headClr,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
+                                  flexShrink:0, cursor:headVal>0?"pointer":"default",
+                                }}>
+                                {fmtShort(headVal)}
+                              </div>
+                            );
+                          })()}
                         </div>
-                      );
-                    })()}
+                        {/* untere Zeile (Pegel-Modus): dünne Linie 0→Ende. Farbiger Pegel =
+                            aktuelles Gesamt (gebucht), grauer Pegel = inkl. Vormerkungen
+                            genutzt; Mitte/Ende klein als Prognose (PrognoseM/E). Werte
+                            werden NICHT doppelt gezeigt (= aktuelles Gesamt → weglassen). */}
+                        {catAmountMode==="pegel" && (()=>{
+                          const scale = Math.max(iEnde, iAkt, 1);
+                          const at = pct => `calc(2px + (100% - 3px) * ${Math.min(100,Math.max(0,pct))/100})`;
+                          const actClr = textColor(iAkt, budgetEnde, isIncome);
+                          const istPct = (iAkt/scale)*100, usedPct = (istEnde/scale)*100, mitPct = (iMitte/scale)*100;
+                          const hasVM = Math.round(istEnde*100) > Math.round(iAkt*100);
+                          const rA = Math.round(iAkt*100), rM = Math.round(iMitte*100), rE = Math.round(iEnde*100);
+                          // Mitte nur, wenn ≠ aktuellem Gesamt UND ≠ Ende (keine Dopplung).
+                          const showMitte = rM !== rA && rM !== rE;
+                          // Ende nur, wenn ≠ aktuellem Gesamt (sonst steht es schon rechts).
+                          const showEnde  = rE !== rA;
+                          return (
+                            <div onClick={e=>{e.stopPropagation(); if(iEnde>0) openCatDrill(lastDay,"aktuell + Vormerkungen",iAkt,false);}}
+                              style={{position:"relative",height:16,marginTop:1,cursor:iEnde>0?"pointer":"default",
+                                fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
+                              {/* Grundlinie 0→Ende */}
+                              <div style={{position:"absolute",left:2,right:1,top:5,height:1.5,background:T.bd}}/>
+                              {/* inkl. Vormerkungen genutzt (grau) */}
+                              {hasVM && <div style={{position:"absolute",left:at(usedPct),top:1,height:9,width:2,background:T.txt2,opacity:0.7,transform:"translateX(-1px)"}}/>}
+                              {/* aktuelles Gesamt (Ampelfarbe) */}
+                              <div style={{position:"absolute",left:at(istPct),top:0,height:11,width:2.5,background:actClr,transform:"translateX(-1.25px)",borderRadius:1}}/>
+                              {/* Mitte-Markierung + Wert klein */}
+                              {showMitte && <div style={{position:"absolute",left:at(mitPct),top:3,height:5,width:1,background:T.mid||T.txt2,opacity:0.6}}/>}
+                              {showMitte && <span style={{position:"absolute",left:at(mitPct),top:8,transform:"translateX(-50%)",color:T.mid||T.txt2,fontSize:8,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(iMitte)}</span>}
+                              {/* Ende-Wert klein rechts */}
+                              {showEnde && <span style={{position:"absolute",right:0,top:8,color:T.gold||T.txt2,fontSize:8,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(iEnde)}</span>}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    </div>
                     {/* Zeile 2: Mitte/Ende-Pillen (global per Toggle ODER wenn Zeile ausgeklappt) */}
-                    {showPills && catAmountMode!=="balken" && (
+                    {showPills && catAmountMode!=="pegel" && (
                       <div style={{display:"flex",gap:6,marginTop:6}}>
                         {valuePill(iMitte, budgetMitte, isIncome,
                           ()=>openCatDrill(14,"Mitte",iMitte,false), {dim:true, colorVal:istMitte})}
