@@ -2730,7 +2730,11 @@ Abbrechen = ${remoteName}-Stand laden`
                 if(lt.t && (now - lt.t) < DOUBLE_TAP_MS) {
                   masterLastTapRef.current = {zone:null, t:0, timer:null};
                   try { if(navigator.vibrate) navigator.vibrate(15); } catch(_) {}
-                  if(e.currentTarget) e.currentTarget.style.transform = "translate(0px, -94px) scale(1.5)";
+                  // Smoothe, federnde Vergrößerung (länger + sanfter als der Standard-Snap).
+                  if(e.currentTarget) {
+                    e.currentTarget.style.transition = "transform 0.42s cubic-bezier(0.34, 1.45, 0.5, 1)";
+                    e.currentTarget.style.transform = "translate(0px, -94px) scale(1.5)";
+                  }
                   setPlusArretiert(true);
                 } else {
                   if(e.currentTarget) e.currentTarget.style.transform = "translate(0px, -14px) scale(1)";
