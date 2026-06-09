@@ -2726,6 +2726,7 @@ Abbrechen = ${remoteName}-Stand laden`
                 ref.consumed = true;
                 if(e.currentTarget) e.currentTarget.style.transform = "translate(0px, -94px) scale(1.5)";
                 setPlusArretiert(true);
+                doPlus(); // erster Swipe-Up öffnet direkt die Mehr-Ansicht (Button bleibt vergrößert)
               } else {
                 if(e.currentTarget) e.currentTarget.style.transform = "translate(0px, -14px) scale(1)";
                 // Doppel-Tap (jumpToToday) bleibt möglich
