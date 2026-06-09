@@ -2582,22 +2582,21 @@ Abbrechen = ${remoteName}-Stand laden`
           const MOVE_TOLERANCE = 14;   // Finger-Jitter bis hier zählt noch als Tap
           const VISUAL_LIMIT = 15;     // Joystick darf max so weit wandern
           const HOLD_MS = 600;         // wie lange in einer Richtung halten für Edge-Jump
-          const DOUBLE_TAP_MS = 350;   // Fenster für Doppel-Tap → jumpToToday
-          const GROW_TRAVEL = 60;      // Finger-Weg nach oben bis volle 1,5×-Größe erreicht ist
+          const DOUBLE_TAP_MS = 350;   // Fenster für Doppel-Tap (vergrößern bzw. jumpToToday)
           // Plus-Button-Rest-Position: Bottom-Bar oder arretiert (80px höher, 1,5× größer)
           const restingTransform = plusArretiert
             ? "translate(0px, -94px) scale(1.5)"
             : "translate(0px, -14px) scale(1)";
 
           // GESTEN-NEUDESIGN:
-          // - Single-Tap   → nichts (nur visuelles Feedback)
-          // - Double-Tap   → jumpToToday + un-arretieren
-          // - Swipe-Up (klein)      → arretieren
-          // - Swipe-Up (arretiert)  → MobileActionPicker (Mehr)
-          // - Swipe-Down (klein)    → nichts
-          // - Swipe-Down (arretiert) → MonthPicker
-          // - Swipe-L/R    → stepMonth
-          // - Hold horizontal → jumpToTxEdge (first/last)
+          // - Single-Tap              → nichts (nur visuelles Feedback)
+          // - Double-Tap (klein)      → vergrößern/arretieren (Position hoch + 1,5×)
+          // - Double-Tap (arretiert)  → jumpToToday + zurück in die Bottom-Bar
+          // - Swipe (klein)           → nichts (Vergrößerung läuft über Doppel-Tap)
+          // - Swipe-Up (arretiert)    → MobileActionPicker (Mehr)
+          // - Swipe-Down (arretiert)  → MonthPicker
+          // - Swipe-L/R (arretiert)   → stepMonth
+          // - Hold horizontal (arretiert) → jumpToTxEdge (first/last)
 
           // Hilfsfunktion: Hold-Timer setzen, wenn Pointer in horizontale Richtung gedraggt
           const armHoldTimer = (ref, btn) => {
@@ -2657,32 +2656,11 @@ Abbrechen = ${remoteName}-Stand laden`
             if(absDx>MOVE_TOLERANCE || absDy>MOVE_TOLERANCE) {
               ref.moved = true;
             }
-            // ── START-ZUSTAND: Nur die Bewegung nach oben wirkt. Der Button wächst
-            //    dabei fingerfolgend direkt auf 1,5× (kein Clamp, keine seitliche/
-            //    abwärts Reaktion) → nichts ruckelt/hakt. ──
+            // ── START-ZUSTAND (klein): Swipen bewirkt visuell/aktionsseitig nichts.
+            //    Die Vergrößerung läuft jetzt über einen Doppel-Tap (siehe onPointerUp);
+            //    erst aus dem vergrößerten Zustand öffnet ein Swipe-Up die Mehr-Ansicht. ──
             if(!plusArretiert) {
-              if(ref.consumed) return;
-              const upPx = Math.max(0, -dy);                    // nur nach oben (dy<0)
-              const progress = Math.min(1, upPx / GROW_TRAVEL); // 0..1
-              const y = -14 - 80 * progress;                    // -14 → -94
-              const scale = 1 + 0.5 * progress;                 // 1 → 1,5
               clearHoldTimer(ref);
-              // SOFORT öffnen: sobald die Schwelle überschritten ist, direkt die
-              // Mehr-Ansicht zeigen (nicht erst beim Loslassen) → kein Haken.
-              if(upPx > DRAG_THRESHOLD) {
-                ref.consumed = true;
-                if(e.currentTarget) {
-                  e.currentTarget.style.transition = "transform 0.18s cubic-bezier(.34,1.4,.64,1)";
-                  e.currentTarget.style.transform = "translate(0px, -94px) scale(1.5)";
-                }
-                setPlusArretiert(true);
-                doPlus();
-                return;
-              }
-              if(e.currentTarget) {
-                e.currentTarget.style.transition = "none";
-                e.currentTarget.style.transform = `translate(0px, ${y}px) scale(${scale})`;
-              }
               return;
             }
             // ACHSEN-SNAPPING: Sobald die Bewegung MOVE_TOLERANCE überschreitet,
@@ -2733,37 +2711,30 @@ Abbrechen = ${remoteName}-Stand laden`
             clearHoldTimer(ref);
             const dx = ref.dx, dy = ref.dy;
             const dt = Date.now() - ref.t;
-            // ── START-ZUSTAND: Nur Swipe-Up arretiert (Button bleibt direkt auf
-            //    1,5×). Seitlich/abwärts/zu-kurz → zurück in die Bottom-Bar. Beim
-            //    Arretieren NICHT erst nach unten zurücksnappen → kein Haken. ──
+            // ── START-ZUSTAND (klein): Doppel-Tap vergrößert/arretiert den Button
+            //    (Position hoch + 1,5×). Swipen bewirkt nichts; der Button bleibt
+            //    klein in der Bottom-Bar. Die Mehr-Ansicht öffnet sich erst per
+            //    Swipe-Up AUS dem vergrößerten Zustand. ──
             if(!plusArretiert) {
               if(e.currentTarget) e.currentTarget.style.transition = "transform 0.2s cubic-bezier(.34,1.4,.64,1)";
-              const upPx = Math.max(0, -dy);
-              // Schon während des Hochziehens ausgelöst (Mehr ist offen) → arretiert
-              // lassen, NICHT zurückschrumpfen (sonst zappelt der Button).
-              if(ref.consumed) {
-                if(e.currentTarget) e.currentTarget.style.transform = "translate(0px, -94px) scale(1.5)";
+              // Swipe (jegliche nennenswerte Bewegung) → nichts, klein bleiben.
+              if(ref.moved) {
+                if(e.currentTarget) e.currentTarget.style.transform = "translate(0px, -14px) scale(1)";
                 try { e.currentTarget.releasePointerCapture(e.pointerId); } catch(err) {}
                 return;
               }
-              if(upPx > DRAG_THRESHOLD) {
-                ref.consumed = true;
-                if(e.currentTarget) e.currentTarget.style.transform = "translate(0px, -94px) scale(1.5)";
-                setPlusArretiert(true);
-                doPlus(); // sehr schneller Flick: hier nachziehen, falls Move es nicht erwischt hat
-              } else {
-                if(e.currentTarget) e.currentTarget.style.transform = "translate(0px, -14px) scale(1)";
-                // Doppel-Tap (jumpToToday) bleibt möglich
-                if(!ref.moved && dt < 700) {
-                  const now = Date.now();
-                  const lt = masterLastTapRef.current;
-                  if(lt.t && (now - lt.t) < DOUBLE_TAP_MS) {
-                    masterLastTapRef.current = {zone:null, t:0, timer:null};
-                    try { if(navigator.vibrate) navigator.vibrate(15); } catch(_) {}
-                    jumpToToday();
-                  } else {
-                    masterLastTapRef.current = {zone:"center", t:now, timer:null};
-                  }
+              // Tap: Doppel-Tap → vergrößern/arretieren; einzelner Tap → nur merken.
+              if(dt < 700) {
+                const now = Date.now();
+                const lt = masterLastTapRef.current;
+                if(lt.t && (now - lt.t) < DOUBLE_TAP_MS) {
+                  masterLastTapRef.current = {zone:null, t:0, timer:null};
+                  try { if(navigator.vibrate) navigator.vibrate(15); } catch(_) {}
+                  if(e.currentTarget) e.currentTarget.style.transform = "translate(0px, -94px) scale(1.5)";
+                  setPlusArretiert(true);
+                } else {
+                  if(e.currentTarget) e.currentTarget.style.transform = "translate(0px, -14px) scale(1)";
+                  masterLastTapRef.current = {zone:"center", t:now, timer:null};
                 }
               }
               try { e.currentTarget.releasePointerCapture(e.pointerId); } catch(err) {}
