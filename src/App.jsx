@@ -2661,11 +2661,23 @@ Abbrechen = ${remoteName}-Stand laden`
               const progress = Math.min(1, upPx / GROW_TRAVEL); // 0..1
               const y = -14 - 80 * progress;                    // -14 → -94
               const scale = 1 + 0.5 * progress;                 // 1 → 1,5
+              clearHoldTimer(ref);
+              // SOFORT öffnen: sobald die Schwelle überschritten ist, direkt die
+              // Mehr-Ansicht zeigen (nicht erst beim Loslassen) → kein Haken.
+              if(upPx > DRAG_THRESHOLD) {
+                ref.consumed = true;
+                if(e.currentTarget) {
+                  e.currentTarget.style.transition = "transform 0.18s cubic-bezier(.34,1.4,.64,1)";
+                  e.currentTarget.style.transform = "translate(0px, -94px) scale(1.5)";
+                }
+                setPlusArretiert(true);
+                doPlus();
+                return;
+              }
               if(e.currentTarget) {
                 e.currentTarget.style.transition = "none";
                 e.currentTarget.style.transform = `translate(0px, ${y}px) scale(${scale})`;
               }
-              clearHoldTimer(ref);
               return;
             }
             // ACHSEN-SNAPPING: Sobald die Bewegung MOVE_TOLERANCE überschreitet,
@@ -2722,11 +2734,18 @@ Abbrechen = ${remoteName}-Stand laden`
             if(!plusArretiert) {
               if(e.currentTarget) e.currentTarget.style.transition = "transform 0.2s cubic-bezier(.34,1.4,.64,1)";
               const upPx = Math.max(0, -dy);
-              if(upPx > DRAG_THRESHOLD && !ref.consumed) {
+              // Schon während des Hochziehens ausgelöst (Mehr ist offen) → arretiert
+              // lassen, NICHT zurückschrumpfen (sonst zappelt der Button).
+              if(ref.consumed) {
+                if(e.currentTarget) e.currentTarget.style.transform = "translate(0px, -94px) scale(1.5)";
+                try { e.currentTarget.releasePointerCapture(e.pointerId); } catch(err) {}
+                return;
+              }
+              if(upPx > DRAG_THRESHOLD) {
                 ref.consumed = true;
                 if(e.currentTarget) e.currentTarget.style.transform = "translate(0px, -94px) scale(1.5)";
                 setPlusArretiert(true);
-                doPlus(); // erster Swipe-Up öffnet direkt die Mehr-Ansicht (Button bleibt vergrößert)
+                doPlus(); // sehr schneller Flick: hier nachziehen, falls Move es nicht erwischt hat
               } else {
                 if(e.currentTarget) e.currentTarget.style.transform = "translate(0px, -14px) scale(1)";
                 // Doppel-Tap (jumpToToday) bleibt möglich
