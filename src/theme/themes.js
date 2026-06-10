@@ -512,6 +512,23 @@ const THEMES = {
   },
 
 };
+
+// ── Dark Hell — wie Dark, aber mit DEUTLICH hellerem Grau, damit das
+//    Ausgaben-Rot besser lesbar ist. Umschaltbare Variante; wenn sie sich
+//    bewährt, kann sie das bisherige Dark ablösen.
+THEMES.darkhell = {
+  ...THEMES.dark,
+  bg:"#3E444C", surf:"#4B525B", surf2:"#545C66", surf3:"#3A414A",
+  bd:"rgba(215,225,235,0.20)", bds:"rgba(215,225,235,0.34)",
+  txt:"#F5F7F9", txt2:"rgba(218,228,238,0.72)",
+  lbl:"rgba(218,228,238,0.58)",
+  neg:"#FF5C42",                       // helleres Rot — liest sich besser auf Grau
+  err:"#FF5C42", cond_neg:"#E74C3C",
+  disabled:"#3A4046",
+  hero_bg:"linear-gradient(135deg,#262B32,#363E48)",
+  name:"Dark Hell (helleres Grau)",
+};
+
 // Globales T — wird von getAppTheme() überschrieben, initialisiert mit dark — wird von getAppTheme() überschrieben, initialisiert mit dark
 function getTheme(name) {
   const t = THEMES[name] || THEMES.dark;
