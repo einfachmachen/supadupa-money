@@ -840,7 +840,18 @@ export default function SupaDupaMoney() {
           // Erst IndexedDB versuchen, dann localStorage als Fallback
           let raw = await window.IDB.get(LS_KEY).catch(()=>null);
           if(!raw) raw = localStorage.getItem(LS_KEY);
-          if(raw) { const d=JSON.parse(raw); delete d.isLand; applyData(d); }
+          if(raw) {
+            try {
+              const d=JSON.parse(raw); delete d.isLand; applyData(d);
+            } catch(parseErr) {
+              // Korrupte Daten NICHT verlieren: der Auto-Save würde sie sonst
+              // kurz darauf mit leerem Zustand überschreiben. Rohstring sichern.
+              console.error("Lokale Daten korrupt — Rohdaten nach mbt_corrupt_rescue gesichert:", parseErr);
+              window.IDB.set("mbt_corrupt_rescue_"+Date.now(), raw).catch(()=>{});
+              setSyncError("⚠️ Lokale Daten beschädigt — Rohdaten wurden gesichert (mbt_corrupt_rescue)");
+              setSyncStatus("error");
+            }
+          }
         } catch(e) { console.error("Lokaler Load fehlgeschlagen:", e); }
       };
       // Timestamp-Vergleich
@@ -1132,14 +1143,24 @@ Abbrechen = ${remoteName}-Stand laden`
       // um 200-500 ms pro Klick. IDB ist asynchron und für große Daten ausgelegt.
       // Beim App-Start wird IDB zuerst gelesen, localStorage nur als Fallback,
       // falls IDB leer ist (siehe loadLocal in der App-Start-Logik).
-      window.IDB.set(LS_KEY, serialized).catch(()=>{});
+      window.IDB.set(LS_KEY, serialized).catch(e=>{
+        // Speichern fehlgeschlagen (Quota voll, Private Mode, …) — Nutzer
+        // muss das erfahren, sonst geht Arbeit still verloren
+        console.error("IDB-Save fehlgeschlagen:", e);
+        setSyncError(`⚠️ Lokales Speichern fehlgeschlagen: ${e?.message||e}`);
+        setSyncStatus("error");
+      });
       // csvRules separat in IDB-Backup behalten — winzig und unabhängig nutzbar
       // beim Reset/Regen über RegenRulesButton.
       if(payload.csvRules&&Object.keys(payload.csvRules).length>0) {
         try { kvStore.setItem("mbt_csvRules_backup", JSON.stringify(payload.csvRules)); } catch(e){}
       }
       setIsDirty(true);
-    } catch(e) {}
+    } catch(e) {
+      console.error("Serialisierung beim Speichern fehlgeschlagen:", e);
+      setSyncError(`⚠️ Lokales Speichern fehlgeschlagen: ${e?.message||e}`);
+      setSyncStatus("error");
+    }
   };
 
   useEffect(()=>{
