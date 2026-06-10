@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { fmt, pn, uid, dayOf, drillSort } from "../src/utils/format.js";
+import { fmt, pn, round2, sumAmounts, uid, dayOf, drillSort } from "../src/utils/format.js";
 
 describe("fmt", () => {
   it("formatiert Zahlen im deutschen Locale", () => {
@@ -41,6 +41,34 @@ describe("uid", () => {
     // 1000 IDs am Stück müssen kollisionsfrei sein
     const set = new Set(Array.from({length:1000}, uid));
     expect(set.size).toBe(1000);
+  });
+});
+
+describe("round2", () => {
+  it("kollabiert Float-Staub auf 2 Stellen", () => {
+    expect(round2(0.1 + 0.2)).toBe(0.3);
+    expect(round2(2.675)).toBe(2.67); // bekannte Float-Repräsentation
+    expect(round2(NaN)).toBe(0);
+    expect(round2(-0.30000000000000004)).toBe(-0.3);
+  });
+});
+
+describe("sumAmounts", () => {
+  it("summiert cent-genau ohne Float-Fehler", () => {
+    expect(sumAmounts([0.1, 0.2])).toBe(0.3);
+    expect(sumAmounts([0.1, 0.1, 0.1])).toBe(0.3);
+    let s = 0; for (let i = 0; i < 10; i++) s += 0.1; // klassischer Fehler
+    expect(s).not.toBe(1);                            // Float-Summe = 0.999…
+    expect(sumAmounts(Array(10).fill(0.1))).toBe(1);  // cent-genau korrekt
+  });
+  it("summiert über einen Selector", () => {
+    const splits = [{amount: 20.01}, {amount: 20.01}, {amount: 20.01}];
+    expect(sumAmounts(splits, s => s.amount)).toBe(60.03);
+  });
+  it("verträgt leere/ungültige Eingaben", () => {
+    expect(sumAmounts([])).toBe(0);
+    expect(sumAmounts(null)).toBe(0);
+    expect(sumAmounts([null, undefined, "x", 1.5])).toBe(1.5);
   });
 });
 

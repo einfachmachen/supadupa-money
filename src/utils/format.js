@@ -17,6 +17,23 @@ const fmt = v => {
 
 const pn  = v => { const n=parseFloat(String(v||"").replace(",",".")); return isNaN(n)?0:Math.round(n*100)/100; };
 
+// round2: kollabiert Float-Staub (0.1+0.2=0.30000000000000004) auf 2 Stellen.
+// An Summen-Abschlüssen anwenden, NICHT auf jeden Summanden.
+const round2 = n => Math.round((Number(n)||0) * 100) / 100;
+
+// sumAmounts: cent-genaue Summe über eine Liste. Addiert in ganzen Cents und
+// teilt erst am Ende — vermeidet Float-Akkumulationsfehler vollständig.
+//   sumAmounts([0.1, 0.2])           === 0.3
+//   sumAmounts(splits, s=>s.amount)  summiert über einen Selector
+const sumAmounts = (arr, get) => {
+  let cents = 0;
+  for (const x of (arr || [])) {
+    const v = get ? get(x) : x;
+    cents += Math.round((Number(v) || 0) * 100);
+  }
+  return cents / 100;
+};
+
 // Zeitanteil + Zufall: kollisionssicher auch bei Massenimport und zwei
 // parallel offenen Tabs (reines Math.random() mit 8 Zeichen war riskant)
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,10);
@@ -39,4 +56,4 @@ const drillSort = (a, b) => {
   return b.date.localeCompare(a.date);
 };
 
-export { fmt, pn, uid, dayOf, drillSort, NUM_FONT };
+export { fmt, pn, round2, sumAmounts, uid, dayOf, drillSort, NUM_FONT };
