@@ -9,6 +9,7 @@ import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { PAL } from "../../theme/palette.js";
+import { amtStyle, readableOn } from "../../theme/amtPill.js";
 import { MONTHS_F } from "../../utils/constants.js";
 import { dayOf, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
@@ -636,7 +637,7 @@ function MonatScreen() {
                     fontFamily:"inherit",
                     border:"none",
                     background: active ? bgActive : "rgba(255,255,255,0.06)",
-                    color: active ? "#fff" : T.txt2,
+                    color: active ? readableOn(bgActive, col) : T.txt2,
                     fontSize:11,
                     fontWeight:600,
                     letterSpacing:0.2,
@@ -755,7 +756,7 @@ function MonatScreen() {
                       {(hasReservierung||hasDayPend)&&(
                         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1,lineHeight:1.2}}>
                           {hasReservierung&&(
-                            <span style={{color:daySaldo>=0?T.txt2:T.neg,fontSize:11,fontFamily:NUM_FONT,fontWeight:600,whiteSpace:"nowrap"}}>
+                            <span style={{...amtStyle(daySaldo>=0?"txt2":"neg"),fontSize:11,fontFamily:NUM_FONT,fontWeight:600,whiteSpace:"nowrap"}}>
                               nach Budget {daySaldo>=0?"+":"−"}{fmt(Math.abs(daySaldo))}
                             </span>
                           )}
@@ -774,13 +775,13 @@ function MonatScreen() {
                         </div>
                       )}
                       <span style={{
-                        color:headSaldo>=0?T.pos:T.neg,
+                        ...amtStyle(headSaldo>=0?"pos":"neg"),
                         fontSize:18,fontWeight:800,fontFamily:NUM_FONT,whiteSpace:"nowrap"}}>
                         {headSaldo>=0?"+":"−"}{fmt(Math.abs(headSaldo))}
                       </span>
                     </div>
                   ) : (
-                    <span style={{color:dayNet>=0?T.pos:T.neg,fontSize:18,fontWeight:800,
+                    <span style={{...amtStyle(dayNet>=0?"pos":"neg"),fontSize:18,fontWeight:800,
                       fontFamily:NUM_FONT,flexShrink:0}}>
                       {dayNet>=0?"+":"−"}{fmt(Math.abs(dayNet))}
                     </span>
@@ -819,11 +820,11 @@ function MonatScreen() {
                           {w.nextPos
                             ? <>Fehlbetrag ausgleichen bis <span style={{color:T.gold,fontWeight:700}}>{nextLabel}</span>
                               {w.nextPos.name&&<span> ({w.nextPos.name})</span>}
-                              {" — mindestens "}<span style={{color:T.neg,fontWeight:700,fontFamily:NUM_FONT}}>
+                              {" — mindestens "}<span style={{...amtStyle("neg"),fontWeight:700,fontFamily:NUM_FONT}}>
                                 {fmt(w.deficit)} €
                               </span>{" einplanen"}</>
                             : <>Kein positiver Saldo-Tag im Monat gefunden — mindestens{" "}
-                              <span style={{color:T.neg,fontWeight:700,fontFamily:NUM_FONT}}>
+                              <span style={{...amtStyle("neg"),fontWeight:700,fontFamily:NUM_FONT}}>
                                 {fmt(w.deficit)} €
                               </span>{" fehlen"}</>
                           }
@@ -876,7 +877,7 @@ function MonatScreen() {
                             </div>
                           </div>
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
-                            <div style={{color:pal.val,fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>+{fmt(tx.totalAmount)}</div>
+                            <div style={{...amtStyle("pos",pal.val),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>+{fmt(tx.totalAmount)}</div>
                             {fulfilled&&<div style={{color:T.pos,fontSize:9}}>{Li("check",9,T.pos)} erfüllt</div>}
                             {needsHatch&&<div style={{color:pal.hdr,fontSize:9}}>{Li("alert-circle",9,T.gold)} offen</div>}
                           </div>
@@ -929,20 +930,20 @@ function MonatScreen() {
                             {isOverspent ? (<>
                               <div style={{display:"flex",justifyContent:"flex-end",gap:6,alignItems:"baseline"}}>
                                 <span style={{color:T.neg,fontSize:10}}>drüber</span>
-                                <span style={{color:T.neg,fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmt(Math.abs(open))}</span>
+                                <span style={{...amtStyle("neg"),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmt(Math.abs(open))}</span>
                               </div>
                               <div style={{display:"flex",justifyContent:"flex-end",gap:6,alignItems:"baseline"}}>
                                 <span style={{color:T.txt2,fontSize:10}}>genutzt</span>
-                                <span style={{color:T.neg,fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmtSigned(-spent)}</span>
+                                <span style={{...amtStyle("neg"),fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmtSigned(-spent)}</span>
                               </div>
                             </>) : (<>
                               <div style={{display:"flex",justifyContent:"flex-end",gap:6,alignItems:"baseline"}}>
                                 <span style={{color:T.txt2,fontSize:10}}>offen</span>
-                                <span style={{color:open>0?T.gold:T.txt2,fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmtSigned(signedOpen)}</span>
+                                <span style={{...amtStyle(open>0?"gold":"txt2"),fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmtSigned(signedOpen)}</span>
                               </div>
                               <div style={{display:"flex",justifyContent:"flex-end",gap:6,alignItems:"baseline"}}>
                                 <span style={{color:T.txt2,fontSize:10}}>genutzt</span>
-                                <span style={{color:spent===0?T.txt2:accentCol,fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{spent===0?"—":fmtSigned(-spent)}</span>
+                                <span style={{...amtStyle(spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold",spent===0?T.txt2:accentCol),fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{spent===0?"—":fmtSigned(-spent)}</span>
                               </div>
                             </>)}
                           </div>
@@ -1041,7 +1042,7 @@ function MonatScreen() {
                           </div>
                           {/* Amount */}
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
-                            <div style={{color:pal.val,fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>
+                            <div style={{...amtStyle(type==="income"?"pos":tx.pending?"gold":"neg",pal.val),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>
                               {type==="income"?"+":"−"}{fmt(tx.totalAmount)}
                             </div>
                             {isS&&(
@@ -1051,7 +1052,7 @@ function MonatScreen() {
                                   return (
                                     <div key={sp.id} style={{display:"flex",alignItems:"center",gap:3,justifyContent:"flex-end",marginBottom:1}}>
                                       <span style={{width:6,height:6,borderRadius:"50%",background:spCat?.color||T.txt2,flexShrink:0,display:"inline-block"}}/>
-                                      <span style={{color:spCat?.color||T.txt2,fontSize:9,fontFamily:NUM_FONT,fontWeight:700}}>{fmt(pn(sp.amount))}</span>
+                                      <span style={{...amtStyle(spCat?.color||T.txt2),fontSize:9,fontFamily:NUM_FONT,fontWeight:700}}>{fmt(pn(sp.amount))}</span>
                                     </div>
                                   );
                                 })}
