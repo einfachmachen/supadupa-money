@@ -2456,7 +2456,15 @@ Abbrechen = ${remoteName}-Stand laden`
   // Pfeil-Klicks im Monatswähler-Modal den Hauptcontent NICHT re-rendern
   // (sehr teuer wegen Prognose-Berechnungen). Beim Schließen des Modals
   // werden die frozen-Werte automatisch synchronisiert.
-  const cx = {
+  // Memoisiert: ohne useMemo bekam der Provider bei JEDEM App-Render eine
+  // neue Objekt-Referenz und alle Consumer re-renderten (z.B. bei jedem
+  // syncStatus-Tick oder lucide-ready). Regel für die Dependency-Liste:
+  // ALLE Wert-Einträge des Objekts müssen rein, ebenso Werte, die von den
+  // enthaltenen Helfern per Closure gelesen werden (deshalb das rohe `year`
+  // für getJV/setJV). Setter aus useState und Refs sind stabil und gehören
+  // nicht in die Liste. Wer hier einen Helfer ergänzt, der neuen State
+  // liest: State mit in die Liste aufnehmen, sonst drohen stale Closures.
+  const cx = useMemo(() => ({
     cats, setCats, groups, setGroups, txs, setTxs, accounts, setAccounts,
     yearData, setYearData,
     year: frozenYear, setYear, month: frozenMonth, setMonth,
@@ -2508,7 +2516,24 @@ Abbrechen = ${remoteName}-Stand laden`
     dashDrillOpen, setDashDrillOpen,
     noBorders, setNoBorders,
     masterOverride, setMasterOverride,
-  };
+  }), [
+    cats, groups, txs, accounts, yearData,
+    frozenYear, frozenMonth, year, selAcc, isLand,
+    showAllMonths, mainTab, subTab, col3Name, modal, mgmtCat,
+    editTx, newTx, newCat, newSubName, exportModal,
+    _txIndex, sparOpenRequest,
+    quickBtns, showQuickPicker, quickColors,
+    supaUrl, supaKey, supaStatus, supaError, supaLockKey, supaActive,
+    accIconPick, confirmReset,
+    csvRules, budgets, startBalances,
+    jsonbinActive, jsonbinStatus, jsonbinKey, jsonbinId,
+    gistActive, gistStatus, gistToken, gistId,
+    reviewQueue, showSettings, showVormHub, editVormTx, showMatching,
+    customIcons, themeName, hideEmptyRows, handedness, debugFlags,
+    cfActive, cfStatus, cfUrl, cfSecret,
+    syncStatus, syncError, cfSaveOnClose,
+    dashDrillOpen, noBorders, masterOverride,
+  ]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // LAYOUT
