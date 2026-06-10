@@ -33,7 +33,7 @@ import { BASE_ROWS, CUR_YEAR, INIT_ACCOUNTS, INIT_CATS } from "./utils/constants
 import { kvStore } from "./utils/kvStore.js";
 import { isoAddMonths } from "./utils/date.js";
 import { anchorValue, anchorDay } from "./utils/anchors.js";
-import { pn, uid } from "./utils/format.js";
+import { pn, uid, sumAmounts } from "./utils/format.js";
 import { Li } from "./utils/icons.jsx";
 import { makeYearData } from "./utils/yearData.js";
 import { isDuplCounterpart, buildTxIdMap } from "./utils/tx.js";
@@ -2030,7 +2030,7 @@ Abbrechen = ${remoteName}-Stand laden`
       ? editTx.pendingDate || (() => { const d=new Date(editTx.date); d.setDate(d.getDate()+acc.delayDays); return d.toISOString().split("T")[0]; })()
       : editTx.pendingDate;
     const newSplits = (editTx.splits||[]).map(sp=>({...sp, amount:pn(sp.amount)}));
-    const newTotal  = newSplits.length===1 ? amt : newSplits.reduce((s,sp)=>s+sp.amount,0);
+    const newTotal  = newSplits.length===1 ? amt : sumAmounts(newSplits, sp=>sp.amount);
 
     const hasSeries = !!editTx._seriesId;
     const hasBudget = !!editTx._budgetSubId;
@@ -2291,8 +2291,8 @@ Abbrechen = ${remoteName}-Stand laden`
   const removeSplit = sid=> setNewTx(t=>({...t,splits:(t.splits||[]).filter(s=>s.id!==sid)}));
   const updSplit    = (sid,f,v) => setNewTx(t=>({...t,splits:(t.splits||[]).map(s=>s.id===sid?{...s,[f]:v,...(f==="catId"?{subId:""}:{})}:s)}));
 
-  const splitTotal = newTx.splits.reduce((s,sp)=>s+pn(sp.amount),0);
-  const splitDiff  = pn(newTx.totalAmount)-splitTotal;
+  const splitTotal = sumAmounts(newTx.splits, sp=>sp.amount);
+  const splitDiff  = pn(pn(newTx.totalAmount)-splitTotal);
   const txValid    = pn(newTx.totalAmount)>0 && (
     newTx.pending
       ? (newTx.splits.length <= 1 || Math.abs(splitDiff)<0.01)  // Vormerkung mit Splits: Summe muss stimmen

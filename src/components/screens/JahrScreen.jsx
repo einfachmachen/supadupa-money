@@ -7,7 +7,7 @@ import { getBC } from "../../theme/palette.js";
 import { amtStyle } from "../../theme/amtPill.js";
 import { groupBudgetPairs } from "../../utils/budgets.js";
 import { BASE_ROWS, CUR_YEAR, MONTHS_F, MONTHS_S } from "../../utils/constants.js";
-import { drillSort, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
+import { drillSort, fmt, pn, sumAmounts, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { saldoAt, saldoMitte, saldoEnde } from "../../utils/saldo.js";
 
@@ -102,7 +102,7 @@ function JahrScreen({forceSingle=false}) {
           const newSplits = (tx.splits||[]).map(sp =>
             sp.subId===row.subId ? {...sp, amount: newAmt} : sp
           );
-          const newTotal = newSplits.reduce((s,sp)=>s+pn(sp.amount),0);
+          const newTotal = sumAmounts(newSplits, sp=>sp.amount);
           return {...tx, totalAmount: newTotal, splits: newSplits};
         }));
         // Also clear any yearData override so display stays in sync
@@ -588,7 +588,7 @@ function JahrScreen({forceSingle=false}) {
                         // Splits der Vormerkung auf die echte Buchung übertragen
                         const pendTx = txs.find(t=>t.id===drilldown.linkPendId);
                         const pendSplits = (pendTx?.splits||[]).filter(s=>s.catId);
-                        const pendTotal  = pendSplits.reduce((s,sp)=>s+pn(sp.amount),0);
+                        const pendTotal  = sumAmounts(pendSplits, sp=>sp.amount);
                         const newSplits  = pendSplits.length>0
                           ? pendSplits.map(sp=>({...sp, id:uid()}))
                           : tx.splits;

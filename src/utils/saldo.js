@@ -54,7 +54,7 @@
 // Gesamt-Sicht (accId=null): Summe über alle Konten.
 
 import { buildTxIdMap, isDuplCounterpart } from "./tx.js";
-import { pn } from "./format.js";
+import { pn, round2 } from "./format.js";
 import { nextBankWorkday } from "./date.js";
 
 // ── Helper: signed amount ─────────────────────────────────────────────
@@ -116,6 +116,7 @@ function saldoAnchor(year, month, accId, ctx) {
         const vAcc = ctx.getKumulierterSaldo ? ctx.getKumulierterSaldo(prevY, prevM, acc.id) : 0;
         if(vAcc != null) v += vAcc;
       });
+      v = round2(v);
     }
   } else {
     // Aktueller oder zukünftiger Vormonat: rekursiv saldoAt → eigene Logik mit Budget-Sprung
@@ -139,7 +140,7 @@ function ist(year, month, day, accId, ctx) {
     if(d.getDate() > day) return;
     sum += signedAmount(t);
   });
-  return sum;
+  return round2(sum);  // Float-Staub aus der Akkumulation entfernen
 }
 
 // ── Budget-Daten pro Sub-Kategorie sammeln ────────────────────────────
@@ -194,8 +195,11 @@ function collectBudgets(year, month, ctx) {
     });
   }
 
-  // Gesamt = mitte + ende
-  Object.values(result).forEach(b => { b.gesamt = b.mitte + b.ende; });
+  // Gesamt = mitte + ende (cent-genau, falls mehrere Platzhalter akkumuliert wurden)
+  Object.values(result).forEach(b => {
+    b.mitte = round2(b.mitte); b.ende = round2(b.ende);
+    b.gesamt = round2(b.mitte + b.ende);
+  });
   return result;
 }
 
@@ -228,7 +232,7 @@ function istForSub(year, month, fromDay, toDay, baseSubId, ctx) {
       sum += amt;
     });
   });
-  return sum;
+  return round2(sum);  // Float-Staub aus der Akkumulation entfernen
 }
 
 // ── RestMitte: Reservierung der ersten Monatshälfte (Tag 1..14) ───────
@@ -247,7 +251,7 @@ function restMitte(year, month, ctx) {
     const istK = istForSub(year, month, 1, 14, subId, ctx);
     rest += Math.max(0, ref - istK);
   });
-  return rest;
+  return round2(rest);
 }
 
 // ── RestEnde: mit dynamischem Roll-Over ───────────────────────────────
@@ -264,7 +268,7 @@ function restEnde(year, month, ctx) {
     const budgetH2 = Math.max(0, b.gesamt - ist1bis14);
     rest += Math.max(0, budgetH2 - ist15bisLetzter);
   });
-  return rest;
+  return round2(rest);
 }
 
 // ── Sollte am gefragten Tag der Budget-Abzug greifen? ─────────────────
@@ -345,7 +349,7 @@ function _saldo(year, month, day, accId, ctx, withReservation) {
     (ctx.accounts || []).forEach(acc => {
       sum += _saldo(year, month, day, acc.id, ctx, withReservation);
     });
-    return sum;
+    return round2(sum);
   }
 
   // Konto-spezifisch
@@ -364,7 +368,7 @@ function _saldo(year, month, day, accId, ctx, withReservation) {
     }
   }
 
-  return anker + istV - sprung;
+  return round2(anker + istV - sprung);
 }
 
 // Tagessaldo "nach Budget" — inkl. Budget-Reservierung (Single Source of Truth)

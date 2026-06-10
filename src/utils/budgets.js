@@ -1,7 +1,7 @@
 // Auto-generated module (siehe app-src.jsx)
 
 import { isDuplCounterpart } from "./tx.js";
-import { pn } from "./format.js";
+import { pn, round2 } from "./format.js";
 
 const groupBudgetPairs = (txList) => {
   const result = [];
@@ -64,7 +64,7 @@ const istForSubInList = (txs, txsById, year, month, subId, fromDay, toDay) => {
       sum += (sp.amount!=null && sp.amount!==0) ? Math.abs(pn(sp.amount)) : Math.abs(t.totalAmount||0);
     }
   }
-  return sum;
+  return round2(sum);
 };
 
 // Offenes Restbudget für einen Budget-Platzhalter (pending tx mit _budgetSubId).
