@@ -8,7 +8,7 @@ import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
 import { WerkzeugeSection } from "../organisms/WerkzeugeSection.jsx";
 import { MonatScreen } from "./MonatScreen.jsx";
 import { AppCtx } from "../../state/AppContext.js";
-import { theme as T } from "../../theme/activeTheme.js";
+import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { amtStyle, readableOn } from "../../theme/amtPill.js";
 import { fmt, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
@@ -324,7 +324,7 @@ function TransactionsScreen() {
               )}
               {selectedCount===2&&(
                 <button onClick={applyLink}
-                  style={{background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.18)":"rgba(245,166,35,0.15)",border:`1px solid ${T.gold}66`,
+                  style={{background:(isLightTheme())?"rgba(192,120,0,0.18)":"rgba(245,166,35,0.15)",border:`1px solid ${T.gold}66`,
                     borderRadius:8,padding:"4px 9px",color:T.gold,
                     fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0,display:"flex",alignItems:"center",gap:3}}>
                   {Li("link",12,T.gold)} Verknüpfen
@@ -502,7 +502,7 @@ function TransactionsScreen() {
                               const catIncome=cat.type==="income"||cat.type==="tagesgeld";
                               const subName=getSub((tx.splits||[])[0]?.catId,(tx.splits||[])[0]?.subId)?.name||cat.name;
                               if((isNeg&&catIncome)||(!isNeg&&!catIncome)) return (
-                                <span style={{fontSize:9,background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.18)":"rgba(245,166,35,0.15)",
+                                <span style={{fontSize:9,background:(isLightTheme())?"rgba(192,120,0,0.18)":"rgba(245,166,35,0.15)",
                                   color:T.gold,borderRadius:4,padding:"1px 6px",fontWeight:700,
                                   display:"inline-flex",alignItems:"center",gap:3,
                                   border:`1px solid ${T.gold}44`}}>

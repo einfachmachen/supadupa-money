@@ -2,12 +2,12 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { MonthPicker } from "../molecules/MonthPicker.jsx";
-import { theme as T } from "../../theme/activeTheme.js";
+import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { Li } from "../../utils/icons.jsx";
 
 function MonthPickerModal({year, month, setYear, setMonth, onClose, onSwitchToMore, plusArretiert}) {
   const MONTHS_S_LOCAL = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
-  const isLightTheme = (T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss");
+  const isLightTheme = (isLightTheme());
   const arrowBtn = {
     background: isLightTheme?"#fff":T.surf3,
     border: isLightTheme?`1px solid ${T.bds}`:"none",

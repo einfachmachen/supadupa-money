@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { InlineCatSelect } from "./InlineCatSelect.jsx";
-import { theme as T } from "../../theme/activeTheme.js";
+import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { MONTHS_S } from "../../utils/constants.js";
 import { Li } from "../../utils/icons.jsx";
 
@@ -21,7 +21,7 @@ function MonthPicker({month, year, onMonth, onYear, yearOnly=false}) {
   const prevM = ()=>{ if(month>0){onMonth(month-1);}else{onMonth(11);onYear(year-1);} };
   const nextM = ()=>{ if(month<11){onMonth(month+1);}else{onMonth(0);onYear(year+1);} };
 
-  const isLightTheme = (T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss");
+  const isLightTheme = (isLightTheme());
   const btnS = {
     background: isLightTheme?"#fff":T.surf3,
     border: isLightTheme?`1px solid ${T.bds}`:"none",
@@ -52,10 +52,10 @@ function MonthPicker({month, year, onMonth, onYear, yearOnly=false}) {
       {/* Dropdown — öffnet nach unten (jetzt in der Titelleiste) */}
       {open&&(
         <div style={{position:"absolute",top:"110%",right:0,zIndex:200,
-          background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"#fff":T.surf2,
+          background:(isLightTheme())?"#fff":T.surf2,
           border:`1px solid ${T.bds}`,borderRadius:14,
           padding:12,
-          boxShadow:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"0 -4px 24px rgba(0,0,0,0.15)":"0 -8px 32px rgba(0,0,0,0.6)",
+          boxShadow:(isLightTheme())?"0 -4px 24px rgba(0,0,0,0.15)":"0 -8px 32px rgba(0,0,0,0.6)",
           minWidth:200}}>
           {/* Jahr-Wähler */}
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>

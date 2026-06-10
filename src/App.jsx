@@ -26,7 +26,7 @@ import { RecurringDetectionScreen } from "./components/screens/RecurringDetectio
 import { TransactionsScreen } from "./components/screens/TransactionsScreen.jsx";
 import { VormerkungHub } from "./components/screens/VormerkungHub.jsx";
 import { AppCtx } from "./state/AppContext.js";
-import { theme as T, setActiveTheme } from "./theme/activeTheme.js";
+import { theme as T, setActiveTheme, isLightTheme } from "./theme/activeTheme.js";
 import { PAL, gs } from "./theme/palette.js";
 import { getTheme } from "./theme/themes.js";
 import { BASE_ROWS, CUR_YEAR, INIT_ACCOUNTS, INIT_CATS } from "./utils/constants.js";
@@ -2566,7 +2566,7 @@ Abbrechen = ${remoteName}-Stand laden`
     <>
     <div className={[noBorders?"no-borders":null, themeName==="clean"?"theme-clean":null, themeName==="brutalist"?"theme-brutalist":null, themeName==="terminal"?"theme-terminal":null, themeName==="swiss"?"theme-swiss":null].filter(Boolean).join(" ")||undefined}
       style={{background:T.bg,height:"100vh",maxHeight:"100vh",
-      colorScheme:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"light":"dark",
+      colorScheme:(isLightTheme())?"light":"dark",
       display:"flex",flexDirection:"column",
       fontFamily:"'SF Pro Text',-apple-system,BlinkMacSystemFont,sans-serif",
       userSelect:"none",overflow:"hidden"}}>
@@ -2614,7 +2614,7 @@ Abbrechen = ${remoteName}-Stand laden`
 
         // ── Master-Button: Inline-Renderfunktion (keine Komponente, um Hook-Identität zu wahren) ──
         const renderMasterButton = (key) => {
-          const isLight = (T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="swiss");
+          const isLight = (isLightTheme());
           const isBrutalist = T.themeName==="brutalist";
           const isTerminal = T.themeName==="terminal";
           const monthNames = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];

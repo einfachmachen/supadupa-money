@@ -11,7 +11,7 @@ import { PendingList } from "../organisms/PendingList.jsx";
 import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
 import { TagesgeldWidget } from "../organisms/TagesgeldWidget.jsx";
 import { AppCtx } from "../../state/AppContext.js";
-import { theme as T } from "../../theme/activeTheme.js";
+import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { amtStyle } from "../../theme/amtPill.js";
 import { groupBudgetPairs, budgetOpenRestFor } from "../../utils/budgets.js";
 import { dayOf, drillSort, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
@@ -848,10 +848,10 @@ function DashboardScreenV2() {
                     <div key={t.id} onClick={()=>openEdit(t)}
                       style={{display:"flex",gap:8,alignItems:"center",padding:"5px 6px",
                         borderRadius:6,cursor:"pointer",marginBottom:2,
-                        background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)"}}>
+                        background:(isLightTheme())?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)"}}>
                       <span style={{color:T.txt2,fontSize:9,flexShrink:0}}>{t.date}</span>
                       <span style={{color:T.gold,fontSize:9,flexShrink:0,
-                        background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.18)":"rgba(245,166,35,0.15)",
+                        background:(isLightTheme())?"rgba(192,120,0,0.18)":"rgba(245,166,35,0.15)",
                         borderRadius:3,padding:"1px 4px",fontWeight:700}}>
                         {t.totalAmount<0?"−":"+"} → {cat?.type==="income"?"Einnahme":"Ausgabe"}
                       </span>
@@ -940,7 +940,7 @@ function DashboardScreenV2() {
             if(g<=0) return s;
             return s + Math.max(0, g - (_catTxMaps.sumSubAll.get(sub.id)||0));
           },0);
-          const isLight = (T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss");
+          const isLight = (isLightTheme());
           const cellBg = T.cat_bg ? "rgba(255,255,255,0.10)" : isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)";
 
           // Ampelfarbe (6-stufig wie in V1):
@@ -1432,7 +1432,7 @@ function DashboardScreenV2() {
                                   <div key={lbl} onClick={e=>{e.stopPropagation();if(val>0)onCellClick();}}
                                     style={{textAlign:"center",cursor:val>0?"pointer":"default",
                                     flex:1,minWidth:0,padding:"5px 4px",borderRadius:7,
-                                    background:T.cat_bg?"rgba(255,255,255,0.10)":(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.04)",
+                                    background:T.cat_bg?"rgba(255,255,255,0.10)":(isLightTheme())?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.04)",
                                     border:`1px solid ${onlyPend?T.gold:T.bd}`,
                                     position:"relative",overflow:"hidden",
                                     display:"flex",flexDirection:"column",gap:1}}>
@@ -1480,7 +1480,7 @@ function DashboardScreenV2() {
                               borderBottom:`1px solid ${T.bd}`}}>
                               {/* Balken */}
                               <div style={{height:6,borderRadius:3,
-                                background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(0,0,0,0.1)":"rgba(255,255,255,0.1)",
+                                background:(isLightTheme())?"rgba(0,0,0,0.1)":"rgba(255,255,255,0.1)",
                                 overflow:"hidden",marginBottom:6}}>
                                 <div style={{height:"100%",borderRadius:3,
                                   background:barCol,
@@ -1660,7 +1660,7 @@ function DashboardScreenV2() {
                               {tx._seriesTyp==="finanzierung"?"Finanzierung":tx._seriesId?"wiederkehrend":"vorgemerkt"}
                             </span>}
                             {tx._seriesId&&tx._seriesTotal>1&&tx._seriesIdx&&tx._seriesTyp==="finanzierung"&&<span style={{color:T.gold,fontSize:10,fontWeight:700,
-                              background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.15)":"rgba(245,166,35,0.12)",borderRadius:4,padding:"0 4px"}}>
+                              background:(isLightTheme())?"rgba(192,120,0,0.15)":"rgba(245,166,35,0.12)",borderRadius:4,padding:"0 4px"}}>
                               {tx._seriesIdx} / {tx._seriesTotal}
                             </span>}
                             <LinkBadges tx={tx}/>

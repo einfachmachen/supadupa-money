@@ -3,7 +3,7 @@
 import React, { useContext, useState } from "react";
 import { CatPicker } from "../molecules/CatPicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
-import { theme as T } from "../../theme/activeTheme.js";
+import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
 import { uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
@@ -12,7 +12,7 @@ function KategorieAnlegen({onDone}) {
   const { cats, setCats, groups } = useContext(AppCtx);
   const [selVal, setSelVal] = React.useState("|");
   const [catType, setCatType] = React.useState("expense");
-  const isLight = T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper";
+  const isLight = isLightTheme();
   const [subName, setSubName] = React.useState("");
   const [saved, setSaved] = React.useState("");
 

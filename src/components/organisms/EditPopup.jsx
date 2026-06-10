@@ -4,7 +4,7 @@ import React, { useContext } from "react";
 import { CatPicker } from "../molecules/CatPicker.jsx";
 import { VerknuepfenPanel } from "./VerknuepfenPanel.jsx";
 import { AppCtx } from "../../state/AppContext.js";
-import { theme as T } from "../../theme/activeTheme.js";
+import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
 import { isoAddMonths } from "../../utils/date.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
@@ -76,7 +76,7 @@ function EditPopup() {
                   <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
                     {Li("link",12,T.blue)}
                     <span style={{color:T.blue,fontSize:11,fontWeight:700}}>Verknüpfte Vormerkung</span>
-                    {total>1&&pend._seriesIdx&&pend._seriesTyp==="finanzierung"&&<span style={{color:T.gold,fontSize:10,background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.15)":"rgba(245,166,35,0.12)",
+                    {total>1&&pend._seriesIdx&&pend._seriesTyp==="finanzierung"&&<span style={{color:T.gold,fontSize:10,background:(isLightTheme())?"rgba(192,120,0,0.15)":"rgba(245,166,35,0.12)",
                       borderRadius:4,padding:"1px 6px",fontWeight:700,marginLeft:"auto"}}>
                       {Li("repeat",9,T.gold)} Zahlung {thisIdx+1} von {total}
                     </span>}
@@ -142,7 +142,7 @@ function EditPopup() {
                     {" · "}Differenz: <b style={{color:T.neg}}>{fmt(Math.abs(mm.pendAmt-mm.realAmt))}</b>
                   </div>
                   {pend&&<button onClick={()=>{ setEditTx(null); setTimeout(()=>setEditTx(pend),50); }}
-                    style={{marginTop:6,background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.18)":"rgba(245,166,35,0.15)",border:`1px solid ${T.gold}44`,
+                    style={{marginTop:6,background:(isLightTheme())?"rgba(192,120,0,0.18)":"rgba(245,166,35,0.15)",border:`1px solid ${T.gold}44`,
                       color:T.gold,borderRadius:7,padding:"4px 10px",fontSize:10,fontWeight:700,
                       cursor:"pointer",display:"flex",alignItems:"center",gap:4,fontFamily:"inherit"}}>
                     {Li("edit",10,T.gold)} Vormerkung bearbeiten
@@ -281,7 +281,7 @@ function EditPopup() {
                 <input type="date" value={editTx.valueDate||""}
                   onChange={e=>setEditTx(p=>({...p,valueDate:e.target.value||undefined}))}
                   style={{...INP,marginBottom:0,flex:1,
-                    colorScheme:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"light":"dark"}}/>
+                    colorScheme:(isLightTheme())?"light":"dark"}}/>
                 {editTx.valueDate&&(
                   <button onClick={()=>setEditTx(p=>{const u={...p};delete u.valueDate;return u;})}
                     style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",padding:4}}>
@@ -530,7 +530,7 @@ function EditPopup() {
             const endeAmt  = isMitte ? (endePartner?endePartner.totalAmount:0) : pn(editTx.totalAmount);
             const gesamtAmt = mitteAmt + endeAmt;
             return (
-            <div style={{background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)",borderRadius:11,padding:"6px 10px",marginBottom:8,border:`1px solid ${T.gold}33`}}>
+            <div style={{background:(isLightTheme())?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)",borderRadius:11,padding:"6px 10px",marginBottom:8,border:`1px solid ${T.gold}33`}}>
               <div style={{color:T.gold,fontSize:11,fontWeight:700,marginBottom:6,display:"flex",alignItems:"center",gap:5}}>
                 {Li("target",11,T.gold)} Budget-Platzhalter
                 <span style={{color:T.txt2,fontSize:10,fontWeight:400,marginLeft:4}}>— Budget-Bindung lösen?</span>
@@ -647,7 +647,7 @@ function EditPopup() {
                 {/* Gesamtbetrag-Eingabe wenn Finanzierung */}
                 {(editTx._seriesTyp==="finanzierung"&&editTx._seriesIdx&&editTx._seriesTotal)&&(
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,
-                    background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)",borderRadius:8,padding:"7px 10px",
+                    background:(isLightTheme())?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)",borderRadius:8,padding:"7px 10px",
                     border:`1px solid ${T.gold}33`}}>
                     <span style={{color:T.txt2,fontSize:11,flex:1}}>Gesamtbetrag Serie</span>
                     <input

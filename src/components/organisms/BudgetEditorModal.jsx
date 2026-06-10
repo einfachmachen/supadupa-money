@@ -2,7 +2,7 @@
 
 import React, { useContext, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
-import { theme as T } from "../../theme/activeTheme.js";
+import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
@@ -10,7 +10,7 @@ import { Li } from "../../utils/icons.jsx";
 function BudgetEditorModal({sub, cat, accountId="acc-giro", onClose}) {
   const { budgets, setBudgets, txs, setTxs, year, setYear, month, setMonth, accounts } = useContext(AppCtx);
   const pad = n => String(n).padStart(2,"0");
-  const isLight = T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper";
+  const isLight = isLightTheme();
   const goldBg = isLight?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)";
 
   // Startdatum = Tag aus gespeichertem Budget, Monat aus App-Monatswähler

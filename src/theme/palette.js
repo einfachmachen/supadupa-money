@@ -1,7 +1,7 @@
 // Live-Paletten: INP (Input-Style), PAL (per Transaktionstyp), getBC/gs (Jahresplan-Farben)
-import { theme as T } from "./activeTheme.js";
+import { theme as T, isLightTheme } from "./activeTheme.js";
 
-const _INP_BASE = ()=>({width:"100%",background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(0,0,0,0.05)":"rgba(255,255,255,0.05)",border:`1px solid ${T.bd}`,borderRadius:11,padding:"6px 10px",color:T.txt,fontSize:14,outline:"none",marginBottom:9,boxSizing:"border-box"});
+const _INP_BASE = ()=>({width:"100%",background:(isLightTheme())?"rgba(0,0,0,0.05)":"rgba(255,255,255,0.05)",border:`1px solid ${T.bd}`,borderRadius:11,padding:"6px 10px",color:T.txt,fontSize:14,outline:"none",marginBottom:9,boxSizing:"border-box"});
 const INP = new Proxy({}, { get:(_,k)=>_INP_BASE()[k] });
 
 

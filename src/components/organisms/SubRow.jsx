@@ -3,7 +3,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { IconPickerDialog } from "./IconPickerDialog.jsx";
 import { AppCtx } from "../../state/AppContext.js";
-import { theme as T } from "../../theme/activeTheme.js";
+import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
 import { fmt, pn, uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
@@ -242,14 +242,14 @@ function SubRow({sub, si, arr, cat}) {
           })()}
         </div>
         {budgets[sub.id]&&(
-          <span style={{color:T.gold,fontSize:10,fontWeight:700,flexShrink:0,background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.15)":"rgba(245,166,35,0.12)",borderRadius:5,padding:"1px 5px"}}>
+          <span style={{color:T.gold,fontSize:10,fontWeight:700,flexShrink:0,background:(isLightTheme())?"rgba(192,120,0,0.15)":"rgba(245,166,35,0.12)",borderRadius:5,padding:"1px 5px"}}>
             {Li("target",9,T.gold)} {fmt(budgets[sub.id].amount)} {budgets[sub.id].months===1?"mtl.":budgets[sub.id].months===3?"quartl.":budgets[sub.id].months===6?"halbj.":"jährl."}{budgets[sub.id].startDate?` · ${budgets[sub.id].startDate.split("-")[2]}.`:""}
           </span>
         )}
         <button onClick={()=>{if(window.confirm(`"${sub.name}" wirklich löschen?`)) deleteSub(cat.id,sub.id);}} style={{background:"none",border:"none",color:T.neg,opacity:0.55,cursor:"pointer",fontSize:15,flexShrink:0,display:"flex",alignItems:"center"}}>{Li("trash-2",14)}</button>
       </div>
       {subEdit==="budget"&&(
-        <div style={{borderTop:`1px solid ${T.bd}`,padding:"10px 10px 12px",background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.06)":"rgba(245,166,35,0.04)"}}>
+        <div style={{borderTop:`1px solid ${T.bd}`,padding:"10px 10px 12px",background:(isLightTheme())?"rgba(192,120,0,0.06)":"rgba(245,166,35,0.04)"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6,gap:8}}>
             <div style={{color:T.gold,fontSize:11,fontWeight:700,display:"flex",alignItems:"center",gap:5}}>
               {Li("target",11,T.gold)} Budget & Vormerkungen für „{sub.name}"
@@ -270,20 +270,20 @@ function SubRow({sub, si, arr, cat}) {
               <input value={budgetInputMitte} onChange={e=>setBudgetInputMitte(e.target.value)}
                 placeholder="z.B. 125" inputMode="decimal"
                 style={{...INP,marginBottom:0,width:"100%",fontSize:13,
-                  border:`1px solid ${T.gold}44`,background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)"}}/>
+                  border:`1px solid ${T.gold}44`,background:(isLightTheme())?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)"}}/>
             </div>
             <div style={{flex:1}}>
               <div style={{color:T.txt2,fontSize:9,marginBottom:2}}>Gesamt/Monat (Ende) €</div>
               <input value={budgetInput} onChange={e=>setBudgetInput(e.target.value)}
                 placeholder="z.B. 250" inputMode="decimal"
                 style={{...INP,marginBottom:0,width:"100%",fontSize:13,
-                  border:`1px solid ${T.gold}44`,background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)"}}/>
+                  border:`1px solid ${T.gold}44`,background:(isLightTheme())?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)"}}/>
             </div>
             <div style={{flex:1}}>
               <div style={{color:T.txt2,fontSize:9,marginBottom:2}}>Startdatum</div>
               <input type="date" value={budgetStartDate} onChange={e=>setBudgetStartDate(e.target.value)}
                 style={{...INP,marginBottom:0,fontSize:11,padding:"6px 6px",width:"100%",
-                  border:`1px solid ${T.gold}44`,background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)",
+                  border:`1px solid ${T.gold}44`,background:(isLightTheme())?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)",
                   colorScheme:"dark"}}/>
             </div>
             <div style={{flex:1}}>
@@ -297,8 +297,8 @@ function SubRow({sub, si, arr, cat}) {
                       min={new Date(Date.now()+86400000).toISOString().slice(0,10)}
                       style={{...INP,marginBottom:0,fontSize:11,padding:"6px 6px",flex:1,
                         border:`1px solid ${T.blue+"66"}`,
-                        background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)",
-                        colorScheme:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"light":"dark"}}/>
+                        background:(isLightTheme())?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)",
+                        colorScheme:(isLightTheme())?"light":"dark"}}/>
                     <button onClick={()=>setBudgetEndDate("")}
                       style={{background:"none",border:"none",color:T.neg,
                         cursor:"pointer",padding:"2px",flexShrink:0}}>
@@ -309,7 +309,7 @@ function SubRow({sub, si, arr, cat}) {
                   <button onClick={()=>setBudgetEndDate(new Date(Date.now()+365*24*60*60*1000).toISOString().slice(0,10))}
                     style={{...INP,marginBottom:0,fontSize:11,padding:"6px 6px",flex:1,
                       border:`1px solid ${T.gold+"44"}`,cursor:"pointer",textAlign:"left",
-                      background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)",
+                      background:(isLightTheme())?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)",
                       color:T.txt2,fontFamily:"inherit"}}>
                     kein Enddatum (7 Jahre)
                   </button>
@@ -323,7 +323,7 @@ function SubRow({sub, si, arr, cat}) {
             {[{k:"h1",l:"1.H"},{k:"h2",l:"2.H"},{k:"w1",l:"W1"},{k:"w2",l:"W2"},{k:"w3",l:"W3"},{k:"w4",l:"W4"}].map(({k,l})=>(
               <button key={k} onClick={()=>applyQuickDate(k)}
                 style={{padding:"3px 6px",borderRadius:5,border:`1px solid ${T.gold}44`,
-                  background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)",color:T.gold,fontSize:9,fontWeight:700,cursor:"pointer"}}>
+                  background:(isLightTheme())?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)",color:T.gold,fontSize:9,fontWeight:700,cursor:"pointer"}}>
                 {l}
               </button>
             ))}

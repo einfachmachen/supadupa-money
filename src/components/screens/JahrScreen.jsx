@@ -2,7 +2,7 @@
 
 import React, { Fragment, useContext, useRef, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
-import { theme as T } from "../../theme/activeTheme.js";
+import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { getBC } from "../../theme/palette.js";
 import { amtStyle } from "../../theme/amtPill.js";
 import { groupBudgetPairs } from "../../utils/budgets.js";
@@ -197,7 +197,7 @@ function JahrScreen({forceSingle=false}) {
             const cellBg = "transparent";
             const isFutureGiroSaldo = row.id==="giro_saldo" && sub!=="D" &&
               (year > nowYear || (year===nowYear && mi >= nowMonth));
-            const emptyCol = (T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")
+            const emptyCol = (isLightTheme())
               ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.12)";
             const textCol = isEmpty             ? emptyCol
                           : isOverride          ? T.gold
@@ -494,7 +494,7 @@ function JahrScreen({forceSingle=false}) {
                 </div>
               )}
               {drilldown.linkPendId&&(
-                <div style={{background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.15)":"rgba(245,166,35,0.12)",border:`1px solid ${T.gold}44`,
+                <div style={{background:(isLightTheme())?"rgba(192,120,0,0.15)":"rgba(245,166,35,0.12)",border:`1px solid ${T.gold}44`,
                   borderRadius:10,margin:"0 12px 8px",padding:"8px 12px",
                   color:T.gold,fontSize:11,display:"flex",alignItems:"center",gap:8}}>
                   {Li("link",12,T.gold)}
@@ -552,7 +552,7 @@ function JahrScreen({forceSingle=false}) {
                       return (
                         <div key={tx.id} style={{display:"flex",alignItems:"center",gap:10,
                           padding:"8px 14px",borderBottom:`1px solid ${T.bd}`,cursor:"pointer",
-                          background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.06)":"rgba(245,166,35,0.04)"}} onClick={()=>{setDrilldown(null);openEdit(tx);}}>
+                          background:(isLightTheme())?"rgba(192,120,0,0.06)":"rgba(245,166,35,0.04)"}} onClick={()=>{setDrilldown(null);openEdit(tx);}}>
                           <div style={{width:36,height:36,borderRadius:11,flexShrink:0,
                             background:(cat2?.color||"#888")+"33",display:"flex",alignItems:"center",justifyContent:"center"}}>
                             {Li(cat2?.icon||"target",16,cat2?.color||T.gold)}
@@ -634,7 +634,7 @@ function JahrScreen({forceSingle=false}) {
                           </div>
                           <div style={{color:T.txt2,fontSize:10,marginTop:1,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
                             <span>{tx.date}</span>
-                            {tx.pending&&<span style={{background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.18)":"rgba(245,166,35,0.15)",color:T.gold,
+                            {tx.pending&&<span style={{background:(isLightTheme())?"rgba(192,120,0,0.18)":"rgba(245,166,35,0.15)",color:T.gold,
                               borderRadius:4,padding:"0 4px",fontSize:9,fontWeight:700}}>
                               {isSelectedPend?"✓ ausgewählt":"Vormerkung – antippen zum Verknüpfen"}
                             </span>}
