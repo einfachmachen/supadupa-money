@@ -591,68 +591,21 @@ function MonatScreen() {
         {catSums.length>0&&!window.MBT_DEBUG?.disable_categorychart&&<CategoryChart catSums={catSums} maxSum={maxSum} budgets={budgets} getBudgetForMonth={getBudgetForMonth} year={year} month={month}/>}
         </div>
 
-        {/* Budget-Schnellzugriff */}
-        <div style={{margin:"0 10px 4px",display:"flex",flexWrap:"wrap",gap:4}}>
-          {cats.filter(c=>c.type==="expense"||c.type==="income").flatMap(cat=>
-            (cat.subs||[]).filter(sub=>getBudgetForMonth(sub.id,year,month)>0).map(sub=>({sub,cat}))
-          ).map(({sub,cat})=>(
-            <button key={sub.id} onClick={()=>openBudgetEdit({id:sub.id,name:sub.name,catId:cat.id,catColor:cat.color,accountId:(groups.find(g=>g.type===cat.type)?.accountId||cat.accountId||"acc-giro")})}
-              style={{padding:"3px 8px",borderRadius:7,border:`1px solid ${T.gold}55`,
-                background:"rgba(245,166,35,0.1)",color:T.gold,fontSize:10,fontWeight:700,
-                cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
-              {Li("target",9,T.gold)} {sub.name}: {fmt(getBudgetForMonth(sub.id,year,month))}
-            </button>
-          ))}
-          <button onClick={()=>setBudgetEditSub({pickMode:true})}
-            style={{padding:"3px 8px",borderRadius:7,border:`1px solid ${T.bds}`,
-              background:"transparent",color:T.txt2,fontSize:10,cursor:"pointer",
-              fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
-            {Li("plus",9,T.txt2)} Budget
-          </button>
-        </div>
-
-        {/* Budget-Picker wenn pickMode */}
-        {budgetEditSub?.pickMode&&(
-          <div onClick={()=>setBudgetEditSub(null)}
-            style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",backdropFilter:"blur(8px)",
-              zIndex:90,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-            <div onClick={e=>e.stopPropagation()} style={{background:T.surf2,borderRadius:20,
-              padding:"16px",width:"100%",maxWidth:400,maxHeight:"80vh",overflowY:"auto",
-              border:`1px solid ${T.gold}44`}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-                <span style={{color:T.gold,fontSize:14,fontWeight:700}}>{Li("target",14,T.gold)} Budget wählen</span>
-                <button onClick={()=>setBudgetEditSub(null)} style={{background:"none",border:"none",color:T.txt2,cursor:"pointer"}}>{Li("x",14)}</button>
-              </div>
-              {cats.filter(c=>c.type==="expense"||c.type==="income").map(cat=>(
-                <div key={cat.id} style={{marginBottom:8}}>
-                  <div style={{color:cat.color||T.blue,fontSize:10,fontWeight:700,padding:"2px 6px"}}>{cat.name}</div>
-                  {(cat.subs||[]).map(sub=>(
-                    <div key={sub.id} onClick={()=>openBudgetEdit({id:sub.id,name:sub.name,catId:cat.id,catColor:cat.color,accountId:(groups.find(g=>g.type===cat.type)?.accountId||cat.accountId||"acc-giro")})}
-                      style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",
-                        marginBottom:3,borderRadius:9,cursor:"pointer",
-                        background:"rgba(255,255,255,0.04)",border:`1px solid ${getBudgetForMonth(sub.id,year,month)>0?T.gold+"55":T.bd}`}}>
-                      <span style={{flex:1,color:T.txt,fontSize:12}}>{sub.name}</span>
-                      {getBudgetForMonth(sub.id,year,month)>0?(
-                        <span style={{color:T.gold,fontSize:10,fontWeight:700}}>
-                          {Li("target",9,T.gold)} {fmt(getBudgetForMonth(sub.id,year,month))}
-                        </span>
-                      ):<span style={{color:T.txt2,fontSize:10}}>{Li("plus",9,T.txt2)} setzen</span>}
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Budget-Schnellzugriff entfernt — Budgets werden über Mehr →
+            Kategorien & Budget gepflegt; die Restbudget-Zeilen in der Liste
+            zeigen den Stand. */}
 
         {/* Suche */}
         <div style={{padding:"6px 10px 4px",display:"flex",gap:6,alignItems:"center"}}>
-          <div style={{flex:1,display:"flex",alignItems:"center",background:"rgba(255,255,255,0.06)",
+          {/* minWidth:0 auf Box+Input: Inputs haben in Flex-Layouts eine
+              intrinsische Mindestbreite und schoben sonst den Kategorien-
+              Schalter rechts aus dem Bild. */}
+          <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center",background:"rgba(255,255,255,0.06)",
             border:`1px solid ${search?T.blue:T.bds}`,borderRadius:11,padding:"8px 10px",gap:6}}>
             {Li("search",14,T.txt2)}
             <input value={search} onChange={e=>{setSearch(e.target.value);setSelected(new Set());}}
               placeholder="suchen…"
-              style={{flex:1,background:"transparent",border:"none",color:T.txt,fontSize:12,outline:"none"}}/>
+              style={{flex:1,minWidth:0,background:"transparent",border:"none",color:T.txt,fontSize:12,outline:"none"}}/>
             {search&&<button onClick={()=>{setSearch("");setSelected(new Set());}}
               style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",fontSize:13}}>{Li("x",13)}</button>}
           </div>
@@ -669,8 +622,8 @@ function MonatScreen() {
           </div>
         </div>
 
-        {/* Filter-Tabs */}
-        <div style={{display:"flex",gap:6,padding:"0 10px 6px"}}>
+        {/* Filter-Tabs — kompakt, inhaltsbreit (nicht mehr gleichmäßig gestreckt) */}
+        <div style={{display:"flex",gap:6,padding:"0 10px 6px",flexWrap:"wrap"}}>
           {(()=>{
             const chips = [
               ["expense","Ausgaben",  T.neg,    T.tab_exp],
@@ -684,16 +637,15 @@ function MonatScreen() {
               return (
                 <button key={v} onClick={()=>setFilt(f=>f===v?"all":v)}
                   style={{
-                    flex:1,
-                    padding:"7px 4px",
-                    borderRadius:10,
+                    padding:"4px 11px",
+                    borderRadius:12,
                     cursor:"pointer",
                     fontFamily:"inherit",
                     border:"none",
                     background: active ? bgActive : "rgba(255,255,255,0.06)",
                     color: active ? "#fff" : T.txt2,
-                    fontSize:12,
-                    fontWeight:700,
+                    fontSize:11,
+                    fontWeight:600,
                     letterSpacing:0.2,
                     transition:"all 0.15s",
                     outline: active ? `1.5px solid ${col}44` : "none",
@@ -955,7 +907,6 @@ function MonatScreen() {
                     const subName = name.split(" / ")[1]||name;
                     const barW = Math.min(100, pct);
                     const signedOpen   = isIncome ?  open :  -open;
-                    const signedBudget = isIncome ? budget : -budget;
                     const fmtSigned = v => (v<0?"-":"+") + fmt(Math.abs(v));
                     return (
                       <div key={"rb-"+name} style={{borderRadius:0,marginBottom:0,overflow:"hidden",background:"transparent",borderTop:`1px solid ${T.bd}`}}>
@@ -965,27 +916,35 @@ function MonatScreen() {
                           </div>
                           <div style={{flex:1,minWidth:0,marginRight:6}}>
                             <div style={{color:isOverspent?T.neg:T.txt,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{isOverspent?"Überzogen: ":"Restbudget: "}{subName}</div>
-                            <div style={{marginTop:3,display:"flex",alignItems:"center",gap:6}}>
-                              <div style={{flex:1,maxWidth:120,height:4,borderRadius:2,background:"rgba(255,255,255,0.1)",overflow:"hidden"}}>
-                                <div style={{height:"100%",borderRadius:2,background:barCol,width:`${barW}%`}}/>
-                              </div>
-                              <span style={{color:isOverspent?T.neg:T.txt2,fontSize:10}}>{Math.round(pct)}% verbraucht</span>
+                            {/* Verbrauch als Punkt auf feiner Linie (gleiche Sprache wie
+                                der Dashboard-Pegel) statt Balken + Prozent-Text */}
+                            <div style={{marginTop:6,position:"relative",height:8,maxWidth:140}}>
+                              <div style={{position:"absolute",left:0,right:0,top:3.25,height:1.5,background:T.bd,borderRadius:1}}/>
+                              <div style={{position:"absolute",left:`calc(3px + (100% - 6px) * ${Math.min(1,barW/100)})`,
+                                top:1,width:6,height:6,borderRadius:"50%",background:barCol,transform:"translateX(-50%)"}}/>
                             </div>
                           </div>
-                          <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
+                          {/* Rechts: ruhige zweizeilige Spalte — kleines Label, Betrag in
+                              Sub-Pillen-Größe (16), Zahlen rechtsbündig untereinander. */}
+                          <div style={{textAlign:"right",flexShrink:0,marginRight:8,
+                            display:"flex",flexDirection:"column",gap:1}}>
                             {isOverspent ? (<>
-                              <div style={{color:T.neg,fontSize:10,fontWeight:700}}>{fmtSigned(signedBudget)} um {fmt(Math.abs(open))} überschritten</div>
-                              <div style={{borderTop:`1px solid ${T.neg}44`,margin:"3px 0"}}/>
-                              <div style={{color:T.neg,fontSize:13,fontWeight:800,fontFamily:NUM_FONT}}>{fmtSigned(-spent)}</div>
-                            </>) : (<>
-                              <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"baseline"}}>
-                                <span style={{color:T.txt2,fontSize:10}}>offenes Budget:</span>
-                                <span style={{color:open>0?T.gold:T.txt2,fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>{fmtSigned(signedOpen)}</span>
+                              <div style={{display:"flex",justifyContent:"flex-end",gap:6,alignItems:"baseline"}}>
+                                <span style={{color:T.neg,fontSize:10}}>drüber</span>
+                                <span style={{color:T.neg,fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmt(Math.abs(open))}</span>
                               </div>
-                              <div style={{borderTop:`1px solid ${T.bd}`,margin:"3px 0"}}/>
-                              <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"baseline"}}>
-                                <span style={{color:T.txt2,fontSize:10}}>genutzt:</span>
-                                <span style={{color:spent===0?T.txt2:accentCol,fontSize:13,fontWeight:800,fontFamily:NUM_FONT}}>{spent===0?"—":fmtSigned(-spent)}</span>
+                              <div style={{display:"flex",justifyContent:"flex-end",gap:6,alignItems:"baseline"}}>
+                                <span style={{color:T.txt2,fontSize:10}}>genutzt</span>
+                                <span style={{color:T.neg,fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmtSigned(-spent)}</span>
+                              </div>
+                            </>) : (<>
+                              <div style={{display:"flex",justifyContent:"flex-end",gap:6,alignItems:"baseline"}}>
+                                <span style={{color:T.txt2,fontSize:10}}>offen</span>
+                                <span style={{color:open>0?T.gold:T.txt2,fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmtSigned(signedOpen)}</span>
+                              </div>
+                              <div style={{display:"flex",justifyContent:"flex-end",gap:6,alignItems:"baseline"}}>
+                                <span style={{color:T.txt2,fontSize:10}}>genutzt</span>
+                                <span style={{color:spent===0?T.txt2:accentCol,fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{spent===0?"—":fmtSigned(-spent)}</span>
                               </div>
                             </>)}
                           </div>
