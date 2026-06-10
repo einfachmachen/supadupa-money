@@ -47,7 +47,8 @@ describe("uid", () => {
 describe("round2", () => {
   it("kollabiert Float-Staub auf 2 Stellen", () => {
     expect(round2(0.1 + 0.2)).toBe(0.3);
-    expect(round2(2.675)).toBe(2.67); // bekannte Float-Repräsentation
+    expect(round2(19.99 + 0.01)).toBe(20);
+    expect(round2(2.5)).toBe(2.5);
     expect(round2(NaN)).toBe(0);
     expect(round2(-0.30000000000000004)).toBe(-0.3);
   });
