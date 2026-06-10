@@ -259,16 +259,11 @@ function DashboardScreenV2() {
     const pendingOut= useMemo(()=>pTxsOut.reduce((s,t)=>s+pendOpenAmt(t),0), [pTxsOut]);
     const pendingIn = useMemo(()=>pTxsIn.reduce((s,t)=>s+pendOpenAmt(t),0),  [pTxsIn]);
 
-    const getPendingIncomeSum = useMemo(()=>(catId) => txs.filter(t=>{
-      if(!t.pending||t._budgetSubId) return false;
-      // CSV-Doppler raus; Sparen-Transfers (Partner auf anderem Konto) bleiben drin
-      if(_isDupl(t)) return false;
-      if(!_isSelAcc(t)) return false;
-      const d=new Date(t.date);
-      return d.getFullYear()===year&&d.getMonth()===month&&
-        (t.splits||[]).some(sp=>sp.catId===catId);
-    }).reduce((s,t)=>s+(t.splits||[]).filter(sp=>sp.catId===catId)
-      .reduce((ss,sp)=>ss+Math.abs(pn(sp.amount)),0),0), [txs,year,month,selAcc]);
+    // Vorgemerkte Einnahmen pro Cat: _catTxMaps.sumPendByCat hat exakt dieselbe
+    // Filterung (im Monat, !_budgetSubId, !_isDupl, _isSelAcc, Σ|pn(sp.amount)|
+    // je Cat) — direkter Lookup statt txs.filter je Kategorie (vorher
+    // O(cats × txs) inkl. Date-Parsing pro Aufruf).
+    const getPendingIncomeSum = (catId) => _catTxMaps.sumPendByCat.get(catId) || 0;
 
     // PERFORMANCE-FIX: gemeinsamer Subsumme-Index für catTotals/incomeTotals.
     // Vorher pro sub ein txs.filter (O(subs × txs)) — bei 10k+ Buchungen und 60+ Subs
@@ -294,17 +289,31 @@ function DashboardScreenV2() {
 
     const catTotals = useMemo(()=>{
       if(window.MBT_DEBUG?.disable_cattotals) return [];
+      // Finanzierungs-VMs einmalig pro Cat aggregieren (vorher txs.filter je
+      // Cat = O(cats × txs) mit Date-Parsing in jeder Iteration).
+      const subToCat = new Map();
+      cats.forEach(c=>(c.subs||[]).forEach(sub=>subToCat.set(sub.id, c.id)));
+      const finPendByCat = new Map();
+      for(const t of txs){
+        if(!(t.pending && t._seriesTyp==="finanzierung")) continue;
+        if(t._budgetSubId || _isDupl(t) || !_isSelAcc(t)) continue;
+        const d=new Date(t.date);
+        if(d.getFullYear()!==year || d.getMonth()!==month) continue;
+        const seen=new Set();
+        for(const sp of (t.splits||[])){
+          const cid = subToCat.get(sp.subId);
+          if(!cid || seen.has(cid)) continue;
+          seen.add(cid);
+          finPendByCat.set(cid, (finPendByCat.get(cid)||0) + Math.abs(t.totalAmount||0));
+        }
+      }
       return cats.filter(_isCatExpense)
       .map(c=>{
         const subSum = (c.subs||[]).reduce((s,sub)=>{
           if(!selAcc) return s+getActualSum(year,month,sub.id);
           return s + (_subSumByAcc?.[sub.id]||0);
         },0);
-        const finPend = txs.filter(t=>t.pending&&t._seriesTyp==="finanzierung"&&!_isDupl(t)&&!t._budgetSubId&&
-          _isSelAcc(t)&&
-          (()=>{const d=new Date(t.date);return d.getFullYear()===year&&d.getMonth()===month;})()&&
-          (t.splits||[]).some(sp=>(c.subs||[]).some(sub=>sub.id===sp.subId))
-        ).reduce((s,t)=>s+Math.abs(t.totalAmount||0),0);
+        const finPend = finPendByCat.get(c.id) || 0;
         // Flat-Cat-Fallback: bei Cats ohne Subs direkt die Cat-Ebene nutzen.
         // Typischer Fall: Tagesgeld-Ausgabe-Cats wie "Belastung" haben oft keine Subs.
         const directCatSum = _catTxMaps.sumRealByCat.get(c.id) || 0;
@@ -316,14 +325,10 @@ function DashboardScreenV2() {
       .filter(c=>{
         if(c.sum>0 && !selAcc) return true;
         const hasBudget=(!selAcc||selAcc==="acc-giro")&&(c.subs||[]).some(sub=>getBudgetForMonth(sub.id,year,month)>0);
-        const hasPend=txs.some(t=>t.pending&&!_isDupl(t)&&!t._budgetSubId&&
-          _isSelAcc(t)&&
-          (()=>{const d=new Date(t.date);return d.getFullYear()===year&&d.getMonth()===month;})()&&
-          (t.splits||[]).some(sp=>sp.catId===c.id));
-        const hasRealTx=txs.some(t=>!t.pending&&!_isDupl(t)&&
-          _isSelAcc(t)&&
-          (()=>{const d=new Date(t.date);return d.getFullYear()===year&&d.getMonth()===month;})()&&
-          (t.splits||[]).some(sp=>sp.catId===c.id));
+        // pendByCat/realByCat (aus _catTxMaps) haben exakt dieselbe Filterung
+        // wie die früheren txs.some(...)-Scans — O(1)-Lookup statt O(txs) je Cat.
+        const hasPend  = _catTxMaps.pendByCat.has(c.id);
+        const hasRealTx= _catTxMaps.realByCat.has(c.id);
         if(selAcc) return hasPend||hasRealTx;
         return hasBudget||hasPend||hasRealTx;
       }).sort((a,b)=>{
@@ -359,14 +364,9 @@ function DashboardScreenV2() {
       })
       .filter(c=>{
         if(c.sum>0 && !selAcc) return true;
-        const hasPend=txs.some(t=>t.pending&&!_isDupl(t)&&!t._budgetSubId&&
-          _isSelAcc(t)&&
-          (()=>{const d=new Date(t.date);return d.getFullYear()===year&&d.getMonth()===month;})()&&
-          (t.splits||[]).some(sp=>sp.catId===c.id));
-        const hasRealTx=txs.some(t=>!t.pending&&!_isDupl(t)&&
-          _isSelAcc(t)&&
-          (()=>{const d=new Date(t.date);return d.getFullYear()===year&&d.getMonth()===month;})()&&
-          (t.splits||[]).some(sp=>sp.catId===c.id));
+        // O(1)-Lookups statt txs.some(...) je Cat (Filterung identisch, s.o.)
+        const hasPend  = _catTxMaps.pendByCat.has(c.id);
+        const hasRealTx= _catTxMaps.realByCat.has(c.id);
         return hasPend||hasRealTx;
       }).sort((a,b)=>{
         if(catSortMode==="asc")  return a.sum-b.sum;
@@ -375,7 +375,7 @@ function DashboardScreenV2() {
       });
     }, [txs,year,month,selAcc,cats,catSortMode,_catTxMaps]);
 
-    const _dashNowY=new Date().getFullYear(),_dashNowM=new Date().getMonth();
+    const _dashNow=new Date(), _dashNowY=_dashNow.getFullYear(), _dashNowM=_dashNow.getMonth();
     const _isCurH=year===_dashNowY&&month===_dashNowM, _isFutH=year>_dashNowY||(year===_dashNowY&&month>_dashNowM);
     // Konto-Filter für Drilldown-Detail (siehe MonatScreen).
     // Zusätzlich werden verlinkte Vormerkungen ausgefiltert: wenn eine echte
@@ -588,12 +588,19 @@ function DashboardScreenV2() {
       },0);
     };
 
-    const _inMitte  = _calcInc(14);
-    const _inEnde   = _calcInc(_lastDayS);
-    const _inAkt    = _calcInc(_lastDayS, true);
-    const _outMitte = _calcOut(14);
-    const _outEnde  = _calcOut(_lastDayS);
-    const _outAkt   = _calcOut(_lastDayS, true);
+    // Memoisiert: vorher liefen alle 6 Berechnungen bei JEDEM Render des
+    // Dashboards komplett neu (O(cats × catTxs × splits) inkl. Date-Parsing).
+    // Alle Eingaben der _calc-Closures stehen in der Dependency-Liste:
+    // txs (deckt _txsInMonthCat/_txsInMonthCatSub/_isDupl ab), budgets
+    // (getBudgetForMonth), selAcc (_isSelAcc), cats, _mitteAbg/_endeAbg.
+    const {_inMitte,_inEnde,_inAkt,_outMitte,_outEnde,_outAkt} = useMemo(()=>({
+      _inMitte:  _calcInc(14),
+      _inEnde:   _calcInc(_lastDayS),
+      _inAkt:    _calcInc(_lastDayS, true),
+      _outMitte: _calcOut(14),
+      _outEnde:  _calcOut(_lastDayS),
+      _outAkt:   _calcOut(_lastDayS, true),
+    }), [txs, cats, year, month, selAcc, budgets, _mitteAbg, _endeAbg, _lastDayS]);
 
     // ── Prognose: Vormonatssaldo + Einnahmen - Ausgaben (Mitte/Ende) ──
     return (<>
