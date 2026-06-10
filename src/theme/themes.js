@@ -20,11 +20,6 @@ const THEMES = {
     pal_tg_bg:"#071820",  pal_tg_bd:"#1A3A48",  pal_tg_hdr:"#4A9FC0",  pal_tg_fld:"#091E2A",  pal_tg_val:"#80C8E0",
     hero_bg:"linear-gradient(135deg,#1A1D22,#252B34)", logo_c1:"#6B9900", logo_c2:"#AACC00", err_bg:"#7A1020",
     cond_neg:"#C0392B", cond_warn:"#E67E22", cond_gold:"#F1C40F", cond_pos:"#2ECC71",
-    // Betrag-Pillen: Beträge liegen auf einer hellen Pille; darauf die
-    // satten Hell-Theme-Töne (Rot/Lime/Gold), die auf Hell gut lesbar sind
-    amt_pill:true, pill_bg:"#ECEFE3",
-    pill_neg:"#C0311A", pill_pos:"#6B9900", pill_gold:"#B36A00",
-    pill_txt:"#1E2418", pill_txt2:"#5A6254",
     name:"Dark (Dove Sport)",
   },
   light: {
