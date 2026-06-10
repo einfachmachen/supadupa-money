@@ -33,11 +33,14 @@ describe("pn (parse-number)", () => {
 });
 
 describe("uid", () => {
-  it("erzeugt eindeutige IDs der Länge 8", () => {
+  it("erzeugt eindeutige IDs (Zeitanteil + Zufall)", () => {
     const a = uid(), b = uid();
-    expect(a).toHaveLength(8);
+    expect(a.length).toBeGreaterThanOrEqual(14);
     expect(a).not.toBe(b);
     expect(a).toMatch(/^[a-z0-9]+$/);
+    // 1000 IDs am Stück müssen kollisionsfrei sein
+    const set = new Set(Array.from({length:1000}, uid));
+    expect(set.size).toBe(1000);
   });
 });
 
