@@ -4,6 +4,7 @@ import React, { Fragment, useContext, useRef, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { getBC } from "../../theme/palette.js";
+import { amtStyle } from "../../theme/amtPill.js";
 import { groupBudgetPairs } from "../../utils/budgets.js";
 import { BASE_ROWS, CUR_YEAR, MONTHS_F, MONTHS_S } from "../../utils/constants.js";
 import { drillSort, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
@@ -517,17 +518,17 @@ function JahrScreen({forceSingle=false}) {
                     return (
                       <div style={{display:"flex",flexDirection:"column",gap:3}}>
                         {[
-                          ["Anfangssaldo",base,T.txt2],
-                          [`+ ${realTxs.length} Buchungen`,realSum,realSum>=0?T.pos:T.neg],
-                          pendTxs.length>0?[`+ ${pendTxs.length} Vormerkungen`,pendSum,T.gold]:null,
-                          ["= Prognose-Saldo",total,total>=0?T.pos:T.neg],
+                          ["Anfangssaldo",base,"txt2"],
+                          [`+ ${realTxs.length} Buchungen`,realSum,realSum>=0?"pos":"neg"],
+                          pendTxs.length>0?[`+ ${pendTxs.length} Vormerkungen`,pendSum,"gold"]:null,
+                          ["= Prognose-Saldo",total,total>=0?"pos":"neg"],
                         ].filter(Boolean).map(([label,val,col],i)=>(
                           <div key={i} style={{display:"flex",justifyContent:"space-between",
                             alignItems:"center",fontSize:10,
                             borderTop:i===3?`1px solid ${T.bds}`:undefined,
                             paddingTop:i===3?3:0}}>
                             <span style={{color:T.txt2}}>{label}</span>
-                            <span style={{color:col,fontFamily:NUM_FONT,fontWeight:i===3?700:400}}>
+                            <span style={{...amtStyle(col),fontFamily:NUM_FONT,fontWeight:i===3?700:400}}>
                               {val>=0?"+":"−"}{fmt(Math.abs(val))}
                             </span>
                           </div>
@@ -562,9 +563,9 @@ function JahrScreen({forceSingle=false}) {
                           </div>
                           <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
                             <span style={{color:T.mid,fontSize:10}}>Mitte</span>
-                            <span style={{color:col2,fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(tx._mitteAmt)}</span>
+                            <span style={{...amtStyle("neg",col2),fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(tx._mitteAmt)}</span>
                             <span style={{color:T.gold,fontSize:10}}>Gesamt</span>
-                            <span style={{color:col2,fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(tx._mitteAmt+tx._endeAmt)}</span>
+                            <span style={{...amtStyle("neg",col2),fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(tx._mitteAmt+tx._endeAmt)}</span>
                           </div>
                         </div>
                       );
@@ -662,7 +663,7 @@ function JahrScreen({forceSingle=false}) {
                         </div>
                         {/* Betrag */}
                         <div style={{textAlign:"right",flexShrink:0}}>
-                          <div style={{color:txType(tx)==="income"?T.pos:T.neg,fontSize:13,fontWeight:700,fontFamily:NUM_FONT}}>
+                          <div style={{...amtStyle(txType(tx)==="income"?"pos":"neg"),fontSize:13,fontWeight:700,fontFamily:NUM_FONT}}>
                             {txType(tx)==="income"?"+":"−"}{fmt(amt)}
                           </div>
                           {isS&&(

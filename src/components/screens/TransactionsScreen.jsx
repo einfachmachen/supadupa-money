@@ -9,6 +9,7 @@ import { WerkzeugeSection } from "../organisms/WerkzeugeSection.jsx";
 import { MonatScreen } from "./MonatScreen.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
+import { amtStyle, readableOn } from "../../theme/amtPill.js";
 import { fmt, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
@@ -239,7 +240,7 @@ function TransactionsScreen() {
                       fontFamily:"inherit",
                       border:"none",
                       background: active ? bgActive : "rgba(255,255,255,0.06)",
-                      color: active ? "#fff" : T.txt2,
+                      color: active ? readableOn(bgActive, col) : T.txt2,
                       fontSize:12,
                       fontWeight:700,
                       letterSpacing:0.2,
@@ -559,7 +560,7 @@ function TransactionsScreen() {
                         </div>
                         {/* Betrag */}
                         <div style={{textAlign:"right",flexShrink:0}}>
-                          <div style={{color:tx.pending?T.gold:type==="income"?T.pos:T.neg,
+                          <div style={{...amtStyle(tx.pending?"gold":type==="income"?"pos":"neg"),
                             fontSize:12,fontWeight:700,fontFamily:NUM_FONT,whiteSpace:"nowrap"}}>
                             {type==="income"?"+":"−"}{fmt(tx.totalAmount)}
                           </div>

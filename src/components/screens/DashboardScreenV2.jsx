@@ -12,6 +12,7 @@ import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
 import { TagesgeldWidget } from "../organisms/TagesgeldWidget.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
+import { amtStyle } from "../../theme/amtPill.js";
 import { groupBudgetPairs, budgetOpenRestFor } from "../../utils/budgets.js";
 import { dayOf, drillSort, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
@@ -620,7 +621,7 @@ function DashboardScreenV2() {
                           <span style={{color:(t.splits||[]).some(s=>s.catId)?T.pos:T.txt2,fontSize:9,flexShrink:0}}>
                             {(t.splits||[]).some(s=>s.catId)?"✓ kat.":"unkategorisiert"}
                           </span>
-                          <span style={{color:T.neg,fontSize:10,fontFamily:NUM_FONT,flexShrink:0}}>{fmt(Math.abs(t.totalAmount))}</span>
+                          <span style={{...amtStyle("neg"),fontSize:10,fontFamily:NUM_FONT,flexShrink:0}}>{fmt(Math.abs(t.totalAmount))}</span>
                         </div>
                       ))}
                     </div>
@@ -1354,7 +1355,7 @@ function DashboardScreenV2() {
                               {tx.pending&&<span style={{color:T.gold,fontSize:11,fontWeight:700}}>{tx._seriesId?"wiederkehrend":"vorgemerkt"}</span>}
                               <LinkBadges tx={tx}/>
                             </div>
-                            <span style={{color:tx.pending?T.gold:(cat.type==="income"?T.pos:T.neg),fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>{fmt(amt)}</span>
+                            <span style={{...amtStyle(tx.pending?"gold":cat.type==="income"?"pos":"neg"),fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>{fmt(amt)}</span>
                           </div>
                         </div>
                       );
@@ -1490,7 +1491,7 @@ function DashboardScreenV2() {
                               <div style={{display:"flex",justifyContent:"space-between",
                                 alignItems:"center",gap:8}}>
                                 <div style={{fontSize:9,color:T.txt2}}>
-                                  <span style={{color:T.neg,fontWeight:700,fontFamily:NUM_FONT}}>
+                                  <span style={{...amtStyle("neg"),fontWeight:700,fontFamily:NUM_FONT}}>
                                     −{fmt(realAmt)}
                                   </span>
                                   {pendAmt>0&&<span style={{color:T.gold,fontFamily:NUM_FONT}}>
@@ -1674,7 +1675,7 @@ function DashboardScreenV2() {
                             {sub&&!isUncat&&!isS&&<span style={{color:cat?.color||dashDrill.cat?.color||T.txt2,fontSize:12}}>{sub.name}</span>}
                             {isUncat&&<span style={{color:T.neg,fontSize:10,fontWeight:700}}>unkategorisiert</span>}
                           </div>
-                          <div style={{color:dashDrill.isIncome?T.pos:T.neg,fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
+                          <div style={{...amtStyle(dashDrill.isIncome?"pos":"neg"),fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
                             {fmt(amt)}
                           </div>
                         </div>

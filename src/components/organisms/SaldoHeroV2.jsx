@@ -10,6 +10,7 @@ import React, { useContext, useState } from "react";
 import { SaldoPrognose } from "./SaldoPrognose.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
+import { amtStyle } from "../../theme/amtPill.js";
 import { fmt, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
@@ -55,13 +56,13 @@ function SaldoHeroV2({
       <div style={{flex:1,textAlign:"center",cursor:vOut>0&&onTapOut?"pointer":"default",padding:"2px 0",opacity:dim?0.65:1}}
         onClick={vOut>0&&onTapOut?()=>onTapOut(isMitte):undefined}>
         {vOut>0
-          ? <span style={{color:clrOut||T.neg,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>{fmt(vOut)}</span>
+          ? <span style={{...amtStyle("neg",clrOut||T.neg),fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>{fmt(vOut)}</span>
           : <span style={{color:T.txt2,fontSize:20}}>—</span>}
       </div>
       <div style={{flex:1,textAlign:"center",cursor:vIn>0&&onTapIn?"pointer":"default",padding:"2px 0",opacity:dim?0.65:1}}
         onClick={vIn>0&&onTapIn?()=>onTapIn(isMitte):undefined}>
         {vIn>0
-          ? <span style={{color:clrIn||T.pos,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>{fmt(vIn)}</span>
+          ? <span style={{...amtStyle("pos",clrIn||T.pos),fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>{fmt(vIn)}</span>
           : <span style={{color:T.txt2,fontSize:20}}>—</span>}
       </div>
     </div>
