@@ -131,6 +131,8 @@ function DashboardScreenV2() {
     const openBudgetEdit = (sub) => { setBudgetEditSub(sub); setBudgetEditKey(k=>k+1); };
     const [dashIconPick, setDashIconPick] = useState(null);
     const [catSortMode, setCatSortMode] = useState("custom"); // "desc" | "asc" | "custom"
+    // Unterkategorie-Darstellung: "pillen" (Mitte/Ende-Pillen) | "pegel" (wie Hauptkategorie)
+    const [subViewMode, setSubViewMode] = useState("pillen");
     const [catAmountMode, setCatAmountMode] = useState("ist"); // "ist" = nur gebucht | "gesamt" = inkl. Vormerkungen/Budget
     const [dragCatId,   setDragCatId]   = useState(null);
     const [dragOver,    setDragOver]    = useState(null);
@@ -877,6 +879,19 @@ function DashboardScreenV2() {
                   </button>
                 ))}
               </div>
+              {/* Unterkategorie-Ansicht: Mitte/Ende-Pillen oder Pegel (wie Hauptkategorie) */}
+              <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
+                <span style={{color:T.txt2,fontSize:10,fontWeight:600}}>Unterkat.:</span>
+                {[["pillen","Pillen"],["pegel","Pegel"]].map(([mode,lbl])=>(
+                  <button key={mode} onClick={()=>setSubViewMode(mode)}
+                    style={{background:subViewMode===mode?T.blue:"transparent",
+                      color:subViewMode===mode?T.on_accent||"#000":T.txt2,
+                      border:`1px solid ${subViewMode===mode?T.blue:T.bd}`,
+                      borderRadius:14,padding:"3px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>
+                    {lbl}
+                  </button>
+                ))}
+              </div>
             </div>
           );
         })()}
@@ -963,6 +978,54 @@ function DashboardScreenV2() {
                     bottom:1.75,width:6,height:6,borderRadius:"50%",background:stripe,
                     transform:"translateX(-50%)"}}/>
                 </>)}
+              </div>
+            );
+          };
+
+          // Pegel-Zeile (Haupt- UND Unterkategorien): dünne Linie 0→Ende; farbiger
+          // Punkt = aktuelles Gesamt (gebucht), grauer Punkt = inkl. Vormerkungen
+          // genutzt; Mitte/Ende als Prognose in Sub-Pillen-Schriftgröße. Werte werden
+          // nicht doppelt gezeigt (= aktuelles Gesamt → weglassen).
+          const renderPegel = ({akt, used, mitte, ende, budget, isInc, indent, onOpen}) => {
+            const scale = Math.max(ende, akt, 1);
+            const at = pct => `calc(2px + (100% - 3px) * ${Math.min(100,Math.max(0,pct))/100})`;
+            const actClr = textColor(akt, budget, isInc);
+            const istPct = (akt/scale)*100, usedPct = (used/scale)*100, mitPct = (mitte/scale)*100;
+            const hasVM = Math.round(used*100) > Math.round(akt*100);
+            const rA = Math.round(akt*100), rM = Math.round(mitte*100), rE = Math.round(ende*100);
+            // Mitte nur, wenn ≠ aktuellem Gesamt UND ≠ Ende (keine Dopplung).
+            const showMitte = rM !== rA && rM !== rE;
+            // Ende nur, wenn ≠ aktuellem Gesamt (sonst steht es schon rechts).
+            const showEnde  = rE !== rA;
+            // Mitte-Punkt UND -Wert teilen sich dieselbe (ggf. nach links geklemmte)
+            // Mitte → der Punkt sitzt immer zentriert über dem Betrag, und beide
+            // halten Sicherheitsabstand zum Ende-Wert. Zeichenbreite ~9.2px bei fs16.
+            const _mfr      = Math.min(100,Math.max(0,mitPct))/100;
+            const _mitW     = fmtShort(mitte).length*9.2;
+            const _endeW    = showEnde ? fmtShort(ende).length*9.2 : 0;
+            const _reserveR = Math.round(_endeW + 10 + _mitW/2);
+            const mitLeft   = `min(2px + (100% - 3px) * ${_mfr}, 100% - ${_reserveR}px)`;
+            const dot = (key, leftCalc, size, bg, opacity=1) => (
+              <div key={key} style={{position:"absolute",left:leftCalc,top:6-size/2,
+                width:size,height:size,borderRadius:"50%",background:bg,opacity,
+                transform:"translateX(-50%)"}}/>
+            );
+            return (
+              <div onClick={e=>{e.stopPropagation(); if(ende>0) onOpen();}}
+                style={{position:"relative",height:(showMitte||showEnde)?30:14,marginTop:1,marginLeft:indent,cursor:ende>0?"pointer":"default",
+                  fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
+                {/* Grundlinie 0→Ende */}
+                <div style={{position:"absolute",left:2,right:1,top:5.25,height:1.5,background:T.bd}}/>
+                {/* Mitte-Punkt (klein) — zentriert über dem Mitte-Wert */}
+                {showMitte && dot("m", mitLeft, 4, T.mid||T.txt2, 0.6)}
+                {/* inkl. Vormerkungen genutzt (grauer Punkt) */}
+                {hasVM && dot("v", at(usedPct), 6, T.txt2, 0.7)}
+                {/* aktuelles Gesamt (Ampelfarben-Punkt) */}
+                {dot("a", at(istPct), 8, actClr)}
+                {/* Mitte-Wert */}
+                {showMitte && <span style={{position:"absolute",left:mitLeft,top:10,transform:"translateX(-50%)",color:T.mid||T.txt2,fontSize:16,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(mitte)}</span>}
+                {/* Ende-Wert rechts */}
+                {showEnde && <span style={{position:"absolute",right:0,top:10,color:T.gold||T.txt2,fontSize:16,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(ende)}</span>}
               </div>
             );
           };
@@ -1070,56 +1133,12 @@ function DashboardScreenV2() {
                       </div>
                     </div>
                     {/* Pegel-Zeile (per Tap eingeblendet): eigene Zeile UNTER dem Header,
-                        eingerückt unter den Namen. Dünne Linie 0→Ende; farbiger Punkt =
-                        aktuelles Gesamt (gebucht), grauer Punkt = inkl. Vormerkungen genutzt;
-                        Mitte/Ende klein als Prognose. */}
-                    {isExpanded && (()=>{
-                          const scale = Math.max(iEnde, iAkt, 1);
-                          const at = pct => `calc(2px + (100% - 3px) * ${Math.min(100,Math.max(0,pct))/100})`;
-                          const actClr = textColor(iAkt, budgetEnde, isIncome);
-                          const istPct = (iAkt/scale)*100, usedPct = (istEnde/scale)*100, mitPct = (iMitte/scale)*100;
-                          const hasVM = Math.round(istEnde*100) > Math.round(iAkt*100);
-                          const rA = Math.round(iAkt*100), rM = Math.round(iMitte*100), rE = Math.round(iEnde*100);
-                          // Mitte nur, wenn ≠ aktuellem Gesamt UND ≠ Ende (keine Dopplung).
-                          const showMitte = rM !== rA && rM !== rE;
-                          // Ende nur, wenn ≠ aktuellem Gesamt (sonst steht es schon rechts).
-                          const showEnde  = rE !== rA;
-                          // Mitte-Punkt UND -Wert teilen sich dieselbe (ggf. nach links
-                          // geklemmte) Mitte → der Punkt sitzt immer zentriert über dem
-                          // Betrag, und beide halten Sicherheitsabstand zum Ende-Wert.
-                          // Zeichenbreite ~9.2px bei fontSize 16 (tabular nums).
-                          const _mfr      = Math.min(100,Math.max(0,mitPct))/100;
-                          const _mitW     = fmtShort(iMitte).length*9.2;
-                          const _endeW    = showEnde ? fmtShort(iEnde).length*9.2 : 0;
-                          const _reserveR = Math.round(_endeW + 10 + _mitW/2);
-                          const mitLeft   = `min(2px + (100% - 3px) * ${_mfr}, 100% - ${_reserveR}px)`;
-                          // Punkte statt Striche; Grundlinie auf y=6 (Mitte der Höhe 16).
-                          const dot = (key, leftCalc, size, bg, opacity=1) => (
-                            <div key={key} style={{position:"absolute",left:leftCalc,top:6-size/2,
-                              width:size,height:size,borderRadius:"50%",background:bg,opacity,
-                              transform:"translateX(-50%)"}}/>
-                          );
-                          return (
-                            <div onClick={e=>{e.stopPropagation(); if(iEnde>0) openCatDrill(lastDay,"aktuell + Vormerkungen",iAkt,false);}}
-                              style={{position:"relative",height:(showMitte||showEnde)?30:14,marginTop:1,marginLeft:38,cursor:iEnde>0?"pointer":"default",
-                                fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
-                              {/* Grundlinie 0→Ende */}
-                              <div style={{position:"absolute",left:2,right:1,top:5.25,height:1.5,background:T.bd}}/>
-                              {/* Mitte-Punkt (klein) — zentriert über dem Mitte-Wert */}
-                              {showMitte && dot("m", mitLeft, 4, T.mid||T.txt2, 0.6)}
-                              {/* inkl. Vormerkungen genutzt (grauer Punkt) */}
-                              {hasVM && dot("v", at(usedPct), 6, T.txt2, 0.7)}
-                              {/* aktuelles Gesamt (Ampelfarben-Punkt) */}
-                              {dot("a", at(istPct), 8, actClr)}
-                              {/* Mitte-Wert — gleiche Schriftgröße wie die Sub-Pillen (16),
-                                  mittig unter dem Mitte-Punkt (gleiche, ggf. nach links
-                                  geklemmte Position → Sicherheitsabstand zum Ende-Wert). */}
-                              {showMitte && <span style={{position:"absolute",left:mitLeft,top:10,transform:"translateX(-50%)",color:T.mid||T.txt2,fontSize:16,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(iMitte)}</span>}
-                              {/* Ende-Wert rechts — gleiche Schriftgröße wie die Sub-Pillen */}
-                              {showEnde && <span style={{position:"absolute",right:0,top:10,color:T.gold||T.txt2,fontSize:16,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(iEnde)}</span>}
-                            </div>
-                          );
-                        })()}
+                        eingerückt unter den Namen (gemeinsamer Renderer, s.o.). */}
+                    {isExpanded && renderPegel({
+                      akt:iAkt, used:istEnde, mitte:iMitte, ende:iEnde,
+                      budget:budgetEnde, isInc:isIncome, indent:38,
+                      onOpen:()=>openCatDrill(lastDay,"aktuell + Vormerkungen",iAkt,false),
+                    })}
                     {/* Inline-Unterkategorien (gleiches 2-Zeilen-Format wie die Hauptzeile) */}
                     {isExpanded && (cat.subs||[]).map(sub => {
                       const subTxs = monthCatTxs.filter(t =>
@@ -1154,7 +1173,8 @@ function DashboardScreenV2() {
                           style={{marginTop:6}}>
                           {/* Sub Zeile 1: Name + aktuell (-> Buchungs-Drilldown) */}
                           <div onClick={e=>{e.stopPropagation(); if(sAkt>0) openSubInlineDrill(sub,subTxs,lastDay,"aktuell",sAkt,true);}}
-                            style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,
+                            style={{display:"flex",alignItems:"center",gap:8,
+                              marginBottom:subViewMode==="pegel"?0:6,
                               cursor:sAkt>0?"pointer":"default"}}>
                             <span style={{flexShrink:0,display:"inline-flex"}}>
                               {Li("corner-down-right",13,T.txt2)}
@@ -1168,13 +1188,20 @@ function DashboardScreenV2() {
                               {sAkt>0?fmt(sAkt):"—"}
                             </div>
                           </div>
-                          {/* Sub Zeile 2: Mitte/Ende-Pillen (-> Buchungs-Drilldown) */}
+                          {/* Sub Zeile 2: Pegel (wie Hauptkategorie) ODER Mitte/Ende-Pillen —
+                              umschaltbar über die Sortier-Zeile ("Unterkat.: Pillen/Pegel") */}
+                          {subViewMode==="pegel" ? renderPegel({
+                            akt:sAkt, used:_istAll, mitte:sMitte, ende:sEnde,
+                            budget:subBudget, isInc:isIncome, indent:21,
+                            onOpen:()=>openSubInlineDrill(sub,subTxs,lastDay,"aktuell + Vormerkungen",sAkt,false),
+                          }) : (
                           <div style={{display:"flex",gap:6}}>
                             {valuePill(sMitte, sBudMitte, isIncome,
                               ()=>openSubInlineDrill(sub,subTxs,14,"Mitte",sMitte,false), {size:16, colorVal:_ist14})}
                             {valuePill(sEnde, subBudget, isIncome,
                               ()=>openSubInlineDrill(sub,subTxs,lastDay,"Ende",sEnde,false), {size:16, colorVal:_istAll})}
                           </div>
+                          )}
                         </div>
                       );
                     })}
