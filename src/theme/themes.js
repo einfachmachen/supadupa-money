@@ -529,6 +529,25 @@ THEMES.darkhell = {
   name:"Dark Hell (helleres Grau)",
 };
 
+// ── Hellgrau — echtes helles Neutralgrau als Hintergrund, weiße Karten,
+//    dunkler Text. Basiert auf dem (für helle Gründe abgestimmten) Light-Theme;
+//    Ausgaben in sattem, dunklem Rot (#CC2B1D), das auf Hell ruhig & klar liest.
+THEMES.hellgrau = {
+  ...THEMES.light,
+  bg:"#DBDFE4",          // klares helles Neutralgrau
+  surf:"#FFFFFF",        // weiße Karten heben sich ab
+  surf2:"#E9ECF0",
+  surf3:"#E3E6EB",
+  bd:"rgba(45,55,70,0.16)", bds:"rgba(45,55,70,0.30)",
+  txt:"#1E232B",         // neutrales Fast-Schwarz
+  txt2:"rgba(45,55,70,0.60)",
+  lbl:"rgba(45,55,70,0.46)",
+  neg:"#CC2B1D",         // sattes, dunkles Rot — ruhig lesbar auf Hell
+  err:"#CC2B1D", cond_neg:"#C0392B",
+  hero_bg:"linear-gradient(135deg,#CBD0D6,#DDE1E6)",
+  name:"Hellgrau",
+};
+
 // Globales T — wird von getAppTheme() überschrieben, initialisiert mit dark — wird von getAppTheme() überschrieben, initialisiert mit dark
 function getTheme(name) {
   const t = THEMES[name] || THEMES.dark;
