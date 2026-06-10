@@ -2,7 +2,6 @@
 
 import React from "react";
 import { theme as T } from "../../theme/activeTheme.js";
-import { LucideIcons } from "../../utils/icons.jsx";
 
 class SafeIcon extends React.Component {
   constructor(props) { super(props); this.state = {crashed: false}; }

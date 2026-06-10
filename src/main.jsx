@@ -1,7 +1,6 @@
 // Bootstrap der App
 import React from "react";
 import ReactDOM from "react-dom/client";
-import * as LucideIcons from "lucide-react";
 import SupaDupaMoney from "./App.jsx";
 import {
   installLegacyBridge,
@@ -20,10 +19,15 @@ installLegacyBridge();
 window.React = React;
 window.ReactDOM = ReactDOM;
 
-// Lucide aus dem Bundle global verfügbar machen — der App-Code erwartet
-// window.LucideIcons (Original-Muster), wir bedienen es jetzt aus npm
-// statt aus einem CDN-Script-Tag.
-window.LucideIcons = LucideIcons;
+// Lucide-Gesamtpaket (~1500 Icons, der größte Brocken im Bundle) asynchron
+// als eigenen Chunk laden. Die im Code fest verdrahteten UI-Icons sind über
+// utils/lucideStatic.js bereits im Hauptbundle und rendern sofort; das
+// Gesamtset braucht nur der Icon-Picker und nutzergewählte Icons.
+// Nach dem Laden re-rendert die App einmal ("lucide-ready").
+import("lucide-react").then(m => {
+  window.LucideIcons = m;
+  window.dispatchEvent(new Event("lucide-ready"));
+});
 
 // kvStore initialisieren (lädt alle Settings/Themes/etc. aus IDB in den
 // In-Memory-Cache und migriert ggf. vorhandene LS-Werte). Erst danach

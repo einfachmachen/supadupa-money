@@ -17,7 +17,9 @@ const fmt = v => {
 
 const pn  = v => { const n=parseFloat(String(v||"").replace(",",".")); return isNaN(n)?0:Math.round(n*100)/100; };
 
-const uid = () => Math.random().toString(36).slice(2,10);
+// Zeitanteil + Zufall: kollisionssicher auch bei Massenimport und zwei
+// parallel offenen Tabs (reines Math.random() mit 8 Zeichen war riskant)
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,10);
 
 // Gruppiert Budget-Mitte/Ende-Paare zu einer einzigen Zeile
 

@@ -6,7 +6,7 @@ import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { AnchorSection } from "../organisms/AnchorSection.jsx";
 import { QuickPicker } from "../organisms/QuickPicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
-import { theme as T } from "../../theme/activeTheme.js";
+import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { parseCSV } from "../../utils/csv.js";
 import { anchorFromDetectedBalance, makeAnchorEntry } from "../../utils/anchors.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
@@ -678,7 +678,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
 
           {/* Auto-Vorschläge Vergleichspanel */}
           {showAutoSugg&&(parsed.autoSuggestions||[]).length>0&&(
-            <div style={{background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)",borderBottom:`1px solid ${T.gold}33`,
+            <div style={{background:(isLightTheme())?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)",borderBottom:`1px solid ${T.gold}33`,
               padding:"10px 16px",flexShrink:0,maxHeight:220,overflowY:"auto"}}>
               <div style={{color:T.gold,fontSize:MFSl,fontWeight:700,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
                 {Li("git-compare",13,T.gold)} Automatische Verknüpfungsvorschläge — nur zur Ansicht, nichts wird automatisch übernommen
@@ -823,7 +823,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                           <div style={{color:T.txt2,fontSize:10,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
                             <span>{r.isoDate}</span>
                             {r._paypalRows>1&&<span style={{color:T.gold,fontSize:9,fontWeight:700,
-                              background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.18)":"rgba(245,166,35,0.15)",borderRadius:4,padding:"0 4px"}}>
+                              background:(isLightTheme())?"rgba(192,120,0,0.18)":"rgba(245,166,35,0.15)",borderRadius:4,padding:"0 4px"}}>
                               {r._paypalRows} Zeilen zusammengefasst{r._paypalTypes?" · "+r._paypalTypes:""}
                             </span>}
                             {r._detailNote&&<span style={{color:T.blue,fontSize:9,fontWeight:600,

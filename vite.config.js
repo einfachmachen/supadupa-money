@@ -14,6 +14,7 @@ export default defineConfig(() => ({
   },
   build: {
     target: "es2020",
-    sourcemap: true,
+    // Source-Maps nur im Dev-Server; die .map im Prod-Build war 4,4 MB groß
+    sourcemap: false,
   },
 }));

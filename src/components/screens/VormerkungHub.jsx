@@ -6,7 +6,7 @@ import { VormHubSegBtn } from "../molecules/VormHubSegBtn.jsx";
 import { VormVerknuepfenPanel } from "../organisms/VormVerknuepfenPanel.jsx";
 import { RecurringDetectionScreen } from "./RecurringDetectionScreen.jsx";
 import { AppCtx } from "../../state/AppContext.js";
-import { theme as T } from "../../theme/activeTheme.js";
+import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
 import { MONTHS_F } from "../../utils/constants.js";
 import { isoAddMonths, nextBankWorkday } from "../../utils/date.js";
@@ -737,7 +737,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
                     <button key={val} onClick={()=>{setCsvType(val);setCatId("");setSubId("");}}
                       style={{flex:1,padding:"8px",borderRadius:10,cursor:"pointer",fontSize:13,fontWeight:700,
                         border:`2px solid ${active?col:T.bd}`,
-                        background:active?col:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.04)",
+                        background:active?col:(isLightTheme())?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.04)",
                         color:active?"#fff":T.txt2,fontFamily:"inherit",transition:"all 0.15s"}}>
                       {label}
                     </button>
@@ -940,7 +940,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
                       <input type="date" value={endDate}
                         onChange={e=>{setEndDate(e.target.value);if(e.target.value)setCount("");}}
                         style={{...INP,marginBottom:0,flex:1,
-                          colorScheme:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"light":"dark"}}/>
+                          colorScheme:(isLightTheme())?"light":"dark"}}/>
                       <button onClick={()=>setEndDate("")}
                         style={{background:"none",border:"none",color:T.neg,cursor:"pointer",padding:"4px"}}>
                         {Li("x",10)}
@@ -968,7 +968,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
                   <div style={{display:"flex",gap:2,alignItems:"center"}}>
                     <input type="date" value={valueDate} onChange={e=>{setValueDate(e.target.value);setStartDateManual(true);}}
                       style={{...INP,marginBottom:0,flex:1,
-                        colorScheme:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"light":"dark"}}/>
+                        colorScheme:(isLightTheme())?"light":"dark"}}/>
                     {valueDate&&<button onClick={()=>setValueDate("")}
                       style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",padding:"4px",flexShrink:0}}>
                       {Li("x",11)}
@@ -981,7 +981,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
                   </div>
                   <input type="date" value={startDate} onChange={e=>{setStartDate(e.target.value);setStartDateManual(true);}}
                     style={{...INP,marginBottom:0,width:"100%",boxSizing:"border-box",
-                      colorScheme:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"light":"dark"}}/>
+                      colorScheme:(isLightTheme())?"light":"dark"}}/>
                 </div>
               </div>
 
@@ -1135,7 +1135,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
 
               {/* Scope-Auswahl im Bearbeiten-Modus */}
               {isEdit&&editVorm._seriesId&&(()=>{
-                const isLight2=T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss";
+                const isLight2=isLightTheme();
                 const csD={colorScheme:isLight2?"light":"dark"};
                 const inpStyle={...INP,marginBottom:0,width:"100%",boxSizing:"border-box",...csD,
                   border:`1px solid ${T.blue}66`};
@@ -1302,7 +1302,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
                       <input type="date" value={exStartDate}
                         onChange={e=>setExStartDate(e.target.value)}
                         style={{...INP,marginBottom:8,width:"100%",boxSizing:"border-box",
-                          colorScheme:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"light":"dark"}}/>
+                          colorScheme:(isLightTheme())?"light":"dark"}}/>
 
                       {/* Rhythmus */}
                       <div style={{color:T.txt2,fontSize:10,marginBottom:3}}>Rhythmus</div>

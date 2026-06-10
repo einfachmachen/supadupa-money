@@ -5,7 +5,7 @@ import { InlineCatSelect } from "../molecules/InlineCatSelect.jsx";
 import { InlineNewCat } from "../molecules/InlineNewCat.jsx";
 import { VormerkungHub } from "./VormerkungHub.jsx";
 import { AppCtx } from "../../state/AppContext.js";
-import { theme as T } from "../../theme/activeTheme.js";
+import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { isoAddMonths } from "../../utils/date.js";
 import { pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
@@ -485,7 +485,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
                       <div style={{color:T.txt,fontSize:12,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                         {v.shortDesc}
                         {hasInterval&&<span style={{marginLeft:6,color:T.gold,fontSize:9,fontWeight:700,
-                          background:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.18)":"rgba(245,166,35,0.15)",borderRadius:4,padding:"1px 5px"}}>
+                          background:(isLightTheme())?"rgba(192,120,0,0.18)":"rgba(245,166,35,0.15)",borderRadius:4,padding:"1px 5px"}}>
                           {v.interval}
                         </span>}
                         {v.hasExistingVorm&&<span style={{marginLeft:4,color:T.blue,fontSize:9,fontWeight:700,
@@ -549,7 +549,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
                               const isManual = !!manualIntervals[v.vendor];
                               return (<>
                                 {effInterval&&<span style={{color:isManual?T.blue:T.gold,fontSize:9,
-                                  background:isManual?"rgba(74,159,212,0.15)":(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.15)":"rgba(245,166,35,0.12)",
+                                  background:isManual?"rgba(74,159,212,0.15)":(isLightTheme())?"rgba(192,120,0,0.15)":"rgba(245,166,35,0.12)",
                                   borderRadius:4,padding:"1px 5px",fontWeight:700}}>
                                   {isManual?"✎ ":""}{effInterval}
                                 </span>}
@@ -981,7 +981,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
                               const isManual = !!manualIntervals[v.vendor];
                               return (<>
                                 {effInterval&&<span style={{color:isManual?T.blue:T.gold,fontSize:9,
-                                  background:isManual?"rgba(74,159,212,0.15)":(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"rgba(192,120,0,0.15)":"rgba(245,166,35,0.12)",
+                                  background:isManual?"rgba(74,159,212,0.15)":(isLightTheme())?"rgba(192,120,0,0.15)":"rgba(245,166,35,0.12)",
                                   borderRadius:4,padding:"1px 5px",fontWeight:700}}>
                                   {isManual?"✎ ":""}{effInterval}
                                 </span>}

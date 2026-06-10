@@ -13,7 +13,7 @@ import { CsvImportScreen } from "../screens/CsvImportScreen.jsx";
 import { RecurringDetectionScreen } from "../screens/RecurringDetectionScreen.jsx";
 import { VormerkungHub } from "../screens/VormerkungHub.jsx";
 import { AppCtx } from "../../state/AppContext.js";
-import { theme as T } from "../../theme/activeTheme.js";
+import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
 import { isoAddMonths } from "../../utils/date.js";
 import { fmt, pn, uid } from "../../utils/format.js";
@@ -29,7 +29,7 @@ function AddTxModal() {
 
   const today = new Date().toISOString().slice(0,10);
   const pad = n => String(n).padStart(2,"0");
-  const isLight = T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper";
+  const isLight = isLightTheme();
 
   // Typ: "sofort" | "einmalig" | "wiederkehrend" | "finanzierung"
   const [typ,            setTyp_]           = React.useState("csv");

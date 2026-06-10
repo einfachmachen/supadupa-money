@@ -26,7 +26,7 @@ import { RecurringDetectionScreen } from "./components/screens/RecurringDetectio
 import { TransactionsScreen } from "./components/screens/TransactionsScreen.jsx";
 import { VormerkungHub } from "./components/screens/VormerkungHub.jsx";
 import { AppCtx } from "./state/AppContext.js";
-import { theme as T, setActiveTheme } from "./theme/activeTheme.js";
+import { theme as T, setActiveTheme, isLightTheme } from "./theme/activeTheme.js";
 import { PAL, gs } from "./theme/palette.js";
 import { getTheme } from "./theme/themes.js";
 import { BASE_ROWS, CUR_YEAR, INIT_ACCOUNTS, INIT_CATS } from "./utils/constants.js";
@@ -189,6 +189,14 @@ export default function SupaDupaMoney() {
   const globalDrag = React.useRef(null);
   const [showQuickPicker, setShowQuickPicker] = useState(false);
   const [syncStatus, setSyncStatus] = useState("idle");
+  // Einmaliger Re-Render, sobald der asynchron geladene Lucide-Chunk bereit
+  // ist — danach rendern auch nutzergewählte Icons (Kategorien/Konten)
+  const [, setLucideReady] = useState(typeof window!=="undefined" && !!window.LucideIcons);
+  useEffect(()=>{
+    const on = () => setLucideReady(true);
+    window.addEventListener("lucide-ready", on);
+    return () => window.removeEventListener("lucide-ready", on);
+  }, []);
   const [isDirty, setIsDirty] = useState(false);
   const [syncError, setSyncError] = useState("");
 
@@ -840,7 +848,18 @@ export default function SupaDupaMoney() {
           // Erst IndexedDB versuchen, dann localStorage als Fallback
           let raw = await window.IDB.get(LS_KEY).catch(()=>null);
           if(!raw) raw = localStorage.getItem(LS_KEY);
-          if(raw) { const d=JSON.parse(raw); delete d.isLand; applyData(d); }
+          if(raw) {
+            try {
+              const d=JSON.parse(raw); delete d.isLand; applyData(d);
+            } catch(parseErr) {
+              // Korrupte Daten NICHT verlieren: der Auto-Save würde sie sonst
+              // kurz darauf mit leerem Zustand überschreiben. Rohstring sichern.
+              console.error("Lokale Daten korrupt — Rohdaten nach mbt_corrupt_rescue gesichert:", parseErr);
+              window.IDB.set("mbt_corrupt_rescue_"+Date.now(), raw).catch(()=>{});
+              setSyncError("⚠️ Lokale Daten beschädigt — Rohdaten wurden gesichert (mbt_corrupt_rescue)");
+              setSyncStatus("error");
+            }
+          }
         } catch(e) { console.error("Lokaler Load fehlgeschlagen:", e); }
       };
       // Timestamp-Vergleich
@@ -1132,14 +1151,24 @@ Abbrechen = ${remoteName}-Stand laden`
       // um 200-500 ms pro Klick. IDB ist asynchron und für große Daten ausgelegt.
       // Beim App-Start wird IDB zuerst gelesen, localStorage nur als Fallback,
       // falls IDB leer ist (siehe loadLocal in der App-Start-Logik).
-      window.IDB.set(LS_KEY, serialized).catch(()=>{});
+      window.IDB.set(LS_KEY, serialized).catch(e=>{
+        // Speichern fehlgeschlagen (Quota voll, Private Mode, …) — Nutzer
+        // muss das erfahren, sonst geht Arbeit still verloren
+        console.error("IDB-Save fehlgeschlagen:", e);
+        setSyncError(`⚠️ Lokales Speichern fehlgeschlagen: ${e?.message||e}`);
+        setSyncStatus("error");
+      });
       // csvRules separat in IDB-Backup behalten — winzig und unabhängig nutzbar
       // beim Reset/Regen über RegenRulesButton.
       if(payload.csvRules&&Object.keys(payload.csvRules).length>0) {
         try { kvStore.setItem("mbt_csvRules_backup", JSON.stringify(payload.csvRules)); } catch(e){}
       }
       setIsDirty(true);
-    } catch(e) {}
+    } catch(e) {
+      console.error("Serialisierung beim Speichern fehlgeschlagen:", e);
+      setSyncError(`⚠️ Lokales Speichern fehlgeschlagen: ${e?.message||e}`);
+      setSyncStatus("error");
+    }
   };
 
   useEffect(()=>{
@@ -2427,7 +2456,15 @@ Abbrechen = ${remoteName}-Stand laden`
   // Pfeil-Klicks im Monatswähler-Modal den Hauptcontent NICHT re-rendern
   // (sehr teuer wegen Prognose-Berechnungen). Beim Schließen des Modals
   // werden die frozen-Werte automatisch synchronisiert.
-  const cx = {
+  // Memoisiert: ohne useMemo bekam der Provider bei JEDEM App-Render eine
+  // neue Objekt-Referenz und alle Consumer re-renderten (z.B. bei jedem
+  // syncStatus-Tick oder lucide-ready). Regel für die Dependency-Liste:
+  // ALLE Wert-Einträge des Objekts müssen rein, ebenso Werte, die von den
+  // enthaltenen Helfern per Closure gelesen werden (deshalb das rohe `year`
+  // für getJV/setJV). Setter aus useState und Refs sind stabil und gehören
+  // nicht in die Liste. Wer hier einen Helfer ergänzt, der neuen State
+  // liest: State mit in die Liste aufnehmen, sonst drohen stale Closures.
+  const cx = useMemo(() => ({
     cats, setCats, groups, setGroups, txs, setTxs, accounts, setAccounts,
     yearData, setYearData,
     year: frozenYear, setYear, month: frozenMonth, setMonth,
@@ -2479,7 +2516,24 @@ Abbrechen = ${remoteName}-Stand laden`
     dashDrillOpen, setDashDrillOpen,
     noBorders, setNoBorders,
     masterOverride, setMasterOverride,
-  };
+  }), [
+    cats, groups, txs, accounts, yearData,
+    frozenYear, frozenMonth, year, selAcc, isLand,
+    showAllMonths, mainTab, subTab, col3Name, modal, mgmtCat,
+    editTx, newTx, newCat, newSubName, exportModal,
+    _txIndex, sparOpenRequest,
+    quickBtns, showQuickPicker, quickColors,
+    supaUrl, supaKey, supaStatus, supaError, supaLockKey, supaActive,
+    accIconPick, confirmReset,
+    csvRules, budgets, startBalances,
+    jsonbinActive, jsonbinStatus, jsonbinKey, jsonbinId,
+    gistActive, gistStatus, gistToken, gistId,
+    reviewQueue, showSettings, showVormHub, editVormTx, showMatching,
+    customIcons, themeName, hideEmptyRows, handedness, debugFlags,
+    cfActive, cfStatus, cfUrl, cfSecret,
+    syncStatus, syncError, cfSaveOnClose,
+    dashDrillOpen, noBorders, masterOverride,
+  ]);
 
   // ═══════════════════════════════════════════════════════════════════════════
   // LAYOUT
@@ -2512,7 +2566,7 @@ Abbrechen = ${remoteName}-Stand laden`
     <>
     <div className={[noBorders?"no-borders":null, themeName==="clean"?"theme-clean":null, themeName==="brutalist"?"theme-brutalist":null, themeName==="terminal"?"theme-terminal":null, themeName==="swiss"?"theme-swiss":null].filter(Boolean).join(" ")||undefined}
       style={{background:T.bg,height:"100vh",maxHeight:"100vh",
-      colorScheme:(T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="brutalist"||T.themeName==="swiss")?"light":"dark",
+      colorScheme:(isLightTheme())?"light":"dark",
       display:"flex",flexDirection:"column",
       fontFamily:"'SF Pro Text',-apple-system,BlinkMacSystemFont,sans-serif",
       userSelect:"none",overflow:"hidden"}}>
@@ -2560,7 +2614,7 @@ Abbrechen = ${remoteName}-Stand laden`
 
         // ── Master-Button: Inline-Renderfunktion (keine Komponente, um Hook-Identität zu wahren) ──
         const renderMasterButton = (key) => {
-          const isLight = (T.themeName==="light"||T.themeName==="ios"||T.themeName==="material"||T.themeName==="paper"||T.themeName==="dkb"||T.themeName==="sand"||T.themeName==="clean"||T.themeName==="swiss");
+          const isLight = (isLightTheme());
           const isBrutalist = T.themeName==="brutalist";
           const isTerminal = T.themeName==="terminal";
           const monthNames = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];

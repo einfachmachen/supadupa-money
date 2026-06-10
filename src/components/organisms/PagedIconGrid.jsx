@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { SafeIcon } from "../atoms/SafeIcon.jsx";
 import { IconPickerDialog } from "./IconPickerDialog.jsx";
 import { theme as T } from "../../theme/activeTheme.js";
-import { matchIconCategory } from "../../utils/icons.jsx";
+import { matchIconCategory, getAllLucideIcons } from "../../utils/icons.jsx";
 
 function PagedIconGrid({search="", catFilter=null, selectedIcon, selectedColor, onSelect, onPagination}) {
   const ICON_SIZE = 46;
@@ -30,15 +30,24 @@ function PagedIconGrid({search="", catFilter=null, selectedIcon, selectedColor, 
     return () => ro.disconnect();
   }, []);
 
+  // Lucide-Gesamtset lädt asynchron (main.jsx) — neu filtern sobald es da ist
+  const [lucideReady, setLucideReady] = React.useState(!!window.LucideIcons);
+  React.useEffect(()=>{
+    if(lucideReady) return;
+    const on = () => setLucideReady(true);
+    window.addEventListener("lucide-ready", on);
+    return () => window.removeEventListener("lucide-ready", on);
+  }, [lucideReady]);
+
   const pageSize = cols * rows;
   const filtered = React.useMemo(()=>{
-    const all = _getAllLucideIcons();
+    const all = getAllLucideIcons();
     return all.filter(n => {
       if (safeSearch && !n.includes(safeSearch)) return false;
       if (catFilter) return matchIconCategory(n, catFilter);
       return true;
     });
-  }, [safeSearch, catFilter]);
+  }, [safeSearch, catFilter, lucideReady]);
 
   React.useEffect(()=>{ setPage(0); }, [safeSearch, catFilter, pageSize]);
 

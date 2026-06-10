@@ -9,6 +9,16 @@ export function setActiveTheme(name, extra = {}) {
   _state.current = { ...getTheme(name), themeName: name, ...extra };
 }
 
+// Zentrale Liste der hellen Themes. Vorher lag dieser Vergleich als
+// inline-Kette ~50x im Code — teils veraltet (neuere helle Themes fehlten).
+// Neues helles Theme? NUR hier ergänzen.
+const LIGHT_THEMES = new Set([
+  "light", "ios", "material", "paper", "dkb",
+  "sand", "clean", "brutalist", "swiss", "hellgrau",
+]);
+export const isLightTheme = (name = _state.current.themeName) =>
+  LIGHT_THEMES.has(name);
+
 // Proxy verhält sich wie das aktuelle Theme-Objekt
 export const theme = new Proxy({}, {
   get(_, key) { return _state.current[key]; },
