@@ -381,11 +381,14 @@ function DashboardScreenV2() {
     // Zusätzlich werden verlinkte Vormerkungen ausgefiltert: wenn eine echte
     // Buchung eine Vormerkung "zugewiesen" wurde (echte Buchung trägt _linkedTo),
     // sollte die Vormerkung nicht mehr in der Liste auftauchen.
-    const _dashTxIdMap = buildTxIdMap(txs);
-    const _dashLinkedPendIds = new Set();
-    (txs||[]).forEach(t => {
-      if(!t.pending && t._linkedTo) _dashLinkedPendIds.add(t._linkedTo);
-    });
+    const _dashTxIdMap = _txsById; // identische Map ist oben bereits memoisiert
+    const _dashLinkedPendIds = useMemo(()=>{
+      const s = new Set();
+      (txs||[]).forEach(t => {
+        if(!t.pending && t._linkedTo) s.add(t._linkedTo);
+      });
+      return s;
+    }, [txs]);
     const _filterDetailByAccD = (det, sa) => {
       if(!det) return det;
       const accMatchOrAny = (t) => !sa || (t.accountId || "acc-giro") === sa;
