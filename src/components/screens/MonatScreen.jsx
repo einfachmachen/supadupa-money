@@ -2,7 +2,6 @@
 
 import React, { useContext, useMemo, useRef, useState } from "react";
 import { CatPicker } from "../molecules/CatPicker.jsx";
-import { CategoryChart } from "../molecules/CategoryChart.jsx";
 import { MitteEndeFields } from "../molecules/MitteEndeFields.jsx";
 import { BudgetEditorModal } from "../organisms/BudgetEditorModal.jsx";
 import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
@@ -205,11 +204,6 @@ function MonatScreen() {
       }
       return idx;
     })();
-    const catSums = cats.filter(c=>c.type==="expense").map(c=>({...c,sum:(c.subs||[]).reduce((s,sub)=>{
-      if(!selAcc) return s+getActualSum(year,month,sub.id);
-      return s + (_subSumByAcc[sub.id]||0);
-    },0)})).filter(c=>c.sum>0).sort((a,b)=>b.sum-a.sum);
-    const maxSum  = catSums[0]?.sum||1;
 
     const byDate  = mTxs.reduce((acc,tx)=>{ if(!acc[tx.date])acc[tx.date]=[]; acc[tx.date].push(tx); return acc; },{});
     // Stelle sicher dass der 14. und Monatsletzt immer im Rendering auftauchen (Restbudget-Zeilen)
@@ -587,8 +581,7 @@ function MonatScreen() {
             />
           );
         })()}
-        {/* Kategorie-Balken — gleiche Hintergrundfarbe wie Hero */}
-        {catSums.length>0&&!window.MBT_DEBUG?.disable_categorychart&&<CategoryChart catSums={catSums} maxSum={maxSum} budgets={budgets} getBudgetForMonth={getBudgetForMonth} year={year} month={month}/>}
+        {/* "Ausgaben nach Kategorie" wurde ins Dashboard (Home) verschoben. */}
         </div>
 
         {/* Budget-Schnellzugriff entfernt — Budgets werden über Mehr →
@@ -622,22 +615,22 @@ function MonatScreen() {
           </div>
         </div>
 
-        {/* Filter-Tabs — kompakt, inhaltsbreit (nicht mehr gleichmäßig gestreckt) */}
-        <div style={{display:"flex",gap:6,padding:"0 10px 6px",flexWrap:"wrap"}}>
+        {/* Filter-Tabs — alle in einer Zeile, dynamisch gleich breit (flex:1) */}
+        <div style={{display:"flex",gap:6,padding:"0 10px 6px"}}>
           {(()=>{
             const chips = [
               ["expense","Ausgaben",  T.neg,    T.tab_exp],
               ["income", "Einnahmen", T.pos,    T.tab_inc],
               ["pending","vorgemerkt",T.gold,   T.tab_pend],
               ["uncat",  "？",        T.txt2,   T.disabled],
-              ["mismatch","⚠ Falsch", T.gold,   T.tab_pend],
             ];
             return chips.map(([v,lbl,col,bgActive])=>{
               const active = filt===v;
               return (
                 <button key={v} onClick={()=>setFilt(f=>f===v?"all":v)}
                   style={{
-                    padding:"4px 11px",
+                    flex:1,minWidth:0,
+                    padding:"5px 4px",
                     borderRadius:12,
                     cursor:"pointer",
                     fontFamily:"inherit",
@@ -649,6 +642,7 @@ function MonatScreen() {
                     letterSpacing:0.2,
                     transition:"all 0.15s",
                     outline: active ? `1.5px solid ${col}44` : "none",
+                    overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
                   }}>
                   {lbl}
                 </button>
@@ -756,33 +750,37 @@ function MonatScreen() {
                     background:(headSaldo!==null?headSaldo:dayNet)>=0?T.pos:T.neg,
                     opacity:0.85,borderRadius:1,minWidth:10}}/>
                   {headSaldo!==null ? (
-                    <div style={{textAlign:"right",flexShrink:0}}>
-                      <span style={{
-                        color:headSaldo>=0?T.pos:T.neg,
-                        fontSize:14,fontWeight:800,fontFamily:NUM_FONT}}>
-                        {headSaldo>=0?"+":"−"}{fmt(Math.abs(headSaldo))}
-                      </span>
-                      {hasReservierung&&(
-                        <div style={{color:daySaldo>=0?T.txt2:T.neg,fontSize:8,lineHeight:1.3,
-                          textAlign:"right",fontFamily:NUM_FONT,opacity:0.9}}>
-                          nach Budget {daySaldo>=0?"+":"−"}{fmt(Math.abs(daySaldo))}
+                    <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+                      {/* Zusatzinfos LINKS neben dem Tagessaldo, größer & lesbar */}
+                      {(hasReservierung||hasDayPend)&&(
+                        <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1,lineHeight:1.2}}>
+                          {hasReservierung&&(
+                            <span style={{color:daySaldo>=0?T.txt2:T.neg,fontSize:11,fontFamily:NUM_FONT,fontWeight:600,whiteSpace:"nowrap"}}>
+                              nach Budget {daySaldo>=0?"+":"−"}{fmt(Math.abs(daySaldo))}
+                            </span>
+                          )}
+                          {hasDayPend&&(()=>{
+                            const pendUpToDay = txs.filter(t=>{
+                              if(!t.pending||t._linkedTo||t._budgetSubId) return false;
+                              const d=new Date(t.date);
+                              return d.getFullYear()===year&&d.getMonth()===month&&t.date<=date&&_isSelAcc(t);
+                            });
+                            const n = pendUpToDay.length;
+                            const todayPend = dayTxs.filter(t=>t.pending&&!t._budgetSubId);
+                            return <span style={{color:T.gold,fontSize:11,whiteSpace:"nowrap"}}>
+                              inkl. {n} Vorm. ({todayPend.length} heute)
+                            </span>;
+                          })()}
                         </div>
                       )}
-                      {hasDayPend&&(()=>{
-                        const pendUpToDay = txs.filter(t=>{
-                          if(!t.pending||t._linkedTo||t._budgetSubId) return false;
-                          const d=new Date(t.date);
-                          return d.getFullYear()===year&&d.getMonth()===month&&t.date<=date&&_isSelAcc(t);
-                        });
-                        const n = pendUpToDay.length;
-                        const todayPend = dayTxs.filter(t=>t.pending&&!t._budgetSubId);
-                        return <div style={{color:T.gold,fontSize:8,lineHeight:1.3,textAlign:"right"}}>
-                          inkl. {n} Vorm. ({todayPend.length} heute)
-                        </div>;
-                      })()}
+                      <span style={{
+                        color:headSaldo>=0?T.pos:T.neg,
+                        fontSize:18,fontWeight:800,fontFamily:NUM_FONT,whiteSpace:"nowrap"}}>
+                        {headSaldo>=0?"+":"−"}{fmt(Math.abs(headSaldo))}
+                      </span>
                     </div>
                   ) : (
-                    <span style={{color:dayNet>=0?T.pos:T.neg,fontSize:14,fontWeight:800,
+                    <span style={{color:dayNet>=0?T.pos:T.neg,fontSize:18,fontWeight:800,
                       fontFamily:NUM_FONT,flexShrink:0}}>
                       {dayNet>=0?"+":"−"}{fmt(Math.abs(dayNet))}
                     </span>
@@ -878,7 +876,7 @@ function MonatScreen() {
                             </div>
                           </div>
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
-                            <div style={{color:pal.val,fontSize:14,fontWeight:800,fontFamily:NUM_FONT}}>+{fmt(tx.totalAmount)}</div>
+                            <div style={{color:pal.val,fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>+{fmt(tx.totalAmount)}</div>
                             {fulfilled&&<div style={{color:T.pos,fontSize:9}}>{Li("check",9,T.pos)} erfüllt</div>}
                             {needsHatch&&<div style={{color:pal.hdr,fontSize:9}}>{Li("alert-circle",9,T.gold)} offen</div>}
                           </div>
@@ -1043,7 +1041,7 @@ function MonatScreen() {
                           </div>
                           {/* Amount */}
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
-                            <div style={{color:pal.val,fontSize:14,fontWeight:800,fontFamily:NUM_FONT}}>
+                            <div style={{color:pal.val,fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>
                               {type==="income"?"+":"−"}{fmt(tx.totalAmount)}
                             </div>
                             {isS&&(

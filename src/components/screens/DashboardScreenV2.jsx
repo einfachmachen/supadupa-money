@@ -3,6 +3,7 @@
 import React, { Fragment, useContext, useMemo, useState } from "react";
 import { Overlay } from "../atoms/Overlay.jsx";
 import { CatPicker } from "../molecules/CatPicker.jsx";
+import { CategoryChart } from "../molecules/CategoryChart.jsx";
 import { BudgetEditorModal } from "../organisms/BudgetEditorModal.jsx";
 import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
 import { KontoWarnungWidget } from "../organisms/KontoWarnungWidget.jsx";
@@ -330,6 +331,11 @@ function DashboardScreenV2() {
         return b.sum-a.sum;
       });
     }, [txs,year,month,selAcc,cats,catSortMode,budgets,_catTxMaps]);
+
+    // "Ausgaben nach Kategorie"-Chart (aus der Monatsansicht hierher verschoben):
+    // Ausgaben-Kategorien mit Verbrauch > 0, immer absteigend sortiert.
+    const chartCatSums = useMemo(()=>[...catTotals].filter(c=>c.sum>0).sort((a,b)=>b.sum-a.sum), [catTotals]);
+    const chartMaxSum  = chartCatSums[0]?.sum || 1;
 
     const incomeTotals = useMemo(()=>{
       if(window.MBT_DEBUG?.disable_cattotals) return [];
@@ -723,6 +729,15 @@ function DashboardScreenV2() {
           }
         })()}
         </div>
+
+        {/* "Ausgaben nach Kategorie" — aus der Monatsansicht hierher (Dashboard)
+            verschoben; eigene Klapp-Logik im Chart. */}
+        {chartCatSums.length>0 && !window.MBT_DEBUG?.disable_categorychart && (
+          <div style={{padding:"0 10px"}}>
+            <CategoryChart catSums={chartCatSums} maxSum={chartMaxSum} budgets={budgets}
+              getBudgetForMonth={getBudgetForMonth} year={year} month={month}/>
+          </div>
+        )}
 
         {/* ── 3-Symbol-Zeile: Warnungen | Sparen | Vormerkungen ──
             Vergangene Monate: nur Vormerkungen-Icon (und nur wenn echte, nicht-Budget-Vormerkungen offen) */}
