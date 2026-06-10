@@ -1,12 +1,15 @@
 // Lucide-Icons-Helper (Li) und Icon-Sets
-// Lucide wird in main.jsx aus dem npm-Bundle auf window.LucideIcons gelegt.
-const LucideIcons = (typeof window !== "undefined" ? window.LucideIcons : null) || {};
+// Die fest verdrahteten UI-Icons kommen statisch aus lucideStatic.js (sofort
+// renderbar); das Gesamtpaket lädt main.jsx asynchron auf window.LucideIcons
+// nach (Event "lucide-ready") — gebraucht für Icon-Picker & Nutzer-Icons.
+import { STATIC_LUCIDE } from "./lucideStatic.js";
 
 const _toPascal = s => s.replace(/(^|-)([a-z0-9])/g, (_, __, c) => c.toUpperCase());
 let _ALL_LUCIDE_ICONS = null;
 // ALL_LUCIDE_ICONS als normale Funktion - kein Proxy
 const _getAllLucideIcons = () => {
-  if(!_ALL_LUCIDE_ICONS) {
+  // Solange der Lucide-Chunk noch lädt, keine leere Liste cachen
+  if(!_ALL_LUCIDE_ICONS || _ALL_LUCIDE_ICONS.length === 0) {
     const li = window.LucideIcons || {};
     _ALL_LUCIDE_ICONS = Object.keys(li)
       .filter(k =>
@@ -23,6 +26,9 @@ const _getAllLucideIcons = () => {
 };
 // ALL_LUCIDE_ICONS als getter-Property auf einem normalen Array-ähnlichen Objekt
 // Aber einfacher: direkt als getter
+// Benannter Export für Komponenten, die die Liste direkt brauchen
+// (PagedIconGrid nutzte _getAllLucideIcons bisher ohne Import — ReferenceError)
+const getAllLucideIcons = _getAllLucideIcons;
 const ALL_LUCIDE_ICONS = {
   get length() { return _getAllLucideIcons().length; },
   [Symbol.iterator]() { return _getAllLucideIcons()[Symbol.iterator](); },
@@ -65,8 +71,9 @@ const Li = (name, size=16, color="currentColor") => {
     return <span style={{width:size,height:size,display:"inline-flex",alignItems:"center",justifyContent:"center",flexShrink:0,verticalAlign:"middle",opacity:0.5}}>{Li("credit-card",size,color)}</span>;
   }
   try {
-    const icons = window.LucideIcons || {};
-    const Comp = icons[_toPascal(name)];
+    // Statische UI-Icons zuerst (immer sofort verfügbar), dann das
+    // asynchron nachgeladene Gesamtset
+    const Comp = STATIC_LUCIDE[name] || (window.LucideIcons || {})[_toPascal(name)];
     if (!Comp) return null;
     return <Comp size={size} color={color} strokeWidth={2} style={{display:"inline-block",verticalAlign:"middle",flexShrink:0}} />;
   } catch(e) { return null; }
@@ -166,10 +173,10 @@ function matchIconCategory(iconName, keywords) {
 export {
   Li,
   ALL_LUCIDE_ICONS,
+  getAllLucideIcons,
   BANK_SVGS,
   ICON_CATEGORIES,
   BANK_ICONS_LIST,
   SIMPLE_ICONS,
   matchIconCategory,
-  LucideIcons,
 };

@@ -189,6 +189,14 @@ export default function SupaDupaMoney() {
   const globalDrag = React.useRef(null);
   const [showQuickPicker, setShowQuickPicker] = useState(false);
   const [syncStatus, setSyncStatus] = useState("idle");
+  // Einmaliger Re-Render, sobald der asynchron geladene Lucide-Chunk bereit
+  // ist — danach rendern auch nutzergewählte Icons (Kategorien/Konten)
+  const [, setLucideReady] = useState(typeof window!=="undefined" && !!window.LucideIcons);
+  useEffect(()=>{
+    const on = () => setLucideReady(true);
+    window.addEventListener("lucide-ready", on);
+    return () => window.removeEventListener("lucide-ready", on);
+  }, []);
   const [isDirty, setIsDirty] = useState(false);
   const [syncError, setSyncError] = useState("");
 
