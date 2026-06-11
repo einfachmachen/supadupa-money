@@ -1,13 +1,12 @@
 // Auto-generated module (siehe app-src.jsx)
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
 import { MobileHeader } from "./components/atoms/MobileHeader.jsx";
 import { Overlay } from "./components/atoms/Overlay.jsx";
 import { PBtn } from "./components/atoms/PBtn.jsx";
 import { MonthPicker } from "./components/molecules/MonthPicker.jsx";
 import { ThemeDropdown } from "./components/molecules/ThemeDropdown.jsx";
-import { AddTxModal } from "./components/organisms/AddTxModal.jsx";
 import { DataManagerDialog } from "./components/organisms/DataManagerDialog.jsx";
 import { EditPopup } from "./components/organisms/EditPopup.jsx";
 import { ExportDialog } from "./components/organisms/ExportDialog.jsx";
@@ -16,21 +15,28 @@ import { MobileKategorienModal } from "./components/organisms/MobileKategorienMo
 import { MobileVormerkenModal } from "./components/organisms/MobileVormerkenModal.jsx";
 import { MobileWiederkehrendModal } from "./components/organisms/MobileWiederkehrendModal.jsx";
 import { MonthPickerModal } from "./components/organisms/MonthPickerModal.jsx";
-import { CsvImportScreen } from "./components/screens/CsvImportScreen.jsx";
 import { DashboardScreenV2 } from "./components/screens/DashboardScreenV2.jsx";
 import { JahrScreen } from "./components/screens/JahrScreen.jsx";
 import { ManagementScreen } from "./components/screens/ManagementScreen.jsx";
-import { MatchingScreen } from "./components/screens/MatchingScreen.jsx";
 import { MonatScreen } from "./components/screens/MonatScreen.jsx";
-import { RecurringDetectionScreen } from "./components/screens/RecurringDetectionScreen.jsx";
 import { TransactionsScreen } from "./components/screens/TransactionsScreen.jsx";
-import { VormerkungHub } from "./components/screens/VormerkungHub.jsx";
+// Schwere, nur auf Nutzeraktion geöffnete Modals als eigene Lazy-Chunks —
+// halten das Initial-Bundle klein. AddTxModal zieht CsvImport+Recurring mit,
+// VormerkungHub zieht Recurring mit; Vite dedupliziert geteilte Module in
+// einen gemeinsamen async-Chunk. Render hinter <Suspense> (s.u.).
+const lazyNamed = (loader, name) => lazy(() => loader().then(m => ({ default: m[name] })));
+const AddTxModal = lazyNamed(() => import("./components/organisms/AddTxModal.jsx"), "AddTxModal");
+const CsvImportScreen = lazyNamed(() => import("./components/screens/CsvImportScreen.jsx"), "CsvImportScreen");
+const MatchingScreen = lazyNamed(() => import("./components/screens/MatchingScreen.jsx"), "MatchingScreen");
+const RecurringDetectionScreen = lazyNamed(() => import("./components/screens/RecurringDetectionScreen.jsx"), "RecurringDetectionScreen");
+const VormerkungHub = lazyNamed(() => import("./components/screens/VormerkungHub.jsx"), "VormerkungHub");
 import { AppCtx } from "./state/AppContext.js";
 import { theme as T, setActiveTheme, isLightTheme } from "./theme/activeTheme.js";
 import { PAL, gs } from "./theme/palette.js";
 import { getTheme } from "./theme/themes.js";
 import { BASE_ROWS, CUR_YEAR, INIT_ACCOUNTS, INIT_CATS } from "./utils/constants.js";
 import { kvStore } from "./utils/kvStore.js";
+import { useLocalSaveDebounce } from "./hooks/useLocalSaveDebounce.js";
 import { isoAddMonths } from "./utils/date.js";
 import { anchorValue, anchorDay } from "./utils/anchors.js";
 import { pn, uid, sumAmounts } from "./utils/format.js";
@@ -1122,87 +1128,16 @@ Abbrechen = ${remoteName}-Stand laden`
   // (geplantes Delta-Sync-Feature). Die JSON.stringify-Diff-Schleife kostete
   // bei 1500+ Buchungen ~5 ms × jeder Klick. Entfernt.
   //
-  // Save-Effekt: Auto-Save in IndexedDB+localStorage mit Debounce.
-  // Vorher: jeder setX-Aufruf löste sofort 4× JSON.stringify + 4× I/O aus
-  // (rd. 50 ms Computer / 200-400 ms iPhone pro Klick).
-  // Jetzt: nach 300 ms Pause genau EIN Save mit EINEM Stringify und einem
-  // Schreibslot. Bei rapid-fire Klicks (z.B. mehrere Kategorien hintereinander)
-  // läuft der Save nur einmal am Ende.
-  const saveTimerRef = useRef(null);
-  const pendingSaveRef = useRef(null); // hält den letzten Save-Job für beforeunload-Flush
-
-  const doSaveLocal = (payload) => {
-    try {
-      let cleanYD = payload.yearData||{};
-      let needsClone = false;
-      Object.keys(cleanYD).forEach(y=>Object.keys(cleanYD[y]||{}).forEach(m=>{
-        Object.keys(cleanYD[y][m]||{}).forEach(k=>{ if(k.startsWith("jsub_")) needsClone = true; });
-      }));
-      if(needsClone) {
-        cleanYD = JSON.parse(JSON.stringify(cleanYD));
-        Object.keys(cleanYD).forEach(y=>Object.keys(cleanYD[y]||{}).forEach(m=>{
-          Object.keys(cleanYD[y][m]||{}).forEach(k=>{ if(k.startsWith("jsub_")) delete cleanYD[y][m][k]; });
-        }));
-      }
-      const toStore = {...payload, yearData:cleanYD, saved_at:Date.now()};
-      const serialized = JSON.stringify(toStore);
-      // Großes Payload (bis zu 4-5 MB bei 10k+ Buchungen) AUSSCHLIESSLICH nach IDB:
-      // localStorage.setItem ist synchron und blockiert die UI bei dieser Größe
-      // um 200-500 ms pro Klick. IDB ist asynchron und für große Daten ausgelegt.
-      // Beim App-Start wird IDB zuerst gelesen, localStorage nur als Fallback,
-      // falls IDB leer ist (siehe loadLocal in der App-Start-Logik).
-      window.IDB.set(LS_KEY, serialized).catch(e=>{
-        // Speichern fehlgeschlagen (Quota voll, Private Mode, …) — Nutzer
-        // muss das erfahren, sonst geht Arbeit still verloren
-        console.error("IDB-Save fehlgeschlagen:", e);
-        setSyncError(`⚠️ Lokales Speichern fehlgeschlagen: ${e?.message||e}`);
-        setSyncStatus("error");
-      });
-      // csvRules separat in IDB-Backup behalten — winzig und unabhängig nutzbar
-      // beim Reset/Regen über RegenRulesButton.
-      if(payload.csvRules&&Object.keys(payload.csvRules).length>0) {
-        try { kvStore.setItem("mbt_csvRules_backup", JSON.stringify(payload.csvRules)); } catch(e){}
-      }
-      setIsDirty(true);
-    } catch(e) {
-      console.error("Serialisierung beim Speichern fehlgeschlagen:", e);
-      setSyncError(`⚠️ Lokales Speichern fehlgeschlagen: ${e?.message||e}`);
-      setSyncStatus("error");
-    }
-  };
-
-  useEffect(()=>{
-    if(syncStatus==="loading") return;
-    const payload = {cats, groups, txs, accounts, yearData, col3Name, quickBtns, quickColors, csvRules, budgets, customIcons, startBalances};
-    pendingSaveRef.current = payload;
-    if(saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(()=>{
-      doSaveLocal(payload);
-      pendingSaveRef.current = null;
-    }, 300);
-    return ()=>{ if(saveTimerRef.current) clearTimeout(saveTimerRef.current); };
-  }, [cats, groups, txs, accounts, yearData, col3Name, quickBtns, quickColors, csvRules, budgets, customIcons, startBalances]);
-
-  // Flush bei App-Schließen/Tab-Wechsel: sofort speichern, falls Debounce
-  // noch lief. Wichtig für iOS, wo der App-Wegswipe den Timer abbricht.
-  useEffect(()=>{
-    const flush = () => {
-      if(pendingSaveRef.current) {
-        if(saveTimerRef.current) clearTimeout(saveTimerRef.current);
-        doSaveLocal(pendingSaveRef.current);
-        pendingSaveRef.current = null;
-      }
-    };
-    const onVisChange = () => { if(document.visibilityState === "hidden") flush(); };
-    window.addEventListener("beforeunload", flush);
-    window.addEventListener("pagehide", flush);
-    document.addEventListener("visibilitychange", onVisChange);
-    return ()=>{
-      window.removeEventListener("beforeunload", flush);
-      window.removeEventListener("pagehide", flush);
-      document.removeEventListener("visibilitychange", onVisChange);
-    };
-  }, []);
+  // Save-Effekt: Auto-Save in IndexedDB mit Debounce + Flush bei App-Schließen.
+  // Logik ausgelagert nach hooks/useLocalSaveDebounce.js (Verhalten unverändert:
+  // 300 ms Debounce, ein Stringify/Schreibslot, jsub_-Strip, csvRules-Backup,
+  // Fehler sichtbar). saveToCloud/saveConfig bleiben hier (CF-spezifisch).
+  useLocalSaveDebounce({
+    lsKey: LS_KEY,
+    state: {cats, groups, txs, accounts, yearData, col3Name, quickBtns, quickColors, csvRules, budgets, customIcons, startBalances},
+    loading: syncStatus==="loading",
+    setSyncStatus, setSyncError, setIsDirty,
+  });
 
   // ── New-tx form ───────────────────────────────────────────────────────────
 
@@ -3051,7 +2986,8 @@ Abbrechen = ${remoteName}-Stand laden`
           onSwitchToMore={()=>{ setShowMonthPickerModal(false); setShowMobilePicker(true); }}/>
       )}
 
-      {/* ── MODALS ── */}
+      {/* ── MODALS (lazy geladen — fallback=null, da Overlays auf Klick) ── */}
+      <Suspense fallback={null}>
       {modal==="addTx"&&<AddTxModal/>}
       {showCsv&&<CsvImportScreen onClose={()=>setShowCsv(false)}
         onBack={()=>{setShowCsv(false);reopenMobilePicker("daten");}}
@@ -3061,6 +2997,7 @@ Abbrechen = ${remoteName}-Stand laden`
       {showVormHub&&<VormerkungHub onClose={()=>{setShowVormHub(false);setEditVormTx(null);}} editVorm={editVormTx} mobileMode={mobileMode}/>}
       {showRecurring&&<RecurringDetectionScreen onClose={()=>setShowRecurring(false)}/>}
       {showKategorisieren&&<RecurringDetectionScreen initialTab="kategorisieren" onClose={()=>setShowKategorisieren(false)}/>}
+      </Suspense>
       {showSettings&&(
         <div onClick={()=>setShowSettings(false)}
           style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",backdropFilter:"blur(8px)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
