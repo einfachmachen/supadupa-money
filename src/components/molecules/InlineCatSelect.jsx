@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { InlineNewCat } from "./InlineNewCat.jsx";
-import { RecurringDetectionScreen } from "../screens/RecurringDetectionScreen.jsx";
 import { theme as T } from "../../theme/activeTheme.js";
 import { uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";

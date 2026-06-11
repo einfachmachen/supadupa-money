@@ -11,7 +11,6 @@ import { BudgetEditorModal } from "./BudgetEditorModal.jsx";
 import { KategorieAnlegen } from "./KategorieAnlegen.jsx";
 import { CsvImportScreen } from "../screens/CsvImportScreen.jsx";
 import { RecurringDetectionScreen } from "../screens/RecurringDetectionScreen.jsx";
-import { VormerkungHub } from "../screens/VormerkungHub.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
