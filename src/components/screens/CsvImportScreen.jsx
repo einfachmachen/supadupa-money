@@ -166,7 +166,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
 
   const doParse = () => {
     if(!csvText.trim()) return;
-    const {rows, format, detectedBalance, detectedBalances} = parseCSV(csvText, {noGroup: !autoGroup});
+    const {rows, format, detectedBalance, detectedBalances, skipped} = parseCSV(csvText, {noGroup: !autoGroup});
     // _konto-String → accountId auflösen und Fingerprint mit accountId neu bilden
     const resolvedRows = rows.map(r => {
       let resolvedAccId = selAccId || accounts[0]?.id;
@@ -190,7 +190,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     const newRows  = resolvedRows.filter(r=>!isDup(r));
     const dupRows  = resolvedRows.filter(isDup);
     const autoSuggestions = computeAutoSuggestions(newRows);
-    setParsed({rows: resolvedRows, format, newRows, dupRows, autoSuggestions, detectedBalance, detectedBalances: detectedBalances || (detectedBalance ? [detectedBalance] : [])});
+    setParsed({rows: resolvedRows, format, newRows, dupRows, autoSuggestions, skipped: skipped || [], detectedBalance, detectedBalances: detectedBalances || (detectedBalance ? [detectedBalance] : [])});
     setAssign(autoAssign(newRows));
     setShowCatAssign(newRows.length <= 20);
     setStep("review");
@@ -620,6 +620,23 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
       {/* STEP: REVIEW */}
       {step==="review"&&parsed&&(
         <div style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
+          {/* Warnung: Zeilen mit unlesbarem Datum/Betrag wurden übersprungen */}
+          {(parsed.skipped||[]).length>0&&(
+            <div style={{background:"rgba(245,166,35,0.12)",borderBottom:`1px solid ${T.gold}55`,
+              padding:"8px 16px",flexShrink:0,fontSize:MFSl,color:T.gold,display:"flex",gap:8,alignItems:"flex-start"}}>
+              <span style={{flexShrink:0,marginTop:1}}>{Li("alert-triangle",13,T.gold)}</span>
+              <div>
+                <b>{parsed.skipped.length} Zeile{parsed.skipped.length!==1?"n":""} übersprungen</b>
+                {" "}— Datum oder Betrag konnte nicht gelesen werden (nicht importiert):
+                <div style={{color:T.txt2,fontSize:MFSl,marginTop:3,fontFamily:NUM_FONT}}>
+                  {parsed.skipped.slice(0,4).map((s,i)=>(
+                    <div key={i}>Zeile {s.line}: {s.reason}=„{(s.reason==="Datum"?s.rawDate:s.rawAmount)||"leer"}"</div>
+                  ))}
+                  {parsed.skipped.length>4&&<div>… und {parsed.skipped.length-4} weitere</div>}
+                </div>
+              </div>
+            </div>
+          )}
           {/* Summary bar */}
           <div style={{background:T.surf2,padding:"10px 16px",borderBottom:`1px solid ${T.bd}`,flexShrink:0,display:"flex",gap:10,flexWrap:"wrap"}}>
             <div style={{textAlign:"center"}}>

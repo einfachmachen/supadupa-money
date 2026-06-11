@@ -74,3 +74,28 @@ describe("txFingerprint", () => {
       .not.toBe(txFingerprint("2026-05-01", -12.35, "Edeka"));
   });
 });
+
+describe("parseCSV — übersprungene Problem-Zeilen melden", () => {
+  it("meldet unlesbaren Betrag (Müll), NICHT legitime 0,00 / Leerzeilen", () => {
+    const csv = [
+      "Datum;Buchungstext;Betrag",
+      "01.05.2026;Edeka;-12,34",      // ok
+      "02.05.2026;Nullbuchung;0,00",  // legitime Null → still überspringen
+      "03.05.2026;Kaputt;n/a",        // Müll im Betrag → melden
+    ].join("\n");
+    const { rows, skipped } = parseCSV(csv);
+    expect(rows.length).toBe(1);
+    expect(skipped.length).toBe(1);
+    expect(skipped[0].reason).toBe("Betrag");
+    expect(skipped[0].rawAmount).toBe("n/a");
+  });
+  it("meldet unlesbares Datum", () => {
+    const csv = [
+      "Datum;Buchungstext;Betrag",
+      "01.05.2026;Ok;-5,00",
+      "Quatschdatum;Defekt;-9,99",
+    ].join("\n");
+    const { skipped } = parseCSV(csv);
+    expect(skipped.some(s=>s.reason==="Datum")).toBe(true);
+  });
+});
