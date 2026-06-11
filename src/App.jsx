@@ -32,6 +32,7 @@ import { getTheme } from "./theme/themes.js";
 import { BASE_ROWS, CUR_YEAR, INIT_ACCOUNTS, INIT_CATS } from "./utils/constants.js";
 import { kvStore } from "./utils/kvStore.js";
 import { useLocalSaveDebounce } from "./hooks/useLocalSaveDebounce.js";
+import { useCloudCredentials } from "./hooks/useCloudCredentials.js";
 import { isoAddMonths } from "./utils/date.js";
 import { anchorValue, anchorDay } from "./utils/anchors.js";
 import { pn, uid, sumAmounts } from "./utils/format.js";
@@ -201,57 +202,16 @@ export default function SupaDupaMoney() {
   const [isDirty, setIsDirty] = useState(false);
   const [syncError, setSyncError] = useState("");
 
-  // Supabase settings
-  const [supaUrl, setSupaUrl] = useState(()=>kvStore.getItem("supa_url")||"");
-  const [supaKey, setSupaKey] = useState(()=>kvStore.getItem("supa_key")||"");
-  const [supaStatus, setSupaStatus] = useState("idle");
-  const [supaError, setSupaError] = useState("");
-  const [supaLockKey, setSupaLockKey] = useState(0);
-  const supaActive = !!(supaUrl && supaKey);
-
-  // JSONBin settings
-  const [jsonbinKey, setJsonbinKey]   = useState(()=>kvStore.getItem("jsonbin_key")||"");
-  const [jsonbinId,  setJsonbinId]    = useState(()=>kvStore.getItem("jsonbin_id")||"");
-  const [jsonbinStatus, setJsonbinStatus] = useState("idle");
-  const jsonbinActive = !!(jsonbinKey && jsonbinId);
-
-  // GitHub Gist settings
-  const [gistToken, setGistToken] = useState(()=>kvStore.getItem("gist_token")||"");
-  const [gistId,    setGistId]    = useState(()=>kvStore.getItem("gist_id")||"");
-  const [gistStatus, setGistStatus] = useState("idle");
-  const gistActive = !!(gistToken && gistId);
-
-  // Cloudflare Workers settings
-  const [cfUrl,    setCfUrlRaw]    = useState("");
-  const [cfSecret, setCfSecretRaw] = useState("");
-  const [cfCredsReady, setCfCredsReady] = useState(false);
-  // CF-Zugangsdaten aus IDB laden (stabiler auf iOS als localStorage)
-  React.useEffect(()=>{
-    (async()=>{
-      try {
-        const url = await window.IDB.get("cf_url").catch(()=>null) || kvStore.getItem("cf_url") || "";
-        const sec = await window.IDB.get("cf_secret").catch(()=>null) || kvStore.getItem("cf_secret") || "";
-        setCfUrlRaw(url);
-        setCfSecretRaw(sec);
-        // Auch in IDB sichern falls noch nicht da
-        if(url) window.IDB.set("cf_url", url).catch(()=>{});
-        if(sec) window.IDB.set("cf_secret", sec).catch(()=>{});
-      } catch(e){}
-      setCfCredsReady(true);
-    })();
-  }, []);
-  const setCfUrl = (v) => {
-    setCfUrlRaw(v);
-    kvStore.setItem("cf_url", v);
-    window.IDB.set("cf_url", v).catch(()=>{});
-  };
-  const setCfSecret = (v) => {
-    setCfSecretRaw(v);
-    kvStore.setItem("cf_secret", v);
-    window.IDB.set("cf_secret", v).catch(()=>{});
-  };
-  const [cfStatus, setCfStatus] = useState("idle");
-  const cfActive = !!(cfUrl && cfSecret);
+  // Cloud-Zugangsdaten (Supa/JSONBin/Gist/Cloudflare) ausgelagert nach
+  // hooks/useCloudCredentials.js — reines State-/Persistenz-Management.
+  // Die Sync-Funktionen (cfSave/cfLoad/gistSave/… normCfUrl) bleiben hier.
+  const {
+    supaUrl, setSupaUrl, supaKey, setSupaKey, supaStatus, setSupaStatus,
+    supaError, setSupaError, supaLockKey, setSupaLockKey, supaActive,
+    jsonbinKey, setJsonbinKey, jsonbinId, setJsonbinId, jsonbinStatus, setJsonbinStatus, jsonbinActive,
+    gistToken, setGistToken, gistId, setGistId, gistStatus, setGistStatus, gistActive,
+    cfUrl, cfSecret, setCfUrl, setCfSecret, cfCredsReady, cfStatus, setCfStatus, cfActive,
+  } = useCloudCredentials();
 
   const normCfUrl = (url) => {
     if(!url) return "";
