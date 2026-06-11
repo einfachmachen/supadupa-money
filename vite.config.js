@@ -14,7 +14,8 @@ export default defineConfig(() => ({
   },
   build: {
     target: "es2020",
-    // Source-Maps nur im Dev-Server; die .map im Prod-Build war 4,4 MB groß
-    sourcemap: false,
+    // "hidden": .map-Dateien werden erzeugt (für nachträgliches Entschlüsseln
+    // von Prod-Crashes), aber NICHT im Bundle verlinkt → Browser laden sie nicht.
+    sourcemap: "hidden",
   },
 }));

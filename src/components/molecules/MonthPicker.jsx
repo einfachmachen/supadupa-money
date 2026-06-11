@@ -21,14 +21,14 @@ function MonthPicker({month, year, onMonth, onYear, yearOnly=false}) {
   const prevM = ()=>{ if(month>0){onMonth(month-1);}else{onMonth(11);onYear(year-1);} };
   const nextM = ()=>{ if(month<11){onMonth(month+1);}else{onMonth(0);onYear(year+1);} };
 
-  const isLightTheme = (isLightTheme());
+  const lightT = isLightTheme();
   const btnS = {
-    background: isLightTheme?"#fff":T.surf3,
-    border: isLightTheme?`1px solid ${T.bds}`:"none",
+    background: lightT?"#fff":T.surf3,
+    border: lightT?`1px solid ${T.bds}`:"none",
     color:T.blue,
     borderRadius:8, width:32, height:32, fontSize:16, cursor:"pointer",
     display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
-    boxShadow: isLightTheme?"0 1px 3px rgba(0,0,0,0.12)":"none",
+    boxShadow: lightT?"0 1px 3px rgba(0,0,0,0.12)":"none",
   };
 
   return (
@@ -37,12 +37,12 @@ function MonthPicker({month, year, onMonth, onYear, yearOnly=false}) {
       {/* Label: klickbar → Dropdown */}
       <span onClick={()=>{setPickYear(year);setOpen(o=>!o);}}
         style={{
-          background: isLightTheme?"#fff":T.surf3,
+          background: lightT?"#fff":T.surf3,
           borderRadius:8, padding:"4px 12px",
           color:T.txt, fontWeight:700, fontSize:14, cursor:"pointer",
           userSelect:"none", textAlign:"center", whiteSpace:"nowrap",
-          border:`1px solid ${open?T.blue:isLightTheme?T.bds:"transparent"}`,
-          boxShadow: isLightTheme?"0 1px 3px rgba(0,0,0,0.12)":"none",
+          border:`1px solid ${open?T.blue:lightT?T.bds:"transparent"}`,
+          boxShadow: lightT?"0 1px 3px rgba(0,0,0,0.12)":"none",
           transition:"border-color 0.15s",
           minWidth: yearOnly?46:88}}>
         {yearOnly ? year : `${MONTHS_S[month]} ${year}`}

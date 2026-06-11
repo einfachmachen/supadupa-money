@@ -7,10 +7,10 @@ import { Li } from "../../utils/icons.jsx";
 
 function MonthPickerModal({year, month, setYear, setMonth, onClose, onSwitchToMore, plusArretiert}) {
   const MONTHS_S_LOCAL = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
-  const isLightTheme = (isLightTheme());
+  const lightT = isLightTheme();
   const arrowBtn = {
-    background: isLightTheme?"#fff":T.surf3,
-    border: isLightTheme?`1px solid ${T.bds}`:"none",
+    background: lightT?"#fff":T.surf3,
+    border: lightT?`1px solid ${T.bds}`:"none",
     color:T.blue,
     borderRadius:10, width:36, height:36, fontSize:16, cursor:"pointer",
     display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
@@ -104,7 +104,7 @@ function MonthPickerModal({year, month, setYear, setMonth, onClose, onSwitchToMo
                 onClick={()=>handleMonthTap(i)}
                 style={{padding:"12px 4px",borderRadius:10,border:"none",cursor:"pointer",
                   fontSize:13,fontWeight:700,fontFamily:"inherit",
-                  background: isSelected ? "rgba(74,159,212,0.35)" : (isLightTheme?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.05)"),
+                  background: isSelected ? "rgba(74,159,212,0.35)" : (lightT?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.05)"),
                   color: isSelected ? T.blue : T.txt2,
                   transition:"background 0.12s"}}>
                 {m}
