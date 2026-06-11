@@ -1,0 +1,9 @@
+Buchungsdatum;Wertstellungsdatum;Empfaenger;Verwendungszweck;Buchungstext;Betrag;IBAN;BIC;Kategorie;Konto;Umbuchung;Notiz;Schlagworte;SteuerKategorie;ParentKategorie;AbweichenderEmpfaenger;Splitbuchung;Auswertungsdatum
+01.03.2026;01.03.2026;Arbeitgeber Muster GmbH; Gehalt 03.2026;;2500,00;DE02100100100006820101;;Gehalt/Lohn;DE12500105170648489890;;;;;Gehalt/Lohn;;false;01.03.2026
+02.03.2026;02.03.2026;Supermarkt Muster; Einkauf Lebensmittel;;-23,45;DE96120300009005290904;;Nahrungsmittel & Getraenke;DE12500105170648489890;;;;;Haushalt;;false;02.03.2026
+03.03.2026;03.03.2026;Baecker Muster; Broetchen;;-7,29;DE96120300009005290904;;Nahrungsmittel & Getraenke;DE12500105170648489890;;;;;Haushalt;;false;03.03.2026
+07.03.2026;07.03.2026;Tankstelle Muster; Kraftstoff;;-66,93;DE96120300009005290904;;Verkehr;DE12500105170648489890;;;;;Mobilitaet;;false;07.03.2026
+10.03.2026;10.03.2026;Vermieter Muster; Miete Maerz 2026;;-530,00;DE03100100100006820102;;Warmmiete;DE12500105170648489890;;;;;Wohnen;;false;10.03.2026
+12.03.2026;12.03.2026;Online Shop Muster; Erstattung Ruecksendung;;82,99;DE93300308800013441006;;Sonstige Einnahmen;DE12500105170648489890;;;;;Einnahmen;;false;12.03.2026
+13.03.2026;13.03.2026;Restaurant Muster; Mittagessen;;-50,53;DE96120300009005290904;;Gastronomie;DE12500105170648489890;;;;;Freizeit;;false;13.03.2026
+14.03.2026;14.03.2026;Apotheke Muster; Medikamente;;-6,99;DE96120300009005290904;;Gesundheit;DE12500105170648489890;;;;;Gesundheit;;false;14.03.2026
