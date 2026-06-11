@@ -2462,7 +2462,6 @@ Abbrechen = ${remoteName}-Stand laden`
 
         // ── Master-Button: Inline-Renderfunktion (keine Komponente, um Hook-Identität zu wahren) ──
         const renderMasterButton = (key) => {
-          const isLight = (isLightTheme());
           const isBrutalist = T.themeName==="brutalist";
           const isTerminal = T.themeName==="terminal";
           const monthNames = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
@@ -2710,13 +2709,18 @@ Abbrechen = ${remoteName}-Stand laden`
           };
 
           // Theme-Farben
+          // Lime-Akzent NUR in diesen drei Themes; alle anderen nehmen ihre
+          // eigene Haupt-Akzentfarbe (T.blue). Brutalist/Terminal behalten ihren
+          // eigenständigen Look (schwarz bzw. grün).
+          const useLime = T.themeName==="dark" || T.themeName==="darkhell" || T.themeName==="hellgrau";
           const bg = isBrutalist ? "#000"
                    : isTerminal ? "rgba(0,255,65,0.12)"
-                   : isLight ? "linear-gradient(135deg,#9CC800,#AADD00)"
+                   : useLime ? "linear-gradient(135deg,#9CC800,#AADD00)"
                    : `linear-gradient(135deg,${T.blue},${T.blue}BB)`;
           const fg = isBrutalist ? "#FFEC3E"
                    : isTerminal ? T.pos
-                   : isLight ? T.on_accent : "#000";
+                   : useLime ? "#1A1E00"          // dunkles Oliv — lesbar auf hellem Lime
+                   : T.on_accent;                  // Kontrasttext zur jeweiligen Akzentfarbe
 
           return (
             <div key={key} style={{flex:"0 0 auto",display:"flex",alignItems:"center",
@@ -2796,9 +2800,9 @@ Abbrechen = ${remoteName}-Stand laden`
         // ── BRUTALIST NAV ─────────────────────────────────────────────────
         if(T.themeName==="brutalist") {
           const BK="#000", BY="#FFEC3E";
-          const items = (handedness==="left")
-            ? [NAV_TABS[0], NAV_TABS[1], NAV_TABS[2], "plus", NAV_TABS[3]]
-            : [NAV_TABS[0], NAV_TABS[1], NAV_TABS[2], "plus", NAV_TABS[3]];
+          // + Button IMMER mittig (3. Position) — identisch zu allen anderen
+          // Navs, damit er themeunabhängig an derselben Stelle sitzt.
+          const items = [NAV_TABS[0], NAV_TABS[1], "plus", NAV_TABS[2], NAV_TABS[3]];
           return (
             <div className="nav-bottom" style={{
               background:BY,
