@@ -1,5 +1,23 @@
 import { describe, it, expect } from "vitest";
-import { nextBankWorkday, isBankWorkday } from "../src/utils/date.js";
+import { nextBankWorkday, isBankWorkday, parseGermanDate } from "../src/utils/date.js";
+
+describe("parseGermanDate", () => {
+  it("parst deutsches Format", () => {
+    expect(parseGermanDate("10.06.2026")).toBe("2026-06-10");
+    expect(parseGermanDate("10.6.26")).toBe("2026-06-10");
+    expect(parseGermanDate(" 01.05.2026 ")).toBe("2026-05-01");
+  });
+  it("parst ISO-Format (manche Bank-Exporte)", () => {
+    expect(parseGermanDate("2026-06-10")).toBe("2026-06-10");
+    expect(parseGermanDate("2026-6-1")).toBe("2026-06-01");
+    expect(parseGermanDate("2026/06/10")).toBe("2026-06-10");
+  });
+  it("liefert null bei unbekanntem Format", () => {
+    expect(parseGermanDate("")).toBe(null);
+    expect(parseGermanDate("Quatsch")).toBe(null);
+    expect(parseGermanDate("06/10/2026")).toBe(null); // US-Format bewusst nicht (mehrdeutig)
+  });
+});
 
 describe("nextBankWorkday — TARGET2-Banktage", () => {
   it("normaler Werktag → Folgetag", () => {

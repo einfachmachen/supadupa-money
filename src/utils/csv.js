@@ -11,8 +11,12 @@ function parseGermanAmount(s) {
   // Negative in parentheses: "(47,30)" → -47.30
   if(norm.startsWith("(") && norm.endsWith(")"))
     return -(parseFloat(norm.slice(1,-1).replace(/[^\d,.]/g,"").replace(/\.(?=\d{3})/g,"").replace(",","."))||0);
-  // Normal sign detection (may have spaces around minus)
-  const sign = /^\s*-/.test(norm) ? -1 : 1;
+  // Vorzeichen: führendes ODER NACHGESTELLTES Minus. Manche deutsche Bank-/SAP-
+  // Exporte schreiben Negativbeträge als "47,30-" (Minus hinten, ggf. + Währung
+  // wie "47,30- EUR"). Ohne diese Erkennung würde eine Ausgabe als Einnahme
+  // verbucht (Vorzeichen gekippt).
+  const core = norm.replace(/\s*(?:€|eur)\s*$/i, "").trim(); // nachgestellte Währung weg
+  const sign = (/^-/.test(core) || /-$/.test(core)) ? -1 : 1;
   const clean = norm.replace(/[^\d,.]/g,"").replace(/\.(?=\d{3})/g,"").replace(",",".");
   return sign * (parseFloat(clean)||0);
 }
@@ -166,6 +170,9 @@ function parseCSV(text, {noGroup=false}={}) {
 
   const startLine = 1;
   const rows = [];
+  // Übersprungene Zeilen, deren Datums-/Betragsfeld zwar Inhalt hatte, aber
+  // nicht als gültiger Wert erkannt wurde (→ stiller Datenverlust, wird gemeldet).
+  const skipped = [];
 
   // Spalten für PayPal-Gruppierung
   const txCodeCol  = headers.findIndex(h=>h.includes("transaktionscode")||h.includes("transaction id")||h.includes("transaktionskennung")||h==="txcode");
@@ -184,7 +191,16 @@ function parseCSV(text, {noGroup=false}={}) {
     const rawKonto  = kontoCol>=0 ? cols[kontoCol] : "";
     const isoDate   = parseGermanDate(rawDate);
     const amount    = parseGermanAmount(rawAmount);
-    if(!isoDate || amount===0) continue;
+    if(!isoDate || amount===0) {
+      // Stillen Datenverlust melden: Feld hatte Inhalt, war aber unlesbar.
+      // Legitime Leerzeilen und echte 0,00-Beträge werden NICHT gemeldet
+      // (0,00 enthält Ziffern; "n/a"/"EUR" im Betragsfeld dagegen nicht).
+      const dateJunk   = !isoDate && rawDate.trim() !== "";
+      const amountJunk = amount===0 && rawAmount.trim() !== "" && !/\d/.test(rawAmount);
+      if((dateJunk || amountJunk) && skipped.length < 100)
+        skipped.push({ line: i+1, rawDate, rawAmount, reason: dateJunk ? "Datum" : "Betrag" });
+      continue;
+    }
     if(cols[0]&&cols[0].toLowerCase().startsWith("saldo")) continue;
     // Beschreibung aufbauen: JSON entfernen, sinnvolle Teile kombinieren
     const cleanStr = s => s.replace(/\{[^}]{0,400}\}/g,"").replace(/\s{2,}/g," ").trim();
@@ -270,7 +286,7 @@ function parseCSV(text, {noGroup=false}={}) {
     orphans.forEach(r => merged.push(r));
     // Nach Datum sortieren
     merged.sort((a,b)=>b.isoDate.localeCompare(a.isoDate));
-    return { rows: merged, format: format==="generisch"?"PayPal-DE":format };
+    return { rows: merged, format: format==="generisch"?"PayPal-DE":format, skipped };
   }
 
   // Finanzblick PayPal: mehrere Gruppierungsstrategien
@@ -362,7 +378,7 @@ function parseCSV(text, {noGroup=false}={}) {
       const { merged, grouped } = tryGroup(rows, stratFn, oppSign);
       if(grouped > 0) {
         merged.sort((a,b)=>b.isoDate.localeCompare(a.isoDate));
-        return { rows: merged, format: `Finanzblick-PayPal (${stratName})` };
+        return { rows: merged, format: `Finanzblick-PayPal (${stratName})`, skipped };
       }
     }
   }
@@ -430,7 +446,7 @@ function parseCSV(text, {noGroup=false}={}) {
     if(detectedBalances.length>0) detectedBalance = detectedBalances[detectedBalances.length-1];
   })();
 
-  return { rows, format, detectedBalance, detectedBalances };
+  return { rows, format, detectedBalance, detectedBalances, skipped };
 }
 
 export { parseGermanAmount, parseCSV };

@@ -13,7 +13,14 @@ function isoAddMonths(isoDate, months, lastOfMonth=false) {
 
 function parseGermanDate(s) {
   if(!s) return null;
-  const m = s.trim().match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})$/);
+  const t = s.trim();
+  // ISO-Format (manche Banken exportieren so): 2026-06-10 oder 2026/6/10.
+  // Vorher wurde das zu null → die ganze CSV-Zeile beim Import stillschweigend
+  // verworfen (0 Buchungen ohne Fehlermeldung).
+  let m = t.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if(m) { const [,y,mo,d]=m; return `${y}-${mo.padStart(2,"0")}-${d.padStart(2,"0")}`; }
+  // Deutsches Format: 10.06.2026 oder 10.6.26
+  m = t.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})$/);
   if(!m) return null;
   let [,d,mo,y] = m;
   if(y.length===2) y = "20"+y;
