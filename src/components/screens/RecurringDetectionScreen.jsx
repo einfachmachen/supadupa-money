@@ -3,7 +3,6 @@
 import React, { useContext, useMemo, useState } from "react";
 import { InlineCatSelect } from "../molecules/InlineCatSelect.jsx";
 import { InlineNewCat } from "../molecules/InlineNewCat.jsx";
-import { VormerkungHub } from "./VormerkungHub.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { isoAddMonths } from "../../utils/date.js";

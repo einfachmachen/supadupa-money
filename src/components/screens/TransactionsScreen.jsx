@@ -2,7 +2,6 @@
 
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { CatPicker } from "../molecules/CatPicker.jsx";
-import { AddTxModal } from "../organisms/AddTxModal.jsx";
 import { BudgetEditorModal } from "../organisms/BudgetEditorModal.jsx";
 import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
 import { WerkzeugeSection } from "../organisms/WerkzeugeSection.jsx";

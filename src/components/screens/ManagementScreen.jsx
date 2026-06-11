@@ -6,7 +6,6 @@ import { Lbl } from "../atoms/Lbl.jsx";
 import { RegenRulesButton } from "../buttons/RegenRulesButton.jsx";
 import { QuickBtnsBarWithColor } from "../molecules/QuickBtnsBarWithColor.jsx";
 import { AddAccountForm } from "../organisms/AddAccountForm.jsx";
-import { AddTxModal } from "../organisms/AddTxModal.jsx";
 import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
 import { KategorieAnlegen } from "../organisms/KategorieAnlegen.jsx";
 import { SubRow } from "../organisms/SubRow.jsx";

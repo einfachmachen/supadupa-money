@@ -2,7 +2,6 @@
 
 import React from "react";
 import { VormVerknuepfenPanel } from "../organisms/VormVerknuepfenPanel.jsx";
-import { VormerkungHub } from "../screens/VormerkungHub.jsx";
 import { theme as T } from "../../theme/activeTheme.js";
 import { Li } from "../../utils/icons.jsx";
 
