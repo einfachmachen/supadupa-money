@@ -39,6 +39,7 @@ import { pn, uid, sumAmounts } from "./utils/format.js";
 import { Li } from "./utils/icons.jsx";
 import { makeYearData } from "./utils/yearData.js";
 import { isDuplCounterpart, buildTxIdMap } from "./utils/tx.js";
+import { compressTxByYear } from "./utils/cloudTx.js";
 import { saldoAt, saldoEnde, saldoMitte } from "./utils/saldo.js";
 
 export default function SupaDupaMoney() {
@@ -228,25 +229,7 @@ export default function SupaDupaMoney() {
     }));
     // Aufteilen: config + txs pro Jahr
     const {txs: allTxs, ...configOnly} = clean;
-    const compressTx = t => {
-      const c = {id:t.id,date:t.date,totalAmount:t.totalAmount,accountId:t.accountId};
-      if(t.desc) c.desc=t.desc; if(t.pending) c.pending=true;
-      if(t._csvType) c._csvType=t._csvType; if(t._budgetSubId) c._budgetSubId=t._budgetSubId;
-      if(t._linkedTo) c._linkedTo=t._linkedTo; if(t._seriesId) c._seriesId=t._seriesId;
-      if(t._seriesIdx) c._seriesIdx=t._seriesIdx; if(t._seriesTotal) c._seriesTotal=t._seriesTotal;
-      if(t._seriesTyp) c._seriesTyp=t._seriesTyp;
-      if(t._fp) c._fp=t._fp; if(t.note) c.note=t.note;
-      if(t.repeatMonths&&t.repeatMonths!==1) c.repeatMonths=t.repeatMonths;
-      if((t.splits||[]).length>0) c.splits=t.splits;
-      if((t.linkedIds||[]).length>0) c.linkedIds=t.linkedIds;
-      return c;
-    };
-    const byYear = {};
-    (allTxs||[]).forEach(t=>{
-      const y=new Date(t.date).getFullYear();
-      if(!byYear[y]) byYear[y]=[];
-      byYear[y].push(compressTx(t));
-    });
+    const byYear = compressTxByYear(allTxs);
     const base = normCfUrl(cfUrl);
     const headers = {"Content-Type":"application/json","X-Secret":cfSecret};
 
@@ -303,33 +286,8 @@ export default function SupaDupaMoney() {
     // Aufteilen: Config (ohne txs) + Buchungen pro Jahr als separate Dateien
     const {txs: allTxs, ...configOnly} = clean;
     const files = {"mbt-config.json": {content: JSON.stringify({...configOnly, saved_at: Date.now()})}};
-    // Buchungen komprimieren: nur nötige Felder speichern
-    const compressTx = t => {
-      const c = {id:t.id, date:t.date, totalAmount:t.totalAmount, accountId:t.accountId};
-      if(t.desc) c.desc=t.desc;
-      if(t.pending) c.pending=true;
-      if(t._csvType) c._csvType=t._csvType;
-      if(t._budgetSubId) c._budgetSubId=t._budgetSubId;
-      if(t._linkedTo) c._linkedTo=t._linkedTo;
-      if(t._seriesId) c._seriesId=t._seriesId;
-      if(t._seriesIdx) c._seriesIdx=t._seriesIdx;
-      if(t._seriesTotal) c._seriesTotal=t._seriesTotal;
-      if(t._seriesTyp) c._seriesTyp=t._seriesTyp;
-      if(t._fp) c._fp=t._fp;
-      if(t.note) c.note=t.note;
-      if(t.valueDate) c.valueDate=t.valueDate;
-      if(t.repeatMonths&&t.repeatMonths!==1) c.repeatMonths=t.repeatMonths;
-      if((t.splits||[]).length>0) c.splits=t.splits;
-      if((t.linkedIds||[]).length>0) c.linkedIds=t.linkedIds;
-      return c;
-    };
-    // Buchungen pro Jahr
-    const byYear = {};
-    (allTxs||[]).forEach(t=>{
-      const y = new Date(t.date).getFullYear();
-      if(!byYear[y]) byYear[y]=[];
-      byYear[y].push(compressTx(t));
-    });
+    // Buchungen pro Jahr komprimieren (kanonisch, siehe utils/cloudTx.js)
+    const byYear = compressTxByYear(allTxs);
     Object.entries(byYear).forEach(([y,arr])=>{
       // Große Jahre in Hälften aufteilen (>500 Buchungen oder >800KB)
       const fullContent = JSON.stringify(arr);
