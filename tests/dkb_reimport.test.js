@@ -1,15 +1,25 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync } from "fs";
+import { readFileSync, readdirSync, existsSync } from "fs";
 import { parseCSV } from "../src/utils/csv.js";
 import { txFingerprint, txFingerprintNorm } from "../src/utils/tx.js";
 
+// Diese Tests prüfen die Duplikatserkennung an ECHTEN, privaten Bank-Auszügen,
+// die NICHT im Repo liegen (personenbezogene Finanzdaten). Sie laufen nur auf
+// einem Rechner, der diese Dateien lokal hat; überall sonst werden sie sauber
+// übersprungen (statt fehlzuschlagen). So bleibt die Suite überall grün.
+const ARCHIV = "/home/claude/archiv";
+const UPLOAD_DKB = "/mnt/user-data/uploads/21-05-2026_Umsatzliste_Tagesgeld_DE16120300001023196197_1_.csv";
+const FB_2024 = `${ARCHIV}/finanzblick_2024_DKB_TagesGeld.csv`;
+const hasReimportFixtures = existsSync(ARCHIV) && existsSync(UPLOAD_DKB);
+const hasFb2024 = existsSync(FB_2024);
+
 describe("DKB-Original-Reimport (formatübergreifende Duplikatserkennung)", () => {
-  it("erkennt 98 von 99 Buchungen als Duplikat nach Finanzblick-Import", () => {
+  it.skipIf(!hasReimportFixtures)("erkennt 98 von 99 Buchungen als Duplikat nach Finanzblick-Import", () => {
     const accId = "acc-tagesgeld";
     const txs = [];
-    for(const f of readdirSync("/home/claude/archiv").sort()) {
+    for(const f of readdirSync(ARCHIV).sort()) {
       if(!(f.startsWith("finanzblick_") && f.endsWith(".csv"))) continue;
-      const text = readFileSync(`/home/claude/archiv/${f}`, "utf-8");
+      const text = readFileSync(`${ARCHIV}/${f}`, "utf-8");
       const { rows } = parseCSV(text);
       for(const r of rows) {
         txs.push({
@@ -39,7 +49,7 @@ describe("DKB-Original-Reimport (formatübergreifende Duplikatserkennung)", () =
       }
     });
 
-    const dkbText = readFileSync("/mnt/user-data/uploads/21-05-2026_Umsatzliste_Tagesgeld_DE16120300001023196197_1_.csv", "utf-8");
+    const dkbText = readFileSync(UPLOAD_DKB, "utf-8");
     const { rows: dkbRows, format, detectedBalances } = parseCSV(dkbText);
 
     const resolved = dkbRows.map(r => ({
@@ -79,10 +89,10 @@ describe("DKB-Original-Reimport (formatübergreifende Duplikatserkennung)", () =
     expect(normalizeDesc("  doppelte   spaces  ")).toBe("doppelte spaces");
   });
 
-  it("ein wiederholter Finanzblick-Import erkennt alle bestehenden Buchungen weiterhin als Dup", () => {
+  it.skipIf(!hasFb2024)("ein wiederholter Finanzblick-Import erkennt alle bestehenden Buchungen weiterhin als Dup", () => {
     // Backward-Compat: bestehender Workflow darf nicht gebrochen werden
     const accId = "acc-tagesgeld";
-    const text = readFileSync("/home/claude/archiv/finanzblick_2024_DKB_TagesGeld.csv", "utf-8");
+    const text = readFileSync(FB_2024, "utf-8");
     const { rows } = parseCSV(text);
     // Erst importieren
     const txs = rows.map(r => ({
