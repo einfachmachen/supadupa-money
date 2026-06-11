@@ -36,6 +36,7 @@ import { PAL, gs } from "./theme/palette.js";
 import { getTheme } from "./theme/themes.js";
 import { BASE_ROWS, CUR_YEAR, INIT_ACCOUNTS, INIT_CATS } from "./utils/constants.js";
 import { kvStore } from "./utils/kvStore.js";
+import { useLocalSaveDebounce } from "./hooks/useLocalSaveDebounce.js";
 import { isoAddMonths } from "./utils/date.js";
 import { anchorValue, anchorDay } from "./utils/anchors.js";
 import { pn, uid, sumAmounts } from "./utils/format.js";
@@ -1127,87 +1128,16 @@ Abbrechen = ${remoteName}-Stand laden`
   // (geplantes Delta-Sync-Feature). Die JSON.stringify-Diff-Schleife kostete
   // bei 1500+ Buchungen ~5 ms × jeder Klick. Entfernt.
   //
-  // Save-Effekt: Auto-Save in IndexedDB+localStorage mit Debounce.
-  // Vorher: jeder setX-Aufruf löste sofort 4× JSON.stringify + 4× I/O aus
-  // (rd. 50 ms Computer / 200-400 ms iPhone pro Klick).
-  // Jetzt: nach 300 ms Pause genau EIN Save mit EINEM Stringify und einem
-  // Schreibslot. Bei rapid-fire Klicks (z.B. mehrere Kategorien hintereinander)
-  // läuft der Save nur einmal am Ende.
-  const saveTimerRef = useRef(null);
-  const pendingSaveRef = useRef(null); // hält den letzten Save-Job für beforeunload-Flush
-
-  const doSaveLocal = (payload) => {
-    try {
-      let cleanYD = payload.yearData||{};
-      let needsClone = false;
-      Object.keys(cleanYD).forEach(y=>Object.keys(cleanYD[y]||{}).forEach(m=>{
-        Object.keys(cleanYD[y][m]||{}).forEach(k=>{ if(k.startsWith("jsub_")) needsClone = true; });
-      }));
-      if(needsClone) {
-        cleanYD = JSON.parse(JSON.stringify(cleanYD));
-        Object.keys(cleanYD).forEach(y=>Object.keys(cleanYD[y]||{}).forEach(m=>{
-          Object.keys(cleanYD[y][m]||{}).forEach(k=>{ if(k.startsWith("jsub_")) delete cleanYD[y][m][k]; });
-        }));
-      }
-      const toStore = {...payload, yearData:cleanYD, saved_at:Date.now()};
-      const serialized = JSON.stringify(toStore);
-      // Großes Payload (bis zu 4-5 MB bei 10k+ Buchungen) AUSSCHLIESSLICH nach IDB:
-      // localStorage.setItem ist synchron und blockiert die UI bei dieser Größe
-      // um 200-500 ms pro Klick. IDB ist asynchron und für große Daten ausgelegt.
-      // Beim App-Start wird IDB zuerst gelesen, localStorage nur als Fallback,
-      // falls IDB leer ist (siehe loadLocal in der App-Start-Logik).
-      window.IDB.set(LS_KEY, serialized).catch(e=>{
-        // Speichern fehlgeschlagen (Quota voll, Private Mode, …) — Nutzer
-        // muss das erfahren, sonst geht Arbeit still verloren
-        console.error("IDB-Save fehlgeschlagen:", e);
-        setSyncError(`⚠️ Lokales Speichern fehlgeschlagen: ${e?.message||e}`);
-        setSyncStatus("error");
-      });
-      // csvRules separat in IDB-Backup behalten — winzig und unabhängig nutzbar
-      // beim Reset/Regen über RegenRulesButton.
-      if(payload.csvRules&&Object.keys(payload.csvRules).length>0) {
-        try { kvStore.setItem("mbt_csvRules_backup", JSON.stringify(payload.csvRules)); } catch(e){}
-      }
-      setIsDirty(true);
-    } catch(e) {
-      console.error("Serialisierung beim Speichern fehlgeschlagen:", e);
-      setSyncError(`⚠️ Lokales Speichern fehlgeschlagen: ${e?.message||e}`);
-      setSyncStatus("error");
-    }
-  };
-
-  useEffect(()=>{
-    if(syncStatus==="loading") return;
-    const payload = {cats, groups, txs, accounts, yearData, col3Name, quickBtns, quickColors, csvRules, budgets, customIcons, startBalances};
-    pendingSaveRef.current = payload;
-    if(saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(()=>{
-      doSaveLocal(payload);
-      pendingSaveRef.current = null;
-    }, 300);
-    return ()=>{ if(saveTimerRef.current) clearTimeout(saveTimerRef.current); };
-  }, [cats, groups, txs, accounts, yearData, col3Name, quickBtns, quickColors, csvRules, budgets, customIcons, startBalances]);
-
-  // Flush bei App-Schließen/Tab-Wechsel: sofort speichern, falls Debounce
-  // noch lief. Wichtig für iOS, wo der App-Wegswipe den Timer abbricht.
-  useEffect(()=>{
-    const flush = () => {
-      if(pendingSaveRef.current) {
-        if(saveTimerRef.current) clearTimeout(saveTimerRef.current);
-        doSaveLocal(pendingSaveRef.current);
-        pendingSaveRef.current = null;
-      }
-    };
-    const onVisChange = () => { if(document.visibilityState === "hidden") flush(); };
-    window.addEventListener("beforeunload", flush);
-    window.addEventListener("pagehide", flush);
-    document.addEventListener("visibilitychange", onVisChange);
-    return ()=>{
-      window.removeEventListener("beforeunload", flush);
-      window.removeEventListener("pagehide", flush);
-      document.removeEventListener("visibilitychange", onVisChange);
-    };
-  }, []);
+  // Save-Effekt: Auto-Save in IndexedDB mit Debounce + Flush bei App-Schließen.
+  // Logik ausgelagert nach hooks/useLocalSaveDebounce.js (Verhalten unverändert:
+  // 300 ms Debounce, ein Stringify/Schreibslot, jsub_-Strip, csvRules-Backup,
+  // Fehler sichtbar). saveToCloud/saveConfig bleiben hier (CF-spezifisch).
+  useLocalSaveDebounce({
+    lsKey: LS_KEY,
+    state: {cats, groups, txs, accounts, yearData, col3Name, quickBtns, quickColors, csvRules, budgets, customIcons, startBalances},
+    loading: syncStatus==="loading",
+    setSyncStatus, setSyncError, setIsDirty,
+  });
 
   // ── New-tx form ───────────────────────────────────────────────────────────
 
