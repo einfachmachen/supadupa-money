@@ -1,12 +1,13 @@
 // Auto-generated module (siehe app-src.jsx)
 
-import React, { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
 import { MobileHeader } from "./components/atoms/MobileHeader.jsx";
 import { Overlay } from "./components/atoms/Overlay.jsx";
 import { PBtn } from "./components/atoms/PBtn.jsx";
 import { MonthPicker } from "./components/molecules/MonthPicker.jsx";
 import { ThemeDropdown } from "./components/molecules/ThemeDropdown.jsx";
+import { AddTxModal } from "./components/organisms/AddTxModal.jsx";
 import { DataManagerDialog } from "./components/organisms/DataManagerDialog.jsx";
 import { EditPopup } from "./components/organisms/EditPopup.jsx";
 import { ExportDialog } from "./components/organisms/ExportDialog.jsx";
@@ -15,21 +16,15 @@ import { MobileKategorienModal } from "./components/organisms/MobileKategorienMo
 import { MobileVormerkenModal } from "./components/organisms/MobileVormerkenModal.jsx";
 import { MobileWiederkehrendModal } from "./components/organisms/MobileWiederkehrendModal.jsx";
 import { MonthPickerModal } from "./components/organisms/MonthPickerModal.jsx";
+import { CsvImportScreen } from "./components/screens/CsvImportScreen.jsx";
 import { DashboardScreenV2 } from "./components/screens/DashboardScreenV2.jsx";
 import { JahrScreen } from "./components/screens/JahrScreen.jsx";
 import { ManagementScreen } from "./components/screens/ManagementScreen.jsx";
+import { MatchingScreen } from "./components/screens/MatchingScreen.jsx";
 import { MonatScreen } from "./components/screens/MonatScreen.jsx";
+import { RecurringDetectionScreen } from "./components/screens/RecurringDetectionScreen.jsx";
 import { TransactionsScreen } from "./components/screens/TransactionsScreen.jsx";
-// Schwere, nur auf Nutzeraktion geöffnete Modals als eigene Lazy-Chunks —
-// halten das Initial-Bundle klein. AddTxModal zieht CsvImport+Recurring mit,
-// VormerkungHub zieht Recurring mit; Vite dedupliziert geteilte Module in
-// einen gemeinsamen async-Chunk. Render hinter <Suspense> (s.u.).
-const lazyNamed = (loader, name) => lazy(() => loader().then(m => ({ default: m[name] })));
-const AddTxModal = lazyNamed(() => import("./components/organisms/AddTxModal.jsx"), "AddTxModal");
-const CsvImportScreen = lazyNamed(() => import("./components/screens/CsvImportScreen.jsx"), "CsvImportScreen");
-const MatchingScreen = lazyNamed(() => import("./components/screens/MatchingScreen.jsx"), "MatchingScreen");
-const RecurringDetectionScreen = lazyNamed(() => import("./components/screens/RecurringDetectionScreen.jsx"), "RecurringDetectionScreen");
-const VormerkungHub = lazyNamed(() => import("./components/screens/VormerkungHub.jsx"), "VormerkungHub");
+import { VormerkungHub } from "./components/screens/VormerkungHub.jsx";
 import { AppCtx } from "./state/AppContext.js";
 import { theme as T, setActiveTheme, isLightTheme } from "./theme/activeTheme.js";
 import { PAL, gs } from "./theme/palette.js";
@@ -2986,8 +2981,7 @@ Abbrechen = ${remoteName}-Stand laden`
           onSwitchToMore={()=>{ setShowMonthPickerModal(false); setShowMobilePicker(true); }}/>
       )}
 
-      {/* ── MODALS (lazy geladen — fallback=null, da Overlays auf Klick) ── */}
-      <Suspense fallback={null}>
+      {/* ── MODALS ── */}
       {modal==="addTx"&&<AddTxModal/>}
       {showCsv&&<CsvImportScreen onClose={()=>setShowCsv(false)}
         onBack={()=>{setShowCsv(false);reopenMobilePicker("daten");}}
@@ -2997,7 +2991,6 @@ Abbrechen = ${remoteName}-Stand laden`
       {showVormHub&&<VormerkungHub onClose={()=>{setShowVormHub(false);setEditVormTx(null);}} editVorm={editVormTx} mobileMode={mobileMode}/>}
       {showRecurring&&<RecurringDetectionScreen onClose={()=>setShowRecurring(false)}/>}
       {showKategorisieren&&<RecurringDetectionScreen initialTab="kategorisieren" onClose={()=>setShowKategorisieren(false)}/>}
-      </Suspense>
       {showSettings&&(
         <div onClick={()=>setShowSettings(false)}
           style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",backdropFilter:"blur(8px)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
