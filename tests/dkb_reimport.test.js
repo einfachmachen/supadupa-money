@@ -4,12 +4,13 @@ import { parseCSV } from "../src/utils/csv.js";
 import { txFingerprint, txFingerprintNorm, normalizeDesc } from "../src/utils/tx.js";
 
 // Formatübergreifende Duplikatserkennung an ENTPERSONALISIERTEN Fixtures (im
-// Repo, daher laufen die Tests überall — kein Zugriff auf private Dateien nötig).
-// Beide Dateien sind derselbe DKB-Tagesgeld-Kontoauszug mit Fantasie-Name/IBAN:
-//   • dkb_tagesgeld.csv    – DKB-Original, 99 Buchungen (2024–2026)
-//   • finanzblick_2024.csv – Finanzblick-Export desselben Kontos, nur 2024
-// Szenario: Wer die 2024er Buchungen schon über Finanzblick importiert hat und
-// danach den DKB-Original-Export einliest, darf die 2024er NICHT doppelt anlegen.
+// Repo, daher laufen die Tests überall). Beide Dateien sind derselbe
+// DKB-Tagesgeld-Kontoauszug mit Fantasie-Name/IBAN:
+//   • dkb_tagesgeld.csv        – DKB-Original, 99 Buchungen (2024 – Mai 2026)
+//   • finanzblick_tagesgeld.csv – Finanzblick-Exporte desselben Kontos,
+//                                 2024 + 2025 + 2026 (Jan–Apr) zusammengeführt
+// Szenario: Wer die Buchungen schon über Finanzblick importiert hat und danach
+// den DKB-Original-Export einliest, darf nichts doppelt anlegen.
 const F = p => readFileSync(`tests/fixtures/${p}`, "utf-8");
 const accId = "acc-tagesgeld";
 
@@ -41,26 +42,30 @@ describe("Formatübergreifende Duplikatserkennung (DKB ↔ Finanzblick)", () => 
     expect(detectedBalances.some(a => a.date === "2026-05-21" && Math.abs(a.saldo - 8905) < 0.001)).toBe(true);
   });
 
-  it("erkennt die 2024-Überlappung als Duplikate, neuere Buchungen als neu", () => {
-    const fb  = parseCSV(F("finanzblick_2024.csv"));
+  it("erkennt 89 von 99 Buchungen als Duplikat; übrige sind nachvollziehbar neu", () => {
+    const fb  = parseCSV(F("finanzblick_tagesgeld.csv"));
     const dkb = parseCSV(F("dkb_tagesgeld.csv"));
     const known = knownFps(fb.rows);
     const resolved = resolve(dkb.rows);
     const dup = resolved.filter(isDup(known));
     const neu = resolved.filter(r => !isDup(known)(r));
 
-    // Finanzblick deckt nur 2024 ab → 35 der 39 DKB-2024-Buchungen werden als
-    // Dup erkannt (die übrigen 4 sind DKB-Zins-/Abrechnungszeilen, die
-    // Finanzblick anders formatiert). 2025/2026 ist korrekt "neu".
-    expect(dup.length).toBe(35);
-    // Alle erkannten Duplikate liegen in 2024:
-    expect(dup.every(r => r.isoDate >= "2024-01-01" && r.isoDate <= "2024-12-31")).toBe(true);
-    // Eine klar außerhalb 2024 liegende Buchung darf NICHT als Dup gelten:
+    // 89/99 als Dup erkannt. Die 10 verbleibenden "neu" sind:
+    //  • die Mai-2026-Buchung (nach dem Finanzblick-Abdeckungszeitraum)
+    //  • Belastung+Gegenbuchung-Paare, die Finanzblick zu EINER Buchung
+    //    gruppiert (±992,50 / ±1305,90 / ±200 / ±1000) → DKB hat beide einzeln
+    //  • eine echt im Finanzblick fehlende Buchung (250 € am 03.04.2025)
+    expect(dup.length).toBe(89);
+    expect(neu.length).toBe(10);
+
+    // Die echt fehlende Buchung MUSS als "neu" auftauchen (manuelle Prüfung):
+    expect(neu.some(r => r.isoDate === "2025-04-03" && Math.abs(r.amount - 250) < 0.001)).toBe(true);
+    // Die Mai-Buchung (außerhalb der Finanzblick-Abdeckung) ebenfalls:
     expect(neu.some(r => r.isoDate === "2026-05-04")).toBe(true);
   });
 
   it("wiederholter Finanzblick-Import erkennt alle bestehenden Buchungen als Dup", () => {
-    const fb = parseCSV(F("finanzblick_2024.csv"));
+    const fb = parseCSV(F("finanzblick_tagesgeld.csv"));
     const known = knownFps(fb.rows);
     const reNew = resolve(fb.rows).filter(r => !isDup(known)(r));
     expect(reNew.length).toBe(0);
