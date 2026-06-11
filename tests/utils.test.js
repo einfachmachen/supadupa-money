@@ -47,6 +47,13 @@ describe("parseCSV", () => {
     expect(Array.isArray(result.rows)).toBe(true);
   });
 
+  it("importiert auch CSVs mit ISO-Datum (vorher: 0 Buchungen, still verworfen)", () => {
+    const iso = "Datum;Buchungstext;Betrag\n2026-05-01;Edeka;-12,34\n2026-05-02;Lohn;1500,00";
+    const de  = "Datum;Buchungstext;Betrag\n01.05.2026;Edeka;-12,34\n02.05.2026;Lohn;1500,00";
+    expect(parseCSV(iso).rows.length).toBe(parseCSV(de).rows.length);
+    expect(parseCSV(iso).rows.length).toBeGreaterThan(0);
+  });
+
   it("liefert leeres rows-Array bei zu kurzer Eingabe", () => {
     const result = parseCSV("nur eine Zeile");
     expect(result.rows).toEqual([]);
