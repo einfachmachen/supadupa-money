@@ -24,6 +24,18 @@ describe("parseGermanAmount", () => {
     expect(parseGermanAmount("-12,50")).toBe(-12.5);
     expect(parseGermanAmount("0,01")).toBe(0.01);
   });
+  it("erkennt nachgestelltes Minus als negativ (DE/SAP-Format)", () => {
+    expect(parseGermanAmount("47,30-")).toBe(-47.30);
+    expect(parseGermanAmount("1.234,56-")).toBe(-1234.56);
+    expect(parseGermanAmount("47,30- EUR")).toBe(-47.30);
+    expect(parseGermanAmount("47,30-€")).toBe(-47.30);
+  });
+  it("erkennt Klammer-Negative und positive Beträge weiterhin korrekt", () => {
+    expect(parseGermanAmount("(47,30)")).toBe(-47.30);
+    expect(parseGermanAmount("100,00 EUR")).toBe(100);
+    expect(parseGermanAmount("+50,00")).toBe(50);
+    expect(parseGermanAmount("1.234,56")).toBe(1234.56); // kein falsches Minus
+  });
 });
 
 describe("parseCSV", () => {

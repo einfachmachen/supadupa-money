@@ -11,8 +11,12 @@ function parseGermanAmount(s) {
   // Negative in parentheses: "(47,30)" → -47.30
   if(norm.startsWith("(") && norm.endsWith(")"))
     return -(parseFloat(norm.slice(1,-1).replace(/[^\d,.]/g,"").replace(/\.(?=\d{3})/g,"").replace(",","."))||0);
-  // Normal sign detection (may have spaces around minus)
-  const sign = /^\s*-/.test(norm) ? -1 : 1;
+  // Vorzeichen: führendes ODER NACHGESTELLTES Minus. Manche deutsche Bank-/SAP-
+  // Exporte schreiben Negativbeträge als "47,30-" (Minus hinten, ggf. + Währung
+  // wie "47,30- EUR"). Ohne diese Erkennung würde eine Ausgabe als Einnahme
+  // verbucht (Vorzeichen gekippt).
+  const core = norm.replace(/\s*(?:€|eur)\s*$/i, "").trim(); // nachgestellte Währung weg
+  const sign = (/^-/.test(core) || /-$/.test(core)) ? -1 : 1;
   const clean = norm.replace(/[^\d,.]/g,"").replace(/\.(?=\d{3})/g,"").replace(",",".");
   return sign * (parseFloat(clean)||0);
 }
