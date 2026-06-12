@@ -27,6 +27,7 @@ import { TransactionsScreen } from "./components/screens/TransactionsScreen.jsx"
 import { VormerkungHub } from "./components/screens/VormerkungHub.jsx";
 import { AppCtx } from "./state/AppContext.js";
 import { theme as T, setActiveTheme, isLightTheme } from "./theme/activeTheme.js";
+import { readableOn } from "./theme/amtPill.js";
 import { PAL, gs } from "./theme/palette.js";
 import { getTheme } from "./theme/themes.js";
 import { BASE_ROWS, CUR_YEAR, INIT_ACCOUNTS, INIT_CATS } from "./utils/constants.js";
@@ -2713,14 +2714,18 @@ Abbrechen = ${remoteName}-Stand laden`
           // eigene Haupt-Akzentfarbe (T.blue). Brutalist/Terminal behalten ihren
           // eigenständigen Look (schwarz bzw. grün).
           const useLime = T.themeName==="dark" || T.themeName==="darkhell" || T.themeName==="hellgrau";
-          const bg = isBrutalist ? "#000"
-                   : isTerminal ? "rgba(0,255,65,0.12)"
-                   : useLime ? "linear-gradient(135deg,#9CC800,#AADD00)"
-                   : `linear-gradient(135deg,${T.blue},${T.blue}BB)`;
-          const fg = isBrutalist ? "#FFEC3E"
-                   : isTerminal ? T.pos
-                   : useLime ? "#1A1E00"          // dunkles Oliv — lesbar auf hellem Lime
-                   : T.on_accent;                  // Kontrasttext zur jeweiligen Akzentfarbe
+          // Flache Themes: CSS entfernt box-shadow+border-radius → Form muss
+          // über die Fläche + einen Kontrastrahmen sichtbar bleiben.
+          const isFlat = isTerminal || isBrutalist || T.themeName==="clean" || T.themeName==="swiss";
+          // Akzentfarbe = Farbe der Symbole in der Bottom-Bar dieses Themes
+          // (Terminal nutzt Grün, alle anderen die Hauptakzentfarbe T.blue).
+          const accent = isTerminal ? T.pos : T.blue;
+          const bg = useLime ? "linear-gradient(135deg,#9CC800,#AADD00)"
+                   : isBrutalist ? "#000"                       // brutalistischer Look
+                   : accent;                                     // solide Akzentfarbe (wie die Icons)
+          const fg = useLime ? "#1A1E00"                         // dunkles Oliv auf hellem Lime
+                   : isBrutalist ? "#FFEC3E"
+                   : readableOn(accent, accent);                 // hell/dunkel je nach Akzenthelligkeit
 
           return (
             <div key={key} style={{flex:"0 0 auto",display:"flex",alignItems:"center",
@@ -2734,9 +2739,12 @@ Abbrechen = ${remoteName}-Stand laden`
                 onPointerCancel={onPointerCancel}
                 style={{
                   width:SIZE, height:SIZE, borderRadius:"50%",
-                  border: isBrutalist ? `3px solid #FFEC3E` : `3px solid ${T.surf}`,
+                  // Flache Themes: Kontrastrahmen (in Textfarbe) definiert die
+                  // Form, da der Schatten per CSS entfernt wird. Sonst dezenter
+                  // Rahmen in Nav-Farbe + Schatten wie gehabt.
+                  border: isFlat ? `2px solid ${fg}` : `3px solid ${T.surf}`,
                   background: bg,
-                  boxShadow: isBrutalist ? "4px 4px 0 #FFEC3E" : "0 -2px 14px rgba(0,0,0,0.4)",
+                  boxShadow: isFlat ? "none" : "0 -2px 14px rgba(0,0,0,0.4)",
                   display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
                   position:"relative",
                   transform: restingTransform,
