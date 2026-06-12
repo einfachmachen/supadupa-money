@@ -2498,8 +2498,8 @@ Abbrechen = ${remoteName}-Stand laden`
           // - Single-Tap (klein)      → nichts (hält den Doppel-Tap zuverlässig)
           // - Single-Tap (arretiert)  → Mehr-Ansicht (nach Ablauf des Doppel-Tap-Fensters)
           // - Swipe-L/R (arretiert)   → stepMonth
-          // - Swipe-Down (arretiert)  → MonthPicker
-          // - Swipe-Up (arretiert)    → MobileActionPicker (Mehr)
+          // - Swipe-Up (arretiert)    → Monatsauswahl öffnen/schließen (Toggle)
+          // - Swipe-Down (arretiert)  → nichts
           // - Hold horizontal (arretiert) → jumpToTxEdge (first/last)
 
           // Hilfsfunktion: Hold-Timer setzen, wenn Pointer in horizontale Richtung gedraggt
@@ -2561,8 +2561,8 @@ Abbrechen = ${remoteName}-Stand laden`
               ref.moved = true;
             }
             // ── START-ZUSTAND (klein): Swipen bewirkt visuell/aktionsseitig nichts.
-            //    Die Vergrößerung läuft jetzt über einen Doppel-Tap (siehe onPointerUp);
-            //    erst aus dem vergrößerten Zustand öffnet ein Swipe-Up die Mehr-Ansicht. ──
+            //    Aktionen laufen über Doppel-Tap (siehe onPointerUp); Wische
+            //    (Monat, Monatsauswahl) wirken erst im vergrößerten Zustand. ──
             if(!plusArretiert) {
               clearHoldTimer(ref);
               return;
@@ -2670,20 +2670,8 @@ Abbrechen = ${remoteName}-Stand laden`
             }
             if(axis === "y" && Math.abs(dy) > DRAG_THRESHOLD) {
               ref.consumed = true;
-              // TOGGLE-LOGIK Vertikal:
-              if(dy < 0) {
-                // Swipe-Up
-                if(showMobilePicker)          setShowMobilePicker(false);                                     // Mehr offen → schließen
-                else if(showMonthPickerModal) { setShowMonthPickerModal(false); doPlus(); }                  // MonthPicker offen → wechseln zu Mehr
-                else if(!plusArretiert)       setPlusArretiert(true);                                         // klein → nur arretieren
-                else                          doPlus();                                                       // arretiert → Mehr auf
-              } else {
-                // Swipe-Down
-                if(showMonthPickerModal)      setShowMonthPickerModal(false);                                 // MonthPicker offen → schließen
-                else if(showMobilePicker)     { setShowMobilePicker(false); setShowMonthPickerModal(true); } // Mehr offen → wechseln zu MonthPicker
-                else if(plusArretiert)        setShowMonthPickerModal(true);                                  // arretiert → MonthPicker auf
-                // klein + Swipe-Down → nichts
-              }
+              // Swipe-Up → Monatsauswahl öffnen/schließen (Toggle). Swipe-Down → nichts.
+              if(dy < 0) setShowMonthPickerModal(v => !v);
               return;
             }
             if(axis === "x" && Math.abs(dx) > DRAG_THRESHOLD) {
