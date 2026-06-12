@@ -2490,10 +2490,13 @@ Abbrechen = ${remoteName}-Stand laden`
             : "translate(0px, -14px) scale(1)";
 
           // GESTEN:
+          // - Double-Tap = IMMER eine Ebene ZURÜCK:
+          //     Mehr/Monatsauswahl offen → schließen
+          //     groß → Dashboard + verkleinern + aktuelles Datum
+          //     Unteransicht (klein) → Dashboard
+          //     Dashboard + klein (Startpunkt) → vergrößern (Zugang zu Mehr)
           // - Single-Tap (klein)      → nichts (hält den Doppel-Tap zuverlässig)
-          // - Double-Tap (klein)      → vergrößern/arretieren (Position hoch + 1,5×)
           // - Single-Tap (arretiert)  → Mehr-Ansicht (nach Ablauf des Doppel-Tap-Fensters)
-          // - Double-Tap (arretiert)  → zum Dashboard, Button verkleinern, aktuelles Datum
           // - Swipe-L/R (arretiert)   → stepMonth
           // - Swipe-Down (arretiert)  → MonthPicker
           // - Swipe-Up (arretiert)    → MobileActionPicker (Mehr)
@@ -2612,9 +2615,11 @@ Abbrechen = ${remoteName}-Stand laden`
             clearHoldTimer(ref);
             const dx = ref.dx, dy = ref.dy;
             const dt = Date.now() - ref.t;
-            // ── START-ZUSTAND (klein): NUR der Doppel-Tap wirkt (→ vergrößern).
-            //    Einfacher Tap und Wische bewirken bewusst nichts, damit der
-            //    Doppel-Tap zuverlässig erkannt wird. ──
+            // ── START-ZUSTAND (klein): NUR der Doppel-Tap wirkt. Er geht eine
+            //    Ebene ZURÜCK (Mehr/Monatsauswahl schließen, Unteransicht →
+            //    Dashboard). Ist man bereits auf dem Dashboard (Startpunkt),
+            //    vergrößert der Doppel-Tap den Button (Zugang zu Mehr). Einfacher
+            //    Tap und Wische bewirken nichts (hält den Doppel-Tap zuverlässig). ──
             if(!plusArretiert) {
               if(e.currentTarget) {
                 e.currentTarget.style.transition = "transform 0.2s cubic-bezier(.34,1.4,.64,1)";
@@ -2622,19 +2627,24 @@ Abbrechen = ${remoteName}-Stand laden`
               }
               try { e.currentTarget.releasePointerCapture(e.pointerId); } catch(err) {}
               if(ref.moved) return;   // Wisch im Klein-Zustand → nichts
-              // Tap: Doppel-Tap → vergrößern/arretieren; einzelner Tap → nur merken.
               if(dt < 700) {
                 const now = Date.now();
                 const lt = masterLastTapRef.current;
                 if(lt.t && (now - lt.t) < DOUBLE_TAP_MS) {
                   masterLastTapRef.current = {zone:null, t:0, timer:null};
                   try { if(navigator.vibrate) navigator.vibrate(15); } catch(_) {}
-                  // Smoothe, federnde Vergrößerung (länger + sanfter als der Standard-Snap).
-                  if(e.currentTarget) {
-                    e.currentTarget.style.transition = "transform 0.42s cubic-bezier(0.34, 1.45, 0.5, 1)";
-                    e.currentTarget.style.transform = "translate(0px, -94px) scale(1.5)";
+                  const onDashboard = (mainTab==="erfassen" && subTab==="dashboard");
+                  if(showMobilePicker)          setShowMobilePicker(false);                          // Mehr offen → schließen
+                  else if(showMonthPickerModal) setShowMonthPickerModal(false);                      // Monatsauswahl → schließen
+                  else if(!onDashboard)         { setMainTab("erfassen"); setSubTab("dashboard"); }  // Unteransicht → Dashboard
+                  else {
+                    // Dashboard + klein = Startpunkt → vergrößern (Zugang zu Mehr)
+                    if(e.currentTarget) {
+                      e.currentTarget.style.transition = "transform 0.42s cubic-bezier(0.34, 1.45, 0.5, 1)";
+                      e.currentTarget.style.transform = "translate(0px, -94px) scale(1.5)";
+                    }
+                    setPlusArretiert(true);
                   }
-                  setPlusArretiert(true);
                 } else {
                   masterLastTapRef.current = {zone:"center", t:now, timer:null};
                 }
@@ -2694,10 +2704,15 @@ Abbrechen = ${remoteName}-Stand laden`
                 if(lt.timer) clearTimeout(lt.timer);   // wartenden Mehr-Tap verwerfen
                 masterLastTapRef.current = {zone:null, t:0, timer:null};
                 try { if(navigator.vibrate) navigator.vibrate(15); } catch(_) {}
-                setShowMobilePicker(false); setShowMonthPickerModal(false);
-                setMainTab("erfassen"); setSubTab("dashboard");   // zum Dashboard
-                jumpToToday();                                    // aktuelles Datum
-                setPlusArretiert(false);                          // Button wieder klein
+                // Doppel-Tap = eine Ebene zurück: erst Overlays schließen,
+                // sonst zum Dashboard, Button wieder klein, aktuelles Datum.
+                if(showMobilePicker)          setShowMobilePicker(false);
+                else if(showMonthPickerModal) setShowMonthPickerModal(false);
+                else {
+                  setMainTab("erfassen"); setSubTab("dashboard");
+                  jumpToToday();
+                  setPlusArretiert(false);
+                }
               } else {
                 // Erster Tap: Mehr öffnen, sobald das Doppel-Tap-Fenster abgelaufen ist
                 const timer = setTimeout(()=>{
