@@ -45,9 +45,11 @@ function SaldoHeroV2({
     ? getKumulierterSaldo(year, month)
     : getKumulierterSaldo(year, month, selAcc);
   const fmtMoney = v => v==null||v===undefined ? "—" : fmt(v);
-  // Farbsystem wie im klassischen Hero: nicht nur grün/rot, sondern nach
-  // Schwellwerten <0 neg · ≤500 warn · ≤1000 gold · sonst pos.
-  const heroColor = v => v==null?T.txt :v<0?T.cond_neg:v<=500?T.cond_warn:v<=1000?T.cond_gold:T.cond_pos;
+  // Aktueller Kontostand (großer Wert): an die Akzentfarbe angeglichen.
+  // Negativ bleibt rot — ein Minus-Saldo soll nicht in der Markenfarbe
+  // "unsichtbar" werden.
+  const heroColor = v => v==null?T.txt : v<0?T.cond_neg : T.blue;
+  // Mitte/Ende-Prognose behalten die Schwellwert-Ampel (<0 neg · ≤500 warn · ≤1000 gold · sonst pos).
   const saldoCol  = v => v==null?T.txt2:v<0?T.cond_neg:v<=500?T.cond_warn:v<=1000?T.cond_gold:T.cond_pos;
 
   // Mini-Zelle für Detail-Werte (Out|In Paar)
