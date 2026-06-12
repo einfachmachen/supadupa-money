@@ -2463,8 +2463,6 @@ Abbrechen = ${remoteName}-Stand laden`
 
         // ── Master-Button: Inline-Renderfunktion (keine Komponente, um Hook-Identität zu wahren) ──
         const renderMasterButton = (key) => {
-          const isBrutalist = T.themeName==="brutalist";
-          const isTerminal = T.themeName==="terminal";
           const monthNames = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
           const SIZE = 78;
           // Heutiger Tag — nur wenn der angezeigte Monat der aktuelle ist (oben im + Button)
@@ -2709,23 +2707,9 @@ Abbrechen = ${remoteName}-Stand laden`
             }
           };
 
-          // Theme-Farben
-          // Lime-Akzent NUR in diesen drei Themes; alle anderen nehmen ihre
-          // eigene Haupt-Akzentfarbe (T.blue). Brutalist/Terminal behalten ihren
-          // eigenständigen Look (schwarz bzw. grün).
-          const useLime = T.themeName==="dark" || T.themeName==="darkhell" || T.themeName==="hellgrau";
-          // Flache Themes: CSS entfernt box-shadow+border-radius → Form muss
-          // über die Fläche + einen Kontrastrahmen sichtbar bleiben.
-          const isFlat = isTerminal || isBrutalist || T.themeName==="clean" || T.themeName==="swiss";
-          // Akzentfarbe = Farbe der Symbole in der Bottom-Bar dieses Themes
-          // (Terminal nutzt Grün, alle anderen die Hauptakzentfarbe T.blue).
-          const accent = isTerminal ? T.pos : T.blue;
-          const bg = useLime ? "linear-gradient(135deg,#9CC800,#AADD00)"
-                   : isBrutalist ? "#000"                       // brutalistischer Look
-                   : accent;                                     // solide Akzentfarbe (wie die Icons)
-          const fg = useLime ? "#1A1E00"                         // dunkles Oliv auf hellem Lime
-                   : isBrutalist ? "#FFEC3E"
-                   : readableOn(accent, accent);                 // hell/dunkel je nach Akzenthelligkeit
+          // Farb-/Form-Logik zentral (siehe plusBtnColors) — identisch zur
+          // Override-Variante, damit der Button überall gleich aussieht.
+          const { isFlat, bg, fg } = plusBtnColors(T);
 
           return (
             <div key={key} style={{flex:"0 0 auto",display:"flex",alignItems:"center",
@@ -3032,6 +3016,29 @@ Abbrechen = ${remoteName}-Stand laden`
 
 // ── Master-Button-Override-Slot ────────────────────────────────────────
 // Belegt exakt denselben Platz im Bottom-Nav-Flex wie der reguläre
+// Gemeinsame Farb-/Form-Logik des + Buttons — von renderMasterButton UND
+// MasterOverrideSlot genutzt, damit beide IMMER identisch aussehen (früher
+// dupliziert → Override-Variante war abweichend transparent/unlesbar).
+//   • Fläche = Akzentfarbe der Bottom-Bar-Symbole (Terminal=pos-Grün, sonst T.blue)
+//   • dark/darkhell/hellgrau behalten Lime
+//   • Textfarbe per Kontrast hell/dunkel
+//   • Flache Themes (clean/swiss/terminal/brutalist): Kontrastrahmen statt
+//     Schatten (CSS entfernt dort box-shadow)
+function plusBtnColors(T) {
+  const isTerminal  = T.themeName==="terminal";
+  const isBrutalist = T.themeName==="brutalist";
+  const useLime = T.themeName==="dark" || T.themeName==="darkhell" || T.themeName==="hellgrau";
+  const isFlat  = isTerminal || isBrutalist || T.themeName==="clean" || T.themeName==="swiss";
+  const accent  = isTerminal ? T.pos : T.blue;
+  const bg = useLime ? "linear-gradient(135deg,#9CC800,#AADD00)"
+           : isBrutalist ? "#000"
+           : accent;
+  const fg = useLime ? "#1A1E00"
+           : isBrutalist ? "#FFEC3E"
+           : readableOn(accent, accent);
+  return { isFlat, bg, fg, accent };
+}
+
 // „Mai 2026 / WISCHEN"-Knopf (SIZE/Transform/Wrapper identisch). Während
 // ein Mobile-Wizard aktiv ist, ersetzt diese Variante den Inhalt:
 //   Tipp     → override.onConfirm()
@@ -3117,6 +3124,7 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
   // Jedes Wort kommt auf eine eigene Zeile (max 4). „→" wird an die
   // vorherige Zeile angehängt. Font-Size schrumpft, je länger das
   // längste Segment, damit nichts seitlich überläuft.
+  const _pbc = plusBtnColors(T);
   const label = override.label || "OK";
   let lines;
   if(/→/.test(label)) {
@@ -3143,12 +3151,11 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
         disabled={override.disabled}
         style={{
           width:SIZE, height:SIZE, borderRadius:"50%",
-          border:`3px solid ${T.surf}`,
-          background: override.disabled
-            ? "rgba(255,255,255,0.1)"
-            : "linear-gradient(135deg,#9CC800,#AADD00)",
-          color: override.disabled ? T.txt2 : "#000",
-          boxShadow:"0 -2px 14px rgba(0,0,0,0.4)",
+          // identische Farb-/Form-Logik wie der reguläre + Button
+          border: _pbc.isFlat ? `2px solid ${override.disabled ? T.txt2 : _pbc.fg}` : `3px solid ${T.surf}`,
+          background: override.disabled ? (T.disabled || "rgba(128,128,128,0.30)") : _pbc.bg,
+          color: override.disabled ? T.txt2 : _pbc.fg,
+          boxShadow: _pbc.isFlat ? "none" : "0 -2px 14px rgba(0,0,0,0.4)",
           display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
           position:"relative",
           transform: restingTransform,
