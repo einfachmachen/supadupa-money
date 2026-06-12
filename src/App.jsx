@@ -2488,14 +2488,14 @@ Abbrechen = ${remoteName}-Stand laden`
             ? "translate(0px, -94px) scale(1.5)"
             : "translate(0px, -14px) scale(1)";
 
-          // GESTEN-NEUDESIGN:
-          // - Single-Tap              → nichts (nur visuelles Feedback)
+          // GESTEN:
+          // - Single-Tap (klein)      → nichts (hält den Doppel-Tap zuverlässig)
           // - Double-Tap (klein)      → vergrößern/arretieren (Position hoch + 1,5×)
+          // - Single-Tap (arretiert)  → Mehr-Ansicht (nach Ablauf des Doppel-Tap-Fensters)
           // - Double-Tap (arretiert)  → jumpToToday + zurück in die Bottom-Bar
-          // - Swipe (klein)           → nichts (Vergrößerung läuft über Doppel-Tap)
+          // - Swipe-L/R (klein+arretiert) → stepMonth
+          // - Swipe-Down (klein+arretiert) → MonthPicker
           // - Swipe-Up (arretiert)    → MobileActionPicker (Mehr)
-          // - Swipe-Down (arretiert)  → MonthPicker
-          // - Swipe-L/R (arretiert)   → stepMonth
           // - Hold horizontal (arretiert) → jumpToTxEdge (first/last)
 
           // Hilfsfunktion: Hold-Timer setzen, wenn Pointer in horizontale Richtung gedraggt
@@ -2611,28 +2611,37 @@ Abbrechen = ${remoteName}-Stand laden`
             clearHoldTimer(ref);
             const dx = ref.dx, dy = ref.dy;
             const dt = Date.now() - ref.t;
-            // ── START-ZUSTAND (klein): Doppel-Tap vergrößert/arretiert den Button
-            //    (Position hoch + 1,5×). Swipen bewirkt nichts; der Button bleibt
-            //    klein in der Bottom-Bar. Die Mehr-Ansicht öffnet sich erst per
-            //    Swipe-Up AUS dem vergrößerten Zustand. ──
+            // ── START-ZUSTAND (klein): Einfacher Tap löst BEWUSST nichts aus —
+            //    so ist der Doppel-Tap (vergrößern/arretieren) zuverlässig.
+            //    Wische: links/rechts → Monat blättern, runter → Monatsauswahl. ──
             if(!plusArretiert) {
               if(e.currentTarget) {
                 e.currentTarget.style.transition = "transform 0.2s cubic-bezier(.34,1.4,.64,1)";
                 e.currentTarget.style.transform = "translate(0px, -14px) scale(1)";
               }
               try { e.currentTarget.releasePointerCapture(e.pointerId); } catch(err) {}
-              // Wische direkt aus der Bottom-Bar: links/rechts → Monat blättern,
-              // runter → Monatsauswahl. (Hoch-Wisch entfällt — Mehr öffnet per Tap.)
               if(ref.moved) {
                 const adx = Math.abs(dx), ady = Math.abs(dy);
                 if(adx > DRAG_THRESHOLD && adx >= ady)      { dx < 0 ? stepMonth(-1) : stepMonth(1); }
                 else if(dy > DRAG_THRESHOLD && ady > adx)   { setShowMonthPickerModal(true); }
                 return;
               }
-              // Einfacher Tap → Mehr-Ansicht öffnen.
+              // Tap: Doppel-Tap → vergrößern/arretieren; einzelner Tap → nur merken.
               if(dt < 700) {
-                try { if(navigator.vibrate) navigator.vibrate(10); } catch(_) {}
-                doPlus();
+                const now = Date.now();
+                const lt = masterLastTapRef.current;
+                if(lt.t && (now - lt.t) < DOUBLE_TAP_MS) {
+                  masterLastTapRef.current = {zone:null, t:0, timer:null};
+                  try { if(navigator.vibrate) navigator.vibrate(15); } catch(_) {}
+                  // Smoothe, federnde Vergrößerung (länger + sanfter als der Standard-Snap).
+                  if(e.currentTarget) {
+                    e.currentTarget.style.transition = "transform 0.42s cubic-bezier(0.34, 1.45, 0.5, 1)";
+                    e.currentTarget.style.transform = "translate(0px, -94px) scale(1.5)";
+                  }
+                  setPlusArretiert(true);
+                } else {
+                  masterLastTapRef.current = {zone:"center", t:now, timer:null};
+                }
               }
               return;
             }
@@ -2647,6 +2656,12 @@ Abbrechen = ${remoteName}-Stand laden`
             // Falls schon durch Hold ausgelöst → nichts mehr tun
             if(wasConsumed) return;
             // Drag-Geste am Ende? Entscheidung über die GELOCKTE Achse (nicht über dx/dy-Vergleich)
+            // Wisch bricht einen evtl. wartenden Einzel-Tap (Mehr-Timer) ab.
+            const _ltPend = masterLastTapRef.current;
+            if(_ltPend.timer && ((axis==="y"&&Math.abs(dy)>DRAG_THRESHOLD)||(axis==="x"&&Math.abs(dx)>DRAG_THRESHOLD))) {
+              clearTimeout(_ltPend.timer);
+              masterLastTapRef.current = {zone:null, t:0, timer:null};
+            }
             if(axis === "y" && Math.abs(dy) > DRAG_THRESHOLD) {
               ref.consumed = true;
               // TOGGLE-LOGIK Vertikal:
@@ -2671,19 +2686,27 @@ Abbrechen = ${remoteName}-Stand laden`
               else       stepMonth(1);
               return;
             }
-            // Tap (ohne nennenswerte Bewegung): nur Doubletap erkennen
+            // Tap (ohne nennenswerte Bewegung) im GROSSEN Zustand:
+            //   Einzel-Tap  → Mehr-Ansicht (läuft über einen kurzen Timer, damit
+            //                 ein Doppel-Tap ihn noch abfangen kann)
+            //   Doppel-Tap  → jumpToToday + Button zurück in die Bottom-Bar
             if(!ref.moved && dt < 700) {
               const now = Date.now();
               const lt = masterLastTapRef.current;
               if(lt.t && (now - lt.t) < DOUBLE_TAP_MS) {
-                // Double-Tap → jumpToToday + Button zurück in Bottom-Bar wenn arretiert
+                if(lt.timer) clearTimeout(lt.timer);   // wartenden Mehr-Tap verwerfen
                 masterLastTapRef.current = {zone:null, t:0, timer:null};
                 try { if(navigator.vibrate) navigator.vibrate(15); } catch(_) {}
                 jumpToToday();
                 if(plusArretiert) setPlusArretiert(false);
               } else {
-                // Erster Tap: nur merken, keine Single-Tap-Aktion
-                masterLastTapRef.current = {zone:"center", t:now, timer:null};
+                // Erster Tap: Mehr öffnen, sobald das Doppel-Tap-Fenster abgelaufen ist
+                const timer = setTimeout(()=>{
+                  masterLastTapRef.current = {zone:null, t:0, timer:null};
+                  try { if(navigator.vibrate) navigator.vibrate(10); } catch(_) {}
+                  doPlus();
+                }, DOUBLE_TAP_MS);
+                masterLastTapRef.current = {zone:"center", t:now, timer};
               }
             }
           };
@@ -2709,6 +2732,7 @@ Abbrechen = ${remoteName}-Stand laden`
               WebkitTapHighlightColor:"transparent",position:"relative",
               width:90}}>
               <button
+                className="plus-master-btn"
                 onPointerDown={onPointerDown}
                 onPointerMove={onPointerMove}
                 onPointerUp={onPointerUp}
@@ -3136,6 +3160,7 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
       width:90,zIndex:500}}>
       <button
         ref={btnRef}
+        className="plus-master-btn"
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}

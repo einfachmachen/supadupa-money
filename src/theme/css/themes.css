@@ -82,8 +82,10 @@
     border-bottom-color: #00FF41 !important;
     outline: none !important;
   }
-  /* Alle generischen Buttons im Terminal: kein sichtbarer Rahmen */
-  .theme-terminal button {
+  /* Alle generischen Buttons im Terminal: kein sichtbarer Rahmen.
+     AUSNAHME: der zentrale + Button (.plus-master-btn) — der definiert seine
+     Fläche/Rahmen inline (Akzentfarbe) und würde sonst unsichtbar. */
+  .theme-terminal button:not(.plus-master-btn) {
     border: none !important;
     background: transparent !important;
   }
