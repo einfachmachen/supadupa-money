@@ -141,14 +141,15 @@ export default function SupaDupaMoney() {
   const [masterOverride, setMasterOverride] = useState(null);
 
   // + Button in den Einstellungen: nur Navigations-Gesten (keine Hauptaktion).
-  // Wisch ↓ = zurück zu Home, Wisch ← = zurück ins Mehr-Menü, Tipp = nichts.
+  // Doppel-Tap = abbrechen/schließen, Wisch ← = zurück ins Mehr-Menü.
   React.useEffect(() => {
     if(mainTab==="struktur" && activeStructurTab==="einstellungen") {
       setMasterOverride({
-        label: "←zurück ↓schließen",
-        onConfirm: () => {},                               // Tipp: bewusst ohne Aktion
+        label: "←zurück 2×schließen",
+        dismissOnDoubleTap: true,                          // Doppel-Tap → onDismiss; Einzel-Tap: nichts
+        onConfirm: () => {},                               // Einzel-Tap: bewusst ohne Aktion
         onBack: () => reopenMobilePicker("main"),          // Wisch ← : zurück ins Mehr-Menü
-        onDismiss: () => { setShowMobilePicker(false); setMobilePickerScreen("main"); setMainTab("erfassen"); setSubTab("dashboard"); }, // Wisch ↓ : Home (Mehr-Menü mitschließen)
+        onDismiss: () => { setShowMobilePicker(false); setMobilePickerScreen("main"); setMainTab("erfassen"); setSubTab("dashboard"); }, // schließen → Home
       });
       return () => setMasterOverride(null);
     }
@@ -2492,9 +2493,9 @@ Abbrechen = ${remoteName}-Stand laden`
           // - Single-Tap (klein)      → nichts (hält den Doppel-Tap zuverlässig)
           // - Double-Tap (klein)      → vergrößern/arretieren (Position hoch + 1,5×)
           // - Single-Tap (arretiert)  → Mehr-Ansicht (nach Ablauf des Doppel-Tap-Fensters)
-          // - Double-Tap (arretiert)  → jumpToToday + zurück in die Bottom-Bar
-          // - Swipe-L/R (klein+arretiert) → stepMonth
-          // - Swipe-Down (klein+arretiert) → MonthPicker
+          // - Double-Tap (arretiert)  → zum Dashboard, Button verkleinern, aktuelles Datum
+          // - Swipe-L/R (arretiert)   → stepMonth
+          // - Swipe-Down (arretiert)  → MonthPicker
           // - Swipe-Up (arretiert)    → MobileActionPicker (Mehr)
           // - Hold horizontal (arretiert) → jumpToTxEdge (first/last)
 
@@ -2611,21 +2612,16 @@ Abbrechen = ${remoteName}-Stand laden`
             clearHoldTimer(ref);
             const dx = ref.dx, dy = ref.dy;
             const dt = Date.now() - ref.t;
-            // ── START-ZUSTAND (klein): Einfacher Tap löst BEWUSST nichts aus —
-            //    so ist der Doppel-Tap (vergrößern/arretieren) zuverlässig.
-            //    Wische: links/rechts → Monat blättern, runter → Monatsauswahl. ──
+            // ── START-ZUSTAND (klein): NUR der Doppel-Tap wirkt (→ vergrößern).
+            //    Einfacher Tap und Wische bewirken bewusst nichts, damit der
+            //    Doppel-Tap zuverlässig erkannt wird. ──
             if(!plusArretiert) {
               if(e.currentTarget) {
                 e.currentTarget.style.transition = "transform 0.2s cubic-bezier(.34,1.4,.64,1)";
                 e.currentTarget.style.transform = "translate(0px, -14px) scale(1)";
               }
               try { e.currentTarget.releasePointerCapture(e.pointerId); } catch(err) {}
-              if(ref.moved) {
-                const adx = Math.abs(dx), ady = Math.abs(dy);
-                if(adx > DRAG_THRESHOLD && adx >= ady)      { dx < 0 ? stepMonth(-1) : stepMonth(1); }
-                else if(dy > DRAG_THRESHOLD && ady > adx)   { setShowMonthPickerModal(true); }
-                return;
-              }
+              if(ref.moved) return;   // Wisch im Klein-Zustand → nichts
               // Tap: Doppel-Tap → vergrößern/arretieren; einzelner Tap → nur merken.
               if(dt < 700) {
                 const now = Date.now();
@@ -2689,7 +2685,8 @@ Abbrechen = ${remoteName}-Stand laden`
             // Tap (ohne nennenswerte Bewegung) im GROSSEN Zustand:
             //   Einzel-Tap  → Mehr-Ansicht (läuft über einen kurzen Timer, damit
             //                 ein Doppel-Tap ihn noch abfangen kann)
-            //   Doppel-Tap  → jumpToToday + Button zurück in die Bottom-Bar
+            //   Doppel-Tap  → zurück zum Dashboard, Button wird wieder klein und
+            //                 zeigt das aktuelle Datum.
             if(!ref.moved && dt < 700) {
               const now = Date.now();
               const lt = masterLastTapRef.current;
@@ -2697,8 +2694,10 @@ Abbrechen = ${remoteName}-Stand laden`
                 if(lt.timer) clearTimeout(lt.timer);   // wartenden Mehr-Tap verwerfen
                 masterLastTapRef.current = {zone:null, t:0, timer:null};
                 try { if(navigator.vibrate) navigator.vibrate(15); } catch(_) {}
-                jumpToToday();
-                if(plusArretiert) setPlusArretiert(false);
+                setShowMobilePicker(false); setShowMonthPickerModal(false);
+                setMainTab("erfassen"); setSubTab("dashboard");   // zum Dashboard
+                jumpToToday();                                    // aktuelles Datum
+                setPlusArretiert(false);                          // Button wieder klein
               } else {
                 // Erster Tap: Mehr öffnen, sobald das Doppel-Tap-Fenster abgelaufen ist
                 const timer = setTimeout(()=>{
@@ -3066,6 +3065,8 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
   const DRAG_THRESHOLD = 30;
   const MOVE_TOLERANCE = 14;
   const VISUAL_LIMIT = 18;
+  const DOUBLE_TAP_MS = 350;
+  const tapRef = React.useRef({ t: 0 });
   const restingTransform = plusArretiert
     ? "translate(0px, -94px) scale(1.5)"
     : "translate(0px, -14px) scale(1)";
@@ -3130,8 +3131,21 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
       return;
     }
     if(!moved && !override.disabled) {
-      try { if(navigator.vibrate) navigator.vibrate(10); } catch(_) {}
-      override.onConfirm();
+      if(override.dismissOnDoubleTap) {
+        // Reiner Navigations-Override (z.B. Einstellungen): Doppel-Tap bricht ab,
+        // Einzel-Tap macht nichts (kein Confirm, daher keine Latenz nötig).
+        const now = Date.now();
+        if(tapRef.current.t && (now - tapRef.current.t) < DOUBLE_TAP_MS) {
+          tapRef.current = { t: 0 };
+          try { if(navigator.vibrate) navigator.vibrate(15); } catch(_) {}
+          override.onDismiss();
+        } else {
+          tapRef.current = { t: now };
+        }
+      } else {
+        try { if(navigator.vibrate) navigator.vibrate(10); } catch(_) {}
+        override.onConfirm();
+      }
     }
   };
   const onCancel = () => { ref.current.dragging = false; settle(); };
