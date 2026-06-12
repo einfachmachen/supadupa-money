@@ -2616,32 +2616,24 @@ Abbrechen = ${remoteName}-Stand laden`
             //    klein in der Bottom-Bar. Die Mehr-Ansicht öffnet sich erst per
             //    Swipe-Up AUS dem vergrößerten Zustand. ──
             if(!plusArretiert) {
-              if(e.currentTarget) e.currentTarget.style.transition = "transform 0.2s cubic-bezier(.34,1.4,.64,1)";
-              // Swipe (jegliche nennenswerte Bewegung) → nichts, klein bleiben.
-              if(ref.moved) {
-                if(e.currentTarget) e.currentTarget.style.transform = "translate(0px, -14px) scale(1)";
-                try { e.currentTarget.releasePointerCapture(e.pointerId); } catch(err) {}
-                return;
-              }
-              // Tap: Doppel-Tap → vergrößern/arretieren; einzelner Tap → nur merken.
-              if(dt < 700) {
-                const now = Date.now();
-                const lt = masterLastTapRef.current;
-                if(lt.t && (now - lt.t) < DOUBLE_TAP_MS) {
-                  masterLastTapRef.current = {zone:null, t:0, timer:null};
-                  try { if(navigator.vibrate) navigator.vibrate(15); } catch(_) {}
-                  // Smoothe, federnde Vergrößerung (länger + sanfter als der Standard-Snap).
-                  if(e.currentTarget) {
-                    e.currentTarget.style.transition = "transform 0.42s cubic-bezier(0.34, 1.45, 0.5, 1)";
-                    e.currentTarget.style.transform = "translate(0px, -94px) scale(1.5)";
-                  }
-                  setPlusArretiert(true);
-                } else {
-                  if(e.currentTarget) e.currentTarget.style.transform = "translate(0px, -14px) scale(1)";
-                  masterLastTapRef.current = {zone:"center", t:now, timer:null};
-                }
+              if(e.currentTarget) {
+                e.currentTarget.style.transition = "transform 0.2s cubic-bezier(.34,1.4,.64,1)";
+                e.currentTarget.style.transform = "translate(0px, -14px) scale(1)";
               }
               try { e.currentTarget.releasePointerCapture(e.pointerId); } catch(err) {}
+              // Wische direkt aus der Bottom-Bar: links/rechts → Monat blättern,
+              // runter → Monatsauswahl. (Hoch-Wisch entfällt — Mehr öffnet per Tap.)
+              if(ref.moved) {
+                const adx = Math.abs(dx), ady = Math.abs(dy);
+                if(adx > DRAG_THRESHOLD && adx >= ady)      { dx < 0 ? stepMonth(-1) : stepMonth(1); }
+                else if(dy > DRAG_THRESHOLD && ady > adx)   { setShowMonthPickerModal(true); }
+                return;
+              }
+              // Einfacher Tap → Mehr-Ansicht öffnen.
+              if(dt < 700) {
+                try { if(navigator.vibrate) navigator.vibrate(10); } catch(_) {}
+                doPlus();
+              }
               return;
             }
             const wasConsumed = ref.consumed;
@@ -2728,7 +2720,7 @@ Abbrechen = ${remoteName}-Stand laden`
                   // Rahmen in Nav-Farbe + Schatten wie gehabt.
                   border: isFlat ? `2px solid ${fg}` : `3px solid ${T.surf}`,
                   background: bg,
-                  boxShadow: isFlat ? "none" : "0 -2px 14px rgba(0,0,0,0.4)",
+                  boxShadow: "none",
                   display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
                   position:"relative",
                   transform: restingTransform,
@@ -3155,7 +3147,7 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
           border: _pbc.isFlat ? `2px solid ${override.disabled ? T.txt2 : _pbc.fg}` : `3px solid ${T.surf}`,
           background: override.disabled ? (T.disabled || "rgba(128,128,128,0.30)") : _pbc.bg,
           color: override.disabled ? T.txt2 : _pbc.fg,
-          boxShadow: _pbc.isFlat ? "none" : "0 -2px 14px rgba(0,0,0,0.4)",
+          boxShadow: "none",
           display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
           position:"relative",
           transform: restingTransform,
