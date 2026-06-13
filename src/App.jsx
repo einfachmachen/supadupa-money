@@ -2429,6 +2429,7 @@ Abbrechen = ${remoteName}-Stand laden`
       style={{background:T.bg,height:"100vh",maxHeight:"100vh",
       colorScheme:(isLightTheme())?"light":"dark",
       display:"flex",flexDirection:"column",
+      paddingTop:"env(safe-area-inset-top)",  // Inhalt unter die Notch/Statusleiste; bg füllt bis ganz oben
       fontFamily:"'SF Pro Text',-apple-system,BlinkMacSystemFont,sans-serif",
       userSelect:"none",overflow:"hidden"}}>
 
