@@ -16,6 +16,7 @@ import { MobileKategorienModal } from "./components/organisms/MobileKategorienMo
 import { MobileVormerkenModal } from "./components/organisms/MobileVormerkenModal.jsx";
 import { MobileWiederkehrendModal } from "./components/organisms/MobileWiederkehrendModal.jsx";
 import { MonthPickerModal } from "./components/organisms/MonthPickerModal.jsx";
+import { CloudSaveModal } from "./components/organisms/CloudSaveModal.jsx";
 import { CsvImportScreen } from "./components/screens/CsvImportScreen.jsx";
 import { DashboardScreenV2 } from "./components/screens/DashboardScreenV2.jsx";
 import { JahrScreen } from "./components/screens/JahrScreen.jsx";
@@ -134,6 +135,7 @@ export default function SupaDupaMoney() {
   const [showMobileBudget, setShowMobileBudget] = useState(false);
   const [showMobileKategorien, setShowMobileKategorien] = useState(false);
   const [showMonthPickerModal, setShowMonthPickerModal] = useState(false);  // für Master-Button
+  const [showCloudSave, setShowCloudSave] = useState(false);  // Cloud-Speichern-Modal (Wisch ↓)
   // Sync: wenn Modal NICHT offen ist, frozenYear/frozenMonth = year/month
   React.useEffect(()=>{
     if(!showMonthPickerModal) {
@@ -2370,7 +2372,7 @@ Abbrechen = ${remoteName}-Stand laden`
     handedness, setHandedness,
     debugFlags, setDebugFlag, setDebugFlags,
     cfActive, cfSave, cfLoad, cfStatus, setCfStatus, cfUrl, cfSecret, setCfUrl, setCfSecret,
-    syncStatus, setSyncStatus, syncError,
+    syncStatus, setSyncStatus, syncError, isDirty,
     cfSaveOnClose, setCfSaveOnClose,
     dashDrillOpen, setDashDrillOpen,
     noBorders, setNoBorders,
@@ -2390,7 +2392,7 @@ Abbrechen = ${remoteName}-Stand laden`
     reviewQueue, showSettings, showVormHub, editVormTx, showMatching,
     customIcons, themeName, hideEmptyRows, handedness, debugFlags,
     cfActive, cfStatus, cfUrl, cfSecret,
-    syncStatus, syncError, cfSaveOnClose,
+    syncStatus, syncError, isDirty, cfSaveOnClose,
     dashDrillOpen, noBorders, masterOverride,
   ]);
 
@@ -2508,7 +2510,7 @@ Abbrechen = ${remoteName}-Stand laden`
           // - Single-Tap (arretiert)  → Mehr-Ansicht (nach Ablauf des Doppel-Tap-Fensters)
           // - Swipe-L/R (arretiert)   → stepMonth
           // - Swipe-Up (arretiert)    → Monatsauswahl öffnen/schließen (Toggle)
-          // - Swipe-Down (arretiert)  → nichts
+          // - Swipe-Down (arretiert)  → Cloud-Speichern-Modal
           // - Hold horizontal (arretiert) → jumpToTxEdge (first/last)
 
           // Hilfsfunktion: Hold-Timer setzen, wenn Pointer in horizontale Richtung gedraggt
@@ -2679,8 +2681,9 @@ Abbrechen = ${remoteName}-Stand laden`
             }
             if(axis === "y" && Math.abs(dy) > DRAG_THRESHOLD) {
               ref.consumed = true;
-              // Swipe-Up → Monatsauswahl öffnen/schließen (Toggle). Swipe-Down → nichts.
+              // Swipe-Up → Monatsauswahl auf/zu (Toggle). Swipe-Down → Cloud-Speichern.
               if(dy < 0) setShowMonthPickerModal(v => !v);
+              else       setShowCloudSave(true);
               return;
             }
             if(axis === "x" && Math.abs(dx) > DRAG_THRESHOLD) {
@@ -2921,6 +2924,9 @@ Abbrechen = ${remoteName}-Stand laden`
           onClose={()=>setShowMonthPickerModal(false)}
           onSwitchToMore={()=>{ setShowMonthPickerModal(false); setShowMobilePicker(true); }}/>
       )}
+
+      {/* ── Cloud-Speichern-Modal (Master-Button Wisch ↓) ── */}
+      {showCloudSave && <CloudSaveModal onClose={()=>setShowCloudSave(false)}/>}
 
       {/* ── MODALS ── */}
       {modal==="addTx"&&<AddTxModal/>}
