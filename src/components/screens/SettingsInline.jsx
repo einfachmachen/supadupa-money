@@ -139,6 +139,7 @@ function SettingsInline() {
               return (
                 <button onClick={()=>saveConfig?.()}
                   disabled={cfStatus==="saving"}
+                  className="btn-solid"
                   style={{flex:1,padding:"10px 8px",borderRadius:9,border:"none",
                     background:cfStatus==="saving"?T.gold:T.pos,
                     color:T.on_accent,fontSize:13,fontWeight:700,
@@ -162,7 +163,7 @@ function SettingsInline() {
                 applyData(data);setCfStatus("ok");alert("Daten erfolgreich geladen!");
               }else setCfStatus("ok");
             }catch(e){setCfStatus("error");alert("Fehler: "+e.message);}
-          }} style={{width:"100%",padding:"10px 8px",borderRadius:9,marginBottom:6,
+          }} className="btn-solid" style={{width:"100%",padding:"10px 8px",borderRadius:9,marginBottom:6,
             border:`2px solid ${T.blue}`,background:`${T.blue}11`,color:T.blue,
             fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
             display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>

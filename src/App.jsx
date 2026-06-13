@@ -54,6 +54,15 @@ export default function SupaDupaMoney() {
   const [handedness, setHandedness] = useState(()=>kvStore.getItem("mbt_handedness")||"right");
   // T als reaktive Variable — alle Komponenten die T nutzen re-rendern durch Context
   setActiveTheme(themeName, { _rev: themeRev });
+  // Haupt-Hintergrundfarbe auch hinter/neben der Notch (Safe-Area, Statusleiste)
+  // setzen: body-Hintergrund + theme-color-Meta an die aktuelle Theme-bg koppeln.
+  useEffect(() => {
+    try {
+      document.body.style.background = T.bg;
+      let meta = document.querySelector('meta[name="theme-color"]');
+      if(meta) meta.setAttribute("content", T.bg);
+    } catch(e) {}
+  }, [themeName, themeRev]);
   const [showHamburger, setShowHamburger] = useState(false);
   // ── DEBUG: Performance-Toggles ──
   const [debugFlags, setDebugFlags] = useState(()=>{

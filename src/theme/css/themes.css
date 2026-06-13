@@ -83,9 +83,10 @@
     outline: none !important;
   }
   /* Alle generischen Buttons im Terminal: kein sichtbarer Rahmen.
-     AUSNAHME: der zentrale + Button (.plus-master-btn) — der definiert seine
-     Fläche/Rahmen inline (Akzentfarbe) und würde sonst unsichtbar. */
-  .theme-terminal button:not(.plus-master-btn) {
+     AUSNAHMEN: der zentrale + Button (.plus-master-btn) und solide Aktions-
+     Buttons (.btn-solid) — die definieren ihre Fläche inline (Akzentfarbe)
+     und würden sonst mit dunklem Text auf dunklem Grund unsichtbar. */
+  .theme-terminal button:not(.plus-master-btn):not(.btn-solid) {
     border: none !important;
     background: transparent !important;
   }
