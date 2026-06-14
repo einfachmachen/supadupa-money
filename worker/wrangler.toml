@@ -1,0 +1,9 @@
+name = "enable-banking-proxy"
+main = "enable-banking-proxy.js"
+compatibility_date = "2024-11-01"
+
+# Optional: Zugriff auf die eigene App-Domain(s) beschränken.
+# Leer lassen = alle Origins erlaubt (der Worker leitet ohnehin nur an
+# api.enablebanking.com weiter und speichert nichts).
+# [vars]
+# ALLOWED_ORIGINS = "https://deine-app.example,https://localhost:5173"
