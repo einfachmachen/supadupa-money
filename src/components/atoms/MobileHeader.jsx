@@ -30,8 +30,8 @@ function MobileHeader({ title, subtitle, onBack, onClose, titleColor, right }) {
   const handler = isBack ? onBack : onClose;
   return (
     <div style={{background:T.surf, borderBottom:`1px solid ${T.bd}`,
-      padding:`${H_PAD_V}px ${H_PAD_H}px`, display:"flex", alignItems:"center",
-      gap:12, flexShrink:0}}>
+      padding:`calc(${H_PAD_V}px + env(safe-area-inset-top, 0px)) ${H_PAD_H}px ${H_PAD_V}px`,
+      display:"flex", alignItems:"center", gap:12, flexShrink:0}}>
       <button onClick={handler} aria-label={isBack ? "Zurück" : "Schließen"}
         style={{background:"rgba(255,255,255,0.08)", border:"none", color:T.txt2,
           width:BTN, height:BTN, borderRadius:BTN_R, cursor:"pointer", fontSize:20,

@@ -69,7 +69,7 @@ function MobileActionPicker({onClose, onSelect, onSwitchToMonth, initialScreen="
         display:"flex",flexDirection:"column",fontFamily:"monospace"}}>
         {/* Header */}
         <div {...swipeHandlers} style={{background:"#111",borderBottom:`2px solid ${G}`,
-          padding:"10px 12px",display:"flex",alignItems:"center",gap:10,flexShrink:0,touchAction:"none"}}>
+          padding:"calc(10px + env(safe-area-inset-top, 0px)) 12px 10px",display:"flex",alignItems:"center",gap:10,flexShrink:0,touchAction:"none"}}>
           <button onClick={onClose}
             style={{background:"transparent",border:`1px solid ${G}44`,color:G,
               width:40,height:40,cursor:"pointer",fontSize:16,fontFamily:"monospace",
@@ -127,7 +127,7 @@ function MobileActionPicker({onClose, onSelect, onSwitchToMonth, initialScreen="
       <div style={{position:"fixed",inset:0,background:BY,zIndex:300,
         display:"flex",flexDirection:"column"}}>
         {/* Header */}
-        <div {...swipeHandlers} style={{background:BK,padding:"10px 12px",
+        <div {...swipeHandlers} style={{background:BK,padding:"calc(10px + env(safe-area-inset-top, 0px)) 12px 10px",
           display:"flex",alignItems:"center",gap:10,flexShrink:0,
           borderBottom:`4px solid ${BK}`,touchAction:"none"}}>
           <button onClick={onClose}
@@ -193,7 +193,7 @@ function MobileActionPicker({onClose, onSelect, onSwitchToMonth, initialScreen="
 
       {/* Header */}
       <div {...swipeHandlers} style={{background:T.surf,borderBottom:`1px solid ${T.bd}`,
-        padding:"12px 16px",display:"flex",alignItems:"center",gap:12,flexShrink:0,touchAction:"none"}}>
+        padding:"calc(12px + env(safe-area-inset-top, 0px)) 16px 12px",display:"flex",alignItems:"center",gap:12,flexShrink:0,touchAction:"none"}}>
         <button onClick={isDaten ? ()=>setScreen("main") : onClose}
           style={{background:"rgba(255,255,255,0.08)",border:"none",color:T.txt2,
             width:44,height:44,borderRadius:14,cursor:"pointer",fontSize:20,
