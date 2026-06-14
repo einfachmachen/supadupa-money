@@ -914,7 +914,7 @@ function MonatScreen() {
                             {Li(isOverspent?"alert-triangle":"target",16,accentCol)}
                           </div>
                           <div style={{flex:1,minWidth:0,marginRight:6}}>
-                            <div style={{color:isOverspent?T.neg:T.txt,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{isOverspent?"Überzogen: ":"Restbudget: "}{subName}</div>
+                            <div style={{color:isOverspent?T.neg:T.txt,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{isOverspent?"Überzogen: ":""}{subName}</div>
                             {/* Verbrauch als Punkt auf feiner Linie (gleiche Sprache wie
                                 der Dashboard-Pegel) statt Balken + Prozent-Text */}
                             <div style={{marginTop:6,position:"relative",height:8,maxWidth:140}}>
@@ -923,29 +923,13 @@ function MonatScreen() {
                                 top:1,width:6,height:6,borderRadius:"50%",background:barCol,transform:"translateX(-50%)"}}/>
                             </div>
                           </div>
-                          {/* Rechts: ruhige zweizeilige Spalte — kleines Label, Betrag in
-                              Sub-Pillen-Größe (16), Zahlen rechtsbündig untereinander. */}
+                          {/* Rechts: eine Zeile — „weg:" (genutzt) links, „Rest:" (offen) rechts. */}
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8,
-                            display:"flex",flexDirection:"column",gap:1}}>
-                            {isOverspent ? (<>
-                              <div style={{display:"flex",justifyContent:"flex-end",gap:6,alignItems:"baseline"}}>
-                                <span style={{color:T.neg,fontSize:10}}>drüber</span>
-                                <span style={{...amtStyle("neg"),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmt(Math.abs(open))}</span>
-                              </div>
-                              <div style={{display:"flex",justifyContent:"flex-end",gap:6,alignItems:"baseline"}}>
-                                <span style={{color:T.txt2,fontSize:10}}>genutzt</span>
-                                <span style={{...amtStyle("neg"),fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmtSigned(-spent)}</span>
-                              </div>
-                            </>) : (<>
-                              <div style={{display:"flex",justifyContent:"flex-end",gap:6,alignItems:"baseline"}}>
-                                <span style={{color:T.txt2,fontSize:10}}>offen</span>
-                                <span style={{...amtStyle(open>0?"gold":"txt2"),fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmtSigned(signedOpen)}</span>
-                              </div>
-                              <div style={{display:"flex",justifyContent:"flex-end",gap:6,alignItems:"baseline"}}>
-                                <span style={{color:T.txt2,fontSize:10}}>genutzt</span>
-                                <span style={{...amtStyle(spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold",spent===0?T.txt2:accentCol),fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{spent===0?"—":fmtSigned(-spent)}</span>
-                              </div>
-                            </>)}
+                            display:"flex",justifyContent:"flex-end",alignItems:"baseline",gap:6}}>
+                            <span style={{color:T.txt2,fontSize:10}}>weg:</span>
+                            <span style={{...amtStyle(spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold",spent===0?T.txt2:accentCol),fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{spent===0?"—":fmtSigned(-spent)}</span>
+                            <span style={{color:T.txt2,fontSize:10,marginLeft:8}}>Rest:</span>
+                            <span style={{...amtStyle(isOverspent?"neg":open>0?"gold":"txt2"),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmtSigned(signedOpen)}</span>
                           </div>
                         </div>
                       </div>
