@@ -23,8 +23,12 @@ function SaldoHeroV2({
   onDrillBuchIn, onDrillBuchOut, onDrillPendIn, onDrillPendOut, onDrillUncatIn, onDrillUncatOut,
   detailsOpen, setDetailsOpen,
 }) {
-  const { selAcc, setSelAcc, accounts, getKumulierterSaldo, txs, getCat, getSub } = useContext(AppCtx);
+  const { selAcc, setSelAcc, accounts, getKumulierterSaldo, txs, getCat, getSub, amtMode, setAmtMode } = useContext(AppCtx);
   const [progDrill, setProgDrill] = useState(null);
+  // Augensymbol: 0 unscharf+neutral → 1 scharf+neutral → 2 scharf+farbig → 0
+  const cycleAmt = (e) => { e.stopPropagation(); setAmtMode?.(m => (m+1)%3); };
+  const eyeIcon = amtMode===0 ? "eye-off" : "eye";
+  const eyeCol  = amtMode===2 ? (T.blue||T.txt) : T.txt2;
 
   const accLabel = selAcc===null
     ? "GESAMT"
@@ -81,7 +85,15 @@ function SaldoHeroV2({
   );
 
   return (
-    <div style={{padding:"5px 20px 6px"}}>
+    <div style={{padding:"5px 20px 6px",position:"relative"}}>
+      {/* Augensymbol: rechts oben neben dem Kontostand. 2-stufig:
+          unscharf+neutral → scharf+neutral → scharf+farbig → … */}
+      <span onClick={cycleAmt} title="Beträge ein-/ausblenden"
+        style={{position:"absolute",top:8,right:14,zIndex:2,cursor:"pointer",
+          userSelect:"none",display:"inline-flex",alignItems:"center",
+          justifyContent:"center",padding:"4px"}}>
+        {Li(eyeIcon,18,eyeCol)}
+      </span>
       {/* Zeile 1: aktueller Kontostand groß & zentriert. Tippen wechselt durch
           die Konten. Der Kontoname sitzt klein/zentriert in der MITTE/ENDE-Zeile. */}
       <div onClick={allAccIds.length>1?cycleAcc:undefined}

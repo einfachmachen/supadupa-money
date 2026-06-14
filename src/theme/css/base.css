@@ -19,6 +19,14 @@
    font-synthesis:weight erlaubt das (faux-)Fett für die single-weight Questrial;
    höhere Spezifität als der *-Selektor → gewinnt trotz beider !important. */
 .heroAmt { font-weight: 700 !important; font-synthesis: weight; }
+
+/* Betrags-Sichtbarkeit (Augensymbol). Beträge nutzen die Geldschrift
+   "Questrial" (NUM_FONT) — darüber erfassen wir sie global, ohne jede
+   Render-Stelle anzufassen.
+   .amts-blur    → alle Beträge unscharf
+   .amts-neutral → alle Beträge in neutraler Schriftfarbe (= Kategorie-Text) */
+.amts-blur [style*="Questrial"] { filter: blur(6px); transition: filter .15s; }
+.amts-neutral [style*="Questrial"] { color: var(--amt-neutral, currentColor) !important; }
     body { background:#2C3035; overflow:hidden; }
     #root { height:100vh; }
     body { overflow: hidden; }

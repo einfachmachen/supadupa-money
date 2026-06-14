@@ -136,6 +136,10 @@ export default function SupaDupaMoney() {
   const [showMobileKategorien, setShowMobileKategorien] = useState(false);
   const [showMonthPickerModal, setShowMonthPickerModal] = useState(false);  // für Master-Button
   const [showCloudSave, setShowCloudSave] = useState(false);  // Cloud-Speichern-Modal (Wisch ↓)
+  // Betrags-Sichtbarkeit (Augensymbol): 0 = unscharf + neutral, 1 = scharf +
+  // neutral, 2 = scharf + farbig (wie bisher). Startet IMMER bei 0 (alle Beträge
+  // unscharf & in Kategorie-Schriftfarbe) — bewusst nicht persistiert.
+  const [amtMode, setAmtMode] = useState(0);
   // Sync: wenn Modal NICHT offen ist, frozenYear/frozenMonth = year/month
   React.useEffect(()=>{
     if(!showMonthPickerModal) {
@@ -2375,6 +2379,7 @@ Abbrechen = ${remoteName}-Stand laden`
     syncStatus, setSyncStatus, syncError, isDirty,
     cfSaveOnClose, setCfSaveOnClose,
     dashDrillOpen, setDashDrillOpen,
+    amtMode, setAmtMode,
     noBorders, setNoBorders,
     masterOverride, setMasterOverride,
   }), [
@@ -2393,7 +2398,7 @@ Abbrechen = ${remoteName}-Stand laden`
     customIcons, themeName, hideEmptyRows, handedness, debugFlags,
     cfActive, cfStatus, cfUrl, cfSecret,
     syncStatus, syncError, isDirty, cfSaveOnClose,
-    dashDrillOpen, noBorders, masterOverride,
+    dashDrillOpen, amtMode, noBorders, masterOverride,
   ]);
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -2425,9 +2430,11 @@ Abbrechen = ${remoteName}-Stand laden`
   return (
   <AppCtx.Provider value={cx}>
     <>
-    <div className={[noBorders?"no-borders":null, themeName==="clean"?"theme-clean":null, themeName==="brutalist"?"theme-brutalist":null, themeName==="terminal"?"theme-terminal":null, themeName==="swiss"?"theme-swiss":null].filter(Boolean).join(" ")||undefined}
+    <div className={[noBorders?"no-borders":null, themeName==="clean"?"theme-clean":null, themeName==="brutalist"?"theme-brutalist":null, themeName==="terminal"?"theme-terminal":null, themeName==="swiss"?"theme-swiss":null,
+      amtMode===0?"amts-blur":null, amtMode<2?"amts-neutral":null].filter(Boolean).join(" ")||undefined}
       style={{background:T.bg,height:"100vh",maxHeight:"100vh",
       colorScheme:(isLightTheme())?"light":"dark",
+      "--amt-neutral":T.txt,  // Neutral-Schriftfarbe für Beträge (= Kategorie-Text)
       display:"flex",flexDirection:"column",
       paddingTop:"env(safe-area-inset-top)",  // Inhalt unter die Notch/Statusleiste; bg füllt bis ganz oben
       fontFamily:"'SF Pro Text',-apple-system,BlinkMacSystemFont,sans-serif",
