@@ -6,9 +6,10 @@
 // Screens (siehe MobileActionPicker / CsvImportScreen): position:fixed,
 // Header mit Zurück-Pfeil, scrollbarer Inhalt, Fuß-Navigation.
 
-import React, { useState } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { theme as T } from "../../theme/activeTheme.js";
 import { Li } from "../../utils/icons.jsx";
+import { AppCtx } from "../../state/AppContext.js";
 
 // Kleines farbiges Hinweis-Kästchen (Tipp / Warnung / Info)
 function Callout({ tone = "info", icon, children }) {
@@ -82,6 +83,10 @@ function EnableBankingGuide({ onClose, onBack }) {
           <Callout tone="info" icon="info">
             Funktioniert aktuell mit Banken in <b>EU & UK</b>. Die Einrichtung
             dauert einmalig ca. 10 Minuten.
+          </Callout>
+          <Callout tone="tip" icon="plus-circle">
+            Tipp auf den großen <b>+</b>-Knopf unten bringt dich weiter
+            (Wisch ← zurück, Wisch ↓ schließen).
           </Callout>
         </>
       ),
@@ -212,11 +217,29 @@ function EnableBankingGuide({ onClose, onBack }) {
     },
   ];
 
+  const { setMasterOverride } = useContext(AppCtx);
   const [page, setPage] = useState(0);
   const last = pages.length - 1;
   const p = pages[page];
   const goBack  = () => { if(page>0) setPage(page-1); else (onBack||onClose)?.(); };
   const goNext  = () => { if(page<last) setPage(page+1); else onClose?.(); };
+
+  // Den zentralen „+“-Knopf temporär zum Weiter-/Fertig-Knopf machen:
+  //   Tipp    → nächste Seite (bzw. „Fertig“ schließt)
+  //   Wisch ← → eine Seite zurück (auf Seite 1: zurück ins Menü)
+  //   Wisch ↓ → Hilfe schließen
+  // So bleibt die Navigation auch erreichbar, wenn die Fußleiste vom
+  // Geräterand (Safe-Area) verdeckt wird. Override pro Seite neu setzen.
+  useEffect(() => {
+    if(!setMasterOverride) return;
+    setMasterOverride({
+      label: page < last ? "Weiter" : "Fertig",
+      onConfirm: goNext,
+      onBack: page > 0 ? goBack : (onBack || null),
+      onDismiss: onClose,
+    });
+    return () => setMasterOverride(null);
+  }, [page]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div style={{position:"fixed", inset:0, background:T.bg, zIndex:320,
