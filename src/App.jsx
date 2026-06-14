@@ -136,6 +136,10 @@ export default function SupaDupaMoney() {
   const [showMobileKategorien, setShowMobileKategorien] = useState(false);
   const [showMonthPickerModal, setShowMonthPickerModal] = useState(false);  // für Master-Button
   const [showCloudSave, setShowCloudSave] = useState(false);  // Cloud-Speichern-Modal (Wisch ↓)
+  // Betrags-Sichtbarkeit (Augensymbol): 0 = unscharf + neutral, 1 = scharf +
+  // neutral, 2 = scharf + farbig (wie bisher). Startet IMMER bei 0 (alle Beträge
+  // unscharf & in Kategorie-Schriftfarbe) — bewusst nicht persistiert.
+  const [amtMode, setAmtMode] = useState(0);
   // Sync: wenn Modal NICHT offen ist, frozenYear/frozenMonth = year/month
   React.useEffect(()=>{
     if(!showMonthPickerModal) {
@@ -2375,6 +2379,7 @@ Abbrechen = ${remoteName}-Stand laden`
     syncStatus, setSyncStatus, syncError, isDirty,
     cfSaveOnClose, setCfSaveOnClose,
     dashDrillOpen, setDashDrillOpen,
+    amtMode, setAmtMode,
     noBorders, setNoBorders,
     masterOverride, setMasterOverride,
   }), [
@@ -2393,7 +2398,7 @@ Abbrechen = ${remoteName}-Stand laden`
     customIcons, themeName, hideEmptyRows, handedness, debugFlags,
     cfActive, cfStatus, cfUrl, cfSecret,
     syncStatus, syncError, isDirty, cfSaveOnClose,
-    dashDrillOpen, noBorders, masterOverride,
+    dashDrillOpen, amtMode, noBorders, masterOverride,
   ]);
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -2425,9 +2430,11 @@ Abbrechen = ${remoteName}-Stand laden`
   return (
   <AppCtx.Provider value={cx}>
     <>
-    <div className={[noBorders?"no-borders":null, themeName==="clean"?"theme-clean":null, themeName==="brutalist"?"theme-brutalist":null, themeName==="terminal"?"theme-terminal":null, themeName==="swiss"?"theme-swiss":null].filter(Boolean).join(" ")||undefined}
+    <div className={[noBorders?"no-borders":null, themeName==="clean"?"theme-clean":null, themeName==="brutalist"?"theme-brutalist":null, themeName==="terminal"?"theme-terminal":null, themeName==="swiss"?"theme-swiss":null,
+      amtMode===0?"amts-blur":null, amtMode<2?"amts-neutral":null].filter(Boolean).join(" ")||undefined}
       style={{background:T.bg,height:"100vh",maxHeight:"100vh",
       colorScheme:(isLightTheme())?"light":"dark",
+      "--amt-neutral":T.txt,  // Neutral-Schriftfarbe für Beträge (= Kategorie-Text)
       display:"flex",flexDirection:"column",
       paddingTop:"env(safe-area-inset-top)",  // Inhalt unter die Notch/Statusleiste; bg füllt bis ganz oben
       fontFamily:"'SF Pro Text',-apple-system,BlinkMacSystemFont,sans-serif",
@@ -2645,12 +2652,11 @@ Abbrechen = ${remoteName}-Stand laden`
                 if(lt.t && (now - lt.t) < DOUBLE_TAP_MS) {
                   masterLastTapRef.current = {zone:null, t:0, timer:null};
                   try { if(navigator.vibrate) navigator.vibrate(15); } catch(_) {}
-                  const onDashboard = (mainTab==="erfassen" && subTab==="dashboard");
-                  if(showMobilePicker)          setShowMobilePicker(false);                          // Mehr offen → schließen
-                  else if(showMonthPickerModal) setShowMonthPickerModal(false);                      // Monatsauswahl → schließen
-                  else if(!onDashboard)         { setMainTab("erfassen"); setSubTab("dashboard"); }  // Unteransicht → Dashboard
+                  if(showMobilePicker)          setShowMobilePicker(false);       // Mehr offen → schließen
+                  else if(showMonthPickerModal) setShowMonthPickerModal(false);   // Monatsauswahl → schließen
+                  else if(showCloudSave)        setShowCloudSave(false);          // Cloud-Modal → schließen
                   else {
-                    // Dashboard + klein = Startpunkt → vergrößern (Zugang zu Mehr)
+                    // klein → vergrößern (Zugang zu Mehr); KEIN Tab-Wechsel
                     if(e.currentTarget) {
                       e.currentTarget.style.transition = "transform 0.42s cubic-bezier(0.34, 1.45, 0.5, 1)";
                       e.currentTarget.style.transform = "translate(0px, -94px) scale(1.5)";
@@ -2682,9 +2688,17 @@ Abbrechen = ${remoteName}-Stand laden`
             }
             if(axis === "y" && Math.abs(dy) > DRAG_THRESHOLD) {
               ref.consumed = true;
-              // Swipe-Up → Monatsauswahl auf/zu (Toggle). Swipe-Down → Cloud-Speichern.
-              if(dy < 0) setShowMonthPickerModal(v => !v);
-              else       setShowCloudSave(true);
+              // Vertikal koordiniert zwischen Monatsauswahl (oben) und
+              // Cloud-Speichern (unten): immer ist höchstens eines offen.
+              if(dy < 0) {
+                // Swipe-Up → Richtung Monatsauswahl
+                if(showCloudSave) { setShowCloudSave(false); setShowMonthPickerModal(true); }
+                else              setShowMonthPickerModal(v => !v);
+              } else {
+                // Swipe-Down → Richtung Cloud-Speichern
+                if(showMonthPickerModal) { setShowMonthPickerModal(false); setShowCloudSave(true); }
+                else                     setShowCloudSave(v => !v);
+              }
               return;
             }
             if(axis === "x" && Math.abs(dx) > DRAG_THRESHOLD) {
@@ -2705,12 +2719,13 @@ Abbrechen = ${remoteName}-Stand laden`
                 if(lt.timer) clearTimeout(lt.timer);   // wartenden Mehr-Tap verwerfen
                 masterLastTapRef.current = {zone:null, t:0, timer:null};
                 try { if(navigator.vibrate) navigator.vibrate(15); } catch(_) {}
-                // Doppel-Tap = eine Ebene zurück: erst Overlays schließen,
-                // sonst zum Dashboard, Button wieder klein, aktuelles Datum.
+                // Doppel-Tap = eine Ebene zurück: erst Overlays schließen, sonst
+                // Button verkleinern + aktuelles Datum. KEIN Tab-Wechsel — man
+                // bleibt im aktuellen Tab (Home bleibt Home, Monat bleibt Monat).
                 if(showMobilePicker)          setShowMobilePicker(false);
                 else if(showMonthPickerModal) setShowMonthPickerModal(false);
+                else if(showCloudSave)        setShowCloudSave(false);
                 else {
-                  setMainTab("erfassen"); setSubTab("dashboard");
                   jumpToToday();
                   setPlusArretiert(false);
                 }
@@ -2745,7 +2760,9 @@ Abbrechen = ${remoteName}-Stand laden`
             <div key={key} style={{flex:"0 0 auto",display:"flex",alignItems:"center",
               justifyContent:"center",overflow:"visible",
               WebkitTapHighlightColor:"transparent",position:"relative",
-              width:90}}>
+              transition:"width 0.25s",
+              // Vergrößert (schwebt nach oben): Slot auf 0 → die 4 Tabs füllen die Bar.
+              width: plusArretiert ? 0 : 90}}>
               <button
                 className="plus-master-btn"
                 onPointerDown={onPointerDown}
@@ -2854,6 +2871,21 @@ Abbrechen = ${remoteName}-Stand laden`
 
         const navTab = (t) => {
           const isActive = activeNavTab===t.id;
+          // Vergrößerter + Button: die 4 Tabs verlieren ihr Label, werden deutlich
+          // größer und füllen die Bottom-Bar gleichmäßig aus.
+          if(plusArretiert) {
+            return (
+              <div key={t.id} onClick={()=>onTap(t)}
+                style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",
+                  cursor:"pointer",padding:"4px 0",minWidth:0,WebkitTapHighlightColor:"transparent"}}>
+                <div style={{width:56,height:48,borderRadius:15,
+                  display:"flex",alignItems:"center",justifyContent:"center",
+                  background:isActive?"rgba(74,159,212,0.18)":"transparent",transition:"all 0.2s"}}>
+                  {Li(t.icon,33,isActive?T.blue:T.txt2,isActive?2.6:2)}
+                </div>
+              </div>
+            );
+          }
           return (
             <div key={t.id} onClick={()=>onTap(t)}
               style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",
