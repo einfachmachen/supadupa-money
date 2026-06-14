@@ -111,7 +111,7 @@ function EnableBankingGuide({ onClose, onBack }) {
     {
       icon: "lock", color: T.gold,
       kicker: "Schritt 2",
-      title: "App & Schlüssel",
+      title: "App anlegen & Schlüssel sichern",
       lead: "Im Portal registrierst du eine „Application“. Dabei erzeugt dein Browser einen privaten Schlüssel als Datei.",
       body: (
         <>
