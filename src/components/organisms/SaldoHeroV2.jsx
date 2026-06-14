@@ -81,7 +81,7 @@ function SaldoHeroV2({
   );
 
   return (
-    <div style={{padding:"12px 20px 6px"}}>
+    <div style={{padding:"5px 20px 6px"}}>
       {/* Zeile 1: aktueller Kontostand groß & zentriert. Tippen wechselt durch
           die Konten. Der Kontoname sitzt klein/zentriert in der MITTE/ENDE-Zeile. */}
       <div onClick={allAccIds.length>1?cycleAcc:undefined}

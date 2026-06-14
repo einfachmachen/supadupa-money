@@ -662,7 +662,7 @@ function DashboardScreenV2() {
             </button>
           </div>
         )}
-        <div style={window.MBT_DEBUG?.disable_sticky?{}:{position:"sticky",top:0,zIndex:10,background:T.hero_bg}}>
+        <div style={window.MBT_DEBUG?.disable_sticky?{}:{position:"sticky",top:0,zIndex:10,background:T.bg}}>
         {(()=>{
           // ── Prognose: Vormonatssaldo + Einnahmen - Ausgaben ──
 
