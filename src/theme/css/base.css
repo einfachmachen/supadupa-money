@@ -25,7 +25,10 @@
    Render-Stelle anzufassen.
    .amts-blur    → alle Beträge unscharf
    .amts-neutral → alle Beträge in neutraler Schriftfarbe (= Kategorie-Text) */
-.amts-blur [style*="Questrial"] { filter: blur(6px); transition: filter .15s; }
+/* Blur skaliert mit der Schriftgröße (em statt px): der große Kontostand
+   (48px) wird so kräftig verwischt, kleine Beträge (16px) bleiben dezent —
+   auf hellen Themes (dunkler Text, hoher Kontrast) sonst noch lesbar. */
+.amts-blur [style*="Questrial"] { filter: blur(0.32em); transition: filter .15s; }
 .amts-neutral [style*="Questrial"] { color: var(--amt-neutral, currentColor) !important; }
     body { background:#2C3035; overflow:hidden; }
     #root { height:100vh; }
