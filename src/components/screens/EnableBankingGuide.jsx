@@ -150,8 +150,8 @@ function EnableBankingGuide({ onClose, onBack }) {
     {
       icon: "edit", color: T.blue,
       kicker: "Schritt 4",
-      title: "In SupaDupa hinterlegen",
-      lead: "Jetzt verbindest du SupaDupa mit deinem Zugang. Die Daten bleiben nur lokal auf deinem Gerät gespeichert.",
+      title: "In SupaDupa Money hinterlegen",
+      lead: "Jetzt verbindest du SupaDupa Money mit deinem Zugang. Die Daten bleiben nur lokal auf deinem Gerät gespeichert.",
       body: (
         <>
           <Steps items={[
@@ -177,7 +177,7 @@ function EnableBankingGuide({ onClose, onBack }) {
             "„Konto verbinden“ antippen.",
             "Du wirst zur Login-Seite deiner Bank geleitet.",
             "Mit TAN / Banking-App freigeben.",
-            "Zurück in SupaDupa werden deine Umsätze importiert.",
+            "Zurück in SupaDupa Money werden deine Umsätze importiert.",
           ]}/>
           <Callout tone="info" icon="info">
             Dein Passwort gibst du <b>nur bei deiner Bank</b> ein — SupaDupa
