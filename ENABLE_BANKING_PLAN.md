@@ -205,15 +205,48 @@ nutzen" zum Nachrüsten. In der App als Einstellung anbieten:
 
 ---
 
-## 7. Offene Punkte vor dem Bau
+## 7. Umsetzungsstand
 
+**Gebaut & getestet:**
+- [x] Web-Crypto-RS256-Signierung des JWT im Browser
+      (`src/utils/enableBanking.js`, `buildJwt`) — Unit-Test mit echtem
+      Signatur-Roundtrip.
+- [x] Transaktions-Mapping EB → `{ isoDate, amount, desc, fp }`
+      (`mapEnableBankingTx`) — Unit-getestet (CRDT/DBIT, Beschreibung, fp).
+- [x] Relay-Client (`createEnableBankingClient`): aspsps/auth/sessions/transactions.
+- [x] Cloudflare-Worker-Relay (`worker/enable-banking-proxy.js`) + Anleitung.
+- [x] Lokaler Credential-Speicher (`enableBankingStore.js`): privater Schlüssel
+      nur in IndexedDB, nie in der Cloud-Synchronisation.
+- [x] Connect-Screen (`EnableBankingConnectScreen.jsx`): Zugangsdaten, Bank
+      wählen, Redirect, Session, Konten-Mapping, Import mit Duplikat-Schutz.
+- [x] Redirect-Abfang beim App-Start (`main.jsx`).
+- [x] Menü-Einträge + Start-Button aus der Hilfe; Render-Smoke-Tests.
+
+**Noch offen / noch nicht live getestet:**
+- [ ] **End-to-End-Test gegen die echte API** (braucht Zugangsdaten + Relay).
+      Feld-/Endpunktnamen ggf. an die reale API-Antwort anpassen
+      (z. B. `aspsps`-Form, `sessions`-Antwortstruktur, `account uid`).
 - [ ] Exakte Free-Limits von Enable Banking verifizieren (Konten/Calls).
-- [ ] Redirect-URL-Konzept für PWA (Production-Domain + lokal) festlegen.
-- [ ] Web-Crypto-RS256-Signierung des JWT im Browser prototypisieren (`.pem` →
-      `CryptoKey` via `crypto.subtle.importKey`).
-- [ ] Minimaler Cloudflare-Worker-Relay (Weg A) als erste Version.
-- [ ] EB-Konto ↔ SupaDupa-`accountId` Mapping-UI.
-- [ ] `pending`-Status-Mapping für Vormerkungs-Matching.
+- [ ] Vorgemerkte Bank-Umsätze (PDNG) werden derzeit übersprungen — später
+      optional als Vormerkung übernehmen.
+- [ ] Kategorisierung beim Import (aktuell unkategorisiert; nachträglich über
+      „Nachkategorisieren“ möglich).
+
+## 8. Inbetriebnahme (was du tun musst)
+
+1. **Relay deployen:** im Ordner `worker/` → `wrangler deploy` (siehe
+   `worker/README.md`). URL notieren.
+2. **Enable-Banking-Zugang anlegen:** Konto + Application registrieren,
+   `.pem`-Schlüssel herunterladen, Application-ID notieren, eigene Konten
+   freischalten (siehe In-App-Hilfe „Bank verbinden – Anleitung“).
+   Als Redirect-URL die App-Adresse eintragen.
+3. **In der App:** Mehr → Daten → „Bank-Konto verbinden“ → Relay-URL,
+   Application-ID und `.pem` eintragen → „Banken laden“ → Bank wählen →
+   „Mit Bank verbinden“ → bei der Bank freigeben → Konten zuordnen →
+   „Umsätze abrufen“.
+4. **Falls API-Felder abweichen:** Die Anpassung erfolgt zentral in
+   `src/utils/enableBanking.js` (Mapping/Client) — die getestete Kern-Logik
+   bleibt gleich.
 
 ---
 
