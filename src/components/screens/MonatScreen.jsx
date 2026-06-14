@@ -923,10 +923,10 @@ function MonatScreen() {
                                 top:1,width:6,height:6,borderRadius:"50%",background:barCol,transform:"translateX(-50%)"}}/>
                             </div>
                           </div>
-                          {/* Rechts: eine Zeile — „weg:" (genutzt) links, „Rest:" (offen) rechts. */}
+                          {/* Rechts: eine Zeile — genutzter Betrag (ohne Label, selbstsprechend)
+                              links, „Rest:" (offen) rechts. */}
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8,
                             display:"flex",justifyContent:"flex-end",alignItems:"baseline",gap:6}}>
-                            <span style={{color:T.txt2,fontSize:10}}>weg:</span>
                             <span style={{...amtStyle(spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold",spent===0?T.txt2:accentCol),fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{spent===0?"—":fmtSigned(-spent)}</span>
                             <span style={{color:T.txt2,fontSize:10,marginLeft:8}}>Rest:</span>
                             <span style={{...amtStyle(isOverspent?"neg":open>0?"gold":"txt2"),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmtSigned(signedOpen)}</span>
