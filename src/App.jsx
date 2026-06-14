@@ -2719,16 +2719,19 @@ Abbrechen = ${remoteName}-Stand laden`
                 if(lt.timer) clearTimeout(lt.timer);   // wartenden Mehr-Tap verwerfen
                 masterLastTapRef.current = {zone:null, t:0, timer:null};
                 try { if(navigator.vibrate) navigator.vibrate(15); } catch(_) {}
-                // Doppel-Tap = eine Ebene zurück: erst Overlays schließen, sonst
-                // Button verkleinern + aktuelles Datum. KEIN Tab-Wechsel — man
-                // bleibt im aktuellen Tab (Home bleibt Home, Monat bleibt Monat).
+                // Doppel-Tap = eine Ebene zurück: offene Overlays schließen, sonst
+                // aktuelles Datum. KEIN Tab-Wechsel — man bleibt im aktuellen Tab
+                // (Home bleibt Home, Monat bleibt Monat). In JEDEM Fall wird der
+                // Button direkt wieder verkleinert.
                 if(showMobilePicker)          setShowMobilePicker(false);
                 else if(showMonthPickerModal) setShowMonthPickerModal(false);
                 else if(showCloudSave)        setShowCloudSave(false);
-                else {
-                  jumpToToday();
-                  setPlusArretiert(false);
+                else                          jumpToToday();
+                if(e.currentTarget) {
+                  e.currentTarget.style.transition = "transform 0.2s cubic-bezier(.34,1.4,.64,1)";
+                  e.currentTarget.style.transform = "translate(0px, -14px) scale(1)";
                 }
+                setPlusArretiert(false);
               } else {
                 // Erster Tap: Mehr öffnen, sobald das Doppel-Tap-Fenster abgelaufen ist
                 const timer = setTimeout(()=>{
@@ -2770,7 +2773,10 @@ Abbrechen = ${remoteName}-Stand laden`
                 onPointerUp={onPointerUp}
                 onPointerCancel={onPointerCancel}
                 style={{
-                  width:SIZE, height:SIZE, borderRadius:"50%",
+                  width:SIZE, height:SIZE, borderRadius:"50%", flexShrink:0,
+                  // flexShrink:0 → im vergrößerten Zustand (Wrapper-Breite 0)
+                  // darf der Button NICHT horizontal zusammengedrückt werden;
+                  // er behält seine runde/quadratische Form und schwebt zentriert.
                   // Flache Themes: Kontrastrahmen (in Textfarbe) definiert die
                   // Form, da der Schatten per CSS entfernt wird. Sonst dezenter
                   // Rahmen in Nav-Farbe + Schatten wie gehabt.
