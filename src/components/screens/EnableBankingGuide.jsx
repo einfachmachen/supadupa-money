@@ -150,8 +150,8 @@ function EnableBankingGuide({ onClose, onBack }) {
     {
       icon: "edit", color: T.blue,
       kicker: "Schritt 4",
-      title: "In SupaDupa hinterlegen",
-      lead: "Jetzt verbindest du SupaDupa mit deinem Zugang. Die Daten bleiben nur lokal auf deinem Gerät gespeichert.",
+      title: "In SupaDupa Money hinterlegen",
+      lead: "Jetzt verbindest du SupaDupa Money mit deinem Zugang. Die Daten bleiben nur lokal auf deinem Gerät gespeichert.",
       body: (
         <>
           <Steps items={[
