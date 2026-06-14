@@ -2905,19 +2905,21 @@ Abbrechen = ${remoteName}-Stand laden`
               </div>
             );
           }
+          // Kleiner Zustand: die 4 Tabs sind NUR Anzeige — sie lösen KEINE
+          // Navigation aus (kein onClick) und sind ausgegraut. Aktiv (tappbar)
+          // werden sie erst nach Doppel-Tap auf den + Button (plusArretiert).
           return (
-            <div key={t.id} onClick={()=>onTap(t)}
+            <div key={t.id}
               style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",
-                justifyContent:"center",gap:2,cursor:"pointer",padding:"6px 0px 4px",minWidth:0,
-                WebkitTapHighlightColor:"transparent"}}>
+                justifyContent:"center",gap:2,cursor:"default",padding:"6px 0px 4px",minWidth:0,
+                opacity:0.4,WebkitTapHighlightColor:"transparent"}}>
               <div style={{width:44,height:32,borderRadius:12,
                 display:"flex",alignItems:"center",justifyContent:"center",
-                background:isActive?"rgba(74,159,212,0.18)":"transparent",
-                transition:"background 0.15s"}}>
-                {Li(t.icon,22,isActive?T.blue:T.txt2,isActive?2.5:1.5)}
+                background:"transparent"}}>
+                {Li(t.icon,22,T.txt2,1.5)}
               </div>
-              <span style={{fontSize:11,fontWeight:isActive?700:500,
-                color:isActive?T.blue:T.txt2,whiteSpace:"nowrap"}}>{t.label}</span>
+              <span style={{fontSize:11,fontWeight:500,
+                color:T.txt2,whiteSpace:"nowrap"}}>{t.label}</span>
             </div>
           );
         };
