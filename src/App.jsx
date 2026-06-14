@@ -18,6 +18,7 @@ import { MobileWiederkehrendModal } from "./components/organisms/MobileWiederkeh
 import { MonthPickerModal } from "./components/organisms/MonthPickerModal.jsx";
 import { CloudSaveModal } from "./components/organisms/CloudSaveModal.jsx";
 import { CsvImportScreen } from "./components/screens/CsvImportScreen.jsx";
+import { EnableBankingGuide } from "./components/screens/EnableBankingGuide.jsx";
 import { DashboardScreenV2 } from "./components/screens/DashboardScreenV2.jsx";
 import { JahrScreen } from "./components/screens/JahrScreen.jsx";
 import { ManagementScreen } from "./components/screens/ManagementScreen.jsx";
@@ -197,6 +198,7 @@ export default function SupaDupaMoney() {
   // Bridge initialisieren
   React.useEffect(()=>{ window._customIcons = customIcons; }, [customIcons]); // globaler Review-Dialog
   const [showCsv,       setShowCsv]       = useState(false);
+  const [showBankGuide, setShowBankGuide] = useState(false);
   const [showJsonImport,setShowJsonImport] = useState(false);
   const [importText,    setImportText]     = useState("");
   const [importStatus,  setImportStatus]   = useState(null);
@@ -2959,6 +2961,7 @@ Abbrechen = ${remoteName}-Stand laden`
           else if(action==="vormerken") setShowMobileVormerken(true);
           else if(action==="matching") setShowMatching(true);
           else if(action==="csv") setShowCsv(true);
+          else if(action==="bankguide") setShowBankGuide(true);
           else if(action==="datenmgr") setShowDataMgr(true);
           else if(action==="jsonladen") setShowJsonImport(true);
           else if(action==="wiederkehrend") { setShowMobileWiederkehrendTyp("wiederkehrend"); setShowMobileWiederkehrend(true); }
@@ -2987,6 +2990,8 @@ Abbrechen = ${remoteName}-Stand laden`
       {showCsv&&<CsvImportScreen onClose={()=>setShowCsv(false)}
         onBack={()=>{setShowCsv(false);reopenMobilePicker("daten");}}
         csvRules={csvRules} setCsvRules={setCsvRules} mobileMode={mobileMode}/>}
+      {showBankGuide&&<EnableBankingGuide onClose={()=>setShowBankGuide(false)}
+        onBack={()=>{setShowBankGuide(false);reopenMobilePicker("daten");}}/>}
       {showMatching&&<MatchingScreen onClose={()=>setShowMatching(false)}
         onBack={()=>{setShowMatching(false);reopenMobilePicker("main");}}/>}
       {showVormHub&&<VormerkungHub onClose={()=>{setShowVormHub(false);setEditVormTx(null);}} editVorm={editVormTx} mobileMode={mobileMode}/>}
