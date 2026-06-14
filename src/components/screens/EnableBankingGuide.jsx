@@ -137,7 +137,7 @@ function EnableBankingGuide({ onClose, onBack }) {
         <>
           <Steps items={[
             "Im Portal deine Bank auswählen.",
-            "Die Konten freischalten, die du in SupaDupa sehen willst.",
+            "Die Konten freischalten, die du in SupaDupa Money sehen willst.",
             "Freigabe speichern.",
           ]}/>
           <Callout tone="warn" icon="alert-triangle">
@@ -180,7 +180,7 @@ function EnableBankingGuide({ onClose, onBack }) {
             "Zurück in SupaDupa Money werden deine Umsätze importiert.",
           ]}/>
           <Callout tone="info" icon="info">
-            Dein Passwort gibst du <b>nur bei deiner Bank</b> ein — SupaDupa
+            Dein Passwort gibst du <b>nur bei deiner Bank</b> ein — SupaDupa Money
             bekommt es nie zu sehen.
           </Callout>
         </>
