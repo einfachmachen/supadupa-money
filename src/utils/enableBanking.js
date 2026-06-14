@@ -1,0 +1,205 @@
+// Enable-Banking-Anbindung — Kern-Logik (ohne UI).
+//
+// Enthält:
+//   • JWT-Signierung (RS256) per Web Crypto aus dem privaten .pem-Schlüssel
+//     der Enable-Banking-Application. Der Schlüssel verlässt den Browser nie.
+//   • Mapping einer Enable-Banking-Transaktion auf die bestehende
+//     SupaDupa-Money-Zeilenform { isoDate, amount, desc, fp } — damit die
+//     vorhandene Dedup-/Kategorisierungs-Pipeline unverändert weiterläuft.
+//   • Einen dünnen Client, der alle Aufrufe über einen konfigurierbaren Relay
+//     (Cloudflare Worker, siehe worker/enable-banking-proxy.js) an
+//     api.enablebanking.com weiterreicht (löst CORS, speichert nichts).
+//
+// Reine Logik, in tests/enableBanking.test.js getestet. Live-Aufrufe brauchen
+// gültige Zugangsdaten + einen erreichbaren Relay.
+
+import { txFingerprint } from "./tx.js";
+
+// ── Base64URL-Helfer ────────────────────────────────────────────────────────
+function base64urlFromBytes(bytes) {
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function base64urlFromString(str) {
+  return base64urlFromBytes(new TextEncoder().encode(str));
+}
+
+// PEM (PKCS#8) → ArrayBuffer mit dem reinen DER-Inhalt
+function pemToPkcs8ArrayBuffer(pem) {
+  const body = String(pem || "")
+    .replace(/-----BEGIN [^-]+-----/g, "")
+    .replace(/-----END [^-]+-----/g, "")
+    .replace(/\s+/g, "");
+  const bin = atob(body);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes.buffer;
+}
+
+async function importPrivateKey(privateKeyPem) {
+  return crypto.subtle.importKey(
+    "pkcs8",
+    pemToPkcs8ArrayBuffer(privateKeyPem),
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+}
+
+// Baut ein signiertes JWT, wie es die Enable-Banking-API als Bearer-Token erwartet.
+async function buildJwt({ appId, privateKeyPem, validitySec = 3600, now = Date.now() }) {
+  if (!appId) throw new Error("Enable Banking: Application-ID fehlt");
+  if (!privateKeyPem) throw new Error("Enable Banking: privater Schlüssel fehlt");
+  const header = { typ: "JWT", alg: "RS256", kid: appId };
+  const iat = Math.floor(now / 1000);
+  const payload = {
+    iss: "enablebanking.com",
+    aud: "api.enablebanking.com",
+    iat,
+    exp: iat + validitySec,
+  };
+  const signingInput =
+    base64urlFromString(JSON.stringify(header)) + "." + base64urlFromString(JSON.stringify(payload));
+  const key = await importPrivateKey(privateKeyPem);
+  const sig = await crypto.subtle.sign(
+    { name: "RSASSA-PKCS1-v1_5" },
+    key,
+    new TextEncoder().encode(signingInput)
+  );
+  return signingInput + "." + base64urlFromBytes(new Uint8Array(sig));
+}
+
+// ── Transaktions-Mapping ────────────────────────────────────────────────────
+// Vorzeichen: credit_debit_indicator ("CRDT" = Eingang, "DBIT" = Ausgang)
+// bestimmt das Vorzeichen, analog zur Vorzeichen-Konvention im CSV-Import.
+function ebSignedAmount(tx) {
+  const rawStr = tx?.transaction_amount?.amount ?? tx?.amount ?? 0;
+  const abs = Math.abs(parseFloat(rawStr)) || 0;
+  const ind = String(tx?.credit_debit_indicator || "").toUpperCase();
+  if (ind === "DBIT") return -abs;
+  if (ind === "CRDT") return abs;
+  // Fallback: Vorzeichen so übernehmen, wie es im Betrag steht
+  return parseFloat(rawStr) || 0;
+}
+
+// Beschreibung im bestehenden " · "-Schema (Empfänger/Absender + Verwendungszweck),
+// mit Duplikat-Entfernung wie im CSV-Parser.
+function ebDescription(tx) {
+  const name =
+    tx?.creditor?.name ||
+    tx?.debtor?.name ||
+    tx?.creditor_account?.name ||
+    tx?.debtor_account?.name ||
+    "";
+  let rem = tx?.remittance_information;
+  if (Array.isArray(rem)) rem = rem.join(" ");
+  rem = String(rem || "").trim();
+  const parts = [name, rem].map((s) => String(s || "").trim()).filter(Boolean);
+  const uniq = parts.filter(
+    (p, i) =>
+      !parts
+        .slice(0, i)
+        .some(
+          (prev) =>
+            prev.toLowerCase().includes(p.toLowerCase()) ||
+            p.toLowerCase().includes(prev.toLowerCase())
+        )
+  );
+  return uniq.join(" · ").trim() || "Unbekannt";
+}
+
+// Eine Enable-Banking-Transaktion → SupaDupa-Money-Zeilenform.
+function mapEnableBankingTx(tx, accountId) {
+  const isoDate = String(tx?.booking_date || tx?.value_date || "").slice(0, 10);
+  const amount = ebSignedAmount(tx);
+  const desc = ebDescription(tx);
+  return {
+    isoDate,
+    amount,
+    desc,
+    fp: txFingerprint(isoDate, amount, desc, accountId),
+    pending: String(tx?.status || "").toUpperCase() === "PDNG",
+    _ebRef: tx?.entry_reference || tx?.transaction_id || null,
+    _resolvedAccId: accountId,
+  };
+}
+
+function mapEnableBankingTransactions(list, accountId) {
+  return (Array.isArray(list) ? list : [])
+    .map((tx) => mapEnableBankingTx(tx, accountId))
+    .filter((r) => r.isoDate && r.amount !== 0);
+}
+
+// ── Relay-Client ────────────────────────────────────────────────────────────
+// Alle Aufrufe gehen an den Relay (base), der sie an api.enablebanking.com
+// weiterleitet. Der private Schlüssel wird NUR lokal zum JWT-Signieren genutzt.
+function createEnableBankingClient({ relayUrl, appId, privateKeyPem }) {
+  const base = String(relayUrl || "").replace(/\/+$/, "");
+
+  async function req(path, { method = "GET", body } = {}) {
+    if (!base) throw new Error("Enable Banking: Relay-URL fehlt");
+    const jwt = await buildJwt({ appId, privateKeyPem });
+    const headers = { Authorization: `Bearer ${jwt}` };
+    if (body) headers["Content-Type"] = "application/json";
+    const res = await fetch(`${base}${path}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const text = await res.text();
+    if (!res.ok) throw new Error(`Enable Banking ${res.status}: ${text.slice(0, 300)}`);
+    try {
+      return text ? JSON.parse(text) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  return {
+    // Liste der verfügbaren Banken (ASPSPs) für ein Land
+    listAspsps: (country = "DE") =>
+      req(`/aspsps?country=${encodeURIComponent(country)}`),
+
+    // Autorisierung starten → liefert { url } zur Weiterleitung an die Bank
+    startAuth: ({ aspspName, country = "DE", redirectUrl, state, validUntilDays = 90, psuType = "personal" }) =>
+      req(`/auth`, {
+        method: "POST",
+        body: {
+          access: { valid_until: new Date(Date.now() + validUntilDays * 86400000).toISOString() },
+          aspsp: { name: aspspName, country },
+          state,
+          redirect_url: redirectUrl,
+          psu_type: psuType,
+        },
+      }),
+
+    // Nach dem Bank-Redirect: Session aus dem code erzeugen → { session_id, accounts }
+    createSession: (code) => req(`/sessions`, { method: "POST", body: { code } }),
+
+    getSession: (sessionId) => req(`/sessions/${encodeURIComponent(sessionId)}`),
+
+    // Umsätze eines Kontos (date_from im Format YYYY-MM-DD)
+    getTransactions: (accountUid, { dateFrom, dateTo, continuationKey } = {}) => {
+      const q = new URLSearchParams();
+      if (dateFrom) q.set("date_from", dateFrom);
+      if (dateTo) q.set("date_to", dateTo);
+      if (continuationKey) q.set("continuation_key", continuationKey);
+      const qs = q.toString();
+      return req(`/accounts/${encodeURIComponent(accountUid)}/transactions${qs ? `?${qs}` : ""}`);
+    },
+  };
+}
+
+export {
+  base64urlFromBytes,
+  base64urlFromString,
+  pemToPkcs8ArrayBuffer,
+  buildJwt,
+  ebSignedAmount,
+  ebDescription,
+  mapEnableBankingTx,
+  mapEnableBankingTransactions,
+  createEnableBankingClient,
+};
