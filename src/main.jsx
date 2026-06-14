@@ -15,6 +15,19 @@ import "./theme/css/themes.css";
 migrateLegacyLocalStorage();
 installLegacyBridge();
 
+// Enable-Banking-Redirect abfangen: Die Bank leitet nach der Freigabe mit
+// ?code=…&state=ebmoney… zurück. Code zwischenspeichern und die URL säubern,
+// damit der Connect-Screen ihn aufgreifen kann (siehe EnableBankingConnectScreen).
+try {
+  const sp = new URLSearchParams(window.location.search);
+  const code = sp.get("code");
+  const state = sp.get("state") || "";
+  if (code && state.startsWith("ebmoney")) {
+    sessionStorage.setItem("eb_pending_code", code);
+    window.history.replaceState({}, "", window.location.origin + window.location.pathname);
+  }
+} catch (e) { /* ignorieren */ }
+
 // React-Globals exponieren, damit Drittcode (Lucide-CDN) weiterhin funktioniert
 window.React = React;
 window.ReactDOM = ReactDOM;

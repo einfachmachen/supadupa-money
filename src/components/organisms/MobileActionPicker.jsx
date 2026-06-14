@@ -55,7 +55,8 @@ function MobileActionPicker({onClose, onSelect, onSwitchToMonth, initialScreen="
 
   const datenActions = [
     {id:"csv",       label:"CSV importieren", icon:"download",    color:T.pos,  sub:"Buchungen aus Banking-App"},
-    {id:"bankguide", label:"Bank verbinden",  icon:"landmark",    color:T.gold, sub:"Echte Umsätze via Enable Banking"},
+    {id:"bankguide",   label:"Bank verbinden – Anleitung", icon:"landmark", color:T.gold, sub:"Schritt für Schritt erklärt"},
+    {id:"bankconnect", label:"Bank-Konto verbinden",       icon:"link",     color:T.gold, sub:"Echte Umsätze via Enable Banking"},
     {id:"datenmgr",  label:"Daten-Manager",   icon:"database",    color:T.pos,  sub:"Export / Import / Löschen"},
     {id:"jsonladen", label:"JSON laden",       icon:"folder-open", color:T.blue, sub:"Backup-Datei einspielen"},
   ];
