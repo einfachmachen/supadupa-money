@@ -134,7 +134,8 @@ function DashboardScreenV2() {
     const [dashIconPick, setDashIconPick] = useState(null);
     const [catSortMode, setCatSortMode] = useState("custom"); // "desc" | "asc" | "custom"
     // Unterkategorie-Darstellung: "pillen" (Mitte/Ende-Pillen) | "pegel" (wie Hauptkategorie)
-    const [subViewMode, setSubViewMode] = useState("pillen");
+    // Standard: Pegel.
+    const [subViewMode, setSubViewMode] = useState("pegel");
     const [catAmountMode, setCatAmountMode] = useState("ist"); // "ist" = nur gebucht | "gesamt" = inkl. Vormerkungen/Budget
     const [dragCatId,   setDragCatId]   = useState(null);
     const [dragOver,    setDragOver]    = useState(null);
