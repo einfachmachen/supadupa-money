@@ -3144,6 +3144,8 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
   const VISUAL_LIMIT = 18;
   const DOUBLE_TAP_MS = 350;
   const tapRef = React.useRef({ t: 0 });
+  // Ausstehenden Einzel-Tipp-Timer (confirmOnTapDismissOnDouble) beim Unmount stoppen
+  React.useEffect(() => () => { if(tapRef.current.timer) clearTimeout(tapRef.current.timer); }, []);
   const restingTransform = plusArretiert
     ? "translate(0px, -94px) scale(1.5)"
     : "translate(0px, -14px) scale(1)";
@@ -3200,15 +3202,36 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
     const {dx,dy,axisLocked,moved} = r;
     settle();
     if(axisLocked === "x" && Math.abs(dx) > DRAG_THRESHOLD) {
+      if(tapRef.current.timer) { clearTimeout(tapRef.current.timer); tapRef.current = { t:0 }; }
       if(dx < 0 && override.onBack) override.onBack();
       return;
     }
     if(axisLocked === "y" && Math.abs(dy) > DRAG_THRESHOLD) {
+      if(tapRef.current.timer) { clearTimeout(tapRef.current.timer); tapRef.current = { t:0 }; }
       if(dy > 0) override.onDismiss();
       return;
     }
     if(!moved && !override.disabled) {
-      if(override.dismissOnDoubleTap) {
+      if(override.confirmOnTapDismissOnDouble) {
+        // Einzel-Tipp → onConfirm (kurz verzögert, um Doppel-Tipp zu erkennen),
+        // Doppel-Tipp → onDismiss. Ermöglicht „weiter“ UND „schließen“ am selben Knopf.
+        const DT = 260;
+        const now = Date.now();
+        if(tapRef.current.t && (now - tapRef.current.t) < DT) {
+          if(tapRef.current.timer) clearTimeout(tapRef.current.timer);
+          tapRef.current = { t: 0 };
+          try { if(navigator.vibrate) navigator.vibrate(15); } catch(_) {}
+          override.onDismiss();
+        } else {
+          if(tapRef.current.timer) clearTimeout(tapRef.current.timer);
+          const timer = setTimeout(()=>{
+            tapRef.current = { t: 0 };
+            try { if(navigator.vibrate) navigator.vibrate(10); } catch(_) {}
+            override.onConfirm();
+          }, DT);
+          tapRef.current = { t: now, timer };
+        }
+      } else if(override.dismissOnDoubleTap) {
         // Reiner Navigations-Override (z.B. Einstellungen): Doppel-Tap bricht ab,
         // Einzel-Tap macht nichts (kein Confirm, daher keine Latenz nötig).
         const now = Date.now();
