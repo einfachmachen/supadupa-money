@@ -2960,12 +2960,12 @@ Abbrechen = ${remoteName}-Stand laden`
           year={year} month={month}
           setYear={setYear} setMonth={setMonth}
           plusArretiert={plusArretiert}
-          onClose={()=>setShowMonthPickerModal(false)}
+          onClose={()=>{ setShowMonthPickerModal(false); setPlusArretiert(false); }}
           onSwitchToMore={()=>{ setShowMonthPickerModal(false); setShowMobilePicker(true); }}/>
       )}
 
       {/* ── Cloud-Speichern-Modal (Master-Button Wisch ↓) ── */}
-      {showCloudSave && <CloudSaveModal onClose={()=>setShowCloudSave(false)}/>}
+      {showCloudSave && <CloudSaveModal onClose={()=>{ setShowCloudSave(false); setPlusArretiert(false); }}/>}
 
       {/* ── MODALS ── */}
       {modal==="addTx"&&<AddTxModal/>}
