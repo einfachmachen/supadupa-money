@@ -155,6 +155,14 @@ export default function SupaDupaMoney() {
   //   { label, onConfirm, onBack|null, onDismiss, disabled? }
   const [masterOverride, setMasterOverride] = useState(null);
 
+  // Merkt sich den zuletzt aktiven Haupt-Tab (außerhalb der Struktur-/
+  // Einstellungs-Screens). Verlässt man die Einstellungen per Doppel-Tap,
+  // kehrt man hierher zurück (z.B. nach Monat), statt immer auf Home zu springen.
+  const prevTabRef = React.useRef({mainTab:"erfassen", subTab:"dashboard"});
+  React.useEffect(() => {
+    if(mainTab !== "struktur") prevTabRef.current = {mainTab, subTab};
+  }, [mainTab, subTab]);
+
   // + Button in den Einstellungen: nur Navigations-Gesten (keine Hauptaktion).
   // Doppel-Tap = abbrechen/schließen, Wisch ← = zurück ins Mehr-Menü.
   React.useEffect(() => {
@@ -164,7 +172,12 @@ export default function SupaDupaMoney() {
         dismissOnDoubleTap: true,                          // Doppel-Tap → onDismiss; Einzel-Tap: nichts
         onConfirm: () => {},                               // Einzel-Tap: bewusst ohne Aktion
         onBack: () => reopenMobilePicker("main"),          // Wisch ← : zurück ins Mehr-Menü
-        onDismiss: () => { setShowMobilePicker(false); setMobilePickerScreen("main"); setMainTab("erfassen"); setSubTab("dashboard"); }, // schließen → Home
+        onDismiss: () => {                                 // schließen → zurück zum vorherigen Tab + Button verkleinern
+          setShowMobilePicker(false); setMobilePickerScreen("main");
+          const p = prevTabRef.current;
+          setMainTab(p.mainTab); setSubTab(p.subTab);
+          setPlusArretiert(false);
+        },
       });
       return () => setMasterOverride(null);
     }
@@ -2934,7 +2947,7 @@ Abbrechen = ${remoteName}-Stand laden`
         onKategorienErweitert={()=>{setShowMobileKategorien(false);setMainTab("struktur");setActiveStructurTab("kategorien");}}/>}
       {showMobilePicker&&<MobileActionPicker
         initialScreen={mobilePickerScreen}
-        onClose={()=>{setShowMobilePicker(false);setMobilePickerScreen("main");}}
+        onClose={()=>{setShowMobilePicker(false);setMobilePickerScreen("main");setPlusArretiert(false);}}
         onSelect={(action)=>{
           setShowMobilePicker(false);
           setMobilePickerScreen("main");
@@ -3195,6 +3208,11 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
         if(tapRef.current.t && (now - tapRef.current.t) < DOUBLE_TAP_MS) {
           tapRef.current = { t: 0 };
           try { if(navigator.vibrate) navigator.vibrate(15); } catch(_) {}
+          // Button schon vor dem (evtl. teuren) Tab-Wechsel sichtbar verkleinern.
+          if(btnRef.current) {
+            btnRef.current.style.transition = "transform 0.2s cubic-bezier(.34,1.4,.64,1)";
+            btnRef.current.style.transform  = "translate(0px, -14px) scale(1)";
+          }
           override.onDismiss();
         } else {
           tapRef.current = { t: now };
