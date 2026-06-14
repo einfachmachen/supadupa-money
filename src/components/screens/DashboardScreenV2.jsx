@@ -1250,7 +1250,8 @@ function DashboardScreenV2() {
                 height:"100dvh",maxHeight:"100dvh",display:"flex",flexDirection:"column",
                 border:"none",boxShadow:"0 8px 40px rgba(0,0,0,0.7)"}}>
               {/* Header */}
-              <div style={{display:"flex",alignItems:"center",gap:8,padding:"12px 12px 8px",flexShrink:0}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,
+                padding:"calc(12px + env(safe-area-inset-top, 0px)) 12px 8px",flexShrink:0}}>
                 {/* Zurueck-Pfeil links (spaeter auch per + bedienbar) */}
                 <button onClick={()=>setDashDrill(null)}
                   style={{background:"rgba(255,255,255,0.08)",border:"none",color:T.txt,
