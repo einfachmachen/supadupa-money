@@ -1299,7 +1299,7 @@ function DashboardScreenV2() {
                   <div style={{flex:1,textAlign:"center",color:T.txt2,fontSize:12,fontWeight:700,letterSpacing:0.3}}>aktuell</div>
                 </div>
               )}
-              <div style={{flex:1,overflowY:"auto"}}>
+              <div style={{flex:1,overflowY:"auto",paddingBottom:"calc(100px + env(safe-area-inset-bottom, 0px))"}}>
                 {/* Unterkategorie-Ansicht wenn Kategorie-Drill und keine Suche */}
                 {dashDrill.cat&&!dashSearch&&(()=>{
                   const cat = dashDrill.cat;
