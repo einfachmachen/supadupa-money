@@ -100,6 +100,31 @@ function EnableBankingConnectScreen({ onClose }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
   const [result, setResult] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  // Genau die Adresse, die die App beim Verbinden als redirect_url mitschickt —
+  // diese muss im Enable-Banking-Portal als Redirect-URL hinterlegt sein.
+  const redirectUrl =
+    typeof window !== "undefined" ? window.location.origin + window.location.pathname : "";
+
+  const copyRedirect = async () => {
+    try {
+      await navigator.clipboard.writeText(redirectUrl);
+    } catch {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = redirectUrl;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      } catch {
+        /* ignorieren */
+      }
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
   const client = () => createEnableBankingClient({ relayUrl, appId, privateKeyPem: privateKey });
   const credsComplete = relayUrl && appId && privateKey;
@@ -247,6 +272,27 @@ function EnableBankingConnectScreen({ onClose }) {
             <b>Experimentell.</b> Voraussetzung: ein deployter Relay-Worker und ein
             Enable-Banking-Zugang. Schritt-für-Schritt erklärt die Hilfe „Bank verbinden“.
           </Box>
+
+          {/* Redirect-URL zum Eintragen im Enable-Banking-Portal */}
+          <div style={{ marginTop: 18 }}>
+            <label style={labelStyle}>Deine Redirect-URL (im Enable-Banking-Portal eintragen)</label>
+            <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+              <div style={{ ...inputStyle, flex: 1, fontFamily: "monospace", fontSize: 12.5,
+                wordBreak: "break-all", display: "flex", alignItems: "center" }}>
+                {redirectUrl}
+              </div>
+              <button onClick={copyRedirect}
+                style={{ flexShrink: 0, padding: "0 14px", borderRadius: 11, border: "none",
+                  background: copied ? T.pos : T.blue, color: T.on_accent, fontSize: 14, fontWeight: 800,
+                  cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>
+                {Li(copied ? "check" : "copy", 16, T.on_accent)}
+                {copied ? "Kopiert" : "Kopieren"}
+              </button>
+            </div>
+            <div style={{ color: T.txt2, fontSize: 12, marginTop: 6, lineHeight: 1.45 }}>
+              Genau diese Adresse muss im Portal als Redirect-URL hinterlegt sein (exakte Schreibweise).
+            </div>
+          </div>
 
           {/* 1. Zugangsdaten */}
           <div style={{ color: T.txt, fontSize: 16, fontWeight: 800, marginTop: 20 }}>1 · Zugangsdaten</div>
