@@ -1745,6 +1745,7 @@ function DashboardScreenV2() {
                           }}
                           placeholder="Kategorie zuweisen…"
                           filterType={tx._csvType||null}
+                          accountId={tx.accountId||"acc-giro"}
                         />
                       )}
                     </div>

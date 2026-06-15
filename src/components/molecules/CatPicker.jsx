@@ -25,13 +25,15 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
   // Split
   const [splitMode, setSplitMode]  = useState(false);
   const [splits,    setSplits]     = useState([]);
+  // Kategorien von einem anderen Konto übernehmen
+  const [copyMode, setCopyMode] = useState(false);
 
   const [curCatId, curSubId] = (value||"|").split("|");
   const curCat = cats.find(c=>c.id===curCatId);
   const curSub = curCat?.subs?.find(s=>s.id===curSubId);
   const label  = curSub?`${curCat.name} / ${curSub.name}`:curCat?curCat.name:placeholder;
 
-  const reset = () => { setStep(0); setSelGrp(null); setSelCat(null); setNewMode(null); setNewName(""); setSplitMode(false); };
+  const reset = () => { setStep(0); setSelGrp(null); setSelCat(null); setNewMode(null); setNewName(""); setSplitMode(false); setCopyMode(false); };
   const close = () => { setOpen(false); reset(); };
 
   // Wenn Konto- oder Typ-Filter sich ändern: zurück zu Step 0 (Gruppen-Liste neu zeigen)
@@ -69,8 +71,29 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
     if(!newName.trim()) return;
     const id = "grp-"+uid();
     const type = id;
-    setGroups(p=>[...p,{id,type,label:newName.trim(),icon:newIcon,accent:newColor,blockColor:"aus",behavior:newBeh}]);
+    // Wenn der Picker auf ein Konto bezogen ist (accountId-Prop), die neue
+    // Hauptkategorie diesem Konto zuordnen — sonst landet sie „ohne Konto".
+    setGroups(p=>[...p,{id,type,label:newName.trim(),icon:newIcon,accent:newColor,blockColor:"aus",behavior:newBeh,...(accountId?{accountId}:{})}]);
     setNewMode(null); setNewName(""); setStep(0);
+  };
+
+  // Alle Hauptkategorien (+ Kategorien + Unterkategorien) eines Quell-Kontos auf
+  // das aktuelle Konto klonen (neue IDs/Typen, gleiche Namen/Icons/Budget-Struktur).
+  const copyCatsFromAccount = (srcAccId) => {
+    const srcGroups = groups.filter(g => (g.accountId||null) === srcAccId);
+    const newGroups = [];
+    const newCats = [];
+    srcGroups.forEach(g => {
+      const newGid = "grp-"+uid();
+      const newType = newGid;
+      newGroups.push({...g, id:newGid, type:newType, accountId});
+      cats.filter(c => c.type === g.type).forEach(c => {
+        newCats.push({...c, id:"cat-"+uid(), type:newType,
+          subs:(c.subs||[]).map(s=>({...s, id:"sub-"+uid()}))});
+      });
+    });
+    if(newGroups.length){ setGroups(p=>[...p,...newGroups]); setCats(p=>[...p,...newCats]); }
+    setCopyMode(false);
   };
   const saveNewCatLocal = () => {
     if(!newName.trim()||!selGrp) return;
@@ -332,6 +355,30 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
                   style={{...btnS(false),border:`1px dashed ${T.bds}`,color:T.blue,marginTop:4}}>
                   <span>＋</span><span>neue Kategorie anlegen</span>
                 </button>
+                {/* Kategorien von anderem Konto übernehmen — nur im Konto-Kontext */}
+                {accountId&&(()=>{
+                  const srcAccs = accounts.filter(a=>a.id!==accountId && groups.some(g=>g.accountId===a.id));
+                  if(!srcAccs.length) return null;
+                  if(copyMode) return (
+                    <div style={{marginTop:6,borderTop:`1px solid ${T.bd}`,paddingTop:6}}>
+                      <div style={{color:T.txt2,fontSize:10,fontWeight:700,marginBottom:4}}>Von welchem Konto übernehmen?</div>
+                      {srcAccs.map(a=>(
+                        <button key={a.id} onClick={()=>copyCatsFromAccount(a.id)} style={{...btnS(false,a.color)}}>
+                          <span style={{display:"flex",alignItems:"center",justifyContent:"center",width:18,flexShrink:0}}>{Li(a.icon||"credit-card",14,a.color||T.blue)}</span>
+                          <span style={{flex:1}}>{a.name}</span>
+                        </button>
+                      ))}
+                      <button onClick={()=>setCopyMode(false)}
+                        style={{background:"none",border:"none",color:T.txt2,fontSize:10,cursor:"pointer",marginTop:2}}>abbrechen</button>
+                    </div>
+                  );
+                  return (
+                    <button onClick={()=>setCopyMode(true)}
+                      style={{...btnS(false),border:`1px dashed ${T.bds}`,color:T.txt2,marginTop:4}}>
+                      <span>⧉</span><span>Kategorien von anderem Konto übernehmen</span>
+                    </button>
+                  );
+                })()}
               </>}
 
               {/* Step 1: Kategorien + Neue Kategorie */}
