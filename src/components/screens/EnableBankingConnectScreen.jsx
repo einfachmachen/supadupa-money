@@ -269,7 +269,7 @@ function EnableBankingConnectScreen({ onClose }) {
 
       {/* Inhalt */}
       <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch",
-        padding: "16px 18px calc(24px + env(safe-area-inset-bottom, 0px))" }}>
+        padding: "16px 18px calc(81px + env(safe-area-inset-bottom, 0px))" }}>
         <div style={{ maxWidth: 480, margin: "0 auto" }}>
 
           <Box tone="warn">

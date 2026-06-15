@@ -277,7 +277,7 @@ function EnableBankingGuide({ onClose, onBack, onStart }) {
 
       {/* Inhalt */}
       <div style={{flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch",
-        padding:"18px 18px calc(18px + env(safe-area-inset-bottom, 0px))"}}>
+        padding:"18px 18px calc(81px + env(safe-area-inset-bottom, 0px))"}}>
         <div style={{maxWidth:480, margin:"0 auto"}}>
           <div style={{color:T.txt2, fontSize:15, lineHeight:1.55, marginBottom:18}}>
             {p.lead}
