@@ -165,27 +165,9 @@ export default function SupaDupaMoney() {
     if(mainTab !== "struktur") prevTabRef.current = {mainTab, subTab};
   }, [mainTab, subTab]);
 
-  // + Button in den Struktur-Screens (Einstellungen / Konten / Kategorien):
-  // nur Navigations-Gesten (keine Hauptaktion). Doppel-Tap = schließen/zurück
-  // zum vorherigen Tab, Wisch ← = zurück ins Mehr-Menü. So braucht keiner dieser
-  // Screens einen eigenen Zurück-Pfeil oder ✕.
-  React.useEffect(() => {
-    if(mainTab==="struktur") {
-      setMasterOverride({
-        label: "←zurück 2×schließen",
-        dismissOnDoubleTap: true,                          // Doppel-Tap → onDismiss; Einzel-Tap: nichts
-        onConfirm: () => {},                               // Einzel-Tap: bewusst ohne Aktion
-        onBack: () => reopenMobilePicker("main"),          // Wisch ← : zurück ins Mehr-Menü
-        onDismiss: () => {                                 // schließen → zurück zum vorherigen Tab + Button verkleinern
-          setShowMobilePicker(false); setMobilePickerScreen("main");
-          const p = prevTabRef.current;
-          setMainTab(p.mainTab); setSubTab(p.subTab);
-          setPlusArretiert(false);
-        },
-      });
-      return () => setMasterOverride(null);
-    }
-  }, [mainTab, activeStructurTab]);
+  // Hinweis: Der +-Button-Override für die Struktur-Screens wird weiter unten
+  // gesetzt (nach allen Overlay-States), damit er nur greift, wenn KEIN Overlay
+  // darüber offen ist. Siehe Effekt „struktur-Override".
   const [dashDrillOpen, setDashDrillOpen] = useState(false);
   const [reviewQueue,   setReviewQueue]  = useState(null);
   const [customIcons,   setCustomIconsRaw] = useState(()=>{
@@ -245,6 +227,38 @@ export default function SupaDupaMoney() {
       }
     } catch(e) {}
   }, []);
+
+  // ── +-Button-Override für die Struktur-Screens (Einstellungen/Konten/Kategorien) ──
+  // Navigations-Gesten statt eigenem Zurück-Pfeil/✕: Doppel-Tap = schließen
+  // (zurück zum vorherigen Tab), Wisch ← = zurück ins Mehr-Menü.
+  // WICHTIG: nur aktiv, wenn KEIN Overlay (Mehr-Menü, Daten-Manager, Dialoge …)
+  // darüber offen ist — sonst zeigte der Knopf ein veraltetes Label und sein
+  // Schließen träfe das obenliegende Overlay nicht. Overlays bringen ihre eigene
+  // Schließen-/Override-Logik mit (eigene Kopfzeile bzw. eigener Override).
+  const _structOverlayOpen =
+    showMobilePicker || showDataMgr || showMobileKategorien || showMobileVormerken ||
+    showMobileWiederkehrend || showMobileBudget || showCsv || showBankConnect ||
+    showBankGuide || showJsonImport || showMatching || showVormHub || showVormMenu ||
+    showRecurring || showKategorisieren || showMonthPickerModal || showCloudSave ||
+    showSettings || showSupaQuick || showQuickPicker || !!modal || !!exportModal ||
+    !!exportDialog || !!reviewQueue || dashDrillOpen || !!accIconPick || !!editTx;
+  React.useEffect(() => {
+    if(mainTab==="struktur" && !_structOverlayOpen) {
+      setMasterOverride({
+        label: "←zurück 2×schließen",
+        dismissOnDoubleTap: true,                          // Doppel-Tap → onDismiss; Einzel-Tap: nichts
+        onConfirm: () => {},                               // Einzel-Tap: bewusst ohne Aktion
+        onBack: () => reopenMobilePicker("main"),          // Wisch ← : zurück ins Mehr-Menü
+        onDismiss: () => {                                 // schließen → zurück zum vorherigen Tab
+          setShowMobilePicker(false); setMobilePickerScreen("main");
+          const p = prevTabRef.current;
+          setMainTab(p.mainTab); setSubTab(p.subTab);
+          setPlusArretiert(false);
+        },
+      });
+      return () => setMasterOverride(null);
+    }
+  }, [mainTab, activeStructurTab, _structOverlayOpen]);
   const [isDirty, setIsDirty] = useState(false);
   const [syncError, setSyncError] = useState("");
 
