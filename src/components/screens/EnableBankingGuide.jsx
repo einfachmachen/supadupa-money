@@ -66,7 +66,7 @@ function LinkBtn({ href, label }) {
   );
 }
 
-function EnableBankingGuide({ onClose, onBack }) {
+function EnableBankingGuide({ onClose, onBack, onStart }) {
   // ── Seiteninhalte (so viele wie nötig, je Seite kompakt) ───────────────────
   const pages = [
     {
@@ -283,6 +283,13 @@ function EnableBankingGuide({ onClose, onBack }) {
             {p.lead}
           </div>
           {p.body}
+          {page === last && onStart && (
+            <button onClick={onStart}
+              style={{ width: "100%", marginTop: 20, padding: "12px", borderRadius: 13, border: "none",
+                background: T.pos, color: T.on_accent, fontSize: 16, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
+              Verbindung jetzt einrichten
+            </button>
+          )}
         </div>
       </div>
     </div>
