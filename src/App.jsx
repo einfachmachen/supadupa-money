@@ -165,10 +165,12 @@ export default function SupaDupaMoney() {
     if(mainTab !== "struktur") prevTabRef.current = {mainTab, subTab};
   }, [mainTab, subTab]);
 
-  // + Button in den Einstellungen: nur Navigations-Gesten (keine Hauptaktion).
-  // Doppel-Tap = abbrechen/schließen, Wisch ← = zurück ins Mehr-Menü.
+  // + Button in den Struktur-Screens (Einstellungen / Konten / Kategorien):
+  // nur Navigations-Gesten (keine Hauptaktion). Doppel-Tap = schließen/zurück
+  // zum vorherigen Tab, Wisch ← = zurück ins Mehr-Menü. So braucht keiner dieser
+  // Screens einen eigenen Zurück-Pfeil oder ✕.
   React.useEffect(() => {
-    if(mainTab==="struktur" && activeStructurTab==="einstellungen") {
+    if(mainTab==="struktur") {
       setMasterOverride({
         label: "←zurück 2×schließen",
         dismissOnDoubleTap: true,                          // Doppel-Tap → onDismiss; Einzel-Tap: nichts
