@@ -11,6 +11,7 @@ const KEYS = {
   appId: "eb_app_id",
   privateKey: "eb_private_key",
   accountMap: "eb_account_map",
+  session: "eb_session",
 };
 
 async function idbGet(k) {
@@ -62,4 +63,33 @@ function saveEbAccountMap(map) {
   kvStore.setItem(KEYS.accountMap, raw);
 }
 
-export { loadEbCreds, saveEbCreds, loadEbAccountMap, saveEbAccountMap };
+// Aktive Bank-Session (Freigabe) lokal halten, damit künftige Importe ohne
+// erneute Bank-Authentifizierung laufen — bis die Freigabe abläuft.
+//   { sessionId, accounts:[{uid,label}], validUntil (ISO), aspsp }
+async function loadEbSession() {
+  try {
+    const raw = (await idbGet(KEYS.session)) || kvStore.getItem(KEYS.session) || "";
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+function saveEbSession(sess) {
+  const raw = JSON.stringify(sess || null);
+  idbSet(KEYS.session, raw);
+  kvStore.setItem(KEYS.session, raw);
+}
+function clearEbSession() {
+  idbSet(KEYS.session, "");
+  kvStore.setItem(KEYS.session, "");
+}
+
+export {
+  loadEbCreds,
+  saveEbCreds,
+  loadEbAccountMap,
+  saveEbAccountMap,
+  loadEbSession,
+  saveEbSession,
+  clearEbSession,
+};

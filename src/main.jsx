@@ -24,6 +24,7 @@ try {
   const state = sp.get("state") || "";
   if (code && state.startsWith("ebmoney")) {
     sessionStorage.setItem("eb_pending_code", code);
+    sessionStorage.setItem("eb_open_connect", "1"); // App öffnet danach direkt den Connect-Screen
     window.history.replaceState({}, "", window.location.origin + window.location.pathname);
   }
 } catch (e) { /* ignorieren */ }

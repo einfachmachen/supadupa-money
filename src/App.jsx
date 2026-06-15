@@ -234,6 +234,15 @@ export default function SupaDupaMoney() {
     window.addEventListener("lucide-ready", on);
     return () => window.removeEventListener("lucide-ready", on);
   }, []);
+  // Nach Enable-Banking-Bank-Redirect direkt den Connect-Screen öffnen
+  useEffect(()=>{
+    try {
+      if(sessionStorage.getItem("eb_open_connect")) {
+        sessionStorage.removeItem("eb_open_connect");
+        setShowBankConnect(true);
+      }
+    } catch(e) {}
+  }, []);
   const [isDirty, setIsDirty] = useState(false);
   const [syncError, setSyncError] = useState("");
 

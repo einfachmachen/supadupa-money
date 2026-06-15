@@ -23,6 +23,9 @@ import {
   saveEbCreds,
   loadEbAccountMap,
   saveEbAccountMap,
+  loadEbSession,
+  saveEbSession,
+  clearEbSession,
 } from "../../utils/enableBankingStore.js";
 
 // Vom Betreiber bereitgestellter Standard-Relay (datenlos, geteilt). Editierbar —
@@ -108,6 +111,7 @@ function EnableBankingConnectScreen({ onClose }) {
   const [bankFilter, setBankFilter] = useState("");
   const [dateFrom, setDateFrom] = useState(() => new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10));
   const [preview, setPreview] = useState(null);
+  const [validUntil, setValidUntil] = useState(null); // ISO: bis wann die Bank-Freigabe gilt
 
   // Genau die Adresse, die die App beim Verbinden als redirect_url mitschickt —
   // diese muss im Enable-Banking-Portal als Redirect-URL hinterlegt sein.
@@ -158,6 +162,18 @@ function EnableBankingConnectScreen({ onClose }) {
       if (code && c.relayUrl && c.appId && c.privateKey) {
         sessionStorage.removeItem("eb_pending_code");
         resumeSession(code, c);
+        return;
+      }
+      // Sonst: gespeicherte, noch gültige Bank-Session wiederverwenden —
+      // dann ohne erneute Bank-Anmeldung direkt Umsätze laden.
+      const sess = await loadEbSession();
+      if (sess && sess.sessionId && sess.validUntil && new Date(sess.validUntil) > new Date() && (sess.accounts || []).length) {
+        setSessionAccounts(sess.accounts);
+        setValidUntil(sess.validUntil);
+        const m = { ...(await loadEbAccountMap()) };
+        sess.accounts.forEach((a) => { if (!m[a.uid]) m[a.uid] = accounts[0]?.id || "acc-giro"; });
+        setAccMap(m);
+        setMsg({ tone: "tip", text: `Bank-Verbindung aktiv (gültig bis ${String(sess.validUntil).slice(0, 10)}). Du kannst direkt „Vorschau laden“.` });
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -215,7 +231,12 @@ function EnableBankingConnectScreen({ onClose }) {
       const m = { ...(await loadEbAccountMap()) };
       accs.forEach((a) => { if (!m[a.uid]) m[a.uid] = accounts[0]?.id || "acc-giro"; });
       setAccMap(m);
-      setMsg({ tone: "tip", text: `${accs.length} Konto/Konten verbunden. Zuordnen und Umsätze abrufen.` });
+      // Session lokal sichern → künftige Importe ohne erneute Bank-Anmeldung
+      const vu = r?.access?.valid_until || r?.valid_until ||
+        new Date(Date.now() + 90 * 86400000).toISOString();
+      saveEbSession({ sessionId: r?.session_id || r?.session?.id || "", accounts: accs, validUntil: vu, aspsp: r?.aspsp?.name || "" });
+      setValidUntil(vu);
+      setMsg({ tone: "tip", text: `${accs.length} Konto/Konten verbunden (gültig bis ${String(vu).slice(0, 10)}). Zuordnen und „Vorschau laden“.` });
     } catch (e) {
       setMsg({ tone: "danger", text: String(e.message || e) });
     }
@@ -261,7 +282,15 @@ function EnableBankingConnectScreen({ onClose }) {
       const news = items.filter((i) => i.status === "new").length;
       setMsg({ tone: "tip", text: `${items.length} Buchungen geladen · ${news} neu vorausgewählt, ${items.length - news} mögliche Dubletten abgewählt.` });
     } catch (e) {
-      setMsg({ tone: "danger", text: String(e.message || e) });
+      const txt = String(e.message || e);
+      if (/\b(401|404)\b|expired|session|consent/i.test(txt)) {
+        clearEbSession();
+        setSessionAccounts(null);
+        setValidUntil(null);
+        setMsg({ tone: "warn", text: "Bank-Freigabe abgelaufen oder ungültig — bitte unten neu mit der Bank verbinden." });
+      } else {
+        setMsg({ tone: "danger", text: txt });
+      }
     }
     setBusy(false);
   };
@@ -315,6 +344,14 @@ function EnableBankingConnectScreen({ onClose }) {
             <b>Experimentell.</b> Voraussetzung: ein deployter Relay-Worker und ein
             Enable-Banking-Zugang. Schritt-für-Schritt erklärt die Hilfe „Bank verbinden“.
           </Box>
+
+          {validUntil && (
+            <Box tone="tip">
+              ✓ Bank-Verbindung aktiv — gültig bis <b>{String(validUntil).slice(0, 10)}</b>.
+              Bis dahin brauchst du für weitere Importe <b>keine erneute Bank-Anmeldung</b> —
+              einfach unten „Vorschau laden“.
+            </Box>
+          )}
 
           {/* Redirect-URL zum Eintragen im Enable-Banking-Portal */}
           <div style={{ marginTop: 18 }}>
