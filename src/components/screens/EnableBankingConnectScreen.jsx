@@ -106,6 +106,8 @@ function EnableBankingConnectScreen({ onClose }) {
   const [result, setResult] = useState(null);
   const [copied, setCopied] = useState(false);
   const [bankFilter, setBankFilter] = useState("");
+  const [dateFrom, setDateFrom] = useState(() => new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10));
+  const [preview, setPreview] = useState(null);
 
   // Genau die Adresse, die die App beim Verbinden als redirect_url mitschickt —
   // diese muss im Enable-Banking-Portal als Redirect-URL hinterlegt sein.
@@ -220,41 +222,66 @@ function EnableBankingConnectScreen({ onClose }) {
     setBusy(false);
   };
 
-  const importTx = async () => {
-    setBusy(true); setMsg(null); setResult(null);
+  // Umsätze laden und als VORSCHAU aufbereiten (noch nicht importieren).
+  // Jede Buchung bekommt einen Status:
+  //   exact = Fingerabdruck schon vorhanden → abgewählt
+  //   maybe = gleiches Datum+Betrag vorhanden (z. B. anderer Quelltext) → abgewählt
+  //   new   = unbekannt → vorausgewählt
+  const loadPreview = async () => {
+    setBusy(true); setMsg(null); setResult(null); setPreview(null);
     try {
       saveEbAccountMap(accMap);
       const known = buildKnownFps(txs);
-      const dateFrom = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
+      const amtIndex = new Set();
+      (txs || []).forEach((t) => {
+        if (t.pending) return;
+        amtIndex.add(`${t.date}|${Math.round(Math.abs(t.totalAmount) * 100)}`);
+      });
       const cl = client();
-      let added = 0, dup = 0, skipped = 0;
-      const newTxs = [];
+      const items = [];
       for (const a of sessionAccounts) {
         const appAccId = accMap[a.uid] || accounts[0]?.id || "acc-giro";
         const r = await cl.getTransactions(a.uid, { dateFrom });
         const rows = mapEnableBankingTransactions(r?.transactions || [], appAccId);
         rows.forEach((row) => {
-          if (row.pending) { skipped++; return; } // vorgemerkte Bank-Umsätze überspringen
+          if (row.pending) return; // vorgemerkte Bank-Umsätze auslassen
           const fpNorm = txFingerprintNorm(row.isoDate, row.amount, row.desc, appAccId);
-          if (known.has(row.fp) || known.has(fpNorm)) { dup++; return; }
-          known.add(row.fp);
-          added++;
-          newTxs.push({
-            id: "eb-" + uid(), date: row.isoDate, totalAmount: Math.abs(row.amount),
-            desc: row.desc, note: "", pending: false, accountId: appAccId, splits: [],
-            _csvType: row.amount > 0 ? "income" : "expense", _fp: row.fp, _csvSource: "Enable Banking",
+          const amtKey = `${row.isoDate}|${Math.round(Math.abs(row.amount) * 100)}`;
+          let status = "new";
+          if (known.has(row.fp) || known.has(fpNorm)) status = "exact";
+          else if (amtIndex.has(amtKey)) status = "maybe";
+          items.push({
+            key: appAccId + "|" + items.length + "|" + (row._ebRef || row.fp),
+            accId: appAccId, row, status, checked: status === "new",
           });
         });
       }
-      if (newTxs.length) {
-        setTxs((p) => [...newTxs, ...p].sort((x, y) => y.date.localeCompare(x.date)));
-      }
-      setResult({ added, dup, skipped });
-      setMsg({ tone: "tip", text: `Fertig: ${added} neu, ${dup} Duplikate, ${skipped} vorgemerkt übersprungen.` });
+      items.sort((x, y) => y.row.isoDate.localeCompare(x.row.isoDate));
+      setPreview(items);
+      const news = items.filter((i) => i.status === "new").length;
+      setMsg({ tone: "tip", text: `${items.length} Buchungen geladen · ${news} neu vorausgewählt, ${items.length - news} mögliche Dubletten abgewählt.` });
     } catch (e) {
       setMsg({ tone: "danger", text: String(e.message || e) });
     }
     setBusy(false);
+  };
+
+  const togglePreview = (key) =>
+    setPreview((p) => p.map((it) => (it.key === key ? { ...it, checked: !it.checked } : it)));
+  const setAllPreview = (val) => setPreview((p) => p.map((it) => ({ ...it, checked: val })));
+
+  const commitImport = () => {
+    const chosen = (preview || []).filter((i) => i.checked);
+    if (!chosen.length) { setMsg({ tone: "warn", text: "Keine Buchung ausgewählt." }); return; }
+    const newTxs = chosen.map(({ row, accId }) => ({
+      id: "eb-" + uid(), date: row.isoDate, totalAmount: Math.abs(row.amount),
+      desc: row.desc, note: "", pending: false, accountId: accId, splits: [],
+      _csvType: row.amount > 0 ? "income" : "expense", _fp: row.fp, _csvSource: "Enable Banking",
+    }));
+    setTxs((p) => [...newTxs, ...p].sort((x, y) => y.date.localeCompare(x.date)));
+    setResult({ added: newTxs.length });
+    setMsg({ tone: "tip", text: `${newTxs.length} Buchungen importiert.` });
+    setPreview(null);
   };
 
   return (
@@ -363,7 +390,7 @@ function EnableBankingConnectScreen({ onClose }) {
             );
           })()}
 
-          {/* 3. Konten & Import */}
+          {/* 3. Konten zuordnen + Zeitraum */}
           {sessionAccounts && (
             <>
               <div style={{ color: T.txt, fontSize: 16, fontWeight: 800, marginTop: 22 }}>3 · Konten zuordnen</div>
@@ -376,8 +403,67 @@ function EnableBankingConnectScreen({ onClose }) {
                   </select>
                 </div>
               ))}
-              <PButton onClick={importTx} disabled={busy} bg={T.pos}>
-                Umsätze abrufen (letzte 90 Tage)
+              <label style={labelStyle}>Buchungen ab Datum</label>
+              <input type="date" style={inputStyle} value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)} />
+              <div style={{ color: T.txt2, fontSize: 12, marginTop: 6, lineHeight: 1.45 }}>
+                Tipp: Datum hochsetzen (z. B. auf nach deinem letzten Finanzblick-Import),
+                damit alte, bereits vorhandene Buchungen gar nicht erst geladen werden.
+              </div>
+              <PButton onClick={loadPreview} disabled={busy} bg={T.blue}>
+                Vorschau laden
+              </PButton>
+            </>
+          )}
+
+          {/* 4. Vorschau & Auswahl */}
+          {preview && (
+            <>
+              <div style={{ color: T.txt, fontSize: 16, fontWeight: 800, marginTop: 22 }}>
+                4 · Vorschau ({preview.filter((i) => i.checked).length}/{preview.length} ausgewählt)
+              </div>
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button onClick={() => setAllPreview(true)}
+                  style={{ flex: 1, padding: "8px", borderRadius: 10, border: `1px solid ${T.bd}`,
+                    background: "rgba(255,255,255,0.05)", color: T.txt, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                  Alle
+                </button>
+                <button onClick={() => setAllPreview(false)}
+                  style={{ flex: 1, padding: "8px", borderRadius: 10, border: `1px solid ${T.bd}`,
+                    background: "rgba(255,255,255,0.05)", color: T.txt, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                  Keine
+                </button>
+              </div>
+              <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
+                {preview.map((it) => (
+                  <label key={it.key}
+                    style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "8px 10px",
+                      borderRadius: 10, border: `1px solid ${T.bd}`, cursor: "pointer",
+                      background: it.checked ? T.blue + "14" : "transparent" }}>
+                    <input type="checkbox" checked={it.checked} onChange={() => togglePreview(it.key)}
+                      style={{ marginTop: 3, width: 18, height: 18, flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                        <span style={{ color: T.txt2, fontSize: 12 }}>{it.row.isoDate}</span>
+                        <span style={{ color: it.row.amount < 0 ? T.neg : T.pos, fontSize: 13, fontWeight: 700 }}>
+                          {it.row.amount.toFixed(2)} €
+                        </span>
+                      </div>
+                      <div style={{ color: T.txt, fontSize: 13, lineHeight: 1.35, wordBreak: "break-word" }}>
+                        {it.row.desc}
+                      </div>
+                      {it.status !== "new" && (
+                        <span style={{ display: "inline-block", marginTop: 3, fontSize: 11, fontWeight: 700,
+                          color: it.status === "exact" ? T.txt2 : T.gold }}>
+                          {it.status === "exact" ? "schon vorhanden" : "mögliche Dublette (Datum + Betrag)"}
+                        </span>
+                      )}
+                    </div>
+                  </label>
+                ))}
+              </div>
+              <PButton onClick={commitImport} disabled={busy} bg={T.pos}>
+                {preview.filter((i) => i.checked).length} Buchungen importieren
               </PButton>
             </>
           )}
