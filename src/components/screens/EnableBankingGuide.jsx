@@ -117,7 +117,7 @@ function EnableBankingGuide({ onClose, onBack, onStart }) {
         <>
           <Steps items={[
             "Im Portal „Applications“ → neue Application anlegen.",
-            "Als Redirect-URL die Adresse dieser App eintragen.",
+            "Als Redirect-URL die Web-Adresse eintragen, unter der du SupaDupa Money öffnest — die App zeigt sie unter „Bank-Konto verbinden“ zum Kopieren.",
             "Die heruntergeladene Schlüssel-Datei (…​.pem) sicher speichern.",
             "Notiere dir die angezeigte Application-ID.",
           ]}/>
