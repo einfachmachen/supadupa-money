@@ -105,6 +105,7 @@ function EnableBankingConnectScreen({ onClose }) {
   const [msg, setMsg] = useState(null);
   const [result, setResult] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [bankFilter, setBankFilter] = useState("");
 
   // Genau die Adresse, die die App beim Verbinden als redirect_url mitschickt —
   // diese muss im Enable-Banking-Portal als Redirect-URL hinterlegt sein.
@@ -133,6 +134,16 @@ function EnableBankingConnectScreen({ onClose }) {
   const client = () => createEnableBankingClient({ relayUrl, appId, privateKeyPem: privateKey });
   const credsComplete = relayUrl && appId && privateKey;
 
+  // Auswahl mit dem Filter synchron halten: ist die gewählte Bank nicht (mehr)
+  // in der gefilterten Liste, automatisch die erste passende übernehmen.
+  useEffect(() => {
+    if (!banks) return;
+    const f = bankFilter.trim().toLowerCase();
+    const filtered = f ? banks.filter((b) => String(b).toLowerCase().includes(f)) : banks;
+    if (filtered.length && !filtered.includes(bank)) setBank(filtered[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bankFilter, banks]);
+
   useEffect(() => {
     (async () => {
       const c = await loadEbCreds();
@@ -160,7 +171,8 @@ function EnableBankingConnectScreen({ onClose }) {
     try {
       saveEbCreds({ relayUrl, appId, privateKey });
       const r = await client().listAspsps(country);
-      const list = (r?.aspsps || r || []).map((a) => a?.name || a).filter(Boolean);
+      const names = (r?.aspsps || r || []).map((a) => a?.name || a).filter(Boolean);
+      const list = [...new Set(names)].sort((a, b) => String(a).localeCompare(String(b)));
       setBanks(list);
       if (list.length && !bank) setBank(list[0]);
       setMsg({ tone: "tip", text: `${list.length} Banken geladen.` });
@@ -332,17 +344,24 @@ function EnableBankingConnectScreen({ onClose }) {
           {/* 2. Bank wählen */}
           <div style={{ color: T.txt, fontSize: 16, fontWeight: 800, marginTop: 22 }}>2 · Bank wählen</div>
           <PButton onClick={loadBanks} disabled={busy || !credsComplete}>Banken laden</PButton>
-          {banks && (
-            <>
-              <label style={labelStyle}>Bank</label>
-              <select style={inputStyle} value={bank} onChange={(e) => setBank(e.target.value)}>
-                {banks.map((b) => <option key={b} value={b}>{b}</option>)}
-              </select>
-              <PButton onClick={connect} disabled={busy || !bank} bg={T.gold}>
-                Mit Bank verbinden (Weiterleitung)
-              </PButton>
-            </>
-          )}
+          {banks && (() => {
+            const f = bankFilter.trim().toLowerCase();
+            const filtered = f ? banks.filter((b) => String(b).toLowerCase().includes(f)) : banks;
+            return (
+              <>
+                <label style={labelStyle}>Bank suchen</label>
+                <input style={inputStyle} value={bankFilter} placeholder="z. B. DKB"
+                  onChange={(e) => setBankFilter(e.target.value)} autoCapitalize="off" autoCorrect="off" />
+                <label style={labelStyle}>Bank ({filtered.length} von {banks.length})</label>
+                <select style={inputStyle} value={bank} onChange={(e) => setBank(e.target.value)}>
+                  {filtered.map((b, i) => <option key={b + "|" + i} value={b}>{b}</option>)}
+                </select>
+                <PButton onClick={connect} disabled={busy || !bank} bg={T.gold}>
+                  Mit Bank verbinden (Weiterleitung)
+                </PButton>
+              </>
+            );
+          })()}
 
           {/* 3. Konten & Import */}
           {sessionAccounts && (
