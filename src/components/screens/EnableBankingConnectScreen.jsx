@@ -25,6 +25,10 @@ import {
   saveEbAccountMap,
 } from "../../utils/enableBankingStore.js";
 
+// Vom Betreiber bereitgestellter Standard-Relay (datenlos, geteilt). Editierbar —
+// wer einen eigenen Relay deployt, trägt hier seine eigene URL ein.
+const DEFAULT_RELAY = "https://enable-banking-proxy.relay-url-supadupa-money.workers.dev";
+
 function Box({ tone = "info", children }) {
   const map = { info: T.blue, tip: T.pos, warn: T.gold, danger: T.neg };
   const c = map[tone] || T.blue;
@@ -89,7 +93,7 @@ function normalizeAccounts(r) {
 function EnableBankingConnectScreen({ onClose }) {
   const { txs, setTxs, accounts } = useContext(AppCtx);
 
-  const [relayUrl, setRelayUrl] = useState("");
+  const [relayUrl, setRelayUrl] = useState(DEFAULT_RELAY);
   const [appId, setAppId] = useState("");
   const [privateKey, setPrivateKey] = useState("");
   const [country, setCountry] = useState("DE");
@@ -132,7 +136,7 @@ function EnableBankingConnectScreen({ onClose }) {
   useEffect(() => {
     (async () => {
       const c = await loadEbCreds();
-      setRelayUrl(c.relayUrl);
+      setRelayUrl(c.relayUrl || DEFAULT_RELAY);
       setAppId(c.appId);
       setPrivateKey(c.privateKey);
       setAccMap(await loadEbAccountMap());
