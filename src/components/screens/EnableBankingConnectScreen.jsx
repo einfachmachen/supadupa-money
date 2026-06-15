@@ -173,7 +173,7 @@ function EnableBankingConnectScreen({ onClose }) {
         const m = { ...(await loadEbAccountMap()) };
         sess.accounts.forEach((a) => { if (!m[a.uid]) m[a.uid] = accounts[0]?.id || "acc-giro"; });
         setAccMap(m);
-        setMsg({ tone: "tip", text: `Bank-Verbindung aktiv (gültig bis ${String(sess.validUntil).slice(0, 10)}). Du kannst direkt „Vorschau laden“.` });
+        setMsg({ tone: "tip", text: `Bank-Verbindung aktiv (gültig bis ${String(sess.validUntil).slice(0, 10)}). Du kannst direkt „Buchungen abrufen“.` });
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -208,7 +208,19 @@ function EnableBankingConnectScreen({ onClose }) {
       const state = "ebmoney-" + Math.random().toString(36).slice(2);
       const r = await client().startAuth({ aspspName: bank, country, redirectUrl, state });
       if (r?.url) {
-        window.location.href = r.url; // Weiterleitung zur Bank
+        // Im NORMALEN Browser (neues Fenster/Tab) öffnen — mit sichtbarer
+        // Adressleiste der Bank. So ist klar: die Zugangsdaten gehen an die
+        // Bank, nicht an diese App. Fallback: gleicher Tab, falls Popup blockiert.
+        const win = window.open(r.url, "_blank", "noopener,noreferrer");
+        if (win) {
+          setMsg({
+            tone: "info",
+            text: "Anmeldung im Browser geöffnet — deine Bank-Zugangsdaten gibst du nur dort ein. Nach der Freigabe wird die Verbindung gespeichert; danach hier „Buchungen abrufen“.",
+          });
+          setBusy(false);
+        } else {
+          window.location.href = r.url; // Popup blockiert → gleicher Tab
+        }
       } else {
         setMsg({ tone: "danger", text: "Keine Weiterleitungs-URL von Enable Banking erhalten." });
         setBusy(false);
@@ -236,7 +248,7 @@ function EnableBankingConnectScreen({ onClose }) {
         new Date(Date.now() + 90 * 86400000).toISOString();
       saveEbSession({ sessionId: r?.session_id || r?.session?.id || "", accounts: accs, validUntil: vu, aspsp: r?.aspsp?.name || "" });
       setValidUntil(vu);
-      setMsg({ tone: "tip", text: `${accs.length} Konto/Konten verbunden (gültig bis ${String(vu).slice(0, 10)}). Zuordnen und „Vorschau laden“.` });
+      setMsg({ tone: "tip", text: `${accs.length} Konto/Konten verbunden (gültig bis ${String(vu).slice(0, 10)}). Zuordnen und „Buchungen abrufen“.` });
     } catch (e) {
       setMsg({ tone: "danger", text: String(e.message || e) });
     }
@@ -349,7 +361,7 @@ function EnableBankingConnectScreen({ onClose }) {
             <Box tone="tip">
               ✓ Bank-Verbindung aktiv — gültig bis <b>{String(validUntil).slice(0, 10)}</b>.
               Bis dahin brauchst du für weitere Importe <b>keine erneute Bank-Anmeldung</b> —
-              einfach unten „Vorschau laden“.
+              einfach unten „Buchungen abrufen“.
             </Box>
           )}
 
@@ -421,8 +433,12 @@ function EnableBankingConnectScreen({ onClose }) {
                   {filtered.map((b, i) => <option key={b + "|" + i} value={b}>{b}</option>)}
                 </select>
                 <PButton onClick={connect} disabled={busy || !bank} bg={T.gold}>
-                  Mit Bank verbinden (Weiterleitung)
+                  Mit Bank verbinden (im Browser)
                 </PButton>
+                <div style={{ color: T.txt2, fontSize: 12, marginTop: 8, lineHeight: 1.45 }}>
+                  Öffnet die Anmeldung im Browser auf der Seite deiner Bank. Deine
+                  Bank-Zugangsdaten gibst du <b>nur dort</b> ein — niemals in dieser App.
+                </div>
               </>
             );
           })()}
@@ -448,7 +464,7 @@ function EnableBankingConnectScreen({ onClose }) {
                 damit alte, bereits vorhandene Buchungen gar nicht erst geladen werden.
               </div>
               <PButton onClick={loadPreview} disabled={busy} bg={T.blue}>
-                Vorschau laden
+                Buchungen abrufen
               </PButton>
             </>
           )}
