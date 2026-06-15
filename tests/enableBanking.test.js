@@ -67,6 +67,24 @@ describe("ebDescription", () => {
   it("fällt auf 'Unbekannt' zurück", () => {
     expect(ebDescription({})).toBe("Unbekannt");
   });
+  it("nimmt bei Eingang (CRDT) den Zahler statt 'NOT PROVIDED'", () => {
+    const d = ebDescription({
+      credit_debit_indicator: "CRDT",
+      creditor: { name: "NOT PROVIDED" },
+      debtor: { name: "STADTVERWALTUNG KOBLENZ" },
+      remittance_information: ["VERGUETUNG 05.2026"],
+    });
+    expect(d).toBe("STADTVERWALTUNG KOBLENZ · VERGUETUNG 05.2026");
+  });
+  it("nimmt bei Ausgang (DBIT) den Empfänger (creditor)", () => {
+    const d = ebDescription({
+      credit_debit_indicator: "DBIT",
+      creditor: { name: "REWE" },
+      debtor: { name: "Dirk" },
+      remittance_information: ["Einkauf"],
+    });
+    expect(d).toBe("REWE · Einkauf");
+  });
 });
 
 describe("mapEnableBankingTx", () => {

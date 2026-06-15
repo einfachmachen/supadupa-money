@@ -84,15 +84,27 @@ function ebSignedAmount(tx) {
   return parseFloat(rawStr) || 0;
 }
 
-// Beschreibung im bestehenden " · "-Schema (Empfänger/Absender + Verwendungszweck),
+// Name der Gegenpartei je nach Richtung: bei Ausgang (DBIT) der Empfänger
+// (creditor), bei Eingang (CRDT) der Zahler (debtor). Platzhalter wie
+// "NOT PROVIDED" werden als leer behandelt und auf die andere Partei
+// zurückgefallen — sonst stünde bei Gutschriften oft "NOT PROVIDED".
+function ebIsJunkName(s) {
+  return !s || /^(not\s*provided|n\/?a|unknown|unbekannt)$/i.test(String(s).trim());
+}
+function ebCounterpartyName(tx) {
+  const creditor = tx?.creditor?.name || tx?.creditor_account?.name || "";
+  const debtor = tx?.debtor?.name || tx?.debtor_account?.name || "";
+  const ind = String(tx?.credit_debit_indicator || "").toUpperCase();
+  let primary = ind === "CRDT" ? debtor : creditor;
+  let secondary = ind === "CRDT" ? creditor : debtor;
+  if (ebIsJunkName(primary)) primary = ebIsJunkName(secondary) ? "" : secondary;
+  return ebIsJunkName(primary) ? "" : String(primary).trim();
+}
+
+// Beschreibung im bestehenden " · "-Schema (Gegenpartei + Verwendungszweck),
 // mit Duplikat-Entfernung wie im CSV-Parser.
 function ebDescription(tx) {
-  const name =
-    tx?.creditor?.name ||
-    tx?.debtor?.name ||
-    tx?.creditor_account?.name ||
-    tx?.debtor_account?.name ||
-    "";
+  const name = ebCounterpartyName(tx);
   let rem = tx?.remittance_information;
   if (Array.isArray(rem)) rem = rem.join(" ");
   rem = String(rem || "").trim();
