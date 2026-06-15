@@ -8,6 +8,7 @@ import { QuickPicker } from "../organisms/QuickPicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { parseCSV } from "../../utils/csv.js";
+import { parsePdfStatement } from "../../utils/pdfStatement.js";
 import { anchorFromDetectedBalance, makeAnchorEntry } from "../../utils/anchors.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
@@ -22,6 +23,8 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const S = {fs:26, pad:10, padL:14, radius:16, gap:14}; // für mobile Konto-Kacheln
   const [csvText, setCsvText]       = useState("");
   const [csvSources, setCsvSources] = useState([]); // Dateinamen der importierten CSVs
+  const [pdfBusy, setPdfBusy]       = useState(false); // PDF wird gerade gelesen
+  const [pdfError, setPdfError]     = useState("");
   const [parsed,  setParsed]        = useState(null);
   const [rules,   setRules]         = useState(()=>({...(csvRules||{})})); // initialisiert aus globalen Regeln
   const [assign,  setAssign]        = useState({});
@@ -166,7 +169,12 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
 
   const doParse = () => {
     if(!csvText.trim()) return;
-    const {rows, format, detectedBalance, detectedBalances, skipped} = parseCSV(csvText, {noGroup: !autoGroup});
+    applyParsed(parseCSV(csvText, {noGroup: !autoGroup}));
+  };
+
+  // Gemeinsame Nachbearbeitung für CSV- UND PDF-Parser: Konto auflösen,
+  // Fingerprints bilden, Duplikate erkennen, Review-Schritt öffnen.
+  const applyParsed = ({rows, format, detectedBalance, detectedBalances, skipped}) => {
     // _konto-String → accountId auflösen und Fingerprint mit accountId neu bilden
     const resolvedRows = rows.map(r => {
       let resolvedAccId = selAccId || accounts[0]?.id;
@@ -194,6 +202,16 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     setAssign(autoAssign(newRows));
     setShowCatAssign(newRows.length <= 20);
     setStep("review");
+  };
+
+  // PDF-Kontoauszug einlesen (asynchron — pdf.js wird bei Bedarf geladen)
+  const doParsePdf = (file) => {
+    setPdfBusy(true); setPdfError("");
+    file.arrayBuffer()
+      .then(ab => parsePdfStatement(ab))
+      .then(res => { setCsvSources([file.name]); applyParsed(res); })
+      .catch(err => setPdfError(String(err?.message || err)))
+      .finally(() => setPdfBusy(false));
   };
 
   const doImport = () => {
@@ -566,10 +584,13 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
           <label style={{display:"block",padding:"11px 14px",borderRadius:11,border:`1px solid ${T.bds}`,
             background:"rgba(137,196,244,0.08)",color:T.blue,fontSize:MFS,fontWeight:600,
             cursor:"pointer",marginBottom:10,textAlign:"left"}}>
-            {Li("folder-open",14)} CSV-Datei(en) auswählen
-            <input type="file" accept=".csv,.txt,text/csv" multiple style={{display:"none"}}
+            {Li("folder-open",14)} CSV- oder PDF-Datei auswählen
+            <input type="file" accept=".csv,.txt,text/csv,.pdf,application/pdf" multiple style={{display:"none"}}
               onChange={e=>{
                 const files=Array.from(e.target.files||[]); if(!files.length) return;
+                // PDF-Kontoauszug? (eigener Pfad, nutzt pdf.js)
+                const pdf = files.find(f=>/\.pdf$/i.test(f.name) || f.type==="application/pdf");
+                if(pdf){ doParsePdf(pdf); e.target.value=""; return; }
                 const results=[];
                 let done=0;
                 files.forEach((file,i)=>{
@@ -596,6 +617,11 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                 e.target.value="";
               }}/>
           </label>
+          <div style={{color:T.txt2,fontSize:10,marginBottom:10,marginTop:-4}}>
+            PDF: Wirecard/N26-Kontoauszüge
+          </div>
+          {pdfBusy && <div style={{color:T.blue,fontSize:11,fontWeight:600,marginBottom:10}}>PDF wird analysiert…</div>}
+          {pdfError && <div style={{color:T.neg,fontSize:11,marginBottom:10}}>PDF-Import: {pdfError}</div>}
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
             <div style={{flex:1,height:1,background:T.bd}}/>
             <span style={{color:T.txt2,fontSize:10}}>oder Text einfügen</span>
