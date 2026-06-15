@@ -914,7 +914,7 @@ function MonatScreen() {
                             {Li(isOverspent?"alert-triangle":"target",16,accentCol)}
                           </div>
                           <div style={{flex:1,minWidth:0,marginRight:6}}>
-                            <div style={{color:isOverspent?T.neg:T.txt,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{isOverspent?"Überzogen: ":""}{subName}</div>
+                            <div style={{color:isOverspent?T.neg:T.txt,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{subName}</div>
                             {/* Verbrauch als Punkt auf feiner Linie (gleiche Sprache wie
                                 der Dashboard-Pegel) statt Balken + Prozent-Text */}
                             <div style={{marginTop:6,position:"relative",height:8,maxWidth:140}}>
@@ -928,7 +928,7 @@ function MonatScreen() {
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8,
                             display:"flex",justifyContent:"flex-end",alignItems:"baseline",gap:6}}>
                             <span style={{...amtStyle(spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold",spent===0?T.txt2:accentCol),fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{spent===0?"—":fmtSigned(-spent)}</span>
-                            <span style={{color:T.txt2,fontSize:10,marginLeft:8}}>Rest:</span>
+                            <span style={{color:T.txt2,fontSize:10,marginLeft:8}}>{isOverspent?"zuviel:":"Rest:"}</span>
                             <span style={{...amtStyle(isOverspent?"neg":open>0?"gold":"txt2"),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmtSigned(signedOpen)}</span>
                           </div>
                         </div>
