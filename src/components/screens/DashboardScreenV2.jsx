@@ -253,6 +253,13 @@ function DashboardScreenV2() {
     const budgetOpenRest = React.useCallback(
       (tx)=>budgetOpenRestFor(tx, txs, _txsById, year, month),
       [txs, _txsById, year, month]);
+    // VM-Betrag eines Posten: für Budget-Platzhalter das OFFENE Restbudget
+    // (volles Budget − Verbrauch), sonst der absolute Betrag. So zählt für
+    // Budgets nur der noch offene Teil — konsistent zu „Offene Vormerkungen"
+    // und Monat. Negatives Restbudget (überzogen) trägt 0 bei.
+    const pendVmAmt = React.useCallback(
+      (t)=> t._budgetSubId ? Math.max(0, budgetOpenRest(t)) : Math.abs(t.totalAmount),
+      [budgetOpenRest]);
     const totalIn = useMemo(()=>getTotalIncome(year, month),  [year,month,txs]);
     const totalOut= useMemo(()=>getTotalExpense(year, month), [year,month,txs]);
     const pTxsOut = useMemo(()=>pTxs.filter(t=>budgetPlaceholderActive(t)&&(txType(t)==="expense"||(t._csvType==="expense"&&txType(t)!=="income"))), [pTxs]);
@@ -260,8 +267,8 @@ function DashboardScreenV2() {
     // Beträge ABSOLUT summieren (wie _sum im Drilldown) — sonst hebt eine positiv
     // gespeicherte Umbuchung (z.B. Sparen·Tagesgeld +600) die negativen Ausgaben
     // fast auf und die Header-VM-Summe stimmt nicht mit Liste/Drilldown überein.
-    const pendingOut= useMemo(()=>pTxsOut.reduce((s,t)=>s+Math.abs(pendOpenAmt(t)),0), [pTxsOut]);
-    const pendingIn = useMemo(()=>pTxsIn.reduce((s,t)=>s+Math.abs(pendOpenAmt(t)),0),  [pTxsIn]);
+    const pendingOut= useMemo(()=>pTxsOut.reduce((s,t)=>s+pendVmAmt(t),0), [pTxsOut,pendVmAmt]);
+    const pendingIn = useMemo(()=>pTxsIn.reduce((s,t)=>s+pendVmAmt(t),0),  [pTxsIn,pendVmAmt]);
 
     // Vorgemerkte Einnahmen pro Cat: _catTxMaps.sumPendByCat hat exakt dieselbe
     // Filterung (im Monat, !_budgetSubId, !_isDupl, _isSelAcc, Σ|pn(sp.amount)|
@@ -719,8 +726,8 @@ function DashboardScreenV2() {
               // Drill-Handler analog V1
               const drillBuchIn  = (isMitte)=>{const l=isMitte?_realInM :_realIn; setDashDrill({label:"Einnahmen"+(isMitte?" bis 14.":""),txList:l,isIncome:true, uncatCount:(isMitte?_uInM2:_uIn).length,cat:null,total:_sum(l)});setDashSearch("");};
               const drillBuchOut = (isMitte)=>{const l=isMitte?_realOutM:_realOut;setDashDrill({label:"Ausgaben" +(isMitte?" bis 14.":""),txList:l,isIncome:false,uncatCount:(isMitte?_uOutM2:_uOut).length,cat:null,total:_sum(l)});setDashSearch("");};
-              const drillPendIn  = (isMitte)=>{const l=isMitte?_pTxsInM :pTxsIn; setDashDrill({label:"Einnahmen \u2013 VM"+(isMitte?" bis 14.":""),txList:l,isIncome:true, uncatCount:0,cat:null,total:_sum(l),isPending:true});setDashSearch("");};
-              const drillPendOut = (isMitte)=>{const l=isMitte?_pTxsOutM:pTxsOut;setDashDrill({label:"Ausgaben \u2013 VM" +(isMitte?" bis 14.":""),txList:l,isIncome:false,uncatCount:0,cat:null,total:_sum(l),isPending:true});setDashSearch("");};
+              const drillPendIn  = (isMitte)=>{const l=isMitte?_pTxsInM :pTxsIn; setDashDrill({label:"Einnahmen \u2013 VM"+(isMitte?" bis 14.":""),txList:l,isIncome:true, uncatCount:0,cat:null,total:l.reduce((s,t)=>s+pendVmAmt(t),0),isPending:true});setDashSearch("");};
+              const drillPendOut = (isMitte)=>{const l=isMitte?_pTxsOutM:pTxsOut;setDashDrill({label:"Ausgaben \u2013 VM" +(isMitte?" bis 14.":""),txList:l,isIncome:false,uncatCount:0,cat:null,total:l.reduce((s,t)=>s+pendVmAmt(t),0),isPending:true});setDashSearch("");};
               const drillUncatIn = (isMitte)=>{const l=isMitte?_uInM2 :_uIn; setDashDrill({label:"Einnahmen \u2013 unkat."+(isMitte?" bis 14.":""),txList:l,isIncome:true, uncatCount:l.length,cat:null,total:null});setDashSearch("");};
               const drillUncatOut= (isMitte)=>{const l=isMitte?_uOutM2:_uOut;setDashDrill({label:"Ausgaben \u2013 unkat." +(isMitte?" bis 14.":""),txList:l,isIncome:false,uncatCount:l.length,cat:null,total:null});setDashSearch("");};
 
@@ -1579,6 +1586,49 @@ function DashboardScreenV2() {
                     return t._budgetSubId.endsWith("_mitte") ? 0 : 1;
                   };
                   let lastSection = null;
+                  // Budget-Details (voll, verbraucht) je Unterkategorie — wie in Monat.
+                  const _budgetEntryBySub = new Map((dashDetailEnde?.budgetEntries||[]).map(e=>[e.baseSubId,e]));
+                  // Budget-Zeile im Monat-Stil: verbraucht + „Rest:"/„zuviel:" (volles Budget).
+                  const renderBudgetRow = (tx) => {
+                    const cat2 = getCat((tx.splits||[])[0]?.catId);
+                    const baseSubId = (tx._budgetSubId||"").replace(/_mitte$/,"") || (tx.splits||[])[0]?.subId;
+                    const be = _budgetEntryBySub.get(baseSubId);
+                    const budgetFull = be ? be.budget
+                      : Math.abs(tx._mitteAmt!=null ? (tx._mitteAmt+tx._endeAmt) : tx.totalAmount);
+                    const rawRest = budgetOpenRest(tx);
+                    const open = (rawRest==null) ? budgetFull : rawRest;       // offener Rest (kann negativ = überzogen)
+                    const spent = Math.max(0, budgetFull - open);
+                    const isInc = be ? be.isInc : dashDrill.isIncome;
+                    const isOver = !isInc && open < 0;
+                    const mainCol = isInc ? T.cell_inc : (isOver ? T.neg : T.gold);
+                    const usedCol = spent===0 ? T.txt2 : mainCol;
+                    const restCol = isOver ? T.neg : (open>0 ? (isInc?T.cell_inc:T.gold) : T.txt2);
+                    const ratio = budgetFull>0 ? Math.min(1, spent/budgetFull) : 0;
+                    const barCol = isInc ? T.cell_inc : (ratio>=1?T.neg:ratio>=0.75?T.gold:T.pos);
+                    const sub = getSub((tx.splits||[])[0]?.catId, baseSubId);
+                    const name = sub?.name || cat2?.name || tx.desc || "Budget";
+                    return (
+                      <div key={tx.id} style={{padding:"8px 18px",borderBottom:`1px solid ${T.bd}`,background:T.surf3}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}} onClick={()=>{setDashDrill(null);openEdit(tx);}}>
+                          <div style={{width:30,height:30,borderRadius:9,flexShrink:0,background:mainCol+"22",border:`1px solid ${T.bd}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                            {Li(isOver?"alert-triangle":"target",15,mainCol)}
+                          </div>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{color:isOver?T.neg:T.txt,fontSize:14,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>
+                            <div style={{marginTop:5,position:"relative",height:8,maxWidth:120}}>
+                              <div style={{position:"absolute",left:0,right:0,top:3.25,height:1.5,background:T.bd,borderRadius:1}}/>
+                              <div style={{position:"absolute",left:`calc(3px + (100% - 6px) * ${ratio})`,top:1,width:6,height:6,borderRadius:"50%",background:barCol,transform:"translateX(-50%)"}}/>
+                            </div>
+                          </div>
+                          <div style={{display:"flex",alignItems:"baseline",gap:6,flexShrink:0}}>
+                            <span style={{color:usedCol,fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{spent===0?"—":fmt(Math.abs(spent))}</span>
+                            <span style={{color:T.txt2,fontSize:10}}>{isOver?"zuviel:":"Rest:"}</span>
+                            <span style={{color:restCol,fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmt(Math.abs(open))}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  };
                   return sorted.map((tx,idx)=>{
                     const sec = sectionOf(tx);
                     // Trennlinie nur zwischen Budget-Ende (1) und Rest (2), oder zwischen Mitte (0) und Ende (1)
@@ -1592,48 +1642,10 @@ function DashboardScreenV2() {
                         <div style={{flex:1,height:1,background:T.bd}}/>
                       </div>}
                       {(()=>{
-                  // Budget-Paar: als einzelne Zeile darstellen
-                  if(tx._isBudgetPair) {
-                    const cat2 = getCat((tx.splits||[])[0]?.catId);
-                    const col2 = dashDrill.isPending ? (dashDrill.isIncome ? T.cell_inc : T.gold) : (dashDrill.isIncome ? T.pos : T.neg);
-                    return (
-                      <div key={tx.id} style={{padding:"10px 18px",borderBottom:`1px solid ${T.bd}`,background:T.surf3}}>
-                        <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={()=>{setDashDrill(null);openEdit(tx);}}>
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{color:T.txt,fontSize:12,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tx.desc||cat2?.name}</div>
-                            <div style={{color:T.txt2,fontSize:10}}>{tx.date.slice(0,7)}</div>
-                          </div>
-                          <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
-                            <span style={{color:T.mid,fontSize:10}}>Mitte</span>
-                            <span style={{color:col2,fontSize:17,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(tx._mitteAmt)}</span>
-                            <span style={{color:T.gold,fontSize:10}}>Gesamt</span>
-                            <span style={{color:col2,fontSize:17,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(tx._mitteAmt+tx._endeAmt)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  }
-                  // Ungepaartes Budget (z.B. "Budget für Unvorhergesehenes" ohne Mitte)
-                  if(tx._budgetSubId && !tx._isBudgetPair) {
-                    const cat2 = getCat((tx.splits||[])[0]?.catId);
-                    const col2 = dashDrill.isPending ? (dashDrill.isIncome ? T.cell_inc : T.gold) : (dashDrill.isIncome ? T.pos : T.neg);
-                    const isMitte = tx._budgetSubId.endsWith("_mitte");
-                    return (
-                      <div key={tx.id} style={{padding:"10px 18px",borderBottom:`1px solid ${T.bd}`,background:T.surf3}}>
-                        <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={()=>{setDashDrill(null);openEdit(tx);}}>
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{color:T.txt,fontSize:12,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tx.desc||cat2?.name}</div>
-                            <div style={{color:T.txt2,fontSize:10}}>{tx.date.slice(0,7)}</div>
-                          </div>
-                          <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
-                            {isMitte&&<><span style={{color:T.mid,fontSize:10}}>Mitte</span>
-                            <span style={{color:col2,fontSize:17,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(tx.totalAmount)}</span></>}
-                            <span style={{color:T.gold,fontSize:10}}>Gesamt</span>
-                            <span style={{color:col2,fontSize:17,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(tx.totalAmount)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
+                  // Budget-Platzhalter (gepaart oder einzeln): im Monat-Stil mit
+                  // verbraucht + Rest (volles Budget) rendern.
+                  if(tx._isBudgetPair || tx._budgetSubId) {
+                    return renderBudgetRow(tx);
                   }
                   const sp = dashDrill.cat ? (tx.splits||[]).find(s=>s.catId===dashDrill.cat.id) : (tx.splits||[])[0];
                   const sub = getSub(sp?.catId, sp?.subId);
