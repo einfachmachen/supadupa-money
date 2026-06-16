@@ -252,9 +252,10 @@ export default function SupaDupaMoney() {
           // WICHTIG: zuerst die struktur-Ebene verlassen (mainTab wechseln),
           // DANN das Menü öffnen — sonst läge das Menü über struktur und ein
           // anschließendes Schließen fiele in den Struktur-Screen zurück (Loop).
+          // Den +-Knopf NICHT verkleinern: das Mehr-Menü wird mit großem Knopf
+          // bedient. Verkleinern passiert nur beim Doppel-Tap (onDismiss).
           const p = prevTabRef.current;
           setMainTab(p.mainTab); setSubTab(p.subTab);
-          setPlusArretiert(false);
           reopenMobilePicker("main");
         },
         onDismiss: () => {                                 // Doppel-Tap → schließen, zurück zum vorherigen Tab (Dashboard)
