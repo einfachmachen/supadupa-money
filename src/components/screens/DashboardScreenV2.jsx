@@ -255,10 +255,13 @@ function DashboardScreenV2() {
       [txs, _txsById, year, month]);
     const totalIn = useMemo(()=>getTotalIncome(year, month),  [year,month,txs]);
     const totalOut= useMemo(()=>getTotalExpense(year, month), [year,month,txs]);
-    const pTxsOut = useMemo(()=>pTxs.filter(t=>budgetPlaceholderActive(t)&&(txType(t)==="expense"||(t._csvType==="expense"&&!txType(t)==="income"))), [pTxs]);
+    const pTxsOut = useMemo(()=>pTxs.filter(t=>budgetPlaceholderActive(t)&&(txType(t)==="expense"||(t._csvType==="expense"&&txType(t)!=="income"))), [pTxs]);
     const pTxsIn  = useMemo(()=>pTxs.filter(t=>budgetPlaceholderActive(t)&&(txType(t)==="income"||(t._csvType==="income"))), [pTxs]);
-    const pendingOut= useMemo(()=>pTxsOut.reduce((s,t)=>s+pendOpenAmt(t),0), [pTxsOut]);
-    const pendingIn = useMemo(()=>pTxsIn.reduce((s,t)=>s+pendOpenAmt(t),0),  [pTxsIn]);
+    // Beträge ABSOLUT summieren (wie _sum im Drilldown) — sonst hebt eine positiv
+    // gespeicherte Umbuchung (z.B. Sparen·Tagesgeld +600) die negativen Ausgaben
+    // fast auf und die Header-VM-Summe stimmt nicht mit Liste/Drilldown überein.
+    const pendingOut= useMemo(()=>pTxsOut.reduce((s,t)=>s+Math.abs(pendOpenAmt(t)),0), [pTxsOut]);
+    const pendingIn = useMemo(()=>pTxsIn.reduce((s,t)=>s+Math.abs(pendOpenAmt(t)),0),  [pTxsIn]);
 
     // Vorgemerkte Einnahmen pro Cat: _catTxMaps.sumPendByCat hat exakt dieselbe
     // Filterung (im Monat, !_budgetSubId, !_isDupl, _isSelAcc, Σ|pn(sp.amount)|
