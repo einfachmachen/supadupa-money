@@ -245,11 +245,19 @@ export default function SupaDupaMoney() {
   React.useEffect(() => {
     if(mainTab==="struktur" && !_structOverlayOpen) {
       setMasterOverride({
-        label: "Doppel-Tipp schließt",
-        dismissOnDoubleTap: true,                          // NUR Doppel-Tap reagiert; Einzel-Tap/Wisch: nichts
+        label: "←zurück 2×schließen",
+        dismissOnDoubleTap: true,                          // Doppel-Tap → onDismiss; Einzel-Tap: nichts
         onConfirm: () => {},                               // Einzel-Tap: bewusst ohne Aktion
-        onBack: null,                                      // bewusst kein Wisch-← (vermied das Menü-Sandwich/den Loop)
-        onDismiss: () => {                                 // Doppel-Tap → zurück zum vorherigen Tab (i.d.R. Dashboard)
+        onBack: () => {                                    // Wisch ← : eine Ebene zurück ins Mehr-Menü
+          // WICHTIG: zuerst die struktur-Ebene verlassen (mainTab wechseln),
+          // DANN das Menü öffnen — sonst läge das Menü über struktur und ein
+          // anschließendes Schließen fiele in den Struktur-Screen zurück (Loop).
+          const p = prevTabRef.current;
+          setMainTab(p.mainTab); setSubTab(p.subTab);
+          setPlusArretiert(false);
+          reopenMobilePicker("main");
+        },
+        onDismiss: () => {                                 // Doppel-Tap → schließen, zurück zum vorherigen Tab (Dashboard)
           setShowMobilePicker(false); setMobilePickerScreen("main");
           const p = prevTabRef.current;
           setMainTab(p.mainTab); setSubTab(p.subTab);
