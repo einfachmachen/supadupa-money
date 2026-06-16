@@ -392,7 +392,9 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const _csvHandlersRef = React.useRef({});
   _csvHandlersRef.current = { doParse, doImport, onClose };
   React.useEffect(() => {
-    if(!mobileMode || !setMasterOverride) return;
+    // Override für den +-Knopf bei JEDEM Vollbild-CSV-Import (auch ohne „großes
+    // Mobile-UI"); nur im eingebetteten Modal-Tab nicht (dort eigenes ✕).
+    if(embedded || !setMasterOverride) return;
     const H = () => _csvHandlersRef.current;
     let cfg = null;
     if(step === "input") {
@@ -426,7 +428,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     }
     setMasterOverride(cfg);
     return () => setMasterOverride(null);
-  }, [step, csvText, parsed, showCatAssign, mobileMode]);
+  }, [step, csvText, parsed, showCatAssign, embedded]);
 
   // ── RENDER ──────────────────────────────────────────────────────────────────
   return (
@@ -445,7 +447,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
           onBack={step!=="input" ? ()=>setStep("input") : (onBack||onClose)}
           onClose={onClose}/>
       ) : (
-        <div style={{background:T.surf,borderBottom:`1px solid ${T.bds}`,padding:MPad,display:"flex",alignItems:"center",gap:12,flexShrink:0}}>
+        <div style={{background:T.surf,borderBottom:`1px solid ${T.bds}`,padding:MPad,paddingTop:"calc(10px + env(safe-area-inset-top, 0px))",display:"flex",alignItems:"center",gap:12,flexShrink:0}}>
           <button onClick={onClose} style={{background:"rgba(255,255,255,0.08)",border:"none",color:T.txt,borderRadius:10,width:34,height:34,cursor:"pointer",fontSize:18}}>{Li("arrow-left",13)}</button>
           <div style={{flex:1}}>
             <div style={{color:T.blue,fontSize:16,fontWeight:700}}>{Li("upload-cloud",16,T.blue)} CSV-Import</div>
