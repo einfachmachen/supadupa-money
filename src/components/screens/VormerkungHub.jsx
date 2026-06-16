@@ -3,6 +3,7 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { VormHubSecToggle } from "../molecules/VormHubSecToggle.jsx";
 import { VormHubSegBtn } from "../molecules/VormHubSegBtn.jsx";
+import { AccountChips } from "../molecules/AccountChips.jsx";
 import { VormVerknuepfenPanel } from "../organisms/VormVerknuepfenPanel.jsx";
 import { RecurringDetectionScreen } from "./RecurringDetectionScreen.jsx";
 import { AppCtx } from "../../state/AppContext.js";
@@ -748,20 +749,8 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
               {/* 2. Zahlungsart */}
               {accounts.length>0&&<>
                 <div style={{color:T.txt2,fontSize:10,marginBottom:3}}>Zahlungsart</div>
-                <div style={{display:"flex",gap:6,marginBottom:8}}>
-                  {accounts.map(acc=>{
-                    const sel = accountId===acc.id;
-                    return (
-                      <button key={acc.id} onClick={()=>setAccountId(acc.id)}
-                        style={{flex:1,padding:"8px 4px",borderRadius:10,border:`2px solid ${sel?acc.color:"transparent"}`,
-                          cursor:"pointer",fontSize:11,fontWeight:700,textAlign:"center",
-                          background:sel?acc.color+"22":"rgba(255,255,255,0.04)",color:sel?acc.color:T.txt2,
-                          fontFamily:"inherit"}}>
-                        <div style={{fontSize:16,marginBottom:1}}>{Li(acc.icon,18,T.txt)}</div>
-                        {acc.name}{acc.delayDays>0&&<span style={{color:T.gold,fontSize:"0.8em",fontWeight:700,marginLeft:2}}>+{acc.delayDays}d</span>}
-                      </button>
-                    );
-                  })}
+                <div style={{marginBottom:8}}>
+                  <AccountChips accounts={accounts} value={accountId} onChange={setAccountId}/>
                 </div>
               </>}
 

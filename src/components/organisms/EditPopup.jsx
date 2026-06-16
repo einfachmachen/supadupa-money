@@ -2,6 +2,7 @@
 
 import React, { useContext } from "react";
 import { CatPicker } from "../molecules/CatPicker.jsx";
+import { AccountChips } from "../molecules/AccountChips.jsx";
 import { VerknuepfenPanel } from "./VerknuepfenPanel.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
@@ -153,27 +154,16 @@ function EditPopup() {
           })()}
           {/* Zahlungsart */}
           <div style={{color:T.txt2,fontSize:11,marginBottom:6}}>Zahlungsart</div>
-          <div style={{display:"flex",gap:6,marginBottom:12}}>
-            {accounts.map(acc=>{
-              const sel = editTx.accountId===acc.id;
-              return (
-                <button key={acc.id} onClick={()=>{
-                  const d = new Date(editTx.date);
-                  d.setDate(d.getDate()+acc.delayDays);
-                  setEditTx(p=>({...p, accountId:acc.id,
-                    pendingDate: acc.delayDays>0 ? d.toISOString().split("T")[0] : "",
-                    pending: acc.delayDays>0 ? true : p.pending,
-                  }));
-                }}
-                  style={{flex:1,padding:"8px 4px",borderRadius:10,border:`2px solid ${sel?acc.color:"transparent"}`,
-                    cursor:"pointer",fontSize:11,fontWeight:700,textAlign:"center",
-                    background:sel?acc.color+"22":"rgba(255,255,255,0.04)",
-                    color:sel?acc.color:T.txt2}}>
-                  <div style={{fontSize:16,marginBottom:2}}>{Li(acc.icon,18,sel?acc.color:T.txt2)}</div>
-                  <div style={{fontSize:10,fontWeight:700,whiteSpace:"nowrap"}}>{acc.name}{acc.delayDays>0&&<span style={{color:T.gold,fontSize:"0.8em",fontWeight:700,marginLeft:2}}>+{acc.delayDays}d</span>}</div>
-                </button>
-              );
-            })}
+          <div style={{marginBottom:12}}>
+            <AccountChips accounts={accounts} value={editTx.accountId} onChange={(id)=>{
+              const acc = accounts.find(a=>a.id===id);
+              const d = new Date(editTx.date);
+              d.setDate(d.getDate()+(acc?.delayDays||0));
+              setEditTx(p=>({...p, accountId:id,
+                pendingDate: acc?.delayDays>0 ? d.toISOString().split("T")[0] : "",
+                pending: acc?.delayDays>0 ? true : p.pending,
+              }));
+            }}/>
           </div>
           {/* Umbuchung: Zielkonto wählen — bei Vormerkungen UND bei Serien-Buchungen
               (damit man bestehende Wiederkehrende nachträglich um Umbuchung ergänzen kann) */}

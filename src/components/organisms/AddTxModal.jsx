@@ -6,6 +6,7 @@ import { MHead } from "../atoms/MHead.jsx";
 import { Overlay } from "../atoms/Overlay.jsx";
 import { PBtn } from "../atoms/PBtn.jsx";
 import { CatPicker } from "../molecules/CatPicker.jsx";
+import { AccountChips } from "../molecules/AccountChips.jsx";
 import { VormHubSecToggle } from "../molecules/VormHubSecToggle.jsx";
 import { BudgetEditorModal } from "./BudgetEditorModal.jsx";
 import { KategorieAnlegen } from "./KategorieAnlegen.jsx";
@@ -345,72 +346,20 @@ function AddTxModal() {
       {/* Zahlungsart — Standard für Vormerken/Wiederk./Finanz., bei Umbuchung Quelle+Ziel */}
       {typ!=="umbuchung" ? (<>
         <Lbl>Zahlungsart</Lbl>
-        <div style={{display:"flex",gap:6,marginBottom:8}}>
-          {accounts.map(acc=>{
-            const sel=accountId===acc.id;
-            return (
-              <button key={acc.id} onClick={()=>setAccountId(acc.id)}
-                style={{flex:1,padding:"8px 4px",borderRadius:10,border:`2px solid ${sel?acc.color:"transparent"}`,
-                  cursor:"pointer",fontSize:11,fontWeight:700,textAlign:"center",
-                  background:sel?acc.color+"22":"rgba(255,255,255,0.04)",
-                  color:sel?acc.color:T.txt2,fontFamily:"inherit"}}>
-                <div style={{marginBottom:1}}>{Li(acc.icon,18,T.txt)}</div>
-                {acc.name}{acc.delayDays>0&&<span style={{color:T.gold,fontSize:"0.8em",marginLeft:2}}>+{acc.delayDays}d</span>}
-              </button>
-            );
-          })}
+        <div style={{marginBottom:8}}>
+          <AccountChips accounts={accounts} value={accountId} onChange={setAccountId}/>
         </div>
       </>) : (<>
-        {/* Umbuchung: Quellkonto → Zielkonto */}
-        <div style={{display:"flex",alignItems:"flex-end",gap:6,marginBottom:8}}>
-          <div style={{flex:1,minWidth:0}}>
-            <Lbl>Quelle</Lbl>
-            <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-              {accounts.map(acc=>{
-                const sel=srcAccountId===acc.id;
-                return (
-                  <button key={acc.id} onClick={()=>setSrcAccountId(acc.id)}
-                    style={{flex:"1 1 0",minWidth:0,padding:"6px 4px",borderRadius:8,
-                      border:`2px solid ${sel?acc.color:"transparent"}`,
-                      cursor:"pointer",fontSize:10,fontWeight:700,textAlign:"center",
-                      background:sel?acc.color+"22":"rgba(255,255,255,0.04)",
-                      color:sel?acc.color:T.txt2,fontFamily:"inherit",
-                      overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                    <div style={{marginBottom:1}}>{Li(acc.icon,14,T.txt)}</div>
-                    {acc.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-          <div style={{padding:"0 4px 14px",color:T.txt2,fontSize:18,fontWeight:700,
-            display:"flex",alignItems:"center",justifyContent:"center"}}>
-            {Li("arrow-right",18,T.txt2)}
-          </div>
-          <div style={{flex:1,minWidth:0}}>
-            <Lbl>Ziel</Lbl>
-            <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-              {accounts.map(acc=>{
-                const sel=tgtAccountId===acc.id;
-                const disabled=acc.id===srcAccountId;
-                return (
-                  <button key={acc.id} onClick={()=>{ if(!disabled) setTgtAccountId(acc.id); }}
-                    disabled={disabled}
-                    style={{flex:"1 1 0",minWidth:0,padding:"6px 4px",borderRadius:8,
-                      border:`2px solid ${sel?acc.color:"transparent"}`,
-                      cursor:disabled?"not-allowed":"pointer",fontSize:10,fontWeight:700,textAlign:"center",
-                      background:sel?acc.color+"22":"rgba(255,255,255,0.04)",
-                      color:disabled?T.txt2+"55":sel?acc.color:T.txt2,
-                      opacity:disabled?0.4:1,
-                      fontFamily:"inherit",
-                      overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                    <div style={{marginBottom:1}}>{Li(acc.icon,14,T.txt)}</div>
-                    {acc.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+        {/* Umbuchung: Quellkonto → Zielkonto (gestapelt, Vormerken-Stil) */}
+        <Lbl>Quelle</Lbl>
+        <div style={{marginBottom:4}}>
+          <AccountChips accounts={accounts} value={srcAccountId}
+            onChange={(id)=>{ setSrcAccountId(id); if(id===tgtAccountId){ const o=accounts.find(a=>a.id!==id); setTgtAccountId(o?.id||""); } }}/>
+        </div>
+        <div style={{textAlign:"center",color:T.txt2,margin:"2px 0 4px"}}>{Li("arrow-down",18,T.txt2)}</div>
+        <Lbl>Ziel</Lbl>
+        <div style={{marginBottom:8}}>
+          <AccountChips accounts={accounts} value={tgtAccountId} onChange={setTgtAccountId} excludeId={srcAccountId}/>
         </div>
       </>)}
 
