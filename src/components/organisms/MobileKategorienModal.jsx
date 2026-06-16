@@ -21,6 +21,29 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
   // Toast für Regen-Feedback
   const [toast, setToast] = useState("");
   const showToast = msg => { setToast(msg); setTimeout(()=>setToast(""), 3000); };
+  // Kategorien von einem anderen Konto auf das aktuell gefilterte Konto klonen
+  // (neue IDs/Typen, gleiche Namen/Icons/Struktur; Budget-Beträge bleiben kontoweise separat)
+  const [copySrcOpen, setCopySrcOpen] = useState(false);
+  const copyCatsToAccount = (targetAccId, srcAccId) => {
+    const srcGroups = groups.filter(g => (g.accountId||"") === srcAccId);
+    const newGroups = []; const newCats = [];
+    srcGroups.forEach(g => {
+      const newGid = "grp-"+uid(); const newType = newGid;
+      newGroups.push({...g, id:newGid, type:newType, accountId: targetAccId});
+      cats.filter(c => c.type === g.type).forEach(c => {
+        newCats.push({...c, id:"cat-"+uid(), type:newType,
+          subs:(c.subs||[]).map(s=>({...s, id:"sub-"+uid()}))});
+      });
+    });
+    if(newGroups.length){
+      setGroups(p=>[...p,...newGroups]);
+      setCats(p=>[...p,...newCats]);
+      showToast(`✓ ${newGroups.length} Kategorie-Gruppen übernommen`);
+    } else {
+      showToast("Quell-Konto hat keine Kategorien");
+    }
+    setCopySrcOpen(false);
+  };
   // Icon-/Farb-Picker State (per Antippen)
   const [iconPickFor, setIconPickFor] = useState(null);    // {type:"cat"|"sub", id}
   const updateCat = (catId, field, val) => {
@@ -327,6 +350,37 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                   </button>
                 );
               })}
+            </div>
+          );
+        })()}
+
+        {/* Kategorien von anderem Konto übernehmen — wenn ein bestimmtes Konto gewählt ist */}
+        {catAccFilter && (()=>{
+          const srcAccs = accounts.filter(a => a.id!==catAccFilter && groups.some(g=>(g.accountId||"")===a.id));
+          if(!srcAccs.length) return null;
+          if(!copySrcOpen) return (
+            <button onClick={()=>setCopySrcOpen(true)}
+              style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+                padding:`${S.pad}px ${S.padL}px`,borderRadius:S.radius,
+                background:"rgba(255,255,255,0.04)",border:`1.5px dashed ${T.bds}`,
+                color:T.txt2,marginBottom:S.gap,fontWeight:600,fontSize:S.fs-2,cursor:"pointer",fontFamily:"inherit"}}>
+              {Li("copy",S.fs-4,T.txt2)} Kategorien von anderem Konto übernehmen
+            </button>
+          );
+          return (
+            <div style={{border:`1px solid ${T.bd}`,borderRadius:S.radius,padding:S.pad,marginBottom:S.gap}}>
+              <div style={{color:T.txt2,fontSize:S.fs-6,fontWeight:700,marginBottom:6}}>Von welchem Konto übernehmen?</div>
+              {srcAccs.map(a=>(
+                <button key={a.id} onClick={()=>copyCatsToAccount(catAccFilter, a.id)}
+                  style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"8px 10px",marginBottom:4,
+                    borderRadius:S.radius/2,border:`1px solid ${T.bd}`,background:"rgba(255,255,255,0.04)",
+                    color:T.txt,cursor:"pointer",fontSize:S.fs-4,fontFamily:"inherit"}}>
+                  {Li(a.icon||"landmark",S.fs-4,a.color||T.blue)}
+                  <span style={{flex:1,textAlign:"left"}}>{a.name}</span>
+                </button>
+              ))}
+              <button onClick={()=>setCopySrcOpen(false)}
+                style={{background:"none",border:"none",color:T.txt2,fontSize:S.fs-8,cursor:"pointer",marginTop:2,fontFamily:"inherit"}}>abbrechen</button>
             </div>
           );
         })()}
