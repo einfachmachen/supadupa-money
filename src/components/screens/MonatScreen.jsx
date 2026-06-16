@@ -877,7 +877,7 @@ function MonatScreen() {
                             </div>
                           </div>
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
-                            <div style={{...amtStyle("pos",pal.val),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>+{fmt(tx.totalAmount)}</div>
+                            <div style={{...amtStyle("pos",pal.val),...(tx.pending?{color:T.cell_inc}:{}),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmt(tx.totalAmount)}</div>
                             {fulfilled&&<div style={{color:T.pos,fontSize:9}}>{Li("check",9,T.pos)} erfüllt</div>}
                             {needsHatch&&<div style={{color:pal.hdr,fontSize:9}}>{Li("alert-circle",9,T.gold)} offen</div>}
                           </div>
@@ -927,9 +927,9 @@ function MonatScreen() {
                               links, „Rest:" (offen) rechts. */}
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8,
                             display:"flex",justifyContent:"flex-end",alignItems:"baseline",gap:6}}>
-                            <span style={{...amtStyle(spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold",spent===0?T.txt2:accentCol),fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{spent===0?"—":fmtSigned(-spent)}</span>
+                            <span style={{...amtStyle(spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold",spent===0?T.txt2:accentCol),fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{spent===0?"—":fmt(Math.abs(spent))}</span>
                             <span style={{color:T.txt2,fontSize:10,marginLeft:8}}>{isOverspent?"zuviel:":"Rest:"}</span>
-                            <span style={{...amtStyle(isOverspent?"neg":open>0?"gold":"txt2"),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmtSigned(signedOpen)}</span>
+                            <span style={{...amtStyle(isOverspent?"neg":open>0?"gold":"txt2"),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmt(Math.abs(signedOpen))}</span>
                           </div>
                         </div>
                       </div>
@@ -1026,8 +1026,8 @@ function MonatScreen() {
                           </div>
                           {/* Amount */}
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
-                            <div style={{...amtStyle(type==="income"?"pos":tx.pending?"gold":"neg",pal.val),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>
-                              {type==="income"?"+":"−"}{fmt(tx.totalAmount)}
+                            <div style={{...amtStyle(type==="income"?"pos":tx.pending?"gold":"neg",pal.val),...(type==="income"&&tx.pending?{color:T.cell_inc}:{}),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>
+                              {fmt(tx.totalAmount)}
                             </div>
                             {isS&&(
                               <div style={{marginTop:2}}>

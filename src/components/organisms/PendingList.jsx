@@ -60,7 +60,8 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
         const cat=getCat((tx.splits||[])[0]?.catId);
         const day=dayOf(tx.date);
         const isIncome = txType(tx)==="income"||(tx._csvType==="income");
-        const col = isIncome ? T.pos : T.neg;
+        // Vormerkungs-Farbschema: Einnahmen = Hellgrün, Ausgaben = Gold
+        const col = isIncome ? T.cell_inc : T.gold;
         const isS = (tx.splits||[]).length>1;
         const isExpanded = expandedId===tx.id;
         // Budget-Platzhalter: nur noch das offene Restbudget zeigen.

@@ -183,7 +183,7 @@ function SaldoHeroV2({
           {(pendInE>0||pendOutE>0) && (
             <DetailRow label="VM"
               mIn={pendInM} mOut={pendOutM} eIn={pendInE} eOut={pendOutE}
-              clrIn={T.pos+"aa"} clrOut={T.neg+"aa"}
+              clrIn={T.cell_inc} clrOut={T.gold}
               onTapIn={onDrillPendIn} onTapOut={onDrillPendOut}/>
           )}
           {(uInE>0||uOutE>0) && (

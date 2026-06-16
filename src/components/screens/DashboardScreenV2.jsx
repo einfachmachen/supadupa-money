@@ -1595,7 +1595,7 @@ function DashboardScreenV2() {
                   // Budget-Paar: als einzelne Zeile darstellen
                   if(tx._isBudgetPair) {
                     const cat2 = getCat((tx.splits||[])[0]?.catId);
-                    const col2 = T.neg;
+                    const col2 = dashDrill.isPending ? (dashDrill.isIncome ? T.cell_inc : T.gold) : (dashDrill.isIncome ? T.pos : T.neg);
                     return (
                       <div key={tx.id} style={{padding:"10px 18px",borderBottom:`1px solid ${T.bd}`,background:T.surf3}}>
                         <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={()=>{setDashDrill(null);openEdit(tx);}}>
@@ -1605,9 +1605,9 @@ function DashboardScreenV2() {
                           </div>
                           <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
                             <span style={{color:T.mid,fontSize:10}}>Mitte</span>
-                            <span style={{color:col2,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(tx._mitteAmt)}</span>
+                            <span style={{color:col2,fontSize:17,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(tx._mitteAmt)}</span>
                             <span style={{color:T.gold,fontSize:10}}>Gesamt</span>
-                            <span style={{color:col2,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(tx._mitteAmt+tx._endeAmt)}</span>
+                            <span style={{color:col2,fontSize:17,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(tx._mitteAmt+tx._endeAmt)}</span>
                           </div>
                         </div>
                       </div>
@@ -1616,7 +1616,7 @@ function DashboardScreenV2() {
                   // Ungepaartes Budget (z.B. "Budget für Unvorhergesehenes" ohne Mitte)
                   if(tx._budgetSubId && !tx._isBudgetPair) {
                     const cat2 = getCat((tx.splits||[])[0]?.catId);
-                    const col2 = T.neg;
+                    const col2 = dashDrill.isPending ? (dashDrill.isIncome ? T.cell_inc : T.gold) : (dashDrill.isIncome ? T.pos : T.neg);
                     const isMitte = tx._budgetSubId.endsWith("_mitte");
                     return (
                       <div key={tx.id} style={{padding:"10px 18px",borderBottom:`1px solid ${T.bd}`,background:T.surf3}}>
@@ -1627,9 +1627,9 @@ function DashboardScreenV2() {
                           </div>
                           <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
                             {isMitte&&<><span style={{color:T.mid,fontSize:10}}>Mitte</span>
-                            <span style={{color:col2,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(tx.totalAmount)}</span></>}
+                            <span style={{color:col2,fontSize:17,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(tx.totalAmount)}</span></>}
                             <span style={{color:T.gold,fontSize:10}}>Gesamt</span>
-                            <span style={{color:col2,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(tx.totalAmount)}</span>
+                            <span style={{color:col2,fontSize:17,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(tx.totalAmount)}</span>
                           </div>
                         </div>
                       </div>
@@ -1690,7 +1690,7 @@ function DashboardScreenV2() {
                             {sub&&!isUncat&&!isS&&<span style={{color:cat?.color||dashDrill.cat?.color||T.txt2,fontSize:12}}>{sub.name}</span>}
                             {isUncat&&<span style={{color:T.neg,fontSize:10,fontWeight:700}}>unkategorisiert</span>}
                           </div>
-                          <div style={{...amtStyle(dashDrill.isIncome?"pos":"neg"),fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
+                          <div style={{...amtStyle(dashDrill.isIncome?"pos":"neg"),...(dashDrill.isPending?{color:dashDrill.isIncome?T.cell_inc:T.gold}:{}),fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
                             {fmt(amt)}
                           </div>
                         </div>
@@ -1717,10 +1717,10 @@ function DashboardScreenV2() {
                                   display:"flex",alignItems:"center",gap:3}}>
                                   {Li("link",9,T.blue)} zugeordnet
                                 </span>}
-                                <span style={{color:isLinked?T.txt2:dashDrill.isIncome?T.pos:T.neg,
+                                <span style={{color:isLinked?T.txt2:(dashDrill.isPending?(dashDrill.isIncome?T.cell_inc:T.gold):(dashDrill.isIncome?T.pos:T.neg)),
                                   fontSize:11,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0,
                                   opacity:isLinked?0.5:1}}>
-                                  {dashDrill.isIncome?"+":"−"}{fmt(pn(s.amount))}
+                                  {fmt(pn(s.amount))}
                                 </span>
                               </div>
                             );
