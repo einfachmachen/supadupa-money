@@ -2,6 +2,7 @@
 
 import React, { useContext, useState } from "react";
 import { CatPicker } from "../molecules/CatPicker.jsx";
+import { AccountChips } from "../molecules/AccountChips.jsx";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { MonthPicker } from "../molecules/MonthPicker.jsx";
 import { QuickBtnsBar } from "../molecules/QuickBtnsBar.jsx";
@@ -304,16 +305,9 @@ function MatchingScreen({onClose, onBack}) {
                     filterType={newPend.csvType||"expense"}/>
                   {/* Zahlungsart */}
                   {accounts.length>0&&(
-                    <div style={{display:"flex",gap:4,marginBottom:6,flexWrap:"wrap"}}>
-                      {accounts.map(acc=>(
-                        <button key={acc.id} onClick={()=>setNewPend(p=>({...p,accountId:acc.id}))}
-                          style={{padding:"4px 8px",borderRadius:7,cursor:"pointer",fontSize:10,fontWeight:600,
-                            border:`2px solid ${newPend.accountId===acc.id?acc.color:"transparent"}`,
-                            background:newPend.accountId===acc.id?acc.color+"22":"rgba(255,255,255,0.04)",
-                            color:newPend.accountId===acc.id?acc.color:T.txt2}}>
-                          {Li(acc.icon,14,T.txt2)} {acc.name}{acc.delayDays>0&&<span style={{color:T.gold,fontSize:"0.8em",fontWeight:700,marginLeft:2}}>+{acc.delayDays}d</span>}
-                        </button>
-                      ))}
+                    <div style={{marginBottom:6}}>
+                      <AccountChips accounts={accounts} value={newPend.accountId}
+                        onChange={(id)=>setNewPend(p=>({...p,accountId:id}))}/>
                     </div>
                   )}
                   {/* Wiederholung */}
