@@ -2,6 +2,7 @@
 
 import React, { useContext, useState } from "react";
 import { SubNameField } from "../atoms/SubNameField.jsx";
+import { AccountChips } from "../molecules/AccountChips.jsx";
 import { IconPickerDialog } from "./IconPickerDialog.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
@@ -307,52 +308,12 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
 
         {/* Hinweis: Symbole und Farben können durch Antippen geändert werden */}
 
-        {/* Konto-Filter — kompakte Kacheln wie in den Vormerken-Dialogen */}
-        {accounts.length>1 && (()=>{
-          const count = accounts.length + 1; // + "Alle"
-          const chipStyle = (selected, color) => ({
-            aspectRatio:"1", borderRadius:S.radius, padding:4,
-            background: selected ? color+"22" : "rgba(255,255,255,0.06)",
-            border:`2px solid ${selected ? (color||T.blue) : T.bd}`,
-            color: selected ? (color||T.blue) : T.txt2,
-            cursor:"pointer", fontFamily:"inherit", position:"relative",
-            display:"flex", flexDirection:"column", alignItems:"center",
-            justifyContent:"center", gap:2, minWidth:0, overflow:"hidden",
-          });
-          const nameStyle = (selected) => ({
-            fontSize:S.fs-12, fontWeight:selected?700:500,
-            width:"100%", textAlign:"center",
-            overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
-            lineHeight:1.1,
-          });
-          return (
-            <div style={{display:"grid", gridTemplateColumns:`repeat(${count}, 1fr)`,
-              gap:S.gap/2, marginBottom:S.gap, paddingBottom:S.gap, borderBottom:`1px solid ${T.bd}`}}>
-              <button onClick={()=>setCatAccFilter(null)} style={chipStyle(catAccFilter===null, T.blue)}>
-                {Li("layers", S.fs, catAccFilter===null?T.blue:T.txt2)}
-                <span style={nameStyle(catAccFilter===null)}>Alle</span>
-              </button>
-              {accounts.map(acc=>{
-                const sel = catAccFilter===acc.id;
-                const col = acc.color||T.blue;
-                return (
-                  <button key={acc.id} onClick={()=>setCatAccFilter(acc.id)} style={chipStyle(sel,col)}>
-                    {acc.delayDays>0 && (
-                      <span style={{position:"absolute", top:3, right:3,
-                        fontSize:S.fs-16, color:T.gold, fontWeight:700,
-                        background:T.gold+"22", borderRadius:4,
-                        padding:"0 3px", lineHeight:1.3, letterSpacing:"-0.5px"}}>
-                        +{acc.delayDays}
-                      </span>
-                    )}
-                    {Li(acc.icon||"landmark", S.fs, sel?col:T.txt2)}
-                    <span style={nameStyle(sel)}>{acc.name||acc.id}</span>
-                  </button>
-                );
-              })}
-            </div>
-          );
-        })()}
+        {/* Konto-Filter — gemeinsame AccountChips (Vormerken-Stil) inkl. „Alle" */}
+        {accounts.length>1 && (
+          <div style={{marginBottom:S.gap, paddingBottom:S.gap, borderBottom:`1px solid ${T.bd}`}}>
+            <AccountChips accounts={accounts} value={catAccFilter} onChange={setCatAccFilter} allowAll={true} S={S}/>
+          </div>
+        )}
 
         {/* Kategorien von anderem Konto übernehmen — wenn ein bestimmtes Konto gewählt ist */}
         {catAccFilter && (()=>{
