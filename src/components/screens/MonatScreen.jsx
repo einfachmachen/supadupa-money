@@ -777,13 +777,13 @@ function MonatScreen() {
                       <span style={{
                         ...amtStyle(headSaldo>=0?"pos":"neg"),
                         fontSize:18,fontWeight:800,fontFamily:NUM_FONT,whiteSpace:"nowrap"}}>
-                        {headSaldo>=0?"+":"−"}{fmt(Math.abs(headSaldo))}
+                        {headSaldo>=0?"":"−"}{fmt(Math.abs(headSaldo))}
                       </span>
                     </div>
                   ) : (
                     <span style={{...amtStyle(dayNet>=0?"pos":"neg"),fontSize:18,fontWeight:800,
                       fontFamily:NUM_FONT,flexShrink:0}}>
-                      {dayNet>=0?"+":"−"}{fmt(Math.abs(dayNet))}
+                      {dayNet>=0?"":"−"}{fmt(Math.abs(dayNet))}
                     </span>
                   )}
                 </div>
