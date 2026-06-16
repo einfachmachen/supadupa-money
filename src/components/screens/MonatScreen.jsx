@@ -757,7 +757,7 @@ function MonatScreen() {
                         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1,lineHeight:1.2}}>
                           {hasReservierung&&(
                             <span style={{...amtStyle(daySaldo>=0?"txt2":"neg"),fontSize:11,fontFamily:NUM_FONT,fontWeight:600,whiteSpace:"nowrap"}}>
-                              nach Budget {daySaldo>=0?"+":"−"}{fmt(Math.abs(daySaldo))}
+                              nach Budget {daySaldo>=0?"":"−"}{fmt(Math.abs(daySaldo))}
                             </span>
                           )}
                           {hasDayPend&&(()=>{
