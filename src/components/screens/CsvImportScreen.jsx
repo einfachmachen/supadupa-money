@@ -8,6 +8,7 @@ import { QuickPicker } from "../organisms/QuickPicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { parseCSV } from "../../utils/csv.js";
+import { AccountChips } from "../molecules/AccountChips.jsx";
 import { parsePdfStatement } from "../../utils/pdfStatement.js";
 import { anchorFromDetectedBalance, makeAnchorEntry } from "../../utils/anchors.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
@@ -463,31 +464,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
           <div style={{color:T.txt2,fontSize:mobileMode?14:10,fontWeight:700,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.05em"}}>
             {Li("landmark",mobileMode?14:10,T.txt2)} Konto (gilt für Buchungen & Ankerpunkt)
           </div>
-          <div style={{display:"flex",flexWrap:"wrap",gap:mobileMode?10:6}}>
-            {accounts.map(acc=>{
-              const active = selAccId===acc.id;
-              return (
-                <button key={acc.id} onClick={()=>setSelAccId(acc.id)}
-                  style={{
-                    display:"flex",alignItems:"center",gap:mobileMode?8:6,
-                    padding:mobileMode?"10px 16px":"6px 12px",
-                    borderRadius:mobileMode?14:10,cursor:"pointer",fontFamily:"inherit",
-                    fontSize:mobileMode?16:12,fontWeight:active?700:500,
-                    border:`2px solid ${active?(acc.color||T.blue):T.bd}`,
-                    background:active?(acc.color||T.blue)+"22":"rgba(255,255,255,0.04)",
-                    color:active?(acc.color||T.blue):T.txt2,
-                    boxShadow:active?`0 0 0 1px ${acc.color||T.blue}44`:"none",
-                    transition:"all 0.15s",
-                  }}>
-                  {Li(acc.icon||"landmark",mobileMode?18:14,active?(acc.color||T.blue):T.txt2)}
-                  <span>{acc.name||acc.id}</span>
-                  {acc.delayDays>0&&<span style={{fontSize:mobileMode?11:9,color:T.gold,fontWeight:700,
-                    background:T.gold+"22",borderRadius:4,padding:"1px 4px"}}>+{acc.delayDays}d</span>}
-                  {active&&<span style={{fontSize:mobileMode?12:9,opacity:0.8}}>✓</span>}
-                </button>
-              );
-            })}
-          </div>
+          <AccountChips accounts={accounts} value={selAccId} onChange={setSelAccId}/>
           {selAccId&&(()=>{const a=accounts.find(x=>x.id===selAccId);return a?(
             <div style={{color:a.color||T.blue,fontSize:mobileMode?12:9,marginTop:5,fontWeight:600}}>
               Buchungen & Ankerpunkt → {a.name}
