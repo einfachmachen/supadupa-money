@@ -13,6 +13,7 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { amtStyle } from "../../theme/amtPill.js";
 import { fmt, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
+import { ThemeSwitcherMini } from "../molecules/ThemeSwitcherMini.jsx";
 
 function SaldoHeroV2({
   year, month,
@@ -96,6 +97,10 @@ function SaldoHeroV2({
 
   return (
     <div style={{padding:"5px 20px 6px",position:"relative"}}>
+      {/* Freier Bereich links oben: minimaler Theme-Umschalter. */}
+      <div style={{position:"absolute",top:8,left:14,zIndex:2}}>
+        <ThemeSwitcherMini/>
+      </div>
       {/* Zeile 1: aktueller Kontostand groß & zentriert. Tippen auf den Betrag
           wechselt durch die Konten. Direkt rechts daneben — vertikal zentriert —
           das Augensymbol (unscharf ↔ sichtbar). Der Kontoname sitzt klein/

@@ -748,16 +748,20 @@ function MonatScreen() {
                   </div>
                   {/* Verbindungs-Linie in grün (positiver) / rot (negativer Ist-Saldo) */}
                   <div style={{flex:1,height:2,
-                    background:(headSaldo!==null?headSaldo:dayNet)>=0?T.pos:T.neg,
+                    background:(daySaldo!==null?daySaldo:headSaldo!==null?headSaldo:dayNet)>=0?T.pos:T.neg,
                     opacity:0.85,borderRadius:1,minWidth:10}}/>
-                  {headSaldo!==null ? (
+                  {headSaldo!==null ? (()=>{
+                    // Headline (rechts, groß) = "nach Budget" (inkl. Reservierung).
+                    // Links klein als Zusatz der reine Ist-Verlauf "ohne Budget".
+                    const bigVal = daySaldo!==null ? daySaldo : headSaldo;
+                    return (
                     <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
                       {/* Zusatzinfos LINKS neben dem Tagessaldo, größer & lesbar */}
                       {(hasReservierung||hasDayPend)&&(
                         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1,lineHeight:1.2}}>
                           {hasReservierung&&(
-                            <span style={{...amtStyle(daySaldo>=0?"txt2":"neg"),fontSize:11,fontFamily:NUM_FONT,fontWeight:600,whiteSpace:"nowrap"}}>
-                              nach Budget {daySaldo>=0?"":"−"}{fmt(Math.abs(daySaldo))}
+                            <span style={{...amtStyle(dayIst>=0?"txt2":"neg"),fontSize:11,fontFamily:NUM_FONT,fontWeight:600,whiteSpace:"nowrap"}}>
+                              ohne Budget {dayIst>=0?"":"−"}{fmt(Math.abs(dayIst))}
                             </span>
                           )}
                           {hasDayPend&&(()=>{
@@ -775,12 +779,13 @@ function MonatScreen() {
                         </div>
                       )}
                       <span style={{
-                        ...amtStyle(headSaldo>=0?"pos":"neg"),
+                        ...amtStyle(bigVal>=0?"pos":"neg"),
                         fontSize:18,fontWeight:800,fontFamily:NUM_FONT,whiteSpace:"nowrap"}}>
-                        {headSaldo>=0?"":"−"}{fmt(Math.abs(headSaldo))}
+                        {bigVal>=0?"":"−"}{fmt(Math.abs(bigVal))}
                       </span>
                     </div>
-                  ) : (
+                    );
+                  })() : (
                     <span style={{...amtStyle(dayNet>=0?"pos":"neg"),fontSize:18,fontWeight:800,
                       fontFamily:NUM_FONT,flexShrink:0}}>
                       {dayNet>=0?"":"−"}{fmt(Math.abs(dayNet))}
