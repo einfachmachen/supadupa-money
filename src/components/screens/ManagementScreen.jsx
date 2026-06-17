@@ -14,6 +14,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
 import { uid, NUM_FONT } from "../../utils/format.js";
+import { reassignAccount, accountRefs } from "../../utils/accountReassign.js";
 import { Li } from "../../utils/icons.jsx";
 
 function ManagementScreen({activeTab="kategorien"}) {
@@ -48,6 +49,18 @@ function ManagementScreen({activeTab="kategorien"}) {
   const [showIconPicker, setShowIconPicker] = useState(null);
   const [ln, setLn] = useState("");
   const [mgrTab, setMgrTab] = useState(activeTab);
+  // Konto-Löschen mit Pflicht-Umhängen: kein verwaisen von Buchungen.
+  const [delAccPrompt, setDelAccPrompt] = useState(null); // das zu löschende Konto
+  const [delTarget, setDelTarget] = useState(null);       // Ziel-Konto-id zum Umhängen
+  const refsOfAcc = (accId) => accountRefs({txs, groups, budgets}, accId);
+  const doDeleteAcc = (acc, targetId) => {
+    if(targetId){
+      const out = reassignAccount({txs, groups, budgets}, acc.id, targetId);
+      setTxs(out.txs); setGroups(out.groups); setBudgets(out.budgets);
+    }
+    setAccounts(p=>p.filter(a=>a.id!==acc.id));
+    setDelAccPrompt(null); setDelTarget(null);
+  };
   React.useEffect(()=>{ setMgrTab(activeTab); }, [activeTab]);
   const _cats = Array.isArray(cats) ? cats : [];
   const _groups = Array.isArray(groups) ? groups : [];
@@ -229,11 +242,75 @@ function ManagementScreen({activeTab="kategorien"}) {
                       color:T.txt,fontSize:11,fontFamily:NUM_FONT,textAlign:"right",outline:"none"}}/>
                   <span style={{color:T.txt2,fontSize:10}}>€</span>
                 </div>
-                <button onClick={()=>setAccounts(p=>p.filter(a=>a.id!==acc.id))}
+                <button onClick={()=>{ setDelTarget(null); setDelAccPrompt(acc); }}
                   style={{background:"none",border:"none",color:T.neg,opacity:0.6,cursor:"pointer",fontSize:14}}>{Li("trash-2",14)}</button>
               </div>
             ))}
             <ErrorBoundary name="AddAccountForm"><AddAccountForm setAccounts={setAccounts}/></ErrorBoundary>
+
+            {/* Konto-Löschen: Pflicht-Umhängen, damit keine Buchung verwaist */}
+            {delAccPrompt && (()=>{
+              const acc = delAccPrompt;
+              const r = refsOfAcc(acc.id);
+              const others = _accounts.filter(a=>a.id!==acc.id);
+              const hasRefs = (r.tx+r.grp+r.bud) > 0;
+              const blocked = hasRefs && others.length===0;
+              const ready = !hasRefs || !!delTarget;
+              return (
+                <div onClick={()=>setDelAccPrompt(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",zIndex:400,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+                  <div onClick={e=>e.stopPropagation()} style={{background:T.surf,borderRadius:18,padding:16,width:"100%",maxWidth:420,border:`1px solid ${T.bds}`,boxShadow:"0 12px 48px rgba(0,0,0,0.6)",maxHeight:"85vh",overflowY:"auto"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                      {Li("alert-triangle",18,T.neg)}
+                      <div style={{color:T.txt,fontSize:15,fontWeight:800}}>Konto löschen: {acc.name}</div>
+                    </div>
+                    {hasRefs ? (<>
+                      <div style={{color:T.txt2,fontSize:12,lineHeight:1.5,marginBottom:10}}>
+                        Diesem Konto sind <b style={{color:T.txt}}>{r.tx} Buchungen</b>{r.grp?`, ${r.grp} Kategorie-Gruppen`:""}{r.bud?`, ${r.bud} Budgets`:""} zugeordnet.
+                        Damit <b style={{color:T.txt}}>nichts verloren geht</b>, werden sie beim Löschen auf ein anderes Konto umgehängt. Bitte Ziel-Konto wählen:
+                      </div>
+                      {blocked ? (
+                        <div style={{color:T.neg,fontSize:12,padding:"8px 10px",borderRadius:8,background:`${T.neg}12`,border:`1px solid ${T.neg}44`,marginBottom:12}}>
+                          Es gibt kein anderes Konto, auf das umgehängt werden könnte. Lege zuerst ein weiteres Konto an.
+                        </div>
+                      ) : (
+                        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:14}}>
+                          {others.map(a=>{
+                            const on = delTarget===a.id;
+                            return (
+                              <button key={a.id} onClick={()=>setDelTarget(a.id)}
+                                style={{display:"flex",alignItems:"center",gap:6,padding:"7px 11px",borderRadius:10,cursor:"pointer",fontFamily:"inherit",fontSize:12,fontWeight:on?700:500,
+                                  background:on?`${a.color||T.blue}22`:"rgba(255,255,255,0.04)",
+                                  color:on?(a.color||T.blue):T.txt, border:`1.5px solid ${on?(a.color||T.blue):T.bd}`}}>
+                                {Li(a.icon,14,a.color||T.blue)} {a.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </>) : (
+                      <div style={{color:T.txt2,fontSize:12,lineHeight:1.5,marginBottom:14}}>
+                        Diesem Konto sind keine Buchungen, Gruppen oder Budgets zugeordnet — es kann gefahrlos gelöscht werden.
+                      </div>
+                    )}
+                    <div style={{display:"flex",gap:8}}>
+                      <button onClick={()=>setDelAccPrompt(null)}
+                        style={{flex:1,padding:"10px",borderRadius:11,border:`1px solid ${T.bds}`,background:"transparent",color:T.txt2,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
+                        Abbrechen
+                      </button>
+                      {!blocked && (
+                        <button disabled={!ready} onClick={()=>doDeleteAcc(acc, hasRefs?delTarget:null)}
+                          style={{flex:1.4,padding:"10px",borderRadius:11,border:"none",
+                            background:ready?T.neg:T.bd,color:"#fff",fontSize:13,fontWeight:700,
+                            cursor:ready?"pointer":"not-allowed",opacity:ready?1:0.6,
+                            fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                          {Li("trash-2",13,"#fff")} {hasRefs?"Umhängen & löschen":"Löschen"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
         {mgrTab!=="einstellungen"&&mgrTab!=="konten"&&(
