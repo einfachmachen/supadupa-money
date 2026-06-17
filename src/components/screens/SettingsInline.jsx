@@ -21,6 +21,7 @@ function SettingsInline() {
     jsonbinActive, jsonbinSave, jsonbinLoad, jsonbinStatus, setJsonbinStatus, jsonbinKey, jsonbinId, setJsonbinKey, setJsonbinId,
     gistActive, gistSave, gistLoad, gistStatus, setGistStatus, gistToken, gistId, setGistToken, setGistId, applyData,
     cfActive, cfSave, cfLoad, cfStatus, setCfStatus, cfUrl, cfSecret, setCfUrl, setCfSecret,
+    syncPass, setSyncPass, syncEncActive,
     syncStatus, setSyncStatus, syncError,
     themeName, setThemeName, setThemeRev,
     handedness, setHandedness,
@@ -116,6 +117,18 @@ function SettingsInline() {
         <Lbl>Secret (selbst gewähltes Passwort)</Lbl>
         <SupaField value={cfSecret} onChange={v=>{setCfSecret(v);kvStore.setItem("cf_secret",v);}}
           placeholder="MeinGeheimesPasswort123" locked={false} type="password"/>
+        <Lbl>Verschlüsselung — Passphrase (optional, Zero-Knowledge)</Lbl>
+        <SupaField value={syncPass||""} onChange={v=>setSyncPass?.(v)}
+          placeholder="leer = Daten unverschlüsselt in der Cloud" locked={false} type="password"/>
+        <div style={{color:T.txt2,fontSize:10,marginTop:-2,marginBottom:8,lineHeight:1.5,
+          display:"flex",alignItems:"flex-start",gap:5}}>
+          {Li(syncEncActive?"lock":"unlock",12,syncEncActive?T.pos:T.gold)}
+          <span>
+            {syncEncActive
+              ? <>Aktiv: Deine Daten werden <b style={{color:T.pos}}>vor dem Hochladen verschlüsselt</b> — der Server sieht nur Chiffrat. Die Passphrase verlässt das Gerät nie. <b style={{color:T.gold}}>Auf jedem Gerät identisch eingeben.</b> Geht sie verloren, sind die Cloud-Daten nicht mehr lesbar.</>
+              : <>Leer = die Cloud speichert deine Daten im Klartext. Setze eine Passphrase, damit selbst bei einem Einbruch in den Store niemand mitlesen kann.</>}
+          </span>
+        </div>
         {cfActive&&(
           <div style={{display:"flex",gap:6,marginBottom:6}}>
             <button onClick={async()=>{
