@@ -25,10 +25,20 @@ function SaldoHeroV2({
 }) {
   const { selAcc, setSelAcc, accounts, getKumulierterSaldo, txs, getCat, getSub, amtMode, setAmtMode } = useContext(AppCtx);
   const [progDrill, setProgDrill] = useState(null);
-  // Augensymbol: 0 unscharf+neutral → 1 scharf+neutral → 2 scharf+farbig → 0
-  const cycleAmt = (e) => { e.stopPropagation(); setAmtMode?.(m => (m+1)%3); };
+  // Augensymbol: nur 2 Stufen — unscharf (0) ↔ sichtbar. Sichtbar ist neutral-
+  // weiß (1), solange der Detail-Block eingeklappt ist; farbig (2) nur, wenn er
+  // über das Ausklapp-Chevron geöffnet wurde.
+  const toggleEye = (e) => { e.stopPropagation(); setAmtMode?.(m => m===0 ? (detailsOpen?2:1) : 0); };
   const eyeIcon = amtMode===0 ? "eye-off" : "eye";
-  const eyeCol  = amtMode===2 ? (T.blue||T.txt) : T.txt2;
+  const eyeCol  = amtMode===0 ? T.txt2 : T.txt;
+  // Ausklappen schaltet im sichtbaren Zustand zugleich die Farbe ein/aus.
+  const toggleDetails = () => {
+    setDetailsOpen(v => {
+      const nv = !v;
+      setAmtMode?.(m => m===0 ? 0 : (nv ? 2 : 1));
+      return nv;
+    });
+  };
 
   const accLabel = selAcc===null
     ? "GESAMT"
@@ -86,26 +96,27 @@ function SaldoHeroV2({
 
   return (
     <div style={{padding:"5px 20px 6px",position:"relative"}}>
-      {/* Augensymbol: rechts oben neben dem Kontostand. 2-stufig:
-          unscharf+neutral → scharf+neutral → scharf+farbig → … */}
-      <span onClick={cycleAmt} title="Beträge ein-/ausblenden"
-        style={{position:"absolute",top:8,right:14,zIndex:2,cursor:"pointer",
-          userSelect:"none",display:"inline-flex",alignItems:"center",
-          justifyContent:"center",padding:"4px"}}>
-        {Li(eyeIcon,18,eyeCol)}
-      </span>
-      {/* Zeile 1: aktueller Kontostand groß & zentriert. Tippen wechselt durch
-          die Konten. Der Kontoname sitzt klein/zentriert in der MITTE/ENDE-Zeile. */}
-      <div onClick={allAccIds.length>1?cycleAcc:undefined}
-        style={{textAlign:"center",userSelect:"none",
-          cursor:allAccIds.length>1?"pointer":"default"}}>
-        <span className="heroAmt" style={{
-          color: heroColor(saldo),
-          fontSize:48,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
-          letterSpacing:-1,lineHeight:1.1,
-          WebkitTextStroke:"0.8px currentColor",
-        }}>
+      {/* Zeile 1: aktueller Kontostand groß & zentriert. Tippen auf den Betrag
+          wechselt durch die Konten. Direkt rechts daneben — vertikal zentriert —
+          das Augensymbol (unscharf ↔ sichtbar). Der Kontoname sitzt klein/
+          zentriert in der MITTE/ENDE-Zeile. */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"center",
+        gap:8,userSelect:"none"}}>
+        <span onClick={allAccIds.length>1?cycleAcc:undefined} className="heroAmt"
+          style={{
+            color: heroColor(saldo),
+            fontSize:48,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
+            letterSpacing:-1,lineHeight:1.1,
+            WebkitTextStroke:"0.8px currentColor",
+            cursor:allAccIds.length>1?"pointer":"default",
+          }}>
           {saldo>=0?"":"−"}{fmtMoney(Math.abs(saldo||0))} €
+        </span>
+        <span onClick={toggleEye} title="Beträge ein-/ausblenden"
+          style={{cursor:"pointer",userSelect:"none",flexShrink:0,
+            display:"inline-flex",alignItems:"center",justifyContent:"center",
+            padding:"4px"}}>
+          {Li(eyeIcon,18,eyeCol)}
         </span>
       </div>
 
@@ -165,7 +176,7 @@ function SaldoHeroV2({
               </span>
             )}
           </span>
-          <span onClick={()=>setDetailsOpen(v=>!v)}
+          <span onClick={toggleDetails}
             title={detailsOpen?"Details ausblenden":"Details anzeigen"}
             style={{pointerEvents:"auto",cursor:"pointer",userSelect:"none",opacity:0.75,
               display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
