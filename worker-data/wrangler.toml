@@ -1,4 +1,4 @@
-name = "mbt-sync"
+name = "supadupa-sync"
 main = "data-store-worker.js"
 compatibility_date = "2024-11-01"
 

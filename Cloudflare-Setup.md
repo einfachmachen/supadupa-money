@@ -18,14 +18,14 @@ oder hier antippen:
 <https://deploy.workers.cloudflare.com/?url=https://github.com/einfachmachen/supadupa-money/tree/main/worker-data>
 
 Cloudflare legt nach dem Login den Worker **und** den Speicher (KV) automatisch
-an. Am Ende bekommst du eine URL wie `https://mbt-sync.DEIN-NAME.workers.dev`.
+an. Am Ende bekommst du eine URL wie `https://supadupa-sync.DEIN-NAME.workers.dev`.
 
 ## 3. Geheimnis (`SYNC_SECRET`) setzen
 
 In der App auf **„Secret generieren"** tippen (erzeugt ein starkes Passwort) und
 kopieren. Dann im Cloudflare-Dashboard:
 
-> Worker `mbt-sync` → **Settings** → **Variables and Secrets** →
+> Worker `supadupa-sync` → **Settings** → **Variables and Secrets** →
 > Variable `SYNC_SECRET` als **Secret** hinzufügen → den kopierten Wert einfügen
 > → speichern.
 
