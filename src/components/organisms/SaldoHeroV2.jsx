@@ -63,7 +63,10 @@ function SaldoHeroV2({
   // Aktueller Kontostand (großer Wert): an die Akzentfarbe angeglichen.
   // Negativ bleibt rot — ein Minus-Saldo soll nicht in der Markenfarbe
   // "unsichtbar" werden.
-  const heroColor = v => v==null?T.txt : v<0?T.cond_neg : T.blue;
+  // Positiver Kontostand in der Akzentfarbe des +-Buttons (Terminal: pos,
+  // sonst blue/lime) — wirkt harmonischer. Negativ bleibt rot.
+  const plusAccent = T.themeName==="terminal" ? T.pos : T.blue;
+  const heroColor = v => v==null?T.txt : v<0?T.cond_neg : plusAccent;
   // Mitte/Ende-Prognose behalten die Schwellwert-Ampel (<0 neg · ≤500 warn · ≤1000 gold · sonst pos).
   const saldoCol  = v => v==null?T.txt2:v<0?T.cond_neg:v<=500?T.cond_warn:v<=1000?T.cond_gold:T.cond_pos;
 
@@ -110,9 +113,10 @@ function SaldoHeroV2({
         {/* Unsichtbarer Platzhalter links, exakt so breit wie das Auge rechts —
             hält den Kontostand trotz Auge optisch mittig. */}
         <span aria-hidden="true" style={{width:26,flexShrink:0,pointerEvents:"none"}}/>
-        <span onClick={allAccIds.length>1?cycleAcc:undefined} className="heroAmt"
+        <span onClick={allAccIds.length>1?cycleAcc:undefined} className="heroAmt heroBalance"
           style={{
             color: heroColor(saldo),
+            "--bal-col": heroColor(saldo),
             fontSize:48,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
             letterSpacing:-1,lineHeight:1.1,
             WebkitTextStroke:"0.8px currentColor",
