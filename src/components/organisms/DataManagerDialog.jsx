@@ -57,6 +57,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   const [hasEbKey, setHasEbKey] = useState(false);
   const [inclEbKey, setInclEbKey] = useState(false);
   const [ebPass, setEbPass] = useState("");
+  const [ebPass2, setEbPass2] = useState("");
   const [showEbPass, setShowEbPass] = useState(false);
   const [importEbPass, setImportEbPass] = useState("");
   useEffect(() => { exportEbForSync().then(b => setHasEbKey(!!b)).catch(()=>{}); }, []);
@@ -85,7 +86,10 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   // Vollständig, wenn ALLE Haken aktiv UND der volle Zeitraum gewählt ist UND —
   // falls ein Bank-Schlüssel existiert — dieser (verschlüsselt) mit dabei ist.
   const isFullRange = fromY===fullFromY && fromM===fullFromM && toY===fullToY && toM===fullToM;
-  const ebOk = !hasEbKey || (inclEbKey && !!ebPass);
+  // Schlüssel-Export erst gültig, wenn Passphrase gesetzt UND wiederholt korrekt.
+  const ebMatch = ebPass === ebPass2;
+  const ebReady = inclEbKey && !!ebPass && ebMatch;
+  const ebOk = !hasEbKey || ebReady;
   const isComplete = sel.cats&&sel.groups&&sel.accounts&&sel.realTxs&&sel.pendTxs&&
     sel.rules&&sel.anchors&&sel.yearData&&sel.budgets&&sel.icons&&sel.quick&&sel.themes&&isFullRange&&ebOk;
 
@@ -113,7 +117,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   // nicht wieder importierbar.
   const buildExportFull = async () => {
     const out = buildExport();
-    if(inclEbKey && ebPass && hasEbKey) {
+    if(ebReady && hasEbKey) {
       try {
         const block = await exportEbForSync();
         if(block) { out._ebSecure = await encryptJSON(block, ebPass); out._ebEnc = true; }
@@ -569,7 +573,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                   <b> mit einer Passphrase verschlüsselt</b> aufnehmen. <b style={{color:T.gold}}>Ohne diese
                   Passphrase lässt er sich später nicht wieder importieren.</b></span>
               </div>
-              {inclEbKey && (
+              {inclEbKey && (<>
                 <div style={{position:"relative",marginTop:8}}>
                   <input type={showEbPass?"text":"password"} value={ebPass}
                     onChange={e=>setEbPass(e.target.value)} placeholder="Passphrase für den Schlüssel"
@@ -581,23 +585,40 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                     {Li(showEbPass?"eye-off":"eye",16,T.txt2)}
                   </button>
                 </div>
-              )}
+                <input type={showEbPass?"text":"password"} value={ebPass2}
+                  onChange={e=>setEbPass2(e.target.value)} placeholder="Passphrase wiederholen"
+                  autoCapitalize="off" autoCorrect="off" autoComplete="new-password" spellCheck={false}
+                  style={{...INP,marginBottom:0,marginTop:6,fontSize:13}}/>
+                {(ebPass||ebPass2) && (
+                  <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,
+                    color:ebMatch?T.pos:T.neg,fontSize:11,fontWeight:700}}>
+                    {Li(ebMatch?"check":"alert-triangle",12,ebMatch?T.pos:T.neg)}
+                    {ebMatch?"Passphrasen stimmen überein":"Passphrasen stimmen noch nicht überein"}
+                  </div>
+                )}
+              </>)}
             </div>
 
-            <div style={{display:"flex",gap:8,marginTop:12}}>
-              <button onClick={copyExport}
+            {/* Export sperren, solange der Schlüssel angefordert ist, aber die
+                Passphrase fehlt/abweicht — sonst ginge der Schlüssel still verloren. */}
+            {(() => { const blocked = inclEbKey && !ebReady; return (
+            <div style={{display:"flex",gap:8,marginTop:12,opacity:blocked?0.5:1}}>
+              <button onClick={copyExport} disabled={blocked}
                 style={{flex:1,padding:"10px",borderRadius:11,border:`1px solid ${T.pos}44`,
-                  background:`${T.pos}08`,color:T.pos,fontSize:12,fontWeight:700,cursor:"pointer",
+                  background:`${T.pos}08`,color:T.pos,fontSize:12,fontWeight:700,
+                  cursor:blocked?"not-allowed":"pointer",
                   fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
                 {Li("copy",13,T.pos)} Kopieren
               </button>
-              <button onClick={doExport}
+              <button onClick={doExport} disabled={blocked}
                 style={{flex:2,padding:"10px",borderRadius:11,border:"none",
-                  background:T.pos,color:T.on_accent,fontSize:13,fontWeight:700,cursor:"pointer",
+                  background:T.pos,color:T.on_accent,fontSize:13,fontWeight:700,
+                  cursor:blocked?"not-allowed":"pointer",
                   fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
                 {Li("download",14,T.on_accent)} Als JSON speichern
               </button>
             </div>
+            ); })()}
           </>)}
 
           {/* ── IMPORT ── */}
