@@ -60,6 +60,17 @@ function CloudSetupWizard({ onClose }) {
   const onCloseRef = React.useRef(onClose);
   onCloseRef.current = onClose;
 
+  // Passphrase mit Sichtbarkeits-Auge und Wiederholungsfeld. Ein Tippfehler in
+  // der Passphrase = Datenverlust → deshalb erst übernehmen (und „Weiter"
+  // freigeben), wenn beide Felder identisch sind.
+  const [showPass, setShowPass] = useState(false);
+  const [pass1, setPass1] = useState(syncPass || "");
+  const [pass2, setPass2] = useState(syncPass || "");
+  const passMatch = pass1 === pass2;
+  React.useEffect(() => {
+    if (pass1 === pass2) setSyncPass?.(pass1);
+  }, [pass1, pass2]);
+
   const setUrl = (v) => { const u = v.trim(); setCfUrl?.(u); kvStore.setItem("cf_url", u); };
   const setSecret = (v) => { setCfSecret?.(v); kvStore.setItem("cf_secret", v); };
 
@@ -93,9 +104,10 @@ function CloudSetupWizard({ onClose }) {
   // hängt nur an Bool-Readiness, nicht an den Rohtexten (sonst Tipp-Lag).
   const urlReady = !!cfUrl;
   const secretReady = !!cfSecret;
+  const passReady = passMatch;
   React.useEffect(() => {
     const isLast = step === STEPS.length - 1;
-    const stepReady = step === 1 ? urlReady : step === 2 ? secretReady : true;
+    const stepReady = step === 1 ? urlReady : step === 2 ? secretReady : step === 3 ? passReady : true;
     setMasterOverride?.({
       label: isLast ? "✓ Fertig" : "Weiter",
       disabled: !stepReady,
@@ -108,7 +120,7 @@ function CloudSetupWizard({ onClose }) {
       onDismiss: () => onCloseRef.current?.(),
     });
     return () => setMasterOverride?.(null);
-  }, [step, urlReady, secretReady]);
+  }, [step, urlReady, secretReady, passReady]);
 
   return (
     <div style={{ position: "fixed", inset: 0, background: T.bg, zIndex: 320, display: "flex", flexDirection: "column" }}>
@@ -204,8 +216,30 @@ function CloudSetupWizard({ onClose }) {
                 Geht sie verloren, sind die Cloud-Daten nicht mehr lesbar.
               </Box>
               <label style={lblStyle}>Passphrase (leer = unverschlüsselt)</label>
-              <input style={inputStyle} type="password" value={syncPass || ""} onChange={(e) => setSyncPass?.(e.target.value)}
-                placeholder="z. B. ein langer Merksatz" autoCapitalize="off" autoCorrect="off" />
+              <div style={{ position: "relative" }}>
+                <input style={{ ...inputStyle, paddingRight: 44 }} type={showPass ? "text" : "password"}
+                  value={pass1} onChange={(e) => setPass1(e.target.value)}
+                  placeholder="z. B. ein langer Merksatz"
+                  autoCapitalize="off" autoCorrect="off" autoComplete="new-password" spellCheck={false} />
+                <button onClick={() => setShowPass((v) => !v)} title={showPass ? "verbergen" : "anzeigen"}
+                  style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)",
+                    background: "transparent", border: "none", cursor: "pointer", padding: 6,
+                    display: "flex", alignItems: "center" }}>
+                  {Li(showPass ? "eye-off" : "eye", 18, T.txt2)}
+                </button>
+              </div>
+              <label style={lblStyle}>Passphrase wiederholen</label>
+              <input style={inputStyle} type={showPass ? "text" : "password"}
+                value={pass2} onChange={(e) => setPass2(e.target.value)}
+                placeholder="zur Sicherheit nochmal eingeben"
+                autoCapitalize="off" autoCorrect="off" autoComplete="new-password" spellCheck={false} />
+              {(pass1 || pass2) && (
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8,
+                  color: passMatch ? T.pos : T.neg, fontSize: 12.5, fontWeight: 700 }}>
+                  {Li(passMatch ? "check" : "alert-triangle", 14, passMatch ? T.pos : T.neg)}
+                  {passMatch ? "Passphrasen stimmen überein" : "Passphrasen stimmen noch nicht überein"}
+                </div>
+              )}
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 10,
                 color: syncEncActive ? T.pos : T.gold, fontSize: 12.5, fontWeight: 700 }}>
                 {Li(syncEncActive ? "lock" : "unlock", 14, syncEncActive ? T.pos : T.gold)}
