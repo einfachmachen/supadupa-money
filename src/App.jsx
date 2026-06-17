@@ -2489,6 +2489,7 @@ Abbrechen = ${remoteName}-Stand laden`
     reviewQueue, showSettings, showVormHub, editVormTx, showMatching,
     customIcons, themeName, hideEmptyRows, handedness, debugFlags,
     cfActive, cfStatus, cfUrl, cfSecret,
+    syncPass, syncEncActive, showCloudSetup,
     syncStatus, syncError, isDirty, cfSaveOnClose,
     dashDrillOpen, amtMode, noBorders, masterOverride,
   ]);
