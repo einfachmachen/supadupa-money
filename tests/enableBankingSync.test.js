@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import {
   saveEbCreds, saveEbAccountMap, exportEbForSync, importEbFromSync, loadEbCreds, loadEbAccountMap,
 } from "../src/utils/enableBankingStore.js";
+import { encryptJSON, decryptJSON } from "../src/utils/syncCrypto.js";
 
 // Einfacher window.IDB-Mock (Map-basiert), wie der echte Bridge in main.jsx.
 let idbMap;
@@ -57,5 +58,21 @@ describe("Enable-Banking Sync-Export/Import", () => {
     expect(await importEbFromSync(null)).toBe(false);
     expect(await importEbFromSync({})).toBe(false);
     expect(await importEbFromSync({ appId: "x" })).toBe(false); // ohne privateKey
+  });
+
+  it("verschlüsselter Datei-Export des Bank-Schlüssels: Round-Trip mit Passphrase", async () => {
+    saveEbCreds({ relayUrl: "https://relay.example/", appId: "app-123", privateKey: PEM });
+    const env = await encryptJSON(await exportEbForSync(), "geheime-phrase");
+    // frisches Gerät simulieren
+    idbMap.clear(); try { localStorage.clear(); } catch {}
+    const block = await decryptJSON(env, "geheime-phrase");
+    expect(await importEbFromSync(block)).toBe(true);
+    expect((await loadEbCreds()).privateKey).toBe(PEM);
+  });
+
+  it("falsche Passphrase entschlüsselt den exportierten Schlüssel NICHT", async () => {
+    saveEbCreds({ privateKey: PEM });
+    const env = await encryptJSON(await exportEbForSync(), "richtig");
+    await expect(decryptJSON(env, "falsch")).rejects.toThrow(/Falsche Passphrase|beschädigte/i);
   });
 });
