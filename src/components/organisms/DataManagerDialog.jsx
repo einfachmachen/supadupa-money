@@ -8,6 +8,9 @@ import { INP } from "../../theme/palette.js";
 import { THEMES } from "../../theme/themes.js";
 import { Li } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
+import { exportEbForSync, importEbFromSync } from "../../utils/enableBankingStore.js";
+import { encryptJSON, decryptJSON, isEncrypted } from "../../utils/syncCrypto.js";
+import { useEffect } from "react";
 
 function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   const { cats, groups, accounts, txs, setTxs, csvRules, startBalances,
@@ -50,6 +53,14 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   const [importErr,  setImportErr]  = useState("");
   const [importOk,   setImportOk]   = useState("");
 
+  // Bank-Schlüssel (.pem): optionaler, passphrase-verschlüsselter Export.
+  const [hasEbKey, setHasEbKey] = useState(false);
+  const [inclEbKey, setInclEbKey] = useState(false);
+  const [ebPass, setEbPass] = useState("");
+  const [showEbPass, setShowEbPass] = useState(false);
+  const [importEbPass, setImportEbPass] = useState("");
+  useEffect(() => { exportEbForSync().then(b => setHasEbKey(!!b)).catch(()=>{}); }, []);
+
   // Delete confirm
   const [delConfirm, setDelConfirm] = useState(null); // null | key
   // Konto-Filter für Löschen/Export — null = alle Konten
@@ -71,10 +82,12 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   });
 
   // ── Export ──────────────────────────────────────────────────────────
-  // Vollständig, wenn ALLE Haken aktiv UND der volle Zeitraum gewählt ist.
+  // Vollständig, wenn ALLE Haken aktiv UND der volle Zeitraum gewählt ist UND —
+  // falls ein Bank-Schlüssel existiert — dieser (verschlüsselt) mit dabei ist.
   const isFullRange = fromY===fullFromY && fromM===fullFromM && toY===fullToY && toM===fullToM;
+  const ebOk = !hasEbKey || (inclEbKey && !!ebPass);
   const isComplete = sel.cats&&sel.groups&&sel.accounts&&sel.realTxs&&sel.pendTxs&&
-    sel.rules&&sel.anchors&&sel.yearData&&sel.budgets&&sel.icons&&sel.quick&&sel.themes&&isFullRange;
+    sel.rules&&sel.anchors&&sel.yearData&&sel.budgets&&sel.icons&&sel.quick&&sel.themes&&isFullRange&&ebOk;
 
   const buildExport = () => {
     const out = {exportedAt: new Date().toISOString(), app:"SupaDupa Money",
@@ -95,8 +108,22 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
     return out;
   };
 
-  const doExport = () => {
-    const data = buildExport();
+  // Hängt den passphrase-verschlüsselten Bank-Schlüssel an, falls gewählt. Der
+  // Schlüssel landet NUR als AES-GCM-Chiffrat in der Datei — ohne die Passphrase
+  // nicht wieder importierbar.
+  const buildExportFull = async () => {
+    const out = buildExport();
+    if(inclEbKey && ebPass && hasEbKey) {
+      try {
+        const block = await exportEbForSync();
+        if(block) { out._ebSecure = await encryptJSON(block, ebPass); out._ebEnc = true; }
+      } catch(e) { /* Schlüssel weglassen statt Export zu verhindern */ }
+    }
+    return out;
+  };
+
+  const doExport = async () => {
+    const data = await buildExportFull();
     const json = JSON.stringify(data, null, 2);
     const blob = new Blob([json], {type:"application/json"});
     const url  = URL.createObjectURL(blob);
@@ -105,8 +132,8 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
     a.click(); URL.revokeObjectURL(url);
   };
 
-  const copyExport = () => {
-    navigator.clipboard.writeText(JSON.stringify(buildExport(), null, 2));
+  const copyExport = async () => {
+    navigator.clipboard.writeText(JSON.stringify(await buildExportFull(), null, 2));
   };
 
   // Zähler
@@ -120,7 +147,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   const cntQuick = (quickBtns||[]).length;
 
   // ── Import ──────────────────────────────────────────────────────────
-  const doImport = () => {
+  const doImport = async () => {
     setImportErr(""); setImportOk("");
     try {
       const d = JSON.parse(importJson);
@@ -155,6 +182,24 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
         // inject into THEMES live
         Object.entries(d.customThemes).forEach(([k,v]) => { THEMES[k] = v; });
         msg.push(`${Object.keys(d.customThemes).length} Themes`);
+      }
+      // Verschlüsselter Bank-Schlüssel: nur mit korrekter Passphrase. Wird nur
+      // übernommen, wenn dieses Gerät noch keinen Schlüssel hat (lokaler Vorrang).
+      if(d._ebSecure) {
+        if(isEncrypted(d._ebSecure)) {
+          if(!importEbPass) {
+            msg.push("Bank-Schlüssel übersprungen (Passphrase fehlt)");
+          } else {
+            let block;
+            try { block = await decryptJSON(d._ebSecure, importEbPass); }
+            catch(e) { setImportErr("Bank-Schlüssel: Passphrase falsch oder Daten beschädigt"); return; }
+            const ok = await importEbFromSync(block);
+            msg.push(ok ? "Bank-Schlüssel" : "Bank-Schlüssel (lokal bereits vorhanden, beibehalten)");
+          }
+        } else {
+          const ok = await importEbFromSync(d._ebSecure);
+          if(ok) msg.push("Bank-Schlüssel");
+        }
       }
       setImportOk("✓ Importiert: "+msg.join(", "));
       setImportJson("");
@@ -474,8 +519,8 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
               {Li(isComplete?"shield-check":"shield",13,isComplete?T.pos:T.gold)}
               <div style={{flex:1,color:T.txt,fontSize:10.5,lineHeight:1.5}}>
                 {isComplete
-                  ? <><b style={{color:T.pos}}>Vollständige Sicherung (100 %)</b> — alle Bereiche + ganzer Zeitraum. Entspricht exakt dem Worker-zu-Worker-Weg.</>
-                  : <><b style={{color:T.gold}}>Teil-Sicherung</b> — nicht alle Bereiche bzw. nicht der ganze Zeitraum gewählt. Für 100 % alle Haken setzen und bei den Buchungen „Alles" als Zeitraum.</>}
+                  ? <><b style={{color:T.pos}}>Vollständige Sicherung (100 %)</b> — alle Bereiche + ganzer Zeitraum{hasEbKey?<> inkl. <b>verschlüsseltem Bank-Schlüssel</b></>:""}.</>
+                  : <><b style={{color:T.gold}}>Teil-Sicherung</b> — für 100 % alle Haken setzen, bei den Buchungen „Alles" als Zeitraum{hasEbKey&&!ebOk?<> und den <b>Bank-Schlüssel</b> mit Passphrase aufnehmen</>:""}.</>}
                 <br/>Wieder einspielen über den Reiter <b style={{color:T.txt}}>„importieren"</b> hier im Daten-Manager.
               </div>
             </div>
@@ -500,6 +545,45 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                 </span>
               </div>
             ))}
+
+            {/* Bank-Schlüssel (.pem): optional, NUR passphrase-verschlüsselt */}
+            <div style={{marginTop:10,padding:"8px 10px",borderRadius:9,
+              border:`1px solid ${inclEbKey?T.gold:T.bd}`,
+              background:inclEbKey?`${T.gold}10`:"rgba(255,255,255,0.03)"}}>
+              <div onClick={()=>hasEbKey&&setInclEbKey(v=>!v)}
+                style={{display:"flex",alignItems:"center",gap:10,cursor:hasEbKey?"pointer":"default",opacity:hasEbKey?1:0.5}}>
+                <div style={{width:16,height:16,borderRadius:4,flexShrink:0,
+                  background:inclEbKey?T.gold:"rgba(255,255,255,0.1)",
+                  border:`2px solid ${inclEbKey?T.gold:T.bds}`,
+                  display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  {inclEbKey&&Li("check",9,T.on_accent)}
+                </div>
+                {Li("key",13,inclEbKey?T.gold:T.txt2)}
+                <span style={{flex:1,color:T.txt,fontSize:12}}>Bank-Schlüssel (verschlüsselt)</span>
+                <span style={{color:T.txt2,fontSize:10}}>{hasEbKey?"vorhanden":"keiner"}</span>
+              </div>
+              <div style={{color:T.txt2,fontSize:10,lineHeight:1.5,marginTop:6,display:"flex",gap:5,alignItems:"flex-start"}}>
+                {Li("shield",11,T.gold)}
+                <span>Der private Bank-Schlüssel wird normalerweise <b>nicht</b> mitgesichert
+                  (er läge sonst unverschlüsselt in der Datei). Optional kannst du ihn hier
+                  <b> mit einer Passphrase verschlüsselt</b> aufnehmen. <b style={{color:T.gold}}>Ohne diese
+                  Passphrase lässt er sich später nicht wieder importieren.</b></span>
+              </div>
+              {inclEbKey && (
+                <div style={{position:"relative",marginTop:8}}>
+                  <input type={showEbPass?"text":"password"} value={ebPass}
+                    onChange={e=>setEbPass(e.target.value)} placeholder="Passphrase für den Schlüssel"
+                    autoCapitalize="off" autoCorrect="off" autoComplete="new-password" spellCheck={false}
+                    style={{...INP,marginBottom:0,paddingRight:40,fontSize:13}}/>
+                  <button onClick={()=>setShowEbPass(v=>!v)}
+                    style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",
+                      background:"transparent",border:"none",cursor:"pointer",padding:6,display:"flex"}}>
+                    {Li(showEbPass?"eye-off":"eye",16,T.txt2)}
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div style={{display:"flex",gap:8,marginTop:12}}>
               <button onClick={copyExport}
                 style={{flex:1,padding:"10px",borderRadius:11,border:`1px solid ${T.pos}44`,
@@ -524,6 +608,13 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
               <b style={{color:T.txt}}> Stammdaten</b> (Kategorien, Gruppen, Konten, Budgets, Monatsdaten,
               Zuordnungen, Ankerpunkte, Schnellwahl, Icons, Themes) werden <b>ersetzt</b>.
               Versteht das Daten-Manager-Format ebenso wie ein Voll-Backup.
+            </div>
+            {/* Optionale Passphrase — nur nötig, wenn die Datei einen verschlüsselten Bank-Schlüssel enthält */}
+            <div style={{position:"relative",marginBottom:10}}>
+              <input type="password" value={importEbPass} onChange={e=>setImportEbPass(e.target.value)}
+                placeholder="Passphrase für Bank-Schlüssel (nur falls enthalten)"
+                autoCapitalize="off" autoCorrect="off" autoComplete="new-password" spellCheck={false}
+                style={{...INP,marginBottom:0,fontSize:12}}/>
             </div>
             <textarea value={importJson} onChange={e=>setImportJson(e.target.value)}
               placeholder='{"cats":[...],"realTxs":[...],...}'
