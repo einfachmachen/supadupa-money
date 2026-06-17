@@ -20,6 +20,7 @@ import { CloudSaveModal } from "./components/organisms/CloudSaveModal.jsx";
 import { CsvImportScreen } from "./components/screens/CsvImportScreen.jsx";
 import { EnableBankingGuide } from "./components/screens/EnableBankingGuide.jsx";
 import { EnableBankingConnectScreen } from "./components/screens/EnableBankingConnectScreen.jsx";
+import { CloudSetupWizard } from "./components/screens/CloudSetupWizard.jsx";
 import { DashboardScreenV2 } from "./components/screens/DashboardScreenV2.jsx";
 import { JahrScreen } from "./components/screens/JahrScreen.jsx";
 import { ManagementScreen } from "./components/screens/ManagementScreen.jsx";
@@ -44,6 +45,8 @@ import { Li } from "./utils/icons.jsx";
 import { makeYearData } from "./utils/yearData.js";
 import { isDuplCounterpart, buildTxIdMap } from "./utils/tx.js";
 import { compressTxByYear } from "./utils/cloudTx.js";
+import { encryptJSON, decryptJSON, isEncrypted, freshSaltB64 } from "./utils/syncCrypto.js";
+import { exportEbForSync, importEbFromSync } from "./utils/enableBankingStore.js";
 import { saldoAt, saldoEnde, saldoMitte } from "./utils/saldo.js";
 
 export default function SupaDupaMoney() {
@@ -185,6 +188,7 @@ export default function SupaDupaMoney() {
   const [showCsv,       setShowCsv]       = useState(false);
   const [showBankGuide, setShowBankGuide] = useState(false);
   const [showBankConnect, setShowBankConnect] = useState(false);
+  const [showCloudSetup, setShowCloudSetup] = useState(false);
   const [showJsonImport,setShowJsonImport] = useState(false);
   const [importText,    setImportText]     = useState("");
   const [importStatus,  setImportStatus]   = useState(null);
@@ -238,7 +242,7 @@ export default function SupaDupaMoney() {
   const _structOverlayOpen =
     showMobilePicker || showDataMgr || showMobileKategorien || showMobileVormerken ||
     showMobileWiederkehrend || showMobileBudget || showCsv || showBankConnect ||
-    showBankGuide || showJsonImport || showMatching || showVormHub || showVormMenu ||
+    showCloudSetup || showBankGuide || showJsonImport || showMatching || showVormHub || showVormMenu ||
     showRecurring || showKategorisieren || showMonthPickerModal || showCloudSave ||
     showSettings || showSupaQuick || showQuickPicker || !!modal || !!exportModal ||
     !!exportDialog || !!reviewQueue || dashDrillOpen || !!accIconPick || !!editTx;
@@ -280,6 +284,7 @@ export default function SupaDupaMoney() {
     jsonbinKey, setJsonbinKey, jsonbinId, setJsonbinId, jsonbinStatus, setJsonbinStatus, jsonbinActive,
     gistToken, setGistToken, gistId, setGistId, gistStatus, setGistStatus, gistActive,
     cfUrl, cfSecret, setCfUrl, setCfSecret, cfCredsReady, cfStatus, setCfStatus, cfActive,
+    syncPass, setSyncPass, syncPassReady, syncEncActive,
   } = useCloudCredentials();
 
   const normCfUrl = (url) => {
@@ -297,17 +302,31 @@ export default function SupaDupaMoney() {
     }));
     // Aufteilen: config + txs pro Jahr
     const {txs: allTxs, ...configOnly} = clean;
+    // Privaten Bank-Schlüssel (.pem) + Verbindungsdaten NUR mitsynchronisieren,
+    // wenn eine Passphrase aktiv ist — dann landet er ausschließlich verschlüsselt
+    // im /config-Body. Ohne Passphrase verlässt der Schlüssel das Gerät nie.
+    if(syncPass) {
+      try { const eb = await exportEbForSync(); if(eb) configOnly._ebSecure = eb; }
+      catch(e) { console.warn("EB-Sync-Export übersprungen:", e); }
+    }
     const byYear = compressTxByYear(allTxs);
     const base = normCfUrl(cfUrl);
     const headers = {"Content-Type":"application/json","X-Secret":cfSecret};
+
+    // Zero-Knowledge: Ist eine Passphrase gesetzt, wird jeder Body vor dem
+    // Hochladen client-seitig verschlüsselt. Ein gemeinsamer Salt pro Sync-Lauf
+    // → PBKDF2-Schlüssel nur einmal ableiten. Delta-Hashes bleiben auf Klartext.
+    const saltB64 = syncPass ? freshSaltB64() : null;
+    const wrap = (obj) => syncPass ? encryptJSON(obj, syncPass, {salt:saltB64}) : Promise.resolve(obj);
 
     // Delta-Sync: Config nur wenn geändert
     const configStr = JSON.stringify(configOnly);
     const configHash = configStr.length + "|" + configStr.slice(0,100);
     let configWrites = 0;
     if(configHash !== savedConfigHashRef.current) {
+      const body = await wrap({...configOnly, saved_at:Date.now()});
       await fetch(`${base}/config`, {method:"PUT", headers,
-        body:JSON.stringify({...configOnly, saved_at:Date.now()})
+        body:JSON.stringify(body)
       }).then(r=>{if(!r.ok)throw new Error(`CF config: ${r.status}`);});
       savedConfigHashRef.current = configHash;
       configWrites = 1;
@@ -318,8 +337,9 @@ export default function SupaDupaMoney() {
     for(const [y,arr] of Object.entries(byYear)) {
       const hash = arr.length + "|" + arr.map(t=>t.id).sort().join(",").slice(0,200);
       if(savedYearHashRef.current[y] !== hash) {
+        const body = await wrap(arr);
         await fetch(`${base}/txs/${y}`, {method:"PUT", headers,
-          body:JSON.stringify(arr)
+          body:JSON.stringify(body)
         }).then(r=>{if(!r.ok)throw new Error(`CF txs ${y}: ${r.status}`);});
         savedYearHashRef.current[y] = hash;
         txWrites++;
@@ -331,9 +351,22 @@ export default function SupaDupaMoney() {
   const cfLoad = async () => {
     const base = cfUrl.replace(/\/$/, "");
     const headers = {"X-Secret":cfSecret};
+    // Erkennt verschlüsselte Bodies und entschlüsselt sie mit der lokalen
+    // Passphrase. Unverschlüsselte (alte) Stores werden unverändert gelesen.
+    const unwrap = async (data) => {
+      if(!isEncrypted(data)) return data;
+      if(!syncPass) throw new Error("Daten sind verschlüsselt — bitte Passphrase eingeben");
+      return decryptJSON(data, syncPass);
+    };
     const cfgRes = await fetch(`${base}/config`, {headers});
     if(!cfgRes.ok) throw new Error(`CF config: ${cfgRes.status}`);
-    const config = await cfgRes.json();
+    const config = await unwrap(await cfgRes.json());
+    // Verschlüsselt mitgelieferten Bank-Schlüssel lokal übernehmen (nur wenn
+    // dieses Gerät noch keinen hat) und aus der App-Nutzlast entfernen.
+    if(config && config._ebSecure) {
+      try { await importEbFromSync(config._ebSecure); } catch(e) { console.warn("EB-Sync-Import:", e); }
+      delete config._ebSecure;
+    }
     // Alle Jahres-Keys laden
     const keysRes = await fetch(`${base}/keys`, {headers});
     if(!keysRes.ok) throw new Error(`CF keys: ${keysRes.status}`);
@@ -341,7 +374,7 @@ export default function SupaDupaMoney() {
     const txs = [];
     for(const key of (keys.txYears||[])) {
       const r = await fetch(`${base}/txs/${key}`, {headers});
-      if(r.ok) { const arr=await r.json(); txs.push(...arr); }
+      if(r.ok) { const arr=await unwrap(await r.json()); txs.push(...arr); }
     }
     return {...config, txs};
   };
@@ -1082,6 +1115,12 @@ Abbrechen = ${remoteName}-Stand laden`
   // Delta-Sync: merkt sich Hashes pro Jahr + Config — nur geänderte Daten nach CF schreiben
   const savedYearHashRef = useRef({});
   const savedConfigHashRef = useRef("");
+  // Passphrase-Wechsel (Verschlüsselung an/aus/geändert) → Delta-Hashes leeren,
+  // damit der nächste Sync alles im neuen (Klartext-/Chiffrat-)Format neu schreibt.
+  useEffect(()=>{
+    savedYearHashRef.current = {};
+    savedConfigHashRef.current = "";
+  }, [syncPass]);
 
   const saveToCloud = async (payload) => {
     if(!cfActive || !normCfUrl(cfUrl)) return;
@@ -2427,6 +2466,8 @@ Abbrechen = ${remoteName}-Stand laden`
     handedness, setHandedness,
     debugFlags, setDebugFlag, setDebugFlags,
     cfActive, cfSave, cfLoad, cfStatus, setCfStatus, cfUrl, cfSecret, setCfUrl, setCfSecret,
+    syncPass, setSyncPass, syncEncActive,
+    showCloudSetup, setShowCloudSetup,
     syncStatus, setSyncStatus, syncError, isDirty,
     cfSaveOnClose, setCfSaveOnClose,
     dashDrillOpen, setDashDrillOpen,
@@ -3031,6 +3072,7 @@ Abbrechen = ${remoteName}-Stand laden`
         onBack={()=>{setShowBankGuide(false);reopenMobilePicker("daten");}}
         onStart={()=>{setShowBankGuide(false);setShowBankConnect(true);}}/>}
       {showBankConnect&&<EnableBankingConnectScreen onClose={()=>setShowBankConnect(false)}/>}
+      {showCloudSetup&&<CloudSetupWizard onClose={()=>setShowCloudSetup(false)}/>}
       {showMatching&&<MatchingScreen onClose={()=>setShowMatching(false)}
         onBack={()=>{setShowMatching(false);reopenMobilePicker("main");}}/>}
       {showVormHub&&<VormerkungHub onClose={()=>{setShowVormHub(false);setEditVormTx(null);}} editVorm={editVormTx} mobileMode={mobileMode}/>}

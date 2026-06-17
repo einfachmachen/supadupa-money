@@ -66,11 +66,37 @@ export function useCloudCredentials() {
   const [cfStatus, setCfStatus] = useState("idle");
   const cfActive = !!(cfUrl && cfSecret);
 
+  // Sync-Verschlüsselung: Passphrase NUR lokal (IndexedDB + kvStore-Fallback),
+  // wird NIE mitsynchronisiert. Ist sie gesetzt, wird die Cloud-Nutzlast vor
+  // dem Hochladen client-seitig verschlüsselt (Zero-Knowledge).
+  const [syncPass, setSyncPassRaw] = useState("");
+  const [syncPassReady, setSyncPassReady] = useState(false);
+  useEffect(()=>{
+    (async()=>{
+      try {
+        const p = await window.IDB.get("sync_pass").catch(()=>null) || kvStore.getItem("sync_pass") || "";
+        setSyncPassRaw(p);
+        if(p) window.IDB.set("sync_pass", p).catch(()=>{});
+      } catch(e){}
+      setSyncPassReady(true);
+    })();
+  }, []);
+  const setSyncPass = (v) => {
+    setSyncPassRaw(v);
+    // Leeren = leeren String persistieren (IDB kennt kein del): beim nächsten
+    // Laden ist "" falsy → fällt auf kvStore zurück, das ebenfalls geleert wird.
+    if(v) { kvStore.setItem("sync_pass", v); }
+    else { kvStore.removeItem?.("sync_pass"); }
+    window.IDB.set("sync_pass", v || "").catch(()=>{});
+  };
+  const syncEncActive = !!syncPass;
+
   return {
     supaUrl, setSupaUrl, supaKey, setSupaKey, supaStatus, setSupaStatus,
     supaError, setSupaError, supaLockKey, setSupaLockKey, supaActive,
     jsonbinKey, setJsonbinKey, jsonbinId, setJsonbinId, jsonbinStatus, setJsonbinStatus, jsonbinActive,
     gistToken, setGistToken, gistId, setGistId, gistStatus, setGistStatus, gistActive,
     cfUrl, cfSecret, setCfUrl, setCfSecret, cfCredsReady, cfStatus, setCfStatus, cfActive,
+    syncPass, setSyncPass, syncPassReady, syncEncActive,
   };
 }

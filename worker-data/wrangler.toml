@@ -1,0 +1,16 @@
+name = "mbt-sync"
+main = "data-store-worker.js"
+compatibility_date = "2024-11-01"
+
+# Persönlicher Daten-Store: KV-Namespace für Konfiguration + Buchungen.
+# Beim Deploy über den "Deploy to Cloudflare"-Button wird der Namespace
+# automatisch angelegt. Bei manuellem Deploy:
+#   wrangler kv namespace create SYNC_KV
+# und die ausgegebene id unten eintragen.
+kv_namespaces = [
+  { binding = "SYNC_KV", id = "" }
+]
+
+# SYNC_SECRET wird NICHT hier abgelegt (kein Geheimnis ins Repo), sondern als
+# Worker-Variable/Secret gesetzt — beim Deploy-Button abgefragt, oder per:
+#   wrangler secret put SYNC_SECRET

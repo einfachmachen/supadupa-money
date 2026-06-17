@@ -21,6 +21,7 @@ function SettingsInline() {
     jsonbinActive, jsonbinSave, jsonbinLoad, jsonbinStatus, setJsonbinStatus, jsonbinKey, jsonbinId, setJsonbinKey, setJsonbinId,
     gistActive, gistSave, gistLoad, gistStatus, setGistStatus, gistToken, gistId, setGistToken, setGistId, applyData,
     cfActive, cfSave, cfLoad, cfStatus, setCfStatus, cfUrl, cfSecret, setCfUrl, setCfSecret,
+    syncPass, setSyncPass, syncEncActive,
     syncStatus, setSyncStatus, syncError,
     themeName, setThemeName, setThemeRev,
     handedness, setHandedness,
@@ -110,12 +111,54 @@ function SettingsInline() {
           <b style={{color:T.gold}}>Empfohlen</b> — kostenlos, kein Limit, kein CORS-Problem.
           Einrichtung: siehe Anleitung <b style={{color:T.txt}}>Cloudflare-Setup.md</b>.
         </div>
+        {/* Geführte Vollbild-Einrichtung mit direkten Eingaben + Selbsttest */}
+        {(()=>{ const {setShowCloudSetup}=useContext(AppCtx); return (
+          <button onClick={()=>setShowCloudSetup?.(true)}
+            style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,
+              width:"100%",marginBottom:8,padding:"12px 8px",borderRadius:11,border:"none",
+              background:T.cf,color:T.on_accent,fontSize:14,fontWeight:800,cursor:"pointer",
+              fontFamily:"inherit"}}>
+            {Li("compass",15,T.on_accent)} Geführte Einrichtung öffnen
+          </button>
+        ); })()}
+        {/* Ein-Klick-Einrichtung: legt Worker + Speicher (KV) bei Cloudflare an */}
+        <a href="https://deploy.workers.cloudflare.com/?url=https://github.com/einfachmachen/supadupa-money/tree/main/worker-data"
+          target="_blank" rel="noopener noreferrer"
+          style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+            textDecoration:"none",marginBottom:8,padding:"10px 8px",borderRadius:9,
+            border:`1px solid ${T.cf}55`,background:`${T.cf}14`,color:T.cf,
+            fontSize:12,fontWeight:700}}>
+          {Li("upload-cloud",13,T.cf)} 1-Klick: Worker bei Cloudflare einrichten
+        </a>
         <Lbl>Worker URL (https://mbt-sync.DEIN-NAME.workers.dev)</Lbl>
         <SupaField value={cfUrl} onChange={v=>{const u=v.trim();setCfUrl(u);kvStore.setItem("cf_url",u);}}
           placeholder="https://mbt-sync.xxx.workers.dev" locked={false} type="text"/>
         <Lbl>Secret (selbst gewähltes Passwort)</Lbl>
         <SupaField value={cfSecret} onChange={v=>{setCfSecret(v);kvStore.setItem("cf_secret",v);}}
           placeholder="MeinGeheimesPasswort123" locked={false} type="password"/>
+        <button onClick={()=>{
+            const b = crypto.getRandomValues(new Uint8Array(24));
+            const s = btoa(String.fromCharCode(...b)).replace(/[+/=]/g,"").slice(0,32);
+            setCfSecret(s); kvStore.setItem("cf_secret",s);
+            try { navigator.clipboard?.writeText(s); } catch(e){}
+          }} style={{marginBottom:8,padding:"6px 10px",borderRadius:8,
+            border:`1px solid ${T.bd}`,background:"rgba(255,255,255,0.04)",color:T.txt2,
+            fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
+            display:"flex",alignItems:"center",gap:5}}>
+          {Li("key",11,T.txt2)} Secret generieren &amp; kopieren
+        </button>
+        <Lbl>Verschlüsselung — Passphrase (optional, Zero-Knowledge)</Lbl>
+        <SupaField value={syncPass||""} onChange={v=>setSyncPass?.(v)}
+          placeholder="leer = Daten unverschlüsselt in der Cloud" locked={false} type="password"/>
+        <div style={{color:T.txt2,fontSize:10,marginTop:-2,marginBottom:8,lineHeight:1.5,
+          display:"flex",alignItems:"flex-start",gap:5}}>
+          {Li(syncEncActive?"lock":"unlock",12,syncEncActive?T.pos:T.gold)}
+          <span>
+            {syncEncActive
+              ? <>Aktiv: Deine Daten werden <b style={{color:T.pos}}>vor dem Hochladen verschlüsselt</b> — der Server sieht nur Chiffrat. Die Passphrase verlässt das Gerät nie. <b style={{color:T.gold}}>Auf jedem Gerät identisch eingeben.</b> Geht sie verloren, sind die Cloud-Daten nicht mehr lesbar.</>
+              : <>Leer = die Cloud speichert deine Daten im Klartext. Setze eine Passphrase, damit selbst bei einem Einbruch in den Store niemand mitlesen kann.</>}
+          </span>
+        </div>
         {cfActive&&(
           <div style={{display:"flex",gap:6,marginBottom:6}}>
             <button onClick={async()=>{
