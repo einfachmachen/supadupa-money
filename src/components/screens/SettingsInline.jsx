@@ -111,16 +111,6 @@ function SettingsInline() {
           <b style={{color:T.gold}}>Empfohlen</b> — kostenlos, kein Limit, kein CORS-Problem.
           Einrichtung: siehe Anleitung <b style={{color:T.txt}}>Cloudflare-Setup.md</b>.
         </div>
-        {/* Geführte Vollbild-Einrichtung mit direkten Eingaben + Selbsttest */}
-        {(()=>{ const {setShowCloudSetup}=useContext(AppCtx); return (
-          <button onClick={()=>setShowCloudSetup?.(true)}
-            style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,
-              width:"100%",marginBottom:8,padding:"12px 8px",borderRadius:11,border:"none",
-              background:T.cf,color:T.on_accent,fontSize:14,fontWeight:800,cursor:"pointer",
-              fontFamily:"inherit"}}>
-            {Li("compass",15,T.on_accent)} Geführte Einrichtung öffnen
-          </button>
-        ); })()}
         {/* Ein-Klick-Einrichtung: legt Worker + Speicher (KV) bei Cloudflare an */}
         <a href="https://deploy.workers.cloudflare.com/?url=https://github.com/einfachmachen/supadupa-money/tree/main/worker-data"
           target="_blank" rel="noopener noreferrer"
