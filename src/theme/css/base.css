@@ -30,6 +30,10 @@
    auf hellen Themes (dunkler Text, hoher Kontrast) sonst noch lesbar. */
 .amts-blur [style*="Questrial"] { filter: blur(0.32em); transition: filter .15s; }
 .amts-neutral [style*="Questrial"] { color: var(--amt-neutral, currentColor) !important; }
+/* Ausnahme: der große Kontostand behält immer seine Akzentfarbe (= Farbe des
+   +-Buttons) — auch im neutralen Zustand. Gleiche Spezifität wie die Regel
+   darüber, steht aber später → gewinnt. Dynamische Farbe via --bal-col. */
+.amts-neutral .heroBalance { color: var(--bal-col, currentColor) !important; }
     body { background:#2C3035; overflow:hidden; }
     #root { height:100vh; }
     body { overflow: hidden; }
