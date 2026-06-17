@@ -3383,6 +3383,20 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
           fontFamily:"inherit",lineHeight:1.15,
           opacity: override.disabled ? 0.55 : 1,
         }}>
+        {/* Richtungs-Hinweise: ‹ = Wisch links (zurück), ⌄ = Wisch runter
+            (schließen). Nur zeigen, wenn die jeweilige Aktion belegt ist. */}
+        {override.onBack && (
+          <div style={{position:"absolute",left:1,top:"50%",transform:"translateY(-50%)",
+            opacity:0.6,pointerEvents:"none",display:"flex"}}>
+            {Li("chevron-left",13,override.disabled?T.txt2:_pbc.fg)}
+          </div>
+        )}
+        {override.onDismiss && (
+          <div style={{position:"absolute",bottom:-1,left:"50%",transform:"translateX(-50%)",
+            opacity:0.6,pointerEvents:"none",display:"flex"}}>
+            {Li("chevron-down",13,override.disabled?T.txt2:_pbc.fg)}
+          </div>
+        )}
         {lines.map((ln,i)=>(
           <div key={i} style={{fontSize,fontWeight:800,letterSpacing:-0.3,
             whiteSpace:"nowrap",pointerEvents:"none",textAlign:"center",
