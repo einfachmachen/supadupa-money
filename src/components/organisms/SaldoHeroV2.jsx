@@ -107,6 +107,9 @@ function SaldoHeroV2({
           zentriert in der MITTE/ENDE-Zeile. */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"center",
         gap:8,userSelect:"none"}}>
+        {/* Unsichtbarer Platzhalter links, exakt so breit wie das Auge rechts —
+            hält den Kontostand trotz Auge optisch mittig. */}
+        <span aria-hidden="true" style={{width:26,flexShrink:0,pointerEvents:"none"}}/>
         <span onClick={allAccIds.length>1?cycleAcc:undefined} className="heroAmt"
           style={{
             color: heroColor(saldo),
@@ -118,9 +121,8 @@ function SaldoHeroV2({
           {saldo>=0?"":"−"}{fmtMoney(Math.abs(saldo||0))} €
         </span>
         <span onClick={toggleEye} title="Beträge ein-/ausblenden"
-          style={{cursor:"pointer",userSelect:"none",flexShrink:0,
-            display:"inline-flex",alignItems:"center",justifyContent:"center",
-            padding:"4px"}}>
+          style={{cursor:"pointer",userSelect:"none",flexShrink:0,width:26,
+            display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
           {Li(eyeIcon,18,eyeCol)}
         </span>
       </div>
