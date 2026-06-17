@@ -1608,7 +1608,7 @@ function DashboardScreenV2() {
                     const sub = getSub((tx.splits||[])[0]?.catId, baseSubId);
                     const name = sub?.name || cat2?.name || tx.desc || "Budget";
                     return (
-                      <div key={tx.id} style={{padding:"8px 18px",borderBottom:`1px solid ${T.bd}`,background:T.surf3}}>
+                      <div key={tx.id} style={{padding:"5px 18px",borderBottom:`1px solid ${T.bd}`,background:T.surf3}}>
                         <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}} onClick={()=>{setDashDrill(null);openEdit(tx);}}>
                           <div style={{width:30,height:30,borderRadius:9,flexShrink:0,background:mainCol+"22",border:`1px solid ${T.bd}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
                             {Li(isOver?"alert-triangle":"target",15,mainCol)}
@@ -1630,17 +1630,7 @@ function DashboardScreenV2() {
                     );
                   };
                   return sorted.map((tx,idx)=>{
-                    const sec = sectionOf(tx);
-                    // Trennlinie nur zwischen Budget-Ende (1) und Rest (2), oder zwischen Mitte (0) und Ende (1)
-                    const showDivider = !dashSearch && lastSection!==null && lastSection<2 && sec===2;
-                    lastSection = sec;
                     return (<React.Fragment key={tx.id}>
-                      {showDivider&&<div style={{padding:"6px 18px",background:T.surf3,
-                        borderBottom:`1px solid ${T.bd}`,display:"flex",alignItems:"center",gap:6}}>
-                        <div style={{flex:1,height:1,background:T.bd}}/>
-                        <span style={{color:T.txt2,fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>Vormerkungen</span>
-                        <div style={{flex:1,height:1,background:T.bd}}/>
-                      </div>}
                       {(()=>{
                   // Budget-Platzhalter (gepaart oder einzeln): im Monat-Stil mit
                   // verbraucht + Rest (volles Budget) rendern.
@@ -1658,7 +1648,7 @@ function DashboardScreenV2() {
                   const isExpanded = expandedSplitId === tx.id;
                   return (
                     <div key={tx.id}
-                      style={{padding:"10px 18px",borderBottom:`1px solid ${T.bd}`,
+                      style={{padding:"6px 18px",borderBottom:`1px solid ${T.bd}`,
                         background:tx.pending?T.surf3:"transparent"}}>
                       <div style={{display:"flex",flexDirection:"column",gap:3,marginBottom:(isUncat||isExpanded)?6:0,
                         cursor:isUncat?"default":"pointer"}}
