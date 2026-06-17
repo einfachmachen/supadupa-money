@@ -20,6 +20,7 @@ import { CloudSaveModal } from "./components/organisms/CloudSaveModal.jsx";
 import { CsvImportScreen } from "./components/screens/CsvImportScreen.jsx";
 import { EnableBankingGuide } from "./components/screens/EnableBankingGuide.jsx";
 import { EnableBankingConnectScreen } from "./components/screens/EnableBankingConnectScreen.jsx";
+import { CloudSetupWizard } from "./components/screens/CloudSetupWizard.jsx";
 import { DashboardScreenV2 } from "./components/screens/DashboardScreenV2.jsx";
 import { JahrScreen } from "./components/screens/JahrScreen.jsx";
 import { ManagementScreen } from "./components/screens/ManagementScreen.jsx";
@@ -187,6 +188,7 @@ export default function SupaDupaMoney() {
   const [showCsv,       setShowCsv]       = useState(false);
   const [showBankGuide, setShowBankGuide] = useState(false);
   const [showBankConnect, setShowBankConnect] = useState(false);
+  const [showCloudSetup, setShowCloudSetup] = useState(false);
   const [showJsonImport,setShowJsonImport] = useState(false);
   const [importText,    setImportText]     = useState("");
   const [importStatus,  setImportStatus]   = useState(null);
@@ -240,7 +242,7 @@ export default function SupaDupaMoney() {
   const _structOverlayOpen =
     showMobilePicker || showDataMgr || showMobileKategorien || showMobileVormerken ||
     showMobileWiederkehrend || showMobileBudget || showCsv || showBankConnect ||
-    showBankGuide || showJsonImport || showMatching || showVormHub || showVormMenu ||
+    showCloudSetup || showBankGuide || showJsonImport || showMatching || showVormHub || showVormMenu ||
     showRecurring || showKategorisieren || showMonthPickerModal || showCloudSave ||
     showSettings || showSupaQuick || showQuickPicker || !!modal || !!exportModal ||
     !!exportDialog || !!reviewQueue || dashDrillOpen || !!accIconPick || !!editTx;
@@ -2465,6 +2467,7 @@ Abbrechen = ${remoteName}-Stand laden`
     debugFlags, setDebugFlag, setDebugFlags,
     cfActive, cfSave, cfLoad, cfStatus, setCfStatus, cfUrl, cfSecret, setCfUrl, setCfSecret,
     syncPass, setSyncPass, syncEncActive,
+    showCloudSetup, setShowCloudSetup,
     syncStatus, setSyncStatus, syncError, isDirty,
     cfSaveOnClose, setCfSaveOnClose,
     dashDrillOpen, setDashDrillOpen,
@@ -3069,6 +3072,7 @@ Abbrechen = ${remoteName}-Stand laden`
         onBack={()=>{setShowBankGuide(false);reopenMobilePicker("daten");}}
         onStart={()=>{setShowBankGuide(false);setShowBankConnect(true);}}/>}
       {showBankConnect&&<EnableBankingConnectScreen onClose={()=>setShowBankConnect(false)}/>}
+      {showCloudSetup&&<CloudSetupWizard onClose={()=>setShowCloudSetup(false)}/>}
       {showMatching&&<MatchingScreen onClose={()=>setShowMatching(false)}
         onBack={()=>{setShowMatching(false);reopenMobilePicker("main");}}/>}
       {showVormHub&&<VormerkungHub onClose={()=>{setShowVormHub(false);setEditVormTx(null);}} editVorm={editVormTx} mobileMode={mobileMode}/>}
