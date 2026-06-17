@@ -33,7 +33,7 @@ import { AppCtx } from "./state/AppContext.js";
 import { theme as T, setActiveTheme, isLightTheme } from "./theme/activeTheme.js";
 import { readableOn } from "./theme/amtPill.js";
 import { PAL, gs } from "./theme/palette.js";
-import { getTheme } from "./theme/themes.js";
+import { getTheme, THEMES } from "./theme/themes.js";
 import { BASE_ROWS, CUR_YEAR, INIT_ACCOUNTS, INIT_CATS } from "./utils/constants.js";
 import { kvStore } from "./utils/kvStore.js";
 import { useLocalSaveDebounce } from "./hooks/useLocalSaveDebounce.js";
@@ -308,6 +308,12 @@ export default function SupaDupaMoney() {
       try { const eb = await exportEbForSync(); if(eb) configOnly._ebSecure = eb; }
       catch(e) { console.warn("EB-Sync-Export übersprungen:", e); }
     }
+    // Eigene Farbthemes liegen lokal in kvStore — mit in den Worker-Sync nehmen,
+    // damit beide Sicherungswege (Worker und Daten-Manager) sie abdecken.
+    try {
+      const ct = JSON.parse(kvStore.getItem("mbt_custom_themes")||"{}");
+      if(ct && Object.keys(ct).length) configOnly.customThemes = ct;
+    } catch(e) {}
     const byYear = compressTxByYear(allTxs);
     const base = normCfUrl(cfUrl);
     const headers = {"Content-Type":"application/json","X-Secret":cfSecret};
@@ -848,6 +854,16 @@ export default function SupaDupaMoney() {
     }
     if(d.csvRules && Object.keys(d.csvRules).length) setCsvRules(d.csvRules);
     if(Array.isArray(d.customIcons) && d.customIcons.length) setCustomIcons(d.customIcons);
+    // Eigene Farbthemes übernehmen (aus Worker-Sync oder Backup): in kvStore
+    // mergen und live in THEMES injizieren, damit sie sofort wählbar sind.
+    if(d.customThemes && typeof d.customThemes === "object" && Object.keys(d.customThemes).length) {
+      try {
+        const existing = JSON.parse(kvStore.getItem("mbt_custom_themes")||"{}");
+        const merged = {...existing, ...d.customThemes};
+        kvStore.setItem("mbt_custom_themes", JSON.stringify(merged));
+        Object.entries(d.customThemes).forEach(([k,v]) => { THEMES[k] = v; });
+      } catch(e) {}
+    }
     if(d.startBalances && Object.keys(d.startBalances).length) {
       // Keys als Zahlen normalisieren
       const normalized = {};
