@@ -37,7 +37,7 @@ function MobileActionPicker({onClose, onSelect, onSwitchToMonth, initialScreen="
   };
 
   const mainActions = [
-    {id:"daten",        label:"Daten-Manager",       icon:"database",    color:T.pos},
+    {id:"daten",        label:"Daten",               icon:"database",    color:T.pos},
     {id:"vormerken",    label:"vormerken",           icon:"calendar",    color:T.gold},
     {id:"matching",     label:"zuordnen",            icon:"git-merge",   color:T.blue},
     {id:"wiederkehrend",label:"Serien",              icon:"repeat",      color:T.blue},
@@ -58,6 +58,7 @@ function MobileActionPicker({onClose, onSelect, onSwitchToMonth, initialScreen="
     {id:"bankguide",   label:"Bank verbinden – Anleitung", icon:"landmark", color:T.gold, sub:"Schritt für Schritt erklärt"},
     {id:"bankconnect", label:"Bank-Konto verbinden",       icon:"link",     color:T.gold, sub:"Echte Umsätze via Enable Banking"},
     {id:"datenmgr",  label:"Daten-Manager",   icon:"database",    color:T.pos,  sub:"Export / Import / Löschen"},
+    {id:"cloudsetup",label:"Cloud-Sync einrichten", icon:"cloud",  color:T.cf||T.blue, sub:"Eigene Cloud-DB · geführt"},
     {id:"jsonladen", label:"JSON laden",       icon:"folder-open", color:T.blue, sub:"Backup-Datei einspielen"},
   ];
   const actions = isDaten ? datenActions : mainActions;

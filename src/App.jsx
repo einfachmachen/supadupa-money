@@ -3041,6 +3041,7 @@ Abbrechen = ${remoteName}-Stand laden`
           else if(action==="bankguide") setShowBankGuide(true);
           else if(action==="bankconnect") setShowBankConnect(true);
           else if(action==="datenmgr") setShowDataMgr(true);
+          else if(action==="cloudsetup") setShowCloudSetup(true);
           else if(action==="jsonladen") setShowJsonImport(true);
           else if(action==="wiederkehrend") { setShowMobileWiederkehrendTyp("wiederkehrend"); setShowMobileWiederkehrend(true); }
           else if(action==="finanzierung")  { setShowMobileWiederkehrendTyp("finanzierung");  setShowMobileWiederkehrend(true); }
