@@ -111,12 +111,32 @@ function SettingsInline() {
           <b style={{color:T.gold}}>Empfohlen</b> — kostenlos, kein Limit, kein CORS-Problem.
           Einrichtung: siehe Anleitung <b style={{color:T.txt}}>Cloudflare-Setup.md</b>.
         </div>
+        {/* Ein-Klick-Einrichtung: legt Worker + Speicher (KV) bei Cloudflare an */}
+        <a href="https://deploy.workers.cloudflare.com/?url=https://github.com/einfachmachen/supadupa-money/tree/main/worker-data"
+          target="_blank" rel="noopener noreferrer"
+          style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+            textDecoration:"none",marginBottom:8,padding:"10px 8px",borderRadius:9,
+            border:`1px solid ${T.cf}55`,background:`${T.cf}14`,color:T.cf,
+            fontSize:12,fontWeight:700}}>
+          {Li("upload-cloud",13,T.cf)} 1-Klick: Worker bei Cloudflare einrichten
+        </a>
         <Lbl>Worker URL (https://mbt-sync.DEIN-NAME.workers.dev)</Lbl>
         <SupaField value={cfUrl} onChange={v=>{const u=v.trim();setCfUrl(u);kvStore.setItem("cf_url",u);}}
           placeholder="https://mbt-sync.xxx.workers.dev" locked={false} type="text"/>
         <Lbl>Secret (selbst gewähltes Passwort)</Lbl>
         <SupaField value={cfSecret} onChange={v=>{setCfSecret(v);kvStore.setItem("cf_secret",v);}}
           placeholder="MeinGeheimesPasswort123" locked={false} type="password"/>
+        <button onClick={()=>{
+            const b = crypto.getRandomValues(new Uint8Array(24));
+            const s = btoa(String.fromCharCode(...b)).replace(/[+/=]/g,"").slice(0,32);
+            setCfSecret(s); kvStore.setItem("cf_secret",s);
+            try { navigator.clipboard?.writeText(s); } catch(e){}
+          }} style={{marginBottom:8,padding:"6px 10px",borderRadius:8,
+            border:`1px solid ${T.bd}`,background:"rgba(255,255,255,0.04)",color:T.txt2,
+            fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
+            display:"flex",alignItems:"center",gap:5}}>
+          {Li("key",11,T.txt2)} Secret generieren &amp; kopieren
+        </button>
         <Lbl>Verschlüsselung — Passphrase (optional, Zero-Knowledge)</Lbl>
         <SupaField value={syncPass||""} onChange={v=>setSyncPass?.(v)}
           placeholder="leer = Daten unverschlüsselt in der Cloud" locked={false} type="password"/>
