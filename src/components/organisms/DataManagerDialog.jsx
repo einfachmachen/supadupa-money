@@ -151,64 +151,86 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   const cntQuick = (quickBtns||[]).length;
 
   // ── Import ──────────────────────────────────────────────────────────
+  // Kern: wendet ein geparstes Objekt an und liefert die Meldungen zurück.
+  // Wirft bei falscher Bank-Schlüssel-Passphrase (damit Mehrfach-Import stoppt).
+  const applyImport = async (d) => {
+    const msg = [];
+    // Stammdaten werden ERSETZT …
+    if(d.cats)    { setCats(d.cats);    msg.push(`${d.cats.length} Kategorien`); }
+    if(d.groups)  { setGroups(d.groups);msg.push(`${d.groups.length} Gruppen`); }
+    if(d.accounts){ setAccounts(d.accounts); msg.push(`${d.accounts.length} Konten`); }
+    if(d.csvRules){ setCsvRules(d.csvRules); msg.push(`${Object.keys(d.csvRules).length} Zuordnungen`); }
+    if(d.startBalances){ setStartBalances(d.startBalances); msg.push("Ankerpunkte"); }
+    if(d.budgets){ setBudgets(d.budgets); msg.push(`${Object.keys(d.budgets).length} Budgets`); }
+    if(d.yearData){ setYearData(d.yearData); msg.push("Monatsdaten"); }
+    if(d.col3Name){ setCol3Name(d.col3Name); }
+    if(Array.isArray(d.quickBtns)){ setQuickBtns(d.quickBtns); msg.push("Schnellwahl"); }
+    if(Array.isArray(d.quickColors)){ setQuickColors(d.quickColors); }
+    if(Array.isArray(d.customIcons)){ setCustomIcons(d.customIcons); msg.push(`${d.customIcons.length} Icons`); }
+    // … Buchungen werden ERGÄNZT (Duplikate per id übersprungen). Akzeptiert
+    // sowohl das Daten-Manager-Format (realTxs/pendTxs) als auch ein
+    // Voll-Backup/Cloud-Format (txs).
+    const toAdd = [...(d.realTxs||[]), ...(d.pendTxs||[]), ...(Array.isArray(d.txs)?d.txs:[])];
+    if(toAdd.length) {
+      setTxs(prev=>{
+        const ids = new Set(prev.map(t=>t.id));
+        return [...prev, ...toAdd.filter(t=>!ids.has(t.id))];
+      });
+      msg.push(`${toAdd.length} Buchungen`);
+    }
+    if(d.customThemes && typeof d.customThemes === "object") {
+      const existing = JSON.parse(kvStore.getItem("mbt_custom_themes")||"{}");
+      const merged = {...existing, ...d.customThemes};
+      kvStore.setItem("mbt_custom_themes", JSON.stringify(merged));
+      Object.entries(d.customThemes).forEach(([k,v]) => { THEMES[k] = v; });
+      msg.push(`${Object.keys(d.customThemes).length} Themes`);
+    }
+    // Verschlüsselter Bank-Schlüssel: nur mit korrekter Passphrase. Wird nur
+    // übernommen, wenn dieses Gerät noch keinen Schlüssel hat (lokaler Vorrang).
+    if(d._ebSecure) {
+      if(isEncrypted(d._ebSecure)) {
+        if(!importEbPass) {
+          msg.push("Bank-Schlüssel übersprungen (Passphrase fehlt)");
+        } else {
+          let block;
+          try { block = await decryptJSON(d._ebSecure, importEbPass); }
+          catch(e) { throw new Error("Bank-Schlüssel: Passphrase falsch oder Daten beschädigt"); }
+          const ok = await importEbFromSync(block);
+          msg.push(ok ? "Bank-Schlüssel" : "Bank-Schlüssel (lokal bereits vorhanden, beibehalten)");
+        }
+      } else {
+        const ok = await importEbFromSync(d._ebSecure);
+        if(ok) msg.push("Bank-Schlüssel");
+      }
+    }
+    return msg;
+  };
+
   const doImport = async () => {
     setImportErr(""); setImportOk("");
     try {
-      const d = JSON.parse(importJson);
-      let msg = [];
-      // Stammdaten werden ERSETZT …
-      if(d.cats)    { setCats(d.cats);    msg.push(`${d.cats.length} Kategorien`); }
-      if(d.groups)  { setGroups(d.groups);msg.push(`${d.groups.length} Gruppen`); }
-      if(d.accounts){ setAccounts(d.accounts); msg.push(`${d.accounts.length} Konten`); }
-      if(d.csvRules){ setCsvRules(d.csvRules); msg.push(`${Object.keys(d.csvRules).length} Zuordnungen`); }
-      if(d.startBalances){ setStartBalances(d.startBalances); msg.push("Ankerpunkte"); }
-      if(d.budgets){ setBudgets(d.budgets); msg.push(`${Object.keys(d.budgets).length} Budgets`); }
-      if(d.yearData){ setYearData(d.yearData); msg.push("Monatsdaten"); }
-      if(d.col3Name){ setCol3Name(d.col3Name); }
-      if(Array.isArray(d.quickBtns)){ setQuickBtns(d.quickBtns); msg.push("Schnellwahl"); }
-      if(Array.isArray(d.quickColors)){ setQuickColors(d.quickColors); }
-      if(Array.isArray(d.customIcons)){ setCustomIcons(d.customIcons); msg.push(`${d.customIcons.length} Icons`); }
-      // … Buchungen werden ERGÄNZT (Duplikate per id übersprungen). Akzeptiert
-      // sowohl das Daten-Manager-Format (realTxs/pendTxs) als auch ein
-      // Voll-Backup/Cloud-Format (txs).
-      const toAdd = [...(d.realTxs||[]), ...(d.pendTxs||[]), ...(Array.isArray(d.txs)?d.txs:[])];
-      if(toAdd.length) {
-        setTxs(prev=>{
-          const ids = new Set(prev.map(t=>t.id));
-          return [...prev, ...toAdd.filter(t=>!ids.has(t.id))];
-        });
-        msg.push(`${toAdd.length} Buchungen`);
-      }
-      if(d.customThemes && typeof d.customThemes === "object") {
-        const existing = JSON.parse(kvStore.getItem("mbt_custom_themes")||"{}");
-        const merged = {...existing, ...d.customThemes};
-        kvStore.setItem("mbt_custom_themes", JSON.stringify(merged));
-        // inject into THEMES live
-        Object.entries(d.customThemes).forEach(([k,v]) => { THEMES[k] = v; });
-        msg.push(`${Object.keys(d.customThemes).length} Themes`);
-      }
-      // Verschlüsselter Bank-Schlüssel: nur mit korrekter Passphrase. Wird nur
-      // übernommen, wenn dieses Gerät noch keinen Schlüssel hat (lokaler Vorrang).
-      if(d._ebSecure) {
-        if(isEncrypted(d._ebSecure)) {
-          if(!importEbPass) {
-            msg.push("Bank-Schlüssel übersprungen (Passphrase fehlt)");
-          } else {
-            let block;
-            try { block = await decryptJSON(d._ebSecure, importEbPass); }
-            catch(e) { setImportErr("Bank-Schlüssel: Passphrase falsch oder Daten beschädigt"); return; }
-            const ok = await importEbFromSync(block);
-            msg.push(ok ? "Bank-Schlüssel" : "Bank-Schlüssel (lokal bereits vorhanden, beibehalten)");
-          }
-        } else {
-          const ok = await importEbFromSync(d._ebSecure);
-          if(ok) msg.push("Bank-Schlüssel");
-        }
-      }
+      const msg = await applyImport(JSON.parse(importJson));
       setImportOk("✓ Importiert: "+msg.join(", "));
       setImportJson("");
     } catch(e) {
-      setImportErr("Ungültiges JSON: "+e.message);
+      setImportErr(e.message.startsWith("Bank-Schlüssel") ? e.message : "Ungültiges JSON: "+e.message);
+    }
+  };
+
+  // Mehrere Dateien nacheinander importieren (Buchungen werden über alle Dateien
+  // hinweg gesammelt, Stammdaten der späteren Datei gewinnen).
+  const doImportFiles = async (files) => {
+    setImportErr(""); setImportOk("");
+    const lines = [];
+    try {
+      for(const f of files) {
+        const text = await f.text();
+        const msg = await applyImport(JSON.parse(text));
+        lines.push(`${f.name}: ${msg.join(", ")||"—"}`);
+      }
+      setImportOk(`✓ ${files.length} Datei(en) importiert:\n`+lines.join("\n"));
+    } catch(e) {
+      setImportErr(e.message.startsWith("Bank-Schlüssel") ? e.message : "Fehler: "+e.message);
     }
   };
 
@@ -408,6 +430,14 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
         : "Kategorien & Gruppen (alle)",
      icon:"tag",
      count: cntCatsGroupsFiltered, action: deleteCatsGroupsFiltered},
+    {key:"budgets", label:"Budgets (alle)", icon:"target",
+     count: cntBudg, action:()=>setBudgets({})},
+    {key:"yearData",label:"Monatsdaten (alle)", icon:"calendar",
+     count: cntYears+" Jahre", action:()=>setYearData({})},
+    {key:"quick",   label:"Schnellwahl & Spaltenname", icon:"grid",
+     count: cntQuick, action:()=>{ setQuickBtns([]); setQuickColors([]); }},
+    {key:"icons",   label:"Eigene Icons (alle)", icon:"image",
+     count: cntIcons, action:()=>setCustomIcons([])},
     {key:"themes",  label:"Eigene Farbthemes (alle, global)",     icon:"palette",
      count: Object.keys(JSON.parse(kvStore.getItem("mbt_custom_themes")||"{}")).length,
      action:()=>{
@@ -431,7 +461,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
     {key:"themes",  label:"eigene Farbthemes",       icon:"palette",   count:Object.keys(JSON.parse(kvStore.getItem("mbt_custom_themes")||"{}")).length},
   ];
 
-  const RangeSelector = ()=>(
+  const rangeSelector = (
     <div style={{background:"rgba(0,0,0,0.15)",borderRadius:9,padding:"8px 10px",marginBottom:10}}>
       <div style={{color:T.txt2,fontSize:10,marginBottom:6,fontWeight:600}}>Zeitraum:</div>
       <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
@@ -458,23 +488,22 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
 
   // Mobile: Vollbild mit einheitlichem Header (Zurück → Daten-Untermenü).
   // Desktop: zentriertes Overlay-Dialog wie bisher.
-  const Wrapper = mobileMode
-    ? ({children}) => (
-        <div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,
-          zIndex:300,display:"flex",flexDirection:"column"}}>{children}</div>
-      )
-    : ({children}) => (
-        <div onClick={onClose}
-          style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",
-            zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"}}>
-          <div onClick={e=>e.stopPropagation()}
-            style={{background:T.surf,borderRadius:20,width:"100%",maxWidth:480,
-              maxHeight:"85vh",display:"flex",flexDirection:"column",
-              border:`1px solid ${T.bds}`,boxShadow:"0 8px 40px rgba(0,0,0,0.5)"}}>{children}</div>
-        </div>
-      );
-  return (
-    <Wrapper>
+  // WICHTIG: als reine Funktion (nicht als <Wrapper/>-Komponente) rendern — sonst
+  // bekäme der Wrapper bei jedem Tastendruck eine neue Identität und der ganze
+  // Dialog würde neu gemountet (Scroll springt nach oben, Eingabe verliert Fokus).
+  const wrap = (children) => mobileMode
+    ? (<div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,
+        zIndex:300,display:"flex",flexDirection:"column"}}>{children}</div>)
+    : (<div onClick={onClose}
+        style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",
+          zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"}}>
+        <div onClick={e=>e.stopPropagation()}
+          style={{background:T.surf,borderRadius:20,width:"100%",maxWidth:480,
+            maxHeight:"85vh",display:"flex",flexDirection:"column",
+            border:`1px solid ${T.bds}`,boxShadow:"0 8px 40px rgba(0,0,0,0.5)"}}>{children}</div>
+      </div>);
+  return wrap(
+    <>
 
         {/* Header */}
         {mobileMode ? (
@@ -528,7 +557,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                 <br/>Wieder einspielen über den Reiter <b style={{color:T.txt}}>„importieren"</b> hier im Daten-Manager.
               </div>
             </div>
-            <RangeSelector/>
+            {rangeSelector}
             <div style={{color:T.txt2,fontSize:10,marginBottom:8}}>Bereiche auswählen (Zeitraum gilt nur für Buchungen):</div>
             {SEL_ITEMS.map(({key,label,icon,count,hasRange})=>(
               <div key={key} onClick={()=>toggleSel(key)}
@@ -622,20 +651,33 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
           </>)}
 
           {/* ── IMPORT ── */}
-          {tab==="import"&&(<>
+          {tab==="import"&&(()=>{
+            // Enthält das eingefügte JSON einen verschlüsselten Bank-Schlüssel?
+            let pastedHasKey = false;
+            try { const d = JSON.parse(importJson); pastedHasKey = !!d && isEncrypted(d._ebSecure); } catch {}
+            return (<>
             <div style={{color:T.txt2,fontSize:11,marginBottom:10,lineHeight:1.6}}>
-              JSON aus einem Export hier einfügen oder Datei wählen.
+              JSON einfügen oder Datei(en) wählen. Du kannst <b style={{color:T.txt}}>mehrere Dateien
+              gleichzeitig</b> importieren.
               <br/><b style={{color:T.txt}}>Buchungen</b> werden <b>ergänzt</b> (Duplikate per id übersprungen).
               <b style={{color:T.txt}}> Stammdaten</b> (Kategorien, Gruppen, Konten, Budgets, Monatsdaten,
               Zuordnungen, Ankerpunkte, Schnellwahl, Icons, Themes) werden <b>ersetzt</b>.
               Versteht das Daten-Manager-Format ebenso wie ein Voll-Backup.
             </div>
-            {/* Optionale Passphrase — nur nötig, wenn die Datei einen verschlüsselten Bank-Schlüssel enthält */}
-            <div style={{position:"relative",marginBottom:10}}>
+            {/* Passphrase für den verschlüsselten Bank-Schlüssel. Hervorgehoben,
+                wenn das eingefügte JSON einen enthält; sonst dezent (für Dateien). */}
+            <div style={{marginBottom:10,padding:"8px 10px",borderRadius:9,
+              border:`1px solid ${pastedHasKey?T.gold:T.bd}`,
+              background:pastedHasKey?`${T.gold}12`:"transparent"}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:5,
+                color:pastedHasKey?T.gold:T.txt2,fontSize:11,fontWeight:700}}>
+                {Li("key",12,pastedHasKey?T.gold:T.txt2)}
+                Passphrase für Bank-Schlüssel {pastedHasKey?"— diese Datei enthält einen!":"(nur falls enthalten)"}
+              </div>
               <input type="password" value={importEbPass} onChange={e=>setImportEbPass(e.target.value)}
-                placeholder="Passphrase für Bank-Schlüssel (nur falls enthalten)"
+                placeholder="Schlüssel-Passphrase eingeben"
                 autoCapitalize="off" autoCorrect="off" autoComplete="new-password" spellCheck={false}
-                style={{...INP,marginBottom:0,fontSize:12}}/>
+                style={{...INP,marginBottom:0,fontSize:13}}/>
             </div>
             <textarea value={importJson} onChange={e=>setImportJson(e.target.value)}
               placeholder='{"cats":[...],"realTxs":[...],...}'
@@ -644,18 +686,23 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                 color:T.txt,fontSize:11,padding:"10px",fontFamily:"monospace",
                 boxSizing:"border-box",outline:"none",resize:"vertical"}}/>
             {importErr&&<div style={{color:T.neg,fontSize:10,marginTop:4}}>{importErr}</div>}
-            {importOk&&<div style={{color:T.pos,fontSize:11,marginTop:4,fontWeight:700}}>{importOk}</div>}
+            {importOk&&<div style={{color:T.pos,fontSize:11,marginTop:4,fontWeight:700,whiteSpace:"pre-wrap"}}>{importOk}</div>}
             <div style={{display:"flex",gap:8,marginTop:10}}>
               <label style={{flex:1,padding:"10px",borderRadius:11,border:`1px solid ${T.blue}44`,
                 background:`${T.blue}08`,color:T.blue,fontSize:12,fontWeight:700,cursor:"pointer",
                 display:"flex",alignItems:"center",justifyContent:"center",gap:6,textAlign:"center"}}>
-                {Li("folder-open",13,T.blue)} Datei wählen
-                <input type="file" accept=".json" style={{display:"none"}}
+                {Li("folder-open",13,T.blue)} Datei(en) importieren
+                <input type="file" accept=".json" multiple style={{display:"none"}}
                   onChange={e=>{
-                    const f=e.target.files[0]; if(!f) return;
-                    const r=new FileReader();
-                    r.onload=ev=>setImportJson(ev.target.result);
-                    r.readAsText(f);
+                    const fs=Array.from(e.target.files||[]); if(!fs.length) return;
+                    if(fs.length===1) {
+                      const r=new FileReader();
+                      r.onload=ev=>setImportJson(ev.target.result);
+                      r.readAsText(fs[0]);
+                    } else {
+                      doImportFiles(fs);
+                    }
+                    e.target.value="";
                   }}/>
               </label>
               <button onClick={doImport} disabled={!importJson.trim()}
@@ -667,7 +714,8 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                 {Li("upload",14,"#fff")} Importieren
               </button>
             </div>
-          </>)}
+            </>);
+          })()}
 
           {/* ── LÖSCHEN ── */}
           {tab==="delete"&&(<>
@@ -675,7 +723,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
               background:`${T.neg}10`,borderRadius:8,border:`1px solid ${T.neg}33`}}>
               {Li("alert-triangle",11,T.neg)} Achtung: Löschen kann nicht rückgängig gemacht werden!
             </div>
-            <RangeSelector/>
+            {rangeSelector}
             {/* Konto-Filter — gilt für 'echte Buchungen' und 'Vormerkungen' */}
             <div style={{marginBottom:10}}>
               <div style={{color:T.txt2,fontSize:10,marginBottom:4}}>Konto-Filter (für Buchungen/Vormerkungen):</div>
@@ -743,7 +791,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
           </>)}
 
         </div>
-    </Wrapper>
+    </>
   );
 }
 
