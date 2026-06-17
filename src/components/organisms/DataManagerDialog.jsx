@@ -408,37 +408,32 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   const inDelRange = (t) => t.date>=fromIso && t.date<=toIso && accMatch(t);
   // Konto-Name für Labels
   const delAccName = !delAcc ? null : ((accounts||[]).find(a=>a.id===delAcc)?.name || delAcc);
+  // Löschen: gleiche Namen UND gleiche Reihenfolge wie der Export (ohne "Konten"
+  // und "Bank-Schlüssel", die hier bewusst nicht massenhaft löschbar sind). Bei
+  // aktivem Konto-Filter wird der Kontoname als Zusatz angehängt.
+  const accSfx = delAcc ? ` (${delAccName})` : "";
   const DELETE_ITEMS = [
+    {key:"cats",    label:"Kategorien & Gruppen"+accSfx, icon:"tag",
+     count: cntCatsGroupsFiltered, action: deleteCatsGroupsFiltered},
     {key:"realTxs", label:"echte Buchungen", icon:"check-circle",
      count: filterTxs(txs.filter(t=>!t.pending)).length,
      action:()=>setTxs(p=>p.filter(t=>t.pending||!inDelRange(t)))},
-    {key:"pendTxs", label:"Vormerkungen / Wiederkehrende", icon:"calendar",
+    {key:"pendTxs", label:"Vormerkungen & Wiederkehrende", icon:"calendar",
      count: filterTxs(txs.filter(t=>t.pending)).length,
      action:()=>setTxs(p=>p.filter(t=>!t.pending||!inDelRange(t)))},
-    {key:"rules",   label: delAcc
-        ? `Kategorie-Zuordnungen (${delAccName})`
-        : "Kategorie-Zuordnungen (alle)",
-     icon:"bookmark",
-     count: cntRulesFiltered, action: deleteRulesFiltered},
-    {key:"anchors", label: delAcc
-        ? `Kontostand-Ankerpunkte (${delAccName}, Zeitraum)`
-        : "Kontostand-Ankerpunkte (ALLE Konten, ALLE Zeiten)",
-     icon:"landmark",
-     count: cntAnchFiltered, action: deleteAnchorsFiltered},
-    {key:"cats",    label: delAcc
-        ? `Kategorien & Gruppen (${delAccName})`
-        : "Kategorien & Gruppen (alle)",
-     icon:"tag",
-     count: cntCatsGroupsFiltered, action: deleteCatsGroupsFiltered},
-    {key:"budgets", label:"Budgets (alle)", icon:"target",
+    {key:"budgets", label:"Budgets", icon:"target",
      count: cntBudg, action:()=>setBudgets({})},
-    {key:"yearData",label:"Monatsdaten (alle)", icon:"calendar",
+    {key:"yearData",label:"Monatsdaten", icon:"calendar",
      count: cntYears+" Jahre", action:()=>setYearData({})},
+    {key:"rules",   label:"Kategorie-Zuordnungen"+accSfx, icon:"bookmark",
+     count: cntRulesFiltered, action: deleteRulesFiltered},
+    {key:"anchors", label:"Kontostand-Ankerpunkte"+accSfx, icon:"landmark",
+     count: cntAnchFiltered, action: deleteAnchorsFiltered},
     {key:"quick",   label:"Schnellwahl & Spaltenname", icon:"grid",
      count: cntQuick, action:()=>{ setQuickBtns([]); setQuickColors([]); }},
-    {key:"icons",   label:"Eigene Icons (alle)", icon:"image",
+    {key:"icons",   label:"Eigene Icons", icon:"image",
      count: cntIcons, action:()=>setCustomIcons([])},
-    {key:"themes",  label:"Eigene Farbthemes (alle, global)",     icon:"palette",
+    {key:"themes",  label:"eigene Farbthemes",     icon:"palette",
      count: Object.keys(JSON.parse(kvStore.getItem("mbt_custom_themes")||"{}")).length,
      action:()=>{
        const saved = JSON.parse(kvStore.getItem("mbt_custom_themes")||"{}");
