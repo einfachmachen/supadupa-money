@@ -49,12 +49,16 @@ function LinkBtn({ href, icon, children, color }) {
 function CloudSetupWizard({ onClose }) {
   const {
     cfUrl, setCfUrl, cfSecret, setCfSecret, cfActive,
-    syncPass, setSyncPass, syncEncActive, saveConfig,
+    syncPass, setSyncPass, syncEncActive, saveConfig, setMasterOverride,
   } = useContext(AppCtx);
   const [step, setStep] = useState(0);
   const [testState, setTestState] = useState("idle"); // idle|testing|ok|error
   const [testMsg, setTestMsg] = useState("");
   const [copied, setCopied] = useState(false);
+
+  // onClose stabil halten (Master-Override-Effekt soll nicht pro Render feuern)
+  const onCloseRef = React.useRef(onClose);
+  onCloseRef.current = onClose;
 
   const setUrl = (v) => { const u = v.trim(); setCfUrl?.(u); kvStore.setItem("cf_url", u); };
   const setSecret = (v) => { setCfSecret?.(v); kvStore.setItem("cf_secret", v); };
@@ -82,13 +86,29 @@ function CloudSetupWizard({ onClose }) {
     }
   };
 
-  const next = () => setStep((s) => Math.min(STEPS.length - 1, s + 1));
   const back = () => (step === 0 ? onClose() : setStep((s) => s - 1));
-  const canNext = () => {
-    if (step === 1) return !!cfUrl;
-    if (step === 2) return !!cfSecret;
-    return true;
-  };
+
+  // Master-„+"-Button übernimmt die Schritt-Steuerung: Tipp = Weiter/Fertig,
+  // Wisch ← = zurück (Schritt 0 → schließen), Wisch ↓ = schließen. Der Effekt
+  // hängt nur an Bool-Readiness, nicht an den Rohtexten (sonst Tipp-Lag).
+  const urlReady = !!cfUrl;
+  const secretReady = !!cfSecret;
+  React.useEffect(() => {
+    const isLast = step === STEPS.length - 1;
+    const stepReady = step === 1 ? urlReady : step === 2 ? secretReady : true;
+    setMasterOverride?.({
+      label: isLast ? "✓ Fertig" : "Weiter",
+      disabled: !stepReady,
+      onConfirm: () => {
+        if (isLast) { onCloseRef.current?.(); return; }
+        if (!stepReady) return;
+        setStep((s) => Math.min(STEPS.length - 1, s + 1));
+      },
+      onBack: () => { if (step === 0) onCloseRef.current?.(); else setStep((s) => Math.max(0, s - 1)); },
+      onDismiss: () => onCloseRef.current?.(),
+    });
+    return () => setMasterOverride?.(null);
+  }, [step, urlReady, secretReady]);
 
   return (
     <div style={{ position: "fixed", inset: 0, background: T.bg, zIndex: 320, display: "flex", flexDirection: "column" }}>
@@ -225,30 +245,8 @@ function CloudSetupWizard({ onClose }) {
         </div>
       </div>
 
-      {/* Fußzeile: Zurück / Weiter (bzw. Fertig) */}
-      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0,
-        display: "flex", gap: 10, padding: "12px 18px calc(12px + env(safe-area-inset-bottom, 0px))",
-        background: T.surf, borderTop: `1px solid ${T.bd}` }}>
-        <button onClick={back}
-          style={{ padding: "12px 16px", borderRadius: 12, border: `1px solid ${T.bd}`,
-            background: "transparent", color: T.txt2, fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
-          {step === 0 ? "Abbrechen" : "Zurück"}
-        </button>
-        {step < STEPS.length - 1 ? (
-          <button onClick={next} disabled={!canNext()}
-            style={{ flex: 1, padding: "12px", borderRadius: 12, border: "none",
-              background: canNext() ? (T.cf || T.blue) : T.bd, color: T.on_accent, fontSize: 16, fontWeight: 800,
-              cursor: canNext() ? "pointer" : "not-allowed", opacity: canNext() ? 1 : 0.6 }}>
-            Weiter
-          </button>
-        ) : (
-          <button onClick={onClose}
-            style={{ flex: 1, padding: "12px", borderRadius: 12, border: "none",
-              background: T.pos, color: T.on_accent, fontSize: 16, fontWeight: 800, cursor: "pointer" }}>
-            Fertig
-          </button>
-        )}
-      </div>
+      {/* Steuerung über den Master-„+"-Button: Tipp = Weiter/Fertig,
+          Wisch ← = zurück, Wisch ↓ = schließen. Zusätzlich oben Header-Pfeil/X. */}
     </div>
   );
 }

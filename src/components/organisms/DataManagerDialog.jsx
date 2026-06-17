@@ -11,7 +11,8 @@ import { kvStore } from "../../utils/kvStore.js";
 
 function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   const { cats, groups, accounts, txs, setTxs, csvRules, startBalances,
-    setStartBalances, setCats, setGroups, setAccounts, setCsvRules } = useContext(AppCtx);
+    setStartBalances, setCats, setGroups, setAccounts, setCsvRules,
+    setShowCloudSetup, cfActive, syncEncActive } = useContext(AppCtx);
 
   const MONTHS_G=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
   const today = new Date();
@@ -418,6 +419,23 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
               {Li(ic,11,tab===v?col:T.txt2)} {lb}
             </button>
           ))}
+        </div>
+
+        {/* Cloud-Sync: geführte Einrichtung der eigenen Cloud-DB */}
+        <div style={{padding:"10px 16px 0",flexShrink:0}}>
+          <button onClick={()=>setShowCloudSetup?.(true)}
+            style={{display:"flex",alignItems:"center",gap:10,width:"100%",
+              padding:"10px 12px",borderRadius:11,cursor:"pointer",fontFamily:"inherit",
+              border:`1px solid ${T.cf||T.blue}55`,background:`${T.cf||T.blue}14`,textAlign:"left"}}>
+            {Li("cloud",16,T.cf||T.blue)}
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{color:T.cf||T.blue,fontSize:13,fontWeight:800}}>Cloud-Sync einrichten</div>
+              <div style={{color:T.txt2,fontSize:10,marginTop:1}}>
+                {cfActive ? (syncEncActive ? "Aktiv · verschlüsselt" : "Aktiv · unverschlüsselt") : "Eigene Cloud-DB · geführt"}
+              </div>
+            </div>
+            {Li("chevron-right",16,T.txt2)}
+          </button>
         </div>
 
         <div style={{flex:1,overflowY:"auto",padding:"12px 16px 24px"}}>
