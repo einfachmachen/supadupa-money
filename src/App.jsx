@@ -2483,6 +2483,7 @@ Abbrechen = ${remoteName}-Stand laden`
     cfActive, cfSave, cfLoad, cfStatus, setCfStatus, cfUrl, cfSecret, setCfUrl, setCfSecret,
     syncPass, setSyncPass, syncEncActive,
     showCloudSetup, setShowCloudSetup,
+    setActiveStructurTab, setShowBankConnect,
     syncStatus, setSyncStatus, syncError, isDirty,
     cfSaveOnClose, setCfSaveOnClose,
     dashDrillOpen, setDashDrillOpen,

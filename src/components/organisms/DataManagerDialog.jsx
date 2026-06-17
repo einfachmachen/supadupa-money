@@ -17,7 +17,12 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
     setStartBalances, setCats, setGroups, setAccounts, setCsvRules,
     yearData, setYearData, col3Name, setCol3Name,
     quickBtns, setQuickBtns, quickColors, setQuickColors,
-    budgets, setBudgets, customIcons, setCustomIcons } = useContext(AppCtx);
+    budgets, setBudgets, customIcons, setCustomIcons,
+    setMainTab, setActiveStructurTab, setShowBankConnect } = useContext(AppCtx);
+
+  // Navigation zu den jeweils zuständigen Stellen (statt direkt hier zu löschen).
+  const openKonten = () => { onClose?.(); setMainTab?.("struktur"); setActiveStructurTab?.("konten"); };
+  const openBankConnect = () => { onClose?.(); setShowBankConnect?.(true); };
 
   const MONTHS_G=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
   const today = new Date();
@@ -415,6 +420,9 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   const DELETE_ITEMS = [
     {key:"cats",    label:"Kategorien & Gruppen"+accSfx, icon:"tag",
      count: cntCatsGroupsFiltered, action: deleteCatsGroupsFiltered},
+    {key:"accounts", label:"Konten", icon:"landmark", nav:true, onNav: openKonten,
+     count: accounts.length,
+     note:"Konten werden im Konten-Manager verwaltet. Löschst du dort ein Konto, müssen seine Buchungen zwingend einem anderen Konto zugewiesen werden — sonst hätten sie kein Konto. Genau das stellt der Konten-Manager sicher."},
     {key:"realTxs", label:"echte Buchungen", icon:"check-circle",
      count: filterTxs(txs.filter(t=>!t.pending)).length,
      action:()=>setTxs(p=>p.filter(t=>t.pending||!inDelRange(t)))},
@@ -440,6 +448,8 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
        Object.keys(saved).forEach(k => { delete THEMES[k]; });
        kvStore.removeItem("mbt_custom_themes");
      }},
+    {key:"ebkey", label:"Bank-Schlüssel", icon:"key", nav:true, onNav: openBankConnect,
+     count: "", note:"Der Bank-Schlüssel wird im Bank-Abruf verwaltet. Dort trennst du die Bankverbindung bzw. entfernst den Schlüssel — aus Sicherheitsgründen nicht über eine Löschliste."},
   ];
 
   const SEL_ITEMS = [
@@ -741,9 +751,27 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                 ))}
               </div>
             </div>
-            {DELETE_ITEMS.map(({key,label,icon,count,action})=>(
+            {DELETE_ITEMS.map(({key,label,icon,count,action,nav,onNav,note})=>(
               <div key={key} style={{marginBottom:6}}>
-                {delConfirm===key ? (
+                {nav ? (
+                  <div style={{padding:"8px 10px",borderRadius:9,
+                    background:`${T.gold}10`,border:`1px solid ${T.gold}44`}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      {Li(icon,14,T.gold)}
+                      <span style={{flex:1,color:T.txt,fontSize:12}}>{label}</span>
+                      {count!==""&&<span style={{color:T.txt2,fontSize:10,fontFamily:"monospace",marginRight:4}}>{count}</span>}
+                      <button onClick={onNav}
+                        style={{padding:"5px 10px",borderRadius:7,border:`1px solid ${T.gold}66`,
+                          background:`${T.gold}14`,color:T.gold,fontSize:11,fontWeight:700,
+                          cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+                        Öffnen {Li("arrow-right",11,T.gold)}
+                      </button>
+                    </div>
+                    <div style={{color:T.txt2,fontSize:10,lineHeight:1.5,marginTop:6,display:"flex",gap:5,alignItems:"flex-start"}}>
+                      {Li("alert-triangle",11,T.gold)}<span>{note}</span>
+                    </div>
+                  </div>
+                ) : delConfirm===key ? (
                   <div style={{padding:"10px",borderRadius:10,
                     background:`${T.neg}15`,border:`1px solid ${T.neg}44`}}>
                     <div style={{color:T.neg,fontSize:11,fontWeight:700,marginBottom:6}}>
