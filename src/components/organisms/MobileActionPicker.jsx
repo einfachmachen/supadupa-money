@@ -59,7 +59,6 @@ function MobileActionPicker({onClose, onSelect, onSwitchToMonth, initialScreen="
     {id:"bankconnect", label:"Bank-Konto verbinden",       icon:"link",     color:T.gold, sub:"Echte Umsätze via Enable Banking"},
     {id:"datenmgr",  label:"Daten-Manager",   icon:"database",    color:T.pos,  sub:"Export / Import / Löschen"},
     {id:"cloudsetup",label:"Cloud-Sync einrichten", icon:"cloud",  color:T.cf||T.blue, sub:"Eigene Cloud-DB · geführt"},
-    {id:"jsonladen", label:"JSON laden",       icon:"folder-open", color:T.blue, sub:"Backup-Datei einspielen"},
   ];
   const actions = isDaten ? datenActions : mainActions;
 
