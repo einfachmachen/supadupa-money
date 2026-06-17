@@ -120,9 +120,9 @@ function SettingsInline() {
             fontSize:12,fontWeight:700}}>
           {Li("upload-cloud",13,T.cf)} 1-Klick: Worker bei Cloudflare einrichten
         </a>
-        <Lbl>Worker URL (https://mbt-sync.DEIN-NAME.workers.dev)</Lbl>
+        <Lbl>Worker URL (https://supadupa-sync.DEIN-NAME.workers.dev)</Lbl>
         <SupaField value={cfUrl} onChange={v=>{const u=v.trim();setCfUrl(u);kvStore.setItem("cf_url",u);}}
-          placeholder="https://mbt-sync.xxx.workers.dev" locked={false} type="text"/>
+          placeholder="https://supadupa-sync.xxx.workers.dev" locked={false} type="text"/>
         <Lbl>Secret (selbst gewähltes Passwort)</Lbl>
         <SupaField value={cfSecret} onChange={v=>{setCfSecret(v);kvStore.setItem("cf_secret",v);}}
           placeholder="MeinGeheimesPasswort123" locked={false} type="password"/>

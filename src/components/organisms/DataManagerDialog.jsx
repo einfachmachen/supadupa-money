@@ -11,22 +11,37 @@ import { kvStore } from "../../utils/kvStore.js";
 
 function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   const { cats, groups, accounts, txs, setTxs, csvRules, startBalances,
-    setStartBalances, setCats, setGroups, setAccounts, setCsvRules } = useContext(AppCtx);
+    setStartBalances, setCats, setGroups, setAccounts, setCsvRules,
+    yearData, setYearData, col3Name, setCol3Name,
+    quickBtns, setQuickBtns, quickColors, setQuickColors,
+    budgets, setBudgets, customIcons, setCustomIcons } = useContext(AppCtx);
 
   const MONTHS_G=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
   const today = new Date();
   const [tab, setTab] = useState("export"); // export | import | delete
 
-  // Zeitraum
-  const [fromY, setFromY] = useState(today.getFullYear()-1);
-  const [fromM, setFromM] = useState(0);
-  const [toY,   setToY]   = useState(today.getFullYear());
-  const [toM,   setToM]   = useState(today.getMonth());
+  // Voller Zeitraum als Standard: vom frühesten bis zum spätesten Buchungsdatum.
+  // So enthält ein Export mit allen Haken wirklich ALLE Buchungen (inkl. alter
+  // und zukünftiger/Vormerkungen) — identisch zum Worker-zu-Worker-Weg.
+  const _allDates = (txs||[]).map(t=>t.date).filter(Boolean).sort();
+  const _minD = _allDates[0] || null;
+  const _maxD = _allDates[_allDates.length-1] || null;
+  const fullFromY = _minD ? Number(_minD.slice(0,4)) : today.getFullYear();
+  const fullFromM = _minD ? Number(_minD.slice(5,7))-1 : 0;
+  const fullToY   = _maxD ? Number(_maxD.slice(0,4)) : today.getFullYear();
+  const fullToM   = _maxD ? Number(_maxD.slice(5,7))-1 : today.getMonth();
 
-  // Export-Auswahl
+  // Zeitraum
+  const [fromY, setFromY] = useState(fullFromY);
+  const [fromM, setFromM] = useState(fullFromM);
+  const [toY,   setToY]   = useState(fullToY);
+  const [toM,   setToM]   = useState(fullToM);
+
+  // Export-Auswahl — Standard: ALLES an (= 100 %-Sicherung).
   const [sel, setSel] = useState({
     cats:true, groups:true, accounts:true,
     realTxs:true, pendTxs:true, rules:true, anchors:true,
+    yearData:true, budgets:true, icons:true, quick:true, themes:true,
   });
   const toggleSel = k => setSel(p=>({...p,[k]:!p[k]}));
 
@@ -56,15 +71,24 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   });
 
   // ── Export ──────────────────────────────────────────────────────────
+  // Vollständig, wenn ALLE Haken aktiv UND der volle Zeitraum gewählt ist.
+  const isFullRange = fromY===fullFromY && fromM===fullFromM && toY===fullToY && toM===fullToM;
+  const isComplete = sel.cats&&sel.groups&&sel.accounts&&sel.realTxs&&sel.pendTxs&&
+    sel.rules&&sel.anchors&&sel.yearData&&sel.budgets&&sel.icons&&sel.quick&&sel.themes&&isFullRange;
+
   const buildExport = () => {
-    const out = {exportedAt: new Date().toISOString(), _type:"mbt-partial"};
-    if(sel.cats)    out.cats    = cats;
-    if(sel.groups)  out.groups  = groups;
-    if(sel.accounts)out.accounts= accounts;
+    const out = {exportedAt: new Date().toISOString(), app:"SupaDupa Money",
+      _type:"supadupa-backup", _complete:isComplete};
+    if(sel.cats)   { out.cats = cats; out.groups = groups; }   // Kategorien & Gruppen gehören zusammen
+    if(sel.accounts) out.accounts = accounts;
     if(sel.realTxs) out.realTxs = filterTxs(txs.filter(t=>!t.pending));
     if(sel.pendTxs) out.pendTxs = filterTxs(txs.filter(t=>t.pending));
-    if(sel.rules)   out.csvRules= csvRules;
-    if(sel.anchors)  out.startBalances = startBalances;
+    if(sel.rules)   out.csvRules = csvRules;
+    if(sel.anchors) out.startBalances = startBalances;
+    if(sel.yearData) out.yearData = yearData;
+    if(sel.budgets)  out.budgets = budgets;
+    if(sel.icons)    out.customIcons = customIcons;
+    if(sel.quick)   { out.quickBtns = quickBtns; out.quickColors = quickColors; out.col3Name = col3Name; }
     if(sel.themes) {
       try { out.customThemes = JSON.parse(kvStore.getItem("mbt_custom_themes")||"{}"); } catch{}
     }
@@ -77,7 +101,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
     const blob = new Blob([json], {type:"application/json"});
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
-    a.href=url; a.download=`mbt-export-${new Date().toISOString().slice(0,10)}.json`;
+    a.href=url; a.download=`supadupa-backup-${new Date().toISOString().slice(0,10)}.json`;
     a.click(); URL.revokeObjectURL(url);
   };
 
@@ -90,6 +114,10 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   const cntPend  = filterTxs(txs.filter(t=>t.pending)).length;
   const cntRules = Object.keys(csvRules||{}).length;
   const cntAnch  = Object.values(startBalances||{}).reduce((s,y)=>s+Object.keys(y||{}).filter(k=>!isNaN(k)).length,0);
+  const cntYears = Object.keys(yearData||{}).length;
+  const cntBudg  = Object.keys(budgets||{}).length;
+  const cntIcons = (customIcons||[]).length;
+  const cntQuick = (quickBtns||[]).length;
 
   // ── Import ──────────────────────────────────────────────────────────
   const doImport = () => {
@@ -97,13 +125,23 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
     try {
       const d = JSON.parse(importJson);
       let msg = [];
+      // Stammdaten werden ERSETZT …
       if(d.cats)    { setCats(d.cats);    msg.push(`${d.cats.length} Kategorien`); }
       if(d.groups)  { setGroups(d.groups);msg.push(`${d.groups.length} Gruppen`); }
       if(d.accounts){ setAccounts(d.accounts); msg.push(`${d.accounts.length} Konten`); }
       if(d.csvRules){ setCsvRules(d.csvRules); msg.push(`${Object.keys(d.csvRules).length} Zuordnungen`); }
       if(d.startBalances){ setStartBalances(d.startBalances); msg.push("Ankerpunkte"); }
-      if(d.realTxs||d.pendTxs) {
-        const toAdd = [...(d.realTxs||[]), ...(d.pendTxs||[])];
+      if(d.budgets){ setBudgets(d.budgets); msg.push(`${Object.keys(d.budgets).length} Budgets`); }
+      if(d.yearData){ setYearData(d.yearData); msg.push("Monatsdaten"); }
+      if(d.col3Name){ setCol3Name(d.col3Name); }
+      if(Array.isArray(d.quickBtns)){ setQuickBtns(d.quickBtns); msg.push("Schnellwahl"); }
+      if(Array.isArray(d.quickColors)){ setQuickColors(d.quickColors); }
+      if(Array.isArray(d.customIcons)){ setCustomIcons(d.customIcons); msg.push(`${d.customIcons.length} Icons`); }
+      // … Buchungen werden ERGÄNZT (Duplikate per id übersprungen). Akzeptiert
+      // sowohl das Daten-Manager-Format (realTxs/pendTxs) als auch ein
+      // Voll-Backup/Cloud-Format (txs).
+      const toAdd = [...(d.realTxs||[]), ...(d.pendTxs||[]), ...(Array.isArray(d.txs)?d.txs:[])];
+      if(toAdd.length) {
         setTxs(prev=>{
           const ids = new Set(prev.map(t=>t.id));
           return [...prev, ...toAdd.filter(t=>!ids.has(t.id))];
@@ -136,7 +174,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "mbt-autobackup-" + new Date().toISOString().slice(0,16).replace(/[:T]/g,"-") + ".json";
+      a.download = "supadupa-autobackup-" + new Date().toISOString().slice(0,16).replace(/[:T]/g,"-") + ".json";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -332,12 +370,16 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
 
   const SEL_ITEMS = [
     {key:"cats",    label:"Kategorien & Gruppen",    icon:"tag",       count:cats.length+groups.length},
-    {key:"themes",  label:"eigene Farbthemes",       icon:"palette",   count:Object.keys(JSON.parse(kvStore.getItem("mbt_custom_themes")||"{}")).length},
     {key:"accounts",label:"Konten",                  icon:"landmark",  count:accounts.length},
     {key:"realTxs", label:"echte Buchungen",          icon:"check-circle",count:cntReal, hasRange:true},
     {key:"pendTxs", label:"Vormerkungen & Wiederkehrende",icon:"calendar",count:cntPend, hasRange:true},
+    {key:"budgets", label:"Budgets",                 icon:"target",    count:cntBudg},
+    {key:"yearData",label:"Monatsdaten",             icon:"calendar",  count:cntYears+" Jahre"},
     {key:"rules",   label:"Kategorie-Zuordnungen",   icon:"bookmark",  count:cntRules},
     {key:"anchors", label:"Kontostand-Ankerpunkte",  icon:"landmark",  count:cntAnch},
+    {key:"quick",   label:"Schnellwahl & Spaltenname",icon:"grid",     count:cntQuick},
+    {key:"icons",   label:"Eigene Icons",            icon:"image",     count:cntIcons},
+    {key:"themes",  label:"eigene Farbthemes",       icon:"palette",   count:Object.keys(JSON.parse(kvStore.getItem("mbt_custom_themes")||"{}")).length},
   ];
 
   const RangeSelector = ()=>(
@@ -357,9 +399,10 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
         </select>
         <input type="number" value={toY} onChange={e=>setToY(Number(e.target.value))}
           style={{width:64,...INP,marginBottom:0,fontSize:11,padding:"4px 6px",textAlign:"center"}}/>
-        <button onClick={()=>{setFromM(0);setFromY(today.getFullYear()-1);setToM(today.getMonth());setToY(today.getFullYear());}}
+        <button onClick={()=>{setFromM(fullFromM);setFromY(fullFromY);setToM(fullToM);setToY(fullToY);}}
+          title="Ganzer Zeitraum (alle Buchungen)"
           style={{background:"rgba(255,255,255,0.07)",border:"none",color:T.txt2,borderRadius:6,
-            padding:"4px 8px",fontSize:10,cursor:"pointer"}}>Reset</button>
+            padding:"4px 8px",fontSize:10,cursor:"pointer"}}>Alles</button>
       </div>
     </div>
   );
@@ -424,8 +467,20 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
 
           {/* ── EXPORT ── */}
           {tab==="export"&&(<>
+            {/* Vollständigkeits-Hinweis: ehrlich anzeigen, ob es ein 100%-Backup ist */}
+            <div style={{display:"flex",alignItems:"flex-start",gap:8,padding:"8px 10px",marginBottom:10,
+              borderRadius:9,border:`1px solid ${isComplete?T.pos:T.gold}55`,
+              background:`${isComplete?T.pos:T.gold}12`}}>
+              {Li(isComplete?"shield-check":"shield",13,isComplete?T.pos:T.gold)}
+              <div style={{flex:1,color:T.txt,fontSize:10.5,lineHeight:1.5}}>
+                {isComplete
+                  ? <><b style={{color:T.pos}}>Vollständige Sicherung (100 %)</b> — alle Bereiche + ganzer Zeitraum. Entspricht exakt dem Worker-zu-Worker-Weg.</>
+                  : <><b style={{color:T.gold}}>Teil-Sicherung</b> — nicht alle Bereiche bzw. nicht der ganze Zeitraum gewählt. Für 100 % alle Haken setzen und bei den Buchungen „Alles" als Zeitraum.</>}
+                <br/>Wieder einspielen über den Reiter <b style={{color:T.txt}}>„importieren"</b> hier im Daten-Manager.
+              </div>
+            </div>
             <RangeSelector/>
-            <div style={{color:T.txt2,fontSize:10,marginBottom:8}}>Bereiche auswählen:</div>
+            <div style={{color:T.txt2,fontSize:10,marginBottom:8}}>Bereiche auswählen (Zeitraum gilt nur für Buchungen):</div>
             {SEL_ITEMS.map(({key,label,icon,count,hasRange})=>(
               <div key={key} onClick={()=>toggleSel(key)}
                 style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",
@@ -464,7 +519,11 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
           {/* ── IMPORT ── */}
           {tab==="import"&&(<>
             <div style={{color:T.txt2,fontSize:11,marginBottom:10,lineHeight:1.6}}>
-              JSON aus vorherigem Export einfügen. Bestehende Daten werden ergänzt (nicht überschrieben).
+              JSON aus einem Export hier einfügen oder Datei wählen.
+              <br/><b style={{color:T.txt}}>Buchungen</b> werden <b>ergänzt</b> (Duplikate per id übersprungen).
+              <b style={{color:T.txt}}> Stammdaten</b> (Kategorien, Gruppen, Konten, Budgets, Monatsdaten,
+              Zuordnungen, Ankerpunkte, Schnellwahl, Icons, Themes) werden <b>ersetzt</b>.
+              Versteht das Daten-Manager-Format ebenso wie ein Voll-Backup.
             </div>
             <textarea value={importJson} onChange={e=>setImportJson(e.target.value)}
               placeholder='{"cats":[...],"realTxs":[...],...}'

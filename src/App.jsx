@@ -33,7 +33,7 @@ import { AppCtx } from "./state/AppContext.js";
 import { theme as T, setActiveTheme, isLightTheme } from "./theme/activeTheme.js";
 import { readableOn } from "./theme/amtPill.js";
 import { PAL, gs } from "./theme/palette.js";
-import { getTheme } from "./theme/themes.js";
+import { getTheme, THEMES } from "./theme/themes.js";
 import { BASE_ROWS, CUR_YEAR, INIT_ACCOUNTS, INIT_CATS } from "./utils/constants.js";
 import { kvStore } from "./utils/kvStore.js";
 import { useLocalSaveDebounce } from "./hooks/useLocalSaveDebounce.js";
@@ -189,7 +189,6 @@ export default function SupaDupaMoney() {
   const [showBankGuide, setShowBankGuide] = useState(false);
   const [showBankConnect, setShowBankConnect] = useState(false);
   const [showCloudSetup, setShowCloudSetup] = useState(false);
-  const [showJsonImport,setShowJsonImport] = useState(false);
   const [importText,    setImportText]     = useState("");
   const [importStatus,  setImportStatus]   = useState(null);
   const [topMenu,       setTopMenu]        = useState(null); // "laden"|"speichern"|null
@@ -242,7 +241,7 @@ export default function SupaDupaMoney() {
   const _structOverlayOpen =
     showMobilePicker || showDataMgr || showMobileKategorien || showMobileVormerken ||
     showMobileWiederkehrend || showMobileBudget || showCsv || showBankConnect ||
-    showCloudSetup || showBankGuide || showJsonImport || showMatching || showVormHub || showVormMenu ||
+    showCloudSetup || showBankGuide || showMatching || showVormHub || showVormMenu ||
     showRecurring || showKategorisieren || showMonthPickerModal || showCloudSave ||
     showSettings || showSupaQuick || showQuickPicker || !!modal || !!exportModal ||
     !!exportDialog || !!reviewQueue || dashDrillOpen || !!accIconPick || !!editTx;
@@ -309,6 +308,12 @@ export default function SupaDupaMoney() {
       try { const eb = await exportEbForSync(); if(eb) configOnly._ebSecure = eb; }
       catch(e) { console.warn("EB-Sync-Export übersprungen:", e); }
     }
+    // Eigene Farbthemes liegen lokal in kvStore — mit in den Worker-Sync nehmen,
+    // damit beide Sicherungswege (Worker und Daten-Manager) sie abdecken.
+    try {
+      const ct = JSON.parse(kvStore.getItem("mbt_custom_themes")||"{}");
+      if(ct && Object.keys(ct).length) configOnly.customThemes = ct;
+    } catch(e) {}
     const byYear = compressTxByYear(allTxs);
     const base = normCfUrl(cfUrl);
     const headers = {"Content-Type":"application/json","X-Secret":cfSecret};
@@ -849,6 +854,16 @@ export default function SupaDupaMoney() {
     }
     if(d.csvRules && Object.keys(d.csvRules).length) setCsvRules(d.csvRules);
     if(Array.isArray(d.customIcons) && d.customIcons.length) setCustomIcons(d.customIcons);
+    // Eigene Farbthemes übernehmen (aus Worker-Sync oder Backup): in kvStore
+    // mergen und live in THEMES injizieren, damit sie sofort wählbar sind.
+    if(d.customThemes && typeof d.customThemes === "object" && Object.keys(d.customThemes).length) {
+      try {
+        const existing = JSON.parse(kvStore.getItem("mbt_custom_themes")||"{}");
+        const merged = {...existing, ...d.customThemes};
+        kvStore.setItem("mbt_custom_themes", JSON.stringify(merged));
+        Object.entries(d.customThemes).forEach(([k,v]) => { THEMES[k] = v; });
+      } catch(e) {}
+    }
     if(d.startBalances && Object.keys(d.startBalances).length) {
       // Keys als Zahlen normalisieren
       const normalized = {};
@@ -3043,7 +3058,6 @@ Abbrechen = ${remoteName}-Stand laden`
           else if(action==="bankconnect") setShowBankConnect(true);
           else if(action==="datenmgr") setShowDataMgr(true);
           else if(action==="cloudsetup") setShowCloudSetup(true);
-          else if(action==="jsonladen") setShowJsonImport(true);
           else if(action==="wiederkehrend") { setShowMobileWiederkehrendTyp("wiederkehrend"); setShowMobileWiederkehrend(true); }
           else if(action==="finanzierung")  { setShowMobileWiederkehrendTyp("finanzierung");  setShowMobileWiederkehrend(true); }
           else if(action==="kategorien"||action==="budget") setShowMobileKategorien(true);
@@ -3096,59 +3110,6 @@ Abbrechen = ${remoteName}-Stand laden`
           </div>
         </div>
       )}
-      {showJsonImport&&(()=>{
-        const doLoad = ()=>{
-          try{
-            const raw=document.getElementById("json-import-area").value.trim();
-            const d=JSON.parse(raw);
-            if(d.cats)setCats(d.cats);
-            if(d.groups)setGroups(d.groups);
-            if(d.txs)setTxs(d.txs);
-            if(d.accounts)setAccounts(d.accounts);
-            if(d.yearData)setYearData(d.yearData);
-            if(d.col3Name)setCol3Name(d.col3Name);
-            if(d.csvRules)setCsvRules(d.csvRules);
-            if(d.budgets)setBudgets(d.budgets);
-            if(d.startBalances)setStartBalances(d.startBalances);
-            setShowJsonImport(false);
-          }catch(e){alert("Fehler: "+e.message);}
-        };
-        const inner = (<>
-          <textarea id="json-import-area" style={{flex:1,minHeight:180,background:"rgba(0,0,0,0.3)",border:`1px solid ${T.bds}`,borderRadius:11,padding:"10px 12px",color:T.txt,fontSize:12,fontFamily:"monospace",resize:"vertical",outline:"none",marginBottom:10}} placeholder='{"cats":[...],"txs":[...],...}'/>
-          <div style={{display:"flex",gap:8,marginBottom:10}}>
-            <label style={{flex:1,padding:"10px",borderRadius:11,border:`1px solid ${T.bds}`,background:"rgba(255,255,255,0.04)",color:T.txt2,fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-              {Li("folder-open",13)} Datei
-              <input type="file" accept=".json" style={{display:"none"}} onChange={e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{document.getElementById("json-import-area").value=ev.target.result;};r.readAsText(f);}}/>
-            </label>
-            <button onClick={doLoad} style={{flex:2,padding:"10px",borderRadius:11,border:"none",background:T.blue,color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-              {Li("folder-open",14,"#fff")} Laden
-            </button>
-          </div>
-        </>);
-        if(mobileMode) {
-          // Vollbild mit einheitlichem Header (Zurück → Daten-Untermenü).
-          return (
-            <div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,zIndex:300,display:"flex",flexDirection:"column"}}>
-              <MobileHeader title="JSON laden" titleColor={T.blue} subtitle="JSON-Text einfügen oder Datei wählen"
-                onBack={()=>{setShowJsonImport(false);reopenMobilePicker("daten");}} onClose={()=>setShowJsonImport(false)}/>
-              <div style={{flex:1,display:"flex",flexDirection:"column",padding:"16px",overflowY:"auto"}}>{inner}</div>
-            </div>
-          );
-        }
-        return (
-          <div onClick={()=>setShowJsonImport(false)}
-            style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
-            <div onClick={e=>e.stopPropagation()}
-              style={{background:T.surf,borderRadius:20,padding:"20px 18px",width:"100%",maxWidth:480,
-                border:`1px solid ${T.bds}`,boxShadow:"0 20px 60px rgba(0,0,0,0.8)",maxHeight:"85vh",display:"flex",flexDirection:"column"}}>
-              <div style={{color:T.blue,fontSize:16,fontWeight:700,marginBottom:10}}><span style={{display:"flex",alignItems:"center",gap:6}}>{Li("folder-open",14)}JSON laden</span></div>
-              <div style={{color:T.txt2,fontSize:12,marginBottom:10}}>JSON-Text einfügen oder Datei wählen:</div>
-              {inner}
-              <button onClick={()=>setShowJsonImport(false)} style={{padding:"10px",borderRadius:11,border:`1px solid ${T.bds}`,background:"transparent",color:T.txt2,fontSize:13,cursor:"pointer"}}>Abbrechen</button>
-            </div>
-          </div>
-        );
-      })()}
       {showDataMgr&&<DataManagerDialog onClose={()=>setShowDataMgr(false)} mobileMode={mobileMode}
         onBack={()=>{setShowDataMgr(false);reopenMobilePicker("daten");}}/>}
       {exportDialog&&(

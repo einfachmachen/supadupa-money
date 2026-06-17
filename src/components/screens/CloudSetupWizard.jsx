@@ -179,12 +179,12 @@ function CloudSetupWizard({ onClose }) {
               <Box tone="info">
                 Der Button legt nach dem Cloudflare-Login den Worker <b>und</b> den
                 Speicher (KV) automatisch an. Am Ende bekommst du eine Adresse wie
-                <b> mbt-sync.dein-name.workers.dev</b> — die trägst du unten ein.
+                <b> supadupa-sync.dein-name.workers.dev</b> — die trägst du unten ein.
               </Box>
               <LinkBtn href={DEPLOY_URL} icon="upload-cloud">1-Klick: Worker einrichten</LinkBtn>
               <label style={lblStyle}>Worker-URL</label>
               <input style={inputStyle} value={cfUrl || ""} onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://mbt-sync.xxx.workers.dev" inputMode="url" autoCapitalize="off" autoCorrect="off" />
+                placeholder="https://supadupa-sync.xxx.workers.dev" inputMode="url" autoCapitalize="off" autoCorrect="off" />
             </>
           )}
 
@@ -193,7 +193,7 @@ function CloudSetupWizard({ onClose }) {
               <Box tone="info">
                 Das Secret schützt deinen Worker. Generiere eins, <b>kopiere</b> es und
                 hinterlege denselben Wert im Cloudflare-Dashboard:
-                <br />Worker <b>mbt-sync</b> → Settings → Variables → <b>SYNC_SECRET</b> (als Secret).
+                <br />Worker <b>supadupa-sync</b> → Settings → Variables → <b>SYNC_SECRET</b> (als Secret).
               </Box>
               <button onClick={genSecret}
                 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
