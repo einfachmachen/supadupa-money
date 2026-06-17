@@ -45,6 +45,7 @@ import { makeYearData } from "./utils/yearData.js";
 import { isDuplCounterpart, buildTxIdMap } from "./utils/tx.js";
 import { compressTxByYear } from "./utils/cloudTx.js";
 import { encryptJSON, decryptJSON, isEncrypted, freshSaltB64 } from "./utils/syncCrypto.js";
+import { exportEbForSync, importEbFromSync } from "./utils/enableBankingStore.js";
 import { saldoAt, saldoEnde, saldoMitte } from "./utils/saldo.js";
 
 export default function SupaDupaMoney() {
@@ -299,6 +300,13 @@ export default function SupaDupaMoney() {
     }));
     // Aufteilen: config + txs pro Jahr
     const {txs: allTxs, ...configOnly} = clean;
+    // Privaten Bank-Schlüssel (.pem) + Verbindungsdaten NUR mitsynchronisieren,
+    // wenn eine Passphrase aktiv ist — dann landet er ausschließlich verschlüsselt
+    // im /config-Body. Ohne Passphrase verlässt der Schlüssel das Gerät nie.
+    if(syncPass) {
+      try { const eb = await exportEbForSync(); if(eb) configOnly._ebSecure = eb; }
+      catch(e) { console.warn("EB-Sync-Export übersprungen:", e); }
+    }
     const byYear = compressTxByYear(allTxs);
     const base = normCfUrl(cfUrl);
     const headers = {"Content-Type":"application/json","X-Secret":cfSecret};
@@ -351,6 +359,12 @@ export default function SupaDupaMoney() {
     const cfgRes = await fetch(`${base}/config`, {headers});
     if(!cfgRes.ok) throw new Error(`CF config: ${cfgRes.status}`);
     const config = await unwrap(await cfgRes.json());
+    // Verschlüsselt mitgelieferten Bank-Schlüssel lokal übernehmen (nur wenn
+    // dieses Gerät noch keinen hat) und aus der App-Nutzlast entfernen.
+    if(config && config._ebSecure) {
+      try { await importEbFromSync(config._ebSecure); } catch(e) { console.warn("EB-Sync-Import:", e); }
+      delete config._ebSecure;
+    }
     // Alle Jahres-Keys laden
     const keysRes = await fetch(`${base}/keys`, {headers});
     if(!keysRes.ok) throw new Error(`CF keys: ${keysRes.status}`);

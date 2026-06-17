@@ -84,6 +84,37 @@ function clearEbSession() {
   kvStore.setItem(KEYS.session, "");
 }
 
+// ── Verschlüsselter Mehrgeräte-Sync ──────────────────────────────────────
+// Der private Schlüssel wird NUR über die client-seitig VERSCHLÜSSELTE
+// Cloud-Nutzlast übertragen (siehe App.jsx cfSave: nur wenn eine Passphrase
+// gesetzt ist). exportEbForSync() liefert die dauerhaften Verbindungsdaten;
+// die kurzlebige Bank-Session bleibt absichtlich draußen (gerät-/zeitgebunden,
+// jederzeit neu abrufbar). Gibt null zurück, wenn kein Schlüssel vorliegt.
+async function exportEbForSync() {
+  const { relayUrl, appId, privateKey } = await loadEbCreds();
+  if (!privateKey) return null;
+  const accountMap = await loadEbAccountMap();
+  return { relayUrl, appId, privateKey, accountMap };
+}
+
+// Schreibt aus dem Sync empfangene Verbindungsdaten lokal — überschreibt aber
+// einen bereits vorhandenen lokalen Schlüssel NICHT (lokal hat Vorrang, damit
+// ein laufendes Gerät nicht versehentlich entkoppelt wird).
+async function importEbFromSync(block) {
+  if (!block || typeof block !== "object") return false;
+  const existing = await loadEbCreds();
+  if (existing.privateKey) return false; // schon eingerichtet → nichts tun
+  const { relayUrl, appId, privateKey, accountMap } = block;
+  if (!privateKey) return false;
+  saveEbCreds({
+    relayUrl: relayUrl || existing.relayUrl || "",
+    appId: appId || existing.appId || "",
+    privateKey,
+  });
+  if (accountMap && typeof accountMap === "object") saveEbAccountMap(accountMap);
+  return true;
+}
+
 export {
   loadEbCreds,
   saveEbCreds,
@@ -92,4 +123,6 @@ export {
   loadEbSession,
   saveEbSession,
   clearEbSession,
+  exportEbForSync,
+  importEbFromSync,
 };
