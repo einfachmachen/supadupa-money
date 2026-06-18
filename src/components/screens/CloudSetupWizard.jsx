@@ -12,9 +12,13 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { Li } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
+// Worker-Quellcode als Roh-String — einzige Quelle der Wahrheit ist die echte
+// Datei. So lässt er sich ohne GitHub direkt ins Cloudflare-Dashboard einfügen.
+import WORKER_CODE from "../../../worker-data/data-store-worker.js?raw";
 
 const DEPLOY_URL = "https://deploy.workers.cloudflare.com/?url=https://github.com/einfachmachen/supadupa-money/tree/main/worker-data";
 const SIGNUP_URL = "https://dash.cloudflare.com/sign-up";
+const DASH_URL = "https://dash.cloudflare.com/?to=/:account/workers-and-pages";
 
 const STEPS = ["Konto", "Worker", "Secret", "Verschlüsselung", "Test"];
 
@@ -55,6 +59,10 @@ function CloudSetupWizard({ onClose }) {
   const [testState, setTestState] = useState("idle"); // idle|testing|ok|error
   const [testMsg, setTestMsg] = useState("");
   const [copied, setCopied] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
+  const copyWorkerCode = () => {
+    try { navigator.clipboard?.writeText(WORKER_CODE); setCodeCopied(true); setTimeout(() => setCodeCopied(false), 1800); } catch (e) {}
+  };
 
   // onClose stabil halten (Master-Override-Effekt soll nicht pro Render feuern)
   const onCloseRef = React.useRef(onClose);
@@ -186,11 +194,32 @@ function CloudSetupWizard({ onClose }) {
           {step === 1 && (
             <>
               <Box tone="info">
-                Der Button legt nach dem Cloudflare-Login den Worker <b>und</b> den
-                Speicher (KV) automatisch an. Am Ende bekommst du eine Adresse wie
-                <b> supadupa-sync.dein-name.workers.dev</b> — die trägst du unten ein.
+                Erstelle deinen Worker direkt im Cloudflare-Dashboard — <b>ganz ohne
+                GitHub</b>. Du kopierst den Code unten und fügst ihn ein.
               </Box>
-              <LinkBtn href={DEPLOY_URL} icon="upload-cloud">1-Klick: Worker einrichten</LinkBtn>
+              <button onClick={copyWorkerCode}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+                  width: "100%", marginTop: 12, padding: "12px", borderRadius: 13, border: "none",
+                  background: T.pos, color: T.on_accent, fontSize: 15, fontWeight: 800, cursor: "pointer" }}>
+                {Li(codeCopied ? "check" : "copy", 16, T.on_accent)} {codeCopied ? "Code kopiert!" : "Worker-Code kopieren"}
+              </button>
+              <ol style={{ margin: "12px 0 0", padding: "0 0 0 18px", color: T.txt, fontSize: 13, lineHeight: 1.7 }}>
+                <li>Im <a href={DASH_URL} target="_blank" rel="noopener noreferrer" style={{ color: T.cf || T.blue, fontWeight: 700 }}>Cloudflare-Dashboard</a> → <b>Workers &amp; Pages</b> → <b>Create</b> → <b>Worker</b> anlegen (Name z. B. <b>supadupa-sync</b>) → <b>Deploy</b>.</li>
+                <li><b>Edit code</b> öffnen, alles markieren, den kopierten Code <b>einfügen</b> → <b>Deploy</b>.</li>
+                <li><b>Settings → Bindings</b>: KV-Namespace-Binding <b>SYNC_KV</b> hinzufügen (Namespace neu anlegen).</li>
+                <li><b>Settings → Variables and Secrets</b>: <b>SYNC_SECRET</b> als <i>Secret</i> setzen (Wert generierst du im nächsten Schritt).</li>
+                <li>Die ausgegebene <b>…workers.dev</b>-URL unten eintragen.</li>
+              </ol>
+              <details style={{ marginTop: 10 }}>
+                <summary style={{ color: T.txt2, fontSize: 12, cursor: "pointer" }}>Alternative: 1-Klick per GitHub (nur mit öffentlichem Repo)</summary>
+                <div style={{ marginTop: 8 }}>
+                  <LinkBtn href={DEPLOY_URL} icon="upload-cloud">Deploy to Cloudflare</LinkBtn>
+                  <div style={{ color: T.txt2, fontSize: 10.5, lineHeight: 1.5, marginTop: 6 }}>
+                    Funktioniert nur, wenn die Worker-Vorlage in einem öffentlichen Repo liegt
+                    (Cloudflare forkt sie). Sonst nimm den Code-Weg oben.
+                  </div>
+                </div>
+              </details>
               <label style={lblStyle}>Worker-URL</label>
               <input style={inputStyle} value={urlDraft}
                 onFocus={()=>{urlFocused.current=true;}}

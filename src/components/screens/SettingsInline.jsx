@@ -11,6 +11,7 @@ import { THEMES } from "../../theme/themes.js";
 import { Li } from "../../utils/icons.jsx";
 import { makeYearData } from "../../utils/yearData.js";
 import { kvStore } from "../../utils/kvStore.js";
+import WORKER_CODE from "../../../worker-data/data-store-worker.js?raw";
 
 function SettingsInline() {
   const {
@@ -32,6 +33,7 @@ function SettingsInline() {
   } = useContext(AppCtx);
 
   const [showDebugExpand, setShowDebugExpand] = useState(false);
+  const [workerCodeCopied, setWorkerCodeCopied] = useState(false);
 
   return (
     <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 14px 24px"}}>
@@ -111,15 +113,17 @@ function SettingsInline() {
           <b style={{color:T.gold}}>Empfohlen</b> — kostenlos, kein Limit, kein CORS-Problem.
           Einrichtung: siehe Anleitung <b style={{color:T.txt}}>Cloudflare-Setup.md</b>.
         </div>
-        {/* Ein-Klick-Einrichtung: legt Worker + Speicher (KV) bei Cloudflare an */}
-        <a href="https://deploy.workers.cloudflare.com/?url=https://github.com/einfachmachen/supadupa-money/tree/main/worker-data"
-          target="_blank" rel="noopener noreferrer"
-          style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,
-            textDecoration:"none",marginBottom:8,padding:"10px 8px",borderRadius:9,
-            border:`1px solid ${T.cf}55`,background:`${T.cf}14`,color:T.cf,
-            fontSize:12,fontWeight:700}}>
-          {Li("upload-cloud",13,T.cf)} 1-Klick: Worker bei Cloudflare einrichten
-        </a>
+        {/* GitHub-freie Einrichtung: Worker-Code kopieren und im Dashboard einfügen */}
+        <button onClick={()=>{try{navigator.clipboard?.writeText(WORKER_CODE);setWorkerCodeCopied(true);setTimeout(()=>setWorkerCodeCopied(false),1800);}catch(e){}}}
+          style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,width:"100%",
+            marginBottom:6,padding:"10px 8px",borderRadius:9,border:"none",
+            background:T.cf,color:T.on_accent,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
+          {Li(workerCodeCopied?"check":"copy",13,T.on_accent)} {workerCodeCopied?"Code kopiert!":"Worker-Code kopieren (ohne GitHub)"}
+        </button>
+        <div style={{color:T.txt2,fontSize:10,marginBottom:8,lineHeight:1.5}}>
+          Dashboard → Workers &amp; Pages → <b>Create Worker</b> → Code einfügen → <b>SYNC_KV</b> (KV) binden,
+          <b> SYNC_SECRET</b> setzen. (Geführt im Cloud-Wizard.) GitHub-Deploy-Button nur mit öffentlichem Repo.
+        </div>
         <Lbl>Worker URL (https://supadupa-sync.DEIN-NAME.workers.dev)</Lbl>
         <SupaField value={cfUrl} onChange={v=>{const u=v.trim();setCfUrl(u);kvStore.setItem("cf_url",u);}}
           placeholder="https://supadupa-sync.xxx.workers.dev" locked={false} type="text"/>
