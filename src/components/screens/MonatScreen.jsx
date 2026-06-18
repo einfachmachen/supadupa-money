@@ -899,7 +899,9 @@ function MonatScreen() {
                   const isMitteDay = dayNum===14;
                   const isEndeDay  = dayNum===lastDayOfMonth;
                   if(!isMitteDay&&!isEndeDay) return null;
-                  if(filt==="mismatch") return null;
+                  // Budgets sind Reservierungen, keine echten Buchungen → bei den
+                  // Buchungs-Filtern „Ausgaben"/„Einnahmen" (und „Falsch") ausblenden.
+                  if(filt==="mismatch"||filt==="expense"||filt==="income"||filt==="uncat") return null;
                   const details = isMitteDay ? budgetDetailsMitte : budgetDetailsEnde;
                   if(!details.items.length) return null;
                   return details.items.map(({name,spent,budget,open,type})=>{
