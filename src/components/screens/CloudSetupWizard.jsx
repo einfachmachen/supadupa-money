@@ -50,6 +50,17 @@ function LinkBtn({ href, icon, children, color }) {
   );
 }
 
+// Schematische Schaubilder (SVG in public/img) — kein echter Screenshot, daher
+// stabil gegen Cloudflare-UI-Änderungen. BASE_URL macht den Pfad deploy-fest.
+function Fig({ name, alt }) {
+  return (
+    <img src={`${import.meta.env.BASE_URL}img/${name}`} alt={alt}
+      style={{ display: "block", width: "100%", maxWidth: 380, margin: "10px auto 0",
+        borderRadius: 12, border: `1px solid ${T.bd}` }} />
+  );
+}
+const olStep = { margin: "10px 0 0", padding: "0 0 0 18px", color: T.txt, fontSize: 13, lineHeight: 1.7 };
+
 function CloudSetupWizard({ onClose }) {
   const {
     cfUrl, setCfUrl, cfSecret, setCfSecret, cfActive,
@@ -203,14 +214,19 @@ function CloudSetupWizard({ onClose }) {
                   background: T.pos, color: T.on_accent, fontSize: 15, fontWeight: 800, cursor: "pointer" }}>
                 {Li(codeCopied ? "check" : "copy", 16, T.on_accent)} {codeCopied ? "Code kopiert!" : "Worker-Code kopieren"}
               </button>
-              <ol style={{ margin: "12px 0 0", padding: "0 0 0 18px", color: T.txt, fontSize: 13, lineHeight: 1.7 }}>
+              <ol style={olStep}>
                 <li>Im <a href={DASH_URL} target="_blank" rel="noopener noreferrer" style={{ color: T.cf || T.blue, fontWeight: 700 }}>Cloudflare-Dashboard</a> → <b>Workers &amp; Pages</b> <i>(Workers und Pages)</i> → <b>Create</b> <i>(Erstellen)</i> → <b>Worker</b> anlegen (Name z. B. <b>supadupa-sync</b>) → <b>Deploy</b> <i>(Bereitstellen)</i>.</li>
-                <li><b>Edit code</b> <i>(Code bearbeiten)</i> öffnen, alles markieren, den kopierten Code <b>einfügen</b> → <b>Deploy</b> <i>(Bereitstellen)</i>.</li>
-                <li>Reiter <b>Bindings</b> <i>(Bindungen)</i> öffnen — <b>eigener Reiter neben „Settings"</b>, nicht darunter → <b>Add binding</b> <i>(Bindung hinzufügen)</i> → Typ <b>KV namespace</b> wählen. Bei <b>Variable name</b> <i>(Variablenname)</i> genau <b>SYNC_KV</b> eintragen; bei <b>KV namespace</b> einen <b>neuen</b> Namespace anlegen (Name egal). Siehe Bild:</li>
               </ol>
-              <img src={`${import.meta.env.BASE_URL}img/cloudflare-kv-binding.svg`} alt="Binding-Dialog: SYNC_KV gehört in das Feld Variablenname"
-                style={{ display: "block", width: "100%", maxWidth: 380, margin: "10px auto 0", borderRadius: 12, border: `1px solid ${T.bd}` }} />
-              <ol start={4} style={{ margin: "10px 0 0", padding: "0 0 0 18px", color: T.txt, fontSize: 13, lineHeight: 1.7 }}>
+              <Fig name="cloudflare-create-worker.svg" alt="Worker anlegen: Workers und Pages → Erstellen → Worker → Name → Bereitstellen" />
+              <ol start={2} style={olStep}>
+                <li><b>Edit code</b> <i>(Code bearbeiten)</i> öffnen, alles markieren, den kopierten Code <b>einfügen</b> → <b>Deploy</b> <i>(Bereitstellen)</i>.</li>
+              </ol>
+              <Fig name="cloudflare-edit-code.svg" alt="Code einfügen: Code bearbeiten öffnen, alles markieren, einfügen, Bereitstellen" />
+              <ol start={3} style={olStep}>
+                <li>Reiter <b>Bindings</b> <i>(Bindungen)</i> öffnen — <b>eigener Reiter neben „Settings"</b>, nicht darunter → <b>Add binding</b> <i>(Bindung hinzufügen)</i> → Typ <b>KV namespace</b> wählen. Bei <b>Variable name</b> <i>(Variablenname)</i> genau <b>SYNC_KV</b> eintragen; bei <b>KV namespace</b> einen <b>neuen</b> Namespace anlegen (Name egal).</li>
+              </ol>
+              <Fig name="cloudflare-kv-binding.svg" alt="Binding-Dialog: SYNC_KV gehört in das Feld Variablenname" />
+              <ol start={4} style={olStep}>
                 <li><b>Settings → Variables and Secrets</b> <i>(Einstellungen → Variablen und Geheimnisse)</i>: <b>SYNC_SECRET</b> als <i>Secret</i> setzen (Wert generierst du im nächsten Schritt).</li>
                 <li>Die ausgegebene <b>…workers.dev</b>-URL unten eintragen.</li>
               </ol>
@@ -246,6 +262,7 @@ function CloudSetupWizard({ onClose }) {
                   background: T.pos, color: T.on_accent, fontSize: 15, fontWeight: 800, cursor: "pointer" }}>
                 {Li(copied ? "check" : "key", 16, T.on_accent)} {copied ? "Kopiert!" : "Secret generieren & kopieren"}
               </button>
+              <Fig name="cloudflare-secret.svg" alt="Secret setzen: Typ Secret, Variablenname SYNC_SECRET, Wert = kopiertes Secret" />
               <label style={lblStyle}>Secret</label>
               <input style={inputStyle} value={secretDraft}
                 onFocus={()=>{secFocused.current=true;}}

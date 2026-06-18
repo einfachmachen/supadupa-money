@@ -84,20 +84,30 @@ dieselben Punkte so:
 2. Im [Cloudflare-Dashboard](https://dash.cloudflare.com/) → **Workers und Pages**
    → **Erstellen** → **Worker** anlegen (Name z. B. `supadupa-sync`) →
    **Bereitstellen**.
+
+   ![Worker anlegen: Workers und Pages → Erstellen → Worker → Name → Bereitstellen](public/img/cloudflare-create-worker.svg)
+
 3. **Code bearbeiten** öffnen, alles markieren, Code **einfügen** →
    **Bereitstellen**.
+
+   ![Code einfügen: Code bearbeiten öffnen, alles markieren, einfügen, Bereitstellen](public/img/cloudflare-edit-code.svg)
+
 4. Reiter **Bindungen** öffnen — das ist ein **eigener Reiter auf derselben Ebene
    wie „Einstellungen"**, *nicht* darunter. Dann **Bindung hinzufügen** klicken und
-   als Typ **KV-Namespace** wählen (siehe Bild unten):
+   als Typ **KV-Namespace** wählen (siehe Bild):
    - Feld **Variablenname** → genau **`SYNC_KV`** eintragen (so heißt es im
      Worker-Code, `env.SYNC_KV`).
    - Feld **KV-Namespace** → **Neu erstellen** wählen (oder vorhandenen nehmen);
      der Name dieses Namespace ist **egal** (z. B. `supadupa-sync-kv`). Falls dort
      schon ein Namespace steht, kannst du gefahrlos einen neuen anlegen.
-5. **Einstellungen → Variablen und Geheimnisse**: **`SYNC_SECRET`** als
-   *Geheimnis (Secret)* setzen (Wert in der App per „Secret generieren").
 
-![Binding-Dialog: SYNC_KV gehört in das Feld „Variablenname", nicht in das Feld „KV-Namespace"](public/img/cloudflare-kv-binding.svg)
+   ![Binding-Dialog: SYNC_KV gehört in das Feld „Variablenname", nicht in das Feld „KV-Namespace"](public/img/cloudflare-kv-binding.svg)
+
+5. **Einstellungen → Variablen und Geheimnisse**: **`SYNC_SECRET`** als
+   *Geheimnis (Secret)* setzen (Wert in der App per „Secret generieren"). Typ muss
+   **Secret** sein (nicht „Text"):
+
+   ![Secret setzen: Typ Secret, Variablenname SYNC_SECRET, Wert = kopiertes Secret](public/img/cloudflare-secret.svg)
 
 Am Ende hast du wieder eine URL wie `https://supadupa-sync.DEIN-NAME.workers.dev`.
 
