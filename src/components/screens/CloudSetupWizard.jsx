@@ -20,7 +20,20 @@ const DEPLOY_URL = "https://deploy.workers.cloudflare.com/?url=https://github.co
 const SIGNUP_URL = "https://dash.cloudflare.com/sign-up";
 const DASH_URL = "https://dash.cloudflare.com/?to=/:account/workers-and-pages";
 
-const STEPS = ["Konto", "Worker", "Secret", "Verschlüsselung", "Test"];
+// Eine Seite pro Schritt mit höchstens EINEM Schaubild — auf kleinen Displays
+// (z. B. iPhone 13 mini) sind mehrere Bilder pro Seite zu klein. Schlüssel statt
+// Index, damit die Weiter-Freigabe unabhängig von der Reihenfolge bleibt.
+const STEPS = [
+  { key: "konto",   title: "Konto" },
+  { key: "worker",  title: "Worker anlegen" },
+  { key: "code",    title: "Code einfügen" },
+  { key: "kv",      title: "KV-Namespace" },
+  { key: "binding", title: "KV verbinden" },
+  { key: "url",     title: "Worker-URL" },
+  { key: "secret",  title: "Secret" },
+  { key: "pass",    title: "Verschlüsselung" },
+  { key: "test",    title: "Test" },
+];
 
 function Box({ tone = "info", children }) {
   const map = { info: T.blue, tip: T.pos, warn: T.gold, danger: T.neg };
@@ -126,6 +139,7 @@ function CloudSetupWizard({ onClose }) {
   };
 
   const back = () => (step === 0 ? onClose() : setStep((s) => s - 1));
+  const k = STEPS[step].key;
 
   // Master-„+"-Button übernimmt die Schritt-Steuerung: Tipp = Weiter/Fertig,
   // Wisch ← = zurück (Schritt 0 → schließen), Wisch ↓ = schließen. Der Effekt
@@ -135,7 +149,8 @@ function CloudSetupWizard({ onClose }) {
   const passReady = passMatch;
   React.useEffect(() => {
     const isLast = step === STEPS.length - 1;
-    const stepReady = step === 1 ? urlReady : step === 2 ? secretReady : step === 3 ? passReady : true;
+    const key = STEPS[step].key;
+    const stepReady = key === "url" ? urlReady : key === "secret" ? secretReady : key === "pass" ? passReady : true;
     setMasterOverride?.({
       label: isLast ? "✓ Fertig" : "Weiter",
       disabled: !stepReady,
@@ -167,7 +182,7 @@ function CloudSetupWizard({ onClose }) {
             Cloud-Datenbank · Schritt {step + 1}/{STEPS.length}
           </div>
           <div style={{ color: T.txt, fontSize: 18, fontWeight: 800, lineHeight: 1.2, marginTop: 1 }}>
-            {STEPS[step]}
+            {STEPS[step].title}
           </div>
         </div>
         <button onClick={onClose} title="Schließen"
@@ -190,7 +205,7 @@ function CloudSetupWizard({ onClose }) {
         padding: "8px 18px calc(96px + env(safe-area-inset-bottom, 0px))" }}>
         <div style={{ maxWidth: 480, margin: "0 auto" }}>
 
-          {step === 0 && (
+          {k === "konto" && (
             <>
               <Box tone="info">
                 Deine Buchungen liegen in <b>deiner eigenen</b> kleinen Cloud-DB bei
@@ -198,15 +213,37 @@ function CloudSetupWizard({ onClose }) {
                 auf allen Geräten verfügbar.
               </Box>
               <LinkBtn href={SIGNUP_URL} icon="user-plus" color={T.pos}>Cloudflare-Konto anlegen</LinkBtn>
-              <Box tone="tip">Hast du schon ein Konto? Dann direkt weiter zu Schritt 2.</Box>
+              <Box tone="tip">Hast du schon ein Konto? Dann einfach weiter.</Box>
             </>
           )}
 
-          {step === 1 && (
+          {k === "worker" && (
             <>
               <Box tone="info">
-                Erstelle deinen Worker direkt im Cloudflare-Dashboard — <b>ganz ohne
-                GitHub</b>. Du kopierst den Code unten und fügst ihn ein.
+                Lege deinen Worker im Cloudflare-Dashboard an — <b>ganz ohne GitHub</b>.
+              </Box>
+              <ol style={olStep}>
+                <li>Im <a href={DASH_URL} target="_blank" rel="noopener noreferrer" style={{ color: T.cf || T.blue, fontWeight: 700 }}>Cloudflare-Dashboard</a> → <b>Workers &amp; Pages</b> <i>(Workers und Pages)</i> → <b>Create</b> <i>(Erstellen)</i> → <b>Worker</b>.</li>
+                <li>Name z. B. <b>supadupa-sync</b> → <b>Deploy</b> <i>(Bereitstellen)</i>.</li>
+              </ol>
+              <Fig name="cloudflare-create-worker.svg" alt="Worker anlegen: Workers und Pages → Erstellen → Worker → Name → Bereitstellen" />
+              <details style={{ marginTop: 12 }}>
+                <summary style={{ color: T.txt2, fontSize: 12, cursor: "pointer" }}>Alternative: 1-Klick per GitHub (nur mit öffentlichem Repo)</summary>
+                <div style={{ marginTop: 8 }}>
+                  <LinkBtn href={DEPLOY_URL} icon="upload-cloud">Deploy to Cloudflare</LinkBtn>
+                  <div style={{ color: T.txt2, fontSize: 10.5, lineHeight: 1.5, marginTop: 6 }}>
+                    Funktioniert nur, wenn die Worker-Vorlage in einem öffentlichen Repo liegt
+                    (Cloudflare forkt sie). Sonst nimm den Code-Weg.
+                  </div>
+                </div>
+              </details>
+            </>
+          )}
+
+          {k === "code" && (
+            <>
+              <Box tone="info">
+                Jetzt den Worker-Code einsetzen: unten kopieren, im Editor einfügen.
               </Box>
               <button onClick={copyWorkerCode}
                 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
@@ -215,35 +252,45 @@ function CloudSetupWizard({ onClose }) {
                 {Li(codeCopied ? "check" : "copy", 16, T.on_accent)} {codeCopied ? "Code kopiert!" : "Worker-Code kopieren"}
               </button>
               <ol style={olStep}>
-                <li>Im <a href={DASH_URL} target="_blank" rel="noopener noreferrer" style={{ color: T.cf || T.blue, fontWeight: 700 }}>Cloudflare-Dashboard</a> → <b>Workers &amp; Pages</b> <i>(Workers und Pages)</i> → <b>Create</b> <i>(Erstellen)</i> → <b>Worker</b> anlegen (Name z. B. <b>supadupa-sync</b>) → <b>Deploy</b> <i>(Bereitstellen)</i>.</li>
-              </ol>
-              <Fig name="cloudflare-create-worker.svg" alt="Worker anlegen: Workers und Pages → Erstellen → Worker → Name → Bereitstellen" />
-              <ol start={2} style={olStep}>
                 <li><b>Edit code</b> <i>(Code bearbeiten)</i> öffnen, alles markieren, den kopierten Code <b>einfügen</b> → <b>Deploy</b> <i>(Bereitstellen)</i>.</li>
               </ol>
               <Fig name="cloudflare-edit-code.svg" alt="Code einfügen: Code bearbeiten öffnen, alles markieren, einfügen, Bereitstellen" />
-              <ol start={3} style={olStep}>
-                <li><b>Zuerst KV-Namespace anlegen</b> (im Binding-Dialog geht das nicht): Menü <b>Storage &amp; Databases → KV</b> <i>(Speicher und Datenbanken → KV)</i> — je nach Dashboard auch <b>Workers &amp; Pages → KV</b> → <b>Create</b> <i>(Namespace erstellen)</i> → Name z. B. <b>supadupa-sync-kv</b>.</li>
+            </>
+          )}
+
+          {k === "kv" && (
+            <>
+              <Box tone="info">
+                Lege den Speicher (<b>KV-Namespace</b>) an. Das geht <b>nur hier</b> —
+                der Binding-Dialog im nächsten Schritt kann keinen neuen anlegen.
+              </Box>
+              <ol style={olStep}>
+                <li>Menü <b>Storage &amp; Databases → KV</b> <i>(Speicher und Datenbanken → KV)</i> — je nach Dashboard auch <b>Workers &amp; Pages → KV</b>.</li>
+                <li><b>Create</b> <i>(Namespace erstellen)</i> → Name z. B. <b>supadupa-sync-kv</b>.</li>
               </ol>
               <Fig name="cloudflare-kv-create.svg" alt="KV-Namespace anlegen: Speicher und Datenbanken → KV → Namespace erstellen → Name" />
-              <ol start={4} style={olStep}>
-                <li>Reiter <b>Bindings</b> <i>(Bindungen)</i> öffnen — <b>eigener Reiter neben „Settings"</b>, nicht darunter → <b>Add binding</b> <i>(Bindung hinzufügen)</i> → Typ <b>KV namespace</b> wählen. Bei <b>Variable name</b> <i>(Variablenname)</i> genau <b>SYNC_KV</b> eintragen; bei <b>KV namespace</b> den eben angelegten Namespace (<b>supadupa-sync-kv</b>) <b>auswählen</b>.</li>
+            </>
+          )}
+
+          {k === "binding" && (
+            <>
+              <Box tone="info">
+                Verbinde den Speicher mit dem Worker (Binding).
+              </Box>
+              <ol style={olStep}>
+                <li>Reiter <b>Bindings</b> <i>(Bindungen)</i> öffnen — <b>eigener Reiter neben „Settings"</b>, nicht darunter → <b>Add binding</b> <i>(Bindung hinzufügen)</i> → Typ <b>KV namespace</b>.</li>
+                <li><b>Variable name</b> <i>(Variablenname)</i>: genau <b>SYNC_KV</b>. <b>KV namespace</b>: den eben angelegten <b>supadupa-sync-kv</b> <b>auswählen</b>.</li>
               </ol>
               <Fig name="cloudflare-kv-binding.svg" alt="Binding-Dialog: SYNC_KV in Variablenname, angelegten Namespace auswählen" />
-              <ol start={5} style={olStep}>
-                <li><b>Settings → Variables and Secrets</b> <i>(Einstellungen → Variablen und Geheimnisse)</i>: <b>SYNC_SECRET</b> als <i>Secret</i> setzen (Wert generierst du im nächsten Schritt).</li>
-                <li>Die ausgegebene <b>…workers.dev</b>-URL unten eintragen.</li>
-              </ol>
-              <details style={{ marginTop: 10 }}>
-                <summary style={{ color: T.txt2, fontSize: 12, cursor: "pointer" }}>Alternative: 1-Klick per GitHub (nur mit öffentlichem Repo)</summary>
-                <div style={{ marginTop: 8 }}>
-                  <LinkBtn href={DEPLOY_URL} icon="upload-cloud">Deploy to Cloudflare</LinkBtn>
-                  <div style={{ color: T.txt2, fontSize: 10.5, lineHeight: 1.5, marginTop: 6 }}>
-                    Funktioniert nur, wenn die Worker-Vorlage in einem öffentlichen Repo liegt
-                    (Cloudflare forkt sie). Sonst nimm den Code-Weg oben.
-                  </div>
-                </div>
-              </details>
+            </>
+          )}
+
+          {k === "url" && (
+            <>
+              <Box tone="info">
+                Nach dem <b>Deploy</b> zeigt Cloudflare die Adresse deines Workers
+                (endet auf <b>…workers.dev</b>). Trag sie hier ein.
+              </Box>
               <label style={lblStyle}>Worker-URL</label>
               <input style={inputStyle} value={urlDraft}
                 onFocus={()=>{urlFocused.current=true;}}
@@ -253,12 +300,15 @@ function CloudSetupWizard({ onClose }) {
             </>
           )}
 
-          {step === 2 && (
+          {k === "secret" && (
             <>
               <Box tone="info">
-                Das Secret schützt deinen Worker. Generiere eins, <b>kopiere</b> es und
-                hinterlege denselben Wert im Cloudflare-Dashboard:
-                <br />Worker <b>supadupa-sync</b> → Settings → Variables <i>(Einstellungen → Variablen und Geheimnisse)</i> → <b>SYNC_SECRET</b> (als Secret/Geheimnis).
+                Das Secret schützt deinen Worker. So der Reihe nach:
+                <ol style={{ margin: "8px 0 0", padding: "0 0 0 18px", lineHeight: 1.6 }}>
+                  <li>Unten <b>„Secret generieren &amp; kopieren"</b> tippen — es entsteht ein langes Zufalls-Geheimnis (liegt dann in der Zwischenablage).</li>
+                  <li>Im Dashboard: Worker <b>supadupa-sync</b> → <b>Settings → Variables and Secrets</b> <i>(Einstellungen → Variablen und Geheimnisse)</i> → <b>Add</b>. Variablenname <b>SYNC_SECRET</b>, Typ <b>Secret</b>, und in das Feld <b>Wert/Value</b> das kopierte Geheimnis <b>einfügen</b> → <b>Bereitstellen</b>.</li>
+                  <li>Fertig — derselbe Wert steht unten schon im Feld <b>Secret</b>.</li>
+                </ol>
               </Box>
               <button onClick={genSecret}
                 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
@@ -276,7 +326,7 @@ function CloudSetupWizard({ onClose }) {
             </>
           )}
 
-          {step === 3 && (
+          {k === "pass" && (
             <>
               <Box tone="warn">
                 <b>Optional, aber empfohlen.</b> Mit einer Passphrase werden deine Daten
@@ -317,7 +367,7 @@ function CloudSetupWizard({ onClose }) {
             </>
           )}
 
-          {step === 4 && (
+          {k === "test" && (
             <>
               <Box tone="info">
                 Letzter Schritt: Verbindung prüfen und deine Daten hochladen.
