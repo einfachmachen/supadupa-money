@@ -10,15 +10,30 @@ neuen Geräten URL + Secret (+ optionale Passphrase).
 Kostenloses Konto unter <https://dash.cloudflare.com/sign-up>. E-Mail
 bestätigen, 2-Faktor aktivieren empfohlen.
 
-## 2. Worker per Knopfdruck einrichten
+## 2. Worker einrichten — ohne GitHub (empfohlen)
 
-Den **„Deploy to Cloudflare"-Button** in der App (Einstellungen → Cloudflare)
-oder hier antippen:
+So braucht niemand Zugriff auf ein bestimmtes Repository:
 
-<https://deploy.workers.cloudflare.com/?url=https://github.com/einfachmachen/supadupa-money/tree/main/worker-data>
+1. In der App **„Worker-Code kopieren"** tippen (Einstellungen → Cloudflare oder
+   im Cloud-Wizard). Der komplette Worker-Code (`worker-data/data-store-worker.js`)
+   liegt damit in der Zwischenablage.
+2. Im [Cloudflare-Dashboard](https://dash.cloudflare.com/) → **Workers & Pages**
+   → **Create** → **Worker** anlegen (Name z. B. `supadupa-sync`) → **Deploy**.
+3. **Edit code** öffnen, alles markieren, Code **einfügen** → **Deploy**.
+4. **Settings → Bindings**: KV-Namespace-Binding **`SYNC_KV`** hinzufügen
+   (Namespace neu anlegen).
+5. **Settings → Variables and Secrets**: **`SYNC_SECRET`** als *Secret* setzen
+   (Wert in der App per „Secret generieren").
 
-Cloudflare legt nach dem Login den Worker **und** den Speicher (KV) automatisch
-an. Am Ende bekommst du eine URL wie `https://supadupa-sync.DEIN-NAME.workers.dev`.
+Am Ende hast du eine URL wie `https://supadupa-sync.DEIN-NAME.workers.dev`.
+
+### Alternative: 1-Klick per GitHub (nur mit öffentlichem Repo)
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/einfachmachen/supadupa-money/tree/main/worker-data)
+
+Der Button **forkt** das angegebene Repo — funktioniert daher nur, wenn die
+Worker-Vorlage in einem **öffentlichen** Repository liegt. Bei privatem Repo nimm
+den Code-Weg oben.
 
 ## 3. Geheimnis (`SYNC_SECRET`) setzen
 
