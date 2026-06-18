@@ -11,6 +11,7 @@
 //   onAddAccount  – wenn gesetzt: „+ Konto“-Kachel hinten (Callback)
 //   addLabel      – Beschriftung der „+ Konto“-Kachel (Default „Konto“)
 //   excludeId     – Konto ausblenden (z.B. Umbuchungs-Quelle)
+//   minCols       – Mindest-Spaltenzahl (hält z.B. Ziel auf Quell-Breite)
 //   S             – Größen-Tokens { fs, radius, gap } (Default wie Vormerken)
 
 import React from "react";
@@ -23,10 +24,10 @@ function AccountChips({
   accounts = [], value, onChange,
   allowAll = false, allLabel = "Alle",
   onAddAccount = null, addLabel = "Konto",
-  excludeId = null, S = DEFAULT_S,
+  excludeId = null, minCols = 0, S = DEFAULT_S,
 }) {
   const list = (accounts || []).filter((a) => a.id !== excludeId);
-  const cols = list.length + (allowAll ? 1 : 0) + (onAddAccount ? 1 : 0);
+  const cols = Math.max(minCols, list.length + (allowAll ? 1 : 0) + (onAddAccount ? 1 : 0));
   if (cols === 0) return null;
 
   const chipStyle = (selected, color) => ({

@@ -11,6 +11,7 @@ import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { amtStyle, readableOn } from "../../theme/amtPill.js";
 import { fmt, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
+import { AccountChips } from "../molecules/AccountChips.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { budgetPlaceholderActive } from "../../utils/saldo.js";
 
@@ -199,21 +200,12 @@ function TransactionsScreen() {
         {/* ── STICKY HEADER ── */}
         <div style={{position:"sticky",top:0,zIndex:20,background:T.bg,flexShrink:0}}>
 
-          {/* Konto-Filter — jetzt ganz oben */}
+          {/* Konto-Filter — gemeinsame AccountChips (Vormerken-Stil) inkl. „Alle“ */}
           {accounts.length>0&&(
-            <div style={{display:"flex",gap:4,padding:"6px 14px 2px",flexWrap:"wrap"}}>
-              {accounts.map(acc=>(
-                <button key={acc.id} onClick={()=>setFiltAcc(f=>f===acc.id?"":acc.id)}
-                  style={{display:"flex",alignItems:"center",gap:4,padding:"3px 8px",borderRadius:7,
-                    border:`1.5px solid ${filtAcc===acc.id?acc.color:T.bd}`,
-                    background:filtAcc===acc.id?acc.color+"22":"transparent",
-                    color:filtAcc===acc.id?acc.color:T.txt2,fontSize:10,fontWeight:600,cursor:"pointer"}}>
-                  {Li(acc.icon,11,filtAcc===acc.id?acc.color:T.txt2)} {acc.name}{acc.delayDays>0&&<span style={{color:T.gold,fontSize:"0.8em",fontWeight:700,marginLeft:2}}>+{acc.delayDays}d</span>}
-                </button>
-              ))}
-              {filtAcc&&<button onClick={()=>setFiltAcc("")}
-                style={{padding:"3px 8px",borderRadius:7,border:`1px solid ${T.bd}`,
-                  background:"transparent",color:T.txt2,fontSize:10,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>{Li("x",12,T.txt2)}</button>}
+            <div style={{padding:"6px 14px 2px"}}>
+              <AccountChips accounts={accounts} value={filtAcc||null}
+                onChange={id=>setFiltAcc(id||"")} allowAll={true} allLabel="Alle"
+                S={{fs:20,radius:12,gap:10}}/>
             </div>
           )}
 
