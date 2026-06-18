@@ -3,6 +3,7 @@
 import React, { useContext, useState } from "react";
 import { MobileCatStep } from "../molecules/MobileCatStep.jsx";
 import { MobileNewAccOverlay } from "../molecules/MobileNewAccOverlay.jsx";
+import { AccountChips } from "../molecules/AccountChips.jsx";
 import { MobileWiederkehrendModal } from "./MobileWiederkehrendModal.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
@@ -249,114 +250,29 @@ function MobileVormerkenModal({onClose, onBack}) {
               {isTransfer ? "Quelle" : "Konto"}
             </div>
           )}
-          {(() => {
-            const srcCount = (accounts||[]).length + 1; // +Konto button
-            const chipStyle = (selected, color) => ({
-              aspectRatio:"1", borderRadius:S.radius, padding:4,
-              background: selected ? color+"22" : "rgba(255,255,255,0.06)",
-              border:`2px solid ${selected ? (color||T.blue) : T.bd}`,
-              color: selected ? (color||T.blue) : T.txt2,
-              cursor:"pointer", fontFamily:"inherit", position:"relative",
-              display:"flex", flexDirection:"column", alignItems:"center",
-              justifyContent:"center", gap:2, minWidth:0, overflow:"hidden",
-            });
-            const nameStyle = (selected) => ({
-              fontSize:S.fs-12, fontWeight:selected?700:500,
-              width:"100%", textAlign:"center",
-              overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
-              lineHeight:1.1,
-            });
-            return (
-              <div style={{display:"grid",
-                gridTemplateColumns:`repeat(${srcCount}, 1fr)`,
-                gap:S.gap/2, marginBottom:S.gap}}>
-                {(accounts||[]).map(acc=>{
-                  const sel = accId===acc.id;
-                  const col = acc.color||T.blue;
-                  return (
-                    <button key={acc.id} onClick={()=>{
-                      setAccId(acc.id);
-                      if(isTransfer && tgtAccId===acc.id) {
-                        const other = (accounts||[]).find(a=>a.id!==acc.id);
-                        setTgtAccId(other?.id || "");
-                      }
-                    }} style={chipStyle(sel,col)}>
-                      {acc.delayDays>0 && (
-                        <span style={{position:"absolute", top:3, right:3,
-                          fontSize:S.fs-16, color:T.gold, fontWeight:700,
-                          background:T.gold+"22", borderRadius:4,
-                          padding:"0 3px", lineHeight:1.3,
-                          letterSpacing:"-0.5px"}}>
-                          +{acc.delayDays}
-                        </span>
-                      )}
-                      {Li(acc.icon||"landmark", S.fs, sel?col:T.txt2)}
-                      <span style={nameStyle(sel)}>{acc.name||acc.id}</span>
-                    </button>
-                  );
-                })}
-                <button onClick={()=>setShowNewAcc(true)}
-                  style={{...chipStyle(false,T.blue),
-                    background:"rgba(74,159,212,0.06)",
-                    border:`1.5px dashed ${T.blue}66`, color:T.blue}}>
-                  {Li("plus", S.fs, T.blue)}
-                  <span style={{...nameStyle(false), color:T.blue}}>Konto</span>
-                </button>
-              </div>
-            );
-          })()}
+          <div style={{marginBottom:S.gap}}>
+            <AccountChips accounts={accounts} value={accId}
+              onChange={(id)=>{
+                setAccId(id);
+                if(isTransfer && tgtAccId===id) {
+                  const other = (accounts||[]).find(a=>a.id!==id);
+                  setTgtAccId(other?.id || "");
+                }
+              }}
+              onAddAccount={()=>setShowNewAcc(true)} addLabel="Konto" S={S}/>
+          </div>
 
-          {/* Bei Umbuchung: Zielkonto-Picker */}
+          {/* Bei Umbuchung: Zielkonto-Picker (auf Quell-Breite gehalten) */}
           {isTransfer && (<>
             <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,color:T.txt2,fontSize:S.fs-4,fontWeight:600}}>
               {Li("arrow-down",S.fs-4,T.blue)}
               <span>Ziel</span>
             </div>
-            {(() => {
-              const tgts = (accounts||[]).filter(a=>a.id!==accId);
-              const cols = Math.max(tgts.length, (accounts||[]).length + 1);
-              const chipStyle = (selected, color) => ({
-                aspectRatio:"1", borderRadius:S.radius, padding:4,
-                background: selected ? color+"22" : "rgba(255,255,255,0.06)",
-                border:`2px solid ${selected ? (color||T.blue) : T.bd}`,
-                color: selected ? (color||T.blue) : T.txt2,
-                cursor:"pointer", fontFamily:"inherit", position:"relative",
-                display:"flex", flexDirection:"column", alignItems:"center",
-                justifyContent:"center", gap:2, minWidth:0, overflow:"hidden",
-              });
-              const nameStyle = (selected) => ({
-                fontSize:S.fs-12, fontWeight:selected?700:500,
-                width:"100%", textAlign:"center",
-                overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
-                lineHeight:1.1,
-              });
-              return (
-                <div style={{display:"grid",
-                  gridTemplateColumns:`repeat(${cols}, 1fr)`,
-                  gap:S.gap/2, marginBottom:S.gap}}>
-                  {tgts.map(acc=>{
-                    const sel = tgtAccId===acc.id;
-                    const col = acc.color||T.blue;
-                    return (
-                      <button key={acc.id} onClick={()=>setTgtAccId(acc.id)}
-                        style={chipStyle(sel,col)}>
-                        {acc.delayDays>0 && (
-                          <span style={{position:"absolute", top:3, right:3,
-                            fontSize:S.fs-16, color:T.gold, fontWeight:700,
-                            background:T.gold+"22", borderRadius:4,
-                            padding:"0 3px", lineHeight:1.3,
-                            letterSpacing:"-0.5px"}}>
-                            +{acc.delayDays}
-                          </span>
-                        )}
-                        {Li(acc.icon||"landmark", S.fs, sel?col:T.txt2)}
-                        <span style={nameStyle(sel)}>{acc.name||acc.id}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              );
-            })()}
+            <div style={{marginBottom:S.gap}}>
+              <AccountChips accounts={accounts} value={tgtAccId}
+                onChange={setTgtAccId} excludeId={accId}
+                minCols={(accounts||[]).length + 1} S={S}/>
+            </div>
           </>)}
 
           {/* Betrag — Placeholder statt Label, € nach Eingabe */}
