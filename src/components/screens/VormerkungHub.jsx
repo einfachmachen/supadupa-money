@@ -15,7 +15,13 @@ import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
 function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}) {
-  const { cats, groups, txs, setTxs, accounts, year, month, getCat, getSub } = useContext(AppCtx);
+  const { cats, groups, txs, setTxs, accounts, year, month, getCat, getSub, setMasterOverride } = useContext(AppCtx);
+  // „+"-Button übernimmt: Tipp = Fertig/Schließen, Wisch ↓ = schließen.
+  useEffect(() => {
+    setMasterOverride?.({ label:"Fertig",
+      onConfirm:()=>onClose?.(), onBack:()=>onClose?.(), onDismiss:()=>onClose?.() });
+    return () => setMasterOverride?.(null);
+  }, []);
   const today = new Date().toISOString().slice(0,10);
   const pad = n => String(n).padStart(2,"0");
   const MONTHS_G = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];

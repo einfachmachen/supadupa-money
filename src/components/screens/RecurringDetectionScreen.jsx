@@ -11,7 +11,14 @@ import { Li } from "../../utils/icons.jsx";
 import { matchAmount } from "../../utils/search.js";
 
 function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerkung", onOpenVormHub=null}) {
-  const { txs, setTxs, cats, setCats, groups, getCat, getSub, setShowVormHub, setEditVormTx } = useContext(AppCtx);
+  const { txs, setTxs, cats, setCats, groups, getCat, getSub, setShowVormHub, setEditVormTx, setMasterOverride } = useContext(AppCtx);
+  // Nur als eigener Vollbild-Screen (nicht eingebettet) den „+"-Button übernehmen.
+  React.useEffect(() => {
+    if(embedded) return;
+    setMasterOverride?.({ label:"Fertig",
+      onConfirm:()=>onClose?.(), onBack:()=>onClose?.(), onDismiss:()=>onClose?.() });
+    return () => setMasterOverride?.(null);
+  }, [embedded]);
   const [newCatPanel, setNewCatPanel] = React.useState(null); // suggestion id where panel is open
   const [tab, setTab] = React.useState(initialTab||"vormerkung"); // vormerkung | kategorisieren
   const [phase, setPhase] = React.useState("config"); // config | vendors | results | done

@@ -14,7 +14,13 @@ import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 
 function MatchingScreen({onClose, onBack}) {
-  const { cats, groups, txs, setTxs, accounts, year, month, getCat, getSub, txType, selAcc } = useContext(AppCtx);
+  const { cats, groups, txs, setTxs, accounts, year, month, getCat, getSub, txType, selAcc, setMasterOverride } = useContext(AppCtx);
+  // „+"-Button übernimmt: Tipp = Fertig/Schließen, Wisch ← = zurück, Wisch ↓ = schließen.
+  React.useEffect(() => {
+    setMasterOverride?.({ label:"Fertig",
+      onConfirm:()=>onClose?.(), onBack:()=>(onBack||onClose)?.(), onDismiss:()=>onClose?.() });
+    return () => setMasterOverride?.(null);
+  }, []);
 
   // Konto-Filter: respektiert den globalen Konto-Filter (selAcc). null = Gesamt
   // (alle Konten). Buchungen ohne accountId zählen als Giro (Default-Konto).
