@@ -1,6 +1,6 @@
 # Design-Guide — SupaDupa Money
 
-> Stand: 2026-06 · Abgeleitet aus dem aktuellen Code (`new/src`). Diese Datei
+> Stand: 2026-06 · Abgeleitet aus dem aktuellen Code (`src/`). Diese Datei
 > beschreibt das gelebte Design-System der App, nicht einen Wunschzustand.
 > Bei Abweichungen gilt der Code — bitte diesen Guide bei Änderungen mitpflegen.
 
@@ -9,79 +9,124 @@
 ## 1. Grundprinzipien
 
 - **Local-first PWA**: React + Vite, Daten liegen lokal (IndexedDB via `kvStore`).
-  Kein Backend, kein Tracking. Import primär über **CSV**; echter Kontoabruf
-  (FinTS/PSD2) ist als spätere Option vorgemerkt, aktuell nicht implementiert.
+  Kein Pflicht-Backend, kein Tracking.
+- **Optionaler, verschlüsselter Cloud-Sync**: Wer mehrere Geräte nutzen will, kann
+  seine Daten in eine **eigene** Cloud-DB legen (Cloudflare Worker, Supabase,
+  JSONBin oder GitHub Gist). Mit gesetzter Passphrase wird die Nutzlast
+  **client-seitig Ende-zu-Ende verschlüsselt** (AES-GCM, siehe §13). Es gibt
+  weiterhin keinen zentralen Server des Betreibers für Nutzerdaten.
+- **Bank-Import** auf drei Wegen: **CSV** (Banking-Export), **PDF-Kontoauszug**
+  (`utils/pdfStatement.js`, Wirecard/N26) und **echter PSD2-Kontoabruf** über
+  **Enable Banking** (`utils/enableBanking.js` + geführter Connect-Screen).
 - **Mobile-first**: Layout ist auf schmale Hochkant-Screens (iPhone 13 mini als
-  Referenz) optimiert; alles skaliert nach oben.
+  Referenz) optimiert; alles skaliert nach oben. Safe-Areas (Notch/Home-Indikator)
+  werden über `env(safe-area-inset-*)` berücksichtigt.
 - **Inline-Styles statt CSS-Klassen**: Komponenten stylen über `style={{…}}` mit
   **Theme-Tokens** (`T.*`). Globales CSS gibt es nur für Grundlagen
   (`theme/css/base.css`) und themenspezifische Sonderfälle (`theme/css/themes.css`).
-- **Ein Quell der Wahrheit für Geld-Logik**: Salden/Prognosen kommen aus
-  `utils/saldo.js`, Formatierung aus `utils/format.js`, Budget-Helfer aus
-  `utils/budgets.js`. UI rechnet nicht selbst „nebenher".
+- **Ein Quell der Wahrheit für Geld-Logik**: Salden/Prognosen aus `utils/saldo.js`,
+  Formatierung aus `utils/format.js`, Budget-Helfer aus `utils/budgets.js`. UI
+  rechnet nicht selbst „nebenher".
 
 ---
 
-## 2. Wo liegt was
+## 2. Wo liegt was (Modul-Karte)
 
-| Bereich | Ort |
+Wurzel: `src/`. Einstieg `main.jsx` → `App.jsx` (hält fast den gesamten State +
+den `AppCtx`-Provider). UI-Sprache Deutsch, Code/Token/Props Englisch.
+
+### Theme & Darstellung
+| Zweck | Ort |
 |---|---|
-| Theme-Definitionen (Farb-Token je Theme) | `new/src/theme/themes.js` |
-| Aktives Theme / Umschaltung | `new/src/theme/activeTheme.js`, Context `AppCtx` |
-| Globale CSS-Grundlagen (Font-Face, Reset, Fett-Regeln) | `new/src/theme/css/base.css` |
-| Themenspezifisches CSS (z. B. Terminal) | `new/src/theme/css/themes.css` |
-| Gebündelte Schrift (Beträge) | `new/src/theme/fonts/questrial-latin-400.woff2` |
-| Formatierung + Schrift-Konstante | `new/src/utils/format.js` (`fmt`, `NUM_FONT`) |
-| Icons | `new/src/utils/icons.jsx` (`Li(...)`, Bank-Logos) |
-| Home (Standard-Variante v2) | `new/src/components/screens/DashboardScreenV2.jsx` |
-| Home (Alt-Variante v1) | `new/src/components/screens/DashboardScreen.jsx` |
-| Hero (Konto + Mitte/Ende) | inline in den Dashboards; separat `organisms/SaldoHero2.jsx` |
-| Monat / Buchungen / Jahr | `screens/MonatScreen.jsx`, `TransactionsScreen.jsx`, `JahrScreen.jsx` |
+| Theme-Definitionen (Farb-Token je Theme) | `theme/themes.js` |
+| Aktives Theme (Proxy + Umschaltung) | `theme/activeTheme.js` (`setActiveTheme`, `isLightTheme`) |
+| Betrags-Pillen (Helligkeits-Kontrast) | `theme/amtPill.js` |
+| Palette/Input-Styles | `theme/palette.js` (`INP`) |
+| Globale CSS-Grundlagen (Font-Face, Reset, Fett, Blur/Neutral) | `theme/css/base.css` |
+| Themenspezifisches CSS | `theme/css/themes.css` |
+| Gebündelte Geldschrift | `theme/fonts/questrial-*.woff2` |
+
+### Zentrale Logik (`utils/`)
+| Zweck | Datei |
+|---|---|
+| Formatierung + `NUM_FONT` | `format.js` (`fmt`, `pn`, `uid`, `sumAmounts`) |
+| Salden/Prognosen | `saldo.js` |
+| Budget-Helfer | `budgets.js` (`budgetOpenRestFor`, `budgetPlaceholderActive`) |
+| Buchungs-Helfer / Fingerprints | `tx.js` |
+| Jahres-/Monatsdaten, Ankerpunkte | `yearData.js`, `anchors.js` |
+| CSV-Parsing / PDF-Kontoauszug | `csv.js`, `pdfStatement.js` |
+| Cloud-Buchungskompression | `cloudTx.js` (`compressTxByYear`) |
+| **Sync-Verschlüsselung (Zero-Knowledge)** | `syncCrypto.js` (AES-GCM/PBKDF2) |
+| **Enable-Banking-Client + lokale Ablage** | `enableBanking.js`, `enableBankingStore.js` |
+| **Konto-Löschen ohne Datenverlust** | `accountReassign.js` |
+| Suche, Datum, Konstanten, KV-Store, Icons | `search.js`, `date.js`, `constants.js`, `kvStore.js`, `icons.jsx`, `lucideStatic.js` |
+
+### State & Hooks
+| Zweck | Ort |
+|---|---|
+| App-Context-Objekt | `state/AppContext.js` (`AppCtx`) |
+| Persistenz / IndexedDB-Bridge (`window.IDB`) | `state/persistence.js` |
+| Cloud-Zugangsdaten + Sync-Passphrase | `hooks/useCloudCredentials.js` |
+| Debounced Local-Save | `hooks/useLocalSaveDebounce.js` |
+
+### Screens (`components/screens/`)
+`DashboardScreenV2` (Home) · `MonatScreen` · `TransactionsScreen` · `JahrScreen` ·
+`ManagementScreen` (Struktur: Konten/Kategorien/Einstellungen) · `SettingsInline` ·
+`CsvImportScreen` · `MatchingScreen` (zuordnen) · `VormerkungHub` ·
+`RecurringDetectionScreen` · `CustomThemeEditor` · **`CloudSetupWizard`** (geführte
+Cloud-DB-Einrichtung) · **`EnableBankingConnectScreen`** + `EnableBankingGuide`.
+
+### Organisms / Molecules / Atoms / Buttons
+- **organisms/**: `SaldoHeroV2` (Hero, von Dashboard **und** Monat genutzt),
+  `SaldoPrognose`, `PendingList`, `DataManagerDialog`, `MobileActionPicker`
+  (das „+"-Menü), `MobileKategorienModal`, `MobileVormerkenModal`,
+  `MobileWiederkehrendModal`, `EditPopup`, `AddTxModal`, `BudgetEditorModal`,
+  `MonthPickerModal`, `CloudSaveModal`, `TagesgeldWidget`, u. a.
+- **molecules/**: `AccountChips` (Konto-Schnellwahl im Vormerken-Stil, überall
+  genutzt), `CatPicker`, `ThemeDropdown`, **`ThemeSwitcherMini`** (Hero-Theme-
+  Umschalter), `MitteEndeFields`, Chart-Bausteine.
+- **atoms/**: `MobileHeader` (Safe-Area + Zurück/X), `SupaField`, `Lbl`, `PBtn`, …
+- **buttons/**: Werkzeug-Buttons (`NachkategorisierenButton`, `RegenRulesButton`, …).
+
+### Worker (außerhalb `src/`, getrennt deploybar)
+| Zweck | Ort |
+|---|---|
+| **Enable-Banking-Relay** (zustandslos, geheimnisfrei) | `worker/` |
+| **Persönlicher Daten-Store** (KV-basiert, `X-Secret`) | `worker-data/` (Deploy-Button) |
 
 ---
 
 ## 3. Typografie
 
 ### 3.1 Zwei Schriftwelten
-- **Geldbeträge** → **Questrial** (selbst gehostet, geometrische Sans im
-  Century-Gothic-Stil). Zentral als `NUM_FONT` in `utils/format.js`:
+- **Geldbeträge** → **Questrial** (selbst gehostet). Zentral als `NUM_FONT` in
+  `utils/format.js`:
   ```
   "Questrial","Century Gothic","Futura","Avenir Next",system-ui,sans-serif
   ```
-  Questrial ist als `@font-face` in `base.css` eingebunden und als **Modul-Asset**
-  gebündelt → systemübergreifend identisch (iOS/iPadOS/macOS/Linux/Windows),
-  unabhängig von installierten Systemschriften. Die Fallbacks greifen nur für die
-  kurze Ladephase beim Erstaufruf.
-- **UI-Text** (Labels, Buttons, Listen) → System-Sans
-  (`-apple-system, BlinkMacSystemFont, "SF Pro Text", …`).
+  Als `@font-face` in `base.css` eingebunden und als Modul-Asset gebündelt →
+  systemübergreifend identisch. Fallbacks greifen nur in der kurzen Ladephase.
+- **UI-Text** → System-Sans (`-apple-system, BlinkMacSystemFont, "SF Pro Text", …`).
 
 ### 3.2 Fett-Regel (wichtig!)
 - **Alle Texte sind regulär.** Global in `base.css`:
   `*{ font-weight:400 !important; font-synthesis:none; }`
-  → jede Inline-`fontWeight:700` läuft ins Leere (auch faux-bold ist aus).
-- **Einzige Ausnahme**: Klasse **`.heroAmt`** für **Kontostand, Mitte- und
-  Ende-Betrag im Hero**:
-  `.heroAmt{ font-weight:700 !important; font-synthesis:weight; }`
-  (Questrial hat nur Schnitt 400 → das Hero-Fett ist synthetisch, per
-  `font-synthesis:weight` an genau diesen Stellen erlaubt.)
-- **Konsequenz für neue Beträge**: Inline-`fontWeight` ist wirkungslos. Soll ein
-  Betrag fett sein, braucht das Element `className="heroAmt"` (bewusst nur für die
-  drei Hero-Werte gedacht).
+- **Ausnahme**: Klasse **`.heroAmt`** (fett, synthetisch via `font-synthesis:weight`).
+  Genutzt für **Kontostand, Mitte- und Ende-Betrag** im Hero. Der große Kontostand
+  trägt zusätzlich `.heroBalance` (siehe §4.5). Inline-`fontWeight` ist sonst wirkungslos.
 
 ### 3.3 Geldformatierung
-- `fmt(v)` → de-DE, **immer 2 Nachkommastellen**, **Betrag ohne Vorzeichen**
-  (Absolutwert). Das Vorzeichen wird separat gesetzt.
-- **Minuszeichen** ist das typografische `−` (U+2212), nicht der Bindestrich.
+- `fmt(v)` → de-DE, **immer 2 Nachkommastellen**, **ohne Vorzeichen** (Absolutwert).
+- **Minuszeichen** ist `−` (U+2212), nicht der Bindestrich.
 - **Euro-Symbol** nur am großen Hero-Kontostand (`… €`); in Listen/Pillen ohne `€`.
-- Für tabellarische Ausrichtung `fontVariantNumeric:"tabular-nums"` setzen.
+- Tabellarische Ausrichtung mit `fontVariantNumeric:"tabular-nums"`.
 
 ---
 
 ## 4. Farben & Theming
 
 ### 4.1 Tokens statt Hex
-Niemals Farben hart kodieren — immer ein Theme-Token aus `T.*` verwenden.
-Die wichtigsten:
+Niemals Farben hart kodieren — immer `T.*` aus dem aktiven Theme.
 
 | Token | Bedeutung |
 |---|---|
@@ -90,72 +135,96 @@ Die wichtigsten:
 | `T.txt`, `T.txt2`, `T.lbl` | Text primär / sekundär / tertiär |
 | `T.bd`, `T.bds` | Border schwach / stärker |
 | `T.pos` | Einnahmen / positiv (Default: Lime `#AACC00`) |
+| `T.cell_inc` | **Hellgrün** — Einnahmen-Vormerkung |
+| `T.gold` | **Gold** — Ausgaben-Vormerkung / Budget / Warnakzent (`#F5A623`) |
 | `T.neg` | Ausgaben / negativ (`#EA4025`) |
-| `T.gold` | Vormerkungen / Budget / Warnakzent (`#F5A623`) |
-| `T.blue` | Primär-Akzent (im Default-Theme = Lime, **nicht** wörtlich blau) |
+| `T.blue` | Primär-Akzent (im Default-Theme = Lime, **nicht** wörtlich blau); auch Farbe des „+"-Buttons & Kontostands |
+| `T.cf` | Cloudflare-Akzent (Sync-UI) |
 | `T.mid` | „Mitte"-Label-Farbe |
 | `T.on_accent` | Textfarbe auf Akzentflächen |
-| `T.err`, `T.warn` | Fehler / Warnung |
-| `T.cond_neg/_warn/_gold/_pos` | Saldo-Ampel des Hero-Kontostands |
+| `T.cond_neg/_warn/_gold/_pos` | Saldo-Ampel der Mitte/Ende-Prognose |
 
-> Hinweis: `T.blue` ist historisch benannt; es ist der **Primärakzent** des Themes
-> (im Standard-Theme die Lime-Marke). Nicht von der Bezeichnung täuschen lassen.
+> `T.blue` ist historisch benannt; es ist der **Primärakzent** des Themes.
 
 ### 4.2 Verfügbare Themes
-Definiert in `themes.js`: `dark` (Default „Dove Sport"), `light`, `firetv`,
-`xbox`, `disneyplus`, `netflix`, `magenta`, `ios`, `material`, `paper`,
-`dkb`, `obsidian`, `sand`, `clean`, `brutalist`, `terminal`, `swiss`, `keyboard`.
-Jedes Theme definiert denselben Token-Satz. `T.themeName` erlaubt
-Sonderfall-Logik (mehrere Komponenten behandeln „helle" Themes
-`light/ios/material/paper/dkb/sand/clean/brutalist/swiss` gesondert).
+Definiert in `themes.js`: `dark` (Default), `light`, `firetv`, `xbox`, `ps5`,
+`disneyplus`, `netflix`, `magenta`, `ios`, `material`, `paper`, `dkb`, `obsidian`,
+`sand`, `clean`, `brutalist`, `terminal`, `swiss`, `keyboard` (plus
+nutzerdefinierte aus `mbt_custom_themes`). Jedes Theme definiert denselben
+Token-Satz. **Helle Themes** werden zentral in `activeTheme.js` (`LIGHT_THEMES` /
+`isLightTheme`) geführt — neue helle Themes **nur dort** ergänzen.
 
 ### 4.3 Eine Farbe ändern — der sichere Weg
-Der frühere **Live-Color-Picker (das schwebende Stift-Symbol) wurde entfernt** —
-er war zu unsicher, weil mehrere UI-Stellen denselben Token teilen und sich
-Farben ungewollt mitänderten. Ab jetzt gilt:
+Der frühere Live-Color-Picker wurde entfernt (§10). Stattdessen:
+1. **Token identifizieren** (`T.xyz` im Code).
+2. Wert in `themes.js` für das/die Theme(s) ändern.
+3. **Ein Token wirkt überall.** Für eine einzelne abweichende Stelle zuerst einen
+   **neuen Token** anlegen, keinen bestehenden „umbiegen".
 
-1. **Token identifizieren**, der die Stelle färbt (im Code an `T.xyz` ablesbar).
-2. Den Wert in `themes.js` für das/die betroffene(n) Theme(s) ändern.
-3. Bewusst sein: **Ein Token wirkt überall**, wo er verwendet wird. Soll nur EINE
-   Stelle anders sein, braucht es zuerst einen **neuen, eigenen Token** — nicht
-   einen bestehenden „umbiegen".
+(Formularbasierter `CustomThemeEditor` in den Einstellungen bleibt; der
+`ThemeSwitcherMini` links oben im Hero schaltet schnell durch — je 4 Akzentpunkte
+über der Theme-Hintergrundfarbe.)
 
-(Ein formularbasierter Theme-Editor existiert noch in den Einstellungen —
-`CustomThemeEditor` —, ist aber vom entfernten Live-Picker unabhängig.)
+### 4.4 Das 4-Farben-Betragsschema (zentral!)
+Beträge tragen **keine** `+`/`−`-Vorzeichen mehr (außer der Kontostand bei negativ);
+die **Farbe** kommuniziert Richtung und Art:
 
-### 4.4 Budget-Ampel (6-stufig)
-Für Budget-Auslastung wird eine 6-Stufen-Skala genutzt (Verbrauch/Budget):
-≤25 % / ≤50 % hellgrün–grün, ≤75 % gelb, ≤100 % orange, ≤125 % hellrot, >125 % rot.
-**Wichtig:** Die Ampel färbt nach **tatsächlichem Verbrauch (Ist)**, nicht nach dem
-reservierten Prognosewert (siehe `valuePill(..., {colorVal})` in V2).
+| Farbe | Token | Bedeutung |
+|---|---|---|
+| Grün | `T.pos` | reale **Einnahme** |
+| Hellgrün | `T.cell_inc` | **Einnahmen**-Vormerkung |
+| Gold | `T.gold` | **Ausgaben**-Vormerkung |
+| Rot | `T.neg` | reale **Ausgabe** |
+
+### 4.5 Betrags-Sichtbarkeit (`amtMode`) — das Augensymbol
+`amtMode` (Context) steuert global per CSS-Klassen auf dem Wurzel-Container:
+- **0** = unscharf (`.amts-blur`) + neutral — Beträge verwischt.
+- **1** = sichtbar, neutral-weiß (`.amts-neutral`).
+- **2** = sichtbar **und farbig** (4-Farben-Schema aktiv).
+
+Bedienung im Hero (`SaldoHeroV2`): Das **Auge** rechts neben dem Kontostand schaltet
+nur **0 ↔ sichtbar**. Das **Farbig-Schalten (2)** passiert über das **Ausklapp-Chevron**
+zwischen MITTE und ENDE — farbig nur im ausgeklappten Detail-Zustand. Der große
+**Kontostand** ist davon ausgenommen (`.heroBalance` + `--bal-col`): Er trägt immer
+die Akzentfarbe des „+"-Buttons (negativ rot).
+
+### 4.6 Budget-Ampel
+Budget-Auslastung färbt nach **tatsächlichem Verbrauch (Ist)**, nicht nach dem
+reservierten Prognosewert.
 
 ---
 
 ## 5. Layout & Navigation
 
-- **Bottom-Tabbar**: Home · Monat · Buchungen · Jahr. Mittig der runde
-  **Monats-Button** („WISCHEN", Monat per Wisch/Tipp wechseln).
-- **Hero** (oben): großer **Kontostand** (GIRO), darunter **MITTE** und **ENDE**
-  (Prognosewerte), mittig ein Chevron-Toggle für Buch./VM/unkat.-Detailzeilen.
-  Nur diese drei Beträge sind fett (`.heroAmt`).
-- **Drilldown-Muster**: state-basiertes Vollbild-Overlay (`dashDrill`), **immer mit
-  Zurück-Pfeil links und X rechts**, Suchfeld oben. Kein URL-Routing — Sichtbarkeit
-  über State.
+- **Bottom-Tabbar**: Home · Monat · Buchungen · Jahr.
+- **Zentraler Master-Button** (runder „+"/Monats-Knopf): Normalzustand zeigt den
+  aktuellen Monat („WISCHEN"); **Tipp** öffnet das Aktions-Menü
+  (`MobileActionPicker`), **Wisch** wechselt den Monat. **Doppel-Tipp** arretiert
+  ihn größer.
+- **Master-Override** (`masterOverride` im Context, `MasterOverrideSlot` in `App.jsx`):
+  Vollbild-Flows (Vormerken, Kategorien, **Cloud-Wizard** …) übernehmen den
+  „+"-Button. Config `{label, onConfirm, onBack, onDismiss, disabled}`:
+  - **Tipp** = `onConfirm` (Weiter/Bestätigen),
+  - **Wisch ←** = `onBack` (Hinweis: **‹** am linken Rand),
+  - **Wisch ↓** = `onDismiss` (Hinweis: **⌄** am unteren Rand).
+  Der Effekt darf **nur an Bool-Readiness** hängen (nicht an Rohtexten), sonst Tipp-Lag.
+- **Drilldown-Muster**: state-basiertes Vollbild-Overlay, **immer Zurück-Pfeil links
+  und X rechts**, Safe-Area-Header (`MobileHeader`), Suchfeld oben. Kein URL-Routing.
+- **Vollbild-Screens** reservieren unten Platz für die fixe Nav-Bar:
+  `calc(57px + env(safe-area-inset-bottom))`.
 
 ---
 
 ## 6. Home / Dashboard
 
-- Zwei Varianten via Flag `mbt_dashboard_variant` (`"v1"` default, `"v2"` = die
-  „clean" Variante der Screenshots). **V2 ist die gepflegte Ziel-Variante.**
-- **Kategorie-Karten (V2)**: Zeile 1 = Icon + Name (Klick = **inline aufklappen**)
-  + großer **aktuell**-Betrag (Klick = Buchungs-Drilldown). Zeile 2 = **Mitte/Ende**-
-  Pillen (sichtbar bei globalem Toggle **oder** wenn die Zeile aufgeklappt ist).
-- **Inline-Unterkategorien**: Beim Aufklappen erscheinen die Subs im selben
-  2-Zeilen-Format (Name + aktuell, darunter Mitte/Ende). Jede Zelle (aktuell/
-  Mitte/Ende) öffnet direkt den **Buchungs-Drilldown** des jeweiligen Zeitraums.
-  Es gibt **kein** Zwischen-Modal mit Unterkategorien mehr.
-- **Kein Ausklapp-Chevron** vor den Kategorien — der Name-Klick genügt.
+Es gibt **nur noch `DashboardScreenV2`** (die „clean"-Variante; die alte v1 wurde
+entfernt). Der Hero ist `organisms/SaldoHeroV2`.
+
+- **Kategorie-Karten**: Zeile 1 = Icon + Name (Klick = **inline aufklappen**) +
+  großer **aktuell**-Betrag (Klick = Buchungs-Drilldown). Zeile 2 = **Mitte/Ende**-
+  Pillen (sichtbar bei globalem Toggle oder wenn aufgeklappt).
+- **Inline-Unterkategorien** im selben 2-Zeilen-Format; jede Zelle öffnet direkt den
+  jeweiligen Buchungs-Drilldown. Kein Zwischen-Modal mit Unterkategorien.
 
 ---
 
@@ -163,91 +232,123 @@ reservierten Prognosewert (siehe `valuePill(..., {colorVal})` in V2).
 
 - **Mitte** = kumuliert bis **Tag 14**; **Ende** = bis **Monatsletzter**;
   **aktuell** = real gebuchter Ist-Stand (ohne Reservierung).
-- **Budget-bewusste Prognose** (Kategorie & Sub):
-  - `Mitte = Ist(1..14) + restMitte`, `Ende = Ist(1..Ende) + restEnde`
-  - mit `restMitte = Σ max(0, refMitte − Ist14)`,
-    `restEnde = Σ max(0, Gesamtbudget − IstGesamt)` je Unterkategorie
-  - identisch zu `restMitte`/`restEnde` in `utils/saldo.js` (gleiche Quelle wie der
-    Hero), nur per Kategorie aggregiert.
-  - Gilt nur auf **Giro/Gesamt** und nur solange die Phase **erreichbar** ist.
+- **Budget-bewusste Prognose** (Giro/Gesamt, solange die Phase erreichbar ist):
+  `Mitte = Ist(1..14) + restMitte`, `Ende = Ist(1..Ende) + restEnde` mit
+  `rest = Σ max(0, Budget − Ist)` je Unterkategorie — gleiche Quelle wie der Hero.
 - **Budget-Platzhalter** sind Vormerkungen mit `_budgetSubId` (`…_mitte` für die
-  erste Hälfte, ohne Suffix für Ende/Gesamt). Ihr `totalAmount` = volles
-  Phasenbudget; das offene Restbudget wird dynamisch berechnet
-  (`utils/budgets.js: budgetOpenRestFor`).
-- **`budgetPlaceholderActive(tx)`** entscheidet, ob ein freigegebenes Restbudget
-  noch zählt. Sobald die Phase (14. bzw. Monatsende) vorbei ist, **fällt der
-  Platzhalter überall weg** — Offene Vormerkungen, Badge, Hero-VM, Monat,
-  Buchungen, Kategorie-Mitte/Ende. Neue VM-/Budget-Anzeigen müssen diesen Filter
-  anwenden.
-- **Saldo-Quelle**: `saldoAt(year, month, day, accId, ctx)` bzw.
-  `saldoMitte`/`saldoEnde`. Keine parallelen Eigenberechnungen in der UI.
+  erste Hälfte, ohne Suffix für Ende/Gesamt). `totalAmount` = volles Phasenbudget;
+  offenes Restbudget dynamisch über `utils/budgets.js: budgetOpenRestFor`.
+- **`budgetPlaceholderActive(tx)`** entscheidet, ob ein Restbudget noch zählt. Nach
+  Phasenende **fällt der Platzhalter überall weg**. Neue VM-/Budget-Anzeigen müssen
+  diesen Filter anwenden.
+- **VM-Buchhaltung** rechnet überall mit dem **offenen Rest** für Budgets
+  (Header, Drilldown, `PendingList`, Monat) — konsistent.
+- **Saldo-Quelle**: `utils/saldo.js`. Keine parallelen Eigenberechnungen in der UI.
 
 ---
 
 ## 8. Icons & Bilder
 
-- Icons über `Li(name, size, color)` aus `utils/icons.jsx` (Lucide-Stil,
-  `stroke=currentColor`/übergebene Farbe). Größen typ. 13–28 px.
-- Bank-Logos als Inline-SVG in `utils/icons.jsx` (DKB, ING, Sparkasse, …) mit
-  `currentColor`.
+- Icons über `Li(name, size, color)` aus `utils/icons.jsx` (Lucide-Stil, async
+  geladen via `lucideStatic.js`). Größen typ. 11–28 px.
+- Bank-Logos als Inline-SVG (DKB, ING, Sparkasse, …) mit `currentColor`.
 
 ---
 
 ## 9. Wiederkehrende Komponenten-Muster
 
-- **Pille/Zelle für Beträge** (`valuePill` in V2): gleichbreite Fläche (`flex:1`),
-  zentriert, optionaler Ampel-Strich an der Unterkante, klickbar nur wenn Wert > 0.
-  Farbe nach Verbrauch (`colorVal`), Anzeige = (ggf. reservierter) Wert.
-- **Drilldown-Header**: Zurück-Pfeil · Icon · Titel · Anzahl Buchungen + Summe · X.
-- **Vorzeichen-Konvention**: Einnahmen `T.pos`, Ausgaben `T.neg`, Vormerkungen
-  `T.gold`; reine Vormerkung (kein Ist) → goldener Wert.
+- **AccountChips** (`molecules/AccountChips.jsx`): quadratische Konto-Schnellwahl
+  (Icon über Name) im Vormerken-Stil — überall verwendet, auch in Desktop-Modals.
+- **Betrags-Pille/Zelle**: gleichbreite Fläche (`flex:1`), zentriert, klickbar nur
+  bei Wert > 0; Betrags-Stil über `amtStyle(kind, plain)` aus `theme/amtPill.js`
+  (sorgt für lesbaren Kontrast auf hellen Themes).
+- **Drilldown-Header**: Zurück-Pfeil · Icon · Titel · Anzahl + Summe · X.
+- **Inline definierte Komponenten NICHT als `<X/>` rendern** — sie bekommen pro
+  Render neue Identität und mounten ihren Teilbaum neu (Scroll springt, Fokus geht
+  verloren). Stattdessen als JSX-Wert oder Funktionsaufruf einsetzen (siehe Fix in
+  `DataManagerDialog`).
 
 ---
 
 ## 10. Entfernt / Deprecated
 
-- **Live-Color-Picker** (schwebendes Stift-Symbol, Antippen-zum-Färben):
-  **komplett entfernt** inkl. globalem Klick-Interceptor. Farbänderungen laufen
-  jetzt gezielt über `themes.js` (siehe 4.3).
+- **Live-Color-Picker** (schwebendes Stift-Symbol): komplett entfernt. Farben über
+  `themes.js` (§4.3).
+- **Dashboard v1** (`DashboardScreen.jsx`): entfernt — nur noch V2.
+- **Menüpunkt „JSON laden"**: entfernt. Importieren läuft **ausschließlich** über
+  den **Daten-Manager → Reiter „importieren"** (versteht Daten-Manager-Format und
+  Voll-Backups; Mehrfach-Datei-Import möglich).
 
 ---
 
-## 11. Performance (Konventionen + bekannte Hotspots)
+## 11. Daten sichern & wiederherstellen (Daten-Manager)
 
-Die App hält bis zu 10.000+ Buchungen im Context. Daraus folgen verbindliche Regeln:
+`organisms/DataManagerDialog.jsx` ist der **eine** nachvollziehbare Sicherungsort,
+drei Reiter:
 
-- **Lange Listen deckeln/virtualisieren.** Nie tausende Zeilen direkt rendern.
-  `TransactionsScreen` rendert nur die ersten `PAGE` (80) Treffer + „mehr
-  anzeigen" (Auswahl/Zähler laufen über die volle Liste). Gilt analog für künftige
-  große Listen.
+- **Exportieren**: 12 einzeln abwählbare Bereiche; **alle Haken + voller Zeitraum =
+  100 %-Sicherung** (identisch zum Worker-zu-Worker-Weg). Optional der **Bank-Schlüssel
+  (.pem)** — nur **passphrase-verschlüsselt** (mit Wiederholungsfeld; ohne die
+  Passphrase nicht reimportierbar). Status-Banner zeigt vollständig/teilweise an.
+- **Importieren**: Buchungen werden **ergänzt** (Duplikate per id übersprungen),
+  Stammdaten **ersetzt**. Mehrere Dateien gleichzeitig möglich. Verschlüsselter
+  Bank-Schlüssel braucht das Passphrase-Feld (wird hervorgehoben, wenn erkannt).
+- **Löschen**: dieselben 12 Punkte (gleiche Namen/Reihenfolge wie Export) mit
+  Bestätigung + automatischem Backup-Download. **Konten** und **Bank-Schlüssel** sind
+  **Sprung-Punkte** in den Konten-Manager bzw. Bank-Abruf (nicht direkt löschbar).
+- **Konto-Löschen** (im Konten-Manager) erzwingt das **Umhängen aller Buchungen,
+  Gruppen und Budgets** auf ein Ziel-Konto — getestet in `utils/accountReassign.js`.
+  So kann keine Buchung verwaisen.
+
+---
+
+## 12. Sync & Verschlüsselung (Architektur)
+
+- **Backends** (`hooks/useCloudCredentials.js`): Supabase, JSONBin, GitHub Gist,
+  **Cloudflare Worker** (empfohlen). Zugangsdaten lokal in IDB + kvStore.
+- **Zero-Knowledge**: Ist eine **Sync-Passphrase** gesetzt, verschlüsselt
+  `utils/syncCrypto.js` (AES-256-GCM, Schlüssel via PBKDF2-SHA256/150k, selbst-
+  beschreibender Umschlag `{__enc,salt,iv,ct}`) jeden Body **vor** dem Upload. Der
+  Worker sieht nur Chiffrat. Ohne Passphrase: Klartext wie bisher. Auf dem Load-Pfad
+  erkennt `isEncrypted()` den Umschlag automatisch. Aktuell im **Cloudflare-Pfad**
+  verdrahtet.
+- **Bank-Schlüssel im Sync**: Der private .pem wird **nur bei aktiver Passphrase**
+  (verschlüsselt) mitsynchronisiert (`exportEbForSync`/`importEbFromSync`); lokaler
+  Schlüssel hat Vorrang. **Eigene Farbthemes** wandern ebenfalls mit.
+- **Relay vs. Daten-Store**: Der Enable-Banking-**Relay** (`worker/`) ist zustandslos
+  und geheimnisfrei (löst nur CORS; JWT wird im Browser signiert). Der **Daten-Store**
+  (`worker-data/`) ist die persönliche DB pro Nutzer (KV, `X-Secret`/`SYNC_SECRET`).
+  Beide Cloudflare-Free-tauglich, 0 € laufend.
+- **Einrichtung**: geführt über `CloudSetupWizard` (Deploy-to-Cloudflare-Button,
+  Secret-Generator, Passphrase mit Auge + Wiederholung, Selbsttest) — erreichbar über
+  „+" → Daten → **Cloud-Sync einrichten**. Doku: `Cloudflare-Setup.md`.
+
+---
+
+## 13. Performance (Konventionen + Hotspots)
+
+Die App hält bis zu 10.000+ Buchungen im Context. Verbindliche Regeln:
+
+- **Lange Listen deckeln/virtualisieren.** `TransactionsScreen` rendert nur die
+  ersten `PAGE` (80) Treffer + „mehr anzeigen".
 - **Teure Aggregationen in `useMemo`** mit minimalen Deps (i. d. R.
-  `[txs, year, month, selAcc]`). Pro-Kategorie/Sub-Summen einmal als Map bauen
-  (`_catTxMaps`), nicht je Zeile neu filtern.
-- **Kein O(txs) pro Zeile.** Innerhalb von `.map()` über Kategorien/Tage/Zeilen
-  keine `txs.filter/find/some` (sonst O(Zeilen × txs)). Stattdessen vorindizierte
-  Map nutzen.
-- **Datumsvergleich per ISO-String statt `new Date()`** in heißen Schleifen:
-  `t.date.slice(0,7)===\`${y}-${mm}\`` bzw. `t.date.localeCompare(b.date)` zum
-  Sortieren. `new Date(t.date)` in Filtern über alle txs ist teuer (und
-  zeitzonenanfällig).
-- **Zentrale Helfer statt Eigenrechnung:** Salden über `utils/saldo.js`, Summen
-  über vorhandene Maps; nicht in der UI duplizieren.
+  `[txs, year, month, selAcc]`); Pro-Kategorie-Summen einmal als Map.
+- **Kein O(txs) pro Zeile** in `.map()` — vorindizierte Maps statt `txs.filter/find`.
+- **Datumsvergleich per ISO-String** statt `new Date()` in heißen Schleifen.
+- **Context-`useMemo`-Deps vollständig halten:** Neue Context-Werte müssen ins
+  Dependency-Array des `AppCtx`-Provider-`useMemo`, sonst „friert" der Wert ein
+  (führte z. B. dazu, dass ein Eingabefeld keine Eingaben annahm).
+- **Zentrale Helfer statt Eigenrechnung** (Salden, Summen-Maps).
 
-**Noch offene Beschleunigungspotenziale (Stand 2026-06, priorisiert):**
-1. `AppCtx.Provider value={cx}` ist ein **frisches Objekt pro Render** und kein
-   Screen ist `React.memo` → bei jeder Interaktion rendert nahezu der ganze Baum.
-   Größter Hebel; erfordert `useMemo` für `cx` **und** `React.memo` auf den Screens
-   zusammen (sonst wirkungslos). Sorgfältig + testen.
-2. `MonatScreen` rendert alle Tage/Buchungen eines Monats ohne Windowing; pro
-   Tages-Header laufen `txs.filter` mit `new Date` → ISO-Vergleich + Vorgruppierung.
-3. Restliche `new Date()`-Schleifen (DashboardScreen v1, Budget-Helfer) auf
-   ISO-String-Ops umstellen.
+---
 
-## 12. Konventionen
+## 14. Konventionen
 
 - **UI-Sprache: Deutsch.** Code/Token/Props in Englisch.
 - Viele Dateien tragen den Kopf „Auto-generated module" — sie werden **direkt**
-  gepflegt (kein aktiver Generator mehr); Änderungen erfolgen in `new/src`.
+  gepflegt (kein aktiver Generator mehr); Änderungen in `src/`.
 - Vor jeder visuellen Änderung prüfen, ob ein **Token** oder eine **zentrale
-  Konstante** (`NUM_FONT`, `fmt`, Saldo-Helfer) der richtige Hebel ist, statt
-  Werte lokal zu duplizieren.
+  Konstante** (`NUM_FONT`, `fmt`, Saldo-Helfer, `amtStyle`) der richtige Hebel ist.
+- **Sicherheit**: Der private .pem-Schlüssel liegt nur im Gerät (IndexedDB) bzw.
+  ausschließlich **verschlüsselt** in Sync/Backup. Keine Geheimnisse ins Repo.
+- Tests: `npm test` (Vitest/jsdom). Vor Commit Build **und** Tests grün halten.
