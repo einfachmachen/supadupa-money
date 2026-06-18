@@ -231,8 +231,8 @@ function CloudSetupWizard({ onClose }) {
               </ol>
               <Fig name="cloudflare-kv-binding.svg" alt="Binding-Dialog: SYNC_KV in Variablenname, angelegten Namespace auswählen" />
               <ol start={5} style={olStep}>
-                <li><b>Settings → Variables and Secrets</b> <i>(Einstellungen → Variablen und Geheimnisse)</i>: <b>SYNC_SECRET</b> als <i>Secret</i> setzen (Wert generierst du im nächsten Schritt).</li>
-                <li>Die ausgegebene <b>…workers.dev</b>-URL unten eintragen.</li>
+                <li>Nach <b>Deploy</b> die ausgegebene <b>…workers.dev</b>-URL unten eintragen.</li>
+                <li>Das Geheimnis <b>SYNC_SECRET</b> richtest du im <b>nächsten Schritt</b> ein — dort wird der Wert erzeugt, den das Dashboard-Feld „Wert/Value" verlangt.</li>
               </ol>
               <details style={{ marginTop: 10 }}>
                 <summary style={{ color: T.txt2, fontSize: 12, cursor: "pointer" }}>Alternative: 1-Klick per GitHub (nur mit öffentlichem Repo)</summary>
@@ -256,9 +256,12 @@ function CloudSetupWizard({ onClose }) {
           {step === 2 && (
             <>
               <Box tone="info">
-                Das Secret schützt deinen Worker. Generiere eins, <b>kopiere</b> es und
-                hinterlege denselben Wert im Cloudflare-Dashboard:
-                <br />Worker <b>supadupa-sync</b> → Settings → Variables <i>(Einstellungen → Variablen und Geheimnisse)</i> → <b>SYNC_SECRET</b> (als Secret/Geheimnis).
+                Das Secret schützt deinen Worker. So der Reihe nach:
+                <ol style={{ margin: "8px 0 0", padding: "0 0 0 18px", lineHeight: 1.6 }}>
+                  <li>Unten <b>„Secret generieren &amp; kopieren"</b> tippen — es entsteht ein langes Zufalls-Geheimnis (liegt dann in der Zwischenablage).</li>
+                  <li>Im Dashboard: Worker <b>supadupa-sync</b> → <b>Settings → Variables and Secrets</b> <i>(Einstellungen → Variablen und Geheimnisse)</i> → <b>Add</b>. Variablenname <b>SYNC_SECRET</b>, Typ <b>Secret</b>, und in das Feld <b>Wert/Value</b> das kopierte Geheimnis <b>einfügen</b> → <b>Bereitstellen</b>.</li>
+                  <li>Fertig — derselbe Wert steht unten schon im Feld <b>Secret</b>.</li>
+                </ol>
               </Box>
               <button onClick={genSecret}
                 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,

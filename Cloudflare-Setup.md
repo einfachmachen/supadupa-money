@@ -116,11 +116,15 @@ dieselben Punkte so:
 
    ![Binding-Dialog: SYNC_KV in das Feld „Variablenname", im Feld „KV-Namespace" den angelegten Namespace wählen](public/img/cloudflare-kv-binding.svg)
 
-6. **Einstellungen → Variablen und Geheimnisse**: **`SYNC_SECRET`** als
-   *Geheimnis (Secret)* setzen (Wert in der App per „Secret generieren"). Typ muss
-   **Secret** sein (nicht „Text"):
+6. **Einstellungen → Variablen und Geheimnisse → Hinzufügen**: Variablenname
+   **`SYNC_SECRET`**, Typ **Geheimnis (Secret)** — nicht „Text". Wichtig: Das Feld
+   **Wert/Value** darf **nicht leer** bleiben. Dort gehört das lange Zufalls-Secret
+   hinein, das du **vorher in der App per „Secret generieren" erzeugst** (es wird
+   automatisch kopiert) — also erst generieren, dann hier **einfügen**. Genau
+   denselben Wert trägst du auch in der App ins Feld **Secret** ein (beide müssen
+   identisch sein).
 
-   ![Secret setzen: Typ Secret, Variablenname SYNC_SECRET, Wert = kopiertes Secret](public/img/cloudflare-secret.svg)
+   ![Secret setzen: Typ Secret, Variablenname SYNC_SECRET, Wert = in der App kopiertes Secret](public/img/cloudflare-secret.svg)
 
 Am Ende hast du wieder eine URL wie `https://supadupa-sync.DEIN-NAME.workers.dev`.
 
