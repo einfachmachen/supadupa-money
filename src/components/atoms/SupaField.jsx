@@ -16,6 +16,16 @@ function SupaField({value, onChange, placeholder, locked, type="text"}) {
   const isLocked   = locked && !unlocked;
   const isPassword = type === "password";
 
+  // Lokaler Entwurf: Tippen aktualisiert nur den lokalen State (sofort), erst beim
+  // Verlassen des Feldes (blur) wird der globale Wert gesetzt. Sonst löst jeder
+  // Tastendruck ein App-weites Re-Render aus → spürbare Trägheit.
+  const [draft, setDraft] = React.useState(value || "");
+  const focusedRef = React.useRef(false);
+  React.useEffect(() => {
+    if(!focusedRef.current) setDraft(value || "");
+  }, [value]);
+  const commit = () => { focusedRef.current = false; if(draft !== (value||"")) onChange(draft); };
+
   const startPress = () => {
     if(!isLocked) return;
     setProgress(0);
@@ -33,9 +43,6 @@ function SupaField({value, onChange, placeholder, locked, type="text"}) {
     setProgress(0);
   };
 
-  const displayValue = isPassword && !showPw && value
-    ? "•".repeat(Math.min(value.length, 32))
-    : value;
 
   return (
     <div style={{position:"relative",marginBottom:6}}
@@ -50,8 +57,10 @@ function SupaField({value, onChange, placeholder, locked, type="text"}) {
       )}
       <div style={{position:"relative"}}>
         <input
-          value={displayValue}
-          onChange={e=>!isLocked&&onChange(e.target.value)}
+          value={draft}
+          onFocus={()=>{focusedRef.current=true;}}
+          onChange={e=>!isLocked&&setDraft(e.target.value)}
+          onBlur={commit}
           placeholder={placeholder}
           readOnly={isLocked}
           type={isPassword && !showPw ? "password" : "text"}
