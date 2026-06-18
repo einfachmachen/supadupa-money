@@ -74,10 +74,19 @@ function CloudSetupWizard({ onClose }) {
   const setUrl = (v) => { const u = v.trim(); setCfUrl?.(u); kvStore.setItem("cf_url", u); };
   const setSecret = (v) => { setCfSecret?.(v); kvStore.setItem("cf_secret", v); };
 
+  // Lokale Entwürfe für URL/Secret: Tippen ist sofort, der globale Wert (und damit
+  // ein App-weites Re-Render) wird erst beim Verlassen des Feldes gesetzt.
+  const [urlDraft, setUrlDraft] = useState(cfUrl || "");
+  const [secretDraft, setSecretDraft] = useState(cfSecret || "");
+  const urlFocused = React.useRef(false);
+  const secFocused = React.useRef(false);
+  React.useEffect(() => { if(!urlFocused.current) setUrlDraft(cfUrl || ""); }, [cfUrl]);
+  React.useEffect(() => { if(!secFocused.current) setSecretDraft(cfSecret || ""); }, [cfSecret]);
+
   const genSecret = () => {
     const b = crypto.getRandomValues(new Uint8Array(24));
     const s = btoa(String.fromCharCode(...b)).replace(/[+/=]/g, "").slice(0, 32);
-    setSecret(s);
+    setSecret(s); setSecretDraft(s);
     try { navigator.clipboard?.writeText(s); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch (e) {}
   };
 
@@ -183,7 +192,10 @@ function CloudSetupWizard({ onClose }) {
               </Box>
               <LinkBtn href={DEPLOY_URL} icon="upload-cloud">1-Klick: Worker einrichten</LinkBtn>
               <label style={lblStyle}>Worker-URL</label>
-              <input style={inputStyle} value={cfUrl || ""} onChange={(e) => setUrl(e.target.value)}
+              <input style={inputStyle} value={urlDraft}
+                onFocus={()=>{urlFocused.current=true;}}
+                onBlur={()=>{urlFocused.current=false; setUrl(urlDraft);}}
+                onChange={(e) => setUrlDraft(e.target.value)}
                 placeholder="https://supadupa-sync.xxx.workers.dev" inputMode="url" autoCapitalize="off" autoCorrect="off" />
             </>
           )}
@@ -202,7 +214,10 @@ function CloudSetupWizard({ onClose }) {
                 {Li(copied ? "check" : "key", 16, T.on_accent)} {copied ? "Kopiert!" : "Secret generieren & kopieren"}
               </button>
               <label style={lblStyle}>Secret</label>
-              <input style={inputStyle} value={cfSecret || ""} onChange={(e) => setSecret(e.target.value)}
+              <input style={inputStyle} value={secretDraft}
+                onFocus={()=>{secFocused.current=true;}}
+                onBlur={()=>{secFocused.current=false; setSecret(secretDraft);}}
+                onChange={(e) => setSecretDraft(e.target.value)}
                 placeholder="wird generiert oder selbst gewählt" autoCapitalize="off" autoCorrect="off" />
             </>
           )}
