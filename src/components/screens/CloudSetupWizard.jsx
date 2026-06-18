@@ -223,10 +223,14 @@ function CloudSetupWizard({ onClose }) {
               </ol>
               <Fig name="cloudflare-edit-code.svg" alt="Code einfügen: Code bearbeiten öffnen, alles markieren, einfügen, Bereitstellen" />
               <ol start={3} style={olStep}>
-                <li>Reiter <b>Bindings</b> <i>(Bindungen)</i> öffnen — <b>eigener Reiter neben „Settings"</b>, nicht darunter → <b>Add binding</b> <i>(Bindung hinzufügen)</i> → Typ <b>KV namespace</b> wählen. Bei <b>Variable name</b> <i>(Variablenname)</i> genau <b>SYNC_KV</b> eintragen; bei <b>KV namespace</b> einen <b>neuen</b> Namespace anlegen (Name egal).</li>
+                <li><b>Zuerst KV-Namespace anlegen</b> (im Binding-Dialog geht das nicht): Menü <b>Storage &amp; Databases → KV</b> <i>(Speicher und Datenbanken → KV)</i> — je nach Dashboard auch <b>Workers &amp; Pages → KV</b> → <b>Create</b> <i>(Namespace erstellen)</i> → Name z. B. <b>supadupa-sync-kv</b>.</li>
               </ol>
-              <Fig name="cloudflare-kv-binding.svg" alt="Binding-Dialog: SYNC_KV gehört in das Feld Variablenname" />
+              <Fig name="cloudflare-kv-create.svg" alt="KV-Namespace anlegen: Speicher und Datenbanken → KV → Namespace erstellen → Name" />
               <ol start={4} style={olStep}>
+                <li>Reiter <b>Bindings</b> <i>(Bindungen)</i> öffnen — <b>eigener Reiter neben „Settings"</b>, nicht darunter → <b>Add binding</b> <i>(Bindung hinzufügen)</i> → Typ <b>KV namespace</b> wählen. Bei <b>Variable name</b> <i>(Variablenname)</i> genau <b>SYNC_KV</b> eintragen; bei <b>KV namespace</b> den eben angelegten Namespace (<b>supadupa-sync-kv</b>) <b>auswählen</b>.</li>
+              </ol>
+              <Fig name="cloudflare-kv-binding.svg" alt="Binding-Dialog: SYNC_KV in Variablenname, angelegten Namespace auswählen" />
+              <ol start={5} style={olStep}>
                 <li><b>Settings → Variables and Secrets</b> <i>(Einstellungen → Variablen und Geheimnisse)</i>: <b>SYNC_SECRET</b> als <i>Secret</i> setzen (Wert generierst du im nächsten Schritt).</li>
                 <li>Die ausgegebene <b>…workers.dev</b>-URL unten eintragen.</li>
               </ol>
