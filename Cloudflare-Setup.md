@@ -52,6 +52,59 @@ In der App die `…workers.dev`-URL ins Feld **Worker URL** eintragen und
 **„Verbindung testen"** drücken — grüner Haken = fertig. Mit **„Lokal →
 Cloudflare"** lädst du deine Daten erstmalig hoch.
 
+## Cloudflare-Dashboard auf Deutsch
+
+Die Schritte oben nennen die **englischen** Menüpunkte. Steht dein Dashboard auf
+Deutsch (oben rechts beim Profil unter **Sprache / „Language"** umstellbar), heißen
+dieselben Punkte so:
+
+| Englisch | Deutsch |
+| --- | --- |
+| Workers & Pages | Workers und Pages |
+| Create | Erstellen |
+| Worker | Worker |
+| Deploy | Bereitstellen |
+| Edit code | Code bearbeiten |
+| Settings | Einstellungen |
+| Bindings | Bindungen |
+| Add binding | Bindung hinzufügen |
+| KV Namespace | KV-Namespace |
+| Variables and Secrets | Variablen und Geheimnisse (Secrets) |
+| Add variable | Variable hinzufügen |
+| Secret | Geheimnis (Secret) |
+| Save / Deploy | Speichern / Bereitstellen |
+
+### Schritt 2 auf Deutsch — Worker einrichten
+
+1. In der App **„Worker-Code kopieren"** tippen (Einstellungen → Cloudflare oder
+   im Cloud-Wizard).
+2. Im [Cloudflare-Dashboard](https://dash.cloudflare.com/) → **Workers und Pages**
+   → **Erstellen** → **Worker** anlegen (Name z. B. `supadupa-sync`) →
+   **Bereitstellen**.
+3. **Code bearbeiten** öffnen, alles markieren, Code **einfügen** →
+   **Bereitstellen**.
+4. **Einstellungen → Bindungen**: KV-Namespace-Bindung **`SYNC_KV`** hinzufügen
+   (Namespace neu anlegen).
+5. **Einstellungen → Variablen und Geheimnisse**: **`SYNC_SECRET`** als
+   *Geheimnis (Secret)* setzen (Wert in der App per „Secret generieren").
+
+Am Ende hast du wieder eine URL wie `https://supadupa-sync.DEIN-NAME.workers.dev`.
+
+### Schritt 3 auf Deutsch — Geheimnis (`SYNC_SECRET`) setzen
+
+In der App auf **„Secret generieren"** tippen und kopieren. Dann im Dashboard:
+
+> Worker `supadupa-sync` → **Einstellungen** → **Variablen und Geheimnisse** →
+> Variable `SYNC_SECRET` als **Geheimnis (Secret)** hinzufügen → den kopierten
+> Wert einfügen → speichern.
+
+Denselben Wert trägst du in der App ins Feld **Secret** ein.
+
+> Hinweis: Die Variablennamen **`SYNC_KV`** und **`SYNC_SECRET`** bleiben in jeder
+> Sprache **unverändert** — sie werden nicht übersetzt und müssen exakt so
+> geschrieben werden. Cloudflare passt die Menü-Übersetzungen gelegentlich an;
+> weicht ein Begriff ab, hilft die Tabelle oben zum Wiedererkennen.
+
 ## Optional, empfohlen: Verschlüsselung (Passphrase)
 
 Setzt du im Feld **Passphrase** ein Geheimwort, werden deine Daten **vor** dem
