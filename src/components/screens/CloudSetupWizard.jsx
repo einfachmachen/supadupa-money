@@ -204,10 +204,10 @@ function CloudSetupWizard({ onClose }) {
                 {Li(codeCopied ? "check" : "copy", 16, T.on_accent)} {codeCopied ? "Code kopiert!" : "Worker-Code kopieren"}
               </button>
               <ol style={{ margin: "12px 0 0", padding: "0 0 0 18px", color: T.txt, fontSize: 13, lineHeight: 1.7 }}>
-                <li>Im <a href={DASH_URL} target="_blank" rel="noopener noreferrer" style={{ color: T.cf || T.blue, fontWeight: 700 }}>Cloudflare-Dashboard</a> → <b>Workers &amp; Pages</b> → <b>Create</b> → <b>Worker</b> anlegen (Name z. B. <b>supadupa-sync</b>) → <b>Deploy</b>.</li>
-                <li><b>Edit code</b> öffnen, alles markieren, den kopierten Code <b>einfügen</b> → <b>Deploy</b>.</li>
-                <li><b>Settings → Bindings</b>: KV-Namespace-Binding <b>SYNC_KV</b> hinzufügen (Namespace neu anlegen).</li>
-                <li><b>Settings → Variables and Secrets</b>: <b>SYNC_SECRET</b> als <i>Secret</i> setzen (Wert generierst du im nächsten Schritt).</li>
+                <li>Im <a href={DASH_URL} target="_blank" rel="noopener noreferrer" style={{ color: T.cf || T.blue, fontWeight: 700 }}>Cloudflare-Dashboard</a> → <b>Workers &amp; Pages</b> <i>(Workers und Pages)</i> → <b>Create</b> <i>(Erstellen)</i> → <b>Worker</b> anlegen (Name z. B. <b>supadupa-sync</b>) → <b>Deploy</b> <i>(Bereitstellen)</i>.</li>
+                <li><b>Edit code</b> <i>(Code bearbeiten)</i> öffnen, alles markieren, den kopierten Code <b>einfügen</b> → <b>Deploy</b> <i>(Bereitstellen)</i>.</li>
+                <li><b>Settings → Bindings</b> <i>(Einstellungen → Bindungen)</i>: KV-Namespace-Binding <b>SYNC_KV</b> hinzufügen (Namespace neu anlegen).</li>
+                <li><b>Settings → Variables and Secrets</b> <i>(Einstellungen → Variablen und Geheimnisse)</i>: <b>SYNC_SECRET</b> als <i>Secret</i> setzen (Wert generierst du im nächsten Schritt).</li>
                 <li>Die ausgegebene <b>…workers.dev</b>-URL unten eintragen.</li>
               </ol>
               <details style={{ marginTop: 10 }}>
@@ -234,7 +234,7 @@ function CloudSetupWizard({ onClose }) {
               <Box tone="info">
                 Das Secret schützt deinen Worker. Generiere eins, <b>kopiere</b> es und
                 hinterlege denselben Wert im Cloudflare-Dashboard:
-                <br />Worker <b>supadupa-sync</b> → Settings → Variables → <b>SYNC_SECRET</b> (als Secret).
+                <br />Worker <b>supadupa-sync</b> → Settings → Variables <i>(Einstellungen → Variablen und Geheimnisse)</i> → <b>SYNC_SECRET</b> (als Secret/Geheimnis).
               </Box>
               <button onClick={genSecret}
                 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
