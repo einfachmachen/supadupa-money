@@ -20,8 +20,10 @@ So braucht niemand Zugriff auf ein bestimmtes Repository:
 2. Im [Cloudflare-Dashboard](https://dash.cloudflare.com/) → **Workers & Pages**
    → **Create** → **Worker** anlegen (Name z. B. `supadupa-sync`) → **Deploy**.
 3. **Edit code** öffnen, alles markieren, Code **einfügen** → **Deploy**.
-4. **Settings → Bindings**: KV-Namespace-Binding **`SYNC_KV`** hinzufügen
-   (Namespace neu anlegen).
+4. Reiter **Bindings** (eigener Reiter neben **Settings**, *nicht* darunter) →
+   **Add binding** → Typ **KV namespace**. Bei **Variable name** genau
+   **`SYNC_KV`** eintragen, bei **KV namespace** einen neuen Namespace anlegen
+   (dessen Name ist egal). Siehe Bild im deutschen Abschnitt unten.
 5. **Settings → Variables and Secrets**: **`SYNC_SECRET`** als *Secret* setzen
    (Wert in der App per „Secret generieren").
 
@@ -69,6 +71,7 @@ dieselben Punkte so:
 | Bindings | Bindungen |
 | Add binding | Bindung hinzufügen |
 | KV Namespace | KV-Namespace |
+| Variable name | Variablenname |
 | Variables and Secrets | Variablen und Geheimnisse (Secrets) |
 | Add variable | Variable hinzufügen |
 | Secret | Geheimnis (Secret) |
@@ -83,10 +86,18 @@ dieselben Punkte so:
    **Bereitstellen**.
 3. **Code bearbeiten** öffnen, alles markieren, Code **einfügen** →
    **Bereitstellen**.
-4. **Einstellungen → Bindungen**: KV-Namespace-Bindung **`SYNC_KV`** hinzufügen
-   (Namespace neu anlegen).
+4. Reiter **Bindungen** öffnen — das ist ein **eigener Reiter auf derselben Ebene
+   wie „Einstellungen"**, *nicht* darunter. Dann **Bindung hinzufügen** klicken und
+   als Typ **KV-Namespace** wählen (siehe Bild unten):
+   - Feld **Variablenname** → genau **`SYNC_KV`** eintragen (so heißt es im
+     Worker-Code, `env.SYNC_KV`).
+   - Feld **KV-Namespace** → **Neu erstellen** wählen (oder vorhandenen nehmen);
+     der Name dieses Namespace ist **egal** (z. B. `supadupa-sync-kv`). Falls dort
+     schon ein Namespace steht, kannst du gefahrlos einen neuen anlegen.
 5. **Einstellungen → Variablen und Geheimnisse**: **`SYNC_SECRET`** als
    *Geheimnis (Secret)* setzen (Wert in der App per „Secret generieren").
+
+![Binding-Dialog: SYNC_KV gehört in das Feld „Variablenname", nicht in das Feld „KV-Namespace"](public/img/cloudflare-kv-binding.svg)
 
 Am Ende hast du wieder eine URL wie `https://supadupa-sync.DEIN-NAME.workers.dev`.
 
