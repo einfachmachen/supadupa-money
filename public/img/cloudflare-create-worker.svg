@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="430" viewBox="0 0 640 430" font-family="-apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+  <rect width="640" height="430" rx="14" fill="#0b1120"/>
+  <text x="32" y="46" fill="#f2f5fa" font-size="17" font-weight="700">Worker anlegen</text>
+  <text x="32" y="64" fill="#8aa0c6" font-size="12">Create Worker</text>
+
+  <!-- Step 1 -->
+  <circle cx="44" cy="104" r="13" fill="#3b82f6"/>
+  <text x="44" y="109" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">1</text>
+  <rect x="68" y="86" width="540" height="40" rx="9" fill="#111c33" stroke="#2b3b5e"/>
+  <text x="84" y="105" fill="#f2f5fa" font-size="13.5">Menü <tspan font-weight="700">Workers &amp; Pages</tspan></text>
+  <text x="84" y="120" fill="#8aa0c6" font-size="11">Workers und Pages</text>
+
+  <!-- Step 2 -->
+  <circle cx="44" cy="178" r="13" fill="#3b82f6"/>
+  <text x="44" y="183" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">2</text>
+  <rect x="68" y="160" width="540" height="40" rx="9" fill="#111c33" stroke="#2b3b5e"/>
+  <text x="84" y="179" fill="#f2f5fa" font-size="13.5">Button <tspan font-weight="700">Create</tspan> <tspan fill="#8aa0c6">(Erstellen)</tspan> → <tspan font-weight="700">Worker</tspan></text>
+  <text x="84" y="194" fill="#8aa0c6" font-size="11">danach „Get started" / leerer Worker</text>
+
+  <!-- Step 3 (highlight name) -->
+  <circle cx="44" cy="256" r="13" fill="#34c759"/>
+  <text x="44" y="261" fill="#06210f" font-size="13" font-weight="700" text-anchor="middle">3</text>
+  <text x="68" y="240" fill="#9be7b4" font-size="12.5" font-weight="700">Name vergeben</text>
+  <rect x="68" y="248" width="400" height="42" rx="9" fill="#0f2a1b" stroke="#34c759" stroke-width="2"/>
+  <text x="84" y="275" fill="#9be7b4" font-size="15" font-weight="700" font-family="monospace">supadupa-sync</text>
+  <text x="480" y="266" fill="#9be7b4" font-size="11.5">frei wählbar,</text>
+  <text x="480" y="281" fill="#9be7b4" font-size="11.5">wird Teil der URL</text>
+
+  <!-- Step 4 (deploy button) -->
+  <circle cx="44" cy="344" r="13" fill="#3b82f6"/>
+  <text x="44" y="349" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">4</text>
+  <rect x="68" y="324" width="200" height="42" rx="9" fill="#3b82f6"/>
+  <text x="168" y="351" fill="#fff" font-size="14.5" font-weight="700" text-anchor="middle">Deploy</text>
+  <text x="288" y="342" fill="#8aa0c6" font-size="12.5">Bereitstellen — danach gibt es</text>
+  <text x="288" y="359" fill="#8aa0c6" font-size="12.5">eine …workers.dev-URL</text>
+</svg>
