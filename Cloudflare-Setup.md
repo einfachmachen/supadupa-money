@@ -20,11 +20,14 @@ So braucht niemand Zugriff auf ein bestimmtes Repository:
 2. Im [Cloudflare-Dashboard](https://dash.cloudflare.com/) → **Workers & Pages**
    → **Create** → **Worker** anlegen (Name z. B. `supadupa-sync`) → **Deploy**.
 3. **Edit code** öffnen, alles markieren, Code **einfügen** → **Deploy**.
-4. Reiter **Bindings** (eigener Reiter neben **Settings**, *nicht* darunter) →
+4. **Zuerst KV-Namespace anlegen**: **Storage & Databases → KV** (je nach
+   Dashboard auch **Workers & Pages → KV**) → **Create** → Name z. B.
+   `supadupa-sync-kv`. Das Binding-Dropdown legt selbst keinen an.
+5. Reiter **Bindings** (eigener Reiter neben **Settings**, *nicht* darunter) →
    **Add binding** → Typ **KV namespace**. Bei **Variable name** genau
-   **`SYNC_KV`** eintragen, bei **KV namespace** einen neuen Namespace anlegen
-   (dessen Name ist egal). Siehe Bild im deutschen Abschnitt unten.
-5. **Settings → Variables and Secrets**: **`SYNC_SECRET`** als *Secret* setzen
+   **`SYNC_KV`** eintragen, bei **KV namespace** den eben angelegten Namespace
+   **auswählen**. Bilder im deutschen Abschnitt unten.
+6. **Settings → Variables and Secrets**: **`SYNC_SECRET`** als *Secret* setzen
    (Wert in der App per „Secret generieren").
 
 Am Ende hast du eine URL wie `https://supadupa-sync.DEIN-NAME.workers.dev`.
@@ -63,6 +66,8 @@ dieselben Punkte so:
 | Englisch | Deutsch |
 | --- | --- |
 | Workers & Pages | Workers und Pages |
+| Storage & Databases | Speicher und Datenbanken |
+| KV / Create namespace | KV / Namespace erstellen |
 | Create | Erstellen |
 | Worker | Worker |
 | Deploy | Bereitstellen |
@@ -92,18 +97,26 @@ dieselben Punkte so:
 
    ![Code einfügen: Code bearbeiten öffnen, alles markieren, einfügen, Bereitstellen](public/img/cloudflare-edit-code.svg)
 
-4. Reiter **Bindungen** öffnen — das ist ein **eigener Reiter auf derselben Ebene
-   wie „Einstellungen"**, *nicht* darunter. Dann **Bindung hinzufügen** klicken und
-   als Typ **KV-Namespace** wählen (siehe Bild):
+4. **Zuerst einen KV-Namespace anlegen** (das geht im Binding-Dialog *nicht*).
+   Linkes Menü **Speicher und Datenbanken → KV** (je nach Dashboard-Version auch
+   **Workers und Pages → KV**) → **Namespace erstellen** → einen Namen vergeben,
+   z. B. `supadupa-sync-kv` → **Hinzufügen**. Den Namen wählst du frei; du
+   brauchst keinen neuen, wenn schon ein passender existiert.
+
+   ![KV-Namespace anlegen: Speicher und Datenbanken → KV → Namespace erstellen → Name](public/img/cloudflare-kv-create.svg)
+
+5. Jetzt den Reiter **Bindungen** öffnen — das ist ein **eigener Reiter auf
+   derselben Ebene wie „Einstellungen"**, *nicht* darunter. Dann
+   **Bindung hinzufügen** klicken und als Typ **KV-Namespace** wählen:
    - Feld **Variablenname** → genau **`SYNC_KV`** eintragen (so heißt es im
      Worker-Code, `env.SYNC_KV`).
-   - Feld **KV-Namespace** → **Neu erstellen** wählen (oder vorhandenen nehmen);
-     der Name dieses Namespace ist **egal** (z. B. `supadupa-sync-kv`). Falls dort
-     schon ein Namespace steht, kannst du gefahrlos einen neuen anlegen.
+   - Feld **KV-Namespace** → den in Schritt 4 angelegten Namespace
+     (`supadupa-sync-kv`) aus der Liste **auswählen**. Das Dropdown legt
+     **keinen neuen** an — deshalb der vorherige Schritt.
 
-   ![Binding-Dialog: SYNC_KV gehört in das Feld „Variablenname", nicht in das Feld „KV-Namespace"](public/img/cloudflare-kv-binding.svg)
+   ![Binding-Dialog: SYNC_KV in das Feld „Variablenname", im Feld „KV-Namespace" den angelegten Namespace wählen](public/img/cloudflare-kv-binding.svg)
 
-5. **Einstellungen → Variablen und Geheimnisse**: **`SYNC_SECRET`** als
+6. **Einstellungen → Variablen und Geheimnisse**: **`SYNC_SECRET`** als
    *Geheimnis (Secret)* setzen (Wert in der App per „Secret generieren"). Typ muss
    **Secret** sein (nicht „Text"):
 
