@@ -29,8 +29,20 @@
       window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
     }
 
-    // Globale Error-Anzeige (wie im Original)
+    // Globale Error-Anzeige (wie im Original) — aber NICHT für Fehler, die nicht
+    // aus der App stammen: Browser-Erweiterungen injizieren eigene Skripte
+    // (moz-extension://, chrome-extension:// …); deren Fehler dürfen das rote
+    // Crash-Banner nicht auslösen. Ebenso opake Cross-Origin-Fehler, die der
+    // Browser nur als "Script error." ohne Datei/Zeile meldet (CORS) — die
+    // tragen keine verwertbare Info und kommen praktisch immer von Drittskripten.
     window.addEventListener('error', function(e) {
+      const file = e.filename || '';
+      const isExtension = /^(moz-extension|chrome-extension|safari-web-extension|safari-extension|webkit-masked-url|extension):\/\//.test(file);
+      const isOpaqueCrossOrigin = !e.error && !file && (e.lineno === 0 || e.lineno == null) && /^Script error\.?$/.test(e.message || '');
+      if (isExtension || isOpaqueCrossOrigin) {
+        console.warn('Ignoriere externen Fehler (nicht aus der App):', e.message, file);
+        return;
+      }
       const msg = `CRASH: ${e.message} | File: ${e.filename} | Line: ${e.lineno} | Col: ${e.colno}`;
       document.title = msg;
       console.error(msg, e.error?.stack);
