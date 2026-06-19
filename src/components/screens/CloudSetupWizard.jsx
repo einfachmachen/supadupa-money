@@ -40,39 +40,40 @@ function Box({ tone = "info", children }) {
   const c = map[tone] || T.blue;
   return (
     <div style={{ background: c + "18", border: `1px solid ${c}55`, borderRadius: 12,
-      padding: "10px 12px", color: T.txt, fontSize: 13.5, lineHeight: 1.5, marginTop: 12 }}>
+      padding: "12px 14px", color: T.txt, fontSize: 15.5, lineHeight: 1.55, marginTop: 12 }}>
       {children}
     </div>
   );
 }
 
-const lblStyle = { color: T.txt2, fontSize: 12.5, fontWeight: 700, marginBottom: 5, marginTop: 14, display: "block" };
+const lblStyle = { color: T.txt2, fontSize: 14.5, fontWeight: 700, marginBottom: 6, marginTop: 16, display: "block" };
 const inputStyle = {
   width: "100%", boxSizing: "border-box", background: T.bg, color: T.txt,
-  border: `1px solid ${T.bds || T.bd}`, borderRadius: 11, padding: "11px 12px", fontSize: 15, fontFamily: "inherit",
+  border: `1px solid ${T.bds || T.bd}`, borderRadius: 11, padding: "13px 14px", fontSize: 17, fontFamily: "inherit",
 };
 function LinkBtn({ href, icon, children, color }) {
   const c = color || T.cf || T.blue;
   return (
     <a href={href} target="_blank" rel="noopener noreferrer"
       style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-        textDecoration: "none", marginTop: 12, padding: "12px", borderRadius: 13,
-        border: `1px solid ${c}55`, background: `${c}14`, color: c, fontSize: 15, fontWeight: 800 }}>
-      {Li(icon, 16, c)} {children}
+        textDecoration: "none", marginTop: 12, padding: "13px", borderRadius: 13,
+        border: `1px solid ${c}55`, background: `${c}14`, color: c, fontSize: 16, fontWeight: 800 }}>
+      {Li(icon, 18, c)} {children}
     </a>
   );
 }
 
 // Schematische Schaubilder (SVG in public/img) — kein echter Screenshot, daher
 // stabil gegen Cloudflare-UI-Änderungen. BASE_URL macht den Pfad deploy-fest.
+// Volle Breite + große Schrift für gute Lesbarkeit auf kleinen Displays.
 function Fig({ name, alt }) {
   return (
     <img src={`${import.meta.env.BASE_URL}img/${name}`} alt={alt}
-      style={{ display: "block", width: "100%", maxWidth: 380, margin: "10px auto 0",
-        borderRadius: 12, border: `1px solid ${T.bd}` }} />
+      style={{ display: "block", width: "100%", margin: "14px auto 0",
+        borderRadius: 14, border: `1px solid ${T.bd}` }} />
   );
 }
-const olStep = { margin: "10px 0 0", padding: "0 0 0 18px", color: T.txt, fontSize: 13, lineHeight: 1.7 };
+const olStep = { margin: "10px 0 0", padding: "0 0 0 20px", color: T.txt, fontSize: 15.5, lineHeight: 1.6 };
 
 function CloudSetupWizard({ onClose }) {
   const {
@@ -228,10 +229,10 @@ function CloudSetupWizard({ onClose }) {
               </ol>
               <Fig name="cloudflare-create-worker.svg" alt="Worker anlegen: Workers und Pages → Erstellen → Worker → Name → Bereitstellen" />
               <details style={{ marginTop: 12 }}>
-                <summary style={{ color: T.txt2, fontSize: 12, cursor: "pointer" }}>Alternative: 1-Klick per GitHub (nur mit öffentlichem Repo)</summary>
+                <summary style={{ color: T.txt2, fontSize: 14, cursor: "pointer" }}>Alternative: 1-Klick per GitHub (nur mit öffentlichem Repo)</summary>
                 <div style={{ marginTop: 8 }}>
                   <LinkBtn href={DEPLOY_URL} icon="upload-cloud">Deploy to Cloudflare</LinkBtn>
-                  <div style={{ color: T.txt2, fontSize: 10.5, lineHeight: 1.5, marginTop: 6 }}>
+                  <div style={{ color: T.txt2, fontSize: 12.5, lineHeight: 1.5, marginTop: 6 }}>
                     Funktioniert nur, wenn die Worker-Vorlage in einem öffentlichen Repo liegt
                     (Cloudflare forkt sie). Sonst nimm den Code-Weg.
                   </div>
