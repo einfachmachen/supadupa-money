@@ -20,7 +20,7 @@ import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { txFingerprint, isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
 import { saldoAt, budgetPlaceholderActive } from "../../utils/saldo.js";
-import { fetchNewBankTx } from "../../utils/enableBankingFetch.js";
+import { fetchNewBankTx, listConnectedBanks } from "../../utils/enableBankingFetch.js";
 
 function DashboardScreenV2() {
   const { cats,setCats,groups,setGroups,txs,setTxs,accounts,setAccounts,
@@ -102,10 +102,12 @@ function DashboardScreenV2() {
     const pullRef = useRef({ startY: 0, active: false });
     const [pullDist, setPullDist] = useState(0);
     const PULL_THRESHOLD = 70;
-    const runBankFetch = React.useCallback(async () => {
-      setBankFetch({ status: "loading" });
-      const res = await fetchNewBankTx({ txs, accounts });
-      if (!res.ok) { setBankFetch({ status: "error", reason: res.reason, message: res.message }); return; }
+    // aspsp=null → alle Banken auf einmal; aspsp gesetzt → nur diese Bank.
+    const runBankFetch = React.useCallback(async (aspsp = null) => {
+      const banks = await listConnectedBanks();
+      setBankFetch({ status: "loading", aspsp, banks });
+      const res = await fetchNewBankTx({ txs, accounts, aspsp });
+      if (!res.ok) { setBankFetch({ status: "error", reason: res.reason, message: res.message, aspsp, banks }); return; }
       const newItems = res.items.filter((i) => i.status === "new");
       const dupeItems = res.items.filter((i) => i.status !== "new");
       const added = newItems.map(({ row, accId }) => ({
@@ -114,7 +116,7 @@ function DashboardScreenV2() {
         _csvType: row.amount > 0 ? "income" : "expense", _fp: row.fp, _csvSource: "Enable Banking",
       }));
       if (added.length) setTxs((p) => [...added, ...p].sort((x, y) => y.date.localeCompare(x.date)));
-      setBankFetch({ status: "done", newIds: added.map((t) => t.id), dupeItems });
+      setBankFetch({ status: "done", newIds: added.map((t) => t.id), dupeItems, aspsp, banks });
     }, [txs, accounts, setTxs]);
     // Pull-to-Refresh: nur greifen, wenn ganz oben gescrollt — sonst normaler Scroll.
     const onPullStart = (e) => {
@@ -813,7 +815,7 @@ function DashboardScreenV2() {
         {/* Per Pull-to-Refresh abgerufene Bank-Buchungen — zwischen Hero und
             erster Kategorie, gefiltert nach aktueller Kontosicht (selAcc). */}
         {bankFetch && (
-          <BankFetchPanel state={bankFetch} onClose={()=>setBankFetch(null)} onRetry={runBankFetch}/>
+          <BankFetchPanel state={bankFetch} onClose={()=>setBankFetch(null)} onRefetch={runBankFetch}/>
         )}
 
         {/* "Ausgaben nach Kategorie" — aus der Monatsansicht hierher (Dashboard)
