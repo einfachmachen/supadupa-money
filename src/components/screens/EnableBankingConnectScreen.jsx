@@ -163,6 +163,7 @@ function EnableBankingConnectScreen({ onClose }) {
       const code = sessionStorage.getItem("eb_pending_code");
       if (code && c.relayUrl && c.appId && c.privateKey) {
         sessionStorage.removeItem("eb_pending_code");
+        await refreshConnected(); // bereits verbundene Banken sofort zeigen
         resumeSession(code, c);
         return;
       }
@@ -257,9 +258,26 @@ function EnableBankingConnectScreen({ onClose }) {
         relayUrl: creds.relayUrl, appId: creds.appId, privateKeyPem: creds.privateKey,
       });
       const r = await cl.createSession(code);
-      const accs = normalizeAccounts(r);
+      let accs = normalizeAccounts(r);
+      let vu = r?.access?.valid_until || r?.valid_until || null;
+      let aspspName = r?.aspsp?.name || "";
+      const sessionId = r?.session_id || r?.session?.id || r?.id || r?.sessionId || "";
+      // Manche ASPSPs (z. B. PayPal) liefern die Konten NICHT im createSession-
+      // Response, sondern erst über GET /sessions/{id} — dann dort nachladen.
+      if (!accs.length && sessionId) {
+        try {
+          const s = await cl.getSession(sessionId);
+          accs = normalizeAccounts(s);
+          vu = vu || s?.access?.valid_until || s?.valid_until || null;
+          aspspName = aspspName || s?.aspsp?.name || "";
+        } catch (e) { /* unten als „keine Konten“ behandelt */ }
+      }
       if (!accs.length) {
-        setMsg({ tone: "danger", text: "Bank verbunden, aber keine Konten erhalten. Bitte erneut versuchen oder anderen Zeitraum/Bank wählen." });
+        // Bestehende Banken weiter anzeigen (DKB darf nicht verschwinden) und
+        // einen verwertbaren Hinweis inkl. Antwort-Auszug geben.
+        await refreshConnected();
+        const snippet = (() => { try { return JSON.stringify(r).slice(0, 240); } catch { return String(r); } })();
+        setMsg({ tone: "danger", text: `Bank verbunden, aber keine Konten erhalten. Antwort: ${snippet}` });
         setBusy(false);
         return;
       }
@@ -269,18 +287,18 @@ function EnableBankingConnectScreen({ onClose }) {
       saveEbAccountMap(m);
       // Bank-Session lokal sichern (Mehrbank: hinzufügen, vorhandene derselben
       // Bank ersetzen) → künftige Importe ohne erneute Bank-Anmeldung.
-      const vu = r?.access?.valid_until || r?.valid_until ||
-        new Date(Date.now() + 90 * 86400000).toISOString();
+      vu = vu || new Date(Date.now() + 90 * 86400000).toISOString();
       // Banklabel/Identität: API-aspsp, sonst die vor dem Redirect gemerkte Wahl.
       let pendingAspsp = "";
       try { pendingAspsp = sessionStorage.getItem("eb_pending_aspsp") || ""; sessionStorage.removeItem("eb_pending_aspsp"); } catch (e) { /* egal */ }
-      const aspsp = r?.aspsp?.name || pendingAspsp || bank || "";
-      const sessionId = r?.session_id || r?.session?.id || r?.id || r?.sessionId || "";
+      const aspsp = aspspName || pendingAspsp || bank || "";
       await upsertEbSession({ sessionId, accounts: accs, validUntil: vu, aspsp });
       // Banken-Liste + vereinigte Konten neu laden (alle verbundenen Banken)
       await refreshConnected();
       setMsg({ tone: "tip", text: `${aspsp || "Bank"} verbunden (gültig bis ${String(vu).slice(0, 10)}). Zuordnen und „Buchungen abrufen“.` });
     } catch (e) {
+      // Bestehende Banken erhalten bleiben — Fehler nur melden.
+      await refreshConnected();
       setMsg({ tone: "danger", text: String(e.message || e) });
     }
     setBusy(false);
