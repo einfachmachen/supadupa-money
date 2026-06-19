@@ -1,6 +1,6 @@
 // Auto-generated module (siehe app-src.jsx)
 
-import React, { Fragment, useContext, useMemo, useState } from "react";
+import React, { Fragment, useContext, useMemo, useRef, useState } from "react";
 import { Overlay } from "../atoms/Overlay.jsx";
 import { CatPicker } from "../molecules/CatPicker.jsx";
 import { CategoryChart } from "../molecules/CategoryChart.jsx";
@@ -9,6 +9,7 @@ import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
 import { KontoWarnungWidget } from "../organisms/KontoWarnungWidget.jsx";
 import { PendingList } from "../organisms/PendingList.jsx";
 import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
+import { BankFetchPanel } from "../organisms/BankFetchPanel.jsx";
 import { TagesgeldWidget } from "../organisms/TagesgeldWidget.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
@@ -19,6 +20,7 @@ import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { txFingerprint, isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
 import { saldoAt, budgetPlaceholderActive } from "../../utils/saldo.js";
+import { fetchNewBankTx } from "../../utils/enableBankingFetch.js";
 
 function DashboardScreenV2() {
   const { cats,setCats,groups,setGroups,txs,setTxs,accounts,setAccounts,
@@ -92,6 +94,51 @@ function DashboardScreenV2() {
       });
     };
     const [detailsOpen, setDetailsOpen] = useState(false);
+
+    // ── Bank-Abruf direkt im Dashboard (Pull-to-Refresh) ──
+    // bankFetch: null | {status:"loading"|"done"|"error", reason?, message?, newIds?, dupeItems?}
+    const [bankFetch, setBankFetch] = useState(null);
+    const dashScrollRef = useRef(null);
+    const pullRef = useRef({ startY: 0, active: false });
+    const [pullDist, setPullDist] = useState(0);
+    const PULL_THRESHOLD = 70;
+    const runBankFetch = React.useCallback(async () => {
+      setBankFetch({ status: "loading" });
+      const res = await fetchNewBankTx({ txs, accounts });
+      if (!res.ok) { setBankFetch({ status: "error", reason: res.reason, message: res.message }); return; }
+      const newItems = res.items.filter((i) => i.status === "new");
+      const dupeItems = res.items.filter((i) => i.status !== "new");
+      const added = newItems.map(({ row, accId }) => ({
+        id: "eb-" + uid(), date: row.isoDate, totalAmount: Math.abs(row.amount),
+        desc: row.desc, note: "", pending: false, accountId: accId, splits: [],
+        _csvType: row.amount > 0 ? "income" : "expense", _fp: row.fp, _csvSource: "Enable Banking",
+      }));
+      if (added.length) setTxs((p) => [...added, ...p].sort((x, y) => y.date.localeCompare(x.date)));
+      setBankFetch({ status: "done", newIds: added.map((t) => t.id), dupeItems });
+    }, [txs, accounts, setTxs]);
+    // Pull-to-Refresh: nur greifen, wenn ganz oben gescrollt — sonst normaler Scroll.
+    const onPullStart = (e) => {
+      const el = dashScrollRef.current;
+      if (el && el.scrollTop <= 0 && !bankFetch) {
+        pullRef.current = { startY: e.touches[0].clientY, active: true };
+      } else {
+        pullRef.current.active = false;
+      }
+    };
+    const onPullMove = (e) => {
+      if (!pullRef.current.active) return;
+      const dy = e.touches[0].clientY - pullRef.current.startY;
+      if (dy > 0 && (dashScrollRef.current?.scrollTop || 0) <= 0) {
+        setPullDist(Math.min(dy, 110));
+      } else {
+        setPullDist(0);
+      }
+    };
+    const onPullEnd = () => {
+      if (pullRef.current.active && pullDist >= PULL_THRESHOLD) runBankFetch();
+      pullRef.current.active = false;
+      setPullDist(0);
+    };
     // Ausklappbarer Buchungstext im Drilldown (iPhone-13-mini: Text wird sonst
     // abgeschnitten). Nur Anfang zeigen, auf Tipp den vollen Text anzeigen.
     const [expandedDescIds, setExpandedDescIds] = useState(()=>new Set());
@@ -615,7 +662,18 @@ function DashboardScreenV2() {
 
     // ── Prognose: Vormonatssaldo + Einnahmen - Ausgaben (Mitte/Ende) ──
     return (<>
-      <div style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch"}}>
+      <div ref={dashScrollRef}
+        onTouchStart={onPullStart} onTouchMove={onPullMove} onTouchEnd={onPullEnd}
+        style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch"}}>
+        {/* Pull-to-Refresh-Indikator: erscheint beim Herunterziehen am oberen Rand */}
+        {pullDist > 0 && !bankFetch && (
+          <div style={{height:pullDist,display:"flex",alignItems:"center",justifyContent:"center",
+            gap:8,color:pullDist>=PULL_THRESHOLD?T.blue:T.txt2,fontSize:12.5,fontWeight:700,
+            overflow:"hidden"}}>
+            {Li(pullDist>=PULL_THRESHOLD?"download-cloud":"arrow-down",16,pullDist>=PULL_THRESHOLD?T.blue:T.txt2)}
+            {pullDist>=PULL_THRESHOLD?"Loslassen zum Abrufen":"Ziehen für neue Buchungen"}
+          </div>
+        )}
         {/* Duplikat-Warnung */}
         {dupCount>0&&(
           <div style={{margin:"6px 10px",background:T.err_bg,border:`2px solid ${T.neg}`,borderRadius:12,padding:"10px 12px"}}>
@@ -751,6 +809,12 @@ function DashboardScreenV2() {
           }
         })()}
         </div>
+
+        {/* Per Pull-to-Refresh abgerufene Bank-Buchungen — zwischen Hero und
+            erster Kategorie, gefiltert nach aktueller Kontosicht (selAcc). */}
+        {bankFetch && (
+          <BankFetchPanel state={bankFetch} onClose={()=>setBankFetch(null)} onRetry={runBankFetch}/>
+        )}
 
         {/* "Ausgaben nach Kategorie" — aus der Monatsansicht hierher (Dashboard)
             verschoben; eigene Klapp-Logik im Chart. */}
