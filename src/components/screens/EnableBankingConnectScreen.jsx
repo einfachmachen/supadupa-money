@@ -23,9 +23,10 @@ import {
   saveEbCreds,
   loadEbAccountMap,
   saveEbAccountMap,
-  loadEbSession,
-  saveEbSession,
   clearEbSession,
+  loadEbSessionList,
+  upsertEbSession,
+  removeEbSession,
 } from "../../utils/enableBankingStore.js";
 
 // Vom Betreiber bereitgestellter Standard-Relay (datenlos, geteilt). Editierbar —
@@ -112,6 +113,7 @@ function EnableBankingConnectScreen({ onClose }) {
   const [dateFrom, setDateFrom] = useState(() => new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10));
   const [preview, setPreview] = useState(null);
   const [validUntil, setValidUntil] = useState(null); // ISO: bis wann die Bank-Freigabe gilt
+  const [connectedBanks, setConnectedBanks] = useState([]); // alle verbundenen Banken (Mehrbank)
 
   // Genau die Adresse, die die App beim Verbinden als redirect_url mitschickt —
   // diese muss im Enable-Banking-Portal als Redirect-URL hinterlegt sein.
@@ -164,20 +166,37 @@ function EnableBankingConnectScreen({ onClose }) {
         resumeSession(code, c);
         return;
       }
-      // Sonst: gespeicherte, noch gültige Bank-Session wiederverwenden —
-      // dann ohne erneute Bank-Anmeldung direkt Umsätze laden.
-      const sess = await loadEbSession();
-      if (sess && sess.sessionId && sess.validUntil && new Date(sess.validUntil) > new Date() && (sess.accounts || []).length) {
-        setSessionAccounts(sess.accounts);
-        setValidUntil(sess.validUntil);
-        const m = { ...(await loadEbAccountMap()) };
-        sess.accounts.forEach((a) => { if (!m[a.uid]) m[a.uid] = accounts[0]?.id || "acc-giro"; });
-        setAccMap(m);
-        setMsg({ tone: "tip", text: `Bank-Verbindung aktiv (gültig bis ${String(sess.validUntil).slice(0, 10)}). Du kannst direkt „Buchungen abrufen“.` });
-      }
+      // Sonst: alle gespeicherten, noch gültigen Bank-Sessions wiederverwenden —
+      // ohne erneute Bank-Anmeldung direkt Umsätze (aller Banken) abrufen.
+      await refreshConnected();
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Lädt alle verbundenen (gültigen) Banken, vereinigt ihre Konten in
+  // sessionAccounts (für Mapping + Abruf) und füllt die Banken-Liste der UI.
+  const refreshConnected = async () => {
+    const list = await loadEbSessionList();
+    const valid = list.filter((s) => s && s.validUntil && new Date(s.validUntil) > new Date() && (s.accounts || []).length);
+    setConnectedBanks(valid);
+    if (!valid.length) { setSessionAccounts(null); setValidUntil(null); return; }
+    const union = [];
+    const seen = new Set();
+    valid.forEach((s) => (s.accounts || []).forEach((a) => { if (!seen.has(a.uid)) { seen.add(a.uid); union.push(a); } }));
+    setSessionAccounts(union);
+    // nächstliegendes Ablaufdatum als Gesamt-Gültigkeit anzeigen
+    const soonest = valid.map((s) => s.validUntil).sort((a, b) => String(a).localeCompare(String(b)))[0];
+    setValidUntil(soonest);
+    const m = { ...(await loadEbAccountMap()) };
+    union.forEach((a) => { if (!m[a.uid]) m[a.uid] = accounts[0]?.id || "acc-giro"; });
+    setAccMap(m);
+    setMsg({ tone: "tip", text: `${valid.length} Bank${valid.length !== 1 ? "en" : ""} verbunden. Du kannst direkt „Buchungen abrufen“.` });
+  };
+
+  const disconnectBank = async (sess) => {
+    await removeEbSession({ aspsp: sess.aspsp, sessionId: sess.sessionId });
+    await refreshConnected();
+  };
 
   const save = () => {
     saveEbCreds({ relayUrl, appId, privateKey });
@@ -208,19 +227,15 @@ function EnableBankingConnectScreen({ onClose }) {
       const state = "ebmoney-" + Math.random().toString(36).slice(2);
       const r = await client().startAuth({ aspspName: bank, country, redirectUrl, state });
       if (r?.url) {
-        // Im NORMALEN Browser (neues Fenster/Tab) öffnen — mit sichtbarer
-        // Adressleiste der Bank. So ist klar: die Zugangsdaten gehen an die
-        // Bank, nicht an diese App. Fallback: gleicher Tab, falls Popup blockiert.
-        const win = window.open(r.url, "_blank", "noopener,noreferrer");
-        if (win) {
-          setMsg({
-            tone: "info",
-            text: "Anmeldung im Browser geöffnet — deine Bank-Zugangsdaten gibst du nur dort ein. Nach der Freigabe wird die Verbindung gespeichert; danach hier „Buchungen abrufen“.",
-          });
-          setBusy(false);
-        } else {
-          window.location.href = r.url; // Popup blockiert → gleicher Tab
-        }
+        // Weiterleitung im SELBEN Tab (volle Seitennavigation zur Bank). So ist
+        // die Adressleiste der Bank sichtbar (Zugangsdaten gehen an die Bank,
+        // nicht an die App) UND der Rücksprung mit ?code landet zuverlässig
+        // wieder hier — main.jsx fängt ihn ab und öffnet den Connect-Screen
+        // erneut (siehe App.jsx eb_open_connect). Ein neuer Tab führte dazu,
+        // dass der Rücksprung im anderen Tab landete und dieser Screen hängen
+        // blieb (u. a. beim Testen im Responsive-Modus, z. B. mit PayPal).
+        setMsg({ tone: "info", text: "Weiterleitung zu deiner Bank…" });
+        window.location.href = r.url;
       } else {
         setMsg({ tone: "danger", text: "Keine Weiterleitungs-URL von Enable Banking erhalten." });
         setBusy(false);
@@ -239,16 +254,19 @@ function EnableBankingConnectScreen({ onClose }) {
       });
       const r = await cl.createSession(code);
       const accs = normalizeAccounts(r);
-      setSessionAccounts(accs);
       const m = { ...(await loadEbAccountMap()) };
       accs.forEach((a) => { if (!m[a.uid]) m[a.uid] = accounts[0]?.id || "acc-giro"; });
       setAccMap(m);
-      // Session lokal sichern → künftige Importe ohne erneute Bank-Anmeldung
+      saveEbAccountMap(m);
+      // Bank-Session lokal sichern (Mehrbank: hinzufügen, vorhandene derselben
+      // Bank ersetzen) → künftige Importe ohne erneute Bank-Anmeldung.
       const vu = r?.access?.valid_until || r?.valid_until ||
         new Date(Date.now() + 90 * 86400000).toISOString();
-      saveEbSession({ sessionId: r?.session_id || r?.session?.id || "", accounts: accs, validUntil: vu, aspsp: r?.aspsp?.name || "" });
-      setValidUntil(vu);
-      setMsg({ tone: "tip", text: `${accs.length} Konto/Konten verbunden (gültig bis ${String(vu).slice(0, 10)}). Zuordnen und „Buchungen abrufen“.` });
+      const aspsp = r?.aspsp?.name || bank || "";
+      await upsertEbSession({ sessionId: r?.session_id || r?.session?.id || "", accounts: accs, validUntil: vu, aspsp });
+      // Banken-Liste + vereinigte Konten neu laden (alle verbundenen Banken)
+      await refreshConnected();
+      setMsg({ tone: "tip", text: `${aspsp || "Bank"} verbunden (gültig bis ${String(vu).slice(0, 10)}). Zuordnen und „Buchungen abrufen“.` });
     } catch (e) {
       setMsg({ tone: "danger", text: String(e.message || e) });
     }
@@ -363,6 +381,40 @@ function EnableBankingConnectScreen({ onClose }) {
               Bis dahin brauchst du für weitere Importe <b>keine erneute Bank-Anmeldung</b> —
               einfach unten „Buchungen abrufen“.
             </Box>
+          )}
+
+          {/* Verbundene Banken (Mehrbank): jede separat entfernbar. Eine weitere
+              Bank verbindest du unten über „2 · Bank wählen“ — sie wird ergänzt,
+              nicht ersetzt. Der Dashboard-Abruf holt alle auf einmal. */}
+          {connectedBanks.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <div style={{ color: T.txt, fontSize: 16, fontWeight: 800, marginBottom: 8 }}>
+                Verbundene Banken ({connectedBanks.length})
+              </div>
+              {connectedBanks.map((s) => (
+                <div key={(s.aspsp || "") + "|" + s.sessionId}
+                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
+                    borderRadius: 11, border: `1px solid ${T.bd}`, background: "rgba(255,255,255,0.03)", marginBottom: 8 }}>
+                  {Li("landmark", 18, T.blue)}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ color: T.txt, fontSize: 14, fontWeight: 700, overflow: "hidden",
+                      textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.aspsp || "Bank"}</div>
+                    <div style={{ color: T.txt2, fontSize: 11.5 }}>
+                      {(s.accounts || []).length} Konto/Konten · gültig bis {String(s.validUntil).slice(0, 10)}
+                    </div>
+                  </div>
+                  <button onClick={() => disconnectBank(s)} title="Bank entfernen"
+                    style={{ flexShrink: 0, background: "transparent", border: `1px solid ${T.bd}`,
+                      borderRadius: 9, padding: "6px 8px", color: T.neg, cursor: "pointer",
+                      display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700 }}>
+                    {Li("trash-2", 14, T.neg)} entfernen
+                  </button>
+                </div>
+              ))}
+              <div style={{ color: T.txt2, fontSize: 11.5, lineHeight: 1.45 }}>
+                Weitere Bank verbinden: unten unter „2 · Bank wählen“ — sie wird zur Liste ergänzt.
+              </div>
+            </div>
           )}
 
           {/* Redirect-URL zum Eintragen im Enable-Banking-Portal */}

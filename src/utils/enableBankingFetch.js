@@ -11,7 +11,7 @@
 
 import { txFingerprint, txFingerprintNorm } from "./tx.js";
 import { createEnableBankingClient, mapEnableBankingTransactions } from "./enableBanking.js";
-import { loadEbCreds, loadEbAccountMap, loadEbSession } from "./enableBankingStore.js";
+import { loadEbCreds, loadEbAccountMap, loadEbSessionList } from "./enableBankingStore.js";
 
 // Alle bekannten Fingerprints aus vorhandenen Buchungen (identisch zum Import).
 function buildKnownFps(txs) {
@@ -38,11 +38,11 @@ function sessionValid(sess) {
     new Date(sess.validUntil) > new Date() && (sess.accounts || []).length);
 }
 
-// Gibt alle gespeicherten, noch gültigen Sessions als Liste zurück. Heute hält
-// der Speicher genau eine — die Liste macht den späteren Mehrbank-Ausbau leicht.
+// Alle gespeicherten, noch gültigen Bank-Sessions (Mehrbank): Der Dashboard-
+// Abruf läuft damit über ALLE verbundenen Banken auf einmal.
 async function loadEbSessions() {
-  const one = await loadEbSession();
-  return sessionValid(one) ? [one] : [];
+  const list = await loadEbSessionList();
+  return list.filter(sessionValid);
 }
 
 // Ruft neue Umsätze ab und klassifiziert sie gegen die vorhandenen Buchungen.
