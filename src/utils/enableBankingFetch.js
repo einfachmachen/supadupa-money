@@ -33,8 +33,10 @@ function buildKnownFps(txs) {
   return s;
 }
 
+// Gültig = noch nicht abgelaufen UND hat Konten. Die sessionId ist NICHT nötig
+// (der Abruf läuft über die Konto-UIDs); manche ASPSPs liefern keine.
 function sessionValid(sess) {
-  return !!(sess && sess.sessionId && sess.validUntil &&
+  return !!(sess && sess.validUntil &&
     new Date(sess.validUntil) > new Date() && (sess.accounts || []).length);
 }
 
