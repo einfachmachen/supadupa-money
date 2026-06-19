@@ -1,29 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="640" height="430" viewBox="0 0 640 430" font-family="-apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif">
-  <rect width="640" height="430" rx="14" fill="#0b1120"/>
-  <text x="32" y="46" fill="#f2f5fa" font-size="17" font-weight="700">Worker-Code einfügen</text>
-  <text x="32" y="64" fill="#8aa0c6" font-size="12">Edit code</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="540" viewBox="0 0 600 540" font-family="-apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+  <rect width="600" height="540" rx="16" fill="#0b1120"/>
+  <text x="28" y="56" fill="#ffffff" font-size="38" font-weight="800">Code einfügen</text>
+  <text x="28" y="88" fill="#c3d2ee" font-size="22">Edit code</text>
 
-  <!-- Step 1 -->
-  <circle cx="44" cy="104" r="13" fill="#3b82f6"/>
-  <text x="44" y="109" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">1</text>
-  <rect x="68" y="86" width="540" height="40" rx="9" fill="#111c33" stroke="#2b3b5e"/>
-  <text x="84" y="105" fill="#f2f5fa" font-size="13.5">Button <tspan font-weight="700">Edit code</tspan> <tspan fill="#8aa0c6">(Code bearbeiten)</tspan> öffnen</text>
-  <text x="84" y="120" fill="#8aa0c6" font-size="11">öffnet den Online-Editor</text>
+  <!-- Row 1 -->
+  <circle cx="60" cy="152" r="24" fill="#3b82f6"/>
+  <text x="60" y="161" fill="#fff" font-size="26" font-weight="800" text-anchor="middle">1</text>
+  <rect x="100" y="108" width="476" height="88" rx="14" fill="#18243d" stroke="#3a4d75" stroke-width="2"/>
+  <text x="120" y="148" fill="#ffffff" font-size="28" font-weight="700">„Edit code" öffnen</text>
+  <text x="120" y="180" fill="#c3d2ee" font-size="21">Code bearbeiten</text>
 
-  <!-- Step 2: editor with select-all + paste -->
-  <circle cx="44" cy="200" r="13" fill="#34c759"/>
-  <text x="44" y="205" fill="#06210f" font-size="13" font-weight="700" text-anchor="middle">2</text>
-  <text x="68" y="160" fill="#9be7b4" font-size="12.5" font-weight="700">Alles markieren &amp; vorhandenen Code ersetzen</text>
-  <rect x="68" y="170" width="400" height="92" rx="9" fill="#0f2a1b" stroke="#34c759" stroke-width="2"/>
-  <text x="84" y="194" fill="#7fd39b" font-size="12" font-family="monospace">// vorhandenen Beispielcode löschen</text>
-  <text x="84" y="214" fill="#9be7b4" font-size="12" font-family="monospace">Strg/Cmd + A  → markieren</text>
-  <text x="84" y="234" fill="#9be7b4" font-size="12" font-family="monospace">Strg/Cmd + V  → eingefügter Code</text>
-  <text x="84" y="252" fill="#7fd39b" font-size="12" font-family="monospace">(aus „Worker-Code kopieren")</text>
+  <!-- Row 2 (highlight: select all + paste) -->
+  <circle cx="60" cy="280" r="24" fill="#34d058"/>
+  <text x="60" y="289" fill="#06210f" font-size="26" font-weight="800" text-anchor="middle">2</text>
+  <rect x="100" y="212" width="476" height="136" rx="14" fill="#14331f" stroke="#34d058" stroke-width="3"/>
+  <text x="120" y="254" fill="#7df09b" font-size="25" font-weight="700">Alten Code löschen,</text>
+  <text x="120" y="290" fill="#7df09b" font-size="26" font-weight="800" font-family="monospace">Cmd/Strg + A</text>
+  <text x="120" y="326" fill="#7df09b" font-size="26" font-weight="800" font-family="monospace">Cmd/Strg + V  (einfügen)</text>
 
-  <!-- Step 3: deploy -->
-  <circle cx="44" cy="344" r="13" fill="#3b82f6"/>
-  <text x="44" y="349" fill="#fff" font-size="13" font-weight="700" text-anchor="middle">3</text>
-  <rect x="68" y="324" width="200" height="42" rx="9" fill="#3b82f6"/>
-  <text x="168" y="351" fill="#fff" font-size="14.5" font-weight="700" text-anchor="middle">Deploy</text>
-  <text x="288" y="350" fill="#8aa0c6" font-size="12.5">Bereitstellen — Code wird aktiv</text>
+  <!-- Row 3 (deploy) -->
+  <circle cx="60" cy="420" r="24" fill="#3b82f6"/>
+  <text x="60" y="429" fill="#fff" font-size="26" font-weight="800" text-anchor="middle">3</text>
+  <rect x="100" y="376" width="476" height="88" rx="14" fill="#3b82f6"/>
+  <text x="338" y="416" fill="#ffffff" font-size="30" font-weight="800" text-anchor="middle">Deploy</text>
+  <text x="338" y="446" fill="#dbe7ff" font-size="21" text-anchor="middle">Bereitstellen</text>
 </svg>
