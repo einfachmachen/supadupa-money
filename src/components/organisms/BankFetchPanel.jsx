@@ -1,0 +1,178 @@
+// Inline-Panel im Dashboard für per Pull-to-Refresh abgerufene Bank-Umsätze.
+//
+// Zeigt die NEUEN (bereits dubletten-geschützt importierten) Buchungen der
+// aktuellen Kontosicht (selAcc) direkt zwischen Hero und erster Kategorie an —
+// jede mit einer Inline-Kategorie-Auswahl wie beim CSV-Import. Bereits
+// vorhandene/erkannte Dubletten bleiben eingeklappt und lassen sich ausklappen.
+
+import React, { useContext, useState } from "react";
+import { AppCtx } from "../../state/AppContext.js";
+import { theme as T } from "../../theme/activeTheme.js";
+import { fmt, uid, NUM_FONT } from "../../utils/format.js";
+import { Li } from "../../utils/icons.jsx";
+import { CatPicker } from "../molecules/CatPicker.jsx";
+
+function BankFetchPanel({ state, onClose, onRetry }) {
+  const { txs, setTxs, selAcc, getCat } = useContext(AppCtx);
+  const [showExisting, setShowExisting] = useState(false);
+
+  const isSel = (accId) =>
+    !selAcc || accId === selAcc || (!accId && selAcc === "acc-giro");
+
+  const setRowCat = (id, catId, subId) =>
+    setTxs((p) => p.map((t) => t.id === id
+      ? { ...t, splits: catId ? [{ id: uid(), catId, subId, amount: t.totalAmount }] : [] }
+      : t));
+
+  const wrap = (children) => (
+    <div style={{ margin: "6px 10px 0", border: `1px solid ${T.blue}55`, borderRadius: 14,
+      background: T.surf || "rgba(255,255,255,0.03)", overflow: "hidden" }}>
+      {children}
+    </div>
+  );
+
+  const Header = ({ title, right }) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px",
+      background: T.blue + "14", borderBottom: `1px solid ${T.bd}` }}>
+      {Li("download-cloud", 18, T.blue)}
+      <div style={{ flex: 1, color: T.txt, fontSize: 14, fontWeight: 800 }}>{title}</div>
+      {right}
+      <button onClick={onClose} title="Schließen"
+        style={{ background: "transparent", border: "none", cursor: "pointer", padding: 4,
+          display: "inline-flex", alignItems: "center" }}>
+        {Li("x", 18, T.txt2)}
+      </button>
+    </div>
+  );
+
+  if (state.status === "loading") {
+    return wrap(
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 12px", color: T.txt }}>
+        {Li("loader", 18, T.blue)}
+        <span style={{ fontSize: 14, fontWeight: 700 }}>Buchungen werden abgerufen…</span>
+      </div>
+    );
+  }
+
+  if (state.status === "error") {
+    const hint = state.reason === "no-creds"
+      ? "Noch kein Bank-Zugang eingerichtet. Unter Mehr → Daten → Bank-Konto verbinden anlegen."
+      : state.reason === "no-session"
+        ? "Keine aktive Bank-Verbindung. Unter Mehr → Daten → Bank-Konto verbinden einmalig freigeben."
+        : state.reason === "expired"
+          ? "Die Bank-Freigabe ist abgelaufen. Unter Mehr → Daten → Bank-Konto verbinden neu freigeben."
+          : (state.message || "Abruf fehlgeschlagen.");
+    return wrap(
+      <>
+        <Header title="Buchungen abrufen" />
+        <div style={{ padding: "12px", color: T.txt, fontSize: 13.5, lineHeight: 1.5 }}>
+          {Li("alert-triangle", 15, T.gold)} {hint}
+          {(state.reason === "error" || state.reason === "expired") && (
+            <button onClick={onRetry}
+              style={{ display: "block", marginTop: 10, padding: "9px 12px", borderRadius: 10, border: "none",
+                background: T.blue, color: T.on_accent, fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
+              Erneut versuchen
+            </button>
+          )}
+        </div>
+      </>
+    );
+  }
+
+  // status === "done"
+  const newTxs = (txs || []).filter((t) => (state.newIds || []).includes(t.id) && isSel(t.accountId));
+  const dupeItems = (state.dupeItems || []).filter((i) => isSel(i.accId));
+
+  if (newTxs.length === 0 && dupeItems.length === 0) {
+    return wrap(
+      <>
+        <Header title="Keine neuen Buchungen" />
+        <div style={{ padding: "12px", color: T.txt2, fontSize: 13.5 }}>
+          Für diese Kontosicht wurden keine neuen Umsätze gefunden.
+        </div>
+      </>
+    );
+  }
+
+  const Row = ({ t }) => {
+    const sp = (t.splits || [])[0];
+    const categorized = !!sp?.catId;
+    const isInc = t._csvType === "income";
+    return (
+      <div style={{ padding: "9px 12px", borderTop: `1px solid ${T.bd}` }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+          <span style={{ color: T.txt2, fontSize: 12, flexShrink: 0 }}>{t.date.slice(8)}.{t.date.slice(5, 7)}.</span>
+          <span style={{ flex: 1, color: T.txt, fontSize: 13.5, fontWeight: 600, overflow: "hidden",
+            textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.desc || "Buchung"}</span>
+          <span style={{ color: isInc ? T.pos : T.neg, fontSize: 14, fontWeight: 800,
+            fontVariantNumeric: "tabular-nums", fontFamily: NUM_FONT, flexShrink: 0 }}>
+            {isInc ? "" : "−"}{fmt(Math.abs(t.totalAmount))} €
+          </span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <CatPicker
+              value={(sp?.catId || "") + "|" + (sp?.subId || "")}
+              onChange={(catId, subId) => setRowCat(t.id, catId, subId)}
+              filterType={isInc ? "income" : "expense"}
+              accountId={t.accountId}
+              placeholder={isInc ? "— Einnahmen-Kategorie —" : "— Ausgaben-Kategorie —"}
+            />
+          </div>
+          {categorized && Li("check-circle", 18, T.pos)}
+        </div>
+      </div>
+    );
+  };
+
+  return wrap(
+    <>
+      <Header
+        title={`${newTxs.length} neue Buchung${newTxs.length !== 1 ? "en" : ""}`}
+        right={newTxs.length > 0 && (
+          <span style={{ color: T.txt2, fontSize: 11 }}>
+            {newTxs.filter((t) => (t.splits || [])[0]?.catId).length}/{newTxs.length} kat.
+          </span>
+        )}
+      />
+      {newTxs.map((t) => <Row key={t.id} t={t} />)}
+
+      {dupeItems.length > 0 && (
+        <>
+          <button onClick={() => setShowExisting((v) => !v)}
+            style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "9px 12px",
+              borderTop: `1px solid ${T.bd}`, background: "transparent", border: "none", cursor: "pointer",
+              color: T.txt2, fontSize: 12.5, fontWeight: 700, fontFamily: "inherit" }}>
+            {Li(showExisting ? "chevron-up" : "chevron-down", 16, T.txt2)}
+            {dupeItems.length} bereits vorhanden{dupeItems.length !== 1 ? "e" : ""} (eingeklappt)
+          </button>
+          {showExisting && dupeItems.map((it, i) => (
+            <div key={(it.row._ebRef || it.row.fp) + "|" + i}
+              style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "6px 12px",
+                borderTop: `1px solid ${T.bd}`, opacity: 0.65 }}>
+              <span style={{ color: T.txt2, fontSize: 11.5, flexShrink: 0 }}>{it.row.isoDate.slice(5)}</span>
+              <span style={{ flex: 1, color: T.txt2, fontSize: 12.5, overflow: "hidden",
+                textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.row.desc}</span>
+              <span style={{ color: T.txt2, fontSize: 11, flexShrink: 0 }}>
+                {it.status === "exact" ? "vorhanden" : "evtl. Dublette"}
+              </span>
+              <span style={{ color: it.row.amount < 0 ? T.neg : T.pos, fontSize: 12.5, fontWeight: 700,
+                fontVariantNumeric: "tabular-nums", fontFamily: NUM_FONT, flexShrink: 0 }}>
+                {fmt(Math.abs(it.row.amount))} €
+              </span>
+            </div>
+          ))}
+        </>
+      )}
+
+      <button onClick={onClose}
+        style={{ width: "100%", padding: "11px", border: "none", borderTop: `1px solid ${T.bd}`,
+          background: T.pos, color: T.on_accent, fontSize: 14, fontWeight: 800, cursor: "pointer",
+          fontFamily: "inherit" }}>
+        Fertig
+      </button>
+    </>
+  );
+}
+
+export { BankFetchPanel };
