@@ -15,6 +15,7 @@ import { dayOf, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
+import { budgetOpenRestFor } from "../../utils/budgets.js";
 import { saldoAt, saldoIst, saldoMitte, saldoEnde, phaseStillReachable, budgetPlaceholderActive } from "../../utils/saldo.js";
 
 function MonatScreen() {
@@ -555,12 +556,20 @@ function MonatScreen() {
           const _uOut    = _heroMTxs.filter(t=>txType(t)==="expense"&&!_heroLinkedChildIds.has(t.id)&&_uncat(t));
           const _sum=arr=>arr.reduce((s,t)=>s+Math.abs(t.totalAmount||0),0);
           const _realInM =_realIn.filter(_h2),_realOutM=_realOut.filter(_h2);
-          const pTxsOut2 = _heroPTxs.filter(t=>budgetPlaceholderActive(t)&&(txType(t)==="expense"||(t._csvType==="expense"&&!txType(t)==="income")));
+          const pTxsOut2 = _heroPTxs.filter(t=>budgetPlaceholderActive(t)&&(txType(t)==="expense"||(t._csvType==="expense"&&txType(t)!=="income")));
           const pTxsIn2  = _heroPTxs.filter(t=>budgetPlaceholderActive(t)&&(txType(t)==="income"||(t._csvType==="income")));
           const _pTxsInM =_mitteAbg?[]:pTxsIn2.filter(t=>_h2(t)&&(!t._budgetSubId||t._budgetSubId.endsWith("_mitte"))),_pTxsOutM=_mitteAbg?[]:pTxsOut2.filter(t=>_h2(t)&&(!t._budgetSubId||t._budgetSubId.endsWith("_mitte")));
           const _uInM2=_mitteAbg?[]:_uIn.filter(_h2),_uOutM2=_mitteAbg?[]:_uOut.filter(_h2);
-          const pendingIn2 = pTxsIn2.reduce((s,t)=>s+t.totalAmount, 0);
-          const pendingOut2= pTxsOut2.reduce((s,t)=>s+t.totalAmount, 0);
+          // VM-Ende-Summen IDENTISCH zum Dashboard: absolut summieren (bzw. offenes
+          // Restbudget bei Budget-Platzhaltern via pendVmAmt). Vorher wurde signed
+          // t.totalAmount summiert — eine positiv gespeicherte Umbuchung hob die
+          // negativen Ausgaben auf, sodass die Hero-VM-Summe im Monat von der im
+          // Dashboard abwich (und im Hero teils als "—" verschwand).
+          const _pendVmAmt2 = (t)=> t._budgetSubId
+            ? Math.max(0, budgetOpenRestFor(t, txs, _txsById, year, month))
+            : Math.abs(t.totalAmount);
+          const pendingIn2 = pTxsIn2.reduce((s,t)=>s+_pendVmAmt2(t), 0);
+          const pendingOut2= pTxsOut2.reduce((s,t)=>s+_pendVmAmt2(t), 0);
           return (
             <SaldoHeroV2 year={year} month={month}
               buchInM={_sum(_realInM)}  buchOutM={_sum(_realOutM)}
