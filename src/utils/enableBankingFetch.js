@@ -38,23 +38,35 @@ function sessionValid(sess) {
     new Date(sess.validUntil) > new Date() && (sess.accounts || []).length);
 }
 
-// Alle gespeicherten, noch gültigen Bank-Sessions (Mehrbank): Der Dashboard-
-// Abruf läuft damit über ALLE verbundenen Banken auf einmal.
-async function loadEbSessions() {
+// Alle gespeicherten, noch gültigen Bank-Sessions (Mehrbank). Mit optionalem
+// aspsp-Filter für den Abruf einer EINZELNEN Bank; ohne Filter alle auf einmal.
+async function loadEbSessions(aspsp) {
   const list = await loadEbSessionList();
-  return list.filter(sessionValid);
+  let valid = list.filter(sessionValid);
+  if (aspsp) valid = valid.filter((s) => s.aspsp === aspsp);
+  return valid;
+}
+
+// Kompakte Liste der verbundenen Banken (für die Bank-Auswahl im Dashboard).
+async function listConnectedBanks() {
+  const sessions = await loadEbSessions();
+  return sessions.map((s) => ({
+    aspsp: s.aspsp || "Bank",
+    accounts: (s.accounts || []).length,
+    validUntil: s.validUntil,
+  }));
 }
 
 // Ruft neue Umsätze ab und klassifiziert sie gegen die vorhandenen Buchungen.
 // Ergebnis:
 //   { ok:true, items:[{ accId, row, status:"new"|"exact"|"maybe" }], validUntil }
 //   { ok:false, reason:"no-creds"|"no-session"|"expired"|"error", message }
-async function fetchNewBankTx({ txs, accounts, dateFrom } = {}) {
+async function fetchNewBankTx({ txs, accounts, dateFrom, aspsp } = {}) {
   const creds = await loadEbCreds();
   if (!creds.relayUrl || !creds.appId || !creds.privateKey) {
     return { ok: false, reason: "no-creds", message: "Kein Bank-Zugang eingerichtet." };
   }
-  const sessions = await loadEbSessions();
+  const sessions = await loadEbSessions(aspsp);
   if (!sessions.length) {
     return { ok: false, reason: "no-session", message: "Keine aktive Bank-Verbindung." };
   }
@@ -105,4 +117,4 @@ async function fetchNewBankTx({ txs, accounts, dateFrom } = {}) {
   return { ok: true, items, validUntil: lastValidUntil };
 }
 
-export { fetchNewBankTx, buildKnownFps, loadEbSessions, sessionValid };
+export { fetchNewBankTx, listConnectedBanks, buildKnownFps, loadEbSessions, sessionValid };

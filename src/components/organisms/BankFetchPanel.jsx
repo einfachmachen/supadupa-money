@@ -12,12 +12,37 @@ import { fmt, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { CatPicker } from "../molecules/CatPicker.jsx";
 
-function BankFetchPanel({ state, onClose, onRetry }) {
+function BankFetchPanel({ state, onClose, onRefetch }) {
   const { txs, setTxs, selAcc, getCat } = useContext(AppCtx);
   const [showExisting, setShowExisting] = useState(false);
 
   const isSel = (accId) =>
     !selAcc || accId === selAcc || (!accId && selAcc === "acc-giro");
+
+  // Bank-Auswahl: „Alle" + je verbundene Bank. Tippen ruft genau diese Bank ab
+  // (bzw. alle). Nur sinnvoll ab 2 Banken; während des Ladens deaktiviert.
+  const banks = state.banks || [];
+  const loading = state.status === "loading";
+  const BankChips = () => {
+    if (banks.length < 2) return null;
+    const chip = (label, aspsp, active) => (
+      <button key={aspsp || "__all__"} disabled={loading}
+        onClick={() => onRefetch?.(aspsp)}
+        style={{ padding: "5px 10px", borderRadius: 999, border: `1px solid ${active ? T.blue : T.bd}`,
+          background: active ? T.blue + "22" : "transparent", color: active ? T.blue : T.txt2,
+          fontSize: 12, fontWeight: 700, cursor: loading ? "default" : "pointer", whiteSpace: "nowrap",
+          opacity: loading && !active ? 0.5 : 1, fontFamily: "inherit", flexShrink: 0 }}>
+        {label}
+      </button>
+    );
+    return (
+      <div style={{ display: "flex", gap: 6, padding: "8px 10px", overflowX: "auto",
+        borderBottom: `1px solid ${T.bd}` }}>
+        {chip("Alle", null, !state.aspsp)}
+        {banks.map((b) => chip(b.aspsp, b.aspsp, state.aspsp === b.aspsp))}
+      </div>
+    );
+  };
 
   const setRowCat = (id, catId, subId) =>
     setTxs((p) => p.map((t) => t.id === id
@@ -47,10 +72,14 @@ function BankFetchPanel({ state, onClose, onRetry }) {
 
   if (state.status === "loading") {
     return wrap(
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 12px", color: T.txt }}>
-        {Li("loader", 18, T.blue)}
-        <span style={{ fontSize: 14, fontWeight: 700 }}>Buchungen werden abgerufen…</span>
-      </div>
+      <>
+        <Header title={state.aspsp ? `${state.aspsp} abrufen…` : "Buchungen abrufen…"} />
+        <BankChips />
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 12px", color: T.txt }}>
+          {Li("loader", 18, T.blue)}
+          <span style={{ fontSize: 14, fontWeight: 700 }}>Buchungen werden abgerufen…</span>
+        </div>
+      </>
     );
   }
 
@@ -65,10 +94,11 @@ function BankFetchPanel({ state, onClose, onRetry }) {
     return wrap(
       <>
         <Header title="Buchungen abrufen" />
+        <BankChips />
         <div style={{ padding: "12px", color: T.txt, fontSize: 13.5, lineHeight: 1.5 }}>
           {Li("alert-triangle", 15, T.gold)} {hint}
           {(state.reason === "error" || state.reason === "expired") && (
-            <button onClick={onRetry}
+            <button onClick={() => onRefetch?.(state.aspsp)}
               style={{ display: "block", marginTop: 10, padding: "9px 12px", borderRadius: 10, border: "none",
                 background: T.blue, color: T.on_accent, fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
               Erneut versuchen
@@ -87,6 +117,7 @@ function BankFetchPanel({ state, onClose, onRetry }) {
     return wrap(
       <>
         <Header title="Keine neuen Buchungen" />
+        <BankChips />
         <div style={{ padding: "12px", color: T.txt2, fontSize: 13.5 }}>
           Für diese Kontosicht wurden keine neuen Umsätze gefunden.
         </div>
@@ -135,6 +166,7 @@ function BankFetchPanel({ state, onClose, onRetry }) {
           </span>
         )}
       />
+      <BankChips />
       {newTxs.map((t) => <Row key={t.id} t={t} />)}
 
       {dupeItems.length > 0 && (
