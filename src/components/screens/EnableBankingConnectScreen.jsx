@@ -27,6 +27,9 @@ import {
   loadEbSessionList,
   upsertEbSession,
   removeEbSession,
+  saveEbDiag,
+  loadEbDiag,
+  clearEbDiag,
 } from "../../utils/enableBankingStore.js";
 
 // Vom Betreiber bereitgestellter Standard-Relay (datenlos, geteilt). Editierbar —
@@ -114,6 +117,8 @@ function EnableBankingConnectScreen({ onClose }) {
   const [preview, setPreview] = useState(null);
   const [validUntil, setValidUntil] = useState(null); // ISO: bis wann die Bank-Freigabe gilt
   const [connectedBanks, setConnectedBanks] = useState([]); // alle verbundenen Banken (Mehrbank)
+  const [diag, setDiag] = useState(null); // Diagnose des letzten Verbindungs-Versuchs
+  const [diagCopied, setDiagCopied] = useState(false);
 
   // Genau die Adresse, die die App beim Verbinden als redirect_url mitschickt —
   // diese muss im Enable-Banking-Portal als Redirect-URL hinterlegt sein.
@@ -159,6 +164,7 @@ function EnableBankingConnectScreen({ onClose }) {
       setAppId(c.appId);
       setPrivateKey(c.privateKey);
       setAccMap(await loadEbAccountMap());
+      setDiag(await loadEbDiag());
       // Nach Bank-Redirect zurückgekehrt? (in main.jsx abgefangen)
       const code = sessionStorage.getItem("eb_pending_code");
       if (code && c.relayUrl && c.appId && c.privateKey) {
@@ -262,6 +268,14 @@ function EnableBankingConnectScreen({ onClose }) {
       let vu = r?.access?.valid_until || r?.valid_until || null;
       let aspspName = r?.aspsp?.name || "";
       const sessionId = r?.session_id || r?.session?.id || r?.id || r?.sessionId || "";
+      // Diagnose (lokal) festhalten — hilft bei ASPSPs wie PayPal.
+      const diagRec = {
+        bank: (() => { try { return sessionStorage.getItem("eb_pending_aspsp") || bank || ""; } catch { return bank || ""; } })(),
+        createKeys: r && typeof r === "object" ? Object.keys(r) : [],
+        createAccounts: accs.length,
+        sessionId: sessionId ? "(vorhanden)" : "(fehlt)",
+        createRaw: (() => { try { return JSON.stringify(r).slice(0, 600); } catch { return String(r); } })(),
+      };
       // Manche ASPSPs (z. B. PayPal) liefern die Konten NICHT im createSession-
       // Response, sondern erst über GET /sessions/{id} — dann dort nachladen.
       if (!accs.length && sessionId) {
@@ -270,17 +284,26 @@ function EnableBankingConnectScreen({ onClose }) {
           accs = normalizeAccounts(s);
           vu = vu || s?.access?.valid_until || s?.valid_until || null;
           aspspName = aspspName || s?.aspsp?.name || "";
-        } catch (e) { /* unten als „keine Konten“ behandelt */ }
+          diagRec.getSessionKeys = s && typeof s === "object" ? Object.keys(s) : [];
+          diagRec.getSessionAccounts = accs.length;
+          diagRec.getSessionRaw = (() => { try { return JSON.stringify(s).slice(0, 600); } catch { return String(s); } })();
+        } catch (e) { diagRec.getSessionError = String(e.message || e); }
       }
       if (!accs.length) {
         // Bestehende Banken weiter anzeigen (DKB darf nicht verschwinden) und
         // einen verwertbaren Hinweis inkl. Antwort-Auszug geben.
+        diagRec.outcome = "keine-konten";
+        saveEbDiag(diagRec); setDiag({ ts: new Date().toISOString(), ...diagRec });
         await refreshConnected();
-        const snippet = (() => { try { return JSON.stringify(r).slice(0, 240); } catch { return String(r); } })();
-        setMsg({ tone: "danger", text: `Bank verbunden, aber keine Konten erhalten. Antwort: ${snippet}` });
+        const isPaypal = /paypal/i.test(aspspName || diagRec.bank || "");
+        setMsg({ tone: "danger", text: isPaypal
+          ? "PayPal hat die Freigabe bestätigt, liefert aber kein abrufbares Konto. PayPal stellt per PSD2 nur ein aktiviertes PayPal-Guthabenkonto („Geldbörse“) bereit — ohne dieses gibt es keine Konten zum Abrufen. Alternative: PayPal-Umsätze als CSV exportieren und über den CSV-Import einlesen."
+          : "Bank verbunden, aber keine Konten erhalten. Details siehe „Diagnose“ oben — bitte kopieren und senden." });
         setBusy(false);
         return;
       }
+      diagRec.outcome = "ok";
+      saveEbDiag(diagRec); setDiag({ ts: new Date().toISOString(), ...diagRec });
       const m = { ...(await loadEbAccountMap()) };
       accs.forEach((a) => { if (!m[a.uid]) m[a.uid] = accounts[0]?.id || "acc-giro"; });
       setAccMap(m);
@@ -297,7 +320,9 @@ function EnableBankingConnectScreen({ onClose }) {
       await refreshConnected();
       setMsg({ tone: "tip", text: `${aspsp || "Bank"} verbunden (gültig bis ${String(vu).slice(0, 10)}). Zuordnen und „Buchungen abrufen“.` });
     } catch (e) {
-      // Bestehende Banken erhalten bleiben — Fehler nur melden.
+      // Bestehende Banken erhalten bleiben — Fehler nur melden + diagnostizieren.
+      const rec = { outcome: "fehler", error: String(e.message || e) };
+      saveEbDiag(rec); setDiag({ ts: new Date().toISOString(), ...rec });
       await refreshConnected();
       setMsg({ tone: "danger", text: String(e.message || e) });
     }
@@ -405,6 +430,40 @@ function EnableBankingConnectScreen({ onClose }) {
             <b>Experimentell.</b> Voraussetzung: ein deployter Relay-Worker und ein
             Enable-Banking-Zugang. Schritt-für-Schritt erklärt die Hilfe „Bank verbinden“.
           </Box>
+
+          {/* Diagnose des letzten Verbindungs-Versuchs — hilft bei Banken wie
+              PayPal, die Konten in einem anderen Feld/Schritt liefern. */}
+          {diag && (
+            <div style={{ marginTop: 12, border: `1px solid ${diag.outcome === "ok" ? T.pos : T.gold}55`,
+              borderRadius: 12, background: (diag.outcome === "ok" ? T.pos : T.gold) + "12", padding: "10px 12px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                <div style={{ flex: 1, color: T.txt, fontSize: 13.5, fontWeight: 800 }}>
+                  Diagnose (letzter Versuch: {diag.outcome || "?"})
+                </div>
+                <button onClick={() => {
+                  const txt = JSON.stringify(diag, null, 2);
+                  try { navigator.clipboard?.writeText(txt); } catch (e) { /* egal */ }
+                  setDiagCopied(true); setTimeout(() => setDiagCopied(false), 1500);
+                }}
+                  style={{ flexShrink: 0, padding: "5px 10px", borderRadius: 9, border: "none",
+                    background: diagCopied ? T.pos : T.blue, color: T.on_accent, fontSize: 12, fontWeight: 800,
+                    cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                  {Li(diagCopied ? "check" : "copy", 14, T.on_accent)} {diagCopied ? "Kopiert" : "Kopieren"}
+                </button>
+                <button onClick={() => { clearEbDiag(); setDiag(null); }} title="Diagnose verbergen"
+                  style={{ flexShrink: 0, background: "transparent", border: "none", cursor: "pointer", padding: 4 }}>
+                  {Li("x", 16, T.txt2)}
+                </button>
+              </div>
+              <pre style={{ margin: 0, color: T.txt2, fontSize: 11, lineHeight: 1.4, whiteSpace: "pre-wrap",
+                wordBreak: "break-word", maxHeight: 180, overflow: "auto", fontFamily: "monospace" }}>
+                {JSON.stringify(diag, null, 2)}
+              </pre>
+              <div style={{ color: T.txt2, fontSize: 11, marginTop: 6, lineHeight: 1.4 }}>
+                Bitte „Kopieren“ und mir senden — daran sehe ich, in welchem Feld die Bank die Konten liefert.
+              </div>
+            </div>
+          )}
 
           {validUntil && (
             <Box tone="tip">

@@ -58,6 +58,28 @@ async function loadEbAccountMap() {
     return {};
   }
 }
+
+// Diagnose des letzten Verbindungs-Versuchs (nur lokal, zur Fehlersuche). Hält
+// fest, was die Bank beim Resume zurückgegeben hat — überlebt Reload/Redirect.
+function saveEbDiag(obj) {
+  try {
+    const raw = JSON.stringify({ ts: new Date().toISOString(), ...obj });
+    idbSet("eb_last_diag", raw);
+    kvStore.setItem("eb_last_diag", raw);
+  } catch { /* egal */ }
+}
+async function loadEbDiag() {
+  try {
+    const raw = (await idbGet("eb_last_diag")) || kvStore.getItem("eb_last_diag") || "";
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+function clearEbDiag() {
+  idbSet("eb_last_diag", "");
+  kvStore.setItem("eb_last_diag", "");
+}
 function saveEbAccountMap(map) {
   const raw = JSON.stringify(map || {});
   idbSet(KEYS.accountMap, raw);
@@ -201,6 +223,9 @@ export {
   loadEbSessionList,
   upsertEbSession,
   removeEbSession,
+  saveEbDiag,
+  loadEbDiag,
+  clearEbDiag,
   exportEbForSync,
   importEbFromSync,
 };
