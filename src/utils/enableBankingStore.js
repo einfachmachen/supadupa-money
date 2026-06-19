@@ -11,7 +11,8 @@ const KEYS = {
   appId: "eb_app_id",
   privateKey: "eb_private_key",
   accountMap: "eb_account_map",
-  session: "eb_session",
+  session: "eb_session",   // Legacy: einzelne Bank-Session
+  sessions: "eb_sessions", // Mehrbank: Liste von Bank-Sessions
 };
 
 async function idbGet(k) {
@@ -63,10 +64,15 @@ function saveEbAccountMap(map) {
   kvStore.setItem(KEYS.accountMap, raw);
 }
 
-// Aktive Bank-Session (Freigabe) lokal halten, damit künftige Importe ohne
+// Aktive Bank-Session(s) (Freigabe) lokal halten, damit künftige Importe ohne
 // erneute Bank-Authentifizierung laufen — bis die Freigabe abläuft.
-//   { sessionId, accounts:[{uid,label}], validUntil (ISO), aspsp }
-async function loadEbSession() {
+//   Session = { sessionId, accounts:[{uid,label}], validUntil (ISO), aspsp }
+//
+// Mehrbank: Es können mehrere Banken parallel verbunden sein. Gespeichert wird
+// eine LISTE unter eb_sessions; der alte Einzel-Key eb_session wird weiter
+// gepflegt (Rückwärtskompatibilität) und beim ersten Laden in die Liste migriert.
+
+async function _loadLegacySession() {
   try {
     const raw = (await idbGet(KEYS.session)) || kvStore.getItem(KEYS.session) || "";
     return raw ? JSON.parse(raw) : null;
@@ -74,12 +80,75 @@ async function loadEbSession() {
     return null;
   }
 }
-function saveEbSession(sess) {
-  const raw = JSON.stringify(sess || null);
+
+// Vollständige Liste aller gespeicherten Bank-Sessions (inkl. evtl. abgelaufener).
+async function loadEbSessionList() {
+  try {
+    const raw = (await idbGet(KEYS.sessions)) || kvStore.getItem(KEYS.sessions) || "";
+    let arr = raw ? JSON.parse(raw) : null;
+    if (!Array.isArray(arr)) arr = [];
+    if (!arr.length) {
+      const one = await _loadLegacySession();
+      if (one && one.sessionId) arr = [one];
+    }
+    return arr;
+  } catch {
+    return [];
+  }
+}
+
+function saveEbSessionList(arr) {
+  const raw = JSON.stringify(Array.isArray(arr) ? arr : []);
+  idbSet(KEYS.sessions, raw);
+  kvStore.setItem(KEYS.sessions, raw);
+}
+
+// Identität einer Session: bevorzugt die Bank (aspsp), sonst die sessionId.
+function _sameSession(a, b) {
+  if (a.aspsp && b.aspsp) return a.aspsp === b.aspsp;
+  return a.sessionId && b.sessionId && a.sessionId === b.sessionId;
+}
+
+// Session hinzufügen/aktualisieren (ersetzt eine vorhandene derselben Bank).
+async function upsertEbSession(sess) {
+  if (!sess || !sess.sessionId) return;
+  const list = await loadEbSessionList();
+  const next = list.filter((s) => !_sameSession(s, sess));
+  next.push(sess);
+  saveEbSessionList(next);
+  // Legacy-Key weiter pflegen (zuletzt verbundene Bank)
+  const raw = JSON.stringify(sess);
   idbSet(KEYS.session, raw);
   kvStore.setItem(KEYS.session, raw);
 }
+
+// Einzelne Bank-Session entfernen (per aspsp oder sessionId).
+async function removeEbSession({ aspsp, sessionId } = {}) {
+  const list = await loadEbSessionList();
+  const match = (s) => (aspsp && s.aspsp === aspsp) || (sessionId && s.sessionId === sessionId);
+  saveEbSessionList(list.filter((s) => !match(s)));
+  const legacy = await _loadLegacySession();
+  if (legacy && match(legacy)) {
+    idbSet(KEYS.session, "");
+    kvStore.setItem(KEYS.session, "");
+  }
+}
+
+// Rückwärtskompatibel: jüngste noch gültige Session (oder null).
+async function loadEbSession() {
+  const list = await loadEbSessionList();
+  const valid = list.filter((s) => s && s.validUntil && new Date(s.validUntil) > new Date());
+  valid.sort((a, b) => String(b.validUntil).localeCompare(String(a.validUntil)));
+  return valid[0] || (list[0] || null);
+}
+
+// Rückwärtskompatibel: schreibt als Upsert in die Liste.
+function saveEbSession(sess) {
+  upsertEbSession(sess);
+}
+
 function clearEbSession() {
+  saveEbSessionList([]);
   idbSet(KEYS.session, "");
   kvStore.setItem(KEYS.session, "");
 }
@@ -123,6 +192,9 @@ export {
   loadEbSession,
   saveEbSession,
   clearEbSession,
+  loadEbSessionList,
+  upsertEbSession,
+  removeEbSession,
   exportEbForSync,
   importEbFromSync,
 };
