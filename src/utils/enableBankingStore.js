@@ -89,7 +89,7 @@ async function loadEbSessionList() {
     if (!Array.isArray(arr)) arr = [];
     if (!arr.length) {
       const one = await _loadLegacySession();
-      if (one && one.sessionId) arr = [one];
+      if (one && (one.accounts || []).length) arr = [one];
     }
     return arr;
   } catch {
@@ -104,14 +104,20 @@ function saveEbSessionList(arr) {
 }
 
 // Identität einer Session: bevorzugt die Bank (aspsp), sonst die sessionId.
+// Ohne gemeinsame Kennung NIE zusammenfassen — sonst überschriebe eine zweite
+// Bank ohne aspsp/sessionId versehentlich die erste.
 function _sameSession(a, b) {
   if (a.aspsp && b.aspsp) return a.aspsp === b.aspsp;
-  return a.sessionId && b.sessionId && a.sessionId === b.sessionId;
+  if (a.sessionId && b.sessionId) return a.sessionId === b.sessionId;
+  return false;
 }
 
 // Session hinzufügen/aktualisieren (ersetzt eine vorhandene derselben Bank).
+// Maßgeblich sind die KONTEN — die getTransactions-Abfrage braucht nur die
+// Konto-UID, keine sessionId. Deshalb wird eine Session mit Konten auch ohne
+// sessionId gespeichert (manche ASPSPs, z. B. PayPal, liefern keine).
 async function upsertEbSession(sess) {
-  if (!sess || !sess.sessionId) return;
+  if (!sess || !(sess.accounts || []).length) return;
   const list = await loadEbSessionList();
   const next = list.filter((s) => !_sameSession(s, sess));
   next.push(sess);

@@ -227,6 +227,10 @@ function EnableBankingConnectScreen({ onClose }) {
       const state = "ebmoney-" + Math.random().toString(36).slice(2);
       const r = await client().startAuth({ aspspName: bank, country, redirectUrl, state });
       if (r?.url) {
+        // Gewählte Bank für den Rücksprung merken: nach der Same-Tab-Navigation
+        // lädt der Screen frisch (bank-State ist dann leer). So bekommt die neu
+        // verbundene Session ein korrektes Label/Identität (DKB, PayPal …).
+        try { sessionStorage.setItem("eb_pending_aspsp", bank || ""); } catch (e) { /* egal */ }
         // Weiterleitung im SELBEN Tab (volle Seitennavigation zur Bank). So ist
         // die Adressleiste der Bank sichtbar (Zugangsdaten gehen an die Bank,
         // nicht an die App) UND der Rücksprung mit ?code landet zuverlässig
@@ -254,6 +258,11 @@ function EnableBankingConnectScreen({ onClose }) {
       });
       const r = await cl.createSession(code);
       const accs = normalizeAccounts(r);
+      if (!accs.length) {
+        setMsg({ tone: "danger", text: "Bank verbunden, aber keine Konten erhalten. Bitte erneut versuchen oder anderen Zeitraum/Bank wählen." });
+        setBusy(false);
+        return;
+      }
       const m = { ...(await loadEbAccountMap()) };
       accs.forEach((a) => { if (!m[a.uid]) m[a.uid] = accounts[0]?.id || "acc-giro"; });
       setAccMap(m);
@@ -262,8 +271,12 @@ function EnableBankingConnectScreen({ onClose }) {
       // Bank ersetzen) → künftige Importe ohne erneute Bank-Anmeldung.
       const vu = r?.access?.valid_until || r?.valid_until ||
         new Date(Date.now() + 90 * 86400000).toISOString();
-      const aspsp = r?.aspsp?.name || bank || "";
-      await upsertEbSession({ sessionId: r?.session_id || r?.session?.id || "", accounts: accs, validUntil: vu, aspsp });
+      // Banklabel/Identität: API-aspsp, sonst die vor dem Redirect gemerkte Wahl.
+      let pendingAspsp = "";
+      try { pendingAspsp = sessionStorage.getItem("eb_pending_aspsp") || ""; sessionStorage.removeItem("eb_pending_aspsp"); } catch (e) { /* egal */ }
+      const aspsp = r?.aspsp?.name || pendingAspsp || bank || "";
+      const sessionId = r?.session_id || r?.session?.id || r?.id || r?.sessionId || "";
+      await upsertEbSession({ sessionId, accounts: accs, validUntil: vu, aspsp });
       // Banken-Liste + vereinigte Konten neu laden (alle verbundenen Banken)
       await refreshConnected();
       setMsg({ tone: "tip", text: `${aspsp || "Bank"} verbunden (gültig bis ${String(vu).slice(0, 10)}). Zuordnen und „Buchungen abrufen“.` });
