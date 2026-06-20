@@ -167,10 +167,9 @@ describe("assignPayPalLinks — Rauschen & Konfidenz-Gründe", () => {
     const { links, suggestions } = assignPayPalLinks(rows, giros, 40);
     expect(links.map(l => l.giroTx.id)).toEqual(["near"]);
     const nearS = suggestions.find(s => s.giroTx.id === "near");
-    const farS  = suggestions.find(s => s.giroTx.id === "far");
     expect(nearS.confidence).toBe("hoch");
-    expect(farS.confidence).toBe("niedrig");
-    expect(farS.reason).toMatch(/näherer Treffer/);
+    // Der ~Folgemonat-Treffer wird gar nicht erst vorgeschlagen (redundant).
+    expect(suggestions.find(s => s.giroTx.id === "far")).toBeUndefined();
   });
 
   it("eindeutiger Betrag ohne Händler, Belastung wenige Tage später → mittel", () => {

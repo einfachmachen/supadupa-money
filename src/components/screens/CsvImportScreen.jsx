@@ -149,6 +149,44 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   // Nur „vollbild", wenn das Panel auch sichtbar ist — sonst leerer Screen.
   const suggFull = showAutoSugg && autoSuggFull;
 
+  // ── Sammel-Übernehmen der Verknüpfungsvorschläge ───────────────────────────
+  // Übernimmt in einem Rutsch die beste 1:1-Zuordnung je Konfidenzstufe.
+  // Vorschläge sind bereits „bestes zuerst" sortiert; greedy hält 1:1 ein.
+  const acceptBulk = (levels) => {
+    const sugg = parsed?.autoSuggestions || [];
+    const usedRows = new Set(), usedGiro = new Set();
+    (parsed?.acceptedSuggs||[]).forEach(a=>{usedRows.add(a.rowIdx);usedGiro.add(a.giroId);});
+    const add = [];
+    sugg.forEach(s=>{
+      if(!levels.includes(s.confidence)) return;
+      if(usedRows.has(s.rowIdx)||usedGiro.has(s.giroTx.id)) return;
+      usedRows.add(s.rowIdx); usedGiro.add(s.giroTx.id);
+      add.push({rowIdx:s.rowIdx, giroId:s.giroTx.id});
+    });
+    if(add.length) setParsed(p=>({...p, acceptedSuggs:[...(p.acceptedSuggs||[]), ...add]}));
+  };
+  const clearAccepted = () => setParsed(p=>({...p, acceptedSuggs:[]}));
+  // Wie viele Vorschläge wären je Stufe noch übernehmbar (nach 1:1, ohne bereits
+  // akzeptierte)? hoch zuerst belegen, dann mittel.
+  const bulkCounts = (()=>{
+    const sugg = parsed?.autoSuggestions || [];
+    const usedRows = new Set(), usedGiro = new Set();
+    (parsed?.acceptedSuggs||[]).forEach(a=>{usedRows.add(a.rowIdx);usedGiro.add(a.giroId);});
+    const take = lvl => {
+      let n=0;
+      sugg.forEach(s=>{
+        if(s.confidence!==lvl) return;
+        if(usedRows.has(s.rowIdx)||usedGiro.has(s.giroTx.id)) return;
+        usedRows.add(s.rowIdx); usedGiro.add(s.giroTx.id); n++;
+      });
+      return n;
+    };
+    const hoch = take("hoch");
+    const mittel = take("mittel");
+    return {hoch, mittel};
+  })();
+  const acceptedCount = (parsed?.acceptedSuggs||[]).length;
+
   // Automatische Verknüpfungsvorschläge berechnen (für Vergleich, ohne zu importieren).
   // Nutzt den robusten Matcher: PayPal-Gate (Gläubiger-ID/Empfänger),
   // Händlername-Bestätigung und Bestes-Paar-Sortierung statt loser Betrag+Datum-Treffer.
@@ -690,19 +728,44 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
             <div style={{background:(isLightTheme())?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)",borderBottom:`1px solid ${T.gold}33`,
               padding:"10px 16px",overflowY:"auto",
               ...(autoSuggFull?{flex:1,minHeight:0}:{flexShrink:0,maxHeight:220})}}>
-              <div style={{color:T.gold,fontSize:MFSl,fontWeight:700,marginBottom:8,display:"flex",alignItems:"center",gap:8,
+              <div style={{marginBottom:8,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",
                 position:"sticky",top:-10,background:(isLightTheme())?"rgba(252,247,238,0.96)":"rgba(38,34,26,0.96)",
                 margin:"-10px -16px 8px",padding:"10px 16px 8px",zIndex:1}}>
-                <span style={{display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0}}>
+                <span style={{color:T.gold,fontSize:MFSl,fontWeight:700,display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0}}>
                   {Li("git-compare",13,T.gold)}
                   <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                    {parsed.autoSuggestions.length} Verknüpfungsvorschläge — nur zur Ansicht, nichts wird automatisch übernommen
+                    {parsed.autoSuggestions.length} Vorschläge{acceptedCount>0?` · ${acceptedCount} übernommen`:""}
                   </span>
                 </span>
+                {/* Sammel-Übernehmen */}
+                {bulkCounts.hoch>0&&(
+                  <button onClick={()=>acceptBulk(["hoch"])}
+                    style={{flexShrink:0,display:"flex",alignItems:"center",gap:5,cursor:"pointer",
+                      background:T.pos,border:`1px solid ${T.pos}`,borderRadius:8,padding:"5px 11px",
+                      color:T.on_accent||"#0a0a0a",fontSize:MFSl,fontWeight:800,fontFamily:"inherit"}}>
+                    {Li("check",13,T.on_accent||"#0a0a0a")} Alle sicheren ({bulkCounts.hoch})
+                  </button>
+                )}
+                {bulkCounts.mittel>0&&(
+                  <button onClick={()=>acceptBulk(["hoch","mittel"])}
+                    style={{flexShrink:0,display:"flex",alignItems:"center",gap:5,cursor:"pointer",
+                      background:"rgba(245,166,35,0.18)",border:`1px solid ${T.gold}`,borderRadius:8,padding:"5px 11px",
+                      color:T.gold,fontSize:MFSl,fontWeight:700,fontFamily:"inherit"}}>
+                    {Li("check",13,T.gold)} +mittel ({bulkCounts.mittel})
+                  </button>
+                )}
+                {acceptedCount>0&&(
+                  <button onClick={clearAccepted}
+                    style={{flexShrink:0,cursor:"pointer",background:"transparent",
+                      border:`1px solid ${T.bd}`,borderRadius:8,padding:"5px 9px",
+                      color:T.txt2,fontSize:MFSl,fontFamily:"inherit"}}>
+                    zurücksetzen
+                  </button>
+                )}
                 <button onClick={()=>setAutoSuggFull(v=>!v)}
                   style={{flexShrink:0,display:"flex",alignItems:"center",gap:5,cursor:"pointer",
                     background:autoSuggFull?T.gold:"rgba(245,166,35,0.15)",
-                    border:`1px solid ${T.gold}`,borderRadius:8,padding:"4px 10px",
+                    border:`1px solid ${T.gold}`,borderRadius:8,padding:"5px 11px",
                     color:autoSuggFull?T.on_accent||"#1a1a1a":T.gold,fontSize:MFSl,fontWeight:700,fontFamily:"inherit"}}>
                   {Li(autoSuggFull?"minimize-2":"maximize-2",12,autoSuggFull?(T.on_accent||"#1a1a1a"):T.gold)}
                   {autoSuggFull?"Verkleinern":"Vollbild"}
