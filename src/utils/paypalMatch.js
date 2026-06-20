@@ -146,9 +146,9 @@ export function assignPayPalLinks(newRows, giroTxs, linkDays, opts = {}) {
   // Kontextbewusste Konfidenz + verständlicher Grund je Paar.
   pairs.forEach(p => {
     const unique = candByRow[p.rowIdx] === 1 && candByTx[p.giroTx.id] === 1;
-    if (p.tier !== "sofort" && rowHasSofort[p.rowIdx]) {
-      // Für dieselbe PayPal-Buchung gibt es einen Treffer wenige Tage später —
-      // der ist fast immer der richtige; dieser hier ist vermutlich ein anderer Monat.
+    // Redundant: für dieselbe PayPal-Buchung existiert ein näherer „sofort"-Treffer.
+    p.redundant = p.tier !== "sofort" && !!rowHasSofort[p.rowIdx];
+    if (p.redundant) {
       p.confidence = "niedrig";
       p.reason = "näherer Treffer vorhanden – Belastung folgt normal in Tagen";
     } else if (p.merchantMatch && p.tier === "sofort") {
@@ -195,5 +195,7 @@ export function assignPayPalLinks(newRows, giroTxs, linkDays, opts = {}) {
     links.push(p);
   });
 
-  return { links, suggestions: sorted };
+  // Redundante Fern-Treffer (es gibt einen näheren) NICHT als Vorschlag zeigen —
+  // sie lenken nur vom richtigen Wenige-Tage-Treffer ab.
+  return { links, suggestions: sorted.filter(p => !p.redundant) };
 }
