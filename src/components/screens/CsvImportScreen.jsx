@@ -188,6 +188,19 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     return {hoch, mittel};
   })();
   const acceptedCount = (parsed?.acceptedSuggs||[]).length;
+  // Einnahmen/Ausgaben-Übersicht für die Summenzeile. Bei PayPal sind die
+  // positiven „Sonstige Einnahmen" ohne Empfänger interne Gegenbuchungen
+  // (Finanzierung jeder Zahlung) — keine echten Einnahmen.
+  const flowStats = (()=>{
+    const rows = parsed?.newRows || [];
+    let income=0, expense=0, counter=0;
+    rows.forEach(r=>{
+      const amt = r.amount ?? r.totalAmount ?? 0;
+      if(amt<0){ expense++; return; }
+      if(amt>0){ if(r._recipient) income++; else counter++; }
+    });
+    return {income, expense, counter};
+  })();
   // Suchgefilterte Vorschläge (für die Anzeige). Sucht in PayPal-Beschreibung,
   // zurückgewonnenem Händler, Beträgen, Daten und Giro-Text.
   const shownSuggs = (()=>{
@@ -702,6 +715,20 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
               <div style={{color:T.blue,fontSize:18,fontWeight:700}}>{parsed.rows.length}</div>
               <div style={{color:T.txt2,fontSize:10}}>Gesamt</div>
             </div>
+            <div style={{textAlign:"center"}}>
+              <div style={{color:T.pos,fontSize:18,fontWeight:800}}>{flowStats.income}</div>
+              <div style={{color:T.txt2,fontSize:10}}>Einnahmen</div>
+            </div>
+            <div style={{textAlign:"center"}}>
+              <div style={{color:T.neg,fontSize:18,fontWeight:800}}>{flowStats.expense}</div>
+              <div style={{color:T.txt2,fontSize:10}}>Ausgaben</div>
+            </div>
+            {flowStats.counter>0&&(
+              <div style={{textAlign:"center"}} title="Interne PayPal-Gegenbuchungen (Finanzierung jeder Zahlung) – keine echten Einnahmen">
+                <div style={{color:T.txt2,fontSize:18,fontWeight:700}}>{flowStats.counter}</div>
+                <div style={{color:T.txt2,fontSize:10}}>Gegenbuch.</div>
+              </div>
+            )}
             {parsed.rows.some(r=>r._paypalRows>1)&&(
               <div style={{textAlign:"center"}}>
                 <div style={{color:T.gold,fontSize:18,fontWeight:800}}>
