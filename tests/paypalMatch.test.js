@@ -140,15 +140,40 @@ describe("assignPayPalLinks — Rauschen & Konfidenz-Gründe", () => {
     expect(suggestions).toHaveLength(0);
   });
 
-  it("Händler-Treffer → hoch, mit Grund", () => {
+  it("Händler-Treffer mit Belastung wenige Tage später → hoch", () => {
     const rows = [ppRow("Apple Services paypal-itunes-eur@group.apple.com", 10.99, "2025-08-26")];
-    const giros = [giro("g1", 10.99, "2025-09-29", "Apple Services")];
+    const giros = [giro("g1", 10.99, "2025-08-28", "Apple Services")];
     const { suggestions } = assignPayPalLinks(rows, giros, 40);
     expect(suggestions[0].confidence).toBe("hoch");
     expect(suggestions[0].reason).toMatch(/Händler/);
   });
 
-  it("eindeutiger Betrag ohne Händler → mittel, mit Grund", () => {
+  it("Händler-Treffer, aber Belastung ~30 Tage später → nur mittel (evtl. PayPal +30)", () => {
+    const rows = [ppRow("Apple Services", 10.99, "2025-08-26")];
+    const giros = [giro("g1", 10.99, "2025-09-25", "Apple Services")]; // 30 Tage
+    const { suggestions } = assignPayPalLinks(rows, giros, 40);
+    expect(suggestions[0].confidence).toBe("mittel");
+    expect(suggestions[0].reason).toMatch(/30|\+30/);
+  });
+
+  it("Abo: näherer Treffer (wenige Tage) gewinnt, der ~Folgemonat wird niedrig", () => {
+    // Apple monatlich: PayPal-Buchung 26.08., echte Belastung 28.08. (2 Tage),
+    // der Treffer 26 Tage später (21.09.) ist der falsche Monat.
+    const rows = [ppRow("Apple Services", 10.99, "2025-08-26")];
+    const giros = [
+      giro("near", 10.99, "2025-08-28", "Apple Services"),
+      giro("far",  10.99, "2025-09-21", "Apple Services"),
+    ];
+    const { links, suggestions } = assignPayPalLinks(rows, giros, 40);
+    expect(links.map(l => l.giroTx.id)).toEqual(["near"]);
+    const nearS = suggestions.find(s => s.giroTx.id === "near");
+    const farS  = suggestions.find(s => s.giroTx.id === "far");
+    expect(nearS.confidence).toBe("hoch");
+    expect(farS.confidence).toBe("niedrig");
+    expect(farS.reason).toMatch(/näherer Treffer/);
+  });
+
+  it("eindeutiger Betrag ohne Händler, Belastung wenige Tage später → mittel", () => {
     const rows = [{ amount: -7.5, isoDate: "2025-03-16", desc: "Successful · Rechnungs-Nr: X" }];
     const giros = [giro("g1", 7.5, "2025-03-20", "", { desc: "PayPal Europe . Allgemeine Abbuchung" })];
     const { suggestions } = assignPayPalLinks(rows, giros, 35);
@@ -156,19 +181,18 @@ describe("assignPayPalLinks — Rauschen & Konfidenz-Gründe", () => {
     expect(suggestions[0].reason).toMatch(/eindeutig/);
   });
 
-  it("mehrere gleich hohe ohne Händler → niedrig, mit Grund", () => {
+  it("mehrere gleich hohe ohne Händler → niedrig", () => {
     const rows = [
       { amount: -10.99, isoDate: "2025-08-26", desc: "Successful · Rechnungs-Nr: A" },
       { amount: -10.99, isoDate: "2025-09-26", desc: "Successful · Rechnungs-Nr: B" },
     ];
     const giros = [
-      giro("g1", 10.99, "2025-09-29", "", { desc: "PayPal Europe . Apple Services Abo" }),
-      giro("g2", 10.99, "2025-10-29", "", { desc: "PayPal Europe . Apple Services Abo" }),
+      giro("g1", 10.99, "2025-08-28", "", { desc: "PayPal Europe . Allgemeine Abbuchung" }),
+      giro("g2", 10.99, "2025-09-28", "", { desc: "PayPal Europe . Allgemeine Abbuchung" }),
     ];
-    const { suggestions } = assignPayPalLinks(rows, giros, 40);
-    const low = suggestions.find(s => s.confidence === "niedrig");
-    expect(low).toBeTruthy();
-    expect(low.reason).toMatch(/mehrere gleich hohe|Abstand/);
+    const { links, suggestions } = assignPayPalLinks(rows, giros, 40);
+    expect(links).toHaveLength(0); // ohne Händler + mehrdeutig → keine Auto-Verknüpfung
+    expect(suggestions.every(s => s.confidence === "niedrig")).toBe(true);
   });
 
   it("bevorzugt das _recipient-Feld als Händlername", () => {

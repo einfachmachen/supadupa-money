@@ -71,6 +71,19 @@ export function merchantMatchesGiro(merchant, giroDesc) {
   return mToks.some(t => (t.length >= 4 && gNorm.includes(t)) || gToks.has(t));
 }
 
+// Erwartete zeitliche Lage der Giro-Lastschrift relativ zur PayPal-Buchung.
+//  - "sofort": Standard — Giro wird wenige Tage nach der PayPal-Buchung belastet.
+//  - "plus30": „PayPal Bezahlen nach 30 Tagen" — Belastung ~30 Tage später.
+//  - "unklar": dazwischen / weiter weg → bei wiederkehrenden Beträgen meist der
+//    falsche Monat.
+// signedDays = Giro-Datum − PayPal-Datum (positiv = Giro später, der Normalfall).
+export const TIMING = { SOFORT_MIN: -2, SOFORT_MAX: 9, PLUS30_MIN: 24, PLUS30_MAX: 38 };
+export function timingTier(signedDays) {
+  if (signedDays >= TIMING.SOFORT_MIN && signedDays <= TIMING.SOFORT_MAX) return "sofort";
+  if (signedDays >= TIMING.PLUS30_MIN && signedDays <= TIMING.PLUS30_MAX) return "plus30";
+  return "unklar";
+}
+
 // Bewertet ein Kandidatenpaar (PayPal-Zeile ↔ Giro-Buchung). Gibt null zurück,
 // wenn es kein Kandidat ist (falscher Betrag, kein PayPal, außerhalb Fenster).
 export function scoreMatch(row, giroTx, linkDays) {
@@ -84,23 +97,28 @@ export function scoreMatch(row, giroTx, linkDays) {
   if (!isPayPalGiroTx(giroTx)) return null;
   const rDate = new Date(row.isoDate || row.date).getTime();
   const tDate = new Date(giroTx.date).getTime();
-  const diffDays = Math.abs(tDate - rDate) / 86400000;
+  const signedDays = Math.round((tDate - rDate) / 86400000);
+  const diffDays = Math.abs(signedDays);
   if (diffDays > linkDays) return null;
   const merchantMatch = merchantMatchesGiro(payPalMerchant(row), giroTx.desc);
-  // Händler-Treffer dominiert; sonst Nähe in Tagen. Lastschriften fallen
-  // meist NACH der PayPal-Buchung an → leichte Bevorzugung tDate >= rDate.
-  const dirBonus = tDate >= rDate ? 1 : 0;
-  const score = (merchantMatch ? 1000 : 0) + (100 - Math.min(diffDays, 100)) + dirBonus;
-  const confidence = merchantMatch ? "hoch" : diffDays <= 3 ? "mittel" : "niedrig";
-  return { diffDays: Math.round(diffDays), merchantMatch, score, confidence };
+  const tier = timingTier(signedDays);
+  // Score nur als Sortier-Fallback; maßgeblich ist die Konfidenz unten.
+  const tierBonus = tier === "sofort" ? 200 : tier === "plus30" ? 80 : 0;
+  const score = (merchantMatch ? 1000 : 0) + tierBonus + (50 - Math.min(diffDays, 50));
+  // Eigenständige (paarweise) Konfidenz — die kontextbewusste Endeinstufung
+  // erfolgt in assignPayPalLinks (berücksichtigt nähere Treffer derselben Zeile).
+  const confidence = merchantMatch && tier !== "unklar" ? "hoch"
+    : merchantMatch ? "niedrig"
+    : tier === "sofort" ? "mittel" : "niedrig";
+  return { diffDays, signedDays, tier, merchantMatch, score, confidence };
 }
 
 // Ordnet PayPal-Zeilen den Giro-Buchungen zu.
 //  - links: sichere 1:1-Auto-Verknüpfungen (für Import).
 //  - suggestions: alle Kandidatenpaare (für die Vorschlagsansicht), bestes zuerst.
-// Sicher (auto) ist ein Paar nur, wenn der Händlername passt ODER die Zuordnung
-// eindeutig ist (genau ein Kandidat auf beiden Seiten). Mehrdeutige gleich-hohe
-// Buchungen ohne Händler-Treffer werden NICHT automatisch verknüpft.
+// Reihenfolge der Sicherheit: Händlername + „sofort"-Timing ist am stärksten.
+// Gibt es für eine PayPal-Buchung einen näheren „sofort"-Treffer, werden ihre
+// weiter entfernten Kandidaten (z.B. der Folgemonat eines Abos) abgewertet.
 export function assignPayPalLinks(newRows, giroTxs, linkDays, opts = {}) {
   const excludeRows = opts.excludeRows || new Set();
   const excludeGiroIds = opts.excludeGiroIds || new Set();
@@ -115,45 +133,63 @@ export function assignPayPalLinks(newRows, giroTxs, linkDays, opts = {}) {
     });
   });
 
-  // Mehrdeutigkeit zählen (global, konservativ).
+  // Mehrdeutigkeit + „gibt es einen sofort-Treffer für diese Zeile?" zählen.
   const candByRow = {};
   const candByTx = {};
+  const rowHasSofort = {};
   pairs.forEach(p => {
     candByRow[p.rowIdx] = (candByRow[p.rowIdx] || 0) + 1;
     candByTx[p.giroTx.id] = (candByTx[p.giroTx.id] || 0) + 1;
+    if (p.tier === "sofort") rowHasSofort[p.rowIdx] = true;
   });
 
-  // Konfidenz + verständlicher Grund je Paar. Eindeutigkeit (nur ein Kandidat
-  // auf beiden Seiten) hebt die Einstufung, auch ohne Händlernamen.
+  // Kontextbewusste Konfidenz + verständlicher Grund je Paar.
   pairs.forEach(p => {
-    const ambiguous = candByRow[p.rowIdx] > 1 || candByTx[p.giroTx.id] > 1;
-    if (p.merchantMatch) {
+    const unique = candByRow[p.rowIdx] === 1 && candByTx[p.giroTx.id] === 1;
+    if (p.tier !== "sofort" && rowHasSofort[p.rowIdx]) {
+      // Für dieselbe PayPal-Buchung gibt es einen Treffer wenige Tage später —
+      // der ist fast immer der richtige; dieser hier ist vermutlich ein anderer Monat.
+      p.confidence = "niedrig";
+      p.reason = "näherer Treffer vorhanden – Belastung folgt normal in Tagen";
+    } else if (p.merchantMatch && p.tier === "sofort") {
       p.confidence = "hoch";
-      p.reason = "Händlername stimmt überein";
-    } else if (!ambiguous) {
+      p.reason = p.diffDays <= 1 ? "Händler + Belastung ~sofort" : `Händler + Belastung ${p.diffDays} Tage später`;
+    } else if (p.merchantMatch && p.tier === "plus30") {
       p.confidence = "mittel";
-      p.reason = "Betrag im Zeitraum eindeutig";
-    } else if (p.diffDays <= 3) {
+      p.reason = `Händler, Belastung ${p.diffDays} Tage später (evtl. PayPal +30)`;
+    } else if (p.merchantMatch) {
+      p.confidence = "niedrig";
+      p.reason = `Händler stimmt, Zeitabstand untypisch (${p.diffDays} Tage)`;
+    } else if (p.tier === "sofort" && unique) {
       p.confidence = "mittel";
-      p.reason = "Betrag passt, Datum sehr nah";
+      p.reason = "Betrag eindeutig, Belastung wenige Tage später";
+    } else if (p.tier === "sofort") {
+      p.confidence = "niedrig";
+      p.reason = "nur Betrag – mehrere gleich hohe Buchungen";
+    } else if (p.tier === "plus30") {
+      p.confidence = "niedrig";
+      p.reason = `nur Betrag, ${p.diffDays} Tage später`;
     } else {
       p.confidence = "niedrig";
-      p.reason = candByTx[p.giroTx.id] > 1
-        ? "nur Betrag – mehrere gleich hohe Buchungen"
-        : `nur Betrag – ${p.diffDays} Tage Abstand`;
+      p.reason = `schwacher Treffer (${p.diffDays} Tage)`;
     }
+    // Auto-verknüpft wird nur, was wirklich sicher ist.
+    p.autoLinkable =
+      p.confidence === "hoch" ||
+      (p.confidence === "mittel" && p.tier === "sofort" && unique) ||
+      (p.confidence === "mittel" && p.tier === "plus30" && unique);
   });
 
-  // Gieriges 1:1 — bestes Paar zuerst.
-  const sorted = [...pairs].sort((a, b) => b.score - a.score || a.diffDays - b.diffDays);
+  // Gieriges 1:1 — stärkste Konfidenz zuerst, dann zeitlich am nächsten.
+  const rank = c => (c === "hoch" ? 3 : c === "mittel" ? 2 : 1);
+  const sorted = [...pairs].sort((a, b) =>
+    rank(b.confidence) - rank(a.confidence) || a.diffDays - b.diffDays || b.score - a.score);
   const usedRows = new Set();
   const usedTx = new Set();
   const links = [];
   sorted.forEach(p => {
     if (usedRows.has(p.rowIdx) || usedTx.has(p.giroTx.id)) return;
-    const unique = candByRow[p.rowIdx] === 1 && candByTx[p.giroTx.id] === 1;
-    const safe = p.merchantMatch || unique;
-    if (!safe) return; // mehrdeutig → nur Vorschlag, keine Auto-Verknüpfung
+    if (!p.autoLinkable) return; // unsicher → nur Vorschlag
     usedRows.add(p.rowIdx);
     usedTx.add(p.giroTx.id);
     links.push(p);
