@@ -8,6 +8,7 @@ import { QuickPicker } from "../organisms/QuickPicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { parseCSV } from "../../utils/csv.js";
+import { assignPayPalLinks } from "../../utils/paypalMatch.js";
 import { AccountChips } from "../molecules/AccountChips.jsx";
 import { parsePdfStatement } from "../../utils/pdfStatement.js";
 import { anchorFromDetectedBalance, makeAnchorEntry } from "../../utils/anchors.js";
@@ -143,30 +144,11 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
 
   const [showAutoSugg, setShowAutoSugg] = useState(false);
 
-  // Automatische Verknüpfungsvorschläge berechnen (für Vergleich, ohne zu importieren)
-  const computeAutoSuggestions = (newRows) => {
-    const suggestions = []; // [{newRowIdx, giroTx, confidence}]
-    newRows.forEach((r, i) => {
-      const absAmt = Math.abs(r.amount);
-      const rDate = new Date(r.isoDate).getTime();
-      const matches = txs.filter(t => {
-        if(Math.round(t.totalAmount*100) !== Math.round(absAmt*100)) return false;
-        const diff = Math.abs(new Date(t.date).getTime() - rDate) / 86400000;
-        if(diff > linkDays) return false;
-        const tDesc = (t.desc||"").toLowerCase();
-        const rName = r.desc.split(" · ")[0].split(" – ")[0].toLowerCase().trim();
-        const isPayPalGiro = tDesc.includes("paypal")||tDesc.includes("pp.")||tDesc.includes("amazon");
-        const nameInGiro = rName.length > 3 && tDesc.includes(rName.slice(0,6).toLowerCase());
-        return isPayPalGiro || nameInGiro;
-      });
-      matches.forEach(m => {
-        const diff = Math.abs(new Date(m.date).getTime() - rDate) / 86400000;
-        const confidence = diff <= 3 ? "hoch" : diff <= 14 ? "mittel" : "niedrig";
-        suggestions.push({ rowIdx: i, giroTx: m, diffDays: Math.round(diff), confidence });
-      });
-    });
-    return suggestions;
-  };
+  // Automatische Verknüpfungsvorschläge berechnen (für Vergleich, ohne zu importieren).
+  // Nutzt den robusten Matcher: PayPal-Gate (Gläubiger-ID/Empfänger),
+  // Händlername-Bestätigung und Bestes-Paar-Sortierung statt loser Betrag+Datum-Treffer.
+  const computeAutoSuggestions = (newRows) =>
+    assignPayPalLinks(newRows, txs, linkDays).suggestions;
 
   const doParse = () => {
     if(!csvText.trim()) return;
@@ -223,6 +205,17 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     const newTxs = [];
     const giroUpdates = {}; // giroTxId → [newTxId, ...]
 
+    // Auto-Verknüpfung vorab berechnen (sicheres 1:1, ohne manuell akzeptierte
+    // Zeilen/Giro-Buchungen doppelt zu belegen).
+    const acceptedRows = new Set((parsed.acceptedSuggs||[]).map(a=>a.rowIdx));
+    const acceptedGiroIds = new Set((parsed.acceptedSuggs||[]).map(a=>a.giroId));
+    const autoByRow = {};
+    if(linkToGiro) {
+      const {links} = assignPayPalLinks(parsed.newRows, txs, linkDays,
+        {excludeRows: acceptedRows, excludeGiroIds: acceptedGiroIds});
+      links.forEach(l => { autoByRow[l.rowIdx] = l.giroTx; });
+    }
+
     parsed.newRows.forEach((r,i) => {
       const {catId="", subId=""} = assign[i]||{};
       const absAmt = Math.abs(r.amount);
@@ -243,6 +236,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
         _fp: r.fp,
         _csvSource: csvSources.length===1 ? csvSources[0] : csvSources.length>1 ? csvSources.join(", ") : "",
         _kontoRaw: r._konto || "",
+        ...(r._creditorId ? {_creditorId: r._creditorId} : {}),
       });
       // Regel merken — lokal + global
       if(catId) {
@@ -257,26 +251,10 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
         if(!giroUpdates[a.giroId]) giroUpdates[a.giroId]=[];
         giroUpdates[a.giroId].push(newId);
       });
-      if(linkToGiro && accepted.length===0) {
-        const rDate = new Date(r.isoDate).getTime();
-        const match = txs.find(t => {
-          // Betrag muss exakt übereinstimmen (Cent-Vergleich gegen Float-Ungenauigkeit)
-          if(Math.round(t.totalAmount*100) !== Math.round(absAmt*100)) return false;
-          // Datum innerhalb der gewählten Toleranz
-          const diff = Math.abs(new Date(t.date).getTime() - rDate) / 86400000;
-          if(diff > linkDays) return false;
-          // Giro-Buchung muss auf PayPal/Amazon/den Empfänger hinweisen
-          const tDesc = (t.desc||"").toLowerCase();
-          const rName = r.desc.split(" · ")[0].split(" – ")[0].toLowerCase().trim();
-          const isPayPalGiro = tDesc.includes("paypal") || tDesc.includes("pp.") || tDesc.includes("amazon");
-          const nameInGiro = rName.length > 3 && tDesc.includes(rName.slice(0,6).toLowerCase());
-          if(!isPayPalGiro && !nameInGiro) return false;
-          return true;
-        });
-        if(match) {
-          if(!giroUpdates[match.id]) giroUpdates[match.id] = [];
-          giroUpdates[match.id].push(newId);
-        }
+      if(linkToGiro && accepted.length===0 && autoByRow[i]) {
+        const match = autoByRow[i];
+        if(!giroUpdates[match.id]) giroUpdates[match.id] = [];
+        giroUpdates[match.id].push(newId);
       }
     });
 

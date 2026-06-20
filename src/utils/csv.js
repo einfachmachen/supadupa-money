@@ -152,6 +152,8 @@ function parseCSV(text, {noGroup=false}={}) {
   // Spalten für Finanzblick-Zusatzfelder
   const buchungstextCol = headers.indexOf("buchungstext");
   const kontoCol        = headers.indexOf("konto");
+  // Gläubiger-ID (SEPA Creditor-ID) — eindeutiges Merkmal z.B. für PayPal.
+  const creditorCol     = headers.findIndex(h=>h.includes("gläubiger")||h.includes("glaubiger")||h.includes("creditor"));
 
   // Finanzblick pending-Flag Spalte suchen — NUR für Finanzblick-Format
   let pendingFlagCol = -1;
@@ -189,6 +191,7 @@ function parseCSV(text, {noGroup=false}={}) {
     const rawRecip  = recipientCol>=0 ? cols[recipientCol] : "";
     const rawBtext  = buchungstextCol>=0 ? cols[buchungstextCol] : "";
     const rawKonto  = kontoCol>=0 ? cols[kontoCol] : "";
+    const rawCreditor = creditorCol>=0 ? cols[creditorCol] : "";
     const isoDate   = parseGermanDate(rawDate);
     const amount    = parseGermanAmount(rawAmount);
     if(!isoDate || amount===0) {
@@ -213,7 +216,7 @@ function parseCSV(text, {noGroup=false}={}) {
     const rowType = typeCol>=0    ? cols[typeCol]     : rawBtext||null;
     // Finanzblick: pending-Flag auslesen
     const isFbPending = pendingFlagCol>=0 && cols[pendingFlagCol]?.toLowerCase()==="true";
-    rows.push({ isoDate, amount, desc, fp: txFingerprint(isoDate, amount, desc), txCode, refCode, rowType, _konto: rawKonto, _fbPending: isFbPending });
+    rows.push({ isoDate, amount, desc, fp: txFingerprint(isoDate, amount, desc), txCode, refCode, rowType, _konto: rawKonto, _fbPending: isFbPending, ...(rawCreditor ? {_creditorId: rawCreditor} : {}) });
   }
 
   // Finanzblick: pending=true Detailzeilen als Notiz an Hauptbuchung anhängen
