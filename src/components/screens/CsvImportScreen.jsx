@@ -8,7 +8,7 @@ import { QuickPicker } from "../organisms/QuickPicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { parseCSV } from "../../utils/csv.js";
-import { assignPayPalLinks } from "../../utils/paypalMatch.js";
+import { assignPayPalLinks, enrichPayPalMerchants } from "../../utils/paypalMatch.js";
 import { AccountChips } from "../molecules/AccountChips.jsx";
 import { parsePdfStatement } from "../../utils/pdfStatement.js";
 import { anchorFromDetectedBalance, makeAnchorEntry } from "../../utils/anchors.js";
@@ -221,8 +221,10 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     // Fingerprint bereits bekannt ist. So erkennen sich Finanzblick- und
     // DKB-Original-Exporte gegenseitig als Dupl.
     const isDup = r => knownFps.has(r.fp) || knownFps.has(r._fpNorm);
-    const newRows  = resolvedRows.filter(r=>!isDup(r));
+    const newRowsRaw = resolvedRows.filter(r=>!isDup(r));
     const dupRows  = resolvedRows.filter(isDup);
+    // PayPal: händlerlose „+30"-Abbuchungen mit dem Händler der Kaufzeile anreichern.
+    const newRows = /paypal/i.test(format||"") ? enrichPayPalMerchants(newRowsRaw) : newRowsRaw;
     const autoSuggestions = computeAutoSuggestions(newRows);
     setParsed({rows: resolvedRows, format, newRows, dupRows, autoSuggestions, skipped: skipped || [], detectedBalance, detectedBalances: detectedBalances || (detectedBalance ? [detectedBalance] : [])});
     setAssign(autoAssign(newRows));
@@ -789,6 +791,11 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                     {/* PayPal-Seite */}
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{color:T.txt,fontSize:sFS,fontWeight:600,...wrapStyle}}>{r.desc}</div>
+                      {r._enrichedMerchant&&(
+                        <div style={{color:T.blue,fontSize:sFSs,fontWeight:700,marginTop:1,...wrapStyle}}>
+                          {Li("corner-down-right",11,T.blue)} {r._enrichedMerchant}{r._enrichedPlus30?" · via PayPal +30":""}
+                        </div>
+                      )}
                       <div style={{color:T.txt2,fontSize:sFSs,marginTop:2}}>
                         {r.isoDate} · <span style={{color:r.amount<0?T.neg:T.pos,fontFamily:NUM_FONT,fontWeight:700}}>{r.amount<0?"−":"+"}{fmt(ppAmt)}</span>
                       </div>

@@ -47,15 +47,57 @@ export function isPayPalGiroTx(tx) {
   return d.includes("paypal") || /\bpp\.\s*\d/.test(d) || /\bpp\.\b/.test(d);
 }
 
-// Händlername aus einer PayPal-CSV-Zeile. Bevorzugt das separate Empfänger-Feld
-// (_recipient, aus der CSV-Spalte „Empfaenger"); fällt sonst auf die erste
-// Beschreibungs-Komponente zurück.
+// Händlername aus einer PayPal-CSV-Zeile. Bevorzugt einen angereicherten Namen
+// (aus der zugehörigen Kaufzeile bei „PayPal +30", siehe enrichPayPalMerchants),
+// dann das separate Empfänger-Feld (_recipient), sonst die erste
+// Beschreibungs-Komponente.
 export function payPalMerchant(row) {
+  if (row?._enrichedMerchant) return row._enrichedMerchant;
   const raw = (row?._recipient || (row?.desc || "").split(" · ")[0]);
   return raw
     .split(" – ")[0]
     .replace(/\{[^}]{0,300}\}/g, "")
     .trim();
+}
+
+// „PayPal Bezahlen nach 30 Tagen": Finanzblick legt zwei Ausgaben-Zeilen an —
+// den Kauf (mit echtem Händler) und ~30 Tage später die Abbuchung über
+// „PayPal (Europe) …" OHNE Händler. Diese Funktion reichert solche händlerlosen
+// Abbuchungen mit dem Händler der passenden Kaufzeile an (gleicher Betrag,
+// 24–40 Tage früher, eindeutiger Händler). Gibt eine neue Zeilen-Liste zurück
+// (Reihenfolge/Länge unverändert → Indizes bleiben gültig).
+export function enrichPayPalMerchants(rows) {
+  const generic = m => tokens(m).length === 0; // nur Floskeln/Rechtsform → kein echter Händler
+  const meta = rows.map(r => ({
+    amt: Math.round(Math.abs(r.amount ?? r.totalAmount ?? 0) * 100),
+    date: new Date(r.isoDate || r.date).getTime(),
+    merchant: payPalMerchant(r),
+    expense: r.amount == null || r.amount < 0,
+  }));
+  const enriched = new Array(rows.length).fill(null);
+  const isPurchaseLeg = new Array(rows.length).fill(false);
+  rows.forEach((r, i) => {
+    const cur = meta[i];
+    if (!cur.expense || !generic(cur.merchant)) return;
+    const sources = meta
+      .map((o, j) => ({ o, j }))
+      .filter(({ o, j }) =>
+        j !== i && o.expense && o.amt === cur.amt && !generic(o.merchant) &&
+        (cur.date - o.date) / 86400000 >= 24 && (cur.date - o.date) / 86400000 <= 40);
+    if (!sources.length) return;
+    const names = [...new Set(sources.map(s => s.o.merchant))];
+    if (names.length !== 1) return; // mehrdeutig → nicht anreichern
+    enriched[i] = names[0];
+    // Kauf-Leg(s) markieren: ihre Belastung läuft über DIESE Abbuchung, sie
+    // haben keine eigene Giro-Buchung → vom Giro-Matching ausschließen.
+    sources.forEach(({ j }) => { isPurchaseLeg[j] = true; });
+  });
+  return rows.map((r, i) => {
+    let out = r;
+    if (enriched[i]) out = { ...out, _enrichedMerchant: enriched[i], _enrichedPlus30: true };
+    if (isPurchaseLeg[i]) out = { ...out, _plus30Purchase: true };
+    return out;
+  });
 }
 
 // Steckt der Händlername im Giro-Verwendungszweck? Token-basiert, damit
@@ -126,6 +168,9 @@ export function assignPayPalLinks(newRows, giroTxs, linkDays, opts = {}) {
   const pairs = [];
   newRows.forEach((r, rowIdx) => {
     if (excludeRows.has(rowIdx)) return;
+    // „PayPal +30"-Kaufzeile: keine eigene Giro-Belastung (läuft über die
+    // ~30 Tage spätere Abbuchung) → nicht matchen.
+    if (r._plus30Purchase) return;
     giroTxs.forEach(t => {
       if (excludeGiroIds.has(t.id)) return;
       const s = scoreMatch(r, t, linkDays);
@@ -180,22 +225,24 @@ export function assignPayPalLinks(newRows, giroTxs, linkDays, opts = {}) {
       (p.confidence === "mittel" && p.tier === "plus30" && unique);
   });
 
-  // Gieriges 1:1 — stärkste Konfidenz zuerst, dann zeitlich am nächsten.
+  // Saubere 1:1-Zuordnung als Vorschlagsliste: jede PayPal-Buchung und jede
+  // Giro-Buchung höchstens einmal, stärkste Konfidenz zuerst, dann zeitlich am
+  // nächsten. links = die automatisch sicheren Treffer daraus.
   const rank = c => (c === "hoch" ? 3 : c === "mittel" ? 2 : 1);
-  const sorted = [...pairs].sort((a, b) =>
-    rank(b.confidence) - rank(a.confidence) || a.diffDays - b.diffDays || b.score - a.score);
+  const ranked = pairs
+    .filter(p => !p.redundant)
+    .sort((a, b) => rank(b.confidence) - rank(a.confidence) || a.diffDays - b.diffDays || b.score - a.score);
   const usedRows = new Set();
   const usedTx = new Set();
+  const suggestions = [];
   const links = [];
-  sorted.forEach(p => {
+  ranked.forEach(p => {
     if (usedRows.has(p.rowIdx) || usedTx.has(p.giroTx.id)) return;
-    if (!p.autoLinkable) return; // unsicher → nur Vorschlag
     usedRows.add(p.rowIdx);
     usedTx.add(p.giroTx.id);
-    links.push(p);
+    suggestions.push(p);
+    if (p.autoLinkable) links.push(p);
   });
 
-  // Redundante Fern-Treffer (es gibt einen näheren) NICHT als Vorschlag zeigen —
-  // sie lenken nur vom richtigen Wenige-Tage-Treffer ab.
-  return { links, suggestions: sorted.filter(p => !p.redundant) };
+  return { links, suggestions };
 }

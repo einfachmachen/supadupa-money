@@ -6,6 +6,7 @@ import {
   merchantMatchesGiro,
   scoreMatch,
   assignPayPalLinks,
+  enrichPayPalMerchants,
 } from "../src/utils/paypalMatch.js";
 
 // Eine PayPal-CSV-Zeile, wie der Parser sie liefert (desc = "Name · Typ · …").
@@ -200,5 +201,51 @@ describe("assignPayPalLinks — Rauschen & Konfidenz-Gründe", () => {
     const giros = [giro("g1", 15.98, "2025-12-29", "Comtrada")];
     const { links } = assignPayPalLinks(rows, giros, 35);
     expect(links.map(l => l.giroTx.id)).toEqual(["g1"]);
+  });
+});
+
+describe("enrichPayPalMerchants — PayPal +30", () => {
+  const rows = () => [
+    // Kauf (mit Händler) am 29.11.
+    { amount: -359.99, isoDate: "2025-11-29", desc: "Roborock Germany GmbH", _recipient: "Roborock Germany GmbH dgpp@roborock.com" },
+    { amount:  359.99, isoDate: "2025-11-29", desc: "Successful" }, // Gegenbuchung
+    // Abbuchung (ohne Händler) am 29.12. — ~30 Tage später
+    { amount: -359.99, isoDate: "2025-12-29", desc: "Successful", _recipient: "PayPal (Europe) S.à r.l. et Cie, SCA" },
+    { amount:  359.99, isoDate: "2025-12-29", desc: "Successful" }, // Gegenbuchung
+  ];
+
+  it("überträgt den Händler der Kaufzeile auf die +30-Abbuchung", () => {
+    const enr = enrichPayPalMerchants(rows());
+    expect(enr[2]._enrichedMerchant).toMatch(/Roborock/);
+    expect(enr[2]._enrichedPlus30).toBe(true);
+    expect(payPalMerchant(enr[2])).toMatch(/Roborock/);
+    // Kaufzeile und Gegenbuchungen bleiben unverändert
+    expect(enr[0]._enrichedMerchant).toBeUndefined();
+  });
+
+  it("+30-Abbuchung wird eindeutig (Kauf-Leg ausgeschlossen) und auto-verknüpft", () => {
+    const enr = enrichPayPalMerchants(rows());
+    // Echte +30-Giro-Form: „PAYPAL..SPAETER.ZAHLEN", VISA-Debit, OHNE Händler.
+    const giros = [{ id: "g1", totalAmount: 359.99, date: "2025-12-30",
+      desc: "PAYPAL..SPAETER.ZAHLEN/8007234500 · VISA Debitkartenumsatz vom 28.12.2025", _csvType: "expense" }];
+    const { links, suggestions } = assignPayPalLinks(enr, giros, 45);
+    // Nur EIN Vorschlag (die Abbuchung), nicht zusätzlich die Kaufzeile.
+    expect(suggestions).toHaveLength(1);
+    expect(links.map(l => l.giroTx.id)).toEqual(["g1"]);
+    expect(suggestions[0].confidence).toBe("mittel");
+    // Der angereicherte Händler hängt an der gematchten Zeile (für die Anzeige).
+    expect(suggestions[0].giroTx.id).toBe("g1");
+    const matchedRow = enr[suggestions[0].rowIdx];
+    expect(matchedRow._enrichedMerchant).toMatch(/Roborock/);
+  });
+
+  it("reichert NICHT an, wenn der Betrag ~30 Tage früher mehrdeutig ist", () => {
+    const r = [
+      { amount: -9.99, isoDate: "2025-11-01", desc: "A", _recipient: "Netflix" },
+      { amount: -9.99, isoDate: "2025-11-02", desc: "B", _recipient: "Spotify" },
+      { amount: -9.99, isoDate: "2025-12-01", desc: "Successful", _recipient: "PayPal (Europe) S.à r.l. et Cie, SCA" },
+    ];
+    const enr = enrichPayPalMerchants(r);
+    expect(enr[2]._enrichedMerchant).toBeUndefined();
   });
 });
