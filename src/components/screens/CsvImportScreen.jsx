@@ -64,9 +64,11 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
       return {...r, _resolvedAccId: newAccId,
         fp: txFingerprint(r.isoDate, r.amount, r.desc, newAccId)};
     });
-    const newRows = updatedRows.filter(r=>!knownFps.has(r.fp));
-    const dupRows = updatedRows.filter(r=> knownFps.has(r.fp));
-    setParsed(p => ({...p, rows: updatedRows, newRows, dupRows}));
+    // Volle Verarbeitung erneut (Anreicherung, Gegenbuchungs-Filter) UND
+    // Vorschläge neu berechnen — sonst stimmen Einnahmen/Vorschläge nicht mehr.
+    const { newRows, dupRows, droppedCounter } = buildRows(parsed.format, updatedRows);
+    setParsed(p => ({...p, rows: updatedRows, newRows, dupRows, droppedCounter,
+      autoSuggestions: computeAutoSuggestions(newRows)}));
     // Kategorien neu zuweisen (Auto-Regeln berücksichtigen jetzt das neue Konto)
     setAssign(autoAssign(newRows));
   }, [selAccId, step]);
@@ -250,6 +252,19 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const computeAutoSuggestions = (newRows) =>
     assignPayPalLinks(newRows, txs, linkDays).suggestions;
 
+  // Gemeinsame Zeilen-Verarbeitung (Dup-Split, PayPal-Anreicherung +30,
+  // Gegenbuchungs-Filter). Wird von applyParsed UND dem Kontowechsel-Effekt
+  // genutzt, damit beide konsistent bleiben.
+  const buildRows = (format, resolvedRows) => {
+    const isDup = r => knownFps.has(r.fp) || knownFps.has(r._fpNorm);
+    const newRowsRaw = resolvedRows.filter(r=>!isDup(r));
+    const dupRows = resolvedRows.filter(isDup);
+    const isPayPalCsv = looksLikePayPalCsv(format, resolvedRows);
+    const enrichedRows = isPayPalCsv ? enrichPayPalMerchants(newRowsRaw) : newRowsRaw;
+    const newRows = isPayPalCsv ? dropPayPalCounterBookings(enrichedRows) : enrichedRows;
+    return { newRows, dupRows, droppedCounter: enrichedRows.length - newRows.length };
+  };
+
   const doParse = () => {
     if(!csvText.trim()) return;
     applyParsed(parseCSV(csvText, {noGroup: !autoGroup}));
@@ -274,20 +289,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
         fp: txFingerprint(r.isoDate, r.amount, r.desc, resolvedAccId),
         _fpNorm: txFingerprintNorm(r.isoDate, r.amount, r.desc, resolvedAccId)};
     });
-    // Eine Row ist Duplikat, wenn ENTWEDER der exakte oder der normalisierte
-    // Fingerprint bereits bekannt ist. So erkennen sich Finanzblick- und
-    // DKB-Original-Exporte gegenseitig als Dupl.
-    const isDup = r => knownFps.has(r.fp) || knownFps.has(r._fpNorm);
-    const newRowsRaw = resolvedRows.filter(r=>!isDup(r));
-    const dupRows  = resolvedRows.filter(isDup);
-    // PayPal-Export am Inhalt erkennen (Finanzblick-PayPal-CSV hat Format
-    // "Finanzblick", aber Konto „PayPal (…)") → händlerlose „+30"-Abbuchungen
-    // mit dem Händler der Kaufzeile anreichern.
-    const isPayPalCsv = looksLikePayPalCsv(format, resolvedRows);
-    const enrichedRows = isPayPalCsv ? enrichPayPalMerchants(newRowsRaw) : newRowsRaw;
-    // PayPal: interne Gegenbuchungen (Spiegel-„Einnahmen") herausfiltern.
-    const newRows = isPayPalCsv ? dropPayPalCounterBookings(enrichedRows) : enrichedRows;
-    const droppedCounter = enrichedRows.length - newRows.length;
+    const { newRows, dupRows, droppedCounter } = buildRows(format, resolvedRows);
     const autoSuggestions = computeAutoSuggestions(newRows);
     setParsed({rows: resolvedRows, format, newRows, dupRows, autoSuggestions, droppedCounter, skipped: skipped || [], detectedBalance, detectedBalances: detectedBalances || (detectedBalance ? [detectedBalance] : [])});
     setAssign(autoAssign(newRows));
@@ -295,7 +297,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     // PayPal-CSVs: Giro-Verknüpfung automatisch vorschalten — PayPal-Zahlungen
     // belasten ohnehin das Girokonto, deshalb fast immer gewünscht. Bei anderen
     // Formaten bleibt die Verknüpfung aus (Standard).
-    setLinkToGiro(isPayPalCsv);
+    setLinkToGiro(looksLikePayPalCsv(format, resolvedRows));
     setStep("review");
   };
 
