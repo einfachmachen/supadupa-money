@@ -100,6 +100,16 @@ export function enrichPayPalMerchants(rows) {
   });
 }
 
+// Ist diese geparste CSV ein PayPal-Aktivitäts-Export? Der Finanzblick-
+// PayPal-Export wird als Format "Finanzblick" erkannt (gleicher Spaltenkopf wie
+// eine Bank-CSV), trägt aber im Konto-Feld „PayPal (…)". Daher am Inhalt prüfen.
+export function looksLikePayPalCsv(format, rows) {
+  if (/paypal/i.test(format || "")) return true;
+  if (!rows || !rows.length) return false;
+  const ppKonto = rows.filter(r => /paypal/i.test(r._konto || "")).length;
+  return ppKonto > rows.length * 0.5;
+}
+
 // Steckt der Händlername im Giro-Verwendungszweck? Token-basiert, damit
 // "REWE SAGT DANKE" ↔ "Rewe" trotzdem greift, aber Floskeln nicht fälschlich
 // matchen. Match, wenn ein signifikantes Händler-Token (≥4 Zeichen Teilstring,

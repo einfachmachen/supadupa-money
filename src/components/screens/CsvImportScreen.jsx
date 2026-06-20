@@ -8,7 +8,7 @@ import { QuickPicker } from "../organisms/QuickPicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { parseCSV } from "../../utils/csv.js";
-import { assignPayPalLinks, enrichPayPalMerchants } from "../../utils/paypalMatch.js";
+import { assignPayPalLinks, enrichPayPalMerchants, looksLikePayPalCsv } from "../../utils/paypalMatch.js";
 import { AccountChips } from "../molecules/AccountChips.jsx";
 import { parsePdfStatement } from "../../utils/pdfStatement.js";
 import { anchorFromDetectedBalance, makeAnchorEntry } from "../../utils/anchors.js";
@@ -146,6 +146,8 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   // Vollbild-Modus für das Vorschlags-Panel: blendet Konto-Kacheln + unsortierte
   // Liste aus, damit die Verknüpfungsvorschläge die ganze Höhe nutzen können.
   const [autoSuggFull, setAutoSuggFull] = useState(false);
+  // Suchfeld im Vorschlags-Panel (Händler, Betrag, Datum, Giro-Text).
+  const [suggSearch, setSuggSearch] = useState("");
   // Nur „vollbild", wenn das Panel auch sichtbar ist — sonst leerer Screen.
   const suggFull = showAutoSugg && autoSuggFull;
 
@@ -186,6 +188,20 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     return {hoch, mittel};
   })();
   const acceptedCount = (parsed?.acceptedSuggs||[]).length;
+  // Suchgefilterte Vorschläge (für die Anzeige). Sucht in PayPal-Beschreibung,
+  // zurückgewonnenem Händler, Beträgen, Daten und Giro-Text.
+  const shownSuggs = (()=>{
+    const all = parsed?.autoSuggestions || [];
+    const q = suggSearch.trim().toLowerCase();
+    if(!q) return all;
+    return all.filter(s=>{
+      const r = parsed.newRows[s.rowIdx] || {};
+      const hay = [r.desc, r._enrichedMerchant, r._recipient, r.isoDate, s.giroTx?.desc,
+        s.giroTx?.date, String(Math.abs(r.amount ?? r.totalAmount ?? 0)).replace(".",","),
+        String(s.giroTx?.totalAmount ?? "").replace(".",",")].join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+  })();
 
   // Automatische Verknüpfungsvorschläge berechnen (für Vergleich, ohne zu importieren).
   // Nutzt den robusten Matcher: PayPal-Gate (Gläubiger-ID/Empfänger),
@@ -223,8 +239,11 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     const isDup = r => knownFps.has(r.fp) || knownFps.has(r._fpNorm);
     const newRowsRaw = resolvedRows.filter(r=>!isDup(r));
     const dupRows  = resolvedRows.filter(isDup);
-    // PayPal: händlerlose „+30"-Abbuchungen mit dem Händler der Kaufzeile anreichern.
-    const newRows = /paypal/i.test(format||"") ? enrichPayPalMerchants(newRowsRaw) : newRowsRaw;
+    // PayPal-Export am Inhalt erkennen (Finanzblick-PayPal-CSV hat Format
+    // "Finanzblick", aber Konto „PayPal (…)") → händlerlose „+30"-Abbuchungen
+    // mit dem Händler der Kaufzeile anreichern.
+    const isPayPalCsv = looksLikePayPalCsv(format, resolvedRows);
+    const newRows = isPayPalCsv ? enrichPayPalMerchants(newRowsRaw) : newRowsRaw;
     const autoSuggestions = computeAutoSuggestions(newRows);
     setParsed({rows: resolvedRows, format, newRows, dupRows, autoSuggestions, skipped: skipped || [], detectedBalance, detectedBalances: detectedBalances || (detectedBalance ? [detectedBalance] : [])});
     setAssign(autoAssign(newRows));
@@ -232,7 +251,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     // PayPal-CSVs: Giro-Verknüpfung automatisch vorschalten — PayPal-Zahlungen
     // belasten ohnehin das Girokonto, deshalb fast immer gewünscht. Bei anderen
     // Formaten bleibt die Verknüpfung aus (Standard).
-    setLinkToGiro(/paypal/i.test(format || ""));
+    setLinkToGiro(isPayPalCsv);
     setStep("review");
   };
 
@@ -772,8 +791,24 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                   {Li(autoSuggFull?"minimize-2":"maximize-2",12,autoSuggFull?(T.on_accent||"#1a1a1a"):T.gold)}
                   {autoSuggFull?"Verkleinern":"Vollbild"}
                 </button>
+                {/* Suchzeile — filtert die Vorschläge (Händler, Betrag, Datum, Giro-Text) */}
+                <div style={{flex:"1 1 100%",display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{flex:1,display:"flex",alignItems:"center",gap:6,
+                    background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bds}`,borderRadius:8,padding:"5px 9px"}}>
+                    {Li("search",13,T.txt2)}
+                    <input value={suggSearch} onChange={e=>setSuggSearch(e.target.value)}
+                      placeholder="Vorschläge durchsuchen (z. B. Roborock, 359, Apple)…"
+                      style={{flex:1,background:"transparent",border:"none",color:T.txt,
+                        fontSize:autoSuggFull?14:MFSl,outline:"none",fontFamily:"inherit"}}/>
+                    {suggSearch&&<span onClick={()=>setSuggSearch("")} style={{cursor:"pointer",color:T.txt2,display:"flex"}}>{Li("x",13,T.txt2)}</span>}
+                  </div>
+                  {suggSearch&&<span style={{color:T.txt2,fontSize:MFSl,flexShrink:0}}>{shownSuggs.length} Treffer</span>}
+                </div>
               </div>
-              {parsed.autoSuggestions.map((s,si)=>{
+              {shownSuggs.length===0&&(
+                <div style={{color:T.txt2,fontSize:MFSl,padding:"10px 2px"}}>Keine Vorschläge passen zur Suche „{suggSearch}".</div>
+              )}
+              {shownSuggs.map((s,si)=>{
                 const r = parsed.newRows[s.rowIdx];
                 const confColor = s.confidence==="hoch"?T.pos:s.confidence==="mittel"?T.gold:T.txt2;
                 // Im Vollbild deutlich größere Schrift + mehr Details.
