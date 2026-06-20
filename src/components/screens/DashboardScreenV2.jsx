@@ -667,15 +667,8 @@ function DashboardScreenV2() {
       <div ref={dashScrollRef}
         onTouchStart={onPullStart} onTouchMove={onPullMove} onTouchEnd={onPullEnd}
         style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch"}}>
-        {/* Pull-to-Refresh-Indikator: erscheint beim Herunterziehen am oberen Rand */}
-        {pullDist > 0 && !bankFetch && (
-          <div style={{height:pullDist,display:"flex",alignItems:"center",justifyContent:"center",
-            gap:8,color:pullDist>=PULL_THRESHOLD?T.blue:T.txt2,fontSize:12.5,fontWeight:700,
-            overflow:"hidden"}}>
-            {Li(pullDist>=PULL_THRESHOLD?"download-cloud":"arrow-down",16,pullDist>=PULL_THRESHOLD?T.blue:T.txt2)}
-            {pullDist>=PULL_THRESHOLD?"Loslassen zum Abrufen":"Ziehen für neue Buchungen"}
-          </div>
-        )}
+        {/* Pull-to-Refresh-Indikator wird unterhalb des fixierten Hero
+            gerendert (zwischen Hero und erster Kategorie) — siehe unten. */}
         {/* Duplikat-Warnung */}
         {dupCount>0&&(
           <div style={{margin:"6px 10px",background:T.err_bg,border:`2px solid ${T.neg}`,borderRadius:12,padding:"10px 12px"}}>
@@ -811,6 +804,17 @@ function DashboardScreenV2() {
           }
         })()}
         </div>
+
+        {/* Pull-to-Refresh-Indikator: erscheint beim Herunterziehen zwischen dem
+            fest positionierten Hero und der ersten Kategorie. */}
+        {pullDist > 0 && !bankFetch && (
+          <div style={{height:pullDist,display:"flex",alignItems:"center",justifyContent:"center",
+            gap:8,color:pullDist>=PULL_THRESHOLD?T.blue:T.txt2,fontSize:12.5,fontWeight:700,
+            overflow:"hidden"}}>
+            {Li(pullDist>=PULL_THRESHOLD?"download-cloud":"arrow-down",16,pullDist>=PULL_THRESHOLD?T.blue:T.txt2)}
+            {pullDist>=PULL_THRESHOLD?"Loslassen zum Abrufen":"Ziehen für neue Buchungen"}
+          </div>
+        )}
 
         {/* Per Pull-to-Refresh abgerufene Bank-Buchungen — zwischen Hero und
             erster Kategorie, gefiltert nach aktueller Kontosicht (selAcc). */}
