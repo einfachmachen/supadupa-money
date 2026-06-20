@@ -7,6 +7,7 @@ import {
   scoreMatch,
   assignPayPalLinks,
   enrichPayPalMerchants,
+  dropPayPalCounterBookings,
 } from "../src/utils/paypalMatch.js";
 
 // Eine PayPal-CSV-Zeile, wie der Parser sie liefert (desc = "Name · Typ · …").
@@ -220,6 +221,28 @@ describe("assignPayPalLinks — Rauschen & Konfidenz-Gründe", () => {
     const giros = [giro("g1", 15.98, "2025-12-29", "Comtrada")];
     const { links } = assignPayPalLinks(rows, giros, 35);
     expect(links.map(l => l.giroTx.id)).toEqual(["g1"]);
+  });
+});
+
+describe("dropPayPalCounterBookings", () => {
+  it("entfernt interne Gegenbuchungen, behält echte Einnahmen und Ausgaben", () => {
+    const rows = [
+      { amount: -15.98, isoDate: "2025-12-29", desc: "COMTRADA", _recipient: "COMTRADA GmbH" },     // Ausgabe
+      { amount:  15.98, isoDate: "2025-12-29", desc: "Successful" },                                  // Gegenbuchung → weg
+      { amount:  30.00, isoDate: "2025-04-09", desc: "Inge Asche", _recipient: "Inge Asche" },        // echte Einnahme → bleibt
+      { amount:  41.82, isoDate: "2025-10-09", desc: "Erstattung", _recipient: "Andreas Warth" },     // Erstattung → bleibt
+      { amount:  99.00, isoDate: "2025-01-01", desc: "Successful" },                                   // positiv ohne Spiegel → bleibt
+    ];
+    const out = dropPayPalCounterBookings(rows);
+    expect(out.map(r => r.amount)).toEqual([-15.98, 30.00, 41.82, 99.00]);
+  });
+
+  it("entfernt die Gegenbuchung auch bei ±3 Tagen Versatz", () => {
+    const rows = [
+      { amount: -10.00, isoDate: "2025-05-01", desc: "X", _recipient: "Shop" },
+      { amount:  10.00, isoDate: "2025-05-03", desc: "Successful" }, // 2 Tage Versatz → Gegenbuchung
+    ];
+    expect(dropPayPalCounterBookings(rows).map(r=>r.amount)).toEqual([-10.00]);
   });
 });
 

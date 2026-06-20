@@ -110,6 +110,32 @@ export function looksLikePayPalCsv(format, rows) {
   return ppKonto > rows.length * 0.5;
 }
 
+// Entfernt die internen PayPal-Gegenbuchungen: positive „Sonstige Einnahmen"
+// OHNE Empfänger, die eine gleich hohe Ausgabe in ±3 Tagen spiegeln
+// (Finanzierung jeder Zahlung). Echte Einnahmen (mit Empfänger) und alle
+// Ausgaben bleiben erhalten.
+export function dropPayPalCounterBookings(rows) {
+  const DAY = 86400000;
+  const negDates = new Map(); // Cent-Betrag → [Zeitstempel der Ausgaben]
+  rows.forEach(r => {
+    const a = r.amount ?? r.totalAmount ?? 0;
+    if (a < 0) {
+      const k = Math.round(Math.abs(a) * 100);
+      if (!negDates.has(k)) negDates.set(k, []);
+      negDates.get(k).push(new Date(r.isoDate || r.date).getTime());
+    }
+  });
+  return rows.filter(r => {
+    const a = r.amount ?? r.totalAmount ?? 0;
+    if (a <= 0) return true;        // Ausgaben (und 0) behalten
+    if (r._recipient) return true;  // echte Einnahme (mit Empfänger) behalten
+    const dates = negDates.get(Math.round(a * 100)) || [];
+    const rd = new Date(r.isoDate || r.date).getTime();
+    const isCounter = dates.some(d => Math.abs(d - rd) <= 3 * DAY);
+    return !isCounter;              // Gegenbuchung → entfernen
+  });
+}
+
 // Steckt der Händlername im Giro-Verwendungszweck? Token-basiert, damit
 // "REWE SAGT DANKE" ↔ "Rewe" trotzdem greift, aber Floskeln nicht fälschlich
 // matchen. Match, wenn ein signifikantes Händler-Token (≥4 Zeichen Teilstring,

@@ -8,7 +8,7 @@ import { QuickPicker } from "../organisms/QuickPicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { parseCSV } from "../../utils/csv.js";
-import { assignPayPalLinks, enrichPayPalMerchants, looksLikePayPalCsv } from "../../utils/paypalMatch.js";
+import { assignPayPalLinks, enrichPayPalMerchants, looksLikePayPalCsv, dropPayPalCounterBookings } from "../../utils/paypalMatch.js";
 import { AccountChips } from "../molecules/AccountChips.jsx";
 import { parsePdfStatement } from "../../utils/pdfStatement.js";
 import { anchorFromDetectedBalance, makeAnchorEntry } from "../../utils/anchors.js";
@@ -256,9 +256,12 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     // "Finanzblick", aber Konto „PayPal (…)") → händlerlose „+30"-Abbuchungen
     // mit dem Händler der Kaufzeile anreichern.
     const isPayPalCsv = looksLikePayPalCsv(format, resolvedRows);
-    const newRows = isPayPalCsv ? enrichPayPalMerchants(newRowsRaw) : newRowsRaw;
+    const enrichedRows = isPayPalCsv ? enrichPayPalMerchants(newRowsRaw) : newRowsRaw;
+    // PayPal: interne Gegenbuchungen (Spiegel-„Einnahmen") herausfiltern.
+    const newRows = isPayPalCsv ? dropPayPalCounterBookings(enrichedRows) : enrichedRows;
+    const droppedCounter = enrichedRows.length - newRows.length;
     const autoSuggestions = computeAutoSuggestions(newRows);
-    setParsed({rows: resolvedRows, format, newRows, dupRows, autoSuggestions, skipped: skipped || [], detectedBalance, detectedBalances: detectedBalances || (detectedBalance ? [detectedBalance] : [])});
+    setParsed({rows: resolvedRows, format, newRows, dupRows, autoSuggestions, droppedCounter, skipped: skipped || [], detectedBalance, detectedBalances: detectedBalances || (detectedBalance ? [detectedBalance] : [])});
     setAssign(autoAssign(newRows));
     setShowCatAssign(newRows.length <= 20);
     // PayPal-CSVs: Giro-Verknüpfung automatisch vorschalten — PayPal-Zahlungen
@@ -723,10 +726,10 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
               <div style={{color:T.neg,fontSize:18,fontWeight:800}}>{flowStats.expense}</div>
               <div style={{color:T.txt2,fontSize:10}}>Ausgaben</div>
             </div>
-            {flowStats.counter>0&&(
-              <div style={{textAlign:"center"}} title="Interne PayPal-Gegenbuchungen (Finanzierung jeder Zahlung) – keine echten Einnahmen">
-                <div style={{color:T.txt2,fontSize:18,fontWeight:700}}>{flowStats.counter}</div>
-                <div style={{color:T.txt2,fontSize:10}}>Gegenbuch.</div>
+            {(parsed.droppedCounter>0)&&(
+              <div style={{textAlign:"center"}} title="Interne PayPal-Gegenbuchungen (Spiegel-Einnahmen zur Finanzierung jeder Zahlung) wurden herausgefiltert">
+                <div style={{color:T.txt2,fontSize:18,fontWeight:700}}>−{parsed.droppedCounter}</div>
+                <div style={{color:T.txt2,fontSize:10}}>Gegenbuch. gefiltert</div>
               </div>
             )}
             {parsed.rows.some(r=>r._paypalRows>1)&&(
