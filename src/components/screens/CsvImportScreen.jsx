@@ -148,9 +148,10 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const [autoSuggFull, setAutoSuggFull] = useState(false);
   // Suchfeld im Vorschlags-Panel (Händler, Betrag, Datum, Giro-Text).
   const [suggSearch, setSuggSearch] = useState("");
-  // Filter-Chips: Typ (alle/einnahmen/ausgaben) und Konfidenz (alle/hoch/mittel/niedrig).
-  const [suggType, setSuggType] = useState("alle");
-  const [suggConf, setSuggConf] = useState("alle");
+  // Filter-Chips: Typ ("" | "ausgaben" | "einnahmen") und Konfidenz
+  // ("" | "hoch" | "mittel" | "niedrig"). "" = nicht gesetzt (kein „alle"-Chip nötig).
+  const [suggType, setSuggType] = useState("");
+  const [suggConf, setSuggConf] = useState("");
   // Nur „vollbild", wenn das Panel auch sichtbar ist — sonst leerer Screen.
   const suggFull = showAutoSugg && autoSuggFull;
 
@@ -204,23 +205,35 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     });
     return {income, expense, counter};
   })();
-  // Gefilterte Vorschläge (Typ-Chips + Konfidenz-Chips + Suche). Sucht in
-  // PayPal-Beschreibung, zurückgewonnenem Händler, Beträgen, Daten und Giro-Text.
+  // Gefilterte Vorschläge (Ausgaben↔Giro). „einnahmen" wird separat behandelt,
+  // weil Einnahmen keine Giro-Belastung haben (siehe incomeShown).
   const suggAmt = s => (parsed?.newRows?.[s.rowIdx]?.amount ?? parsed?.newRows?.[s.rowIdx]?.totalAmount ?? 0);
   const dshort = iso => { const p=String(iso||"").split("-"); return p.length===3?`${p[2]}.${p[1]}.${p[0].slice(2)}`:iso||""; };
+  const matchSuggText = (s, q) => {
+    const r = parsed.newRows[s.rowIdx] || {};
+    const hay = [r.desc, r._enrichedMerchant, r._recipient, r.isoDate, s.giroTx?.desc,
+      s.giroTx?.date, String(Math.abs(r.amount ?? r.totalAmount ?? 0)).replace(".",","),
+      String(s.giroTx?.totalAmount ?? "").replace(".",",")].join(" ").toLowerCase();
+    return hay.includes(q);
+  };
+  const showIncome = suggType==="einnahmen";
   const shownSuggs = (()=>{
     const all = parsed?.autoSuggestions || [];
     const q = suggSearch.trim().toLowerCase();
     return all.filter(s=>{
-      if(suggConf!=="alle" && s.confidence!==suggConf) return false;
-      if(suggType==="einnahmen" && !(suggAmt(s)>0)) return false;
-      if(suggType==="ausgaben"  && !(suggAmt(s)<0)) return false;
+      if(suggConf && s.confidence!==suggConf) return false;
       if(!q) return true;
-      const r = parsed.newRows[s.rowIdx] || {};
-      const hay = [r.desc, r._enrichedMerchant, r._recipient, r.isoDate, s.giroTx?.desc,
-        s.giroTx?.date, String(Math.abs(r.amount ?? r.totalAmount ?? 0)).replace(".",","),
-        String(s.giroTx?.totalAmount ?? "").replace(".",",")].join(" ").toLowerCase();
-      return hay.includes(q);
+      return matchSuggText(s, q);
+    });
+  })();
+  // Echte Einnahmen-Buchungen (positive Zeilen) — für den Filter „Einnahmen".
+  const incomeShown = (()=>{
+    const rows = parsed?.newRows || [];
+    const q = suggSearch.trim().toLowerCase();
+    return rows.filter(r=>{
+      if(!((r.amount ?? r.totalAmount ?? 0) > 0)) return false;
+      if(!q) return true;
+      return [r.desc, r._recipient, r.isoDate, String(Math.abs(r.amount??r.totalAmount??0)).replace(".",",")].join(" ").toLowerCase().includes(q);
     });
   })();
   // Zähler je Konfidenzstufe (für die Chip-Beschriftung).
@@ -719,7 +732,9 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
               </div>
             </div>
           )}
-          {/* Summary bar */}
+          {/* Summary bar — im Vorschlags-Vollbild ausgeblendet, damit nur die
+              Vorschläge sichtbar sind. */}
+          {!suggFull&&(
           <div style={{background:T.surf2,padding:"10px 16px",borderBottom:`1px solid ${T.bd}`,flexShrink:0,display:"flex",gap:10,flexWrap:"wrap"}}>
             <div style={{textAlign:"center"}}>
               <div style={{color:T.pos,fontSize:18,fontWeight:800}}>{parsed.newRows.length}</div>
@@ -788,6 +803,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
               </div>
             </div>
           </div>
+          )}
 
           {/* Auto-Vorschläge Vergleichspanel */}
           {showAutoSugg&&(parsed.autoSuggestions||[]).length>0&&(
@@ -795,16 +811,18 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
               padding:"10px 16px",overflowY:"auto",
               ...(autoSuggFull?{flex:1,minHeight:0}:{flexShrink:0,maxHeight:220})}}>
               <div style={{marginBottom:8,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",
-                position:"sticky",top:-10,background:(isLightTheme())?"rgba(252,247,238,0.96)":"rgba(38,34,26,0.96)",
-                margin:"-10px -16px 8px",padding:"10px 16px 8px",zIndex:1}}>
+                background:(isLightTheme())?"rgba(252,247,238,0.96)":"rgba(38,34,26,0.96)",
+                margin:"-10px -16px 8px",padding:"10px 16px 8px",zIndex:1,
+                // Im Vollbild scrollt der Kopf mit (nur Vorschläge sichtbar); sonst sticky.
+                ...(autoSuggFull?{}:{position:"sticky",top:-10})}}>
                 <span style={{color:T.gold,fontSize:MFSl,fontWeight:700,display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0}}>
                   {Li("git-compare",13,T.gold)}
                   <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                    {parsed.autoSuggestions.length} Vorschläge{acceptedCount>0?` · ${acceptedCount} übernommen`:""}
+                    {showIncome ? `${incomeShown.length} Einnahmen` : `${parsed.autoSuggestions.length} Vorschläge${acceptedCount>0?` · ${acceptedCount} übernommen`:""}`}
                   </span>
                 </span>
-                {/* Sammel-Übernehmen */}
-                {bulkCounts.hoch>0&&(
+                {/* Sammel-Übernehmen (nur in der Vorschlags-/Match-Ansicht) */}
+                {!showIncome&&bulkCounts.hoch>0&&(
                   <button onClick={()=>acceptBulk(["hoch"])}
                     style={{flexShrink:0,display:"flex",alignItems:"center",gap:5,cursor:"pointer",
                       background:T.pos,border:`1px solid ${T.pos}`,borderRadius:8,padding:"5px 11px",
@@ -812,7 +830,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                     {Li("check",13,T.on_accent||"#0a0a0a")} Alle sicheren ({bulkCounts.hoch})
                   </button>
                 )}
-                {bulkCounts.mittel>0&&(
+                {!showIncome&&bulkCounts.mittel>0&&(
                   <button onClick={()=>acceptBulk(["hoch","mittel"])}
                     style={{flexShrink:0,display:"flex",alignItems:"center",gap:5,cursor:"pointer",
                       background:"rgba(245,166,35,0.18)",border:`1px solid ${T.gold}`,borderRadius:8,padding:"5px 11px",
@@ -847,36 +865,64 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                         fontSize:autoSuggFull?14:MFSl,outline:"none",fontFamily:"inherit"}}/>
                     {suggSearch&&<span onClick={()=>setSuggSearch("")} style={{cursor:"pointer",color:T.txt2,display:"flex"}}>{Li("x",13,T.txt2)}</span>}
                   </div>
-                  {suggSearch&&<span style={{color:T.txt2,fontSize:MFSl,flexShrink:0}}>{shownSuggs.length} Treffer</span>}
+                  {suggSearch&&<span style={{color:T.txt2,fontSize:MFSl,flexShrink:0}}>{(showIncome?incomeShown:shownSuggs).length} Treffer</span>}
                 </div>
-                {/* Filter-Chips: Typ + Konfidenz */}
+                {/* Filter-Chips: Typ (groß, Substantive) + Konfidenz (klein,
+                    Adjektive). Erneutes Tippen wählt wieder ab — kein „alle"-Chip nötig. */}
                 <div style={{flex:"1 1 100%",display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
-                  {[["alle","alle"],["ausgaben","ausgaben"],["einnahmen","einnahmen"]].map(([v,lbl])=>{
+                  {[["ausgaben","Ausgaben"],["einnahmen","Einnahmen"]].map(([v,lbl])=>{
                     const active=suggType===v;
-                    return <button key={v} onClick={()=>setSuggType(v)}
+                    return <button key={v} onClick={()=>setSuggType(t=>t===v?"":v)}
                       style={{padding:"4px 11px",borderRadius:10,border:`1px solid ${active?T.blue:T.bd}`,
                         background:active?"rgba(74,159,212,0.2)":"transparent",color:active?T.blue:T.txt2,
                         fontSize:autoSuggFull?13:MFSl,fontWeight:active?700:500,cursor:"pointer",fontFamily:"inherit"}}>{lbl}</button>;
                   })}
                   <div style={{width:1,alignSelf:"stretch",background:T.bd,margin:"2px 3px"}}/>
-                  {[["alle","alle",T.txt2,"rgba(255,255,255,0.08)"],["hoch","hoch",T.pos,"rgba(34,197,94,0.18)"],
-                    ["mittel","mittel",T.gold,"rgba(245,166,35,0.18)"],["niedrig","niedrig",T.txt2,"rgba(255,255,255,0.08)"]].map(([v,lbl,col,bg])=>{
+                  {[["hoch",T.pos,"rgba(34,197,94,0.18)"],["mittel",T.gold,"rgba(245,166,35,0.18)"],
+                    ["niedrig",T.txt2,"rgba(255,255,255,0.08)"]].map(([v,col,bg])=>{
                     const active=suggConf===v;
-                    const cnt = v==="alle" ? null : confCounts[v];
-                    return <button key={v} onClick={()=>setSuggConf(v)}
+                    return <button key={v} onClick={()=>setSuggConf(c=>c===v?"":v)} disabled={showIncome}
                       style={{padding:"4px 11px",borderRadius:10,border:`1px solid ${active?col:T.bd}`,
-                        background:active?bg:"transparent",color:active?col:T.txt2,
-                        fontSize:autoSuggFull?13:MFSl,fontWeight:active?700:500,cursor:"pointer",fontFamily:"inherit"}}>
-                      {lbl}{cnt!=null?` (${cnt})`:""}</button>;
+                        background:active?bg:"transparent",color:active?col:T.txt2,opacity:showIncome?0.4:1,
+                        fontSize:autoSuggFull?13:MFSl,fontWeight:active?700:500,cursor:showIncome?"default":"pointer",fontFamily:"inherit"}}>
+                      {v} ({confCounts[v]})</button>;
                   })}
                 </div>
               </div>
-              {shownSuggs.length===0&&(
+              {/* Filter „Einnahmen": echte Einnahmen-Buchungen (ohne Giro-Match,
+                  da Einnahmen keine Giro-Belastung haben). */}
+              {showIncome&&(
+                <>
+                  {incomeShown.length===0&&(
+                    <div style={{color:T.txt2,fontSize:MFSl,padding:"10px 2px"}}>Keine Einnahmen für die aktuelle Auswahl.</div>
+                  )}
+                  {incomeShown.map((r,ii)=>{
+                    const amt = Math.abs(pn(r.amount ?? r.totalAmount ?? 0));
+                    const descFS = autoSuggFull ? (mobileMode?15:13.5) : (mobileMode?14:11.5);
+                    const metaFS = autoSuggFull ? (mobileMode?13:11.5) : (mobileMode?12:10);
+                    const wrap = autoSuggFull ? {whiteSpace:"normal",wordBreak:"break-word"} : {overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"};
+                    return (
+                      <div key={"inc"+ii} style={{display:"flex",flexDirection:"column",gap:3,
+                        padding:autoSuggFull?"11px 2px":"8px 2px",borderBottom:`1px solid rgba(255,255,255,0.06)`}}>
+                        <div style={{display:"flex",alignItems:"baseline",gap:8}}>
+                          <div style={{flex:1,minWidth:0,color:T.pos,fontSize:autoSuggFull?(mobileMode?22:17):(mobileMode?17:13.5),
+                            fontWeight:800,fontFamily:NUM_FONT}}>+ {fmt(amt)}</div>
+                          <div style={{flexShrink:0,color:T.txt2,fontSize:metaFS}}>PayPal {dshort(r.isoDate)}</div>
+                        </div>
+                        <div style={{color:T.txt2,fontSize:descFS,...wrap}}>
+                          <span style={{color:T.gold,fontWeight:700}}>PayPal:</span> {r.desc}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
+              {!showIncome&&shownSuggs.length===0&&(
                 <div style={{color:T.txt2,fontSize:MFSl,padding:"10px 2px"}}>
                   Keine Vorschläge für die aktuelle Auswahl{suggSearch?` (Suche „${suggSearch}")`:""}.
                 </div>
               )}
-              {shownSuggs.map((s,si)=>{
+              {!showIncome&&shownSuggs.map((s,si)=>{
                 const r = parsed.newRows[s.rowIdx];
                 const confColor = s.confidence==="hoch"?T.pos:s.confidence==="mittel"?T.gold:T.txt2;
                 const accepted = (parsed.acceptedSuggs||[]).some(a=>a.rowIdx===s.rowIdx&&a.giroId===s.giroTx.id);
