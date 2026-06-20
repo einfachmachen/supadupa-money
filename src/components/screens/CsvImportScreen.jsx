@@ -148,6 +148,9 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const [autoSuggFull, setAutoSuggFull] = useState(false);
   // Suchfeld im Vorschlags-Panel (Händler, Betrag, Datum, Giro-Text).
   const [suggSearch, setSuggSearch] = useState("");
+  // Filter-Chips: Typ (alle/einnahmen/ausgaben) und Konfidenz (alle/hoch/mittel/niedrig).
+  const [suggType, setSuggType] = useState("alle");
+  const [suggConf, setSuggConf] = useState("alle");
   // Nur „vollbild", wenn das Panel auch sichtbar ist — sonst leerer Screen.
   const suggFull = showAutoSugg && autoSuggFull;
 
@@ -201,19 +204,31 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     });
     return {income, expense, counter};
   })();
-  // Suchgefilterte Vorschläge (für die Anzeige). Sucht in PayPal-Beschreibung,
-  // zurückgewonnenem Händler, Beträgen, Daten und Giro-Text.
+  // Gefilterte Vorschläge (Typ-Chips + Konfidenz-Chips + Suche). Sucht in
+  // PayPal-Beschreibung, zurückgewonnenem Händler, Beträgen, Daten und Giro-Text.
+  const suggAmt = s => (parsed?.newRows?.[s.rowIdx]?.amount ?? parsed?.newRows?.[s.rowIdx]?.totalAmount ?? 0);
+  const dshort = iso => { const p=String(iso||"").split("-"); return p.length===3?`${p[2]}.${p[1]}.${p[0].slice(2)}`:iso||""; };
   const shownSuggs = (()=>{
     const all = parsed?.autoSuggestions || [];
     const q = suggSearch.trim().toLowerCase();
-    if(!q) return all;
     return all.filter(s=>{
+      if(suggConf!=="alle" && s.confidence!==suggConf) return false;
+      if(suggType==="einnahmen" && !(suggAmt(s)>0)) return false;
+      if(suggType==="ausgaben"  && !(suggAmt(s)<0)) return false;
+      if(!q) return true;
       const r = parsed.newRows[s.rowIdx] || {};
       const hay = [r.desc, r._enrichedMerchant, r._recipient, r.isoDate, s.giroTx?.desc,
         s.giroTx?.date, String(Math.abs(r.amount ?? r.totalAmount ?? 0)).replace(".",","),
         String(s.giroTx?.totalAmount ?? "").replace(".",",")].join(" ").toLowerCase();
       return hay.includes(q);
     });
+  })();
+  // Zähler je Konfidenzstufe (für die Chip-Beschriftung).
+  const confCounts = (()=>{
+    const all = parsed?.autoSuggestions || [];
+    const c = {hoch:0, mittel:0, niedrig:0};
+    all.forEach(s=>{ if(c[s.confidence]!=null) c[s.confidence]++; });
+    return c;
   })();
 
   // Automatische Verknüpfungsvorschläge berechnen (für Vergleich, ohne zu importieren).
@@ -834,72 +849,92 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                   </div>
                   {suggSearch&&<span style={{color:T.txt2,fontSize:MFSl,flexShrink:0}}>{shownSuggs.length} Treffer</span>}
                 </div>
+                {/* Filter-Chips: Typ + Konfidenz */}
+                <div style={{flex:"1 1 100%",display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
+                  {[["alle","alle"],["ausgaben","ausgaben"],["einnahmen","einnahmen"]].map(([v,lbl])=>{
+                    const active=suggType===v;
+                    return <button key={v} onClick={()=>setSuggType(v)}
+                      style={{padding:"4px 11px",borderRadius:10,border:`1px solid ${active?T.blue:T.bd}`,
+                        background:active?"rgba(74,159,212,0.2)":"transparent",color:active?T.blue:T.txt2,
+                        fontSize:autoSuggFull?13:MFSl,fontWeight:active?700:500,cursor:"pointer",fontFamily:"inherit"}}>{lbl}</button>;
+                  })}
+                  <div style={{width:1,alignSelf:"stretch",background:T.bd,margin:"2px 3px"}}/>
+                  {[["alle","alle",T.txt2,"rgba(255,255,255,0.08)"],["hoch","hoch",T.pos,"rgba(34,197,94,0.18)"],
+                    ["mittel","mittel",T.gold,"rgba(245,166,35,0.18)"],["niedrig","niedrig",T.txt2,"rgba(255,255,255,0.08)"]].map(([v,lbl,col,bg])=>{
+                    const active=suggConf===v;
+                    const cnt = v==="alle" ? null : confCounts[v];
+                    return <button key={v} onClick={()=>setSuggConf(v)}
+                      style={{padding:"4px 11px",borderRadius:10,border:`1px solid ${active?col:T.bd}`,
+                        background:active?bg:"transparent",color:active?col:T.txt2,
+                        fontSize:autoSuggFull?13:MFSl,fontWeight:active?700:500,cursor:"pointer",fontFamily:"inherit"}}>
+                      {lbl}{cnt!=null?` (${cnt})`:""}</button>;
+                  })}
+                </div>
               </div>
               {shownSuggs.length===0&&(
-                <div style={{color:T.txt2,fontSize:MFSl,padding:"10px 2px"}}>Keine Vorschläge passen zur Suche „{suggSearch}".</div>
+                <div style={{color:T.txt2,fontSize:MFSl,padding:"10px 2px"}}>
+                  Keine Vorschläge für die aktuelle Auswahl{suggSearch?` (Suche „${suggSearch}")`:""}.
+                </div>
               )}
               {shownSuggs.map((s,si)=>{
                 const r = parsed.newRows[s.rowIdx];
                 const confColor = s.confidence==="hoch"?T.pos:s.confidence==="mittel"?T.gold:T.txt2;
-                // Im Vollbild deutlich größere Schrift + mehr Details.
-                const sFS  = autoSuggFull ? (mobileMode?20:15.5) : MFSl;
-                const sFSs = autoSuggFull ? (mobileMode?14:11.5) : 9;
                 const accepted = (parsed.acceptedSuggs||[]).some(a=>a.rowIdx===s.rowIdx&&a.giroId===s.giroTx.id);
                 const ppAmt = Math.abs(pn(r.amount ?? r.totalAmount ?? 0));
+                const isExpense = (r.amount ?? r.totalAmount ?? 0) < 0;
+                // Schriftgrößen — auf dem iPhone 13 mini gut lesbar, im Vollbild größer.
+                const amtFS  = autoSuggFull ? (mobileMode?22:17)   : (mobileMode?17:13.5);
+                const descFS = autoSuggFull ? (mobileMode?15:13.5) : (mobileMode?14:11.5);
+                const metaFS = autoSuggFull ? (mobileMode?13:11.5) : (mobileMode?12:10);
                 const wrapStyle = autoSuggFull
                   ? {whiteSpace:"normal",overflow:"visible",wordBreak:"break-word"}
                   : {overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"};
                 return (
-                  <div key={si} style={{display:"flex",alignItems:autoSuggFull?"flex-start":"center",
-                    gap:autoSuggFull?14:8,padding:autoSuggFull?"10px 0":"5px 0",
-                    borderBottom:`1px solid rgba(255,255,255,0.06)`}}>
-                    {/* PayPal-Seite */}
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{color:T.txt,fontSize:sFS,fontWeight:600,...wrapStyle}}>{r.desc}</div>
-                      {r._enrichedMerchant&&(
-                        <div style={{color:T.blue,fontSize:sFSs,fontWeight:700,marginTop:1,...wrapStyle}}>
-                          {Li("corner-down-right",11,T.blue)} {r._enrichedMerchant}{r._enrichedPlus30?" · via PayPal +30":""}
-                        </div>
-                      )}
-                      <div style={{color:T.txt2,fontSize:sFSs,marginTop:2}}>
-                        {r.isoDate} · <span style={{color:r.amount<0?T.neg:T.pos,fontFamily:NUM_FONT,fontWeight:700}}>{r.amount<0?"−":"+"}{fmt(ppAmt)}</span>
+                  <div key={si} style={{display:"flex",flexDirection:"column",gap:3,
+                    padding:autoSuggFull?"11px 2px":"8px 2px",
+                    borderBottom:`1px solid rgba(255,255,255,0.06)`,
+                    background:accepted?"rgba(34,197,94,0.07)":"transparent"}}>
+                    {/* Zeile 1: Betrag (nur einmal) | Datum Giro · Datum PayPal */}
+                    <div style={{display:"flex",alignItems:"baseline",gap:8}}>
+                      <div style={{flex:1,minWidth:0,color:isExpense?T.neg:T.pos,fontSize:amtFS,
+                        fontWeight:800,fontFamily:NUM_FONT}}>
+                        {isExpense?"−":"+"} {fmt(ppAmt)}
+                      </div>
+                      <div style={{flexShrink:0,color:T.txt2,fontSize:metaFS,textAlign:"right"}}>
+                        Giro {dshort(s.giroTx.date)} · PayPal {dshort(r.isoDate)}
                       </div>
                     </div>
-                    {/* Mitte: Konfidenz + Grund + Tage-Abstand */}
-                    <div style={{flexShrink:0,textAlign:"center",width:autoSuggFull?160:62,
-                      alignSelf:autoSuggFull?"center":"auto"}}>
-                      <div style={{color:confColor,fontSize:autoSuggFull?13:9,fontWeight:800,
-                        textTransform:"uppercase",letterSpacing:"0.04em"}}>{s.confidence}</div>
-                      {Li("arrow-right",autoSuggFull?18:14,confColor)}
-                      <div style={{color:T.txt2,fontSize:sFSs}}>±{s.diffDays} Tage</div>
-                      {autoSuggFull&&s.reason&&(
-                        <div style={{color:confColor,fontSize:11,marginTop:3,lineHeight:1.25,opacity:0.92}}>{s.reason}</div>
-                      )}
-                    </div>
-                    {/* Giro-Seite */}
-                    <div style={{flex:1,minWidth:0,textAlign:"right"}}>
-                      <div style={{color:T.txt,fontSize:sFS,fontWeight:600,
-                        ...(autoSuggFull?wrapStyle:{...wrapStyle,direction:"rtl"})}}>{s.giroTx.desc}</div>
-                      <div style={{color:T.txt2,fontSize:sFSs,marginTop:2}}>
-                        {s.giroTx.date} · <span style={{fontFamily:NUM_FONT,fontWeight:700}}>{fmt(s.giroTx.totalAmount)}</span>
+                    {/* Zeile 2: Konfidenz · ±Tage (+ Grund) | übernehmen */}
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      <div style={{flex:1,minWidth:0,display:"flex",alignItems:"baseline",gap:6,flexWrap:"wrap"}}>
+                        <span style={{color:confColor,fontSize:autoSuggFull?14:12,fontWeight:800}}>{s.confidence}</span>
+                        <span style={{color:T.txt2,fontSize:metaFS}}>±{s.diffDays} Tage</span>
+                        {s.reason&&<span style={{color:T.txt2,fontSize:metaFS,opacity:0.85}}>· {s.reason}</span>}
                       </div>
+                      <button onClick={()=>{
+                        // Vorschlag als manuelle Verknüpfung übernehmen — wird in doImport angewendet.
+                        setParsed(p=>({...p,
+                          acceptedSuggs: [...(p.acceptedSuggs||[]), {rowIdx:s.rowIdx, giroId:s.giroTx.id}]
+                        }));
+                      }}
+                        disabled={accepted}
+                        style={{flexShrink:0,background:accepted?"rgba(34,197,94,0.2)":"rgba(255,255,255,0.06)",
+                          border:`1px solid ${accepted?T.pos:T.bd}`,
+                          borderRadius:8,padding:autoSuggFull?"6px 13px":"4px 10px",
+                          fontSize:autoSuggFull?13:11,fontWeight:700,cursor:accepted?"default":"pointer",
+                          color:accepted?T.pos:T.txt2,fontFamily:"inherit"}}>
+                        {accepted?"✓ übernommen":"übernehmen"}
+                      </button>
                     </div>
-                    {/* Übernehmen-Button */}
-                    <button onClick={()=>{
-                      // Vorschlag als manuelle Verknüpfung übernehmen — wird in doImport angewendet.
-                      setParsed(p=>({...p,
-                        acceptedSuggs: [...(p.acceptedSuggs||[]), {rowIdx:s.rowIdx, giroId:s.giroTx.id}]
-                      }));
-                    }}
-                      disabled={accepted}
-                      style={{flexShrink:0,alignSelf:"center",
-                        background:accepted?"rgba(34,197,94,0.2)":"rgba(255,255,255,0.06)",
-                        border:`1px solid ${accepted?T.pos:T.bd}`,
-                        borderRadius:8,padding:autoSuggFull?"7px 14px":"3px 8px",
-                        fontSize:autoSuggFull?13:10,fontWeight:700,cursor:accepted?"default":"pointer",
-                        color:accepted?T.pos:T.txt2,fontFamily:"inherit"}}>
-                      {accepted?"✓ übernommen":"übernehmen"}
-                    </button>
+                    {/* Zeile 3: Giro-Buchung = „die Wahrheit" */}
+                    <div style={{color:T.txt,fontSize:descFS,fontWeight:600,...wrapStyle}}>
+                      <span style={{color:T.blue,fontWeight:700}}>Giro:</span> {s.giroTx.desc}
+                    </div>
+                    {/* Zeile 4: PayPal-Buchung = Detail-Infos */}
+                    <div style={{color:T.txt2,fontSize:descFS,...wrapStyle}}>
+                      <span style={{color:T.gold,fontWeight:700}}>PayPal:</span>{" "}
+                      {r._enrichedMerchant?`${r._enrichedMerchant}${r._enrichedPlus30?" · via +30":""} — `:""}{r.desc}
+                    </div>
                   </div>
                 );
               })}
