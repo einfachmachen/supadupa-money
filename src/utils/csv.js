@@ -216,7 +216,7 @@ function parseCSV(text, {noGroup=false}={}) {
     const rowType = typeCol>=0    ? cols[typeCol]     : rawBtext||null;
     // Finanzblick: pending-Flag auslesen
     const isFbPending = pendingFlagCol>=0 && cols[pendingFlagCol]?.toLowerCase()==="true";
-    rows.push({ isoDate, amount, desc, fp: txFingerprint(isoDate, amount, desc), txCode, refCode, rowType, _konto: rawKonto, _fbPending: isFbPending, ...(rawCreditor ? {_creditorId: rawCreditor} : {}) });
+    rows.push({ isoDate, amount, desc, fp: txFingerprint(isoDate, amount, desc), txCode, refCode, rowType, _konto: rawKonto, _fbPending: isFbPending, ...(rawRecip ? {_recipient: rawRecip} : {}), ...(rawCreditor ? {_creditorId: rawCreditor} : {}) });
   }
 
   // Finanzblick: pending=true Detailzeilen als Notiz an Hauptbuchung anhängen
