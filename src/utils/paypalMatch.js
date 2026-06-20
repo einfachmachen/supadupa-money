@@ -25,6 +25,9 @@ const STOP = new Set([
   "ihr", "einkauf", "bei", "ein", "kauf", "der", "die", "das", "und",
   "com", "www", "http", "https", "payment", "zahlung", "ref", "kd",
   "mandat", "mandatsref", "glaeubiger", "verwendungszweck",
+  // Finanzblick-PayPal-Floskeln (Status / Gegenbuchungen), kein Händlername:
+  "successful", "pending", "completed", "rechnungs", "nr", "rechnungsnr",
+  "sonstige", "einnahmen", "abbuchung", "konto", "service", "services",
 ]);
 
 const norm = s =>
@@ -44,10 +47,12 @@ export function isPayPalGiroTx(tx) {
   return d.includes("paypal") || /\bpp\.\s*\d/.test(d) || /\bpp\.\b/.test(d);
 }
 
-// Händlername aus einer PayPal-CSV-Zeile (erste Beschreibungs-Komponente = "Name").
+// Händlername aus einer PayPal-CSV-Zeile. Bevorzugt das separate Empfänger-Feld
+// (_recipient, aus der CSV-Spalte „Empfaenger"); fällt sonst auf die erste
+// Beschreibungs-Komponente zurück.
 export function payPalMerchant(row) {
-  return (row?.desc || "")
-    .split(" · ")[0]
+  const raw = (row?._recipient || (row?.desc || "").split(" · ")[0]);
+  return raw
     .split(" – ")[0]
     .replace(/\{[^}]{0,300}\}/g, "")
     .trim();
@@ -69,6 +74,11 @@ export function merchantMatchesGiro(merchant, giroDesc) {
 // Bewertet ein Kandidatenpaar (PayPal-Zeile ↔ Giro-Buchung). Gibt null zurück,
 // wenn es kein Kandidat ist (falscher Betrag, kein PayPal, außerhalb Fenster).
 export function scoreMatch(row, giroTx, linkDays) {
+  // Nur Ausgaben paaren: PayPal-Lastschriften belasten das Girokonto. Die
+  // positiven „Sonstige Einnahmen"-Gegenbuchungen der Finanzblick-PayPal-CSV
+  // (Guthaben-Finanzierung jeder Zahlung) sind kein Lastschrift-Pendant.
+  if (row.amount != null && row.amount >= 0) return null;
+  if (giroTx._csvType === "income") return null;
   const absAmt = Math.abs(row.amount ?? row.totalAmount ?? 0);
   if (Math.round((giroTx.totalAmount || 0) * 100) !== Math.round(absAmt * 100)) return null;
   if (!isPayPalGiroTx(giroTx)) return null;
@@ -111,6 +121,27 @@ export function assignPayPalLinks(newRows, giroTxs, linkDays, opts = {}) {
   pairs.forEach(p => {
     candByRow[p.rowIdx] = (candByRow[p.rowIdx] || 0) + 1;
     candByTx[p.giroTx.id] = (candByTx[p.giroTx.id] || 0) + 1;
+  });
+
+  // Konfidenz + verständlicher Grund je Paar. Eindeutigkeit (nur ein Kandidat
+  // auf beiden Seiten) hebt die Einstufung, auch ohne Händlernamen.
+  pairs.forEach(p => {
+    const ambiguous = candByRow[p.rowIdx] > 1 || candByTx[p.giroTx.id] > 1;
+    if (p.merchantMatch) {
+      p.confidence = "hoch";
+      p.reason = "Händlername stimmt überein";
+    } else if (!ambiguous) {
+      p.confidence = "mittel";
+      p.reason = "Betrag im Zeitraum eindeutig";
+    } else if (p.diffDays <= 3) {
+      p.confidence = "mittel";
+      p.reason = "Betrag passt, Datum sehr nah";
+    } else {
+      p.confidence = "niedrig";
+      p.reason = candByTx[p.giroTx.id] > 1
+        ? "nur Betrag – mehrere gleich hohe Buchungen"
+        : `nur Betrag – ${p.diffDays} Tage Abstand`;
+    }
   });
 
   // Gieriges 1:1 — bestes Paar zuerst.

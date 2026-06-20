@@ -129,3 +129,53 @@ describe("assignPayPalLinks — eindeutige Zuordnung", () => {
     expect(links.map(l => l.giroTx.id)).toEqual(["g1"]);
   });
 });
+
+describe("assignPayPalLinks — Rauschen & Konfidenz-Gründe", () => {
+  it("ignoriert positive Gegenbuchungen (Guthaben-Finanzierung)", () => {
+    // Finanzblick-PayPal-CSV: jede Zahlung hat eine +X 'Sonstige Einnahmen'-Zeile.
+    const rows = [{ amount: 15.98, isoDate: "2025-12-29", desc: "Successful · Rechnungs-Nr: OLNUE1" }];
+    const giros = [giro("g1", 15.98, "2025-12-29", "Comtrada")];
+    const { links, suggestions } = assignPayPalLinks(rows, giros, 35);
+    expect(links).toHaveLength(0);
+    expect(suggestions).toHaveLength(0);
+  });
+
+  it("Händler-Treffer → hoch, mit Grund", () => {
+    const rows = [ppRow("Apple Services paypal-itunes-eur@group.apple.com", 10.99, "2025-08-26")];
+    const giros = [giro("g1", 10.99, "2025-09-29", "Apple Services")];
+    const { suggestions } = assignPayPalLinks(rows, giros, 40);
+    expect(suggestions[0].confidence).toBe("hoch");
+    expect(suggestions[0].reason).toMatch(/Händler/);
+  });
+
+  it("eindeutiger Betrag ohne Händler → mittel, mit Grund", () => {
+    const rows = [{ amount: -7.5, isoDate: "2025-03-16", desc: "Successful · Rechnungs-Nr: X" }];
+    const giros = [giro("g1", 7.5, "2025-03-20", "", { desc: "PayPal Europe . Allgemeine Abbuchung" })];
+    const { suggestions } = assignPayPalLinks(rows, giros, 35);
+    expect(suggestions[0].confidence).toBe("mittel");
+    expect(suggestions[0].reason).toMatch(/eindeutig/);
+  });
+
+  it("mehrere gleich hohe ohne Händler → niedrig, mit Grund", () => {
+    const rows = [
+      { amount: -10.99, isoDate: "2025-08-26", desc: "Successful · Rechnungs-Nr: A" },
+      { amount: -10.99, isoDate: "2025-09-26", desc: "Successful · Rechnungs-Nr: B" },
+    ];
+    const giros = [
+      giro("g1", 10.99, "2025-09-29", "", { desc: "PayPal Europe . Apple Services Abo" }),
+      giro("g2", 10.99, "2025-10-29", "", { desc: "PayPal Europe . Apple Services Abo" }),
+    ];
+    const { suggestions } = assignPayPalLinks(rows, giros, 40);
+    const low = suggestions.find(s => s.confidence === "niedrig");
+    expect(low).toBeTruthy();
+    expect(low.reason).toMatch(/mehrere gleich hohe|Abstand/);
+  });
+
+  it("bevorzugt das _recipient-Feld als Händlername", () => {
+    const rows = [{ amount: -15.98, isoDate: "2025-12-29",
+      desc: "Successful · Rechnungs-Nr: OLNUE1", _recipient: "COMTRADA GmbH paypal@comtrada.de" }];
+    const giros = [giro("g1", 15.98, "2025-12-29", "Comtrada")];
+    const { links } = assignPayPalLinks(rows, giros, 35);
+    expect(links.map(l => l.giroTx.id)).toEqual(["g1"]);
+  });
+});

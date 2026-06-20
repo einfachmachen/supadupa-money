@@ -711,45 +711,59 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
               {parsed.autoSuggestions.map((s,si)=>{
                 const r = parsed.newRows[s.rowIdx];
                 const confColor = s.confidence==="hoch"?T.pos:s.confidence==="mittel"?T.gold:T.txt2;
+                // Im Vollbild deutlich größere Schrift + mehr Details.
+                const sFS  = autoSuggFull ? (mobileMode?20:15.5) : MFSl;
+                const sFSs = autoSuggFull ? (mobileMode?14:11.5) : 9;
+                const accepted = (parsed.acceptedSuggs||[]).some(a=>a.rowIdx===s.rowIdx&&a.giroId===s.giroTx.id);
+                const ppAmt = Math.abs(pn(r.amount ?? r.totalAmount ?? 0));
+                const wrapStyle = autoSuggFull
+                  ? {whiteSpace:"normal",overflow:"visible",wordBreak:"break-word"}
+                  : {overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"};
                 return (
-                  <div key={si} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",
-                    borderBottom:`1px solid rgba(255,255,255,0.05)`}}>
+                  <div key={si} style={{display:"flex",alignItems:autoSuggFull?"flex-start":"center",
+                    gap:autoSuggFull?14:8,padding:autoSuggFull?"10px 0":"5px 0",
+                    borderBottom:`1px solid rgba(255,255,255,0.06)`}}>
                     {/* PayPal-Seite */}
                     <div style={{flex:1,minWidth:0}}>
-                      <div style={{color:T.txt,fontSize:MFSl,fontWeight:600,
-                        ...(autoSuggFull
-                          ? {whiteSpace:"normal",overflow:"visible",wordBreak:"break-word"}
-                          : {overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"})}}>{r.desc}</div>
-                      <div style={{color:T.txt2,fontSize:9}}>{r.isoDate}</div>
+                      <div style={{color:T.txt,fontSize:sFS,fontWeight:600,...wrapStyle}}>{r.desc}</div>
+                      <div style={{color:T.txt2,fontSize:sFSs,marginTop:2}}>
+                        {r.isoDate} · <span style={{color:r.amount<0?T.neg:T.pos,fontFamily:NUM_FONT,fontWeight:700}}>{r.amount<0?"−":"+"}{fmt(ppAmt)}</span>
+                      </div>
                     </div>
-                    {/* Pfeil + Tage-Abstand */}
-                    <div style={{flexShrink:0,textAlign:"center"}}>
-                      <div style={{color:confColor,fontSize:9,fontWeight:700}}>{s.confidence}</div>
-                      <div style={{color:T.txt2,fontSize:9}}>±{s.diffDays}d</div>
-                      {Li("arrow-right",14,confColor)}
+                    {/* Mitte: Konfidenz + Grund + Tage-Abstand */}
+                    <div style={{flexShrink:0,textAlign:"center",width:autoSuggFull?160:62,
+                      alignSelf:autoSuggFull?"center":"auto"}}>
+                      <div style={{color:confColor,fontSize:autoSuggFull?13:9,fontWeight:800,
+                        textTransform:"uppercase",letterSpacing:"0.04em"}}>{s.confidence}</div>
+                      {Li("arrow-right",autoSuggFull?18:14,confColor)}
+                      <div style={{color:T.txt2,fontSize:sFSs}}>±{s.diffDays} Tage</div>
+                      {autoSuggFull&&s.reason&&(
+                        <div style={{color:confColor,fontSize:11,marginTop:3,lineHeight:1.25,opacity:0.92}}>{s.reason}</div>
+                      )}
                     </div>
                     {/* Giro-Seite */}
                     <div style={{flex:1,minWidth:0,textAlign:"right"}}>
-                      <div style={{color:T.txt,fontSize:MFSl,fontWeight:600,
-                        ...(autoSuggFull
-                          ? {whiteSpace:"normal",overflow:"visible",wordBreak:"break-word"}
-                          : {overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",direction:"rtl"})}}>{s.giroTx.desc}</div>
-                      <div style={{color:T.txt2,fontSize:9}}>{s.giroTx.date} · {fmt(s.giroTx.totalAmount)}</div>
+                      <div style={{color:T.txt,fontSize:sFS,fontWeight:600,
+                        ...(autoSuggFull?wrapStyle:{...wrapStyle,direction:"rtl"})}}>{s.giroTx.desc}</div>
+                      <div style={{color:T.txt2,fontSize:sFSs,marginTop:2}}>
+                        {s.giroTx.date} · <span style={{fontFamily:NUM_FONT,fontWeight:700}}>{fmt(s.giroTx.totalAmount)}</span>
+                      </div>
                     </div>
                     {/* Übernehmen-Button */}
                     <button onClick={()=>{
-                      // Vorschlag als manuelle Verknüpfung übernehmen — nach Import
-                      // Hier nur merken, wird in doImport angewendet
+                      // Vorschlag als manuelle Verknüpfung übernehmen — wird in doImport angewendet.
                       setParsed(p=>({...p,
                         acceptedSuggs: [...(p.acceptedSuggs||[]), {rowIdx:s.rowIdx, giroId:s.giroTx.id}]
                       }));
                     }}
-                      disabled={(parsed.acceptedSuggs||[]).some(a=>a.rowIdx===s.rowIdx&&a.giroId===s.giroTx.id)}
-                      style={{flexShrink:0,background:(parsed.acceptedSuggs||[]).some(a=>a.rowIdx===s.rowIdx)?"rgba(34,197,94,0.2)":"rgba(255,255,255,0.06)",
-                        border:`1px solid ${(parsed.acceptedSuggs||[]).some(a=>a.rowIdx===s.rowIdx)?T.pos:T.bd}`,
-                        borderRadius:7,padding:"3px 8px",fontSize:10,fontWeight:700,cursor:"pointer",
-                        color:(parsed.acceptedSuggs||[]).some(a=>a.rowIdx===s.rowIdx)?T.pos:T.txt2}}>
-                      {(parsed.acceptedSuggs||[]).some(a=>a.rowIdx===s.rowIdx)?"✓ übernommen":"übernehmen"}
+                      disabled={accepted}
+                      style={{flexShrink:0,alignSelf:"center",
+                        background:accepted?"rgba(34,197,94,0.2)":"rgba(255,255,255,0.06)",
+                        border:`1px solid ${accepted?T.pos:T.bd}`,
+                        borderRadius:8,padding:autoSuggFull?"7px 14px":"3px 8px",
+                        fontSize:autoSuggFull?13:10,fontWeight:700,cursor:accepted?"default":"pointer",
+                        color:accepted?T.pos:T.txt2,fontFamily:"inherit"}}>
+                      {accepted?"✓ übernommen":"übernehmen"}
                     </button>
                   </div>
                 );
