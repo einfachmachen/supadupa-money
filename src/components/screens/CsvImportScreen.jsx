@@ -202,6 +202,10 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     setParsed({rows: resolvedRows, format, newRows, dupRows, autoSuggestions, skipped: skipped || [], detectedBalance, detectedBalances: detectedBalances || (detectedBalance ? [detectedBalance] : [])});
     setAssign(autoAssign(newRows));
     setShowCatAssign(newRows.length <= 20);
+    // PayPal-CSVs: Giro-Verknüpfung automatisch vorschalten — PayPal-Zahlungen
+    // belasten ohnehin das Girokonto, deshalb fast immer gewünscht. Bei anderen
+    // Formaten bleibt die Verknüpfung aus (Standard).
+    setLinkToGiro(/paypal/i.test(format || ""));
     setStep("review");
   };
 
