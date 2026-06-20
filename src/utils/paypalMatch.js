@@ -129,7 +129,7 @@ export function merchantMatchesGiro(merchant, giroDesc) {
 //  - "unklar": dazwischen / weiter weg → bei wiederkehrenden Beträgen meist der
 //    falsche Monat.
 // signedDays = Giro-Datum − PayPal-Datum (positiv = Giro später, der Normalfall).
-export const TIMING = { SOFORT_MIN: -2, SOFORT_MAX: 9, PLUS30_MIN: 24, PLUS30_MAX: 38 };
+export const TIMING = { SOFORT_MIN: -2, SOFORT_MAX: 10, PLUS30_MIN: 24, PLUS30_MAX: 38 };
 export function timingTier(signedDays) {
   if (signedDays >= TIMING.SOFORT_MIN && signedDays <= TIMING.SOFORT_MAX) return "sofort";
   if (signedDays >= TIMING.PLUS30_MIN && signedDays <= TIMING.PLUS30_MAX) return "plus30";
@@ -188,51 +188,62 @@ export function assignPayPalLinks(newRows, giroTxs, linkDays, opts = {}) {
     });
   });
 
-  // Mehrdeutigkeit + „gibt es einen sofort-Treffer für diese Zeile?" zählen.
-  const candByRow = {};
+  // Zählungen. Der Schlüssel zur Vereinfachung: Eindeutigkeit im ENGEN
+  // Zeitfenster (tight = „sofort"). Eine gleich hohe Buchung 30 Tage entfernt
+  // macht einen Wenige-Tage-Treffer NICHT unsicher.
   const candByTx = {};
   const rowHasSofort = {};
+  const tightByRow = {};
+  const tightByTx = {};
   pairs.forEach(p => {
-    candByRow[p.rowIdx] = (candByRow[p.rowIdx] || 0) + 1;
     candByTx[p.giroTx.id] = (candByTx[p.giroTx.id] || 0) + 1;
-    if (p.tier === "sofort") rowHasSofort[p.rowIdx] = true;
+    if (p.tier === "sofort") {
+      rowHasSofort[p.rowIdx] = true;
+      tightByRow[p.rowIdx] = (tightByRow[p.rowIdx] || 0) + 1;
+      tightByTx[p.giroTx.id] = (tightByTx[p.giroTx.id] || 0) + 1;
+    }
   });
 
   // Kontextbewusste Konfidenz + verständlicher Grund je Paar.
   pairs.forEach(p => {
-    const unique = candByRow[p.rowIdx] === 1 && candByTx[p.giroTx.id] === 1;
     // Redundant: für dieselbe PayPal-Buchung existiert ein näherer „sofort"-Treffer.
     p.redundant = p.tier !== "sofort" && !!rowHasSofort[p.rowIdx];
+    // Eindeutig im engen Fenster: genau ein Wenige-Tage-Treffer auf beiden Seiten.
+    const tightUnique = tightByRow[p.rowIdx] === 1 && tightByTx[p.giroTx.id] === 1;
     if (p.redundant) {
       p.confidence = "niedrig";
       p.reason = "näherer Treffer vorhanden – Belastung folgt normal in Tagen";
-    } else if (p.merchantMatch && p.tier === "sofort") {
-      p.confidence = "hoch";
-      p.reason = p.diffDays <= 1 ? "Händler + Belastung ~sofort" : `Händler + Belastung ${p.diffDays} Tage später`;
-    } else if (p.merchantMatch && p.tier === "plus30") {
-      p.confidence = "mittel";
-      p.reason = `Händler, Belastung ${p.diffDays} Tage später (evtl. PayPal +30)`;
-    } else if (p.merchantMatch) {
-      p.confidence = "niedrig";
-      p.reason = `Händler stimmt, Zeitabstand untypisch (${p.diffDays} Tage)`;
-    } else if (p.tier === "sofort" && unique) {
-      p.confidence = "mittel";
-      p.reason = "Betrag eindeutig, Belastung wenige Tage später";
     } else if (p.tier === "sofort") {
-      p.confidence = "niedrig";
-      p.reason = "nur Betrag – mehrere gleich hohe Buchungen";
+      if (p.merchantMatch && tightUnique) {
+        p.confidence = "hoch";
+        p.reason = p.diffDays <= 1 ? "Händler + Belastung ~sofort" : `Händler + Belastung ${p.diffDays} Tage später`;
+      } else if (p.merchantMatch) {
+        p.confidence = "hoch";
+        p.reason = "Händlername stimmt überein";
+      } else if (tightUnique) {
+        // Gleicher Betrag, Belastung wenige Tage später, im engen Fenster
+        // konkurrenzlos → zuverlässig, auch ohne Händlernamen.
+        p.confidence = "hoch";
+        p.reason = `Betrag eindeutig, Belastung ${p.diffDays <= 1 ? "~sofort" : p.diffDays + " Tage später"}`;
+      } else {
+        // Mehrere gleich hohe Buchungen IM engen Fenster → Datum trennt nicht.
+        p.confidence = "mittel";
+        p.reason = "Betrag + wenige Tage, aber mehrere ähnliche Buchungen";
+      }
     } else if (p.tier === "plus30") {
-      p.confidence = "niedrig";
-      p.reason = `nur Betrag, ${p.diffDays} Tage später`;
+      if (p.merchantMatch) {
+        p.confidence = "mittel";
+        p.reason = `Händler, Belastung ${p.diffDays} Tage später (evtl. PayPal +30)`;
+      } else {
+        p.confidence = "niedrig";
+        p.reason = `nur Betrag, ${p.diffDays} Tage später`;
+      }
     } else {
       p.confidence = "niedrig";
       p.reason = `schwacher Treffer (${p.diffDays} Tage)`;
     }
-    // Auto-verknüpft wird nur, was wirklich sicher ist.
-    p.autoLinkable =
-      p.confidence === "hoch" ||
-      (p.confidence === "mittel" && p.tier === "sofort" && unique) ||
-      (p.confidence === "mittel" && p.tier === "plus30" && unique);
+    // Auto-verknüpft wird, was zuverlässig ist: hoch, oder ein Händlertreffer.
+    p.autoLinkable = p.confidence === "hoch" || (p.confidence === "mittel" && p.merchantMatch);
   });
 
   // Saubere 1:1-Zuordnung als Vorschlagsliste: jede PayPal-Buchung und jede

@@ -173,15 +173,17 @@ describe("assignPayPalLinks — Rauschen & Konfidenz-Gründe", () => {
     expect(suggestions.find(s => s.giroTx.id === "far")).toBeUndefined();
   });
 
-  it("eindeutiger Betrag ohne Händler, Belastung wenige Tage später → mittel", () => {
+  it("eindeutiger Betrag ohne Händler, Belastung wenige Tage später → hoch (im engen Fenster konkurrenzlos)", () => {
     const rows = [{ amount: -7.5, isoDate: "2025-03-16", desc: "Successful · Rechnungs-Nr: X" }];
     const giros = [giro("g1", 7.5, "2025-03-20", "", { desc: "PayPal Europe . Allgemeine Abbuchung" })];
-    const { suggestions } = assignPayPalLinks(rows, giros, 35);
-    expect(suggestions[0].confidence).toBe("mittel");
+    const { links, suggestions } = assignPayPalLinks(rows, giros, 35);
+    expect(suggestions[0].confidence).toBe("hoch");
     expect(suggestions[0].reason).toMatch(/eindeutig/);
+    expect(links.map(l => l.giroTx.id)).toEqual(["g1"]);
   });
 
-  it("mehrere gleich hohe ohne Händler → niedrig", () => {
+  it("monatliches Abo: jeder Monat wird trotz gleicher Beträge sauber 1:1 zugeordnet (hoch)", () => {
+    // Gleicher Betrag mehrfach im Jahr, aber je Monat ein klarer Wenige-Tage-Treffer.
     const rows = [
       { amount: -10.99, isoDate: "2025-08-26", desc: "Successful · Rechnungs-Nr: A" },
       { amount: -10.99, isoDate: "2025-09-26", desc: "Successful · Rechnungs-Nr: B" },
@@ -191,8 +193,25 @@ describe("assignPayPalLinks — Rauschen & Konfidenz-Gründe", () => {
       giro("g2", 10.99, "2025-09-28", "", { desc: "PayPal Europe . Allgemeine Abbuchung" }),
     ];
     const { links, suggestions } = assignPayPalLinks(rows, giros, 40);
-    expect(links).toHaveLength(0); // ohne Händler + mehrdeutig → keine Auto-Verknüpfung
-    expect(suggestions.every(s => s.confidence === "niedrig")).toBe(true);
+    const byRow = Object.fromEntries(suggestions.map(s => [s.rowIdx, s.giroTx.id]));
+    expect(byRow[0]).toBe("g1");
+    expect(byRow[1]).toBe("g2");
+    expect(suggestions.every(s => s.confidence === "hoch")).toBe(true);
+    expect(links).toHaveLength(2);
+  });
+
+  it("echt mehrdeutig: zwei gleich hohe Buchungen IM selben engen Fenster → mittel, kein Auto-Link", () => {
+    const rows = [
+      { amount: -10.99, isoDate: "2025-08-25", desc: "Successful · Rechnungs-Nr: A" },
+      { amount: -10.99, isoDate: "2025-08-26", desc: "Successful · Rechnungs-Nr: B" },
+    ];
+    const giros = [
+      giro("g1", 10.99, "2025-08-27", "", { desc: "PayPal Europe . Allgemeine Abbuchung" }),
+      giro("g2", 10.99, "2025-08-28", "", { desc: "PayPal Europe . Allgemeine Abbuchung" }),
+    ];
+    const { links, suggestions } = assignPayPalLinks(rows, giros, 40);
+    expect(links).toHaveLength(0); // Datum trennt nicht, kein Händler → nur Vorschlag
+    expect(suggestions.every(s => s.confidence === "mittel")).toBe(true);
   });
 
   it("bevorzugt das _recipient-Feld als Händlername", () => {
@@ -232,7 +251,8 @@ describe("enrichPayPalMerchants — PayPal +30", () => {
     // Nur EIN Vorschlag (die Abbuchung), nicht zusätzlich die Kaufzeile.
     expect(suggestions).toHaveLength(1);
     expect(links.map(l => l.giroTx.id)).toEqual(["g1"]);
-    expect(suggestions[0].confidence).toBe("mittel");
+    // Betrag im engen Fenster konkurrenzlos → zuverlässig.
+    expect(suggestions[0].confidence).toBe("hoch");
     // Der angereicherte Händler hängt an der gematchten Zeile (für die Anzeige).
     expect(suggestions[0].giroTx.id).toBe("g1");
     const matchedRow = enr[suggestions[0].rowIdx];
