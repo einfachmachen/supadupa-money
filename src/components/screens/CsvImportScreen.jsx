@@ -390,6 +390,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
         ...(r._creditorId ? {_creditorId: r._creditorId} : {}),
         ...(r._umbuchung ? {_umbuchung: r._umbuchung} : {}),
         ...(r._isRefund ? {_isRefund: true} : {}),
+        ...(r._partialRefund ? {_partialRefund: true} : {}),
         ...(r._refundOf ? {_refundOf: r._refundOf} : {}),
       });
       // Regel merken — lokal + global
@@ -1014,7 +1015,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                           <div style={{display:"inline-flex",alignSelf:"flex-start",alignItems:"center",gap:5,
                             background:"rgba(245,166,35,0.15)",border:`1px solid ${T.gold}66`,borderRadius:7,
                             padding:"2px 8px",color:T.gold,fontSize:metaFS,fontWeight:700}}>
-                            {Li("corner-up-left",11,T.gold)} Erstattung{r._refundOf?` zu ${(r._refundOf.merchant||"Ausgabe").split(" ")[0]} ${fmt(Math.abs(r._refundOf.amount))} · ${dshort(r._refundOf.date)}`:""}
+                            {Li("corner-up-left",11,T.gold)} {r._partialRefund?"Teilerstattung":"Erstattung"}{r._refundOf?` zu ${(r._refundOf.merchant||"Ausgabe").split(" ")[0]} ${fmt(Math.abs(r._refundOf.amount))} · ${dshort(r._refundOf.date)}`:""}
                           </div>
                         )}
                         {r._enrichedWithdrawal&&r._enrichedMerchant&&(
@@ -1034,8 +1035,8 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                             Import an dieselbe Giro-Buchung gehängt → hier als Detail
                             unter der Auszahlung, nicht als eigene Einnahme. */}
                         {(legsByParent.get(i)||[]).length>0&&(
-                          <div style={{marginTop:4,marginLeft:2,paddingLeft:9,
-                            borderLeft:`2px solid ${T.gold}55`,display:"flex",flexDirection:"column",gap:5}}>
+                          <div style={{marginTop:4,paddingTop:5,
+                            borderTop:`1px solid rgba(255,255,255,0.08)`,display:"flex",flexDirection:"column",gap:5}}>
                             <div style={{color:T.txt2,fontSize:metaFS,fontWeight:700,display:"flex",alignItems:"center",gap:4}}>
                               {Li("link",10,T.txt2)} Verrechnete Erstattung{(legsByParent.get(i)||[]).length>1?"en":""} (mit dieser Auszahlung verknüpft)
                             </div>
@@ -1047,7 +1048,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                                     <div style={{display:"inline-flex",alignSelf:"flex-start",alignItems:"center",gap:5,
                                       background:"rgba(245,166,35,0.15)",border:`1px solid ${T.gold}66`,borderRadius:7,
                                       padding:"2px 8px",color:T.gold,fontSize:metaFS,fontWeight:700}}>
-                                      {Li("corner-up-left",11,T.gold)} Erstattung{lr._refundOf?` zu ${(lr._refundOf.merchant||"Ausgabe").split(" ")[0]} ${fmt(Math.abs(lr._refundOf.amount))} · ${dshort(lr._refundOf.date)}`:""}
+                                      {Li("corner-up-left",11,T.gold)} {lr._partialRefund?"Teilerstattung":"Erstattung"}{lr._refundOf?` zu ${(lr._refundOf.merchant||"Ausgabe").split(" ")[0]} ${fmt(Math.abs(lr._refundOf.amount))} · ${dshort(lr._refundOf.date)}`:""}
                                     </div>
                                   )}
                                   <div style={{color:T.txt2,fontSize:descFS,...wrap}}>
