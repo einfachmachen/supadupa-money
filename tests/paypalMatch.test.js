@@ -274,6 +274,37 @@ describe("detectPayPalRefunds", () => {
     ];
     expect(detectPayPalRefunds(rows)[1]._isRefund).toBeUndefined();
   });
+
+  it("Teilerstattung: verlinkt über Referenztransaktionscode trotz abweichendem Betrag", () => {
+    const rows = [
+      { amount: -145.95, isoDate: "2022-05-04", desc: "Macconnect", txCode: "9AB12345CD678901E" },
+      { amount:   50.00, isoDate: "2022-05-21", desc: "Macconnect", txCode: "1ZZ99887766554433", refCode: "9AB12345CD678901E" },
+    ];
+    const out = detectPayPalRefunds(rows);
+    expect(out[1]._isRefund).toBe(true);
+    expect(out[1]._partialRefund).toBe(true);
+    expect(out[1]._refundOf.date).toBe("2022-05-04");
+    expect(out[1]._refundOf.amount).toBeCloseTo(-145.95, 2);
+  });
+
+  it("Teilerstattung: verlinkt über gemeinsame Rechnungs-Nr (Finanzblick)", () => {
+    const rows = [
+      { amount: -200.00, isoDate: "2022-03-01", desc: "Macconnect · Rechnungs-Nr: 21645" },
+      { amount:   75.50, isoDate: "2022-03-20", desc: "Macconnect · Rechnungs-Nr: 21645 https://macconnect-store.de" },
+    ];
+    const out = detectPayPalRefunds(rows);
+    expect(out[1]._isRefund).toBe(true);
+    expect(out[1]._partialRefund).toBe(true);
+    expect(out[1]._refundOf.date).toBe("2022-03-01");
+  });
+
+  it("ohne gemeinsame Referenz wird ein Teilbetrag NICHT fälschlich als Erstattung gewertet", () => {
+    const rows = [
+      { amount: -200.00, isoDate: "2022-03-01", desc: "Macconnect · Rechnungs-Nr: 21645" },
+      { amount:   75.50, isoDate: "2022-03-20", desc: "Andere Firma · Rechnungs-Nr: 99999" },
+    ];
+    expect(detectPayPalRefunds(rows)[1]._isRefund).toBeUndefined();
+  });
 });
 
 describe("dropPayPalCounterBookings", () => {

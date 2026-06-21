@@ -390,6 +390,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
         ...(r._creditorId ? {_creditorId: r._creditorId} : {}),
         ...(r._umbuchung ? {_umbuchung: r._umbuchung} : {}),
         ...(r._isRefund ? {_isRefund: true} : {}),
+        ...(r._partialRefund ? {_partialRefund: true} : {}),
         ...(r._refundOf ? {_refundOf: r._refundOf} : {}),
       });
       // Regel merken — lokal + global
@@ -1014,7 +1015,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                           <div style={{display:"inline-flex",alignSelf:"flex-start",alignItems:"center",gap:5,
                             background:"rgba(245,166,35,0.15)",border:`1px solid ${T.gold}66`,borderRadius:7,
                             padding:"2px 8px",color:T.gold,fontSize:metaFS,fontWeight:700}}>
-                            {Li("corner-up-left",11,T.gold)} Erstattung{r._refundOf?` zu ${(r._refundOf.merchant||"Ausgabe").split(" ")[0]} ${fmt(Math.abs(r._refundOf.amount))} · ${dshort(r._refundOf.date)}`:""}
+                            {Li("corner-up-left",11,T.gold)} {r._partialRefund?"Teilerstattung":"Erstattung"}{r._refundOf?` zu ${(r._refundOf.merchant||"Ausgabe").split(" ")[0]} ${fmt(Math.abs(r._refundOf.amount))} · ${dshort(r._refundOf.date)}`:""}
                           </div>
                         )}
                         {r._enrichedWithdrawal&&r._enrichedMerchant&&(
@@ -1047,7 +1048,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                                     <div style={{display:"inline-flex",alignSelf:"flex-start",alignItems:"center",gap:5,
                                       background:"rgba(245,166,35,0.15)",border:`1px solid ${T.gold}66`,borderRadius:7,
                                       padding:"2px 8px",color:T.gold,fontSize:metaFS,fontWeight:700}}>
-                                      {Li("corner-up-left",11,T.gold)} Erstattung{lr._refundOf?` zu ${(lr._refundOf.merchant||"Ausgabe").split(" ")[0]} ${fmt(Math.abs(lr._refundOf.amount))} · ${dshort(lr._refundOf.date)}`:""}
+                                      {Li("corner-up-left",11,T.gold)} {lr._partialRefund?"Teilerstattung":"Erstattung"}{lr._refundOf?` zu ${(lr._refundOf.merchant||"Ausgabe").split(" ")[0]} ${fmt(Math.abs(lr._refundOf.amount))} · ${dshort(lr._refundOf.date)}`:""}
                                     </div>
                                   )}
                                   <div style={{color:T.txt2,fontSize:descFS,...wrap}}>

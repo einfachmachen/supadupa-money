@@ -163,27 +163,74 @@ function merchantsSimilar(a, b) {
   const tb = new Set(tokens(b));
   return tokens(a).some(t => tb.has(t));
 }
+
+// Stabile Referenzkennungen einer Zeile (Rechnungs-/Bestell-/Invoice-Nr,
+// PayPal-Transaktionscodes). Dienen dem Abgleich Erstattung ↔ Originalzahlung
+// auch bei TEILerstattung, wo der Betrag NICHT mehr als Schlüssel taugt:
+//  - PayPal-Direktexport: refCode (Referenztransaktionscode) der Erstattung ist
+//    der txCode (Transaktionscode) der ursprünglichen Zahlung → eindeutig.
+//  - Finanzblick u.a.: Rechnungs-/Bestell-/Invoice-Nr im Text, Amazon-Bestellnr.
+const REF_PATTERNS = [
+  /Rechnungs?-?\s*Nr[.:]?\s*([A-Z0-9][A-Z0-9-]{4,})/ig,
+  /Invoice[-\s]?(?:Nr|No|#)?[.:]?\s*([A-Z0-9][A-Z0-9-]{4,})/ig,
+  /Bestell(?:nummer|nr|ung)?[.:]?\s*([A-Z0-9][A-Z0-9-]{4,})/ig,
+  /\b(\d{3}-\d{7}-\d{7})\b/g,            // Amazon-Bestellnr
+  /\b(PP\.[A-Z0-9]+\.PP)\b/ig,
+  /\b(PAYID-[A-Z0-9]+)\b/ig,
+  /\b(T-[A-Z0-9]{10,})\b/ig,
+];
+export function payPalRefTokens(row) {
+  const set = new Set();
+  const code = v => { const s = String(v || "").trim().toUpperCase(); if (s.length >= 5) set.add(s); };
+  code(row?.txCode);
+  code(row?.refCode);
+  const src = `${row?.rowType || ""} ${row?.desc || ""} ${row?._detailNote || ""}`;
+  REF_PATTERNS.forEach(re => { re.lastIndex = 0; let m; while ((m = re.exec(src))) set.add((m[1] || m[0]).toUpperCase()); });
+  return set;
+}
+
 export function detectPayPalRefunds(rows) {
-  const expenses = rows.filter(r => (r.amount ?? r.totalAmount ?? 0) < 0);
+  const DAY = 86400000;
+  const expenses = rows
+    .filter(r => (r.amount ?? r.totalAmount ?? 0) < 0)
+    .map(e => ({
+      e,
+      cents: Math.round(Math.abs(e.amount ?? e.totalAmount ?? 0) * 100),
+      t: new Date(e.isoDate || e.date).getTime(),
+      merch: payPalMerchant(e),
+      ref: payPalRefTokens(e),
+    }));
   return rows.map(r => {
     const a = r.amount ?? r.totalAmount ?? 0;
     if (a <= 0) return r; // nur Einnahmen prüfen
     if (r._enrichedWithdrawal) return r; // Auszahlung einer Erstattung ist selbst keine Erstattung
     const merch = payPalMerchant(r);
     const keyword = REFUND_RE.test(r.desc || "");
-    let best = null;
-    if (merch && tokens(merch).length) {
-      const cents = Math.round(a * 100);
-      const rd = new Date(r.isoDate || r.date).getTime();
+    const cents = Math.round(a * 100);
+    const rd = new Date(r.isoDate || r.date).getTime();
+    let best = null, partial = false;
+    // 1) Eindeutige Referenz (Rechnungs-/Transaktionsnr.): matcht auch, wenn der
+    //    erstattete Betrag KLEINER ist als die Ausgabe (Teilerstattung). Die
+    //    Ausgabe muss ≥ Erstattung sein und (typisch) früher liegen.
+    const myRef = payPalRefTokens(r);
+    if (myRef.size) {
+      const refHit = expenses
+        .filter(x => x.cents >= cents && x.t <= rd + 3 * DAY && [...myRef].some(tok => x.ref.has(tok)))
+        .sort((x, y) => Math.abs(x.t - rd) - Math.abs(y.t - rd))[0];
+      if (refHit) { best = refHit.e; partial = refHit.cents !== cents; }
+    }
+    // 2) Fallback: gleicher Betrag + ähnlicher Händler (bisheriges Verhalten).
+    if (!best && merch && tokens(merch).length) {
       best = expenses
-        .filter(e => Math.round(Math.abs(e.amount ?? e.totalAmount ?? 0) * 100) === cents && merchantsSimilar(merch, payPalMerchant(e)))
-        .map(e => ({ e, dd: Math.abs(new Date(e.isoDate || e.date).getTime() - rd) }))
+        .filter(x => x.cents === cents && merchantsSimilar(merch, x.merch))
+        .map(x => ({ e: x.e, dd: Math.abs(x.t - rd) }))
         .sort((x, y) => x.dd - y.dd)[0]?.e || null;
     }
     if (!keyword && !best) return r;
     return {
       ...r, _isRefund: true,
-      ...(best ? { _refundOf: { date: best.isoDate, amount: best.amount ?? -(best.totalAmount || 0), merchant: payPalMerchant(best) } } : {}),
+      ...(partial ? { _partialRefund: true } : {}),
+      ...(best ? { _refundOf: { date: best.isoDate, amount: best.amount ?? -(best.totalAmount || 0), merchant: payPalMerchant(best), ...(partial ? { partial: true } : {}) } } : {}),
     };
   });
 }
