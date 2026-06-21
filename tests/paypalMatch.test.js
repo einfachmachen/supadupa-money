@@ -9,6 +9,7 @@ import {
   enrichPayPalMerchants,
   dropPayPalCounterBookings,
   detectPayPalRefunds,
+  reconcilePayPalLegs,
 } from "../src/utils/paypalMatch.js";
 
 // Eine PayPal-CSV-Zeile, wie der Parser sie liefert (desc = "Name · Typ · …").
@@ -304,6 +305,48 @@ describe("detectPayPalRefunds", () => {
       { amount:   75.50, isoDate: "2022-03-20", desc: "Andere Firma · Rechnungs-Nr: 99999" },
     ];
     expect(detectPayPalRefunds(rows)[1]._isRefund).toBeUndefined();
+  });
+});
+
+describe("reconcilePayPalLegs", () => {
+  it("hebt _internalLeg auf, wenn die zugehörige Auszahlung nicht (mehr) existiert", () => {
+    const rows = [
+      { fp: "fp-refund", amount: 29.99, isoDate: "2026-02-11", _internalLeg: true, _isRefund: true },
+    ];
+    const out = reconcilePayPalLegs(rows);
+    expect(out[0]._internalLeg).toBeUndefined();
+    expect(out[0]._isRefund).toBe(true); // übrige Marker bleiben erhalten
+  });
+
+  it("behält _internalLeg, solange die Auszahlung per _legSourceFps darauf verweist", () => {
+    const rows = [
+      { fp: "fp-refund", amount: 29.99, isoDate: "2026-02-11", _internalLeg: true },
+      { fp: "fp-wd", amount: 29.99, isoDate: "2026-02-12", _enrichedWithdrawal: true, _legSourceFps: ["fp-refund"] },
+    ];
+    const out = reconcilePayPalLegs(rows);
+    expect(out[0]._internalLeg).toBe(true);
+  });
+
+  it("bereinigt _legSourceFps, die auf entfernte Zeilen zeigen", () => {
+    const rows = [
+      { fp: "fp-wd", amount: 29.99, isoDate: "2026-02-12", _enrichedWithdrawal: true, _legSourceFps: ["fp-refund", "fp-gone"] },
+      { fp: "fp-refund", amount: 29.99, isoDate: "2026-02-11", _internalLeg: true },
+    ];
+    const out = reconcilePayPalLegs(rows);
+    expect(out[0]._legSourceFps).toEqual(["fp-refund"]);
+    expect(out[1]._internalLeg).toBe(true);
+  });
+
+  it("nach Wegfall der Auszahlung wird die Erstattung wieder der Giro-Gutschrift zugeordnet", () => {
+    // Nur die Erstattung überlebt (Auszahlung als Gegenbuchung entfernt).
+    const rows = reconcilePayPalLegs([
+      { fp: "fp-refund", amount: 29.99, isoDate: "2026-02-11", _internalLeg: true,
+        desc: "Microsoft Payments · Reverse Payment", _recipient: "Microsoft Payments" },
+    ]);
+    const giros = [{ id: "g1", totalAmount: 29.99, date: "2026-02-12", _csvType: "income",
+      desc: "PayPal (Europe) S.a r.l. · ABBUCHUNG VOM PAYPAL-KONTO Microsoft" }];
+    const { suggestions } = assignPayPalLinks(rows, giros, 35);
+    expect(suggestions.map(s => s.giroTx.id)).toEqual(["g1"]);
   });
 });
 
