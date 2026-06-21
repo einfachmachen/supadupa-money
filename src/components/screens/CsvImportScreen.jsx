@@ -281,7 +281,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
 
   // Gemeinsame Nachbearbeitung für CSV- UND PDF-Parser: Konto auflösen,
   // Fingerprints bilden, Duplikate erkennen, Review-Schritt öffnen.
-  const applyParsed = ({rows, format, detectedBalance, detectedBalances, skipped}) => {
+  const applyParsed = ({rows, format, detectedBalance, detectedBalances, skipped, headerRepeats}) => {
     // _konto-String → accountId auflösen und Fingerprint mit accountId neu bilden
     const resolvedRows = rows.map(r => {
       let resolvedAccId = selAccId || accounts[0]?.id;
@@ -300,7 +300,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     });
     const { newRows, dupRows, droppedCounter } = buildRows(format, resolvedRows);
     const autoSuggestions = computeAutoSuggestions(newRows);
-    setParsed({rows: resolvedRows, format, newRows, dupRows, autoSuggestions, droppedCounter, skipped: skipped || [], detectedBalance, detectedBalances: detectedBalances || (detectedBalance ? [detectedBalance] : [])});
+    setParsed({rows: resolvedRows, format, newRows, dupRows, autoSuggestions, droppedCounter, skipped: skipped || [], headerRepeats: headerRepeats || 0, detectedBalance, detectedBalances: detectedBalances || (detectedBalance ? [detectedBalance] : [])});
     setAssign(autoAssign(newRows));
     setShowCatAssign(newRows.length <= 20);
     // PayPal-CSVs: Giro-Verknüpfung automatisch vorschalten — PayPal-Zahlungen
@@ -726,14 +726,25 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
       {/* STEP: REVIEW */}
       {step==="review"&&parsed&&(
         <div style={{flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
-          {/* Warnung: Zeilen mit unlesbarem Datum/Betrag wurden übersprungen */}
-          {(parsed.skipped||[]).length>0&&(
+          {/* Info: wiederholte Kopfzeilen (mehrere Exporte zusammengefügt) — harmlos */}
+          {!suggFull&&(parsed.headerRepeats||0)>0&&(
+            <div style={{background:"rgba(74,159,212,0.10)",borderBottom:`1px solid ${T.blue}44`,
+              padding:"7px 16px",flexShrink:0,fontSize:MFSl,color:T.txt2,display:"flex",gap:8,alignItems:"flex-start"}}>
+              <span style={{flexShrink:0,marginTop:1}}>{Li("info",13,T.blue)}</span>
+              <div>
+                <b style={{color:T.blue}}>{parsed.headerRepeats} wiederholte Kopfzeile{parsed.headerRepeats!==1?"n":""}</b> übersprungen
+                {" "}— entstehen, wenn mehrere Export-Dateien zusammengefügt werden. <b style={{color:T.txt}}>Kein Datenverlust.</b>
+              </div>
+            </div>
+          )}
+          {/* Warnung: Zeilen mit WIRKLICH unlesbarem Datum/Betrag (echter Datenverlust) */}
+          {!suggFull&&(parsed.skipped||[]).length>0&&(
             <div style={{background:"rgba(245,166,35,0.12)",borderBottom:`1px solid ${T.gold}55`,
               padding:"8px 16px",flexShrink:0,fontSize:MFSl,color:T.gold,display:"flex",gap:8,alignItems:"flex-start"}}>
               <span style={{flexShrink:0,marginTop:1}}>{Li("alert-triangle",13,T.gold)}</span>
               <div>
-                <b>{parsed.skipped.length} Zeile{parsed.skipped.length!==1?"n":""} übersprungen</b>
-                {" "}— Datum oder Betrag konnte nicht gelesen werden (nicht importiert):
+                <b>{parsed.skipped.length} Zeile{parsed.skipped.length!==1?"n":""} nicht importiert</b>
+                {" "}— Datum oder Betrag war unlesbar:
                 <div style={{color:T.txt2,fontSize:MFSl,marginTop:3,fontFamily:NUM_FONT}}>
                   {parsed.skipped.slice(0,4).map((s,i)=>(
                     <div key={i}>Zeile {s.line}: {s.reason}=„{(s.reason==="Datum"?s.rawDate:s.rawAmount)||"leer"}"</div>

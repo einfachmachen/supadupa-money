@@ -175,6 +175,7 @@ function parseCSV(text, {noGroup=false}={}) {
   // Übersprungene Zeilen, deren Datums-/Betragsfeld zwar Inhalt hatte, aber
   // nicht als gültiger Wert erkannt wurde (→ stiller Datenverlust, wird gemeldet).
   const skipped = [];
+  let headerRepeats = 0; // wiederholte Kopfzeilen (mehrere Exporte zusammengefügt)
 
   // Spalten für PayPal-Gruppierung
   const txCodeCol  = headers.findIndex(h=>h.includes("transaktionscode")||h.includes("transaction id")||h.includes("transaktionskennung")||h==="txcode");
@@ -195,6 +196,14 @@ function parseCSV(text, {noGroup=false}={}) {
     const isoDate   = parseGermanDate(rawDate);
     const amount    = parseGermanAmount(rawAmount);
     if(!isoDate || amount===0) {
+      // Wiederholte Kopfzeile? Entsteht beim Zusammenfügen mehrerer Export-
+      // Dateien (jede bringt ihre Überschrift mit). KEIN Datenverlust → separat
+      // zählen statt als „übersprungen" zu warnen.
+      const dLow = rawDate.trim().toLowerCase();
+      if(/^(buchungs)?datum$|^date$|^posting ?date$|^wertstellung/.test(dLow)) {
+        headerRepeats++;
+        continue;
+      }
       // Stillen Datenverlust melden: Feld hatte Inhalt, war aber unlesbar.
       // Legitime Leerzeilen und echte 0,00-Beträge werden NICHT gemeldet
       // (0,00 enthält Ziffern; "n/a"/"EUR" im Betragsfeld dagegen nicht).
@@ -289,7 +298,7 @@ function parseCSV(text, {noGroup=false}={}) {
     orphans.forEach(r => merged.push(r));
     // Nach Datum sortieren
     merged.sort((a,b)=>b.isoDate.localeCompare(a.isoDate));
-    return { rows: merged, format: format==="generisch"?"PayPal-DE":format, skipped };
+    return { rows: merged, format: format==="generisch"?"PayPal-DE":format, skipped, headerRepeats };
   }
 
   // Finanzblick PayPal: mehrere Gruppierungsstrategien
@@ -381,7 +390,7 @@ function parseCSV(text, {noGroup=false}={}) {
       const { merged, grouped } = tryGroup(rows, stratFn, oppSign);
       if(grouped > 0) {
         merged.sort((a,b)=>b.isoDate.localeCompare(a.isoDate));
-        return { rows: merged, format: `Finanzblick-PayPal (${stratName})`, skipped };
+        return { rows: merged, format: `Finanzblick-PayPal (${stratName})`, skipped, headerRepeats };
       }
     }
   }
@@ -449,7 +458,7 @@ function parseCSV(text, {noGroup=false}={}) {
     if(detectedBalances.length>0) detectedBalance = detectedBalances[detectedBalances.length-1];
   })();
 
-  return { rows, format, detectedBalance, detectedBalances, skipped };
+  return { rows, format, detectedBalance, detectedBalances, skipped, headerRepeats };
 }
 
 export { parseGermanAmount, parseCSV };
