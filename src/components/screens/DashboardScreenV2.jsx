@@ -186,6 +186,7 @@ function DashboardScreenV2() {
     // Standard: Pegel.
     const [subViewMode, setSubViewMode] = useState("pegel");
     const [catAmountMode, setCatAmountMode] = useState("ist"); // "ist" = nur gebucht | "gesamt" = inkl. Vormerkungen/Budget
+    const [hideUmb, setHideUmb] = useState(false); // Umbuchungen + Erstattungen aus Ein-/Ausgaben ausblenden
     const [dragCatId,   setDragCatId]   = useState(null);
     const [dragOver,    setDragOver]    = useState(null);
     const [dashSearch, setDashSearch] = useState("");
@@ -501,8 +502,13 @@ function DashboardScreenV2() {
       const filtered = _filterDetailByAccD(base, selAcc);
       return { ...filtered, saldo: newSaldo, base: newBase };
     }, [year, month, txs, selAcc, accounts]);
-    const dashRealIn  = useMemo(()=>mTxs.filter(t=>!t.pending&&txType(t)==="income" &&!dashLinkedChildIds.has(t.id)), [mTxs]);
-    const dashRealOut = useMemo(()=>mTxs.filter(t=>!t.pending&&txType(t)==="expense"&&!dashLinkedChildIds.has(t.id)), [mTxs]);
+    // Umbuchungen (interne Transfers, _umbuchung) und Erstattungen (_isRefund)
+    // optional aus Einnahmen/Ausgaben ausblenden — zeigt die tatsächlichen Flüsse.
+    const _flowHidden = t => hideUmb && (!!t._umbuchung || !!t._isRefund);
+    const dashRealIn  = useMemo(()=>mTxs.filter(t=>!t.pending&&txType(t)==="income" &&!dashLinkedChildIds.has(t.id)&&!_flowHidden(t)), [mTxs, hideUmb]);
+    const dashRealOut = useMemo(()=>mTxs.filter(t=>!t.pending&&txType(t)==="expense"&&!dashLinkedChildIds.has(t.id)&&!_flowHidden(t)), [mTxs, hideUmb]);
+    // Wie viele Umbuchungen/Erstattungen ließen sich in diesem Monat ausblenden?
+    const umbCount = useMemo(()=>mTxs.filter(t=>!t.pending&&!dashLinkedChildIds.has(t.id)&&(!!t._umbuchung||!!t._isRefund)&&(txType(t)==="income"||txType(t)==="expense")).length, [mTxs]);
     const dashUIn     = useMemo(()=>mTxs.filter(t=>txType(t)==="income" &&!dashLinkedChildIds.has(t.id)&&((t.splits||[]).length===0||(t.splits||[]).every(s=>!s.catId))), [mTxs]);
     const dashUOut    = useMemo(()=>mTxs.filter(t=>txType(t)==="expense"&&!dashLinkedChildIds.has(t.id)&&((t.splits||[]).length===0||(t.splits||[]).every(s=>!s.catId))), [mTxs]);
     // Buchungen aus derselben CSV (gleicher _csvSource) werden nie als Duplikat gewertet
@@ -820,6 +826,32 @@ function DashboardScreenV2() {
             erster Kategorie, gefiltert nach aktueller Kontosicht (selAcc). */}
         {bankFetch && (
           <BankFetchPanel state={bankFetch} onClose={()=>setBankFetch(null)} onRefetch={runBankFetch}/>
+        )}
+
+        {/* Schalter: Umbuchungen (interne Transfers) + Erstattungen aus den
+            Ein-/Ausgaben ausblenden — zeigt die tatsächlichen Flüsse. */}
+        {umbCount>0 && (
+          <div onClick={()=>setHideUmb(v=>!v)}
+            style={{margin:"4px 10px 0",display:"flex",alignItems:"center",gap:10,cursor:"pointer",
+              padding:"8px 12px",borderRadius:11,
+              border:`1px solid ${hideUmb?T.blue+"66":T.bd}`,
+              background:hideUmb?"rgba(74,159,212,0.08)":"rgba(255,255,255,0.03)"}}>
+            <div style={{width:36,height:22,borderRadius:11,position:"relative",flexShrink:0,
+              background:hideUmb?T.blue:"rgba(255,255,255,0.12)",transition:"background 0.2s"}}>
+              <div style={{position:"absolute",top:3,left:hideUmb?16:3,width:16,height:16,
+                borderRadius:"50%",background:"#fff",transition:"left 0.2s"}}/>
+            </div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{color:hideUmb?T.blue:T.txt2,fontSize:12.5,fontWeight:700}}>
+                Umbuchungen & Erstattungen ausblenden
+              </div>
+              <div style={{color:T.txt2,fontSize:10,lineHeight:1.35}}>
+                {hideUmb
+                  ? `${umbCount} interne Transfers/Erstattungen aus Ein-/Ausgaben ausgeblendet (Saldo unverändert)`
+                  : `${umbCount} interne Transfers/Erstattungen erkannt — für tatsächliche Ein-/Ausgaben ausblenden`}
+              </div>
+            </div>
+          </div>
         )}
 
         {/* "Ausgaben nach Kategorie" — aus der Monatsansicht hierher (Dashboard)
