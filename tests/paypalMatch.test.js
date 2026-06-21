@@ -262,6 +262,14 @@ describe("dropPayPalCounterBookings", () => {
     expect(out.map(r => r.amount)).toEqual([-15.98, 30.00, 41.82, 99.00]);
   });
 
+  it("entfernt auch die NEGATIVE Gegenbuchung einer Einnahme/Erstattung", () => {
+    const rows = [
+      { amount:  240.00, isoDate: "2026-01-11", desc: "Andreas Bauer", _recipient: "Andreas Bauer" }, // Einnahme → bleibt
+      { amount: -240.00, isoDate: "2026-01-11", desc: "Successful" },                                   // Gegenbuchung → weg
+    ];
+    expect(dropPayPalCounterBookings(rows).map(r=>r.amount)).toEqual([240.00]);
+  });
+
   it("entfernt die Gegenbuchung auch bei ±3 Tagen Versatz", () => {
     const rows = [
       { amount: -10.00, isoDate: "2025-05-01", desc: "X", _recipient: "Shop" },

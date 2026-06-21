@@ -110,26 +110,27 @@ export function looksLikePayPalCsv(format, rows) {
   return ppKonto > rows.length * 0.5;
 }
 
-// Entfernt die internen PayPal-Gegenbuchungen: positive „Sonstige Einnahmen"
-// OHNE Empfänger, die eine gleich hohe Ausgabe in ±3 Tagen spiegeln
-// (Finanzierung jeder Zahlung). Echte Einnahmen (mit Empfänger) und alle
-// Ausgaben bleiben erhalten.
+// Entfernt die internen PayPal-Gegenbuchungen: Zeilen OHNE Empfänger, die eine
+// gleich hohe Buchung mit GEGENVORZEICHEN in ±3 Tagen spiegeln (die „Finanzierung"
+// jeder Zahlung — bei Ausgaben als +X, bei Einnahmen/Erstattungen als −X). Echte
+// Buchungen mit Empfänger bleiben erhalten.
 export function dropPayPalCounterBookings(rows) {
   const DAY = 86400000;
-  const negDates = new Map(); // Cent-Betrag → [Zeitstempel der Ausgaben]
+  const byKey = new Map(); // `${+|-}${cents}` → [Zeitstempel]
   rows.forEach(r => {
     const a = r.amount ?? r.totalAmount ?? 0;
-    if (a < 0) {
-      const k = Math.round(Math.abs(a) * 100);
-      if (!negDates.has(k)) negDates.set(k, []);
-      negDates.get(k).push(new Date(r.isoDate || r.date).getTime());
-    }
+    if (a === 0) return;
+    const key = (a > 0 ? "+" : "-") + Math.round(Math.abs(a) * 100);
+    if (!byKey.has(key)) byKey.set(key, []);
+    byKey.get(key).push(new Date(r.isoDate || r.date).getTime());
   });
   return rows.filter(r => {
     const a = r.amount ?? r.totalAmount ?? 0;
-    if (a <= 0) return true;        // Ausgaben (und 0) behalten
-    if (r._recipient) return true;  // echte Einnahme (mit Empfänger) behalten
-    const dates = negDates.get(Math.round(a * 100)) || [];
+    if (a === 0) return true;
+    if (r._recipient) return true;  // echte Buchung mit Empfänger behalten
+    // Gegenbuchung: gibt es eine Gegenvorzeichen-Buchung gleichen Betrags in ±3 Tagen?
+    const oppKey = (a > 0 ? "-" : "+") + Math.round(Math.abs(a) * 100);
+    const dates = byKey.get(oppKey) || [];
     const rd = new Date(r.isoDate || r.date).getTime();
     const isCounter = dates.some(d => Math.abs(d - rd) <= 3 * DAY);
     return !isCounter;              // Gegenbuchung → entfernen
