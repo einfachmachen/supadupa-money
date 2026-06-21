@@ -20,6 +20,14 @@
    höhere Spezifität als der *-Selektor → gewinnt trotz beider !important. */
 .heroAmt { font-weight: 700 !important; font-synthesis: weight; }
 
+/* Tabellarische Ziffern für ALLE Geldbeträge: gleiche Zeichenbreite, damit
+   Beträge in Listen/Spalten sauber untereinander ausgerichtet sind (kein
+   „Wackeln" beim Wechsel von 1 auf 8). Wir erfassen die Beträge global über
+   ihre Geldschrift (NUM_FONT enthält "Questrial"), ohne jede Render-Stelle
+   anzufassen. Aktiviert tnum dort, wo der Font es unterstützt (System-SF/
+   Roboto-Fallbacks); andernfalls schadenlos ignoriert. */
+[style*="Questrial"] { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+
 /* Betrags-Sichtbarkeit (Augensymbol). Beträge nutzen die Geldschrift
    "Questrial" (NUM_FONT) — darüber erfassen wir sie global, ohne jede
    Render-Stelle anzufassen.
