@@ -11,15 +11,25 @@ function ChartBlock({catSums, maxSum, budgets, getBudgetForMonth, year, month}) 
   const nextMode = () => setChartMode(m => modes[(modes.indexOf(m)+1)%modes.length]);
   const shown = chartMode===0 ? catSums : catSums.slice(0, chartMode);
   const modeLabel = chartMode===0 ? "alle" : String(chartMode);
+  // Der Block liegt auf T.hero_bg (hell ODER dunkel je Theme). Textfarbe daher
+  // aus der Helligkeit des Hero-Hintergrunds ableiten → garantiert lesbar auf
+  // jedem Theme (statt fest Weiß). Spuren als neutrales Grau (auf hell & dunkel
+  // sichtbar).
+  const _hb = (String(T.hero_bg||T.bg||"").match(/#([0-9a-fA-F]{6})/)||[])[1];
+  const _L = _hb ? (0.299*parseInt(_hb.slice(0,2),16)+0.587*parseInt(_hb.slice(2,4),16)+0.114*parseInt(_hb.slice(4,6),16))/255 : 0.2;
+  const onHero    = _L>0.5 ? "rgba(0,0,0,0.88)" : "rgba(255,255,255,0.92)";
+  const onHeroMut = _L>0.5 ? "rgba(0,0,0,0.60)" : "rgba(255,255,255,0.66)";
+  const trackBg  = "rgba(128,128,128,0.18)";
+  const trackBud = "rgba(128,128,128,0.30)";
   return (
     <div style={{margin:"0 10px 6px",background:T.hero_bg,borderRadius:20,padding:"10px 12px 8px"}}>
       <div style={{display:"flex",alignItems:"center",marginBottom:6}}>
-        <div style={{color:T.lbl||T.txt2,fontSize:10,fontWeight:700,letterSpacing:0.5,textTransform:"uppercase",flex:1}}>Top Ausgaben</div>
+        <div style={{color:onHeroMut,fontSize:10,fontWeight:700,letterSpacing:0.5,textTransform:"uppercase",flex:1}}>Top Ausgaben</div>
         <button onClick={nextMode}
-          style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",
-            borderRadius:7,padding:"2px 8px",color:T.txt2,fontSize:10,fontWeight:700,
+          style={{background:trackBg,border:`1px solid ${T.bd}`,
+            borderRadius:7,padding:"2px 8px",color:onHeroMut,fontSize:10,fontWeight:700,
             cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
-          {Li("bar-chart-2",11,T.txt2)} {modeLabel}
+          {Li("bar-chart-2",11,onHeroMut)} {modeLabel}
         </button>
       </div>
       {shown.map(cat=>{
@@ -31,11 +41,11 @@ function ChartBlock({catSums, maxSum, budgets, getBudgetForMonth, year, month}) 
           <div key={cat.id} style={{marginBottom:6}}>
             <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
               <span style={{width:16,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{Li(cat.icon,12,cat.color||T.txt2)}</span>
-              <span style={{color:"rgba(255,255,255,0.75)",fontSize:10,fontWeight:600,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{cat.name}</span>
-              <span style={{color:"rgba(255,255,255,0.6)",fontSize:10,fontFamily:NUM_FONT,flexShrink:0}}>{fmt(cat.sum)}</span>
+              <span style={{color:onHero,fontSize:10,fontWeight:600,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{cat.name}</span>
+              <span style={{color:onHeroMut,fontSize:10,fontFamily:NUM_FONT,flexShrink:0}}>{fmt(cat.sum)}</span>
             </div>
-            <div style={{height:4,borderRadius:2,background:"rgba(255,255,255,0.07)",position:"relative",marginLeft:22}}>
-              {budget>0&&<div style={{position:"absolute",inset:0,borderRadius:2,background:"rgba(255,255,255,0.12)"}}/>}
+            <div style={{height:4,borderRadius:2,background:trackBg,position:"relative",marginLeft:22}}>
+              {budget>0&&<div style={{position:"absolute",inset:0,borderRadius:2,background:trackBud}}/>}
               <div style={{height:"100%",width:`${barPct}%`,background:remaining!==null&&remaining<0?T.neg:cat.color,borderRadius:2,zIndex:1,position:"relative"}}/>
             </div>
             {remaining!==null&&(

@@ -630,6 +630,97 @@ THEMES.creme = {
   name:"Creme",
 };
 
+// ════════════════════════════════════════════════════════════════════════
+//  Zusätzliche UI-Designs (kuratierte Paletten). Light-Mode-Grün bewusst dunkel
+//  genug für WCAG 4.5:1 (kleine farbige Beträge müssen lesbar bleiben).
+// ════════════════════════════════════════════════════════════════════════
+
+// ── Modern Slate — neutrales Schiefergrau, weiße Schrift, Lime-Akzent ───────
+THEMES.modernslate = {
+  ...THEMES.dark,
+  bg:"#1E222B", surf:"#282D37", surf2:"#313742", surf3:"#181B22",
+  bd:"rgba(255,255,255,0.12)", bds:"rgba(255,255,255,0.24)",
+  txt:"#FFFFFF", txt2:"#9098AC", lbl:"#727A90",
+  blue:"#5B9DF9", pos:"#A3E635", neg:"#FF4D4D", gold:"#FBBF24",
+  on_accent:"#0C1206", disabled:"#2A2F3A", warn:"#FBBF24", override:"#B5830F",
+  mid:"#67E8F9",
+  cell_inc:"#A3E635", cell_inc_bg:"#18200A", cell_inc_bd:"#4A6612",
+  tab_exp:"#3A1414", tab_inc:"#1E2A0A", tab_pend:"#332A0A",
+  err:"#FF4D4D", err_bg:"#350F0F",
+  vorm_bg:"#332A0A", vorm_bd:"rgba(251,191,36,0.85)",
+  pal_inc_bg:"#18200A", pal_inc_bd:"#4A6612", pal_inc_hdr:"#A3E635", pal_inc_fld:"#1E280C", pal_inc_val:"#B6F24D",
+  pal_exp_bg:"#2A0E0E", pal_exp_bd:"#5C1A1A", pal_exp_fld:"#330F0F",
+  pal_tg_bg:"#0E1B2E", pal_tg_bd:"#1E3A5C", pal_tg_hdr:"#5B9DF9", pal_tg_fld:"#0C1A2A", pal_tg_val:"#9CC9FF",
+  hero_bg:"linear-gradient(135deg,#181B22,#282D37)", logo_c1:"#6FA80F", logo_c2:"#A3E635",
+  cond_neg:"#FF4D4D", cond_warn:"#FBBF24", cond_gold:"#FCD34D", cond_pos:"#A3E635",
+  name:"Modern Slate",
+};
+
+// ── Clean Corporate — sehr helles Blaugrau, dunkles Marineblau-Schwarz,
+//    klares Geschäftsblau. Grün WCAG-sicher abgedunkelt.
+THEMES.cleancorporate = {
+  ...THEMES.light,
+  bg:"#F8FAFC", surf:"#FFFFFF", surf2:"#EEF2F6", surf3:"#E6EBF1",
+  bd:"rgba(15,23,42,0.12)", bds:"rgba(15,23,42,0.24)",
+  txt:"#0F172A", txt2:"#64748B", lbl:"#7E8B9E",
+  blue:"#2563EB", pos:"#3C8200", neg:"#D6001C", gold:"#B45309",
+  on_accent:"#FFFFFF", disabled:"#C8D0DA", warn:"#B45309", override:"#7A4300",
+  mid:"#0E6E94",
+  cell_inc:"#3C8200", cell_inc_bg:"#EEF7E0", cell_inc_bd:"#A8CE78",
+  tab_exp:"#FBE4E6", tab_inc:"#EEF7E0", tab_pend:"#FBF1DD",
+  err:"#D6001C", err_bg:"#FBDEE1",
+  vorm_bg:"#FFF3D6", vorm_bd:"rgba(180,83,9,0.6)",
+  pal_inc_bg:"#EEF7E0", pal_inc_bd:"#A8CE78", pal_inc_hdr:"#3C8200", pal_inc_fld:"#E4F2D2", pal_inc_val:"#2E5E00",
+  pal_exp_bg:"#FBE6E8", pal_exp_bd:"#E5A6AE", pal_exp_fld:"#F8D8DC",
+  pal_tg_bg:"#E7EEFB", pal_tg_bd:"#A8C0EC", pal_tg_hdr:"#2563EB", pal_tg_fld:"#DCE6F8", pal_tg_val:"#1A47B0",
+  hero_bg:"linear-gradient(135deg,#EEF2F6,#FFFFFF)", logo_c1:"#3C8200", logo_c2:"#2563EB",
+  cond_neg:"#D6001C", cond_warn:"#B45309", cond_gold:"#B8860B", cond_pos:"#3C8200",
+  name:"Clean Corporate",
+};
+
+// ── Deep Ocean — tiefes Marineblau, helle Schrift, Cyan-Akzent, Chartreuse-Grün
+THEMES.deepocean = {
+  ...THEMES.dark,
+  bg:"#0B132B", surf:"#1C2541", surf2:"#243056", surf3:"#080F22",
+  bd:"rgba(150,180,220,0.18)", bds:"rgba(150,180,220,0.34)",
+  txt:"#F4F6F9", txt2:"rgba(200,215,240,0.72)", lbl:"rgba(200,215,240,0.54)",
+  blue:"#48CAE4", pos:"#BFFF00", neg:"#FF5252", gold:"#FFC861",
+  on_accent:"#06121A", disabled:"#243056", warn:"#FFB54A", override:"#C2820F",
+  mid:"#67E8F9",
+  cell_inc:"#BFFF00", cell_inc_bg:"#141F00", cell_inc_bd:"#4A6600",
+  tab_exp:"#3A1010", tab_inc:"#1C2A00", tab_pend:"#332600",
+  err:"#FF5252", err_bg:"#350E0E",
+  vorm_bg:"#332600", vorm_bd:"rgba(255,200,97,0.8)",
+  pal_inc_bg:"#141F00", pal_inc_bd:"#4A6600", pal_inc_hdr:"#BFFF00", pal_inc_fld:"#1A2600", pal_inc_val:"#D4FF4D",
+  pal_exp_bg:"#2A0C0C", pal_exp_bd:"#5C1818", pal_exp_fld:"#330E0E",
+  pal_tg_bg:"#0A1B2E", pal_tg_bd:"#1A4658", pal_tg_hdr:"#48CAE4", pal_tg_fld:"#08182A", pal_tg_val:"#8AE0F0",
+  hero_bg:"linear-gradient(135deg,#080F22,#1C2541)", logo_c1:"#6FA800", logo_c2:"#BFFF00",
+  cond_neg:"#FF5252", cond_warn:"#FFB54A", cond_gold:"#FFD263", cond_pos:"#BFFF00",
+  name:"Deep Ocean",
+};
+
+// ── Soft Eco-Tech — warmes helles Grau, dunkler Text, freundliches Teal,
+//    natürliches Grün (WCAG-sicher abgedunkelt).
+THEMES.softecotech = {
+  ...THEMES.light,
+  bg:"#F4F4F2", surf:"#FFFFFF", surf2:"#EAEAE6", surf3:"#E3E3DE",
+  bd:"rgba(26,28,30,0.12)", bds:"rgba(26,28,30,0.24)",
+  txt:"#1A1C1E", txt2:"#5E6568", lbl:"#80878A",
+  blue:"#1F8A7A", pos:"#3A8000", neg:"#DE2129", gold:"#A66A00",
+  on_accent:"#FFFFFF", disabled:"#CBCBC6", warn:"#A66A00", override:"#7A4D00",
+  mid:"#1E7E90",
+  cell_inc:"#3A8000", cell_inc_bg:"#EAF3DE", cell_inc_bd:"#A6CC80",
+  tab_exp:"#FBE2E3", tab_inc:"#EAF3DE", tab_pend:"#F8EFDA",
+  err:"#DE2129", err_bg:"#FBDFE0",
+  vorm_bg:"#F8EFD6", vorm_bd:"rgba(166,106,0,0.6)",
+  pal_inc_bg:"#EAF3DE", pal_inc_bd:"#A6CC80", pal_inc_hdr:"#357500", pal_inc_fld:"#E0EECF", pal_inc_val:"#275600",
+  pal_exp_bg:"#FBE4E5", pal_exp_bd:"#E8A6A9", pal_exp_fld:"#F8D6D8",
+  pal_tg_bg:"#E4F2EF", pal_tg_bd:"#A6D0C8", pal_tg_hdr:"#1F8A7A", pal_tg_fld:"#D8ECE7", pal_tg_val:"#14685B",
+  hero_bg:"linear-gradient(135deg,#EAEAE6,#FFFFFF)", logo_c1:"#3A8000", logo_c2:"#1F8A7A",
+  cond_neg:"#DE2129", cond_warn:"#A66A00", cond_gold:"#B8860B", cond_pos:"#3A8000",
+  name:"Soft Eco-Tech",
+};
+
 // Globales T — wird von getAppTheme() überschrieben, initialisiert mit dark — wird von getAppTheme() überschrieben, initialisiert mit dark
 function getTheme(name) {
   const t = THEMES[name] || THEMES.dark;
