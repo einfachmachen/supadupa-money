@@ -137,6 +137,40 @@ export function dropPayPalCounterBookings(rows) {
   });
 }
 
+// Erkennt Rückerstattungen unter den Einnahmen: ein PayPal-Eingang ist eine
+// Erstattung, wenn (a) der Text ein Erstattungs-Schlüsselwort enthält oder
+// (b) der Händler ein Ausgaben-Händler ist und es eine gleich hohe Ausgabe gibt
+// (z.B. Apple/AliExpress/COMTRADA erstatten). Markiert die Zeile mit _isRefund
+// und – falls gefunden – _refundOf (die zugehörige frühere Ausgabe).
+const REFUND_RE = /reverse payment|credit has been processed|claim is now closed|dispute|erstattung|r[üu]ckerstattung|r[üu]ckzahlung|refund|reversal|storno|gutschrift/i;
+function merchantsSimilar(a, b) {
+  const tb = new Set(tokens(b));
+  return tokens(a).some(t => tb.has(t));
+}
+export function detectPayPalRefunds(rows) {
+  const expenses = rows.filter(r => (r.amount ?? r.totalAmount ?? 0) < 0);
+  return rows.map(r => {
+    const a = r.amount ?? r.totalAmount ?? 0;
+    if (a <= 0) return r; // nur Einnahmen prüfen
+    const merch = payPalMerchant(r);
+    const keyword = REFUND_RE.test(r.desc || "");
+    let best = null;
+    if (merch && tokens(merch).length) {
+      const cents = Math.round(a * 100);
+      const rd = new Date(r.isoDate || r.date).getTime();
+      best = expenses
+        .filter(e => Math.round(Math.abs(e.amount ?? e.totalAmount ?? 0) * 100) === cents && merchantsSimilar(merch, payPalMerchant(e)))
+        .map(e => ({ e, dd: Math.abs(new Date(e.isoDate || e.date).getTime() - rd) }))
+        .sort((x, y) => x.dd - y.dd)[0]?.e || null;
+    }
+    if (!keyword && !best) return r;
+    return {
+      ...r, _isRefund: true,
+      ...(best ? { _refundOf: { date: best.isoDate, amount: best.amount ?? -(best.totalAmount || 0), merchant: payPalMerchant(best) } } : {}),
+    };
+  });
+}
+
 // Steckt der Händlername im Giro-Verwendungszweck? Token-basiert, damit
 // "REWE SAGT DANKE" ↔ "Rewe" trotzdem greift, aber Floskeln nicht fälschlich
 // matchen. Match, wenn ein signifikantes Händler-Token (≥4 Zeichen Teilstring,
