@@ -223,26 +223,35 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     const all = parsed?.autoSuggestions || [];
     const q = suggSearch.trim().toLowerCase();
     return all.filter(s=>{
+      if(suggAmt(s) > 0) return false; // Einnahmen-Matches → eigene „Einnahmen"-Ansicht
       if(suggConf && s.confidence!==suggConf) return false;
       if(!q) return true;
       return matchSuggText(s, q);
     });
   })();
-  // Echte Einnahmen-Buchungen (positive Zeilen) — für den Filter „Einnahmen".
+  // Vorschlag je PayPal-Zeile (für Einnahmen: zeigt die zugehörige
+  // Giro-Gutschrift, falls vorhanden).
+  const suggByRow = (()=>{
+    const m = new Map();
+    (parsed?.autoSuggestions || []).forEach(s=>{ if(!m.has(s.rowIdx)) m.set(s.rowIdx, s); });
+    return m;
+  })();
+  // Echte Einnahmen-Buchungen (positive Zeilen) mit Original-Index — für den
+  // Filter „Einnahmen". Matched = hat eine Giro-Gutschrift.
   const incomeShown = (()=>{
     const rows = parsed?.newRows || [];
     const q = suggSearch.trim().toLowerCase();
-    return rows.filter(r=>{
+    return rows.map((r,i)=>({r,i})).filter(({r})=>{
       if(!((r.amount ?? r.totalAmount ?? 0) > 0)) return false;
       if(!q) return true;
       return [r.desc, r._recipient, r.isoDate, String(Math.abs(r.amount??r.totalAmount??0)).replace(".",",")].join(" ").toLowerCase().includes(q);
     });
   })();
-  // Zähler je Konfidenzstufe (für die Chip-Beschriftung).
+  // Zähler je Konfidenzstufe (für die Chip-Beschriftung) — nur Ausgaben-Matches.
   const confCounts = (()=>{
     const all = parsed?.autoSuggestions || [];
     const c = {hoch:0, mittel:0, niedrig:0};
-    all.forEach(s=>{ if(c[s.confidence]!=null) c[s.confidence]++; });
+    all.forEach(s=>{ if(suggAmt(s)<0 && c[s.confidence]!=null) c[s.confidence]++; });
     return c;
   })();
 
@@ -898,19 +907,50 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                   {incomeShown.length===0&&(
                     <div style={{color:T.txt2,fontSize:MFSl,padding:"10px 2px"}}>Keine Einnahmen für die aktuelle Auswahl.</div>
                   )}
-                  {incomeShown.map((r,ii)=>{
+                  {incomeShown.map(({r,i})=>{
                     const amt = Math.abs(pn(r.amount ?? r.totalAmount ?? 0));
                     const descFS = autoSuggFull ? (mobileMode?15:13.5) : (mobileMode?14:11.5);
                     const metaFS = autoSuggFull ? (mobileMode?13:11.5) : (mobileMode?12:10);
                     const wrap = autoSuggFull ? {whiteSpace:"normal",wordBreak:"break-word"} : {overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"};
+                    const s = suggByRow.get(i); // zugehörige Giro-Gutschrift (falls vorhanden)
+                    const confColor = s ? (s.confidence==="hoch"?T.pos:s.confidence==="mittel"?T.gold:T.txt2) : T.txt2;
+                    const accepted = s && (parsed.acceptedSuggs||[]).some(a=>a.rowIdx===s.rowIdx&&a.giroId===s.giroTx.id);
                     return (
-                      <div key={"inc"+ii} style={{display:"flex",flexDirection:"column",gap:3,
-                        padding:autoSuggFull?"11px 2px":"8px 2px",borderBottom:`1px solid rgba(255,255,255,0.06)`}}>
+                      <div key={"inc"+i} style={{display:"flex",flexDirection:"column",gap:3,
+                        padding:autoSuggFull?"11px 2px":"8px 2px",borderBottom:`1px solid rgba(255,255,255,0.06)`,
+                        background:accepted?"rgba(34,197,94,0.07)":"transparent"}}>
                         <div style={{display:"flex",alignItems:"baseline",gap:8}}>
                           <div style={{flex:1,minWidth:0,color:T.pos,fontSize:autoSuggFull?(mobileMode?22:17):(mobileMode?17:13.5),
                             fontWeight:800,fontFamily:NUM_FONT}}>+ {fmt(amt)}</div>
-                          <div style={{flexShrink:0,color:T.txt2,fontSize:metaFS}}>PayPal {dshort(r.isoDate)}</div>
+                          <div style={{flexShrink:0,color:T.txt2,fontSize:metaFS}}>
+                            {s?`Giro ${dshort(s.giroTx.date)} · `:""}PayPal {dshort(r.isoDate)}
+                          </div>
                         </div>
+                        {/* Konfidenz + übernehmen — nur wenn es eine Giro-Gutschrift gibt */}
+                        {s ? (
+                          <div style={{display:"flex",alignItems:"center",gap:8}}>
+                            <div style={{flex:1,minWidth:0,display:"flex",alignItems:"baseline",gap:6,flexWrap:"wrap"}}>
+                              <span style={{color:confColor,fontSize:autoSuggFull?14:12,fontWeight:800}}>{s.confidence}</span>
+                              <span style={{color:T.txt2,fontSize:metaFS}}>±{s.diffDays} Tage</span>
+                              {s.reason&&<span style={{color:T.txt2,fontSize:metaFS,opacity:0.85}}>· {s.reason}</span>}
+                            </div>
+                            <button onClick={()=>setParsed(p=>({...p,acceptedSuggs:[...(p.acceptedSuggs||[]),{rowIdx:s.rowIdx,giroId:s.giroTx.id}]}))}
+                              disabled={accepted}
+                              style={{flexShrink:0,background:accepted?"rgba(34,197,94,0.2)":"rgba(255,255,255,0.06)",
+                                border:`1px solid ${accepted?T.pos:T.bd}`,borderRadius:8,padding:autoSuggFull?"6px 13px":"4px 10px",
+                                fontSize:autoSuggFull?13:11,fontWeight:700,cursor:accepted?"default":"pointer",
+                                color:accepted?T.pos:T.txt2,fontFamily:"inherit"}}>
+                              {accepted?"✓ übernommen":"übernehmen"}
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{color:T.txt2,fontSize:metaFS,opacity:0.7}}>kein Giro-Gegenstück (Guthaben bleibt in PayPal)</div>
+                        )}
+                        {s&&(
+                          <div style={{color:T.txt,fontSize:descFS,fontWeight:600,...wrap}}>
+                            <span style={{color:T.blue,fontWeight:700}}>Giro:</span> {s.giroTx.desc}
+                          </div>
+                        )}
                         <div style={{color:T.txt2,fontSize:descFS,...wrap}}>
                           <span style={{color:T.gold,fontWeight:700}}>PayPal:</span> {r.desc}
                         </div>
