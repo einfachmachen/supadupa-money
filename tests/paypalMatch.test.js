@@ -371,4 +371,14 @@ describe("enrichPayPalMerchants — PayPal +30", () => {
     expect(links.map(l => l.giroTx.id)).toEqual(["g1"]);
     expect(suggestions[0].confidence).toBe("hoch");
   });
+
+  it("merkt sich die Quell-Legs per Fingerprint (zum Mit-Verknüpfen an die Giro-Buchung)", () => {
+    const rows = [
+      { amount: 145.95, isoDate: "2022-05-21", desc: "Macconnect", fp: "fp-refund", _recipient: "Macconnect Computersysteme GmbH" },
+      { amount: 145.95, isoDate: "2022-05-22", desc: "Successful", fp: "fp-withdrawal", _recipient: "PayPal (Europe) S.à r.l. et Cie, SCA" },
+    ];
+    const enr = enrichPayPalMerchants(rows);
+    // Die Auszahlung kennt den Fingerprint ihrer Quell-Erstattung.
+    expect(enr[1]._legSourceFps).toEqual(["fp-refund"]);
+  });
 });

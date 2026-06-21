@@ -337,11 +337,17 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
       links.forEach(l => { autoByRow[l.rowIdx] = l.giroTx; });
     }
 
+    // Fingerprint → neue Tx-ID, um interne Legs (PayPal +30-Kauf / Auszahlungs-
+    // Quelle) an dieselbe Giro-Buchung zu hängen wie ihren gematchten Partner.
+    const fpToNewId = {};
+    const legLinkByRow = {}; // rowIdx → [fp der Quell-Legs]
     parsed.newRows.forEach((r,i) => {
       const {catId="", subId=""} = assign[i]||{};
       const absAmt = Math.abs(r.amount);
       const splits = catId ? [{id:uid(), catId, subId, amount:absAmt}] : [];
       const newId = "csv-"+uid();
+      fpToNewId[r.fp] = newId;
+      if(r._legSourceFps) legLinkByRow[i] = r._legSourceFps;
       // Konto: bereits in doParse aufgelöst
       const resolvedAccId = r._resolvedAccId || selAccId || accounts[0]?.id || "acc-giro";
       newTxs.push({
@@ -380,6 +386,22 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
         if(!giroUpdates[match.id]) giroUpdates[match.id] = [];
         giroUpdates[match.id].push(newId);
       }
+    });
+
+    // Interne Legs (PayPal-+30-Kauf / Quell-Erstattung einer Auszahlung) an
+    // dieselbe Giro-Buchung hängen wie ihren gematchten Partner → eine gezählte
+    // Buchung (das Giro), alle PayPal-Detail-Legs als verknüpfte Info, keine
+    // Doppelzählung.
+    if(linkToGiro) Object.entries(legLinkByRow).forEach(([iStr, fps]) => {
+      const i = Number(iStr);
+      const acc = (parsed.acceptedSuggs||[]).find(a=>a.rowIdx===i);
+      const giroId = acc ? acc.giroId : autoByRow[i]?.id;
+      if(!giroId) return;
+      if(!giroUpdates[giroId]) giroUpdates[giroId] = [];
+      fps.forEach(fp => {
+        const sid = fpToNewId[fp];
+        if(sid && !giroUpdates[giroId].includes(sid)) giroUpdates[giroId].push(sid);
+      });
     });
 
     setTxs(p => {

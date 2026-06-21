@@ -81,6 +81,7 @@ export function enrichPayPalMerchants(rows) {
   const enriched = new Array(rows.length).fill(null);
   const kind = new Array(rows.length).fill(null);     // "plus30" | "withdrawal"
   const isLeg = new Array(rows.length).fill(false);   // Quell-Leg → vom Giro-Matching ausschließen
+  const legFps = new Array(rows.length).fill(null);   // Fingerprints der Quell-Legs (zum Mit-Verknüpfen)
   rows.forEach((r, i) => {
     const cur = meta[i];
     if (!generic(cur.merchant)) return;
@@ -102,12 +103,14 @@ export function enrichPayPalMerchants(rows) {
     kind[i] = cur.income ? "withdrawal" : "plus30";
     // Quell-Leg markieren: hat keine eigene Giro-Buchung (läuft über DIESE
     // generische Abbuchung/Auszahlung) → vom Giro-Matching ausschließen.
+    legFps[i] = sources.map(s => rows[s.j].fp).filter(Boolean);
     sources.forEach(({ j }) => { isLeg[j] = true; });
   });
   return rows.map((r, i) => {
     let out = r;
     if (enriched[i]) out = { ...out, _enrichedMerchant: enriched[i],
-      ...(kind[i] === "withdrawal" ? { _enrichedWithdrawal: true } : { _enrichedPlus30: true }) };
+      ...(kind[i] === "withdrawal" ? { _enrichedWithdrawal: true } : { _enrichedPlus30: true }),
+      ...(legFps[i] && legFps[i].length ? { _legSourceFps: legFps[i] } : {}) };
     if (isLeg[i]) out = { ...out, _internalLeg: true };
     return out;
   });
