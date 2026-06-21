@@ -38,7 +38,7 @@ function Swatch({ th, size = 22, dot = 5, gap = 2 }) {
 }
 
 function ThemeSwitcherMini() {
-  const { themeName, setThemeName, setThemeRev } = useContext(AppCtx);
+  const { themeName, setThemeName, setThemeRev, amtFont, setAmtFont } = useContext(AppCtx);
   const [open, setOpen] = React.useState(false);
   const luma = c => { const h = toH(c); const r = parseInt(h.slice(1,3),16)||0, g = parseInt(h.slice(3,5),16)||0, b = parseInt(h.slice(5,7),16)||0; return (0.299*r+0.587*g+0.114*b)/255; };
   const groups = React.useMemo(() => {
@@ -83,7 +83,7 @@ function ThemeSwitcherMini() {
   };
   const hdr = (label, count) => (
     <div style={{ padding: "6px 12px 3px", fontSize: 10, fontWeight: 800, letterSpacing: "0.08em",
-      textTransform: "uppercase", color: T.txt2 }}>{label} <span style={{ opacity: 0.6, fontWeight: 600 }}>({count})</span></div>
+      textTransform: "uppercase", color: T.txt2 }}>{label}{count!=null && <span style={{ opacity: 0.6, fontWeight: 600 }}> ({count})</span>}</div>
   );
   return (
     <div style={{ position: "relative" }}>
@@ -108,6 +108,30 @@ function ThemeSwitcherMini() {
             {groups.dark.map(renderItem)}
             {hdr("Hell", groups.light.length)}
             {groups.light.map(renderItem)}
+            <div style={{ borderTop: `1px solid ${T.bd}`, margin: "5px 0 0" }} />
+            {hdr("Beträge (Test)")}
+            <div style={{ display: "flex", gap: 6, padding: "2px 12px 8px" }}>
+              {[
+                { v: "",         lbl: "Standard", cls: "amtw-q" },
+                { v: "medium",   lbl: "Medium",   cls: "amtw-500" },
+                { v: "semibold", lbl: "Semibold", cls: "amtw-600" },
+              ].map(o => {
+                const on = (amtFont || "") === o.v;
+                return (
+                  <button key={o.v} onClick={() => setAmtFont?.(o.v)}
+                    style={{
+                      flex: 1, padding: "5px 4px", cursor: "pointer",
+                      borderRadius: 7, fontSize: 11, lineHeight: 1.25,
+                      color: on ? T.blue : T.txt,
+                      background: on ? `${T.blue}18` : "transparent",
+                      border: `1px solid ${on ? T.blue : T.bd}`,
+                    }}>
+                    <span style={{ fontSize: 9, opacity: 0.75 }}>{o.lbl}</span><br/>
+                    <span className={o.cls} style={{ fontSize: 13 }}>1.234</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </>
       )}

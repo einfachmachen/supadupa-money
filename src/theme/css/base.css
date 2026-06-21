@@ -28,6 +28,25 @@
    Roboto-Fallbacks); andernfalls schadenlos ignoriert. */
 [style*="Questrial"] { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
 
+/* Betrags-Schriftvarianten (Test-Optionen, umschaltbar im Theme-Menü).
+   Wechselt die Geldschrift auf einen System-Stack mit ECHTEN Schnitten
+   (SF Pro / Roboto / Inter) — diese liefern echtes Medium/Semibold UND
+   tabellarische Ziffern. Höhere Spezifität (0,2,0) als der globale
+   *{font-weight:400} → gewinnt. Der große Hero-Betrag (.heroAmt, fett 700)
+   bleibt ausgenommen, nur seine Schriftfamilie wechselt mit. */
+.amtfont-medium [style*="Questrial"],
+.amtfont-semibold [style*="Questrial"] {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Roboto", "Inter", system-ui, sans-serif !important;
+}
+.amtfont-medium   [style*="Questrial"]:not(.heroAmt) { font-weight: 500 !important; }
+.amtfont-semibold [style*="Questrial"]:not(.heroAmt) { font-weight: 600 !important; }
+
+/* Vorschau-Schriften für die Test-Buttons im Theme-Menü (eigene Klassen, da
+   inline font-weight am globalen *{font-weight:400!important} scheitert). */
+.amtw-q   { font-family:"Questrial","Century Gothic",sans-serif; font-weight:400 !important; font-variant-numeric:tabular-nums; }
+.amtw-500 { font-family:-apple-system,BlinkMacSystemFont,"Roboto","Inter",system-ui,sans-serif; font-weight:500 !important; font-variant-numeric:tabular-nums; }
+.amtw-600 { font-family:-apple-system,BlinkMacSystemFont,"Roboto","Inter",system-ui,sans-serif; font-weight:600 !important; font-variant-numeric:tabular-nums; }
+
 /* Betrags-Sichtbarkeit (Augensymbol). Beträge nutzen die Geldschrift
    "Questrial" (NUM_FONT) — darüber erfassen wir sie global, ohne jede
    Render-Stelle anzufassen.
