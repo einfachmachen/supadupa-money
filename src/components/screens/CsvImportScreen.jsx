@@ -8,7 +8,7 @@ import { QuickPicker } from "../organisms/QuickPicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { parseCSV } from "../../utils/csv.js";
-import { assignPayPalLinks, enrichPayPalMerchants, looksLikePayPalCsv, dropPayPalCounterBookings, detectPayPalRefunds } from "../../utils/paypalMatch.js";
+import { assignPayPalLinks, enrichPayPalMerchants, looksLikePayPalCsv, dropPayPalCounterBookings, detectPayPalRefunds, reconcilePayPalLegs } from "../../utils/paypalMatch.js";
 import { AccountChips } from "../molecules/AccountChips.jsx";
 import { parsePdfStatement } from "../../utils/pdfStatement.js";
 import { anchorFromDetectedBalance, makeAnchorEntry } from "../../utils/anchors.js";
@@ -296,7 +296,11 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     const enrichedRows = isPayPalCsv ? enrichPayPalMerchants(newRowsRaw) : newRowsRaw;
     // PayPal: interne Gegenbuchungen entfernen, dann Rückerstattungen erkennen.
     const filtered = isPayPalCsv ? dropPayPalCounterBookings(enrichedRows) : enrichedRows;
-    const newRows = isPayPalCsv ? detectPayPalRefunds(filtered) : filtered;
+    const refunds = isPayPalCsv ? detectPayPalRefunds(filtered) : filtered;
+    // Verwaiste Legs reparieren: wurde die zugehörige Auszahlung gefiltert,
+    // wird die Erstattung wieder normal zuordenbar (sonst „siehe Auszahlung"
+    // ohne Auszahlung + kein Giro-Match).
+    const newRows = isPayPalCsv ? reconcilePayPalLegs(refunds) : refunds;
     return { newRows, dupRows, droppedCounter: enrichedRows.length - filtered.length };
   };
 

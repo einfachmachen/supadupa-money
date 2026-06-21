@@ -235,6 +235,35 @@ export function detectPayPalRefunds(rows) {
   });
 }
 
+// Reconciliation nach allen Filterschritten: „interne Legs" reparieren, deren
+// Auszahlung nicht überlebt hat. Eine Quell-Erstattung wird nur dann vom
+// Giro-Matching ausgeschlossen (_internalLeg), wenn es TATSÄCHLICH noch eine
+// Auszahlungs-Zeile gibt, die per _legSourceFps darauf verweist. Wurde diese
+// Auszahlung zwischenzeitlich entfernt (z.B. als interne Gegenbuchung), wäre das
+// Leg sonst verwaist: Hinweis „→ aufs Giro ausgezahlt", obwohl es keine
+// Auszahlung mehr gibt, UND fälschlich nicht zuordenbar. Dann: Flag aufheben,
+// damit die Erstattung wieder normal der Giro-Gutschrift zugeordnet werden kann.
+// Spiegelbildlich: zeigt _legSourceFps auf entfernte Zeilen, wird es bereinigt.
+export function reconcilePayPalLegs(rows) {
+  const present = new Set(rows.map(r => r.fp).filter(Boolean));
+  const referenced = new Set();
+  rows.forEach(r => (r._legSourceFps || []).forEach(fp => { if (present.has(fp)) referenced.add(fp); }));
+  return rows.map(r => {
+    let out = r;
+    if (out._internalLeg && (!out.fp || !referenced.has(out.fp))) {
+      const { _internalLeg, ...rest } = out; out = rest; // verwaistes Leg → normale Buchung
+    }
+    if (out._legSourceFps) {
+      const fps = out._legSourceFps.filter(fp => present.has(fp));
+      if (fps.length !== out._legSourceFps.length) {
+        if (fps.length) out = { ...out, _legSourceFps: fps };
+        else { const { _legSourceFps, ...rest } = out; out = rest; }
+      }
+    }
+    return out;
+  });
+}
+
 // Steckt der Händlername im Giro-Verwendungszweck? Token-basiert, damit
 // "REWE SAGT DANKE" ↔ "Rewe" trotzdem greift, aber Floskeln nicht fälschlich
 // matchen. Match, wenn ein signifikantes Händler-Token (≥4 Zeichen Teilstring,
