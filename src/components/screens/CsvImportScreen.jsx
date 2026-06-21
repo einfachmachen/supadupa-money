@@ -960,13 +960,20 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                             </button>
                           </div>
                         ) : (
-                          <div style={{color:T.txt2,fontSize:metaFS,opacity:0.7}}>kein Giro-Gegenstück (Guthaben bleibt in PayPal)</div>
+                          <div style={{color:T.txt2,fontSize:metaFS,opacity:0.7}}>
+                            {r._internalLeg ? "→ aufs Giro ausgezahlt (siehe Auszahlung)" : "kein Giro-Gegenstück (Guthaben bleibt in PayPal)"}
+                          </div>
                         )}
                         {r._isRefund&&(
                           <div style={{display:"inline-flex",alignSelf:"flex-start",alignItems:"center",gap:5,
                             background:"rgba(245,166,35,0.15)",border:`1px solid ${T.gold}66`,borderRadius:7,
                             padding:"2px 8px",color:T.gold,fontSize:metaFS,fontWeight:700}}>
                             {Li("corner-up-left",11,T.gold)} Erstattung{r._refundOf?` zu ${(r._refundOf.merchant||"Ausgabe").split(" ")[0]} ${fmt(Math.abs(r._refundOf.amount))} · ${dshort(r._refundOf.date)}`:""}
+                          </div>
+                        )}
+                        {r._enrichedWithdrawal&&r._enrichedMerchant&&(
+                          <div style={{color:T.blue,fontSize:metaFS,fontWeight:700,...wrap}}>
+                            {Li("corner-down-right",11,T.blue)} Auszahlung von: {r._enrichedMerchant}
                           </div>
                         )}
                         {s&&(

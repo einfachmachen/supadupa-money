@@ -351,4 +351,24 @@ describe("enrichPayPalMerchants — PayPal +30", () => {
     const enr = enrichPayPalMerchants(r);
     expect(enr[2]._enrichedMerchant).toBeUndefined();
   });
+
+  it("Auszahlung: generische +Einnahme erbt Händler der Quell-Erstattung; Quelle wird Leg", () => {
+    // Macconnect erstattet +145,95 (21.05) → Auszahlung „PayPal (Europe)" +145,95 (22.05) → Giro 23.05.
+    const rows = [
+      { amount: 145.95, isoDate: "2022-05-21", desc: "Macconnect", _recipient: "Macconnect Computersysteme GmbH paypal@macconnect.de" },
+      { amount: 145.95, isoDate: "2022-05-22", desc: "Successful", _recipient: "PayPal (Europe) S.à r.l. et Cie, SCA" },
+    ];
+    const enr = enrichPayPalMerchants(rows);
+    expect(enr[1]._enrichedMerchant).toMatch(/Macconnect/);
+    expect(enr[1]._enrichedWithdrawal).toBe(true);
+    expect(enr[0]._internalLeg).toBe(true); // Quell-Erstattung → vom Matching ausschließen
+
+    // Giro-Gutschrift trifft eindeutig die Auszahlung (Quelle ausgeschlossen) → hoch.
+    const giros = [{ id: "g1", totalAmount: 145.95, date: "2022-05-23", _csvType: "income",
+      desc: "PayPal (Europe) S.a r.l. · PP.5555.PP ABBUCHUNG VOM PAYPAL-KONTO" }];
+    const { links, suggestions } = assignPayPalLinks(enr, giros, 35);
+    expect(suggestions).toHaveLength(1);
+    expect(links.map(l => l.giroTx.id)).toEqual(["g1"]);
+    expect(suggestions[0].confidence).toBe("hoch");
+  });
 });

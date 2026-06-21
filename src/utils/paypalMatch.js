@@ -68,34 +68,47 @@ export function payPalMerchant(row) {
 // (Reihenfolge/Länge unverändert → Indizes bleiben gültig).
 export function enrichPayPalMerchants(rows) {
   const generic = m => tokens(m).length === 0; // nur Floskeln/Rechtsform → kein echter Händler
-  const meta = rows.map(r => ({
-    amt: Math.round(Math.abs(r.amount ?? r.totalAmount ?? 0) * 100),
-    date: new Date(r.isoDate || r.date).getTime(),
-    merchant: payPalMerchant(r),
-    expense: r.amount == null || r.amount < 0,
-  }));
+  const DAY = 86400000;
+  const meta = rows.map(r => {
+    const amt = r.amount ?? r.totalAmount ?? 0;
+    return {
+      cents: Math.round(Math.abs(amt) * 100),
+      date: new Date(r.isoDate || r.date).getTime(),
+      merchant: payPalMerchant(r),
+      income: amt > 0,
+    };
+  });
   const enriched = new Array(rows.length).fill(null);
-  const isPurchaseLeg = new Array(rows.length).fill(false);
+  const kind = new Array(rows.length).fill(null);     // "plus30" | "withdrawal"
+  const isLeg = new Array(rows.length).fill(false);   // Quell-Leg → vom Giro-Matching ausschließen
   rows.forEach((r, i) => {
     const cur = meta[i];
-    if (!cur.expense || !generic(cur.merchant)) return;
+    if (!generic(cur.merchant)) return;
+    // Quelle: gleiches Vorzeichen, gleicher Betrag, echter Händler, im Fenster.
+    //  - Ausgabe (Lastschrift): Kauf 24–40 Tage früher („PayPal +30").
+    //  - Einnahme (Auszahlung): Quell-Eingang/Erstattung 0–12 Tage früher.
+    const window = cur.income ? [0, 12] : [24, 40];
     const sources = meta
       .map((o, j) => ({ o, j }))
-      .filter(({ o, j }) =>
-        j !== i && o.expense && o.amt === cur.amt && !generic(o.merchant) &&
-        (cur.date - o.date) / 86400000 >= 24 && (cur.date - o.date) / 86400000 <= 40);
+      .filter(({ o, j }) => {
+        if (j === i || o.income !== cur.income || o.cents !== cur.cents || generic(o.merchant)) return false;
+        const dd = (cur.date - o.date) / DAY; // Quelle liegt VOR der generischen Buchung
+        return dd >= window[0] && dd <= window[1];
+      });
     if (!sources.length) return;
     const names = [...new Set(sources.map(s => s.o.merchant))];
     if (names.length !== 1) return; // mehrdeutig → nicht anreichern
     enriched[i] = names[0];
-    // Kauf-Leg(s) markieren: ihre Belastung läuft über DIESE Abbuchung, sie
-    // haben keine eigene Giro-Buchung → vom Giro-Matching ausschließen.
-    sources.forEach(({ j }) => { isPurchaseLeg[j] = true; });
+    kind[i] = cur.income ? "withdrawal" : "plus30";
+    // Quell-Leg markieren: hat keine eigene Giro-Buchung (läuft über DIESE
+    // generische Abbuchung/Auszahlung) → vom Giro-Matching ausschließen.
+    sources.forEach(({ j }) => { isLeg[j] = true; });
   });
   return rows.map((r, i) => {
     let out = r;
-    if (enriched[i]) out = { ...out, _enrichedMerchant: enriched[i], _enrichedPlus30: true };
-    if (isPurchaseLeg[i]) out = { ...out, _plus30Purchase: true };
+    if (enriched[i]) out = { ...out, _enrichedMerchant: enriched[i],
+      ...(kind[i] === "withdrawal" ? { _enrichedWithdrawal: true } : { _enrichedPlus30: true }) };
+    if (isLeg[i]) out = { ...out, _internalLeg: true };
     return out;
   });
 }
@@ -152,6 +165,7 @@ export function detectPayPalRefunds(rows) {
   return rows.map(r => {
     const a = r.amount ?? r.totalAmount ?? 0;
     if (a <= 0) return r; // nur Einnahmen prüfen
+    if (r._enrichedWithdrawal) return r; // Auszahlung einer Erstattung ist selbst keine Erstattung
     const merch = payPalMerchant(r);
     const keyword = REFUND_RE.test(r.desc || "");
     let best = null;
@@ -242,9 +256,10 @@ export function assignPayPalLinks(newRows, giroTxs, linkDays, opts = {}) {
   const pairs = [];
   newRows.forEach((r, rowIdx) => {
     if (excludeRows.has(rowIdx)) return;
-    // „PayPal +30"-Kaufzeile: keine eigene Giro-Belastung (läuft über die
-    // ~30 Tage spätere Abbuchung) → nicht matchen.
-    if (r._plus30Purchase) return;
+    // Internes Leg (PayPal-+30-Kauf oder Quell-Erstattung einer Auszahlung):
+    // hat keine eigene Giro-Buchung (läuft über die generische Abbuchung/
+    // Auszahlung) → nicht matchen.
+    if (r._internalLeg) return;
     giroTxs.forEach(t => {
       if (excludeGiroIds.has(t.id)) return;
       const s = scoreMatch(r, t, linkDays);
