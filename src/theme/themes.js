@@ -548,6 +548,88 @@ THEMES.hellgrau = {
   name:"Hellgrau",
 };
 
+// ════════════════════════════════════════════════════════════════════════
+//  Hoch lesbare Farbkombinationen (maximaler Kontrast, klar getrennte Akzente)
+// ════════════════════════════════════════════════════════════════════════
+
+// ── Kontrast Dunkel — reines Schwarz, weiße Schrift, klar getrennte Akzente
+//    (Blau/Grün/Rot). Maximale Lesbarkeit bei dunkler Umgebung.
+THEMES.kontrastdunkel = {
+  ...THEMES.dark,
+  bg:"#000000", surf:"#141414", surf2:"#1F1F1F", surf3:"#0A0A0A",
+  bd:"rgba(255,255,255,0.24)", bds:"rgba(255,255,255,0.44)",
+  txt:"#FFFFFF", txt2:"rgba(255,255,255,0.82)", lbl:"rgba(255,255,255,0.64)",
+  blue:"#5AB7FF", pos:"#3FD06A", neg:"#FF6B5E", gold:"#FFC83D",
+  on_accent:"#05140A", disabled:"#2A2A2A", warn:"#FFB02E", override:"#C2740A",
+  mid:"#67E8F9",
+  cell_inc:"#5FE08A", cell_inc_bg:"#06160C", cell_inc_bd:"#1E5A33",
+  tab_exp:"#3A0E0A", tab_inc:"#0C2A16", tab_pend:"#332300",
+  err:"#FF6B5E", err_bg:"#3A0A0A",
+  vorm_bg:"#332300", vorm_bd:"rgba(255,200,0,0.9)",
+  pal_inc_bg:"#06160C", pal_inc_bd:"#1E5A33", pal_inc_hdr:"#3FD06A", pal_inc_fld:"#0A1F12", pal_inc_val:"#5FE08A",
+  pal_exp_bg:"#200808", pal_exp_bd:"#5C1A14", pal_exp_fld:"#280A0A",
+  pal_tg_bg:"#06121F", pal_tg_bd:"#1A3A55", pal_tg_hdr:"#5AB7FF", pal_tg_fld:"#0A1A2A", pal_tg_val:"#8FD0FF",
+  hero_bg:"linear-gradient(135deg,#0A0A0A,#1C1C1C)", logo_c1:"#3FD06A", logo_c2:"#5AB7FF",
+  cond_neg:"#FF6B5E", cond_warn:"#FFA53D", cond_gold:"#FFD23D", cond_pos:"#3FD06A",
+  name:"Kontrast Dunkel",
+};
+
+// ── Kontrast Hell — reines Weiß, fast schwarze Schrift, kräftige, dunkle
+//    Akzente (Blau/Grün/Rot). Maximale Lesbarkeit bei heller Umgebung.
+THEMES.kontrasthell = {
+  ...THEMES.light,
+  bg:"#FFFFFF", surf:"#FFFFFF", surf2:"#EEF1F5", surf3:"#E6EAEF",
+  bd:"rgba(0,0,0,0.22)", bds:"rgba(0,0,0,0.42)",
+  txt:"#000000", txt2:"rgba(0,0,0,0.74)", lbl:"rgba(0,0,0,0.56)",
+  blue:"#1565C0", pos:"#1B7A33", neg:"#C62012", gold:"#A65A00",
+  on_accent:"#FFFFFF", disabled:"#C8CCD2", warn:"#9A5400", override:"#7A4300",
+  mid:"#0E6E94",
+  cell_inc:"#1B7A33", cell_inc_bg:"#E6F4E6", cell_inc_bd:"#8FC79A",
+  tab_exp:"#FBE2DF", tab_inc:"#E4F3E4", tab_pend:"#FBF0D0",
+  err:"#C62012", err_bg:"#FBDED9",
+  vorm_bg:"#FFF1CC", vorm_bd:"rgba(160,110,0,0.7)",
+  pal_inc_bg:"#EAF6EA", pal_inc_bd:"#A7CFA7", pal_inc_hdr:"#1B7A33", pal_inc_fld:"#E0F0E0", pal_inc_val:"#155C28",
+  pal_exp_bg:"#FBEAE7", pal_exp_bd:"#E0A59C", pal_exp_fld:"#F8DED9",
+  pal_tg_bg:"#E7F0FA", pal_tg_bd:"#A6C4E6", pal_tg_hdr:"#1565C0", pal_tg_fld:"#DCEAF8", pal_tg_val:"#0D4C95",
+  hero_bg:"linear-gradient(135deg,#E6EAEF,#FFFFFF)", logo_c1:"#1B7A33", logo_c2:"#1565C0",
+  cond_neg:"#C62012", cond_warn:"#B45309", cond_gold:"#B8860B", cond_pos:"#1B7A33",
+  name:"Kontrast Hell",
+};
+
+// ── Mitternacht Blau — tiefes Marineblau, ruhige helle Schrift. Augenschonend
+//    und trotzdem klar lesbar.
+THEMES.mitternacht = {
+  ...THEMES.dark,
+  bg:"#0F1626", surf:"#18223A", surf2:"#1F2B47", surf3:"#0C1220",
+  bd:"rgba(170,195,235,0.20)", bds:"rgba(170,195,235,0.36)",
+  txt:"#EAF1FF", txt2:"rgba(200,215,245,0.74)", lbl:"rgba(200,215,245,0.56)",
+  blue:"#6CB4FF", pos:"#4FD08A", neg:"#FF6F61", gold:"#FFC861",
+  on_accent:"#08101F", mid:"#67E8F9",
+  cell_inc:"#5FE0A0", cell_inc_bg:"#08200F", cell_inc_bd:"#1E5A3A",
+  tab_exp:"#3A1015", tab_inc:"#0C2A1A", tab_pend:"#33260A",
+  err:"#FF6F61", err_bg:"#33101A",
+  hero_bg:"linear-gradient(135deg,#0C1220,#1A2742)", logo_c1:"#4FD08A", logo_c2:"#6CB4FF",
+  cond_neg:"#FF6F61", cond_warn:"#FFA552", cond_gold:"#FFD263", cond_pos:"#4FD08A",
+  name:"Mitternacht Blau",
+};
+
+// ── Creme — warmes Off-White, dunkelbrauner Text. Ruhig, augenschonend,
+//    gut lesbar.
+THEMES.creme = {
+  ...THEMES.light,
+  bg:"#F5F0E6", surf:"#FFFDF8", surf2:"#EDE6D6", surf3:"#E8E0CE",
+  bd:"rgba(90,70,40,0.18)", bds:"rgba(90,70,40,0.34)",
+  txt:"#2A2418", txt2:"rgba(80,65,40,0.64)", lbl:"rgba(80,65,40,0.48)",
+  blue:"#1F6FB2", pos:"#2E7D32", neg:"#C0341F", gold:"#B07400",
+  on_accent:"#FFFFFF", mid:"#1E6E90",
+  cell_inc:"#2E7D32", cell_inc_bg:"#EAF3E2", cell_inc_bd:"#9FC79A",
+  tab_exp:"#F7E2DC", tab_inc:"#EAF3DE", tab_pend:"#F7EFD6",
+  err:"#C0341F", err_bg:"#F7DED8",
+  hero_bg:"linear-gradient(135deg,#E8E0CE,#F7F2E8)", logo_c1:"#2E7D32", logo_c2:"#1F6FB2",
+  cond_neg:"#C0341F", cond_warn:"#C2730A", cond_gold:"#B8860B", cond_pos:"#2E7D32",
+  name:"Creme",
+};
+
 // Globales T — wird von getAppTheme() überschrieben, initialisiert mit dark — wird von getAppTheme() überschrieben, initialisiert mit dark
 function getTheme(name) {
   const t = THEMES[name] || THEMES.dark;
