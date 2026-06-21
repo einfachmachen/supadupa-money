@@ -1034,8 +1034,8 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                             Import an dieselbe Giro-Buchung gehängt → hier als Detail
                             unter der Auszahlung, nicht als eigene Einnahme. */}
                         {(legsByParent.get(i)||[]).length>0&&(
-                          <div style={{marginTop:4,marginLeft:2,paddingLeft:9,
-                            borderLeft:`2px solid ${T.gold}55`,display:"flex",flexDirection:"column",gap:5}}>
+                          <div style={{marginTop:4,paddingTop:5,
+                            borderTop:`1px solid rgba(255,255,255,0.08)`,display:"flex",flexDirection:"column",gap:5}}>
                             <div style={{color:T.txt2,fontSize:metaFS,fontWeight:700,display:"flex",alignItems:"center",gap:4}}>
                               {Li("link",10,T.txt2)} Verrechnete Erstattung{(legsByParent.get(i)||[]).length>1?"en":""} (mit dieser Auszahlung verknüpft)
                             </div>
