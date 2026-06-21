@@ -115,6 +115,26 @@
     border-radius: 0 !important;
   }
 
+  /* ── „+"-Button (.plus-master-btn): in den eckigen Spezial-Themes wieder
+     rund. Der zentrale Aktionsknopf soll überall kreisförmig bleiben. ── */
+  .theme-brutalist .plus-master-btn,
+  .theme-swiss .plus-master-btn,
+  .theme-clean .plus-master-btn {
+    border-radius: 50% !important;
+  }
+  /* Terminal: grobpixeliger „Kreis" (Retro/8-Bit-Optik) statt glatt rund.
+     8×8-Raster (Schritte von 12,5%) → blockige Kreiskontur wie früher. */
+  .theme-terminal .plus-master-btn {
+    border-radius: 0 !important;
+    clip-path: polygon(
+      37.5% 0%, 62.5% 0%, 62.5% 12.5%, 75% 12.5%, 75% 25%, 87.5% 25%,
+      87.5% 37.5%, 100% 37.5%, 100% 62.5%, 87.5% 62.5%, 87.5% 75%, 75% 75%,
+      75% 87.5%, 62.5% 87.5%, 62.5% 100%, 37.5% 100%, 37.5% 87.5%, 25% 87.5%,
+      25% 75%, 12.5% 75%, 12.5% 62.5%, 0% 62.5%, 0% 37.5%, 12.5% 37.5%,
+      12.5% 25%, 25% 25%, 25% 12.5%, 37.5% 12.5%
+    ) !important;
+  }
+
   /* ── Randlos-Modus ── */
   .no-borders * {
     border-color: transparent !important;

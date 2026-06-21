@@ -40,12 +40,17 @@ function Swatch({ th, size = 22, dot = 5, gap = 2 }) {
 function ThemeSwitcherMini() {
   const { themeName, setThemeName, setThemeRev } = useContext(AppCtx);
   const [open, setOpen] = React.useState(false);
-  const themes = React.useMemo(() => {
+  const luma = c => { const h = toH(c); const r = parseInt(h.slice(1,3),16)||0, g = parseInt(h.slice(3,5),16)||0, b = parseInt(h.slice(5,7),16)||0; return (0.299*r+0.587*g+0.114*b)/255; };
+  const groups = React.useMemo(() => {
     const saved = (() => { try { return JSON.parse(kvStore.getItem("mbt_custom_themes") || "{}"); } catch { return {}; } })();
     Object.entries(saved).forEach(([k, v]) => { if (!THEMES[k]) THEMES[k] = v; });
-    return Object.entries(THEMES)
+    const list = Object.entries(THEMES)
       .filter(([k]) => k !== "custom_preview")
-      .map(([k, v]) => ({ key: k, name: v.name || k, th: v }));
+      .map(([k, v]) => ({ key: k, name: v.name || k, th: v, lum: luma(v.bg) }));
+    return {
+      dark:  list.filter(t => t.lum < 0.5).sort((a,b)=>a.lum-b.lum),
+      light: list.filter(t => t.lum >= 0.5).sort((a,b)=>b.lum-a.lum),
+    };
   }, [themeName]);
   const cur = THEMES[themeName] || THEMES.dark;
   const pick = (key) => {
@@ -54,6 +59,32 @@ function ThemeSwitcherMini() {
     setThemeRev?.(r => r + 1);
     setOpen(false);
   };
+  const renderItem = ({ key, name, th }) => {
+    const active = key === themeName;
+    return (
+      <div key={key} onClick={() => pick(key)}
+        style={{
+          display: "flex", alignItems: "center", gap: 9, padding: "6px 12px",
+          cursor: "pointer", background: active ? `${T.blue}18` : "transparent",
+          borderLeft: active ? `3px solid ${T.blue}` : "3px solid transparent",
+        }}>
+        <Swatch th={th} size={20} dot={4.5} />
+        <span style={{
+          fontSize: 12, color: active ? T.blue : T.txt, fontWeight: active ? 700 : 400,
+          flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+        }}>{name}</span>
+        {active && (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={T.blue} strokeWidth="2.5">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        )}
+      </div>
+    );
+  };
+  const hdr = (label, count) => (
+    <div style={{ padding: "6px 12px 3px", fontSize: 10, fontWeight: 800, letterSpacing: "0.08em",
+      textTransform: "uppercase", color: T.txt2 }}>{label} <span style={{ opacity: 0.6, fontWeight: 600 }}>({count})</span></div>
+  );
   return (
     <div style={{ position: "relative" }}>
       <button onClick={() => setOpen(o => !o)} title="Theme wechseln"
@@ -73,28 +104,10 @@ function ThemeSwitcherMini() {
             boxShadow: "0 8px 32px rgba(0,0,0,0.45)", backdropFilter: "blur(12px)",
             maxHeight: 320, overflowY: "auto", padding: "5px 0", minWidth: 180,
           }}>
-            {themes.map(({ key, name, th }) => {
-              const active = key === themeName;
-              return (
-                <div key={key} onClick={() => pick(key)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 9, padding: "6px 12px",
-                    cursor: "pointer", background: active ? `${T.blue}18` : "transparent",
-                    borderLeft: active ? `3px solid ${T.blue}` : "3px solid transparent",
-                  }}>
-                  <Swatch th={th} size={20} dot={4.5} />
-                  <span style={{
-                    fontSize: 12, color: active ? T.blue : T.txt, fontWeight: active ? 700 : 400,
-                    flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                  }}>{name}</span>
-                  {active && (
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={T.blue} strokeWidth="2.5">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                  )}
-                </div>
-              );
-            })}
+            {hdr("Dunkel", groups.dark.length)}
+            {groups.dark.map(renderItem)}
+            {hdr("Hell", groups.light.length)}
+            {groups.light.map(renderItem)}
           </div>
         </>
       )}
