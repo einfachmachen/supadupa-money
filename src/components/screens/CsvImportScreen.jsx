@@ -238,13 +238,37 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   })();
   // Echte Einnahmen-Buchungen (positive Zeilen) mit Original-Index — für den
   // Filter „Einnahmen". Matched = hat eine Giro-Gutschrift.
+  // Interne Legs (Quell-Erstattungen einer Auszahlung) werden NICHT eigenständig
+  // gelistet, sondern als Detail unter ihrer Auszahlung gezeigt — sie werden beim
+  // Import an dieselbe Giro-Buchung gehängt (eine gezählte Buchung, alle Infos).
+  const fpToRowIdx = (()=>{
+    const m = new Map();
+    (parsed?.newRows || []).forEach((r,i)=>{ if(r.fp && !m.has(r.fp)) m.set(r.fp, i); });
+    return m;
+  })();
+  const legsByParent = (()=>{
+    const m = new Map(); // Auszahlungs-Zeilenindex → [Index der Quell-Erstattungen]
+    (parsed?.newRows || []).forEach((r,i)=>{
+      if(r._legSourceFps && r._legSourceFps.length){
+        const legs = r._legSourceFps.map(fp=>fpToRowIdx.get(fp)).filter(j=>j!=null);
+        if(legs.length) m.set(i, legs);
+      }
+    });
+    return m;
+  })();
+  const claimedLegIdx = new Set([...legsByParent.values()].flat());
+  const incomeRowText = r => [r.desc, r._recipient, r.isoDate,
+    String(Math.abs(r.amount??r.totalAmount??0)).replace(".",",")].join(" ").toLowerCase();
   const incomeShown = (()=>{
     const rows = parsed?.newRows || [];
     const q = suggSearch.trim().toLowerCase();
-    return rows.map((r,i)=>({r,i})).filter(({r})=>{
+    return rows.map((r,i)=>({r,i})).filter(({r,i})=>{
       if(!((r.amount ?? r.totalAmount ?? 0) > 0)) return false;
+      if(claimedLegIdx.has(i)) return false; // wird als Detail unter der Auszahlung gezeigt
       if(!q) return true;
-      return [r.desc, r._recipient, r.isoDate, String(Math.abs(r.amount??r.totalAmount??0)).replace(".",",")].join(" ").toLowerCase().includes(q);
+      if(incomeRowText(r).includes(q)) return true;
+      // Treffer in einem verknüpften Leg → Auszahlung trotzdem zeigen.
+      return (legsByParent.get(i)||[]).some(j=>incomeRowText(rows[j]).includes(q));
     });
   })();
   // Zähler je Konfidenzstufe (für die Chip-Beschriftung) — nur Ausgaben-Matches.
@@ -1006,6 +1030,34 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                         <div style={{color:T.txt2,fontSize:descFS,...wrap}}>
                           <span style={{color:T.gold,fontWeight:700}}>PayPal:</span> {r.desc}
                         </div>
+                        {/* Verknüpfte Quell-Erstattungen (interne Legs): werden beim
+                            Import an dieselbe Giro-Buchung gehängt → hier als Detail
+                            unter der Auszahlung, nicht als eigene Einnahme. */}
+                        {(legsByParent.get(i)||[]).length>0&&(
+                          <div style={{marginTop:4,marginLeft:2,paddingLeft:9,
+                            borderLeft:`2px solid ${T.gold}55`,display:"flex",flexDirection:"column",gap:5}}>
+                            <div style={{color:T.txt2,fontSize:metaFS,fontWeight:700,display:"flex",alignItems:"center",gap:4}}>
+                              {Li("link",10,T.txt2)} Verrechnete Erstattung{(legsByParent.get(i)||[]).length>1?"en":""} (mit dieser Auszahlung verknüpft)
+                            </div>
+                            {(legsByParent.get(i)||[]).map(j=>{
+                              const lr = parsed.newRows[j];
+                              return (
+                                <div key={"leg"+j} style={{display:"flex",flexDirection:"column",gap:2}}>
+                                  {lr._isRefund&&(
+                                    <div style={{display:"inline-flex",alignSelf:"flex-start",alignItems:"center",gap:5,
+                                      background:"rgba(245,166,35,0.15)",border:`1px solid ${T.gold}66`,borderRadius:7,
+                                      padding:"2px 8px",color:T.gold,fontSize:metaFS,fontWeight:700}}>
+                                      {Li("corner-up-left",11,T.gold)} Erstattung{lr._refundOf?` zu ${(lr._refundOf.merchant||"Ausgabe").split(" ")[0]} ${fmt(Math.abs(lr._refundOf.amount))} · ${dshort(lr._refundOf.date)}`:""}
+                                    </div>
+                                  )}
+                                  <div style={{color:T.txt2,fontSize:descFS,...wrap}}>
+                                    <span style={{color:T.gold,fontWeight:700}}>PayPal {dshort(lr.isoDate)}:</span> {lr.desc}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
