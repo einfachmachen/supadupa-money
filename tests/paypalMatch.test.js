@@ -24,6 +24,7 @@ const giro = (id, amount, date, merchant, opts = {}) => ({
   totalAmount: Math.abs(amount),
   date,
   desc: opts.desc || `PayPal Europe S.a.r.l. et Cie S.C.A. · . Ihr Einkauf bei ${merchant}`,
+  _csvType: opts.csvType || "expense",
   ...(opts.creditorId ? { _creditorId: opts.creditorId } : {}),
 });
 
@@ -124,7 +125,7 @@ describe("assignPayPalLinks — eindeutige Zuordnung", () => {
   it("nutzt die Gläubiger-ID als PayPal-Nachweis, auch ohne 'paypal' im Text", () => {
     const rows = [ppRow("Spotify", 9.99, "2026-03-01")];
     const giros = [{
-      id: "g1", totalAmount: 9.99, date: "2026-03-03",
+      id: "g1", totalAmount: 9.99, date: "2026-03-03", _csvType: "expense",
       desc: "Lastschrift . Ihr Einkauf bei Spotify", _creditorId: PAYPAL_CREDITOR_ID,
     }];
     const { links } = assignPayPalLinks(rows, giros, 35);
@@ -221,6 +222,30 @@ describe("assignPayPalLinks — Rauschen & Konfidenz-Gründe", () => {
     const giros = [giro("g1", 15.98, "2025-12-29", "Comtrada")];
     const { links } = assignPayPalLinks(rows, giros, 35);
     expect(links.map(l => l.giroTx.id)).toEqual(["g1"]);
+  });
+});
+
+describe("Einnahmen-Matching (PayPal-Eingang ↔ Giro-Gutschrift)", () => {
+  it("matcht einen PayPal-Eingang mit einer gleich hohen Giro-Gutschrift", () => {
+    const rows = [{ amount: 30.00, isoDate: "2025-04-09", desc: "Inge Asche", _recipient: "Inge Asche" }];
+    const giros = [{ id: "g1", totalAmount: 30.00, date: "2025-04-10", _csvType: "income",
+      desc: "PayPal Europe S.a.r.l. · PP.5555.PP/ABBUCHUNG VOM PAYPAL-KONTO" }];
+    const { links, suggestions } = assignPayPalLinks(rows, giros, 35);
+    expect(links.map(l => l.giroTx.id)).toEqual(["g1"]);
+    expect(suggestions[0].confidence).toBe("hoch");
+  });
+
+  it("paart NICHT über Kreuz: Eingang nicht mit Lastschrift, Ausgabe nicht mit Gutschrift", () => {
+    const inc = { amount: 30.00, isoDate: "2025-04-09", desc: "X", _recipient: "Inge" };
+    const exp = { amount: -30.00, isoDate: "2025-04-09", desc: "Y", _recipient: "Shop" };
+    const giroCredit = { id: "gc", totalAmount: 30, date: "2025-04-10", _csvType: "income", desc: "PayPal ABBUCHUNG VOM PAYPAL-KONTO" };
+    const giroDebit  = { id: "gd", totalAmount: 30, date: "2025-04-10", _csvType: "expense", desc: "PayPal Ihr Einkauf bei Shop" };
+    // Eingang darf nur die Gutschrift treffen
+    expect(assignPayPalLinks([inc], [giroDebit], 35).suggestions).toHaveLength(0);
+    expect(assignPayPalLinks([inc], [giroCredit], 35).suggestions.map(s=>s.giroTx.id)).toEqual(["gc"]);
+    // Ausgabe darf nur die Lastschrift treffen
+    expect(assignPayPalLinks([exp], [giroCredit], 35).suggestions).toHaveLength(0);
+    expect(assignPayPalLinks([exp], [giroDebit], 35).suggestions.map(s=>s.giroTx.id)).toEqual(["gd"]);
   });
 });
 

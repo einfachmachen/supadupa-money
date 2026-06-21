@@ -163,15 +163,18 @@ export function timingTier(signedDays) {
 }
 
 // Bewertet ein Kandidatenpaar (PayPal-Zeile ↔ Giro-Buchung). Gibt null zurück,
-// wenn es kein Kandidat ist (falscher Betrag, kein PayPal, außerhalb Fenster).
+// wenn es kein Kandidat ist (falsches Vorzeichen, falscher Betrag, kein PayPal,
+// außerhalb Fenster). Paart symmetrisch: PayPal-Ausgabe ↔ Giro-Lastschrift UND
+// PayPal-Eingang ↔ Giro-Gutschrift („ABBUCHUNG VOM PAYPAL-KONTO").
 export function scoreMatch(row, giroTx, linkDays) {
-  // Nur Ausgaben paaren: PayPal-Lastschriften belasten das Girokonto. Die
-  // positiven „Sonstige Einnahmen"-Gegenbuchungen der Finanzblick-PayPal-CSV
-  // (Guthaben-Finanzierung jeder Zahlung) sind kein Lastschrift-Pendant.
-  if (row.amount != null && row.amount >= 0) return null;
-  if (giroTx._csvType === "income") return null;
-  const absAmt = Math.abs(row.amount ?? row.totalAmount ?? 0);
-  if (Math.round((giroTx.totalAmount || 0) * 100) !== Math.round(absAmt * 100)) return null;
+  const rowAmt = row.amount ?? row.totalAmount ?? 0;
+  const rowIsIncome = rowAmt > 0;
+  // Giro-Vorzeichen: _csvType bevorzugen (CSV speichert totalAmount als Betrag),
+  // sonst aus dem Vorzeichen von totalAmount (manuelle Buchungen sind signiert).
+  const giroIsIncome = giroTx._csvType ? giroTx._csvType === "income" : (giroTx.totalAmount || 0) > 0;
+  if (rowIsIncome !== giroIsIncome) return null; // Vorzeichen muss passen
+  const absAmt = Math.abs(rowAmt);
+  if (Math.round(Math.abs(giroTx.totalAmount || 0) * 100) !== Math.round(absAmt * 100)) return null;
   if (!isPayPalGiroTx(giroTx)) return null;
   const rDate = new Date(row.isoDate || row.date).getTime();
   const tDate = new Date(giroTx.date).getTime();
