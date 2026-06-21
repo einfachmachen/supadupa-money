@@ -145,6 +145,12 @@ export default function SupaDupaMoney() {
   // neutral, 2 = scharf + farbig (wie bisher). Startet IMMER bei 0 (alle Beträge
   // unscharf & in Kategorie-Schriftfarbe) — bewusst nicht persistiert.
   const [amtMode, setAmtMode] = useState(0);
+  // Betrags-Schriftvariante (persistiert, zum Testen umschaltbar im Theme-Menü):
+  // "" = Geldschrift Questrial (Standard, Schnitt 400)
+  // "medium" = System-Font 500, "semibold" = System-Font 600 (echte Schnitte +
+  // tabellarische Ziffern). Klasse amtfont-* am Wurzel-Div schaltet die CSS-Regel.
+  const [amtFont, setAmtFontState] = useState(()=>kvStore.getItem("mbt_amt_font")||"");
+  const setAmtFont = (v)=>{ setAmtFontState(v||""); kvStore.setItem("mbt_amt_font", v||""); };
   // Sync: wenn Modal NICHT offen ist, frozenYear/frozenMonth = year/month
   React.useEffect(()=>{
     if(!showMonthPickerModal) {
@@ -2488,6 +2494,7 @@ Abbrechen = ${remoteName}-Stand laden`
     cfSaveOnClose, setCfSaveOnClose,
     dashDrillOpen, setDashDrillOpen,
     amtMode, setAmtMode,
+    amtFont, setAmtFont,
     noBorders, setNoBorders,
     masterOverride, setMasterOverride,
   }), [
@@ -2507,7 +2514,7 @@ Abbrechen = ${remoteName}-Stand laden`
     cfActive, cfStatus, cfUrl, cfSecret,
     syncPass, syncEncActive, showCloudSetup,
     syncStatus, syncError, isDirty, cfSaveOnClose,
-    dashDrillOpen, amtMode, noBorders, masterOverride,
+    dashDrillOpen, amtMode, amtFont, noBorders, masterOverride,
   ]);
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -2540,7 +2547,8 @@ Abbrechen = ${remoteName}-Stand laden`
   <AppCtx.Provider value={cx}>
     <>
     <div className={[noBorders?"no-borders":null, themeName==="clean"?"theme-clean":null, themeName==="brutalist"?"theme-brutalist":null, themeName==="terminal"?"theme-terminal":null, themeName==="swiss"?"theme-swiss":null,
-      amtMode===0?"amts-blur":null, amtMode<2?"amts-neutral":null].filter(Boolean).join(" ")||undefined}
+      amtMode===0?"amts-blur":null, amtMode<2?"amts-neutral":null,
+      amtFont?`amtfont-${amtFont}`:null].filter(Boolean).join(" ")||undefined}
       style={{background:T.bg,height:"100vh",maxHeight:"100vh",
       colorScheme:(isLightTheme())?"light":"dark",
       "--amt-neutral":T.txt,  // Neutral-Schriftfarbe für Beträge (= Kategorie-Text)
