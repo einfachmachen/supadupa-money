@@ -358,6 +358,9 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
         _csvSource: csvSources.length===1 ? csvSources[0] : csvSources.length>1 ? csvSources.join(", ") : "",
         _kontoRaw: r._konto || "",
         ...(r._creditorId ? {_creditorId: r._creditorId} : {}),
+        ...(r._umbuchung ? {_umbuchung: r._umbuchung} : {}),
+        ...(r._isRefund ? {_isRefund: true} : {}),
+        ...(r._refundOf ? {_refundOf: r._refundOf} : {}),
       });
       // Regel merken — lokal + global
       if(catId) {
