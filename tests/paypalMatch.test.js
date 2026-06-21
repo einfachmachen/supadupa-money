@@ -8,6 +8,7 @@ import {
   assignPayPalLinks,
   enrichPayPalMerchants,
   dropPayPalCounterBookings,
+  detectPayPalRefunds,
 } from "../src/utils/paypalMatch.js";
 
 // Eine PayPal-CSV-Zeile, wie der Parser sie liefert (desc = "Name · Typ · …").
@@ -246,6 +247,32 @@ describe("Einnahmen-Matching (PayPal-Eingang ↔ Giro-Gutschrift)", () => {
     // Ausgabe darf nur die Lastschrift treffen
     expect(assignPayPalLinks([exp], [giroCredit], 35).suggestions).toHaveLength(0);
     expect(assignPayPalLinks([exp], [giroDebit], 35).suggestions.map(s=>s.giroTx.id)).toEqual(["gd"]);
+  });
+});
+
+describe("detectPayPalRefunds", () => {
+  it("erkennt Erstattung über Händler + gleichen Betrag und verlinkt die Ausgabe", () => {
+    const rows = [
+      { amount: -10.99, isoDate: "2026-01-01", desc: "Apple", _recipient: "Apple Services paypal-itunes-eur@group.apple.com" },
+      { amount:  10.99, isoDate: "2026-01-05", desc: "Apple", _recipient: "Apple Services paypal-itunes-eur@group.apple.com" },
+    ];
+    const out = detectPayPalRefunds(rows);
+    expect(out[1]._isRefund).toBe(true);
+    expect(out[1]._refundOf.date).toBe("2026-01-01");
+    expect(out[0]._isRefund).toBeUndefined(); // Ausgabe selbst ist keine Erstattung
+  });
+
+  it("erkennt Erstattung am Schlüsselwort (auch ohne passende Ausgabe)", () => {
+    const rows = [{ amount: 8.99, isoDate: "2026-05-24", desc: "DisneyPlus · Credit has been processed and claim is now closed. Dispute ID PP-R-SSU-123", _recipient: "DisneyPlus" }];
+    expect(detectPayPalRefunds(rows)[0]._isRefund).toBe(true);
+  });
+
+  it("markiert echte Einnahmen (Privatperson) NICHT als Erstattung", () => {
+    const rows = [
+      { amount: -5.00, isoDate: "2026-01-01", desc: "Shop", _recipient: "Irgendein Shop" },
+      { amount: 240.00, isoDate: "2026-01-11", desc: "Andreas Bauer", _recipient: "Andreas Bauer" },
+    ];
+    expect(detectPayPalRefunds(rows)[1]._isRefund).toBeUndefined();
   });
 });
 

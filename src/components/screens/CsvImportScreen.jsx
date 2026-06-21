@@ -8,7 +8,7 @@ import { QuickPicker } from "../organisms/QuickPicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { parseCSV } from "../../utils/csv.js";
-import { assignPayPalLinks, enrichPayPalMerchants, looksLikePayPalCsv, dropPayPalCounterBookings } from "../../utils/paypalMatch.js";
+import { assignPayPalLinks, enrichPayPalMerchants, looksLikePayPalCsv, dropPayPalCounterBookings, detectPayPalRefunds } from "../../utils/paypalMatch.js";
 import { AccountChips } from "../molecules/AccountChips.jsx";
 import { parsePdfStatement } from "../../utils/pdfStatement.js";
 import { anchorFromDetectedBalance, makeAnchorEntry } from "../../utils/anchors.js";
@@ -270,8 +270,10 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     const dupRows = resolvedRows.filter(isDup);
     const isPayPalCsv = looksLikePayPalCsv(format, resolvedRows);
     const enrichedRows = isPayPalCsv ? enrichPayPalMerchants(newRowsRaw) : newRowsRaw;
-    const newRows = isPayPalCsv ? dropPayPalCounterBookings(enrichedRows) : enrichedRows;
-    return { newRows, dupRows, droppedCounter: enrichedRows.length - newRows.length };
+    // PayPal: interne Gegenbuchungen entfernen, dann Rückerstattungen erkennen.
+    const filtered = isPayPalCsv ? dropPayPalCounterBookings(enrichedRows) : enrichedRows;
+    const newRows = isPayPalCsv ? detectPayPalRefunds(filtered) : filtered;
+    return { newRows, dupRows, droppedCounter: enrichedRows.length - filtered.length };
   };
 
   const doParse = () => {
@@ -956,6 +958,13 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                           </div>
                         ) : (
                           <div style={{color:T.txt2,fontSize:metaFS,opacity:0.7}}>kein Giro-Gegenstück (Guthaben bleibt in PayPal)</div>
+                        )}
+                        {r._isRefund&&(
+                          <div style={{display:"inline-flex",alignSelf:"flex-start",alignItems:"center",gap:5,
+                            background:"rgba(245,166,35,0.15)",border:`1px solid ${T.gold}66`,borderRadius:7,
+                            padding:"2px 8px",color:T.gold,fontSize:metaFS,fontWeight:700}}>
+                            {Li("corner-up-left",11,T.gold)} Erstattung{r._refundOf?` zu ${(r._refundOf.merchant||"Ausgabe").split(" ")[0]} ${fmt(Math.abs(r._refundOf.amount))} · ${dshort(r._refundOf.date)}`:""}
+                          </div>
                         )}
                         {s&&(
                           <div style={{color:T.txt,fontSize:descFS,fontWeight:600,...wrap}}>
