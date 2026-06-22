@@ -290,11 +290,11 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   };
   const showIncome = suggType==="einnahmen";
   // Filter-Logik: ohne Auswahl (suggType==="") werden BEIDE Listen gezeigt.
-  // „Nur ohne Giro" erzwingt die (gefilterte) Einnahmen-Ansicht — Ausgaben-
-  // Vorschläge haben per Definition immer eine Giro-Buchung.
-  const showExpenses   = !onlyUnmatched && suggType!=="einnahmen"; // "" oder "ausgaben"
-  const showIncomeList = onlyUnmatched || suggType!=="ausgaben";   // "" oder "einnahmen"
-  const showBoth       = !onlyUnmatched && suggType==="";
+  // „Nur ohne Giro" filtert INNERHALB beider Spalten auf unzugeordnete Zeilen,
+  // ändert aber nicht, welche Spalten sichtbar sind.
+  const showExpenses   = suggType!=="einnahmen"; // "" oder "ausgaben"
+  const showIncomeList = suggType!=="ausgaben";  // "" oder "einnahmen"
+  const showBoth       = suggType==="";
   const shownSuggs = (()=>{
     const all = parsed?.autoSuggestions || [];
     const q = suggSearch.trim().toLowerCase();
@@ -353,12 +353,28 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
       return (legsByParent.get(i)||[]).some(j=>incomeRowText(rows[j]).includes(q));
     });
   })();
-  // Anzahl Einnahmen ohne gefundene/gewählte Giro-Buchung (für den Filter-Chip).
+  // Ausgaben-Zeilen ohne gefundene/gewählte Giro-Lastschrift (Pendant zu
+  // incomeShown — für manuelles Zuordnen auf der Ausgaben-Seite).
+  const expenseUnmatched = (()=>{
+    const rows = parsed?.newRows || [];
+    const q = suggSearch.trim().toLowerCase();
+    const accepted = parsed?.acceptedSuggs || [];
+    const isMatched = (i) => suggByRow.has(i) || accepted.some(a=>a.rowIdx===i);
+    return rows.map((r,i)=>({r,i})).filter(({r,i})=>{
+      if(!((r.amount ?? r.totalAmount ?? 0) < 0)) return false; // nur Ausgaben
+      if(claimedLegIdx.has(i) || r._internalLeg) return false;
+      if(isMatched(i)) return false;                            // nur ohne Giro
+      if(!q) return true;
+      return incomeRowText(r).includes(q);
+    });
+  })();
+  // Anzahl Buchungen (Ein- UND Ausgaben) ohne Giro-Buchung — für den Filter-Chip.
   const unmatchedCount = (()=>{
     const rows = parsed?.newRows || [];
     const accepted = parsed?.acceptedSuggs || [];
     return rows.reduce((n,r,i)=>{
-      if(!((r.amount ?? r.totalAmount ?? 0) > 0)) return n;
+      const amt = r.amount ?? r.totalAmount ?? 0;
+      if(amt===0) return n;
       if(claimedLegIdx.has(i) || r._internalLeg) return n;
       if(suggByRow.has(i) || accepted.some(a=>a.rowIdx===i)) return n;
       return n+1;
@@ -441,6 +457,90 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
       list.sort((a,b) => (a.dAmt-b.dAmt) || (abs(a.signed)-abs(b.signed)));
     }
     return list.slice(0, 30);
+  };
+
+  // Wiederverwendbare Verknüpfungs-UI für eine unzugeordnete PayPal-Zeile
+  // (Einnahme ODER Ausgabe): zeigt entweder „manuell verknüpft + entfernen",
+  // den offenen Giro-Picker oder den Button „Giro-Buchung manuell wählen…".
+  const renderGiroLink = (i, r, autoSuggFull) => {
+    const mg = manualGiroFor(i);
+    if(mg) {
+      return (
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{flex:1,minWidth:0,color:T.pos,fontSize:autoSuggFull?14:12,fontWeight:800,
+            display:"flex",alignItems:"center",gap:5}}>
+            {Li("link",12,T.pos)} manuell verknüpft
+          </div>
+          <button onClick={()=>removeLink(i)}
+            style={{flexShrink:0,background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bd}`,
+              borderRadius:8,padding:autoSuggFull?"6px 13px":"4px 10px",fontSize:autoSuggFull?13:11,
+              fontWeight:700,cursor:"pointer",color:T.txt2,fontFamily:"inherit"}}>
+            entfernen
+          </button>
+        </div>
+      );
+    }
+    if(pickFor!==i) {
+      return (
+        <button onClick={()=>{setPickFor(i);setPickSearch("");}}
+          style={{alignSelf:"flex-start",marginTop:2,display:"inline-flex",alignItems:"center",gap:5,
+            background:"rgba(255,255,255,0.05)",border:`1px solid ${T.bd}`,borderRadius:8,
+            padding:"4px 10px",fontSize:11,fontWeight:700,color:T.blue,
+            cursor:"pointer",fontFamily:"inherit"}}>
+          {Li("link",11,T.blue)} Giro-Buchung manuell wählen…
+        </button>
+      );
+    }
+    return (
+      <div style={{marginTop:6,padding:"8px",borderRadius:9,
+        background:"rgba(0,0,0,0.2)",border:`1px solid ${T.bd}`}}>
+        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+          <input autoFocus value={pickSearch} onChange={e=>setPickSearch(e.target.value)}
+            placeholder="Giro-Buchung suchen (Text/Betrag)…"
+            style={{flex:1,background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bd}`,
+              borderRadius:7,color:T.txt,fontSize:12,padding:"5px 8px",
+              fontFamily:"inherit",outline:"none"}}/>
+          <button onClick={()=>setPickFor(null)}
+            style={{flexShrink:0,background:"transparent",border:`1px solid ${T.bd}`,
+              borderRadius:7,padding:"5px 9px",fontSize:11,color:T.txt2,
+              cursor:"pointer",fontFamily:"inherit"}}>schließen</button>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+          <span style={{color:T.txt2,fontSize:10}}>Sortieren:</span>
+          {[["amount","Betrag"],["date","Datum (nach PayPal)"]].map(([v,lbl])=>{
+            const on=pickSort===v;
+            return <button key={v} onClick={()=>setPickSort(v)}
+              style={{padding:"3px 9px",borderRadius:6,fontSize:10,fontWeight:on?700:500,
+                background:on?T.blue:"transparent",color:on?"#fff":T.txt2,
+                border:`1px solid ${on?T.blue:T.bd}`,cursor:"pointer",fontFamily:"inherit"}}>{lbl}</button>;
+          })}
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:4,maxHeight:230,overflowY:"auto"}}>
+          {giroPickCandidates(r, pickSearch, pickSort).map(({t,signed})=>(
+            <button key={t.id} onClick={()=>{acceptLink(i,t.id);setPickFor(null);}}
+              style={{textAlign:"left",display:"flex",flexDirection:"column",gap:2,
+                padding:"6px 8px",borderRadius:7,background:"rgba(255,255,255,0.04)",
+                border:`1px solid ${T.bd}`,cursor:"pointer",fontFamily:"inherit"}}>
+              <div style={{display:"flex",justifyContent:"space-between",gap:8}}>
+                <span style={{color:T.txt,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>
+                  {fmt(Math.abs(t.totalAmount||0))}
+                </span>
+                <span style={{color:T.txt2,fontSize:11}}>
+                  {dshort(t.date)}{signed!=null?` · ${signed>=0?`${signed} T. nach`:`${Math.abs(signed)} T. vor`} PayPal`:""}
+                </span>
+              </div>
+              <span style={{color:T.txt2,fontSize:11,overflow:"hidden",
+                textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.desc}</span>
+            </button>
+          ))}
+          {giroPickCandidates(r, pickSearch, pickSort).length===0&&(
+            <div style={{color:T.txt2,fontSize:11,padding:"6px 2px"}}>
+              Keine passende Giro-Buchung gefunden.
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   // Gemeinsame Zeilen-Verarbeitung (Dup-Split, PayPal-Anreicherung +30,
@@ -1085,14 +1185,17 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                 <span style={{color:T.gold,fontSize:MFSl,fontWeight:700,display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0}}>
                   {Li("git-compare",13,T.gold)}
                   <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                    {onlyUnmatched ? `${incomeShown.length} Einnahmen ohne Giro`
+                    {onlyUnmatched
+                        ? (suggType==="einnahmen" ? `${incomeShown.length} Einnahmen ohne Giro`
+                          : suggType==="ausgaben" ? `${expenseUnmatched.length} Ausgaben ohne Giro`
+                          : `${expenseUnmatched.length} Ausgaben · ${incomeShown.length} Einnahmen ohne Giro`)
                       : suggType==="einnahmen" ? `${incomeShown.length} Einnahmen`
                       : suggType==="ausgaben" ? `${shownSuggs.length} Ausgaben`
                       : `${shownSuggs.length} Ausgaben · ${incomeShown.length} Einnahmen`}{acceptedCount>0&&showExpenses?` · ${acceptedCount} übernommen`:""}
                   </span>
                 </span>
                 {/* Sammel-Übernehmen (nur in der Vorschlags-/Match-Ansicht) */}
-                {showExpenses&&bulkCounts.hoch>0&&(
+                {showExpenses&&!onlyUnmatched&&bulkCounts.hoch>0&&(
                   <button onClick={()=>acceptBulk(["hoch"])}
                     style={{flexShrink:0,display:"flex",alignItems:"center",gap:5,cursor:"pointer",
                       background:T.pos,border:`1px solid ${T.pos}`,borderRadius:8,padding:"5px 11px",
@@ -1100,7 +1203,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                     {Li("check",13,T.on_accent||"#0a0a0a")} Alle sicheren ({bulkCounts.hoch})
                   </button>
                 )}
-                {showExpenses&&bulkCounts.mittel>0&&(
+                {showExpenses&&!onlyUnmatched&&bulkCounts.mittel>0&&(
                   <button onClick={()=>acceptBulk(["hoch","mittel"])}
                     style={{flexShrink:0,display:"flex",alignItems:"center",gap:5,cursor:"pointer",
                       background:"rgba(245,166,35,0.18)",border:`1px solid ${T.gold}`,borderRadius:8,padding:"5px 11px",
@@ -1142,13 +1245,12 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                 <div style={{flex:"1 1 100%",display:"flex",gap:6,flexWrap:"wrap",alignItems:"center"}}>
                   {[["ausgaben","Ausgaben"],["einnahmen","Einnahmen"]].map(([v,lbl])=>{
                     const active=suggType===v;
-                    return <button key={v} onClick={()=>setSuggType(t=>t===v?"":v)} disabled={onlyUnmatched}
+                    return <button key={v} onClick={()=>setSuggType(t=>t===v?"":v)}
                       style={{padding:"4px 11px",borderRadius:10,border:`1px solid ${active?T.blue:T.bd}`,
                         background:active?"rgba(74,159,212,0.2)":"transparent",color:active?T.blue:T.txt2,
-                        opacity:onlyUnmatched?0.4:1,
-                        fontSize:autoSuggFull?13:MFSl,fontWeight:active?700:500,cursor:onlyUnmatched?"default":"pointer",fontFamily:"inherit"}}>{lbl}</button>;
+                        fontSize:autoSuggFull?13:MFSl,fontWeight:active?700:500,cursor:"pointer",fontFamily:"inherit"}}>{lbl}</button>;
                   })}
-                  {/* „ohne Giro": nur Einnahmen ohne gefundene/gewählte Giro-Buchung. */}
+                  {/* „ohne Giro": nur Ein-/Ausgaben ohne gefundene/gewählte Giro-Buchung. */}
                   <button onClick={()=>setOnlyUnmatched(v=>!v)}
                     style={{padding:"4px 11px",borderRadius:10,border:`1px solid ${onlyUnmatched?T.gold:T.bd}`,
                       background:onlyUnmatched?"rgba(245,166,35,0.18)":"transparent",color:onlyUnmatched?T.gold:T.txt2,
@@ -1159,10 +1261,11 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                   {[["hoch",T.pos,"rgba(34,197,94,0.18)"],["mittel",T.gold,"rgba(245,166,35,0.18)"],
                     ["niedrig",T.txt2,"rgba(255,255,255,0.08)"]].map(([v,col,bg])=>{
                     const active=suggConf===v;
-                    return <button key={v} onClick={()=>setSuggConf(c=>c===v?"":v)} disabled={!showExpenses}
+                    const confDisabled=!showExpenses||onlyUnmatched; // Konfidenz gilt nur für Auto-Ausgaben-Treffer
+                    return <button key={v} onClick={()=>setSuggConf(c=>c===v?"":v)} disabled={confDisabled}
                       style={{padding:"4px 11px",borderRadius:10,border:`1px solid ${active?col:T.bd}`,
-                        background:active?bg:"transparent",color:active?col:T.txt2,opacity:!showExpenses?0.4:1,
-                        fontSize:autoSuggFull?13:MFSl,fontWeight:active?700:500,cursor:!showExpenses?"default":"pointer",fontFamily:"inherit"}}>
+                        background:active?bg:"transparent",color:active?col:T.txt2,opacity:confDisabled?0.4:1,
+                        fontSize:autoSuggFull?13:MFSl,fontWeight:active?700:500,cursor:confDisabled?"default":"pointer",fontFamily:"inherit"}}>
                       {v} ({confCounts[v]})</button>;
                   })}
                 </div>
@@ -1184,7 +1287,6 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                     const s = suggByRow.get(i); // zugehörige Giro-Gutschrift (falls vorhanden)
                     const manualGiro = !s ? manualGiroFor(i) : null; // manuell gewählte Giro-Buchung
                     const linkedGiro = s ? s.giroTx : manualGiro;    // angezeigte/zu verknüpfende Giro-Buchung
-                    const picking = pickFor===i;
                     const confColor = s ? (s.confidence==="hoch"?T.pos:s.confidence==="mittel"?T.gold:T.txt2) : T.txt2;
                     const accepted = (s && (parsed.acceptedSuggs||[]).some(a=>a.rowIdx===s.rowIdx&&a.giroId===s.giroTx.id)) || !!manualGiro;
                     return (
@@ -1215,83 +1317,15 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                               {accepted?"✓ übernommen":"übernehmen"}
                             </button>
                           </div>
-                        ) : manualGiro ? (
-                          <div style={{display:"flex",alignItems:"center",gap:8}}>
-                            <div style={{flex:1,minWidth:0,color:T.pos,fontSize:autoSuggFull?14:12,fontWeight:800,
-                              display:"flex",alignItems:"center",gap:5}}>
-                              {Li("link",12,T.pos)} manuell verknüpft
-                            </div>
-                            <button onClick={()=>removeLink(i)}
-                              style={{flexShrink:0,background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bd}`,
-                                borderRadius:8,padding:autoSuggFull?"6px 13px":"4px 10px",fontSize:autoSuggFull?13:11,
-                                fontWeight:700,cursor:"pointer",color:T.txt2,fontFamily:"inherit"}}>
-                              entfernen
-                            </button>
-                          </div>
                         ) : (
                           <>
-                            <div style={{color:T.txt2,fontSize:metaFS,opacity:0.7}}>
-                              {r._internalLeg ? "→ aufs Giro ausgezahlt (siehe Auszahlung)" : "kein Giro-Gegenstück (Guthaben bleibt in PayPal)"}
-                            </div>
-                            {!r._internalLeg && !r._isRefund && renderPlus30(i, r)}
-                            {!r._internalLeg && (picking ? (
-                              <div style={{marginTop:6,padding:"8px",borderRadius:9,
-                                background:"rgba(0,0,0,0.2)",border:`1px solid ${T.bd}`}}>
-                                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
-                                  <input autoFocus value={pickSearch} onChange={e=>setPickSearch(e.target.value)}
-                                    placeholder="Giro-Buchung suchen (Text/Betrag)…"
-                                    style={{flex:1,background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bd}`,
-                                      borderRadius:7,color:T.txt,fontSize:12,padding:"5px 8px",
-                                      fontFamily:"inherit",outline:"none"}}/>
-                                  <button onClick={()=>setPickFor(null)}
-                                    style={{flexShrink:0,background:"transparent",border:`1px solid ${T.bd}`,
-                                      borderRadius:7,padding:"5px 9px",fontSize:11,color:T.txt2,
-                                      cursor:"pointer",fontFamily:"inherit"}}>schließen</button>
-                                </div>
-                                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
-                                  <span style={{color:T.txt2,fontSize:10}}>Sortieren:</span>
-                                  {[["amount","Betrag"],["date","Datum (nach PayPal)"]].map(([v,lbl])=>{
-                                    const on=pickSort===v;
-                                    return <button key={v} onClick={()=>setPickSort(v)}
-                                      style={{padding:"3px 9px",borderRadius:6,fontSize:10,fontWeight:on?700:500,
-                                        background:on?T.blue:"transparent",color:on?"#fff":T.txt2,
-                                        border:`1px solid ${on?T.blue:T.bd}`,cursor:"pointer",fontFamily:"inherit"}}>{lbl}</button>;
-                                  })}
-                                </div>
-                                <div style={{display:"flex",flexDirection:"column",gap:4,maxHeight:230,overflowY:"auto"}}>
-                                  {giroPickCandidates(r, pickSearch, pickSort).map(({t,signed})=>(
-                                    <button key={t.id} onClick={()=>{acceptLink(i,t.id);setPickFor(null);}}
-                                      style={{textAlign:"left",display:"flex",flexDirection:"column",gap:2,
-                                        padding:"6px 8px",borderRadius:7,background:"rgba(255,255,255,0.04)",
-                                        border:`1px solid ${T.bd}`,cursor:"pointer",fontFamily:"inherit"}}>
-                                      <div style={{display:"flex",justifyContent:"space-between",gap:8}}>
-                                        <span style={{color:T.txt,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>
-                                          {fmt(Math.abs(t.totalAmount||0))}
-                                        </span>
-                                        <span style={{color:T.txt2,fontSize:11}}>
-                                          {dshort(t.date)}{signed!=null?` · ${signed>=0?`${signed} T. nach`:`${Math.abs(signed)} T. vor`} PayPal`:""}
-                                        </span>
-                                      </div>
-                                      <span style={{color:T.txt2,fontSize:11,overflow:"hidden",
-                                        textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.desc}</span>
-                                    </button>
-                                  ))}
-                                  {giroPickCandidates(r, pickSearch, pickSort).length===0&&(
-                                    <div style={{color:T.txt2,fontSize:11,padding:"6px 2px"}}>
-                                      Keine passende Giro-Buchung gefunden.
-                                    </div>
-                                  )}
-                                </div>
+                            {!manualGiro && (
+                              <div style={{color:T.txt2,fontSize:metaFS,opacity:0.7}}>
+                                {r._internalLeg ? "→ aufs Giro ausgezahlt (siehe Auszahlung)" : "kein Giro-Gegenstück (Guthaben bleibt in PayPal)"}
                               </div>
-                            ) : (
-                              <button onClick={()=>{setPickFor(i);setPickSearch("");}}
-                                style={{alignSelf:"flex-start",marginTop:2,display:"inline-flex",alignItems:"center",gap:5,
-                                  background:"rgba(255,255,255,0.05)",border:`1px solid ${T.bd}`,borderRadius:8,
-                                  padding:"4px 10px",fontSize:11,fontWeight:700,color:T.blue,
-                                  cursor:"pointer",fontFamily:"inherit"}}>
-                                {Li("link",11,T.blue)} Giro-Buchung manuell wählen…
-                              </button>
-                            ))}
+                            )}
+                            {!manualGiro && !r._internalLeg && !r._isRefund && renderPlus30(i, r)}
+                            {!r._internalLeg && renderGiroLink(i, r, autoSuggFull)}
                           </>
                         )}
                         {r._isRefund&&(
@@ -1349,13 +1383,18 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
               )}
               {showExpenses&&(
               <div style={{order:1}}>
-                {showBoth&&<div style={{color:T.neg,fontSize:MFSl,fontWeight:800,letterSpacing:"0.04em",textTransform:"uppercase",opacity:0.85,padding:"6px 2px 3px"}}>Ausgaben ({shownSuggs.length})</div>}
-                {shownSuggs.length===0&&(
+                {showBoth&&<div style={{color:T.neg,fontSize:MFSl,fontWeight:800,letterSpacing:"0.04em",textTransform:"uppercase",opacity:0.85,padding:"6px 2px 3px"}}>Ausgaben ({onlyUnmatched?expenseUnmatched.length:shownSuggs.length}{!onlyUnmatched&&expenseUnmatched.length?` + ${expenseUnmatched.length} ohne Giro`:""})</div>}
+                {!onlyUnmatched && shownSuggs.length===0 && expenseUnmatched.length===0 && (
                 <div style={{color:T.txt2,fontSize:MFSl,padding:"10px 2px"}}>
                   Keine Vorschläge für die aktuelle Auswahl{suggSearch?` (Suche „${suggSearch}")`:""}.
                 </div>
               )}
-              {shownSuggs.map((s,si)=>{
+                {onlyUnmatched && expenseUnmatched.length===0 && (
+                <div style={{color:T.txt2,fontSize:MFSl,padding:"10px 2px"}}>
+                  Keine Ausgaben ohne Giro-Buchung{suggSearch?` (Suche „${suggSearch}")`:""}.
+                </div>
+              )}
+              {!onlyUnmatched && shownSuggs.map((s,si)=>{
                 const r = parsed.newRows[s.rowIdx];
                 const confColor = s.confidence==="hoch"?T.pos:s.confidence==="mittel"?T.gold:T.txt2;
                 const accepted = (parsed.acceptedSuggs||[]).some(a=>a.rowIdx===s.rowIdx&&a.giroId===s.giroTx.id);
@@ -1417,6 +1456,45 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                   </div>
                 );
               })}
+              {/* Ausgaben ohne gefundene Giro-Lastschrift — manuell zuordenbar. */}
+              {expenseUnmatched.length>0 && (<>
+                {!onlyUnmatched && shownSuggs.length>0 && (
+                  <div style={{color:T.txt2,fontSize:MFSl,fontWeight:700,opacity:0.75,padding:"8px 2px 3px"}}>
+                    Ohne Giro-Lastschrift ({expenseUnmatched.length})
+                  </div>
+                )}
+                {expenseUnmatched.map(({r,i})=>{
+                  const mg = manualGiroFor(i);
+                  const amtFS  = autoSuggFull ? (mobileMode?22:17)   : (mobileMode?17:13.5);
+                  const descFS = autoSuggFull ? (mobileMode?15:13.5) : (mobileMode?14:11.5);
+                  const metaFS = autoSuggFull ? (mobileMode?13:11.5) : (mobileMode?12:10);
+                  const exAmt  = Math.abs(pn(r.amount ?? r.totalAmount ?? 0));
+                  const wrapS  = autoSuggFull ? {whiteSpace:"normal",wordBreak:"break-word"} : {overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"};
+                  return (
+                    <div key={"exu"+i} style={{display:"flex",flexDirection:"column",gap:3,
+                      padding:autoSuggFull?"11px 2px":"8px 2px",borderBottom:`1px solid rgba(255,255,255,0.06)`,
+                      background:mg?"rgba(34,197,94,0.07)":"transparent"}}>
+                      <div style={{display:"flex",alignItems:"baseline",gap:8}}>
+                        <div style={{flex:1,minWidth:0,color:T.neg,fontSize:amtFS,fontWeight:800,fontFamily:NUM_FONT}}>− {fmt(exAmt)}</div>
+                        <div style={{flexShrink:0,color:T.txt2,fontSize:metaFS}}>
+                          {mg?`Giro ${dshort(mg.date)} · `:""}PayPal {dshort(r.isoDate)}
+                        </div>
+                      </div>
+                      {!mg && <div style={{color:T.txt2,fontSize:metaFS,opacity:0.7}}>keine Giro-Lastschrift gefunden</div>}
+                      {!mg && !r._isRefund && renderPlus30(i, r)}
+                      {renderGiroLink(i, r, autoSuggFull)}
+                      {mg && (
+                        <div style={{color:T.txt,fontSize:descFS,fontWeight:600,...wrapS}}>
+                          <span style={{color:T.blue,fontWeight:700}}>Giro:</span> {mg.desc}
+                        </div>
+                      )}
+                      <div style={{color:T.txt2,fontSize:descFS,...wrapS}}>
+                        <span style={{color:T.gold,fontWeight:700}}>PayPal:</span> {r.desc}
+                      </div>
+                    </div>
+                  );
+                })}
+              </>)}
               </div>
               )}
               </div>
