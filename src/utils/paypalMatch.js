@@ -300,7 +300,13 @@ export function scoreMatch(row, giroTx, linkDays) {
   // Giro-Vorzeichen: _csvType bevorzugen (CSV speichert totalAmount als Betrag),
   // sonst aus dem Vorzeichen von totalAmount (manuelle Buchungen sind signiert).
   const giroIsIncome = giroTx._csvType ? giroTx._csvType === "income" : (giroTx.totalAmount || 0) > 0;
-  if (rowIsIncome !== giroIsIncome) return null; // Vorzeichen muss passen
+  // Normalfall: Vorzeichen muss passen (PayPal-Ausgabe ↔ Giro-Lastschrift,
+  // PayPal-Eingang ↔ Giro-Gutschrift). Sonderfall „Erstattung": eine PayPal-
+  // Erstattung (Eingang) gehört zur ursprünglichen Giro-LASTSCHRIFT (Ausgang) —
+  // gegenläufige Vorzeichen. Nur mit klarem Händlerbezug und nur als Vorschlag
+  // (nie Auto-Link, siehe assignPayPalLinks).
+  const refundVsDebit = !!row._isRefund && rowIsIncome && !giroIsIncome;
+  if (rowIsIncome !== giroIsIncome && !refundVsDebit) return null;
   const absAmt = Math.abs(rowAmt);
   if (Math.round(Math.abs(giroTx.totalAmount || 0) * 100) !== Math.round(absAmt * 100)) return null;
   if (!isPayPalGiroTx(giroTx)) return null;
@@ -310,6 +316,7 @@ export function scoreMatch(row, giroTx, linkDays) {
   const diffDays = Math.abs(signedDays);
   if (diffDays > linkDays) return null;
   const merchantMatch = merchantMatchesGiro(payPalMerchant(row), giroTx.desc);
+  if (refundVsDebit && !merchantMatch) return null; // ohne Händlerbezug zu unsicher
   const tier = timingTier(signedDays);
   // Score nur als Sortier-Fallback; maßgeblich ist die Konfidenz unten.
   const tierBonus = tier === "sofort" ? 200 : tier === "plus30" ? 80 : 0;
@@ -319,7 +326,7 @@ export function scoreMatch(row, giroTx, linkDays) {
   const confidence = merchantMatch && tier !== "unklar" ? "hoch"
     : merchantMatch ? "niedrig"
     : tier === "sofort" ? "mittel" : "niedrig";
-  return { diffDays, signedDays, tier, merchantMatch, score, confidence };
+  return { diffDays, signedDays, tier, merchantMatch, score, confidence, refundVsDebit };
 }
 
 // Ordnet PayPal-Zeilen den Giro-Buchungen zu.
@@ -402,6 +409,13 @@ export function assignPayPalLinks(newRows, giroTxs, linkDays, opts = {}) {
     }
     // Auto-verknüpft wird, was zuverlässig ist: hoch, oder ein Händlertreffer.
     p.autoLinkable = p.confidence === "hoch" || (p.confidence === "mittel" && p.merchantMatch);
+    // Erstattung ↔ Giro-Lastschrift: gegenläufige Vorzeichen sind nie sicher genug
+    // für eine Automatik — nur als Vorschlag zum manuellen Bestätigen anbieten.
+    if (p.refundVsDebit) {
+      p.autoLinkable = false;
+      if (p.confidence === "hoch") p.confidence = "mittel";
+      p.reason = "Erstattung zur Giro-Lastschrift (gleicher Händler)";
+    }
   });
 
   // Saubere 1:1-Zuordnung als Vorschlagsliste: jede PayPal-Buchung und jede
