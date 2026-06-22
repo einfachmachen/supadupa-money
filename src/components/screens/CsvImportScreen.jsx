@@ -286,8 +286,15 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   // Automatische Verknüpfungsvorschläge berechnen (für Vergleich, ohne zu importieren).
   // Nutzt den robusten Matcher: PayPal-Gate (Gläubiger-ID/Empfänger),
   // Händlername-Bestätigung und Bestes-Paar-Sortierung statt loser Betrag+Datum-Treffer.
+  // Giro-Buchungen, die bereits eine Verknüpfung tragen (aus einem früheren
+  // Import), werden ausgeschlossen — beim Re-Import einer überlappenden
+  // PayPal-CSV wären das sonst „Geister-Vorschläge" für längst verknüpfte
+  // Buchungen (Nutzer denkt, es seien neue Treffer).
+  const linkedGiroIds = new Set(
+    txs.filter(t=>!t.pending && (t.linkedIds||[]).length>0).map(t=>t.id)
+  );
   const computeAutoSuggestions = (newRows) =>
-    assignPayPalLinks(newRows, txs, linkDays).suggestions;
+    assignPayPalLinks(newRows, txs, linkDays, {excludeGiroIds: linkedGiroIds}).suggestions;
 
   // Gemeinsame Zeilen-Verarbeitung (Dup-Split, PayPal-Anreicherung +30,
   // Gegenbuchungs-Filter). Wird von applyParsed UND dem Kontowechsel-Effekt
@@ -365,7 +372,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     const autoByRow = {};
     if(linkToGiro) {
       const {links} = assignPayPalLinks(parsed.newRows, txs, linkDays,
-        {excludeRows: acceptedRows, excludeGiroIds: acceptedGiroIds});
+        {excludeRows: acceptedRows, excludeGiroIds: new Set([...acceptedGiroIds, ...linkedGiroIds])});
       links.forEach(l => { autoByRow[l.rowIdx] = l.giroTx; });
     }
 
