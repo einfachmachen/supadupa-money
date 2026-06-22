@@ -8,7 +8,7 @@ import { QuickPicker } from "../organisms/QuickPicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { parseCSV } from "../../utils/csv.js";
-import { assignPayPalLinks, enrichPayPalMerchants, looksLikePayPalCsv, dropPayPalCounterBookings, detectPayPalRefunds, reconcilePayPalLegs } from "../../utils/paypalMatch.js";
+import { assignPayPalLinks, enrichPayPalMerchants, looksLikePayPalCsv, dropPayPalCounterBookings, detectPayPalRefunds, reconcilePayPalLegs, payPalMerchant } from "../../utils/paypalMatch.js";
 import { AccountChips } from "../molecules/AccountChips.jsx";
 import { parsePdfStatement } from "../../utils/pdfStatement.js";
 import { anchorFromDetectedBalance, makeAnchorEntry } from "../../utils/anchors.js";
@@ -143,7 +143,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   };
 
   const [linkToGiro, setLinkToGiro] = useState(false);
-  const [linkDays, setLinkDays] = useState(35);
+  const [linkDays, setLinkDays] = useState(60);
   const [autoGroup, setAutoGroup] = useState(false); // Automatisches Zusammenfassen
   // „PayPal +30": Zeilen-Indizes, die nicht als PayPal-Ausgabe, sondern als
   // Giro-Vormerkung für den späteren Einzug importiert werden. Pro Zeile lässt
@@ -159,9 +159,6 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const [pickSort, setPickSort] = useState("amount"); // "amount" | "date"
   // Filter „nur Einnahmen ohne gefundene Giro-Buchung".
   const [onlyUnmatched, setOnlyUnmatched] = useState(false);
-  // Review-Assistent: Matches einzeln durchgehen (Übernehmen/Überspringen).
-  const [reviewMode, setReviewMode] = useState(false);
-  const [reviewIdx, setReviewIdx] = useState(0);
   const defaultGiroAccId = useMemo(() =>
     accounts.find(a=>a.id==="acc-giro")?.id
     || accounts.find(a=>/giro/i.test(a.name||""))?.id
@@ -264,11 +261,10 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     };
     const hoch = take("hoch");
     const mittel = take("mittel");
-    return {hoch, mittel};
+    const niedrig = take("niedrig");
+    return {hoch, mittel, niedrig};
   })();
   const acceptedCount = (parsed?.acceptedSuggs||[]).length;
-  // Review-Assistent: ist dieser Vorschlag bereits übernommen?
-  const isSuggAccepted = s => (parsed?.acceptedSuggs||[]).some(a=>a.rowIdx===s.rowIdx && a.giroId===s.giroTx.id);
   // Einnahmen/Ausgaben-Übersicht für die Summenzeile. Bei PayPal sind die
   // positiven „Sonstige Einnahmen" ohne Empfänger interne Gegenbuchungen
   // (Finanzierung jeder Zahlung) — keine echten Einnahmen.
@@ -285,12 +281,6 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   // Gefilterte Vorschläge (Ausgaben↔Giro). „einnahmen" wird separat behandelt,
   // weil Einnahmen keine Giro-Belastung haben (siehe incomeShown).
   const suggAmt = s => (parsed?.newRows?.[s.rowIdx]?.amount ?? parsed?.newRows?.[s.rowIdx]?.totalAmount ?? 0);
-  // Review-Assistent: alle Auto-Matches, sicherste zuerst (nach suggAmt def.).
-  const reviewQueue = (()=>{
-    const rank = c => c==="hoch"?3:c==="mittel"?2:1;
-    return (parsed?.autoSuggestions||[]).slice()
-      .sort((a,b)=> rank(b.confidence)-rank(a.confidence) || Math.abs(suggAmt(b))-Math.abs(suggAmt(a)));
-  })();
   const dshort = iso => { const p=String(iso||"").split("-"); return p.length===3?`${p[2]}.${p[1]}.${p[0].slice(2)}`:iso||""; };
   const matchSuggText = (s, q) => {
     const r = parsed.newRows[s.rowIdx] || {};
@@ -555,86 +545,6 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     );
   };
 
-  // ── Review-Assistent: ein Match nach dem anderen prüfen ──────────────
-  const renderReviewCard = () => {
-    const total = reviewQueue.length;
-    const exitReview = () => { setReviewMode(false); setPickFor(null); };
-    if(reviewIdx >= total) {
-      return (
-        <div style={{padding:"18px 12px",textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
-          {Li("check-circle",34,T.pos)}
-          <div style={{color:T.txt,fontSize:MFS,fontWeight:700}}>Alle {total} Matches durchgesehen</div>
-          <div style={{color:T.txt2,fontSize:MFSl}}>{acceptedCount} übernommen</div>
-          <button onClick={exitReview}
-            style={{marginTop:6,padding:"9px 22px",borderRadius:10,border:"none",background:T.blue,
-              color:T.on_accent||"#0a0a0a",fontSize:MFSl,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-            Fertig
-          </button>
-        </div>
-      );
-    }
-    const s = reviewQueue[reviewIdx];
-    const r = parsed.newRows[s.rowIdx];
-    const isExpense = (r.amount ?? r.totalAmount ?? 0) < 0;
-    const ppAmt = Math.abs(pn(r.amount ?? r.totalAmount ?? 0));
-    const accepted = isSuggAccepted(s);
-    const mg = manualGiroFor(s.rowIdx);                 // ggf. abweichend manuell gewählt
-    const giro = (accepted && mg) ? mg : s.giroTx;
-    const confColor = s.confidence==="hoch"?T.pos:s.confidence==="mittel"?T.gold:T.txt2;
-    const picking = pickFor===s.rowIdx;
-    const advance = () => { setPickFor(null); setReviewIdx(i=>i+1); };
-    const back = () => { setPickFor(null); setReviewIdx(i=>Math.max(0,i-1)); };
-    const btn = (label, onClick, kind) => (
-      <button onClick={onClick}
-        style={{flex:1,minWidth:0,padding:"9px 6px",borderRadius:9,cursor:"pointer",fontFamily:"inherit",
-          fontSize:MFSl,fontWeight:700,whiteSpace:"nowrap",
-          ...(kind==="primary"?{background:T.pos,border:`1px solid ${T.pos}`,color:T.on_accent||"#0a0a0a"}
-            :kind==="ghost"?{background:"transparent",border:`1px solid ${T.bd}`,color:T.txt2}
-            :{background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bd}`,color:T.txt})}}>
-        {label}
-      </button>
-    );
-    return (
-      <div style={{padding:"4px 2px 10px"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-          <span style={{color:T.txt2,fontSize:MFSl,fontWeight:700}}>Match {reviewIdx+1} von {total}{acceptedCount>0?` · ${acceptedCount} übernommen`:""}</span>
-          <button onClick={exitReview}
-            style={{background:"transparent",border:`1px solid ${T.bd}`,borderRadius:7,padding:"4px 10px",
-              fontSize:MFSl,color:T.txt2,cursor:"pointer",fontFamily:"inherit"}}>Beenden</button>
-        </div>
-        <div style={{borderRadius:11,border:`1px solid ${accepted?T.pos:T.bd}`,
-          background:accepted?"rgba(34,197,94,0.08)":"rgba(255,255,255,0.03)",padding:"11px 12px",
-          display:"flex",flexDirection:"column",gap:6}}>
-          <div style={{display:"flex",alignItems:"baseline",gap:8}}>
-            <span style={{color:isExpense?T.neg:T.pos,fontSize:mobileMode?20:17,fontWeight:800,fontFamily:NUM_FONT}}>
-              {isExpense?"−":"+"} {fmt(ppAmt)}
-            </span>
-            <span style={{flex:1}}/>
-            <span style={{color:T.txt2,fontSize:MFSl}}>Giro {dshort(giro.date)} · PayPal {dshort(r.isoDate)}</span>
-          </div>
-          <div style={{display:"flex",alignItems:"baseline",gap:6,flexWrap:"wrap"}}>
-            <span style={{color:confColor,fontSize:MFSl,fontWeight:800}}>{accepted?"✓ "+(mg&&mg!==s.giroTx?"manuell":s.confidence):s.confidence}</span>
-            <span style={{color:T.txt2,fontSize:MFSl}}>±{s.diffDays} Tage</span>
-            {s.reason&&<span style={{color:T.txt2,fontSize:MFSl,opacity:0.85}}>· {s.reason}</span>}
-          </div>
-          <div style={{color:T.txt,fontSize:mobileMode?14:13,fontWeight:600,whiteSpace:"normal",wordBreak:"break-word"}}>
-            <span style={{color:T.blue,fontWeight:700}}>Giro:</span> {giro.desc}
-          </div>
-          <div style={{color:T.txt2,fontSize:mobileMode?14:13,whiteSpace:"normal",wordBreak:"break-word"}}>
-            <span style={{color:T.gold,fontWeight:700}}>PayPal:</span> {r.desc}
-          </div>
-          {picking && renderGiroLink(s.rowIdx, r, true)}
-        </div>
-        <div style={{display:"flex",gap:6,marginTop:9}}>
-          {btn("← Zurück", back, "ghost")}
-          {btn(picking?"Picker schließen":"Anders zuordnen", ()=>setPickFor(picking?null:s.rowIdx), "neutral")}
-          {!accepted && btn("Überspringen", advance, "neutral")}
-          {btn(accepted?"Weiter →":"✓ Übernehmen", ()=>{ if(!accepted) acceptLink(s.rowIdx, s.giroTx.id); advance(); }, "primary")}
-        </div>
-      </div>
-    );
-  };
-
   // Gemeinsame Zeilen-Verarbeitung (Dup-Split, PayPal-Anreicherung +30,
   // Gegenbuchungs-Filter). Wird von applyParsed UND dem Kontowechsel-Effekt
   // genutzt, damit beide konsistent bleiben.
@@ -764,7 +674,13 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
         date: r.isoDate,
         totalAmount: absAmt,
         desc: r.desc,
-        note: r._detailNote || "",
+        // Bei angereicherten +30-/Auszahlungs-Legs fehlt der Händler im desc
+        // („Successful"/„PayPal (Europe)") — ihn als Notiz mitführen, damit auch
+        // nach dem Import erkennbar bleibt, an wen gezahlt wurde.
+        note: [
+          r._enrichedMerchant ? `Händler: ${r._enrichedMerchant}${r._enrichedPlus30?" (PayPal +30)":r._enrichedWithdrawal?" (Auszahlung)":""}` : "",
+          r._detailNote || "",
+        ].filter(Boolean).join(" · "),
         pending: false,
         accountId: resolvedAccId,
         splits,
@@ -1286,21 +1202,30 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                       : `${shownSuggs.length} Ausgaben · ${incomeShown.length} Einnahmen`}{acceptedCount>0&&showExpenses?` · ${acceptedCount} übernommen`:""}
                   </span>
                 </span>
-                {/* Sammel-Übernehmen (nur in der Vorschlags-/Match-Ansicht) */}
+                {/* Stufenweises Sammel-Übernehmen: erst alle „hoch", dann „mittel",
+                    dann „niedrig" — je Stufe ein Klick (nur in der Match-Ansicht). */}
                 {showExpenses&&!onlyUnmatched&&bulkCounts.hoch>0&&(
                   <button onClick={()=>acceptBulk(["hoch"])}
                     style={{flexShrink:0,display:"flex",alignItems:"center",gap:5,cursor:"pointer",
                       background:T.pos,border:`1px solid ${T.pos}`,borderRadius:8,padding:"5px 11px",
                       color:T.on_accent||"#0a0a0a",fontSize:MFSl,fontWeight:800,fontFamily:"inherit"}}>
-                    {Li("check",13,T.on_accent||"#0a0a0a")} Alle sicheren ({bulkCounts.hoch})
+                    {Li("check",13,T.on_accent||"#0a0a0a")} Alle hoch ({bulkCounts.hoch})
                   </button>
                 )}
-                {showExpenses&&!onlyUnmatched&&bulkCounts.mittel>0&&(
-                  <button onClick={()=>acceptBulk(["hoch","mittel"])}
+                {showExpenses&&!onlyUnmatched&&bulkCounts.hoch===0&&bulkCounts.mittel>0&&(
+                  <button onClick={()=>acceptBulk(["mittel"])}
                     style={{flexShrink:0,display:"flex",alignItems:"center",gap:5,cursor:"pointer",
                       background:"rgba(245,166,35,0.18)",border:`1px solid ${T.gold}`,borderRadius:8,padding:"5px 11px",
                       color:T.gold,fontSize:MFSl,fontWeight:700,fontFamily:"inherit"}}>
-                    {Li("check",13,T.gold)} +mittel ({bulkCounts.mittel})
+                    {Li("check",13,T.gold)} Alle mittel ({bulkCounts.mittel})
+                  </button>
+                )}
+                {showExpenses&&!onlyUnmatched&&bulkCounts.hoch===0&&bulkCounts.mittel===0&&bulkCounts.niedrig>0&&(
+                  <button onClick={()=>acceptBulk(["niedrig"])}
+                    style={{flexShrink:0,display:"flex",alignItems:"center",gap:5,cursor:"pointer",
+                      background:"rgba(255,255,255,0.08)",border:`1px solid ${T.bd}`,borderRadius:8,padding:"5px 11px",
+                      color:T.txt2,fontSize:MFSl,fontWeight:700,fontFamily:"inherit"}}>
+                    {Li("check",13,T.txt2)} Alle niedrig ({bulkCounts.niedrig})
                   </button>
                 )}
                 {acceptedCount>0&&(
@@ -1362,18 +1287,8 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                   })}
                 </div>
               </div>
-              {/* Review-Assistent: Matches einzeln durchgehen. */}
-              {reviewQueue.length>0 && (reviewMode ? renderReviewCard() : (
-                <button onClick={()=>{setReviewMode(true); setReviewIdx(0); setPickFor(null);}}
-                  style={{width:"100%",marginBottom:8,display:"flex",alignItems:"center",justifyContent:"center",gap:7,
-                    background:"rgba(74,159,212,0.14)",border:`1px solid ${T.blue}66`,borderRadius:9,
-                    padding:"8px 12px",fontSize:MFSl,fontWeight:700,color:T.blue,cursor:"pointer",fontFamily:"inherit"}}>
-                  {Li("git-compare",13,T.blue)} Schritt für Schritt prüfen ({reviewQueue.length})
-                </button>
-              ))}
               {/* Listen-Bereich. Ohne Filter (suggType==="") werden BEIDE Listen
                   gezeigt — Ausgaben zuerst (order:1), Einnahmen darunter (order:2). */}
-              {!reviewMode&&(
               <div style={{display:"flex",flexDirection:"column"}}>
               {showIncomeList&&(
                 <div style={{order:showBoth?2:1}}>
@@ -1553,8 +1468,20 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                     {/* Zeile 4: PayPal-Buchung = Detail-Infos */}
                     <div style={{color:T.txt2,fontSize:descFS,...wrapStyle}}>
                       <span style={{color:T.gold,fontWeight:700}}>PayPal:</span>{" "}
-                      {r._enrichedMerchant?`${r._enrichedMerchant}${r._enrichedPlus30?" · via +30":""} — `:""}{r.desc}
+                      {(r._enrichedMerchant||payPalMerchant(r))?`${r._enrichedMerchant||payPalMerchant(r)}${r._enrichedPlus30?" · via +30":""} — `:""}{r.desc}
                     </div>
+                    {/* Empfänger/Zweck explizit zeigen — gerade bei hohen Buchungen
+                        soll erkennbar bleiben, an WEN gezahlt wurde. */}
+                    {(()=>{ const rec=(r._recipient||"").trim();
+                      return rec && rec!==r.desc && !/^paypal\b/i.test(rec) ? (
+                      <div style={{color:T.txt2,fontSize:metaFS,opacity:0.85,...wrapStyle}}>
+                        ↳ Empfänger: {rec}
+                      </div>) : null; })()}
+                    {(()=>{ const note=(r._detailNote||"").trim();
+                      return note && !(r.desc||"").includes(note) ? (
+                      <div style={{color:T.txt2,fontSize:metaFS,opacity:0.85,...wrapStyle}}>
+                        ↳ {note}
+                      </div>) : null; })()}
                   </div>
                 );
               })}
@@ -1600,7 +1527,6 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
               </div>
               )}
               </div>
-              )}
             </div>
           )}
 

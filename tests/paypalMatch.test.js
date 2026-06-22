@@ -76,6 +76,16 @@ describe("scoreMatch — Gating", () => {
     expect(s.merchantMatch).toBe(true);
     expect(s.confidence).toBe("hoch");
   });
+  it("gemeinsame Bestellnummer zählt als Händlerbezug — auch ohne Namensgleichheit", () => {
+    // Giro nennt nur die Amazon-Bestellnr., PayPal trägt denselben Code im Detail.
+    const row = { amount: -49.9, isoDate: "2026-03-01",
+      desc: "Amazon Marketplace", _detailNote: "Bestellnr. 302-1234567-1234567" };
+    const g = { id: "g", totalAmount: 49.9, date: "2026-03-04", _csvType: "expense",
+      desc: "PayPal Europe S.a.r.l. · 302-1234567-1234567" };
+    const s = scoreMatch(row, g, 35);
+    expect(s).not.toBeNull();
+    expect(s.merchantMatch).toBe(true); // Referenz-Gemeinsamkeit ⇒ starker Treffer
+  });
 });
 
 describe("assignPayPalLinks — eindeutige Zuordnung", () => {
@@ -450,6 +460,18 @@ describe("enrichPayPalMerchants — PayPal +30", () => {
     ];
     const enr = enrichPayPalMerchants(r);
     expect(enr[2]._enrichedMerchant).toBeUndefined();
+  });
+
+  it("löst betraglich mehrdeutige +30-Quelle über gemeinsame Referenz auf", () => {
+    const r = [
+      { amount: -9.99, isoDate: "2025-11-01", desc: "A", _recipient: "Netflix", _detailNote: "Rechnungsnr. INV-AAA111" },
+      { amount: -9.99, isoDate: "2025-11-02", desc: "B", _recipient: "Spotify", _detailNote: "Rechnungsnr. INV-BBB222" },
+      // Generische +30-Abbuchung trägt dieselbe Rechnungsnr. wie der Spotify-Kauf.
+      { amount: -9.99, isoDate: "2025-12-01", desc: "Successful",
+        _recipient: "PayPal (Europe) S.à r.l. et Cie, SCA", _detailNote: "Rechnungsnr. INV-BBB222" },
+    ];
+    const enr = enrichPayPalMerchants(r);
+    expect(enr[2]._enrichedMerchant).toMatch(/Spotify/);
   });
 
   it("Auszahlung: generische +Einnahme erbt Händler der Quell-Erstattung; Quelle wird Leg", () => {

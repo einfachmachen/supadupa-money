@@ -78,6 +78,7 @@ export function enrichPayPalMerchants(rows) {
       income: amt > 0,
     };
   });
+  const refs = rows.map(r => payPalRefTokens(r));    // Referenzkennungen je Zeile
   const enriched = new Array(rows.length).fill(null);
   const kind = new Array(rows.length).fill(null);     // "plus30" | "withdrawal"
   const isLeg = new Array(rows.length).fill(false);   // Quell-Leg → vom Giro-Matching ausschließen
@@ -86,10 +87,12 @@ export function enrichPayPalMerchants(rows) {
     const cur = meta[i];
     if (!generic(cur.merchant)) return;
     // Quelle: gleiches Vorzeichen, gleicher Betrag, echter Händler, im Fenster.
-    //  - Ausgabe (Lastschrift): Kauf 24–40 Tage früher („PayPal +30").
-    //  - Einnahme (Auszahlung): Quell-Eingang/Erstattung 0–12 Tage früher.
-    const window = cur.income ? [0, 12] : [24, 40];
-    const sources = meta
+    // Fenster bewusst weit gespannt (zusammenhängende Buchungen liegen je nach
+    // Abrechnungslauf/Wochenende unterschiedlich weit auseinander):
+    //  - Ausgabe (Lastschrift): Kauf 18–45 Tage früher („PayPal +30").
+    //  - Einnahme (Auszahlung): Quell-Eingang/Erstattung 0–16 Tage früher.
+    const window = cur.income ? [0, 16] : [18, 45];
+    let sources = meta
       .map((o, j) => ({ o, j }))
       .filter(({ o, j }) => {
         if (j === i || o.income !== cur.income || o.cents !== cur.cents || generic(o.merchant)) return false;
@@ -97,8 +100,19 @@ export function enrichPayPalMerchants(rows) {
         return dd >= window[0] && dd <= window[1];
       });
     if (!sources.length) return;
-    const names = [...new Set(sources.map(s => s.o.merchant))];
-    if (names.length !== 1) return; // mehrdeutig → nicht anreichern
+    let names = [...new Set(sources.map(s => s.o.merchant))];
+    if (names.length !== 1) {
+      // Mehrdeutig nach Betrag/Zeit → gemeinsame Referenz (Rechnungs-/Bestell-/
+      // Transaktionsnr.) als zusätzliches Unterscheidungsmerkmal: teilen sich
+      // generische Buchung und genau EIN Kauf eine Kennung, ist die Quelle klar.
+      const myRef = refs[i];
+      if (myRef.size) {
+        const refHits = sources.filter(s => [...myRef].some(t => refs[s.j].has(t)));
+        const refNames = [...new Set(refHits.map(s => s.o.merchant))];
+        if (refNames.length === 1) { sources = refHits; names = refNames; }
+      }
+    }
+    if (names.length !== 1) return; // weiterhin mehrdeutig → nicht anreichern
     enriched[i] = names[0];
     kind[i] = cur.income ? "withdrawal" : "plus30";
     // Quell-Leg markieren: hat keine eigene Giro-Buchung (läuft über DIESE
@@ -315,7 +329,16 @@ export function scoreMatch(row, giroTx, linkDays) {
   const signedDays = Math.round((tDate - rDate) / 86400000);
   const diffDays = Math.abs(signedDays);
   if (diffDays > linkDays) return null;
-  const merchantMatch = merchantMatchesGiro(payPalMerchant(row), giroTx.desc);
+  // Gemeinsamkeit über den Händlernamen ODER eine geteilte Referenzkennung
+  // (Rechnungs-/Bestell-/Transaktionsnr.). Letztere verbindet auch zeitlich weit
+  // auseinanderliegende Buchungen eindeutig (z.B. gleiche Amazon-Bestellnr.).
+  const refMatch = (() => {
+    const a = payPalRefTokens(row);
+    if (!a.size) return false;
+    const b = payPalRefTokens({ desc: giroTx.desc, _detailNote: giroTx.note });
+    return [...a].some(t => b.has(t));
+  })();
+  const merchantMatch = merchantMatchesGiro(payPalMerchant(row), giroTx.desc) || refMatch;
   if (refundVsDebit && !merchantMatch) return null; // ohne Händlerbezug zu unsicher
   const tier = timingTier(signedDays);
   // Score nur als Sortier-Fallback; maßgeblich ist die Konfidenz unten.
