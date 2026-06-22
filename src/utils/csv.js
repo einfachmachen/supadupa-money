@@ -315,11 +315,14 @@ function parseCSV(text, {noGroup=false}={}) {
       return m ? m[0].toUpperCase() : null;
     };
 
-    // Strategie 1b: Rechnungs-Nr / Invoice-Nr als Gruppierschlüssel
+    // Strategie 1b: Rechnungs-Nr / Invoice-Nr als Gruppierschlüssel.
+    // WICHTIG: Bindestriche mit erfassen — sonst kollabiert „OLNUE1-10778384"
+    // auf „OLNUE1", und verschiedene Rechnungen desselben Händlers (COMTRADA:
+    // OLNUE1-…) landen fälschlich in EINER Gruppe → echte Ausgaben gehen verloren.
     const getRechnungsNr = r => {
       const src = (r.rowType||"") + " " + r.desc;
-      const m = src.match(/Rechnungs-Nr[.:]?\s*([A-Z0-9]{6,})/i)
-             || src.match(/Invoice[- ]?(?:Nr|No|#)[.:]?\s*([A-Z0-9]{6,})/i)
+      const m = src.match(/Rechnungs-Nr[.:]?\s*([A-Z0-9][A-Z0-9-]{5,})/i)
+             || src.match(/Invoice[- ]?(?:Nr|No|#)[.:]?\s*([A-Z0-9][A-Z0-9-]{5,})/i)
              || src.match(/\bPP-[A-Z0-9-]{8,}\b/i)
              || src.match(/\bPP-R-[A-Z0-9-]+\b/i);
       return m ? (m[1]||m[0]).toUpperCase() : null;
