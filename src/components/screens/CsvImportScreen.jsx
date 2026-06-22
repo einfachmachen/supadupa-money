@@ -267,13 +267,8 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     return {hoch, mittel};
   })();
   const acceptedCount = (parsed?.acceptedSuggs||[]).length;
-  // ── Review-Assistent: alle Auto-Matches, sicherste zuerst ───────────
+  // Review-Assistent: ist dieser Vorschlag bereits übernommen?
   const isSuggAccepted = s => (parsed?.acceptedSuggs||[]).some(a=>a.rowIdx===s.rowIdx && a.giroId===s.giroTx.id);
-  const reviewQueue = (()=>{
-    const rank = c => c==="hoch"?3:c==="mittel"?2:1;
-    return (parsed?.autoSuggestions||[]).slice()
-      .sort((a,b)=> rank(b.confidence)-rank(a.confidence) || Math.abs(suggAmt(b))-Math.abs(suggAmt(a)));
-  })();
   // Einnahmen/Ausgaben-Übersicht für die Summenzeile. Bei PayPal sind die
   // positiven „Sonstige Einnahmen" ohne Empfänger interne Gegenbuchungen
   // (Finanzierung jeder Zahlung) — keine echten Einnahmen.
@@ -290,6 +285,12 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   // Gefilterte Vorschläge (Ausgaben↔Giro). „einnahmen" wird separat behandelt,
   // weil Einnahmen keine Giro-Belastung haben (siehe incomeShown).
   const suggAmt = s => (parsed?.newRows?.[s.rowIdx]?.amount ?? parsed?.newRows?.[s.rowIdx]?.totalAmount ?? 0);
+  // Review-Assistent: alle Auto-Matches, sicherste zuerst (nach suggAmt def.).
+  const reviewQueue = (()=>{
+    const rank = c => c==="hoch"?3:c==="mittel"?2:1;
+    return (parsed?.autoSuggestions||[]).slice()
+      .sort((a,b)=> rank(b.confidence)-rank(a.confidence) || Math.abs(suggAmt(b))-Math.abs(suggAmt(a)));
+  })();
   const dshort = iso => { const p=String(iso||"").split("-"); return p.length===3?`${p[2]}.${p[1]}.${p[0].slice(2)}`:iso||""; };
   const matchSuggText = (s, q) => {
     const r = parsed.newRows[s.rowIdx] || {};
