@@ -60,6 +60,12 @@ function EditPopup() {
               .filter(t=>t); // alle verknüpften, egal ob noch pending oder bereits abgebucht
             if(linkedPends.length===0) return null;
             return linkedPends.map(pend=>{
+              // PayPal-Legs (Erstattung/Kauf/Auszahlung) werden über linkedIds an
+              // die Giro-Buchung gehängt — sie sind KEINE Vormerkung. Daran erkennbar:
+              // Konto/Bezug „PayPal" oder Erstattungs-/Leg-Marker.
+              const isPayPalLink = /paypal/i.test(pend._kontoRaw||"") || /paypal/i.test(pend.desc||"")
+                || !!pend._isRefund || !!pend._refundOf || !!pend._legSourceFps;
+              const linkLabel = isPayPalLink ? "PayPal-Verknüpfung" : "Verknüpfte Vormerkung";
               const seriesTxs = pend._seriesId
                 ? txs.filter(t=>t._seriesId===pend._seriesId).sort((a,b)=>a.date.localeCompare(b.date))
                 : [];
@@ -76,7 +82,7 @@ function EditPopup() {
                   {/* Header */}
                   <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
                     {Li("link",12,T.blue)}
-                    <span style={{color:T.blue,fontSize:11,fontWeight:700}}>Verknüpfte Vormerkung</span>
+                    <span style={{color:T.blue,fontSize:11,fontWeight:700}}>{linkLabel}</span>
                     {total>1&&pend._seriesIdx&&pend._seriesTyp==="finanzierung"&&<span style={{color:T.gold,fontSize:10,background:(isLightTheme())?"rgba(192,120,0,0.15)":"rgba(245,166,35,0.12)",
                       borderRadius:4,padding:"1px 6px",fontWeight:700,marginLeft:"auto"}}>
                       {Li("repeat",9,T.gold)} Zahlung {thisIdx+1} von {total}
