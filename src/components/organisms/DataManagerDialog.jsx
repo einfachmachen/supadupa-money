@@ -69,18 +69,17 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
 
   // Delete confirm
   const [delConfirm, setDelConfirm] = useState(null); // null | key
-  // Konto-Filter für Löschen/Export — null = alle Konten
-  const [delAcc, setDelAcc] = useState(null);
+  // Konto-Filter für Löschen/Export — leere Menge = ALLE Konten, sonst genau die
+  // ausgewählten Konten (Mehrfachauswahl möglich).
+  const [delAccs, setDelAccs] = useState(() => new Set());
+  const allAccts = delAccs.size === 0;
+  const toggleDelAcc = (id) => setDelAccs(p => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   const fromIso = `${fromY}-${String(fromM+1).padStart(2,"0")}-01`;
   const toIso   = `${toY}-${String(toM+1).padStart(2,"0")}-31`;
 
-  // Konto-Match: null = alle. Bei "acc-giro" auch tx ohne accountId (Legacy).
-  const accMatch = (t) => {
-    if(!delAcc) return true;
-    const a = t.accountId || "acc-giro";
-    return a === delAcc;
-  };
+  // Konto-Match: leere Menge = alle. Bei "acc-giro" auch tx ohne accountId (Legacy).
+  const accMatch = (t) => allAccts || delAccs.has(t.accountId || "acc-giro");
   const filterTxs = (list) => list.filter(t=>{
     if(!t.date) return false;
     if(!accMatch(t)) return false;
@@ -268,10 +267,10 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   };
 
   // ── Anker-Filter: berücksichtigt Datum-Range UND Konto-Filter ───────
-  // Wenn delAcc gesetzt: nur Anker dieses Kontos im Datums-Range löschen.
-  // Wenn delAcc=null: ALLE Anker (verhalten wie zuvor).
+  // Wenn Konten gewählt: nur deren Anker im Datums-Range löschen.
+  // Wenn keine Auswahl (allAccts): ALLE Anker (Verhalten wie zuvor).
   const deleteAnchorsFiltered = () => {
-    if(!delAcc) {
+    if(allAccts) {
       // Alle Konten + alle Zeit
       setStartBalances({});
       return;
@@ -298,11 +297,11 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
             const m = Number(mKey);
             const idx = y*12 + m;
             const inRange = idx >= fromIdx && idx <= toIdx;
-            if(inRange && mVal[delAcc] !== undefined) {
-              // Diesen Konto-Anker entfernen; andere Konten behalten
+            if(inRange && Object.keys(mVal).some(aId => delAccs.has(aId))) {
+              // Anker der gewählten Konten entfernen; andere Konten behalten
               const filteredAccs = {};
               Object.entries(mVal).forEach(([aId, aVal]) => {
-                if(aId !== delAcc) filteredAccs[aId] = aVal;
+                if(!delAccs.has(aId)) filteredAccs[aId] = aVal;
               });
               if(Object.keys(filteredAccs).length > 0) newY[mKey] = filteredAccs;
               // sonst: ganzen Monatseintrag weglassen
@@ -321,7 +320,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
 
   // Anker-Counter: ehrlich anzeigen, wie viele tatsächlich betroffen wären
   const cntAnchFiltered = (() => {
-    if(!delAcc) {
+    if(allAccts) {
       // Alle Anker
       let cnt = 0;
       Object.values(startBalances || {}).forEach(yVal => {
@@ -345,7 +344,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
         if(isNaN(Number(mKey)) || !mVal || typeof mVal !== "object") return;
         const m = Number(mKey);
         const idx = y*12 + m;
-        if(idx >= fromIdx && idx <= toIdx && mVal[delAcc] !== undefined) cnt++;
+        if(idx >= fromIdx && idx <= toIdx) cnt += Object.keys(mVal).filter(aId => delAccs.has(aId)).length;
       });
     });
     return cnt;
@@ -353,19 +352,19 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
 
   // ── Kategorien & Gruppen: konto-spezifisch über groups.accountId ────
   // Modell: Kategorie.type → Gruppe.id; Gruppe.accountId → Konto.
-  // Bei aktivem delAcc löschen wir: Gruppen mit accountId===delAcc UND
-  // Kategorien deren type auf eine dieser Gruppen zeigt.
-  const groupsForAcc = !delAcc ? [] :
-    (groups || []).filter(g => (g.accountId || "") === delAcc);
+  // Bei Konto-Auswahl löschen wir: Gruppen der gewählten Konten UND
+  // Kategorien, deren type auf eine dieser Gruppen zeigt.
+  const groupsForAcc = allAccts ? [] :
+    (groups || []).filter(g => delAccs.has(g.accountId || ""));
   const groupTypesForAcc = new Set(groupsForAcc.map(g => g.type));
-  const catsForAcc = !delAcc ? [] :
+  const catsForAcc = allAccts ? [] :
     (cats || []).filter(c => groupTypesForAcc.has(c.type));
-  const cntCatsGroupsFiltered = !delAcc
+  const cntCatsGroupsFiltered = allAccts
     ? (cats.length + groups.length)
     : (catsForAcc.length + groupsForAcc.length);
 
   const deleteCatsGroupsFiltered = () => {
-    if(!delAcc) { setCats([]); setGroups([]); return; }
+    if(allAccts) { setCats([]); setGroups([]); return; }
     const catIdsToRemove = new Set(catsForAcc.map(c => c.id));
     // Kategorien entfernen
     setCats(p => p.filter(c => !catIdsToRemove.has(c.id)));
@@ -389,15 +388,15 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   // ── CSV-Rules: konto-spezifisch über catId → Gruppe → accountId ─────
   // Eine Rule zeigt auf eine Kategorie. Die Kategorie hat eine Gruppe.
   // Die Gruppe hat eine accountId. → Rule gehört indirekt zu diesem Konto.
-  const rulesForAcc = !delAcc ? [] : (() => {
+  const rulesForAcc = allAccts ? [] : (() => {
     const catIdsThisAcc = new Set(catsForAcc.map(c => c.id));
     return Object.entries(csvRules || {})
       .filter(([_, v]) => catIdsThisAcc.has(v?.catId));
   })();
-  const cntRulesFiltered = !delAcc ? cntRules : rulesForAcc.length;
+  const cntRulesFiltered = allAccts ? cntRules : rulesForAcc.length;
 
   const deleteRulesFiltered = () => {
-    if(!delAcc) { setCsvRules({}); return; }
+    if(allAccts) { setCsvRules({}); return; }
     const keysToRemove = new Set(rulesForAcc.map(([k]) => k));
     setCsvRules(p => {
       const next = {};
@@ -411,12 +410,13 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   // ── Löschen ─────────────────────────────────────────────────────────
   // Lösch-Filter: Datum-Range UND (wenn gesetzt) Konto-Match
   const inDelRange = (t) => t.date>=fromIso && t.date<=toIso && accMatch(t);
-  // Konto-Name für Labels
-  const delAccName = !delAcc ? null : ((accounts||[]).find(a=>a.id===delAcc)?.name || delAcc);
+  // Konto-Namen für Labels
+  const delAccNames = [...delAccs].map(id => (accounts||[]).find(a=>a.id===id)?.name || id);
   // Löschen: gleiche Namen UND gleiche Reihenfolge wie der Export (ohne "Konten"
   // und "Bank-Schlüssel", die hier bewusst nicht massenhaft löschbar sind). Bei
-  // aktivem Konto-Filter wird der Kontoname als Zusatz angehängt.
-  const accSfx = delAcc ? ` (${delAccName})` : "";
+  // aktivem Konto-Filter wird der/die Kontoname(n) als Zusatz angehängt.
+  const accSfx = allAccts ? "" :
+    ` (${delAccNames.length <= 2 ? delAccNames.join(", ") : delAccNames.length + " Konten"})`;
   const DELETE_ITEMS = [
     {key:"cats",    label:"Kategorien & Gruppen"+accSfx, icon:"tag",
      count: cntCatsGroupsFiltered, action: deleteCatsGroupsFiltered},
@@ -729,26 +729,33 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
               {Li("alert-triangle",11,T.neg)} Achtung: Löschen kann nicht rückgängig gemacht werden!
             </div>
             {rangeSelector}
-            {/* Konto-Filter — gilt für 'echte Buchungen' und 'Vormerkungen' */}
+            {/* Konto-Filter — Mehrfachauswahl; gilt für Buchungen, Vormerkungen
+                sowie konto-spezifische Kategorien/Zuordnungen/Ankerpunkte. */}
             <div style={{marginBottom:10}}>
-              <div style={{color:T.txt2,fontSize:10,marginBottom:4}}>Konto-Filter (für Buchungen/Vormerkungen):</div>
+              <div style={{color:T.txt2,fontSize:10,marginBottom:4}}>
+                Konto-Filter (Mehrfachauswahl möglich):
+              </div>
               <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-                <button onClick={()=>setDelAcc(null)}
-                  style={{padding:"4px 10px",borderRadius:6,fontSize:11,fontWeight:!delAcc?700:400,
-                    background:!delAcc?T.blue:"transparent",
-                    color:!delAcc?"#fff":T.txt2,
-                    border:`1px solid ${!delAcc?T.blue:T.bd}`,cursor:"pointer"}}>
+                <button onClick={()=>setDelAccs(new Set())}
+                  style={{padding:"4px 10px",borderRadius:6,fontSize:11,fontWeight:allAccts?700:400,
+                    background:allAccts?T.blue:"transparent",
+                    color:allAccts?"#fff":T.txt2,
+                    border:`1px solid ${allAccts?T.blue:T.bd}`,cursor:"pointer"}}>
                   Alle Konten
                 </button>
-                {(accounts||[]).map(a => (
-                  <button key={a.id} onClick={()=>setDelAcc(a.id)}
-                    style={{padding:"4px 10px",borderRadius:6,fontSize:11,fontWeight:delAcc===a.id?700:400,
-                      background:delAcc===a.id?T.blue:"transparent",
-                      color:delAcc===a.id?"#fff":T.txt2,
-                      border:`1px solid ${delAcc===a.id?T.blue:T.bd}`,cursor:"pointer"}}>
-                    {a.name}
-                  </button>
-                ))}
+                {(accounts||[]).map(a => {
+                  const on = delAccs.has(a.id);
+                  return (
+                    <button key={a.id} onClick={()=>toggleDelAcc(a.id)}
+                      style={{padding:"4px 10px",borderRadius:6,fontSize:11,fontWeight:on?700:400,
+                        display:"inline-flex",alignItems:"center",gap:4,
+                        background:on?T.blue:"transparent",
+                        color:on?"#fff":T.txt2,
+                        border:`1px solid ${on?T.blue:T.bd}`,cursor:"pointer"}}>
+                      {on&&Li("check",11,"#fff")}{a.name}
+                    </button>
+                  );
+                })}
               </div>
             </div>
             {DELETE_ITEMS.map(({key,label,icon,count,action,nav,onNav,note})=>(
