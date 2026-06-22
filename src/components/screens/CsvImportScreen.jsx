@@ -159,6 +159,9 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const [pickSort, setPickSort] = useState("amount"); // "amount" | "date"
   // Filter „nur Einnahmen ohne gefundene Giro-Buchung".
   const [onlyUnmatched, setOnlyUnmatched] = useState(false);
+  // Review-Assistent: Matches einzeln durchgehen (Übernehmen/Überspringen).
+  const [reviewMode, setReviewMode] = useState(false);
+  const [reviewIdx, setReviewIdx] = useState(0);
   const defaultGiroAccId = useMemo(() =>
     accounts.find(a=>a.id==="acc-giro")?.id
     || accounts.find(a=>/giro/i.test(a.name||""))?.id
@@ -264,6 +267,13 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     return {hoch, mittel};
   })();
   const acceptedCount = (parsed?.acceptedSuggs||[]).length;
+  // ── Review-Assistent: alle Auto-Matches, sicherste zuerst ───────────
+  const isSuggAccepted = s => (parsed?.acceptedSuggs||[]).some(a=>a.rowIdx===s.rowIdx && a.giroId===s.giroTx.id);
+  const reviewQueue = (()=>{
+    const rank = c => c==="hoch"?3:c==="mittel"?2:1;
+    return (parsed?.autoSuggestions||[]).slice()
+      .sort((a,b)=> rank(b.confidence)-rank(a.confidence) || Math.abs(suggAmt(b))-Math.abs(suggAmt(a)));
+  })();
   // Einnahmen/Ausgaben-Übersicht für die Summenzeile. Bei PayPal sind die
   // positiven „Sonstige Einnahmen" ohne Empfänger interne Gegenbuchungen
   // (Finanzierung jeder Zahlung) — keine echten Einnahmen.
@@ -424,8 +434,9 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     if(!a) return null;
     return txs.find(t=>t.id===a.giroId) || giroCandidates.find(t=>t.id===a.giroId) || null;
   };
+  // Genau eine Giro-Buchung je PayPal-Zeile: vorhandenen Eintrag ersetzen.
   const acceptLink = (rowIdx, giroId) =>
-    setParsed(p=>({...p, acceptedSuggs:[...(p.acceptedSuggs||[]), {rowIdx, giroId}]}));
+    setParsed(p=>({...p, acceptedSuggs:[...(p.acceptedSuggs||[]).filter(a=>a.rowIdx!==rowIdx), {rowIdx, giroId}]}));
   const removeLink = (rowIdx) =>
     setParsed(p=>({...p, acceptedSuggs:(p.acceptedSuggs||[]).filter(a=>a.rowIdx!==rowIdx)}));
   // Kandidaten für den manuellen Giro-Picker einer Zeile: bestehende
@@ -538,6 +549,86 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
               Keine passende Giro-Buchung gefunden.
             </div>
           )}
+        </div>
+      </div>
+    );
+  };
+
+  // ── Review-Assistent: ein Match nach dem anderen prüfen ──────────────
+  const renderReviewCard = () => {
+    const total = reviewQueue.length;
+    const exitReview = () => { setReviewMode(false); setPickFor(null); };
+    if(reviewIdx >= total) {
+      return (
+        <div style={{padding:"18px 12px",textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",gap:10}}>
+          {Li("check-circle",34,T.pos)}
+          <div style={{color:T.txt,fontSize:MFS,fontWeight:700}}>Alle {total} Matches durchgesehen</div>
+          <div style={{color:T.txt2,fontSize:MFSl}}>{acceptedCount} übernommen</div>
+          <button onClick={exitReview}
+            style={{marginTop:6,padding:"9px 22px",borderRadius:10,border:"none",background:T.blue,
+              color:T.on_accent||"#0a0a0a",fontSize:MFSl,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+            Fertig
+          </button>
+        </div>
+      );
+    }
+    const s = reviewQueue[reviewIdx];
+    const r = parsed.newRows[s.rowIdx];
+    const isExpense = (r.amount ?? r.totalAmount ?? 0) < 0;
+    const ppAmt = Math.abs(pn(r.amount ?? r.totalAmount ?? 0));
+    const accepted = isSuggAccepted(s);
+    const mg = manualGiroFor(s.rowIdx);                 // ggf. abweichend manuell gewählt
+    const giro = (accepted && mg) ? mg : s.giroTx;
+    const confColor = s.confidence==="hoch"?T.pos:s.confidence==="mittel"?T.gold:T.txt2;
+    const picking = pickFor===s.rowIdx;
+    const advance = () => { setPickFor(null); setReviewIdx(i=>i+1); };
+    const back = () => { setPickFor(null); setReviewIdx(i=>Math.max(0,i-1)); };
+    const btn = (label, onClick, kind) => (
+      <button onClick={onClick}
+        style={{flex:1,minWidth:0,padding:"9px 6px",borderRadius:9,cursor:"pointer",fontFamily:"inherit",
+          fontSize:MFSl,fontWeight:700,whiteSpace:"nowrap",
+          ...(kind==="primary"?{background:T.pos,border:`1px solid ${T.pos}`,color:T.on_accent||"#0a0a0a"}
+            :kind==="ghost"?{background:"transparent",border:`1px solid ${T.bd}`,color:T.txt2}
+            :{background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bd}`,color:T.txt})}}>
+        {label}
+      </button>
+    );
+    return (
+      <div style={{padding:"4px 2px 10px"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+          <span style={{color:T.txt2,fontSize:MFSl,fontWeight:700}}>Match {reviewIdx+1} von {total}{acceptedCount>0?` · ${acceptedCount} übernommen`:""}</span>
+          <button onClick={exitReview}
+            style={{background:"transparent",border:`1px solid ${T.bd}`,borderRadius:7,padding:"4px 10px",
+              fontSize:MFSl,color:T.txt2,cursor:"pointer",fontFamily:"inherit"}}>Beenden</button>
+        </div>
+        <div style={{borderRadius:11,border:`1px solid ${accepted?T.pos:T.bd}`,
+          background:accepted?"rgba(34,197,94,0.08)":"rgba(255,255,255,0.03)",padding:"11px 12px",
+          display:"flex",flexDirection:"column",gap:6}}>
+          <div style={{display:"flex",alignItems:"baseline",gap:8}}>
+            <span style={{color:isExpense?T.neg:T.pos,fontSize:mobileMode?20:17,fontWeight:800,fontFamily:NUM_FONT}}>
+              {isExpense?"−":"+"} {fmt(ppAmt)}
+            </span>
+            <span style={{flex:1}}/>
+            <span style={{color:T.txt2,fontSize:MFSl}}>Giro {dshort(giro.date)} · PayPal {dshort(r.isoDate)}</span>
+          </div>
+          <div style={{display:"flex",alignItems:"baseline",gap:6,flexWrap:"wrap"}}>
+            <span style={{color:confColor,fontSize:MFSl,fontWeight:800}}>{accepted?"✓ "+(mg&&mg!==s.giroTx?"manuell":s.confidence):s.confidence}</span>
+            <span style={{color:T.txt2,fontSize:MFSl}}>±{s.diffDays} Tage</span>
+            {s.reason&&<span style={{color:T.txt2,fontSize:MFSl,opacity:0.85}}>· {s.reason}</span>}
+          </div>
+          <div style={{color:T.txt,fontSize:mobileMode?14:13,fontWeight:600,whiteSpace:"normal",wordBreak:"break-word"}}>
+            <span style={{color:T.blue,fontWeight:700}}>Giro:</span> {giro.desc}
+          </div>
+          <div style={{color:T.txt2,fontSize:mobileMode?14:13,whiteSpace:"normal",wordBreak:"break-word"}}>
+            <span style={{color:T.gold,fontWeight:700}}>PayPal:</span> {r.desc}
+          </div>
+          {picking && renderGiroLink(s.rowIdx, r, true)}
+        </div>
+        <div style={{display:"flex",gap:6,marginTop:9}}>
+          {btn("← Zurück", back, "ghost")}
+          {btn(picking?"Picker schließen":"Anders zuordnen", ()=>setPickFor(picking?null:s.rowIdx), "neutral")}
+          {!accepted && btn("Überspringen", advance, "neutral")}
+          {btn(accepted?"Weiter →":"✓ Übernehmen", ()=>{ if(!accepted) acceptLink(s.rowIdx, s.giroTx.id); advance(); }, "primary")}
         </div>
       </div>
     );
@@ -1270,8 +1361,18 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                   })}
                 </div>
               </div>
+              {/* Review-Assistent: Matches einzeln durchgehen. */}
+              {reviewQueue.length>0 && (reviewMode ? renderReviewCard() : (
+                <button onClick={()=>{setReviewMode(true); setReviewIdx(0); setPickFor(null);}}
+                  style={{width:"100%",marginBottom:8,display:"flex",alignItems:"center",justifyContent:"center",gap:7,
+                    background:"rgba(74,159,212,0.14)",border:`1px solid ${T.blue}66`,borderRadius:9,
+                    padding:"8px 12px",fontSize:MFSl,fontWeight:700,color:T.blue,cursor:"pointer",fontFamily:"inherit"}}>
+                  {Li("git-compare",13,T.blue)} Schritt für Schritt prüfen ({reviewQueue.length})
+                </button>
+              ))}
               {/* Listen-Bereich. Ohne Filter (suggType==="") werden BEIDE Listen
                   gezeigt — Ausgaben zuerst (order:1), Einnahmen darunter (order:2). */}
+              {!reviewMode&&(
               <div style={{display:"flex",flexDirection:"column"}}>
               {showIncomeList&&(
                 <div style={{order:showBoth?2:1}}>
@@ -1498,6 +1599,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
               </div>
               )}
               </div>
+              )}
             </div>
           )}
 
