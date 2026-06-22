@@ -147,6 +147,14 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   // „PayPal +30": Zeilen-Indizes, die nicht als PayPal-Ausgabe, sondern als
   // Giro-Vormerkung für den späteren Einzug (~30 Tage) importiert werden.
   const [plus30, setPlus30] = useState(() => new Set());
+  // Zielkonto für diese Vormerkungen (wählbar; Default = Girokonto).
+  const [plus30AccId, setPlus30AccId] = useState("");
+  const defaultGiroAccId = useMemo(() =>
+    accounts.find(a=>a.id==="acc-giro")?.id
+    || accounts.find(a=>/giro/i.test(a.name||""))?.id
+    || accounts[0]?.id || "acc-giro",
+  [accounts]);
+  const plus30Acc = plus30AccId || defaultGiroAccId;
 
   const [showAutoSugg, setShowAutoSugg] = useState(false);
   // Vollbild-Modus für das Vorschlags-Panel: blendet Konto-Kacheln + unsortierte
@@ -395,9 +403,6 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
       // dem Giro (Modell „Giro = Ausgabe"); der echte spätere Giro-Einzug wird
       // per Vormerkungs-Verknüpfung zugeordnet. So zählt der Betrag nur einmal.
       if(plus30.has(i)) {
-        const giroAccId = accounts.find(a=>a.id==="acc-giro")?.id
-          || accounts.find(a=>/giro/i.test(a.name||""))?.id
-          || accounts[0]?.id || "acc-giro";
         newTxs.push({
           id: "pend-"+uid(),
           date: isoAddDays(r.isoDate, 30),
@@ -405,7 +410,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
           desc: (r.desc||"").split(" · ")[0] + " (PayPal +30)",
           note: [r._detailNote, r.desc].filter(Boolean).join(" · ").slice(0,200),
           pending: true,
-          accountId: giroAccId,
+          accountId: plus30Acc,
           splits: catId ? [{id:uid(), catId, subId, amount:absAmt}] : [],
           _csvType: "expense",
           _plus30: true,
@@ -1336,6 +1341,14 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                   );
                 })}
               </div>
+              {plus30.size>0&&(
+                <div style={{padding:"8px 16px 10px",flexShrink:0,borderTop:`1px solid ${T.bd}`,background:"rgba(245,166,35,0.08)"}}>
+                  <div style={{color:T.gold,fontSize:MFSl,fontWeight:700,marginBottom:6,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                    📅 {plus30.size} PayPal-{plus30.size===1?"Zahlung wird":"Zahlungen werden"} als Vormerkung auf dieses Konto gelegt:
+                  </div>
+                  <AccountChips accounts={accounts} value={plus30Acc} onChange={setPlus30AccId}/>
+                </div>
+              )}
               <div style={{padding:"12px 16px",flexShrink:0,borderTop:`1px solid ${T.bd}`,display:"flex",gap:8}}>
                 <button onClick={()=>setStep("input")}
                   style={{flex:1,padding:"12px",borderRadius:11,border:`1px solid ${T.bds}`,background:"transparent",color:T.txt2,fontSize:MFS,cursor:"pointer"}}>
