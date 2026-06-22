@@ -482,3 +482,45 @@ describe("enrichPayPalMerchants — PayPal +30", () => {
     expect(enr[1]._legSourceFps).toEqual(["fp-refund"]);
   });
 });
+
+describe("Erstattung (Eingang) ↔ Giro-Lastschrift (Ausgang)", () => {
+  // PayPal-Erstattung als positiver Betrag, als Erstattung markiert.
+  const refundRow = (merchant, amount, isoDate) => ({
+    amount: Math.abs(amount), isoDate, _isRefund: true,
+    desc: merchant, _recipient: merchant,
+  });
+  const debit = (id, amount, date, merchant) => ({
+    id, totalAmount: Math.abs(amount), date, _csvType: "expense",
+    desc: `PayPal Europe S.a.r.l. · PP.5555.PP . PAYPAL..${merchant} NL`,
+  });
+
+  it("matcht die DisneyPlus-Erstattung gegen die DisneyPlus-Lastschrift", () => {
+    const r = refundRow("DisneyPlus", 8.99, "2026-05-24");
+    const g = debit("g1", 8.99, "2026-05-25", "DISNEYPLUS");
+    const s = scoreMatch(r, g, 35);
+    expect(s).not.toBeNull();
+    expect(s.refundVsDebit).toBe(true);
+    expect(s.merchantMatch).toBe(true);
+  });
+
+  it("bleibt Vorschlag, wird NIE automatisch verknüpft", () => {
+    const r = refundRow("DisneyPlus", 8.99, "2026-05-24");
+    const g = debit("g1", 8.99, "2026-05-25", "DISNEYPLUS");
+    const { links, suggestions } = assignPayPalLinks([r], [g], 35);
+    expect(suggestions).toHaveLength(1);
+    expect(suggestions[0].confidence).not.toBe("hoch"); // höchstens „mittel"
+    expect(links).toHaveLength(0); // niemals Auto-Link bei gegenläufigem Vorzeichen
+  });
+
+  it("matcht NICHT ohne Händlerbezug (nur gleicher Betrag reicht nicht)", () => {
+    const r = refundRow("DisneyPlus", 8.99, "2026-05-24");
+    const g = debit("g1", 8.99, "2026-05-25", "SPOTIFY");
+    expect(scoreMatch(r, g, 35)).toBeNull();
+  });
+
+  it("gegenläufiges Vorzeichen nur für Erstattungen — normale Einnahme nicht", () => {
+    const notRefund = { amount: 8.99, isoDate: "2026-05-24", desc: "DisneyPlus", _recipient: "DisneyPlus" };
+    const g = debit("g1", 8.99, "2026-05-25", "DISNEYPLUS");
+    expect(scoreMatch(notRefund, g, 35)).toBeNull();
+  });
+});
