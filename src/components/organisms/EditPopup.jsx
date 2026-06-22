@@ -61,10 +61,13 @@ function EditPopup() {
             if(linkedPends.length===0) return null;
             return linkedPends.map(pend=>{
               // PayPal-Legs (Erstattung/Kauf/Auszahlung) werden über linkedIds an
-              // die Giro-Buchung gehängt — sie sind KEINE Vormerkung. Daran erkennbar:
-              // Konto/Bezug „PayPal" oder Erstattungs-/Leg-Marker.
+              // die Giro-Buchung gehängt — sie sind KEINE Vormerkung. Eine echte
+              // verknüpfte Vormerkung trägt _linkedTo===dieser Buchung (oder ist
+              // noch pending); alles andere ist ein PayPal-/Import-Leg. Zusätzlich
+              // greifen explizite PayPal-Marker (Konto/Bezug, Erstattung).
+              const isVormerkung = pend._linkedTo===editTx.id || !!pend.pending;
               const isPayPalLink = /paypal/i.test(pend._kontoRaw||"") || /paypal/i.test(pend.desc||"")
-                || !!pend._isRefund || !!pend._refundOf || !!pend._legSourceFps;
+                || !!pend._isRefund || !!pend._refundOf || !!pend._legSourceFps || !isVormerkung;
               const linkLabel = isPayPalLink ? "PayPal-Verknüpfung" : "Verknüpfte Vormerkung";
               const seriesTxs = pend._seriesId
                 ? txs.filter(t=>t._seriesId===pend._seriesId).sort((a,b)=>a.date.localeCompare(b.date))
