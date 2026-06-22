@@ -66,9 +66,9 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     });
     // Volle Verarbeitung erneut (Anreicherung, Gegenbuchungs-Filter) UND
     // Vorschläge neu berechnen — sonst stimmen Einnahmen/Vorschläge nicht mehr.
-    const { newRows, dupRows, droppedCounter } = buildRows(parsed.format, updatedRows);
-    setParsed(p => ({...p, rows: updatedRows, newRows, dupRows, droppedCounter,
-      autoSuggestions: computeAutoSuggestions(newRows)}));
+    const { newRows, dupRows, droppedCounter, isPayPal } = buildRows(parsed.format, updatedRows);
+    setParsed(p => ({...p, rows: updatedRows, newRows, dupRows, droppedCounter, isPayPal,
+      autoSuggestions: computeAutoSuggestions(newRows, isPayPal)}));
     // Kategorien neu zuweisen (Auto-Regeln berücksichtigen jetzt das neue Konto)
     setAssign(autoAssign(newRows));
   }, [selAccId, step]);
@@ -293,8 +293,11 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const linkedGiroIds = new Set(
     txs.filter(t=>!t.pending && (t.linkedIds||[]).length>0).map(t=>t.id)
   );
-  const computeAutoSuggestions = (newRows) =>
-    assignPayPalLinks(newRows, txs, linkDays, {excludeGiroIds: linkedGiroIds}).suggestions;
+  // Nur für echte PayPal-CSVs. Bei einer Giro-/Bank-CSV darf der PayPal-Matcher
+  // NICHT laufen — sonst werden reguläre Giro-Buchungen (Gehalt, Erstattungen …)
+  // in der Vorschau fälschlich als „PayPal:" gelistet/abgeglichen.
+  const computeAutoSuggestions = (newRows, isPayPal) =>
+    isPayPal ? assignPayPalLinks(newRows, txs, linkDays, {excludeGiroIds: linkedGiroIds}).suggestions : [];
 
   // Gemeinsame Zeilen-Verarbeitung (Dup-Split, PayPal-Anreicherung +30,
   // Gegenbuchungs-Filter). Wird von applyParsed UND dem Kontowechsel-Effekt
@@ -312,7 +315,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     // wird die Erstattung wieder normal zuordenbar (sonst „siehe Auszahlung"
     // ohne Auszahlung + kein Giro-Match).
     const newRows = isPayPalCsv ? reconcilePayPalLegs(refunds) : refunds;
-    return { newRows, dupRows, droppedCounter: enrichedRows.length - filtered.length };
+    return { newRows, dupRows, droppedCounter: enrichedRows.length - filtered.length, isPayPal: isPayPalCsv };
   };
 
   const doParse = () => {
@@ -339,9 +342,9 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
         fp: txFingerprint(r.isoDate, r.amount, r.desc, resolvedAccId),
         _fpNorm: txFingerprintNorm(r.isoDate, r.amount, r.desc, resolvedAccId)};
     });
-    const { newRows, dupRows, droppedCounter } = buildRows(format, resolvedRows);
-    const autoSuggestions = computeAutoSuggestions(newRows);
-    setParsed({rows: resolvedRows, format, newRows, dupRows, autoSuggestions, droppedCounter, skipped: skipped || [], headerRepeats: headerRepeats || 0, detectedBalance, detectedBalances: detectedBalances || (detectedBalance ? [detectedBalance] : [])});
+    const { newRows, dupRows, droppedCounter, isPayPal } = buildRows(format, resolvedRows);
+    const autoSuggestions = computeAutoSuggestions(newRows, isPayPal);
+    setParsed({rows: resolvedRows, format, newRows, dupRows, autoSuggestions, droppedCounter, isPayPal, skipped: skipped || [], headerRepeats: headerRepeats || 0, detectedBalance, detectedBalances: detectedBalances || (detectedBalance ? [detectedBalance] : [])});
     setAssign(autoAssign(newRows));
     setShowCatAssign(newRows.length <= 20);
     // PayPal-CSVs: Giro-Verknüpfung automatisch vorschalten — PayPal-Zahlungen
