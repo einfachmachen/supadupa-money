@@ -16,6 +16,7 @@ import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { txFingerprint, txFingerprintNorm } from "../../utils/tx.js";
+import { isoAddDays, nextBankWorkday } from "../../utils/date.js";
 
 function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const { cats, groups, txs, setTxs, accounts, csvRules, setCsvRules, startBalances, setStartBalances, setMasterOverride } = useContext(AppCtx);
@@ -143,6 +144,59 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const [linkToGiro, setLinkToGiro] = useState(false);
   const [linkDays, setLinkDays] = useState(35);
   const [autoGroup, setAutoGroup] = useState(false); // Automatisches Zusammenfassen
+  // „PayPal +30": Zeilen-Indizes, die nicht als PayPal-Ausgabe, sondern als
+  // Giro-Vormerkung für den späteren Einzug importiert werden. Pro Zeile lässt
+  // sich das spätere PayPal-Buchungsdatum wählen; die Giro-Vormerkung liegt
+  // 1 Werktag danach.
+  const [plus30, setPlus30] = useState(() => new Set());
+  const [plus30Date, setPlus30Date] = useState({}); // rowIdx → spätere PayPal-Buchung (iso)
+  // Zielkonto für diese Vormerkungen (wählbar; Default = Girokonto).
+  const [plus30AccId, setPlus30AccId] = useState("");
+  const defaultGiroAccId = useMemo(() =>
+    accounts.find(a=>a.id==="acc-giro")?.id
+    || accounts.find(a=>/giro/i.test(a.name||""))?.id
+    || accounts[0]?.id || "acc-giro",
+  [accounts]);
+  const plus30Acc = plus30AccId || defaultGiroAccId;
+  // Spätere PayPal-Buchung einer Zeile (Default: Kaufdatum + 30 Tage).
+  const plus30PpDate = (i, r) => plus30Date[i] || isoAddDays(r.isoDate, 30);
+  // Giro-Vormerkungsdatum = 1 Werktag nach der späteren PayPal-Buchung.
+  const plus30GiroDate = (i, r) => nextBankWorkday(plus30PpDate(i, r));
+  const togglePlus30 = (i, r) => setPlus30(p => {
+    const n = new Set(p);
+    if(n.has(i)) { n.delete(i); }
+    else { n.add(i); setPlus30Date(d => (i in d) ? d : {...d, [i]: isoAddDays(r.isoDate, 30)}); }
+    return n;
+  });
+  // Schalter + Datumswahl für „erst später per Giro abgebucht" (PayPal +30).
+  // Als Funktion (nicht Komponente) eingebunden, damit das Datums-Input beim
+  // Tippen nicht neu gemountet wird (Fokus bleibt erhalten).
+  const renderPlus30 = (i, r) => {
+    const on = plus30.has(i);
+    const ppDate = plus30PpDate(i, r);
+    const giroDate = plus30GiroDate(i, r);
+    return (
+      <div style={{marginTop:4,display:"flex",flexDirection:"column",gap:5,alignItems:"flex-start"}}>
+        <button onClick={()=>togglePlus30(i, r)}
+          style={{display:"inline-flex",alignItems:"center",gap:5,
+            background:on?"rgba(245,166,35,0.18)":"transparent",
+            border:`1px solid ${on?T.gold:T.bds}`,borderRadius:7,padding:"3px 9px",
+            color:on?T.gold:T.txt2,fontSize:MFSl,fontWeight:on?700:600,cursor:"pointer",fontFamily:"inherit"}}>
+          📅 {on ? "Wird als Giro-Vormerkung gebucht" : "Erst später per Giro abgebucht? → vormerken"}
+        </button>
+        {on && (
+          <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:6,fontSize:MFSl,color:T.txt2}}>
+            <span>PayPal bucht am</span>
+            <input type="date" value={ppDate}
+              onChange={e=>{ if(e.target.value) setPlus30Date(d=>({...d,[i]:e.target.value})); }}
+              style={{background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bd}`,borderRadius:6,
+                padding:"2px 6px",color:T.txt,fontSize:MFSl,fontFamily:"inherit"}}/>
+            <span style={{color:T.gold,fontWeight:700}}>→ Giro-Vormerkung am {dshort(giroDate)} (1 Werktag danach)</span>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const [showAutoSugg, setShowAutoSugg] = useState(false);
   // Vollbild-Modus für das Vorschlags-Panel: blendet Konto-Kacheln + unsortierte
@@ -293,29 +347,43 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const linkedGiroIds = new Set(
     txs.filter(t=>!t.pending && (t.linkedIds||[]).length>0).map(t=>t.id)
   );
+  // Giro-Kandidaten fürs PayPal-Matching: das Gegenstück einer PayPal-Buchung ist
+  // IMMER die Bank-Lastschrift auf dem Girokonto — NIE eine andere PayPal-Konto-
+  // Buchung. Bereits importierte PayPal-CSV-Buchungen (z.B. „COMTRADA …
+  // paypal@comtrada.de") sehen für isPayPalGiroTx wie eine PayPal-Lastschrift aus
+  // („paypal" im Text) und würden sonst beim Re-Import fälschlich als Treffer
+  // erscheinen. Daher Konten mit „PayPal" im Namen als Kandidaten ausschließen.
+  const giroCandidates = useMemo(() => {
+    const ppAcc = new Set((accounts||[]).filter(a=>/paypal/i.test(a.name||"")).map(a=>a.id));
+    if(!ppAcc.size) return txs;
+    return txs.filter(t => !ppAcc.has(t.accountId || "acc-giro"));
+  }, [txs, accounts]);
   // Nur für echte PayPal-CSVs. Bei einer Giro-/Bank-CSV darf der PayPal-Matcher
   // NICHT laufen — sonst werden reguläre Giro-Buchungen (Gehalt, Erstattungen …)
   // in der Vorschau fälschlich als „PayPal:" gelistet/abgeglichen.
   const computeAutoSuggestions = (newRows, isPayPal) =>
-    isPayPal ? assignPayPalLinks(newRows, txs, linkDays, {excludeGiroIds: linkedGiroIds}).suggestions : [];
+    isPayPal ? assignPayPalLinks(newRows, giroCandidates, linkDays, {excludeGiroIds: linkedGiroIds}).suggestions : [];
 
   // Gemeinsame Zeilen-Verarbeitung (Dup-Split, PayPal-Anreicherung +30,
   // Gegenbuchungs-Filter). Wird von applyParsed UND dem Kontowechsel-Effekt
   // genutzt, damit beide konsistent bleiben.
   const buildRows = (format, resolvedRows) => {
     const isDup = r => knownFps.has(r.fp) || knownFps.has(r._fpNorm);
-    const newRowsRaw = resolvedRows.filter(r=>!isDup(r));
     const dupRows = resolvedRows.filter(isDup);
     const isPayPalCsv = looksLikePayPalCsv(format, resolvedRows);
-    const enrichedRows = isPayPalCsv ? enrichPayPalMerchants(newRowsRaw) : newRowsRaw;
-    // PayPal: interne Gegenbuchungen entfernen, dann Rückerstattungen erkennen.
-    const filtered = isPayPalCsv ? dropPayPalCounterBookings(enrichedRows) : enrichedRows;
-    const refunds = isPayPalCsv ? detectPayPalRefunds(filtered) : filtered;
-    // Verwaiste Legs reparieren: wurde die zugehörige Auszahlung gefiltert,
-    // wird die Erstattung wieder normal zuordenbar (sonst „siehe Auszahlung"
-    // ohne Auszahlung + kein Giro-Match).
-    const newRows = isPayPalCsv ? reconcilePayPalLegs(refunds) : refunds;
-    return { newRows, dupRows, droppedCounter: enrichedRows.length - filtered.length, isPayPal: isPayPalCsv };
+    if(!isPayPalCsv) {
+      return { newRows: resolvedRows.filter(r=>!isDup(r)), dupRows, droppedCounter: 0, isPayPal: false };
+    }
+    // WICHTIG: Die PayPal-Pipeline läuft über ALLE Zeilen (auch bereits
+    // importierte) — erst DANACH werden Duplikate entfernt. Sonst überlebt die
+    // interne Gegenbuchung (+X) einer schon importierten Ausgabe (−X) als
+    // „Phantom-Einnahme", weil ihr Paarpartner vorher rausgefiltert wurde.
+    const enrichedRows = enrichPayPalMerchants(resolvedRows);
+    const filtered = dropPayPalCounterBookings(enrichedRows);
+    const refunds = detectPayPalRefunds(filtered);
+    const reconciled = reconcilePayPalLegs(refunds);
+    const newRows = reconciled.filter(r=>!isDup(r));
+    return { newRows, dupRows, droppedCounter: enrichedRows.length - filtered.length, isPayPal: true };
   };
 
   const doParse = () => {
@@ -374,7 +442,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     const acceptedGiroIds = new Set((parsed.acceptedSuggs||[]).map(a=>a.giroId));
     const autoByRow = {};
     if(linkToGiro) {
-      const {links} = assignPayPalLinks(parsed.newRows, txs, linkDays,
+      const {links} = assignPayPalLinks(parsed.newRows, giroCandidates, linkDays,
         {excludeRows: acceptedRows, excludeGiroIds: new Set([...acceptedGiroIds, ...linkedGiroIds])});
       links.forEach(l => { autoByRow[l.rowIdx] = l.giroTx; });
     }
@@ -386,6 +454,34 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     parsed.newRows.forEach((r,i) => {
       const {catId="", subId=""} = assign[i]||{};
       const absAmt = Math.abs(r.amount);
+      // „PayPal +30": statt der PayPal-Ausgabe eine Giro-Vormerkung für den
+      // erwarteten Einzug (~30 Tage später) anlegen. Die Ausgabe lebt damit auf
+      // dem Giro (Modell „Giro = Ausgabe"); der echte spätere Giro-Einzug wird
+      // per Vormerkungs-Verknüpfung zugeordnet. So zählt der Betrag nur einmal.
+      if(plus30.has(i)) {
+        const ppDate = plus30PpDate(i, r);          // spätere PayPal-Buchung
+        const giroDate = nextBankWorkday(ppDate);   // 1 Werktag danach
+        newTxs.push({
+          id: "pend-"+uid(),
+          date: giroDate,
+          totalAmount: absAmt,
+          desc: (r.desc||"").split(" · ")[0] + " (PayPal +30)",
+          note: [`PayPal-Buchung ${ppDate}`, r._detailNote, r.desc].filter(Boolean).join(" · ").slice(0,200),
+          pending: true,
+          accountId: plus30Acc,
+          splits: catId ? [{id:uid(), catId, subId, amount:absAmt}] : [],
+          _csvType: "expense",
+          _plus30: true,
+        });
+        // Kategorie-Regel trotzdem merken (gleicher Empfänger künftig auto-zugeordnet)
+        if(catId) {
+          const name = r.desc.split(" – ")[0].toLowerCase().trim();
+          const newRule = {catId,subId};
+          setRules(p=>({...p, ["name:"+name]:newRule, [r.fp]:newRule}));
+          setCsvRules(p=>({...p, ["name:"+name]:newRule, [r.fp]:newRule}));
+        }
+        return; // PayPal-Ausgabe NICHT zusätzlich anlegen
+      }
       const splits = catId ? [{id:uid(), catId, subId, amount:absAmt}] : [];
       const newId = "csv-"+uid();
       fpToNewId[r.fp] = newId;
@@ -1029,9 +1125,12 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                             </button>
                           </div>
                         ) : (
-                          <div style={{color:T.txt2,fontSize:metaFS,opacity:0.7}}>
-                            {r._internalLeg ? "→ aufs Giro ausgezahlt (siehe Auszahlung)" : "kein Giro-Gegenstück (Guthaben bleibt in PayPal)"}
-                          </div>
+                          <>
+                            <div style={{color:T.txt2,fontSize:metaFS,opacity:0.7}}>
+                              {r._internalLeg ? "→ aufs Giro ausgezahlt (siehe Auszahlung)" : "kein Giro-Gegenstück (Guthaben bleibt in PayPal)"}
+                            </div>
+                            {!r._internalLeg && renderPlus30(i, r)}
+                          </>
                         )}
                         {r._isRefund&&(
                           <div style={{display:"inline-flex",alignSelf:"flex-start",alignItems:"center",gap:5,
@@ -1270,6 +1369,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                           {isPos?"+ ":"− "}{Math.abs(r.amount).toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})} €
                         </div>
                       </div>
+                      {parsed.isPayPal && renderPlus30(origIdx, r)}
                       {showCatAssign&&(()=>{
                         const rowAccId = r._resolvedAccId || selAccId || accounts[0]?.id;
                         const rowAcc = accounts.find(a=>a.id===rowAccId);
@@ -1289,6 +1389,14 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                   );
                 })}
               </div>
+              {plus30.size>0&&(
+                <div style={{padding:"8px 16px 10px",flexShrink:0,borderTop:`1px solid ${T.bd}`,background:"rgba(245,166,35,0.08)"}}>
+                  <div style={{color:T.gold,fontSize:MFSl,fontWeight:700,marginBottom:6,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                    📅 {plus30.size} PayPal-{plus30.size===1?"Zahlung wird":"Zahlungen werden"} als Vormerkung auf dieses Konto gelegt:
+                  </div>
+                  <AccountChips accounts={accounts} value={plus30Acc} onChange={setPlus30AccId}/>
+                </div>
+              )}
               <div style={{padding:"12px 16px",flexShrink:0,borderTop:`1px solid ${T.bd}`,display:"flex",gap:8}}>
                 <button onClick={()=>setStep("input")}
                   style={{flex:1,padding:"12px",borderRadius:11,border:`1px solid ${T.bds}`,background:"transparent",color:T.txt2,fontSize:MFS,cursor:"pointer"}}>

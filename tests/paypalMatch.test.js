@@ -380,6 +380,32 @@ describe("dropPayPalCounterBookings", () => {
   });
 });
 
+// Re-Import einer überlappenden PayPal-CSV: die Ausgabe (−X) ist bereits
+// importiert (Duplikat), ihre interne Gegenbuchung (+X) aber nicht. Wird ZUERST
+// dedupliziert und DANN die Pipeline angewandt, bleibt die Gegenbuchung als
+// „Phantom-Einnahme" stehen (der frühere Bug: +5,99 erschien als Einnahme und
+// wurde an eine alte PayPal-Buchung 8 Tage entfernt fehl-gematcht). Richtig:
+// Pipeline ZUERST über alle Zeilen, Dedup ZULETZT.
+describe("PayPal Re-Import — keine Phantom-Einnahme aus Gegenbuchung", () => {
+  const rows = [
+    { amount: -5.99, isoDate: "2026-06-15", desc: "COMTRADA GmbH", _recipient: "COMTRADA GmbH", fp: "exp" },
+    { amount:  5.99, isoDate: "2026-06-15", desc: "Successful", fp: "cnt" },
+  ];
+  const isDup = r => r.fp === "exp"; // Ausgabe wurde bereits importiert
+  const pipeline = rs => reconcilePayPalLegs(detectPayPalRefunds(dropPayPalCounterBookings(enrichPayPalMerchants(rs))));
+
+  it("Bug-Reihenfolge (dedup zuerst) ließe ein Phantom +5,99 übrig", () => {
+    const wrong = pipeline(rows.filter(r=>!isDup(r)));
+    expect(wrong.some(r=>r.amount > 0)).toBe(true); // dokumentiert den alten Fehler
+  });
+
+  it("Fix-Reihenfolge (dedup zuletzt) hinterlässt keine Phantom-Einnahme", () => {
+    const right = pipeline(rows).filter(r=>!isDup(r));
+    expect(right.some(r=>r.amount > 0)).toBe(false);
+    expect(right.length).toBe(0); // Ausgabe = Dup, Gegenbuchung = Counter → beide weg
+  });
+});
+
 describe("enrichPayPalMerchants — PayPal +30", () => {
   const rows = () => [
     // Kauf (mit Händler) am 29.11.

@@ -1,5 +1,16 @@
 import { describe, it, expect } from "vitest";
-import { nextBankWorkday, isBankWorkday, parseGermanDate } from "../src/utils/date.js";
+import { nextBankWorkday, isBankWorkday, parseGermanDate, isoAddDays } from "../src/utils/date.js";
+
+describe("isoAddDays", () => {
+  it("addiert Kalendertage", () => {
+    expect(isoAddDays("2026-06-22", 30)).toBe("2026-07-22");
+    expect(isoAddDays("2026-01-15", 30)).toBe("2026-02-14");
+  });
+  it("rechnet über Monats- und Jahresgrenzen", () => {
+    expect(isoAddDays("2026-12-20", 30)).toBe("2027-01-19");
+    expect(isoAddDays("2024-02-28", 1)).toBe("2024-02-29"); // Schaltjahr
+  });
+});
 
 describe("parseGermanDate", () => {
   it("parst deutsches Format", () => {
