@@ -16,7 +16,7 @@ import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { txFingerprint, txFingerprintNorm } from "../../utils/tx.js";
-import { isoAddDays } from "../../utils/date.js";
+import { isoAddDays, nextBankWorkday } from "../../utils/date.js";
 
 function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const { cats, groups, txs, setTxs, accounts, csvRules, setCsvRules, startBalances, setStartBalances, setMasterOverride } = useContext(AppCtx);
@@ -145,8 +145,11 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const [linkDays, setLinkDays] = useState(35);
   const [autoGroup, setAutoGroup] = useState(false); // Automatisches Zusammenfassen
   // „PayPal +30": Zeilen-Indizes, die nicht als PayPal-Ausgabe, sondern als
-  // Giro-Vormerkung für den späteren Einzug (~30 Tage) importiert werden.
+  // Giro-Vormerkung für den späteren Einzug importiert werden. Pro Zeile lässt
+  // sich das spätere PayPal-Buchungsdatum wählen; die Giro-Vormerkung liegt
+  // 1 Werktag danach.
   const [plus30, setPlus30] = useState(() => new Set());
+  const [plus30Date, setPlus30Date] = useState({}); // rowIdx → spätere PayPal-Buchung (iso)
   // Zielkonto für diese Vormerkungen (wählbar; Default = Girokonto).
   const [plus30AccId, setPlus30AccId] = useState("");
   const defaultGiroAccId = useMemo(() =>
@@ -155,6 +158,45 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     || accounts[0]?.id || "acc-giro",
   [accounts]);
   const plus30Acc = plus30AccId || defaultGiroAccId;
+  // Spätere PayPal-Buchung einer Zeile (Default: Kaufdatum + 30 Tage).
+  const plus30PpDate = (i, r) => plus30Date[i] || isoAddDays(r.isoDate, 30);
+  // Giro-Vormerkungsdatum = 1 Werktag nach der späteren PayPal-Buchung.
+  const plus30GiroDate = (i, r) => nextBankWorkday(plus30PpDate(i, r));
+  const togglePlus30 = (i, r) => setPlus30(p => {
+    const n = new Set(p);
+    if(n.has(i)) { n.delete(i); }
+    else { n.add(i); setPlus30Date(d => (i in d) ? d : {...d, [i]: isoAddDays(r.isoDate, 30)}); }
+    return n;
+  });
+  // Schalter + Datumswahl für „erst später per Giro abgebucht" (PayPal +30).
+  // Als Funktion (nicht Komponente) eingebunden, damit das Datums-Input beim
+  // Tippen nicht neu gemountet wird (Fokus bleibt erhalten).
+  const renderPlus30 = (i, r) => {
+    const on = plus30.has(i);
+    const ppDate = plus30PpDate(i, r);
+    const giroDate = plus30GiroDate(i, r);
+    return (
+      <div style={{marginTop:4,display:"flex",flexDirection:"column",gap:5,alignItems:"flex-start"}}>
+        <button onClick={()=>togglePlus30(i, r)}
+          style={{display:"inline-flex",alignItems:"center",gap:5,
+            background:on?"rgba(245,166,35,0.18)":"transparent",
+            border:`1px solid ${on?T.gold:T.bds}`,borderRadius:7,padding:"3px 9px",
+            color:on?T.gold:T.txt2,fontSize:MFSl,fontWeight:on?700:600,cursor:"pointer",fontFamily:"inherit"}}>
+          📅 {on ? "Wird als Giro-Vormerkung gebucht" : "Erst später per Giro abgebucht? → vormerken"}
+        </button>
+        {on && (
+          <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:6,fontSize:MFSl,color:T.txt2}}>
+            <span>PayPal bucht am</span>
+            <input type="date" value={ppDate}
+              onChange={e=>{ if(e.target.value) setPlus30Date(d=>({...d,[i]:e.target.value})); }}
+              style={{background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bd}`,borderRadius:6,
+                padding:"2px 6px",color:T.txt,fontSize:MFSl,fontFamily:"inherit"}}/>
+            <span style={{color:T.gold,fontWeight:700}}>→ Giro-Vormerkung am {dshort(giroDate)} (1 Werktag danach)</span>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const [showAutoSugg, setShowAutoSugg] = useState(false);
   // Vollbild-Modus für das Vorschlags-Panel: blendet Konto-Kacheln + unsortierte
@@ -403,12 +445,14 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
       // dem Giro (Modell „Giro = Ausgabe"); der echte spätere Giro-Einzug wird
       // per Vormerkungs-Verknüpfung zugeordnet. So zählt der Betrag nur einmal.
       if(plus30.has(i)) {
+        const ppDate = plus30PpDate(i, r);          // spätere PayPal-Buchung
+        const giroDate = nextBankWorkday(ppDate);   // 1 Werktag danach
         newTxs.push({
           id: "pend-"+uid(),
-          date: isoAddDays(r.isoDate, 30),
+          date: giroDate,
           totalAmount: absAmt,
           desc: (r.desc||"").split(" · ")[0] + " (PayPal +30)",
-          note: [r._detailNote, r.desc].filter(Boolean).join(" · ").slice(0,200),
+          note: [`PayPal-Buchung ${ppDate}`, r._detailNote, r.desc].filter(Boolean).join(" · ").slice(0,200),
           pending: true,
           accountId: plus30Acc,
           splits: catId ? [{id:uid(), catId, subId, amount:absAmt}] : [],
@@ -1067,9 +1111,12 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                             </button>
                           </div>
                         ) : (
-                          <div style={{color:T.txt2,fontSize:metaFS,opacity:0.7}}>
-                            {r._internalLeg ? "→ aufs Giro ausgezahlt (siehe Auszahlung)" : "kein Giro-Gegenstück (Guthaben bleibt in PayPal)"}
-                          </div>
+                          <>
+                            <div style={{color:T.txt2,fontSize:metaFS,opacity:0.7}}>
+                              {r._internalLeg ? "→ aufs Giro ausgezahlt (siehe Auszahlung)" : "kein Giro-Gegenstück (Guthaben bleibt in PayPal)"}
+                            </div>
+                            {!r._internalLeg && renderPlus30(i, r)}
+                          </>
                         )}
                         {r._isRefund&&(
                           <div style={{display:"inline-flex",alignSelf:"flex-start",alignItems:"center",gap:5,
@@ -1308,20 +1355,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                           {isPos?"+ ":"− "}{Math.abs(r.amount).toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})} €
                         </div>
                       </div>
-                      {parsed.isPayPal && r.amount < 0 && (()=>{
-                        // „Bezahlen nach 30 Tagen": Kauf nicht als PayPal-Ausgabe buchen,
-                        // sondern als Giro-Vormerkung für den späteren Einzug (~30 Tage).
-                        const on = plus30.has(origIdx);
-                        return (
-                          <button onClick={()=>setPlus30(p=>{ const n=new Set(p); on?n.delete(origIdx):n.add(origIdx); return n; })}
-                            style={{marginBottom:showCatAssign?4:0,display:"inline-flex",alignItems:"center",gap:5,
-                              background:on?"rgba(245,166,35,0.18)":"transparent",
-                              border:`1px solid ${on?T.gold:T.bds}`,borderRadius:7,padding:"3px 9px",
-                              color:on?T.gold:T.txt2,fontSize:MFSl,fontWeight:on?700:600,cursor:"pointer",fontFamily:"inherit"}}>
-                            📅 {on ? `Giro-Vormerkung am ${isoAddDays(r.isoDate,30)}` : "+30 Tage: später per Giro einziehen"}
-                          </button>
-                        );
-                      })()}
+                      {parsed.isPayPal && renderPlus30(origIdx, r)}
                       {showCatAssign&&(()=>{
                         const rowAccId = r._resolvedAccId || selAccId || accounts[0]?.id;
                         const rowAcc = accounts.find(a=>a.id===rowAccId);
