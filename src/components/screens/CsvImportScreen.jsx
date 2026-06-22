@@ -219,6 +219,10 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     return hay.includes(q);
   };
   const showIncome = suggType==="einnahmen";
+  // Filter-Logik: ohne Auswahl (suggType==="") werden BEIDE Listen gezeigt.
+  const showExpenses   = suggType!=="einnahmen"; // "" oder "ausgaben"
+  const showIncomeList = suggType!=="ausgaben";  // "" oder "einnahmen"
+  const showBoth       = suggType==="";
   const shownSuggs = (()=>{
     const all = parsed?.autoSuggestions || [];
     const q = suggSearch.trim().toLowerCase();
@@ -896,11 +900,13 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                 <span style={{color:T.gold,fontSize:MFSl,fontWeight:700,display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0}}>
                   {Li("git-compare",13,T.gold)}
                   <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                    {showIncome ? `${incomeShown.length} Einnahmen` : `${parsed.autoSuggestions.length} Vorschläge${acceptedCount>0?` · ${acceptedCount} übernommen`:""}`}
+                    {suggType==="einnahmen" ? `${incomeShown.length} Einnahmen`
+                      : suggType==="ausgaben" ? `${shownSuggs.length} Ausgaben`
+                      : `${shownSuggs.length} Ausgaben · ${incomeShown.length} Einnahmen`}{acceptedCount>0&&showExpenses?` · ${acceptedCount} übernommen`:""}
                   </span>
                 </span>
                 {/* Sammel-Übernehmen (nur in der Vorschlags-/Match-Ansicht) */}
-                {!showIncome&&bulkCounts.hoch>0&&(
+                {showExpenses&&bulkCounts.hoch>0&&(
                   <button onClick={()=>acceptBulk(["hoch"])}
                     style={{flexShrink:0,display:"flex",alignItems:"center",gap:5,cursor:"pointer",
                       background:T.pos,border:`1px solid ${T.pos}`,borderRadius:8,padding:"5px 11px",
@@ -908,7 +914,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                     {Li("check",13,T.on_accent||"#0a0a0a")} Alle sicheren ({bulkCounts.hoch})
                   </button>
                 )}
-                {!showIncome&&bulkCounts.mittel>0&&(
+                {showExpenses&&bulkCounts.mittel>0&&(
                   <button onClick={()=>acceptBulk(["hoch","mittel"])}
                     style={{flexShrink:0,display:"flex",alignItems:"center",gap:5,cursor:"pointer",
                       background:"rgba(245,166,35,0.18)",border:`1px solid ${T.gold}`,borderRadius:8,padding:"5px 11px",
@@ -943,7 +949,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                         fontSize:autoSuggFull?14:MFSl,outline:"none",fontFamily:"inherit"}}/>
                     {suggSearch&&<span onClick={()=>setSuggSearch("")} style={{cursor:"pointer",color:T.txt2,display:"flex"}}>{Li("x",13,T.txt2)}</span>}
                   </div>
-                  {suggSearch&&<span style={{color:T.txt2,fontSize:MFSl,flexShrink:0}}>{(showIncome?incomeShown:shownSuggs).length} Treffer</span>}
+                  {suggSearch&&<span style={{color:T.txt2,fontSize:MFSl,flexShrink:0}}>{(suggType==="einnahmen"?incomeShown.length:suggType==="ausgaben"?shownSuggs.length:incomeShown.length+shownSuggs.length)} Treffer</span>}
                 </div>
                 {/* Filter-Chips: Typ (groß, Substantive) + Konfidenz (klein,
                     Adjektive). Erneutes Tippen wählt wieder ab — kein „alle"-Chip nötig. */}
@@ -959,18 +965,20 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                   {[["hoch",T.pos,"rgba(34,197,94,0.18)"],["mittel",T.gold,"rgba(245,166,35,0.18)"],
                     ["niedrig",T.txt2,"rgba(255,255,255,0.08)"]].map(([v,col,bg])=>{
                     const active=suggConf===v;
-                    return <button key={v} onClick={()=>setSuggConf(c=>c===v?"":v)} disabled={showIncome}
+                    return <button key={v} onClick={()=>setSuggConf(c=>c===v?"":v)} disabled={!showExpenses}
                       style={{padding:"4px 11px",borderRadius:10,border:`1px solid ${active?col:T.bd}`,
-                        background:active?bg:"transparent",color:active?col:T.txt2,opacity:showIncome?0.4:1,
-                        fontSize:autoSuggFull?13:MFSl,fontWeight:active?700:500,cursor:showIncome?"default":"pointer",fontFamily:"inherit"}}>
+                        background:active?bg:"transparent",color:active?col:T.txt2,opacity:!showExpenses?0.4:1,
+                        fontSize:autoSuggFull?13:MFSl,fontWeight:active?700:500,cursor:!showExpenses?"default":"pointer",fontFamily:"inherit"}}>
                       {v} ({confCounts[v]})</button>;
                   })}
                 </div>
               </div>
-              {/* Filter „Einnahmen": echte Einnahmen-Buchungen (ohne Giro-Match,
-                  da Einnahmen keine Giro-Belastung haben). */}
-              {showIncome&&(
-                <>
+              {/* Listen-Bereich. Ohne Filter (suggType==="") werden BEIDE Listen
+                  gezeigt — Ausgaben zuerst (order:1), Einnahmen darunter (order:2). */}
+              <div style={{display:"flex",flexDirection:"column"}}>
+              {showIncomeList&&(
+                <div style={{order:showBoth?2:1}}>
+                  {showBoth&&<div style={{color:T.pos,fontSize:MFSl,fontWeight:800,letterSpacing:"0.04em",textTransform:"uppercase",opacity:0.85,padding:"6px 2px 3px"}}>Einnahmen ({incomeShown.length})</div>}
                   {incomeShown.length===0&&(
                     <div style={{color:T.txt2,fontSize:MFSl,padding:"10px 2px"}}>Keine Einnahmen für die aktuelle Auswahl.</div>
                   )}
@@ -1066,14 +1074,17 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                       </div>
                     );
                   })}
-                </>
+                </div>
               )}
-              {!showIncome&&shownSuggs.length===0&&(
+              {showExpenses&&(
+              <div style={{order:1}}>
+                {showBoth&&<div style={{color:T.neg,fontSize:MFSl,fontWeight:800,letterSpacing:"0.04em",textTransform:"uppercase",opacity:0.85,padding:"6px 2px 3px"}}>Ausgaben ({shownSuggs.length})</div>}
+                {shownSuggs.length===0&&(
                 <div style={{color:T.txt2,fontSize:MFSl,padding:"10px 2px"}}>
                   Keine Vorschläge für die aktuelle Auswahl{suggSearch?` (Suche „${suggSearch}")`:""}.
                 </div>
               )}
-              {!showIncome&&shownSuggs.map((s,si)=>{
+              {shownSuggs.map((s,si)=>{
                 const r = parsed.newRows[s.rowIdx];
                 const confColor = s.confidence==="hoch"?T.pos:s.confidence==="mittel"?T.gold:T.txt2;
                 const accepted = (parsed.acceptedSuggs||[]).some(a=>a.rowIdx===s.rowIdx&&a.giroId===s.giroTx.id);
@@ -1135,6 +1146,9 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                   </div>
                 );
               })}
+              </div>
+              )}
+              </div>
             </div>
           )}
 
