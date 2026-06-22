@@ -10,6 +10,7 @@ import { Li } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
 import { exportEbForSync, importEbFromSync } from "../../utils/enableBankingStore.js";
 import { encryptJSON, decryptJSON, isEncrypted } from "../../utils/syncCrypto.js";
+import { dropTxsAndUnlink } from "../../utils/links.js";
 import { useEffect } from "react";
 
 function DataManagerDialog({onClose, onBack, mobileMode=false}) {
@@ -410,6 +411,10 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   // ── Löschen ─────────────────────────────────────────────────────────
   // Lösch-Filter: Datum-Range UND (wenn gesetzt) Konto-Match
   const inDelRange = (t) => t.date>=fromIso && t.date<=toIso && accMatch(t);
+  // Buchungen löschen UND verwaiste Verknüpfungen bereinigen (siehe utils/links):
+  // verbleibende Buchungen dürfen gelöschte nicht mehr referenzieren, sonst bleibt
+  // z.B. eine Giro-Lastschrift mit linkedIds auf eine gelöschte PayPal-Buchung
+  // „für immer verknüpft" und taucht im Import-Matching nie wieder auf.
   // Konto-Namen für Labels
   const delAccNames = [...delAccs].map(id => (accounts||[]).find(a=>a.id===id)?.name || id);
   // Löschen: gleiche Namen UND gleiche Reihenfolge wie der Export (ohne "Konten"
@@ -425,10 +430,10 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
      note:"Konten werden im Konten-Manager verwaltet. Löschst du dort ein Konto, müssen seine Buchungen zwingend einem anderen Konto zugewiesen werden — sonst hätten sie kein Konto. Genau das stellt der Konten-Manager sicher."},
     {key:"realTxs", label:"echte Buchungen", icon:"check-circle",
      count: filterTxs(txs.filter(t=>!t.pending)).length,
-     action:()=>setTxs(p=>p.filter(t=>t.pending||!inDelRange(t)))},
+     action:()=>setTxs(p=>dropTxsAndUnlink(p, t=>!t.pending && inDelRange(t)))},
     {key:"pendTxs", label:"Vormerkungen & Wiederkehrende", icon:"calendar",
      count: filterTxs(txs.filter(t=>t.pending)).length,
-     action:()=>setTxs(p=>p.filter(t=>!t.pending||!inDelRange(t)))},
+     action:()=>setTxs(p=>dropTxsAndUnlink(p, t=>t.pending && inDelRange(t)))},
     {key:"budgets", label:"Budgets", icon:"target",
      count: cntBudg, action:()=>setBudgets({})},
     {key:"yearData",label:"Monatsdaten", icon:"calendar",
