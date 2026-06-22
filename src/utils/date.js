@@ -11,6 +11,14 @@ function isoAddMonths(isoDate, months, lastOfMonth=false) {
   return `${newY}-${String(newMonth).padStart(2,"0")}-${String(newDay).padStart(2,"0")}`;
 }
 
+// Kalendertage addieren (UTC, damit kein Zeitzonen-Versatz). z.B. „+30 Tage".
+function isoAddDays(isoDate, days) {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  dt.setUTCDate(dt.getUTCDate() + days);
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth()+1).padStart(2,"0")}-${String(dt.getUTCDate()).padStart(2,"0")}`;
+}
+
 function parseGermanDate(s) {
   if(!s) return null;
   const t = s.trim();
@@ -74,4 +82,4 @@ function nextBankWorkday(isoDate) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
 
-export { isoAddMonths, parseGermanDate, isBankWorkday, nextBankWorkday };
+export { isoAddMonths, isoAddDays, parseGermanDate, isBankWorkday, nextBankWorkday };

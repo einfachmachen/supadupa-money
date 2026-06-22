@@ -16,6 +16,7 @@ import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { txFingerprint, txFingerprintNorm } from "../../utils/tx.js";
+import { isoAddDays } from "../../utils/date.js";
 
 function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const { cats, groups, txs, setTxs, accounts, csvRules, setCsvRules, startBalances, setStartBalances, setMasterOverride } = useContext(AppCtx);
@@ -143,6 +144,9 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const [linkToGiro, setLinkToGiro] = useState(false);
   const [linkDays, setLinkDays] = useState(35);
   const [autoGroup, setAutoGroup] = useState(false); // Automatisches Zusammenfassen
+  // „PayPal +30": Zeilen-Indizes, die nicht als PayPal-Ausgabe, sondern als
+  // Giro-Vormerkung für den späteren Einzug (~30 Tage) importiert werden.
+  const [plus30, setPlus30] = useState(() => new Set());
 
   const [showAutoSugg, setShowAutoSugg] = useState(false);
   // Vollbild-Modus für das Vorschlags-Panel: blendet Konto-Kacheln + unsortierte
@@ -386,6 +390,35 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     parsed.newRows.forEach((r,i) => {
       const {catId="", subId=""} = assign[i]||{};
       const absAmt = Math.abs(r.amount);
+      // „PayPal +30": statt der PayPal-Ausgabe eine Giro-Vormerkung für den
+      // erwarteten Einzug (~30 Tage später) anlegen. Die Ausgabe lebt damit auf
+      // dem Giro (Modell „Giro = Ausgabe"); der echte spätere Giro-Einzug wird
+      // per Vormerkungs-Verknüpfung zugeordnet. So zählt der Betrag nur einmal.
+      if(plus30.has(i)) {
+        const giroAccId = accounts.find(a=>a.id==="acc-giro")?.id
+          || accounts.find(a=>/giro/i.test(a.name||""))?.id
+          || accounts[0]?.id || "acc-giro";
+        newTxs.push({
+          id: "pend-"+uid(),
+          date: isoAddDays(r.isoDate, 30),
+          totalAmount: absAmt,
+          desc: (r.desc||"").split(" · ")[0] + " (PayPal +30)",
+          note: [r._detailNote, r.desc].filter(Boolean).join(" · ").slice(0,200),
+          pending: true,
+          accountId: giroAccId,
+          splits: catId ? [{id:uid(), catId, subId, amount:absAmt}] : [],
+          _csvType: "expense",
+          _plus30: true,
+        });
+        // Kategorie-Regel trotzdem merken (gleicher Empfänger künftig auto-zugeordnet)
+        if(catId) {
+          const name = r.desc.split(" – ")[0].toLowerCase().trim();
+          const newRule = {catId,subId};
+          setRules(p=>({...p, ["name:"+name]:newRule, [r.fp]:newRule}));
+          setCsvRules(p=>({...p, ["name:"+name]:newRule, [r.fp]:newRule}));
+        }
+        return; // PayPal-Ausgabe NICHT zusätzlich anlegen
+      }
       const splits = catId ? [{id:uid(), catId, subId, amount:absAmt}] : [];
       const newId = "csv-"+uid();
       fpToNewId[r.fp] = newId;
@@ -1270,6 +1303,20 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                           {isPos?"+ ":"− "}{Math.abs(r.amount).toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})} €
                         </div>
                       </div>
+                      {parsed.isPayPal && r.amount < 0 && (()=>{
+                        // „Bezahlen nach 30 Tagen": Kauf nicht als PayPal-Ausgabe buchen,
+                        // sondern als Giro-Vormerkung für den späteren Einzug (~30 Tage).
+                        const on = plus30.has(origIdx);
+                        return (
+                          <button onClick={()=>setPlus30(p=>{ const n=new Set(p); on?n.delete(origIdx):n.add(origIdx); return n; })}
+                            style={{marginBottom:showCatAssign?4:0,display:"inline-flex",alignItems:"center",gap:5,
+                              background:on?"rgba(245,166,35,0.18)":"transparent",
+                              border:`1px solid ${on?T.gold:T.bds}`,borderRadius:7,padding:"3px 9px",
+                              color:on?T.gold:T.txt2,fontSize:MFSl,fontWeight:on?700:600,cursor:"pointer",fontFamily:"inherit"}}>
+                            📅 {on ? `Giro-Vormerkung am ${isoAddDays(r.isoDate,30)}` : "+30 Tage: später per Giro einziehen"}
+                          </button>
+                        );
+                      })()}
                       {showCatAssign&&(()=>{
                         const rowAccId = r._resolvedAccId || selAccId || accounts[0]?.id;
                         const rowAcc = accounts.find(a=>a.id===rowAccId);
