@@ -347,29 +347,43 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const linkedGiroIds = new Set(
     txs.filter(t=>!t.pending && (t.linkedIds||[]).length>0).map(t=>t.id)
   );
+  // Giro-Kandidaten fürs PayPal-Matching: das Gegenstück einer PayPal-Buchung ist
+  // IMMER die Bank-Lastschrift auf dem Girokonto — NIE eine andere PayPal-Konto-
+  // Buchung. Bereits importierte PayPal-CSV-Buchungen (z.B. „COMTRADA …
+  // paypal@comtrada.de") sehen für isPayPalGiroTx wie eine PayPal-Lastschrift aus
+  // („paypal" im Text) und würden sonst beim Re-Import fälschlich als Treffer
+  // erscheinen. Daher Konten mit „PayPal" im Namen als Kandidaten ausschließen.
+  const giroCandidates = useMemo(() => {
+    const ppAcc = new Set((accounts||[]).filter(a=>/paypal/i.test(a.name||"")).map(a=>a.id));
+    if(!ppAcc.size) return txs;
+    return txs.filter(t => !ppAcc.has(t.accountId || "acc-giro"));
+  }, [txs, accounts]);
   // Nur für echte PayPal-CSVs. Bei einer Giro-/Bank-CSV darf der PayPal-Matcher
   // NICHT laufen — sonst werden reguläre Giro-Buchungen (Gehalt, Erstattungen …)
   // in der Vorschau fälschlich als „PayPal:" gelistet/abgeglichen.
   const computeAutoSuggestions = (newRows, isPayPal) =>
-    isPayPal ? assignPayPalLinks(newRows, txs, linkDays, {excludeGiroIds: linkedGiroIds}).suggestions : [];
+    isPayPal ? assignPayPalLinks(newRows, giroCandidates, linkDays, {excludeGiroIds: linkedGiroIds}).suggestions : [];
 
   // Gemeinsame Zeilen-Verarbeitung (Dup-Split, PayPal-Anreicherung +30,
   // Gegenbuchungs-Filter). Wird von applyParsed UND dem Kontowechsel-Effekt
   // genutzt, damit beide konsistent bleiben.
   const buildRows = (format, resolvedRows) => {
     const isDup = r => knownFps.has(r.fp) || knownFps.has(r._fpNorm);
-    const newRowsRaw = resolvedRows.filter(r=>!isDup(r));
     const dupRows = resolvedRows.filter(isDup);
     const isPayPalCsv = looksLikePayPalCsv(format, resolvedRows);
-    const enrichedRows = isPayPalCsv ? enrichPayPalMerchants(newRowsRaw) : newRowsRaw;
-    // PayPal: interne Gegenbuchungen entfernen, dann Rückerstattungen erkennen.
-    const filtered = isPayPalCsv ? dropPayPalCounterBookings(enrichedRows) : enrichedRows;
-    const refunds = isPayPalCsv ? detectPayPalRefunds(filtered) : filtered;
-    // Verwaiste Legs reparieren: wurde die zugehörige Auszahlung gefiltert,
-    // wird die Erstattung wieder normal zuordenbar (sonst „siehe Auszahlung"
-    // ohne Auszahlung + kein Giro-Match).
-    const newRows = isPayPalCsv ? reconcilePayPalLegs(refunds) : refunds;
-    return { newRows, dupRows, droppedCounter: enrichedRows.length - filtered.length, isPayPal: isPayPalCsv };
+    if(!isPayPalCsv) {
+      return { newRows: resolvedRows.filter(r=>!isDup(r)), dupRows, droppedCounter: 0, isPayPal: false };
+    }
+    // WICHTIG: Die PayPal-Pipeline läuft über ALLE Zeilen (auch bereits
+    // importierte) — erst DANACH werden Duplikate entfernt. Sonst überlebt die
+    // interne Gegenbuchung (+X) einer schon importierten Ausgabe (−X) als
+    // „Phantom-Einnahme", weil ihr Paarpartner vorher rausgefiltert wurde.
+    const enrichedRows = enrichPayPalMerchants(resolvedRows);
+    const filtered = dropPayPalCounterBookings(enrichedRows);
+    const refunds = detectPayPalRefunds(filtered);
+    const reconciled = reconcilePayPalLegs(refunds);
+    const newRows = reconciled.filter(r=>!isDup(r));
+    return { newRows, dupRows, droppedCounter: enrichedRows.length - filtered.length, isPayPal: true };
   };
 
   const doParse = () => {
@@ -428,7 +442,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     const acceptedGiroIds = new Set((parsed.acceptedSuggs||[]).map(a=>a.giroId));
     const autoByRow = {};
     if(linkToGiro) {
-      const {links} = assignPayPalLinks(parsed.newRows, txs, linkDays,
+      const {links} = assignPayPalLinks(parsed.newRows, giroCandidates, linkDays,
         {excludeRows: acceptedRows, excludeGiroIds: new Set([...acceptedGiroIds, ...linkedGiroIds])});
       links.forEach(l => { autoByRow[l.rowIdx] = l.giroTx; });
     }
