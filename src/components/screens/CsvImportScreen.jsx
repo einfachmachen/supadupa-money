@@ -17,6 +17,7 @@ import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { txFingerprint, txFingerprintNorm } from "../../utils/tx.js";
 import { isoAddDays, nextBankWorkday } from "../../utils/date.js";
+import { liveLinkedGiroIds } from "../../utils/links.js";
 
 function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const { cats, groups, txs, setTxs, accounts, csvRules, setCsvRules, startBalances, setStartBalances, setMasterOverride } = useContext(AppCtx);
@@ -344,9 +345,10 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   // Import), werden ausgeschlossen — beim Re-Import einer überlappenden
   // PayPal-CSV wären das sonst „Geister-Vorschläge" für längst verknüpfte
   // Buchungen (Nutzer denkt, es seien neue Treffer).
-  const linkedGiroIds = new Set(
-    txs.filter(t=>!t.pending && (t.linkedIds||[]).length>0).map(t=>t.id)
-  );
+  // Bereits verknüpfte Giro-Buchungen vom Matching ausschließen — aber nur, wenn
+  // die Verknüpfung noch LEBT (verwaiste Links nach dem Löschen ignorieren, sonst
+  // wären die Lastschriften für immer un-matchbar → kaum noch Vorschläge).
+  const linkedGiroIds = liveLinkedGiroIds(txs);
   // Giro-Kandidaten fürs PayPal-Matching: das Gegenstück einer PayPal-Buchung ist
   // IMMER die Bank-Lastschrift auf dem Girokonto — NIE eine andere PayPal-Konto-
   // Buchung. Bereits importierte PayPal-CSV-Buchungen (z.B. „COMTRADA …
