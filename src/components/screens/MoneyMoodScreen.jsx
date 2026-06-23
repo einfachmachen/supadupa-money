@@ -180,7 +180,7 @@ function MoneyMoodScreen() {
             {Li(row.icon || "folder", 18, accent)}
           </div>
           <button onClick={() => setDetail({ row, isSub: false, isIncome: row.isIncome })}
-            style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, textAlign: "left", background: "transparent", border: "none", cursor: "pointer", fontFamily: "inherit", padding: "8px 0" }}>
+            style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, textAlign: "left", background: "transparent", border: "none", cursor: "pointer", fontFamily: "inherit", padding: 0, minHeight: 30 }}>
             <span style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 20, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.name}</span>
             <Spark row={row} h={24} />
             <MoodDot {...mood} />
@@ -249,7 +249,7 @@ function MoneyMoodScreen() {
           Für {year} sind noch keine Buchungen/Budgets vorhanden.
         </div>
       ) : (
-        <div style={{ padding: "8px 10px 4px", display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ padding: "4px 10px", display: "flex", flexDirection: "column", gap: 2 }}>
           {sortedRows.map(renderCard)}
         </div>
       )}
@@ -354,13 +354,13 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
                   return (
                     <div key={i} style={{ borderRadius: 6, overflow: "hidden", background: open ? "rgba(255,255,255,0.04)" : "transparent", border: `1px solid ${open ? T.bd : "transparent"}` }}>
                       <button onClick={() => setOpenBk(open ? null : i)}
-                        style={{ position: "relative", width: "100%", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", borderRadius: 6, overflow: "hidden", padding: "6px 8px", display: "block" }}>
+                        style={{ position: "relative", width: "100%", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", borderRadius: 6, overflow: "hidden", padding: "9px 8px", display: "block" }}>
                         <div style={{ position: "absolute", inset: 0, width: `${(it.val / bkMax) * 100}%`, background: (isIncome ? T.pos : T.blue) + "22" }} />
                         <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8 }}>
                           {Li(open ? "chevron-down" : "chevron-right", 13, T.txt2)}
-                          <span style={{ flex: 1, minWidth: 0, textAlign: "left", color: T.txt, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
-                          <span style={{ color: T.txt2, fontSize: 10 }}>{it.dateStr}</span>
-                          <span style={{ color: T.txt, fontSize: 12, fontWeight: 600, fontFamily: NUM_FONT }}>{fmt(it.val)}</span>
+                          <span style={{ flex: 1, minWidth: 0, textAlign: "left", color: T.txt, fontSize: 12, lineHeight: 1.3, overflowWrap: "anywhere" }}>{it.name}</span>
+                          <span style={{ color: T.txt2, fontSize: 10, flexShrink: 0 }}>{it.dateStr}</span>
+                          <span style={{ color: T.txt, fontSize: 12, fontWeight: 600, fontFamily: NUM_FONT, flexShrink: 0 }}>{fmt(it.val)}</span>
                         </div>
                       </button>
                       {open && (
@@ -396,11 +396,11 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
                   const active = it.subId === selSub;
                   return (
                     <div key={i} onClick={() => setSelSub(it.subId)}
-                      style={{ position: "relative", borderRadius: 6, overflow: "hidden", padding: "5px 8px", cursor: "pointer", outline: active ? `1px solid ${T.gold}` : "none" }}>
+                      style={{ position: "relative", borderRadius: 6, overflow: "hidden", padding: "8px 8px", cursor: "pointer", outline: active ? `1px solid ${T.gold}` : "none" }}>
                       <div style={{ position: "absolute", inset: 0, width: `${(it.val / subMax) * 100}%`, background: (isIncome ? T.pos : T.blue) + "22" }} />
                       <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ flex: 1, minWidth: 0, color: active ? T.gold : T.txt, fontSize: 12, fontWeight: active ? 700 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
-                        <span style={{ color: T.txt, fontSize: 12, fontWeight: 600, fontFamily: NUM_FONT }}>{fmt(it.val)}</span>
+                        <span style={{ flex: 1, minWidth: 0, color: active ? T.gold : T.txt, fontSize: 12, fontWeight: active ? 700 : 400, lineHeight: 1.3, overflowWrap: "anywhere" }}>{it.name}</span>
+                        <span style={{ color: T.txt, fontSize: 12, fontWeight: 600, fontFamily: NUM_FONT, flexShrink: 0 }}>{fmt(it.val)}</span>
                         {Li("chevron-right", 13, active ? T.gold : T.txt2)}
                       </div>
                     </div>

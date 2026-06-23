@@ -2533,9 +2533,9 @@ Abbrechen = ${remoteName}-Stand laden`
   // ── Neue 5-Tab Navigation ─────────────────────────────────────────
   const NAV_TABS = [
     {id:"home",      label:"Home",     icon:"home"},
+    {id:"jahr",      label:"Trend",    icon:"activity"},
     {id:"monat",     label:"Monat",    icon:"calendar"},
     {id:"buchungen", label:"Buchungen",icon:"list"},
-    {id:"jahr",      label:"Jahr",     icon:"activity"},
   ];
   const activeNavTab =
     mainTab==="buchungen" ? "buchungen" :
