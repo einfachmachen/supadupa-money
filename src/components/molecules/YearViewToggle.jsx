@@ -8,7 +8,7 @@ import { Li } from "../../utils/icons.jsx";
 
 function YearViewToggle({ active }) {       // active: "jahr" | "mood"
   const { setSubTab } = useContext(AppCtx);
-  const opts = [["jahr", "Tabelle", "calendar-range"], ["mood", "Money Mood", "activity"]];
+  const opts = [["mood", "Money Mood", "activity"], ["jahr", "Jahr", "calendar-range"]];
   return (
     <div style={{ display: "flex", gap: 6, padding: "7px 10px", flexShrink: 0, borderBottom: `1px solid ${T.bd}`, background: T.bg }}>
       {opts.map(([id, lbl, ic]) => {

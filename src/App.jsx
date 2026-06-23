@@ -2535,7 +2535,7 @@ Abbrechen = ${remoteName}-Stand laden`
     {id:"home",      label:"Home",     icon:"home"},
     {id:"monat",     label:"Monat",    icon:"calendar"},
     {id:"buchungen", label:"Buchungen",icon:"list"},
-    {id:"jahr",      label:"Jahr",     icon:"calendar-range"},
+    {id:"jahr",      label:"Jahr",     icon:"activity"},
   ];
   const activeNavTab =
     mainTab==="buchungen" ? "buchungen" :
@@ -2604,7 +2604,7 @@ Abbrechen = ${remoteName}-Stand laden`
           if(t.id==="home")      { setMainTab("erfassen"); setSubTab("dashboard"); }
           else if(t.id==="monat")     { setMainTab("erfassen"); setSubTab("monat"); }
           else if(t.id==="buchungen") { setMainTab("buchungen"); }
-          else if(t.id==="jahr")      { setMainTab("erfassen"); setSubTab("jahr"); }
+          else if(t.id==="jahr")      { setMainTab("erfassen"); setSubTab("mood"); }
         };
 
         // ── Master-Button: Inline-Renderfunktion (keine Komponente, um Hook-Identität zu wahren) ──
