@@ -26,6 +26,7 @@ import { JahrScreen } from "./components/screens/JahrScreen.jsx";
 import { ManagementScreen } from "./components/screens/ManagementScreen.jsx";
 import { MatchingScreen } from "./components/screens/MatchingScreen.jsx";
 import { MonatScreen } from "./components/screens/MonatScreen.jsx";
+import { MoneyMoodScreen } from "./components/screens/MoneyMoodScreen.jsx";
 import { RecurringDetectionScreen } from "./components/screens/RecurringDetectionScreen.jsx";
 import { TransactionsScreen } from "./components/screens/TransactionsScreen.jsx";
 import { VormerkungHub } from "./components/screens/VormerkungHub.jsx";
@@ -2533,7 +2534,8 @@ Abbrechen = ${remoteName}-Stand laden`
   const activeNavTab =
     mainTab==="buchungen" ? "buchungen" :
     mainTab==="erfassen"&&subTab==="monat" ? "monat" :
-    mainTab==="erfassen"&&subTab==="jahr"  ? "jahr"  :
+    // „Money Mood" wird aus der Jahresansicht geöffnet → Jahr bleibt aktiv.
+    mainTab==="erfassen"&&(subTab==="jahr"||subTab==="mood") ? "jahr" :
     "home";
   const anyMobileModalOpen = showMobileVormerken||showMobileWiederkehrend||
     showMobilePicker||showMobileKategorien||showMobileBudget||
@@ -2573,6 +2575,7 @@ Abbrechen = ${remoteName}-Stand laden`
         )}
         {mainTab==="erfassen"&&subTab==="monat"    &&<ErrorBoundary name="MonatScreen"><MonatScreen/></ErrorBoundary>}
         {mainTab==="erfassen"&&subTab==="jahr"      &&<ErrorBoundary name="JahrScreen"><JahrScreen forceSingle={false}/></ErrorBoundary>}
+        {mainTab==="erfassen"&&subTab==="mood"      &&<ErrorBoundary name="MoneyMoodScreen"><MoneyMoodScreen/></ErrorBoundary>}
         {mainTab==="buchungen"                      &&<ErrorBoundary name="TransactionsScreen"><TransactionsScreen/></ErrorBoundary>}
         {mainTab==="struktur"                       &&<ManagementScreen activeTab={activeStructurTab}/>}
 
