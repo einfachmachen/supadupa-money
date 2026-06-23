@@ -557,6 +557,36 @@ function DashboardScreenV2() {
     const _todayS=new Date(),_todayYS=_todayS.getFullYear(),_todayMS=_todayS.getMonth(),_todayDS=_todayS.getDate();
     const _isCurS=year===_todayYS&&month===_todayMS,_isPastS=year<_todayYS||(year===_todayYS&&month<_todayMS);
     const _lastDayS=new Date(year,month+1,0).getDate(),_mitteAbg=_isPastS||(_isCurS&&_todayDS>14),_endeAbg=_isPastS||(_isCurS&&_todayDS>=_lastDayS);
+    // Summen-Drilldowns (Einnahmen/Ausgaben/VM/unkat) live aus dem AKTUELLEN Monat
+    // auflösen — so wandert das geöffnete Modal beim Monatswechsel mit, statt eine
+    // beim Öffnen eingefrorene Buchungsliste zu zeigen.
+    const _drillH2 = t => { const d=new Date(t.date); return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()<=14; };
+    const resolveDrillList = (dd) => {
+      if(!dd?.kind) return dd?.txList || [];
+      const inM   = arr => _mitteAbg ? [] : arr.filter(_drillH2);
+      const pendM = arr => _mitteAbg ? [] : arr.filter(t=>_drillH2(t)&&(!t._budgetSubId||t._budgetSubId.endsWith("_mitte")));
+      switch(dd.kind){
+        case "in":       return dd.isMitte ? dashRealIn.filter(_drillH2)  : dashRealIn;
+        case "out":      return dd.isMitte ? dashRealOut.filter(_drillH2) : dashRealOut;
+        case "uncatIn":  return dd.isMitte ? inM(dashUIn)  : dashUIn;
+        case "uncatOut": return dd.isMitte ? inM(dashUOut) : dashUOut;
+        case "pendIn":   return dd.isMitte ? pendM(pTxsIn)  : pTxsIn;
+        case "pendOut":  return dd.isMitte ? pendM(pTxsOut) : pTxsOut;
+        default:         return dd.txList || [];
+      }
+    };
+    const resolveDrillTotal = (dd, list) =>
+      !dd?.kind || dd.kind.startsWith("uncat") ? (dd?.kind ? null : dd?.total)
+        : dd.isPending ? list.reduce((s,t)=>s+pendVmAmt(t),0)
+        : list.reduce((s,t)=>s+Math.abs(t.totalAmount||0),0);
+    const dashDrillList  = dashDrill ? resolveDrillList(dashDrill) : [];
+    const dashDrillTotal = dashDrill ? resolveDrillTotal(dashDrill, dashDrillList) : null;
+    // Eingefrorene (nicht-reaktive) Drilldowns beim Monatswechsel schließen, damit
+    // keine veralteten Buchungen stehen bleiben. Reaktive (kind/cat) wandern mit.
+    React.useEffect(()=>{
+      if(dashDrill && !dashDrill.kind && !dashDrill.cat) setDashDrill(null);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [year, month]);
     const _calcInc = (maxDay, onlyReal=false) => {
       const isMC = maxDay===14;
       // PERFORMANCE-FIX: nutzt _txsInMonthCat statt globalem txs.filter
@@ -783,12 +813,12 @@ function DashboardScreenV2() {
               const uInEv    = _sum(_uIn),       uOutEv   = _sum(_uOut);
 
               // Drill-Handler analog V1
-              const drillBuchIn  = (isMitte)=>{const l=isMitte?_realInM :_realIn; setDashDrill({label:"Einnahmen"+(isMitte?" bis 14.":""),txList:l,isIncome:true, uncatCount:(isMitte?_uInM2:_uIn).length,cat:null,total:_sum(l)});setDashSearch("");};
-              const drillBuchOut = (isMitte)=>{const l=isMitte?_realOutM:_realOut;setDashDrill({label:"Ausgaben" +(isMitte?" bis 14.":""),txList:l,isIncome:false,uncatCount:(isMitte?_uOutM2:_uOut).length,cat:null,total:_sum(l)});setDashSearch("");};
-              const drillPendIn  = (isMitte)=>{const l=isMitte?_pTxsInM :pTxsIn; setDashDrill({label:"Einnahmen \u2013 VM"+(isMitte?" bis 14.":""),txList:l,isIncome:true, uncatCount:0,cat:null,total:l.reduce((s,t)=>s+pendVmAmt(t),0),isPending:true});setDashSearch("");};
-              const drillPendOut = (isMitte)=>{const l=isMitte?_pTxsOutM:pTxsOut;setDashDrill({label:"Ausgaben \u2013 VM" +(isMitte?" bis 14.":""),txList:l,isIncome:false,uncatCount:0,cat:null,total:l.reduce((s,t)=>s+pendVmAmt(t),0),isPending:true});setDashSearch("");};
-              const drillUncatIn = (isMitte)=>{const l=isMitte?_uInM2 :_uIn; setDashDrill({label:"Einnahmen \u2013 unkat."+(isMitte?" bis 14.":""),txList:l,isIncome:true, uncatCount:l.length,cat:null,total:null});setDashSearch("");};
-              const drillUncatOut= (isMitte)=>{const l=isMitte?_uOutM2:_uOut;setDashDrill({label:"Ausgaben \u2013 unkat." +(isMitte?" bis 14.":""),txList:l,isIncome:false,uncatCount:l.length,cat:null,total:null});setDashSearch("");};
+              const drillBuchIn  = (isMitte)=>{setDashDrill({kind:"in",      isMitte,label:"Einnahmen"+(isMitte?" bis 14.":""),       isIncome:true, cat:null});setDashSearch("");};
+              const drillBuchOut = (isMitte)=>{setDashDrill({kind:"out",     isMitte,label:"Ausgaben" +(isMitte?" bis 14.":""),       isIncome:false,cat:null});setDashSearch("");};
+              const drillPendIn  = (isMitte)=>{setDashDrill({kind:"pendIn",  isMitte,label:"Einnahmen \u2013 VM"+(isMitte?" bis 14.":""),isIncome:true, cat:null,isPending:true});setDashSearch("");};
+              const drillPendOut = (isMitte)=>{setDashDrill({kind:"pendOut", isMitte,label:"Ausgaben \u2013 VM" +(isMitte?" bis 14.":""),isIncome:false,cat:null,isPending:true});setDashSearch("");};
+              const drillUncatIn = (isMitte)=>{setDashDrill({kind:"uncatIn", isMitte,label:"Einnahmen \u2013 unkat."+(isMitte?" bis 14.":""),isIncome:true, cat:null});setDashSearch("");};
+              const drillUncatOut= (isMitte)=>{setDashDrill({kind:"uncatOut",isMitte,label:"Ausgaben \u2013 unkat." +(isMitte?" bis 14.":""),isIncome:false,cat:null});setDashSearch("");};
 
               return (
                 <SaldoHeroV2 year={year} month={month}
@@ -1380,9 +1410,9 @@ function DashboardScreenV2() {
                     {dashDrill.cat ? (()=>{
                       const live = txs.filter(t=>{const d=new Date(t.date);return d.getFullYear()===year&&d.getMonth()===month&&(t.splits||[]).some(sp=>sp.catId===dashDrill.cat.id);});
                       return <span>{live.length} Buchung{live.length!==1?"en":""}</span>;
-                    })() : <span>{(dashDrill.txList||[]).length} Buchung{(dashDrill.txList||[]).length!==1?"en":""}</span>}
-                    {dashDrill.total!=null&&<span style={{color:dashDrill.isIncome?T.pos:T.neg,fontWeight:700,fontSize:15}}>
-                      {fmt(dashDrill.total)}
+                    })() : <span>{dashDrillList.length} Buchung{dashDrillList.length!==1?"en":""}</span>}
+                    {dashDrillTotal!=null&&<span style={{color:dashDrill.isIncome?T.pos:T.neg,fontWeight:700,fontSize:15}}>
+                      {fmt(dashDrillTotal)}
                     </span>}
                   </div>
                 </div>
@@ -1673,7 +1703,7 @@ function DashboardScreenV2() {
                     ...txs.filter(t=>{const d=new Date(t.date);return !t.pending&&!t._linkedTo&&d.getFullYear()===year&&d.getMonth()===month&&(t.splits||[]).some(sp=>sp.catId===dashDrill.cat.id);}),
                     ...txs.filter(t=>{const d=new Date(t.date);return t.pending&&!t._budgetSubId&&d.getFullYear()===year&&d.getMonth()===month&&(t.splits||[]).some(sp=>sp.catId===dashDrill.cat.id);}),
                   ].sort(drillSort)
-                  : [...(dashDrill.txList||[]).map(t=>txs.find(x=>x.id===t.id)||t)]
+                  : [...dashDrillList.map(t=>txs.find(x=>x.id===t.id)||t)]
                       .filter(t=>!(dashDrill._subDrillNoBudget&&t.pending&&t._budgetSubId))
                       .sort((a,b)=>{const da=a.date||"",db=b.date||"";return db.localeCompare(da);})
                   ).filter(t=>{
