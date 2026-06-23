@@ -1226,7 +1226,10 @@ Abbrechen = ${remoteName}-Stand laden`
     const dy = e.changedTouches[0].clientY - t0y.current;
     // Nur auslösen wenn eindeutig horizontal (dx > dy * 1.5) und Mindestdistanz
     if(Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-      if(dx<0) { setMonth(m=>{ if(m<11)return m+1; setYear(y=>y+1); return 0; }); }
+      if(mainTab==="erfassen" && subTab==="mood") {
+        // Money Mood: horizontal wischt das Jahr.
+        setYear(y => dx<0 ? y+1 : y-1);
+      } else if(dx<0) { setMonth(m=>{ if(m<11)return m+1; setYear(y=>y+1); return 0; }); }
       else     { setMonth(m=>{ if(m>0) return m-1; setYear(y=>y-1); return 11; }); }
     }
     t0.current = null; t0y.current = null;
@@ -2415,6 +2418,9 @@ Abbrechen = ${remoteName}-Stand laden`
     while(m>11) { m-=12; y++; }
     setMonth(m); setYear(y);
   };
+  // In der Money-Mood-Ansicht schaltet die Wisch-Geste das Jahr statt des Monats.
+  const onMoodScreen = mainTab==="erfassen" && subTab==="mood";
+  const stepPeriod = (delta) => { if(onMoodScreen) setYear(y=>y+delta); else stepMonth(delta); };
   const jumpToToday = () => {
     const t = new Date();
     setMonth(t.getMonth()); setYear(t.getFullYear());
@@ -2823,8 +2829,8 @@ Abbrechen = ${remoteName}-Stand laden`
             }
             if(axis === "x" && Math.abs(dx) > DRAG_THRESHOLD) {
               ref.consumed = true;
-              if(dx < 0) stepMonth(-1);
-              else       stepMonth(1);
+              if(dx < 0) stepPeriod(-1);
+              else       stepPeriod(1);
               return;
             }
             // Tap (ohne nennenswerte Bewegung) im GROSSEN Zustand:
@@ -2910,13 +2916,13 @@ Abbrechen = ${remoteName}-Stand laden`
                   touchAction:"none",userSelect:"none",cursor:"pointer",
                   WebkitTapHighlightColor:"transparent",padding:0,
                   fontFamily:"inherit",lineHeight:1}}>
-                {_dayStr && (
+                {_dayStr && !onMoodScreen && (
                   <div style={{fontSize:24,fontWeight:800,color:fg,lineHeight:1,pointerEvents:"none"}}>
                     {_dayStr}
                   </div>
                 )}
-                <div style={{fontSize:13,fontWeight:800,color:fg,letterSpacing:-0.3,whiteSpace:"nowrap",pointerEvents:"none"}}>
-                  {monthNames[month]} {year}
+                <div style={{fontSize:onMoodScreen?20:13,fontWeight:800,color:fg,letterSpacing:-0.3,whiteSpace:"nowrap",pointerEvents:"none"}}>
+                  {onMoodScreen ? year : `${monthNames[month]} ${year}`}
                 </div>
                 <div style={{fontSize:8,fontWeight:700,color:fg,opacity:0.75,letterSpacing:0.6,marginTop:2,pointerEvents:"none"}}>
                   WISCHEN
