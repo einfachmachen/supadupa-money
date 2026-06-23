@@ -14,7 +14,7 @@
 
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
-import { theme as T } from "../../theme/activeTheme.js";
+import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { MONTHS_S, MONTHS_F } from "../../utils/constants.js";
 import { fmt, pn, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
@@ -44,6 +44,12 @@ function MoneyMoodScreen() {
   const { cats, groups, txs, year, getActualSum, getBudgetForMonth, getAcc, getTotalIncome, getTotalExpense } = useContext(AppCtx);
   const [openCat, setOpenCat] = useState(null);   // aufgeklappte Hauptkategorie
   const [detail, setDetail] = useState(null);     // { row, isSub, isIncome }
+  const [heroOpen, setHeroOpen] = useState(false);          // Hero-Details auf/zu
+  const [catSortMode, setCatSortMode] = useState("mood");   // custom | desc | asc | mood
+  // Akzent wie +Button/Kontostand im Hero (rote Spark-Balken im eingeklappten Modus).
+  const plusAccent = T.themeName === "terminal" ? T.pos : T.blue;
+  const isLight = isLightTheme();
+  const cardBg = T.surf || (isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)");
 
   const now = new Date();
   const nowY = now.getFullYear(), nowM = now.getMonth();
@@ -137,87 +143,114 @@ function MoneyMoodScreen() {
     return best;
   };
 
-  // ── Mini-Sparkline: 12 ampelgefärbte Balken, Höhe = relative Größe ──
+  // ── Mini-Sparkline: 12 Balken, Höhe = relative Größe ──
+  // Hero ausgeklappt → volle Ampelfarben. Eingeklappt (Anfangsansicht) → ruhig
+  // weiß wie im Dashboard, rote Monate in der +Button/Kontostand-Akzentfarbe.
   const Spark = ({ row, h = 24 }) => {
     const maxV = Math.max(1, ...row.actual);
     // Schmaler + rechtsbündig → Sparkline beginnt weiter rechts, einheitliche Spalte.
     return (
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "flex-end", gap: 1, height: h, width: 60, marginLeft: 16, flexShrink: 0 }}>
         {row.actual.map((v, mi) => {
-          const { c } = monthMood(row, mi);
+          const m = monthMood(row, mi);
+          const barC = heroOpen ? m.c : (m.sev >= 2 ? plusAccent : T.txt);
           const bh = Math.max(2, Math.round((v / maxV) * h));
           return <div key={mi} title={`${MONTHS_S[mi]}: ${fmt(v)}`}
-            style={{ width: 4, height: bh, background: v > 0 ? c : T.bd, opacity: v > 0 ? (mi === recentIdx ? 1 : 0.9) : 0.18, borderRadius: 1 }} />;
+            style={{ width: 4, height: bh, background: v > 0 ? barC : T.bd, opacity: v > 0 ? (mi === recentIdx ? 1 : 0.9) : 0.18, borderRadius: 1 }} />;
         })}
       </div>
     );
   };
 
-  const Row = ({ row, sub }) => {
-    const { c, sev } = rowMood(row);
+  const MoodDot = ({ c, sev }) => (
+    <div style={{ width: 9, height: 9, borderRadius: "50%", background: sev < 0 ? "transparent" : c, border: sev < 0 ? `1px solid ${T.bd}` : "none", flexShrink: 0 }} />
+  );
+
+  // ── Kategorie-Karte wie im Dashboard (kombinierte Liste, Einnahmen + Ausgaben) ──
+  const renderCard = (row) => {
+    const mood = rowMood(row);
     const accent = row.color || (row.isIncome ? T.pos : T.neg);
+    const subs = (row.subs || []).filter(s => s.actual.some(v => v > 0) || s.budget.some(v => v > 0));
+    const open = openCat === row.id;
     return (
-      <button onClick={() => setDetail({ row, isSub: !!sub, isIncome: row.isIncome })}
-        style={{
-          display: "flex", alignItems: "center", gap: 9, width: "100%", textAlign: "left",
-          padding: sub ? "6px 14px 6px 22px" : "8px 14px", background: "transparent",
-          border: "none", borderBottom: `1px solid ${T.bd}`, cursor: "pointer", fontFamily: "inherit",
-        }}>
-        {/* Kategorie-Symbol wie im Dashboard (nur Hauptkategorien) */}
-        {!sub && (
+      <div key={row.id} style={{ background: cardBg, border: `1px solid ${T.bd}`, borderRadius: 10, padding: "4px 10px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {/* Icon-Kästchen in Kategoriefarbe wie im Dashboard */}
           <div style={{ width: 30, height: 30, borderRadius: 8, background: accent + "22", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             {Li(row.icon || "folder", 18, accent)}
           </div>
-        )}
-        <span style={{ flex: 1, minWidth: 0, color: sub ? T.txt2 : T.txt, fontSize: sub ? 15 : 20, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {row.name}
-        </span>
-        <Spark row={row} h={sub ? 18 : 24} />
-        <div style={{ width: 9, height: 9, borderRadius: "50%", background: sev < 0 ? "transparent" : c, border: sev < 0 ? `1px solid ${T.bd}` : "none", flexShrink: 0 }} />
-      </button>
-    );
-  };
-
-  const renderBlock = (label, rows, color) => {
-    if (!rows.length) return null;
-    const sorted = [...rows].sort((a, b) => rowMood(b).sev - rowMood(a).sev);
-    return (
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ color, fontSize: 11, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", padding: "4px 14px 5px", opacity: 0.85 }}>{label}</div>
-        {sorted.map(cat => (
-          <div key={cat.id}>
-            <div style={{ display: "flex", alignItems: "stretch" }}>
-              <div style={{ flex: 1, minWidth: 0 }}><Row row={cat} /></div>
-              {cat.subs.length > 0 && (
-                <button onClick={() => setOpenCat(o => o === cat.id ? null : cat.id)}
-                  style={{ flexShrink: 0, width: 38, background: "transparent", border: "none", borderBottom: `1px solid ${T.bd}`, cursor: "pointer", color: T.txt2 }}>
-                  {Li(openCat === cat.id ? "chevron-up" : "chevron-down", 15, T.txt2)}
-                </button>
-              )}
-            </div>
-            {openCat === cat.id && cat.subs
-              .filter(s => s.actual.some(v => v > 0) || s.budget.some(v => v > 0))
-              .map(s => <Row key={s.id} row={{ ...s, isIncome: cat.isIncome }} sub />)}
-          </div>
-        ))}
+          <button onClick={() => setDetail({ row, isSub: false, isIncome: row.isIncome })}
+            style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, textAlign: "left", background: "transparent", border: "none", cursor: "pointer", fontFamily: "inherit", padding: "8px 0" }}>
+            <span style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 20, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.name}</span>
+            <Spark row={row} h={24} />
+            <MoodDot {...mood} />
+          </button>
+          {subs.length > 0 && (
+            <button onClick={() => setOpenCat(o => o === row.id ? null : row.id)}
+              style={{ flexShrink: 0, width: 30, height: 30, background: "transparent", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {Li(open ? "chevron-up" : "chevron-down", 15, T.txt2)}
+            </button>
+          )}
+        </div>
+        {open && subs.map(s => {
+          const srow = { ...s, isIncome: row.isIncome };
+          const sm = rowMood(srow);
+          return (
+            <button key={s.id} onClick={() => setDetail({ row: srow, isSub: true, isIncome: row.isIncome })}
+              style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", textAlign: "left", padding: "6px 0 6px 38px", background: "transparent", border: "none", borderTop: `1px solid ${T.bd}`, cursor: "pointer", fontFamily: "inherit" }}>
+              <span style={{ flex: 1, minWidth: 0, color: T.txt2, fontSize: 15, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.name}</span>
+              <Spark row={srow} h={18} />
+              <MoodDot {...sm} />
+            </button>
+          );
+        })}
       </div>
     );
   };
 
-  return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto", background: T.bg }}>
-      <YearSectionHeader active="mood" />
+  // Kombinierte, durchsortierbare Liste (Einnahmen + Ausgaben), Modi wie im Dashboard
+  // plus „Auffällig" (rötester/auffälligster Monat zuerst).
+  const yearTotal = (row) => row.actual.reduce((s, v) => s + v, 0);
+  const allRows = [...blocks.income, ...blocks.expense];
+  const sortedRows = (() => {
+    const arr = [...allRows];
+    if (catSortMode === "desc") arr.sort((a, b) => yearTotal(b) - yearTotal(a));
+    else if (catSortMode === "asc") arr.sort((a, b) => yearTotal(a) - yearTotal(b));
+    else if (catSortMode === "mood") arr.sort((a, b) => rowMood(b).sev - rowMood(a).sev);
+    return arr;   // "custom" → natürliche Reihenfolge (Dashboard-/cats-Order)
+  })();
 
-      <div style={{ color: T.txt2, fontSize: 11, padding: "8px 14px 6px", lineHeight: 1.45 }}>
+  // Sortier-Buttons (wie Dashboard) + Farb-Legende — beides nur im Hero-Ausklappmodus.
+  const headerExtras = (
+    <>
+      <div style={{ padding: "6px 12px 2px", display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {[["custom", "✎ Eigene"], ["desc", "↓"], ["asc", "↑"], ["mood", "Auffällig"]].map(([mode, lbl]) => (
+          <button key={mode} onClick={() => setCatSortMode(mode)}
+            style={{ background: catSortMode === mode ? T.blue : "transparent", color: catSortMode === mode ? (T.on_accent || "#000") : T.txt2, border: `1px solid ${catSortMode === mode ? T.blue : T.bd}`, borderRadius: 14, padding: "3px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+            {lbl}
+          </button>
+        ))}
+      </div>
+      <div style={{ color: T.txt2, fontSize: 11, padding: "4px 14px 6px", lineHeight: 1.45 }}>
         <b style={{ color: T.gold }}>Gelb</b>/<b style={{ color: T.neg }}>rot</b> nur in Monaten, in denen insgesamt mehr aus- als einging –
         {" "}und diese Kategorie auffällig dazu beitrug. Sonst <b style={{ color: T.pos }}>grün</b>.
       </div>
+    </>
+  );
 
-      {renderBlock("Ausgaben", blocks.expense, T.neg)}
-      {renderBlock("Einnahmen", blocks.income, T.pos)}
-      {blocks.expense.length === 0 && blocks.income.length === 0 && (
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto", background: T.bg }}>
+      <YearSectionHeader active="mood" detailsOpen={heroOpen} setDetailsOpen={setHeroOpen}>
+        {headerExtras}
+      </YearSectionHeader>
+
+      {sortedRows.length === 0 ? (
         <div style={{ color: T.txt2, fontSize: 13, padding: "24px 16px", textAlign: "center" }}>
           Für {year} sind noch keine Buchungen/Budgets vorhanden.
+        </div>
+      ) : (
+        <div style={{ padding: "8px 10px 4px", display: "flex", flexDirection: "column", gap: 6 }}>
+          {sortedRows.map(renderCard)}
         </div>
       )}
 
