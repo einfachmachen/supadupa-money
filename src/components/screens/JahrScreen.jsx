@@ -10,6 +10,7 @@ import { BASE_ROWS, CUR_YEAR, MONTHS_F, MONTHS_S } from "../../utils/constants.j
 import { drillSort, fmt, pn, sumAmounts, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { saldoAt, saldoMitte, saldoEnde } from "../../utils/saldo.js";
+import { YearViewToggle } from "../molecules/YearViewToggle.jsx";
 
 function JahrScreen({forceSingle=false}) {
   const { cats,setCats,groups,setGroups,txs,setTxs,accounts,setAccounts,
@@ -356,6 +357,7 @@ function JahrScreen({forceSingle=false}) {
 
     return (
       <div style={{flex:1,minHeight:0,display:"flex",flexDirection:"column",background:T.bg,color:T.txt,position:"relative",overflow:"hidden"}}>
+        <YearViewToggle active="jahr"/>
 
         {/* Popup editor */}
         {popup&&(
