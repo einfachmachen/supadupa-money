@@ -326,10 +326,6 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
       <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxHeight: "88vh", overflowY: "auto", background: T.surf || T.bg, borderTopLeftRadius: 18, borderTopRightRadius: 18, borderTop: `1px solid ${T.bd}`, padding: "14px 16px 0", paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
           <span style={{ flex: 1, color: T.txt, fontSize: 17, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
-          {/* Sichtbarer Build-Marker zur eindeutigen Versionsprüfung (temporär). */}
-          <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, color: "#000", background: "#AACC00", borderRadius: 6, padding: "2px 6px" }}>
-            BUILD {(typeof __BUILD_ID__ !== "undefined" ? String(__BUILD_ID__) : "dev").slice(-4)}
-          </span>
           <button onClick={onClose} style={{ ...navBtn, width: 34, height: 34 }}>{Li("x", 16, T.txt2)}</button>
         </div>
 
