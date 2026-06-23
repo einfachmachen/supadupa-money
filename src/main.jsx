@@ -7,6 +7,7 @@ import {
   migrateLegacyLocalStorage,
 } from "./state/persistence.js";
 import { kvStore } from "./utils/kvStore.js";
+import { startAutoUpdate } from "./utils/autoUpdate.js";
 
 import "./theme/css/base.css";
 import "./theme/css/themes.css";
@@ -52,4 +53,7 @@ kvStore.init().finally(() => {
 
   const root = ReactDOM.createRoot(document.getElementById("root"));
   root.render(<SupaDupaMoney />);
+
+  // Auf neue Deploys prüfen und die App ggf. automatisch aktualisieren.
+  startAutoUpdate();
 });
