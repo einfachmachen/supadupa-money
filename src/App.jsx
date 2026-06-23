@@ -138,11 +138,13 @@ export default function SupaDupaMoney() {
   // Plus-Button: arretiert (höhere Position + 1,5× Größe) ja/nein
   // NICHT persistiert — beim App-Start immer false (Bottom-Bar-Position)
   const [plusArretiert, setPlusArretiert] = useState(false);
-  // True, solange der Money-Mood/Trend-Drilldown offen ist → + Button ausblenden,
-  // damit er die Monatsbalken unten nicht verdeckt (Event aus MoneyMoodScreen).
+  // True, solange der Money-Mood/Trend-Drilldown offen ist. Dort wird der + Button
+  // vergrößert angezeigt und ist frei vertikal verschiebbar (drillBtnY); Links/
+  // Rechts-Wisch schaltet weiter das Jahr. Standard-Y bei jedem Öffnen.
   const [moodDrillOpen, setMoodDrillOpen] = useState(false);
+  const [drillBtnY, setDrillBtnY] = useState(-260);
   useEffect(() => {
-    const h = e => setMoodDrillOpen(!!e.detail);
+    const h = e => { setMoodDrillOpen(!!e.detail); if (e.detail) setDrillBtnY(-260); };
     window.addEventListener("sdm-drill", h);
     return () => window.removeEventListener("sdm-drill", h);
   }, []);
@@ -2637,12 +2639,12 @@ Abbrechen = ${remoteName}-Stand laden`
           const VISUAL_LIMIT = 15;     // Joystick darf max so weit wandern
           const HOLD_MS = 600;         // wie lange in einer Richtung halten für Edge-Jump
           const DOUBLE_TAP_MS = 350;   // Fenster für Doppel-Tap (vergrößern bzw. jumpToToday)
-          // Plus-Button-Rest-Position: Bottom-Bar oder arretiert (80px höher, 1,5× größer).
-          // Im Trend-Drilldown nach oben geschoben, damit er die Monatsbalken NICHT
-          // verdeckt, aber per Links/Rechts-Wisch weiter das Jahr umschaltet.
-          const _restYBase = (plusArretiert ? -94 : -14) + (moodDrillOpen ? -270 : 0);
-          const _restScale = moodDrillOpen ? 0.78 : (plusArretiert ? 1.5 : 1);
-          const restingTransform = `translate(0px, ${_restYBase}px) scale(${_restScale})`;
+          // Plus-Button-Rest-Position. Im Trend-Drilldown: VERGRÖSSERT und frei
+          // vertikal verschiebbar (drillBtnY) — der Nutzer schiebt ihn aus den
+          // Balken; Links/Rechts-Wisch schaltet weiter das Jahr.
+          const restingTransform = moodDrillOpen
+            ? `translate(0px, ${drillBtnY}px) scale(1.45)`
+            : (plusArretiert ? "translate(0px, -94px) scale(1.5)" : "translate(0px, -14px) scale(1)");
 
           // GESTEN:
           // - Double-Tap = IMMER eine Ebene ZURÜCK:
@@ -2672,8 +2674,8 @@ Abbrechen = ${remoteName}-Stand laden`
               // Rest-Position/-Größe (arretiert: y -94, scale 1,5), damit er beim
               // Links/Rechts-Hold nicht erst verkleinert und wieder vergrößert wird.
               if(btn) {
-                const restY = (plusArretiert ? -94 : -14) + (moodDrillOpen ? -270 : 0);
-                const base  = moodDrillOpen ? 0.78 : (plusArretiert ? 1.5 : 1);
+                const restY = plusArretiert ? -94 : -14;
+                const base  = plusArretiert ? 1.5 : 1;
                 const dir   = ref.dx < 0 ? -1 : 1;
                 btn.style.transition = "transform 0.15s ease-out";
                 btn.style.transform = `translate(${dir*(VISUAL_LIMIT+4)}px, ${restY}px) scale(${base*1.1})`;
@@ -2702,7 +2704,9 @@ Abbrechen = ${remoteName}-Stand laden`
               dragging: true,
               consumed: false,
               holdTimer: null,
-              axisLocked: null   // SNAPPING: "x" oder "y" sobald dominante Achse klar ist
+              axisLocked: null,  // SNAPPING: "x" oder "y" sobald dominante Achse klar ist
+              startDrillY: drillBtnY,  // Ausgangs-Y für freies Ziehen im Drilldown
+              drillLiveY: null
             };
           };
           const onPointerMove = (e) => {
@@ -2714,6 +2718,26 @@ Abbrechen = ${remoteName}-Stand laden`
             const absDx = Math.abs(dx), absDy = Math.abs(dy);
             if(absDx>MOVE_TOLERANCE || absDy>MOVE_TOLERANCE) {
               ref.moved = true;
+            }
+            // ── TREND-DRILLDOWN: Button vergrößert & frei vertikal ziehbar.
+            //    Vertikal = verschieben (folgt dem Finger); Links/Rechts = Jahr
+            //    (erst beim Loslassen). Normaler Hoch/Runter-Swipe entfällt hier. ──
+            if(moodDrillOpen) {
+              if(!ref.axisLocked && (absDx > MOVE_TOLERANCE || absDy > MOVE_TOLERANCE)) {
+                ref.axisLocked = (absDx >= absDy) ? "x" : "y";
+              }
+              if(e.currentTarget) {
+                e.currentTarget.style.transition = "none";
+                if(ref.axisLocked === "y") {
+                  const newY = Math.max(-660, Math.min(20, ref.startDrillY + dy));
+                  ref.drillLiveY = newY;
+                  e.currentTarget.style.transform = `translate(0px, ${newY}px) scale(1.45)`;
+                } else if(ref.axisLocked === "x") {
+                  const vx = Math.max(-VISUAL_LIMIT, Math.min(VISUAL_LIMIT, dx));
+                  e.currentTarget.style.transform = `translate(${vx}px, ${ref.startDrillY}px) scale(${1.45*1.06})`;
+                }
+              }
+              return;
             }
             // ── START-ZUSTAND (klein): Swipen bewirkt visuell/aktionsseitig nichts.
             //    Aktionen laufen über Doppel-Tap (siehe onPointerUp); Wische
@@ -2750,8 +2774,8 @@ Abbrechen = ${remoteName}-Stand laden`
             // rechts) gelockt ist, und folgt dann strikt nur dieser einen Achse.
             // Live-Drag visuell: Translation relativ zur aktuellen Rest-Position
             // (arretiert: y-Offset -94, scale 1.5; sonst y-Offset -14, scale 1)
-            const restY = (plusArretiert ? -94 : -14) + (moodDrillOpen ? -270 : 0);
-            const dragScale = (moodDrillOpen ? 0.78 : (plusArretiert ? 1.5 : 1)) * 1.08;
+            const restY = plusArretiert ? -94 : -14;
+            const dragScale = plusArretiert ? 1.5*1.08 : 1.08;
             if(e.currentTarget) {
               e.currentTarget.style.transform = `translate(${visX}px, ${visY+restY+14}px) scale(${dragScale})`;
               e.currentTarget.style.transition = "none";
@@ -2770,6 +2794,24 @@ Abbrechen = ${remoteName}-Stand laden`
             clearHoldTimer(ref);
             const dx = ref.dx, dy = ref.dy;
             const dt = Date.now() - ref.t;
+            // ── TREND-DRILLDOWN: vertikal → Position übernehmen; links/rechts →
+            //    Jahr wechseln. Sonst nichts (kein Monatsauswahl/Cloud hier). ──
+            if(moodDrillOpen) {
+              try { e.currentTarget.releasePointerCapture(e.pointerId); } catch(err) {}
+              const axis = ref.axisLocked;
+              if(axis === "y" && ref.drillLiveY != null) {
+                setDrillBtnY(ref.drillLiveY);
+              } else {
+                if(axis === "x" && Math.abs(dx) > DRAG_THRESHOLD) {
+                  if(dx < 0) stepPeriod(-1); else stepPeriod(1);
+                }
+                if(e.currentTarget) {
+                  e.currentTarget.style.transition = "transform 0.18s ease-out";
+                  e.currentTarget.style.transform = `translate(0px, ${drillBtnY}px) scale(1.45)`;
+                }
+              }
+              return;
+            }
             // ── START-ZUSTAND (klein): NUR der Doppel-Tap wirkt. Er geht eine
             //    Ebene ZURÜCK (Mehr/Monatsauswahl schließen, Unteransicht →
             //    Dashboard). Ist man bereits auf dem Dashboard (Startpunkt),
@@ -2921,10 +2963,10 @@ Abbrechen = ${remoteName}-Stand laden`
                   boxShadow: "none",
                   display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
                   position:"relative",
-                  // Ruheposition (im Drilldown nach oben verschoben, s. restingTransform),
-                  // bleibt sichtbar & per Wisch bedienbar.
+                  // Ruheposition. Im Drilldown vergrößert & frei ziehbar (s. Gesten);
+                  // dort ohne Transition, damit das Ziehen direkt folgt.
                   transform: restingTransform,
-                  transition:"transform 0.25s cubic-bezier(.34,1.4,.64,1)",
+                  transition: moodDrillOpen ? "none" : "transform 0.25s cubic-bezier(.34,1.4,.64,1)",
                   touchAction:"none",userSelect:"none",cursor:"pointer",
                   WebkitTapHighlightColor:"transparent",padding:0,
                   fontFamily:"inherit",lineHeight:1}}>

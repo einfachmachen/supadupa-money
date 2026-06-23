@@ -212,6 +212,25 @@ function MoneyMoodScreen() {
   // plus „Auffällig" (rötester/auffälligster Monat zuerst).
   const yearTotal = (row) => row.actual.reduce((s, v) => s + v, 0);
   const allRows = [...blocks.income, ...blocks.expense];
+
+  // Bei Jahrwechsel (Links/Rechts-Wisch am + Button) den offenen Drilldown auf die
+  // gleiche Kategorie/Unterkategorie des neuen Jahres aktualisieren, statt veraltet
+  // stehenzubleiben. Existiert sie im neuen Jahr nicht → Drilldown schließen.
+  useEffect(() => {
+    if (!detail) return;
+    let next = null;
+    if (detail.isSub) {
+      for (const cat of allRows) {
+        const s = (cat.subs || []).find(x => x.id === detail.row.id);
+        if (s) { next = { ...s, isIncome: cat.isIncome }; break; }
+      }
+    } else {
+      next = allRows.find(r => r.id === detail.row.id) || null;
+    }
+    if (next) { if (next !== detail.row) setDetail(d => d ? { ...d, row: next } : d); }
+    else setDetail(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [year]);
   const sortedRows = (() => {
     const arr = [...allRows];
     if (catSortMode === "desc") arr.sort((a, b) => yearTotal(b) - yearTotal(a));
@@ -338,8 +357,8 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
   const maxV = Math.max(1, ...actual, ...budget);
 
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)", zIndex: 300, display: "flex", alignItems: "flex-end" }}>
-      <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxHeight: "88vh", overflowY: "auto", background: T.surf || T.bg, borderTopLeftRadius: 18, borderTopRightRadius: 18, borderTop: `1px solid ${T.bd}`, padding: "12px 14px 0", paddingBottom: "58px" }}>
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: T.surf || T.bg, zIndex: 300, display: "flex", alignItems: "flex-start" }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: "100%", height: "100dvh", maxHeight: "100dvh", overflowY: "auto", background: T.surf || T.bg, padding: "10px 5px 0", paddingBottom: "58px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
           <span style={{ flex: 1, color: T.txt, fontSize: 17, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
           <button onClick={onClose} style={{ ...navBtn, width: 34, height: 34 }}>{Li("x", 16, T.txt2)}</button>
@@ -347,7 +366,7 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
 
         {/* Oberer Extra-Bereich: Einzelbeträge, je Zeile per Chevron ausklappbar */}
         {bookings && (
-          <div style={{ border: `1px solid ${T.bd}`, borderRadius: 12, padding: "8px 10px", marginBottom: 8, background: "rgba(255,255,255,0.02)" }}>
+          <div style={{ border: `1px solid ${T.bd}`, borderRadius: 12, padding: "8px 6px", marginBottom: 8, background: "rgba(255,255,255,0.02)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
               {drilledSub && (
                 <button onClick={() => setSelSub(null)} title="Zurück"
@@ -373,7 +392,7 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
                     return (
                       <div key={i} ref={open ? openRowRef : null} style={{ flexShrink: 0, borderRadius: 6, overflow: "hidden", background: open ? "rgba(255,255,255,0.05)" : "transparent", border: `1px solid ${open ? T.bd : "transparent"}` }}>
                         <button onClick={() => setOpenBk(open ? null : i)}
-                          style={{ position: "relative", width: "100%", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", borderRadius: 6, overflow: "hidden", padding: "5px 10px", display: "block", textAlign: "left" }}>
+                          style={{ position: "relative", width: "100%", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", borderRadius: 6, overflow: "hidden", padding: "5px 8px", display: "block", textAlign: "left" }}>
                           <div style={{ position: "absolute", inset: 0, width: `${(it.val / bkMax) * 100}%`, background: (isIncome ? T.pos : T.blue) + "22" }} />
                           <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8 }}>
                             {Li(open ? "chevron-down" : "chevron-right", 13, T.txt2)}
@@ -396,9 +415,6 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
                     );
                   })}
                 </div>
-                {bookings.length > 7 && (
-                  <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 18, background: `linear-gradient(to bottom, transparent, ${T.surf || T.bg})`, pointerEvents: "none" }} />
-                )}
               </div>
             )}
           </div>
@@ -406,7 +422,7 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
 
         {/* Unterkategorie-Zusammensetzung des Monats (nur Hauptkategorien) */}
         {isCat && (
-          <div style={{ border: `1px solid ${T.bd}`, borderRadius: 12, padding: "8px 10px", marginBottom: 8, background: "rgba(255,255,255,0.02)" }}>
+          <div style={{ border: `1px solid ${T.bd}`, borderRadius: 12, padding: "8px 6px", marginBottom: 8, background: "rgba(255,255,255,0.02)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
               <span style={{ flex: 1, color: T.txt, fontSize: 13, fontWeight: 700 }}>{MONTHS_F[sel]} {year}</span>
               <span style={{ color: isIncome ? T.pos : T.txt, fontSize: 15, fontWeight: 800, fontFamily: NUM_FONT }}>{fmt(selTotal)}</span>
