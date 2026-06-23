@@ -26,6 +26,8 @@ export function openDB() {
         .then(() => { _db = db; res(_db); });
     };
     req.onerror = e => rej(e.target.error);
+    // Mehrere offene Tabs können das Öffnen blockieren — nicht ewig warten.
+    req.onblocked = () => rej(new Error("IndexedDB blockiert (anderer Tab offen?)"));
   });
   return _dbPromise;
 }

@@ -54,6 +54,12 @@ kvStore.init().finally(() => {
   const root = ReactDOM.createRoot(document.getElementById("root"));
   root.render(<SupaDupaMoney />);
 
+  // Boot-Notbremse entschärfen: App ist gemountet (siehe index.html-Selbstheilung).
+  try {
+    window.__appMounted = true;
+    sessionStorage.removeItem("sdm_boot_retry");
+  } catch (e) { /* ignorieren */ }
+
   // Auf neue Deploys prüfen und die App ggf. automatisch aktualisieren.
   startAutoUpdate();
 });

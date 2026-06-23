@@ -2,7 +2,7 @@
 // frische index.html geladen wird (verhindert den alten Ladebildschirm aus dem
 // Cache). Offline gibt es einen Fallback auf die zuletzt gesehene Version.
 // JS/CSS sind content-gehasht und laufen über den normalen Browser-Cache.
-const CACHE = "supadupa-money-v3";
+const CACHE = "supadupa-money-v4";
 
 self.addEventListener("install", e => {
   self.skipWaiting(); // neue Version sofort übernehmen
@@ -23,7 +23,10 @@ self.addEventListener("fetch", e => {
   if (req.mode === "navigate") {
     e.respondWith((async () => {
       try {
-        const res = await fetch(req);
+        // cache:"reload" → HTTP-/Edge-Cache umgehen, IMMER frische index.html holen.
+        // Verhindert veraltete Shells, die auf nicht mehr existierende JS-Chunks
+        // zeigen (Symptom: ewiger Ladescreen).
+        const res = await fetch(req, { cache: "reload" });
         try { const c = await caches.open(CACHE); await c.put(req, res.clone()); } catch (_) {}
         return res;
       } catch (_) {

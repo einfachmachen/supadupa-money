@@ -29,6 +29,39 @@
       window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
     }
 
+    // Boot-Notbremse / Selbstheilung: Hängt der Ladescreen (z. B. weil ein alter
+    // Service Worker oder CDN-Edge-Cache eine veraltete index.html mit Verweisen
+    // auf nicht mehr existierende JS-Chunks liefert), läuft kein App-Code und der
+    // Spinner bliebe ewig. Dieses Skript läuft IMMER (sobald die Seite lädt) und
+    // repariert sich selbst: einmal Service Worker abmelden + Caches leeren +
+    // frisch laden. Schlägt es erneut fehl → Hinweis statt Endlos-Spinner.
+    window.__appMounted = false;
+    setTimeout(function () {
+      var root = document.getElementById('root');
+      if (window.__appMounted || (root && root.childElementCount > 0)) return; // App läuft
+      try {
+        if (!sessionStorage.getItem('sdm_boot_retry')) {
+          sessionStorage.setItem('sdm_boot_retry', '1');
+          var done = 0, total = 2, go = function () {
+            if (++done < total) return;
+            location.replace(location.pathname + '?b=' + Date.now());
+          };
+          if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+            navigator.serviceWorker.getRegistrations()
+              .then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); })
+              .catch(function () {}).then(go);
+          } else { go(); }
+          if (window.caches && caches.keys) {
+            caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); })
+              .catch(function () {}).then(go);
+          } else { go(); }
+        } else {
+          var l = document.getElementById('loading');
+          if (l) l.innerHTML = '<div style="text-align:center;padding:24px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;color:#AACC00;line-height:1.5">Die App konnte nicht laden.<br><span style="opacity:0.6;font-size:13px">(Cache-/Netzwerkproblem)</span><br><br><button onclick="sessionStorage.removeItem(\'sdm_boot_retry\');location.replace(location.pathname+\'?b=\'+Date.now())" style="padding:11px 20px;font-size:16px;border-radius:9px;border:1px solid #AACC00;background:transparent;color:#AACC00">Erneut versuchen</button></div>';
+        }
+      } catch (e) {}
+    }, 8000);
+
     // Globale Error-Anzeige (wie im Original) — aber NICHT für Fehler, die nicht
     // aus der App stammen: Browser-Erweiterungen injizieren eigene Skripte
     // (moz-extension://, chrome-extension:// …); deren Fehler dürfen das rote
