@@ -364,8 +364,10 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
           <button onClick={onClose} style={{ ...navBtn, width: 34, height: 34 }}>{Li("x", 16, T.txt2)}</button>
         </div>
 
-        {/* Scrollende Mitte: Buchungen + Unterkategorien. Kopf bleibt oben, Chart unten. */}
-        <div className="sdm-scroll" style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
+        {/* Scrollende Mitte: Inhalte von UNTEN nach oben verankert (direkt über dem
+            Chart), damit keine große Lücke entsteht. */}
+        <div className="sdm-scroll" style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+          <div style={{ marginTop: "auto" }}>
 
         {/* Oberer Extra-Bereich: Einzelbeträge, je Zeile per Chevron ausklappbar */}
         {bookings && (
@@ -438,7 +440,7 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
                   const active = it.subId === selSub;
                   return (
                     <div key={i} onClick={() => setSelSub(it.subId)}
-                      style={{ flexShrink: 0, position: "relative", borderRadius: 6, overflow: "hidden", padding: "6px 8px", cursor: "pointer", outline: active ? `1px solid ${T.gold}` : "none" }}>
+                      style={{ flexShrink: 0, position: "relative", borderRadius: 6, overflow: "hidden", padding: "6px 8px 6px 16px", cursor: "pointer", outline: active ? `1px solid ${T.gold}` : "none" }}>
                       <div style={{ position: "absolute", inset: 0, width: `${(it.val / subMax) * 100}%`, background: (isIncome ? T.pos : T.blue) + "22" }} />
                       <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8 }}>
                         <span style={{ flex: 1, minWidth: 0, color: active ? T.gold : T.txt, fontSize: 12, fontWeight: active ? 700 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
@@ -452,13 +454,11 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
             )}
           </div>
         )}
+        </div>{/* Ende Unten-Verankerung */}
         </div>{/* Ende scrollende Mitte */}
 
-        {/* Fester Fußbereich: Legende + Monatsbalken — immer unten verankert. */}
+        {/* Fester Fußbereich: Monatsbalken — immer unten verankert. */}
         <div style={{ flexShrink: 0, marginTop: 6 }}>
-        <div style={{ color: T.txt2, fontSize: 11, marginBottom: 4 }}>
-          {isCat ? "Monatsbalken unten & Kategoriebalken oben sind tippbar" : "Tippe einen Balken für den jeweiligen Monat"} · gestrichelt = Budget
-        </div>
         <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }}>
           {actual.map((a, i) => {
             const x = padL + i * bw;
