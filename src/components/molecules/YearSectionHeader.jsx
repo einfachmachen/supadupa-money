@@ -12,47 +12,42 @@ import { useSaldoHeroData } from "../../state/useSaldoHeroData.js";
 const noop = () => {};
 const OPTS = [["mood", "Money Mood", "activity"], ["jahr", "Jahr", "calendar-range"]];
 
-function YearSectionHeader({ active }) {   // active: "mood" | "jahr"
+function YearSectionHeader({ active, detailsOpen, setDetailsOpen, children }) {   // active: "mood" | "jahr"
   const { year, month, setSubTab } = useContext(AppCtx);
   const hero = useSaldoHeroData(year, month);
-  const [heroOpen, setHeroOpen] = useState(false);
-  const [tabsOpen, setTabsOpen] = useState(false);
-  const cur = OPTS.find(o => o[0] === active) || OPTS[0];
+  // Kontrolliert vom Screen (MoneyMood braucht den Zustand für die Sparklines),
+  // sonst interner Fallback (z. B. JahrScreen).
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = detailsOpen !== undefined ? detailsOpen : internalOpen;
+  const setOpen = setDetailsOpen || setInternalOpen;
 
   return (
     <div style={{ flexShrink: 0, background: T.bg }}>
       <SaldoHeroV2 year={year} month={month} {...hero}
         onDrillBuchIn={noop} onDrillBuchOut={noop} onDrillPendIn={noop} onDrillPendOut={noop}
         onDrillUncatIn={noop} onDrillUncatOut={noop}
-        detailsOpen={heroOpen} setDetailsOpen={setHeroOpen} />
+        detailsOpen={open} setDetailsOpen={setOpen} />
 
-      {!tabsOpen ? (
-        // Eingeklappt: nur die aktive Sicht + Chevron als Aufklapp-Hinweis.
-        <button onClick={() => setTabsOpen(true)}
-          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, width: "100%",
-            padding: "5px 10px", background: "transparent", border: "none", borderBottom: `1px solid ${T.bd}`,
-            cursor: "pointer", fontFamily: "inherit", fontSize: 12, fontWeight: 700 }}>
-          {Li(cur[2], 13, T.gold)} <span style={{ color: T.txt }}>{cur[1]}</span> {Li("chevron-down", 14, T.txt2)}
-        </button>
-      ) : (
-        <div style={{ display: "flex", gap: 6, alignItems: "center", padding: "7px 10px", borderBottom: `1px solid ${T.bd}` }}>
-          {OPTS.map(([id, lbl, ic]) => {
-            const on = active === id;
-            return (
-              <button key={id} onClick={() => { if (id !== active) setSubTab(id); else setTabsOpen(false); }}
-                style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 9, cursor: "pointer",
-                  fontFamily: "inherit", fontSize: 12, fontWeight: on ? 700 : 500,
-                  border: `1px solid ${on ? T.gold : T.bd}`, background: on ? "rgba(245,166,35,0.16)" : "transparent",
-                  color: on ? T.gold : T.txt2 }}>
-                {Li(ic, 13, on ? T.gold : T.txt2)} {lbl}
-              </button>
-            );
-          })}
-          <button onClick={() => setTabsOpen(false)}
-            style={{ marginLeft: "auto", width: 28, height: 28, borderRadius: 7, border: `1px solid ${T.bd}`, background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {Li("chevron-up", 14, T.txt2)}
-          </button>
-        </div>
+      {/* Umschalter Money Mood | Jahr, Sortierung & Farb-Legende verstecken sich mit
+          dem Hero-Ausklappmodus (nur sichtbar, wenn die Hero-Details offen sind). */}
+      {open && (
+        <>
+          <div style={{ display: "flex", gap: 6, alignItems: "center", padding: "7px 10px", borderBottom: `1px solid ${T.bd}` }}>
+            {OPTS.map(([id, lbl, ic]) => {
+              const on = active === id;
+              return (
+                <button key={id} onClick={() => { if (id !== active) setSubTab(id); }}
+                  style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 9, cursor: "pointer",
+                    fontFamily: "inherit", fontSize: 12, fontWeight: on ? 700 : 500,
+                    border: `1px solid ${on ? T.gold : T.bd}`, background: on ? "rgba(245,166,35,0.16)" : "transparent",
+                    color: on ? T.gold : T.txt2 }}>
+                  {Li(ic, 13, on ? T.gold : T.txt2)} {lbl}
+                </button>
+              );
+            })}
+          </div>
+          {children}
+        </>
       )}
     </div>
   );
