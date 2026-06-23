@@ -19,6 +19,8 @@ import { MONTHS_S, MONTHS_F } from "../../utils/constants.js";
 import { fmt, pn, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { YearViewToggle } from "../molecules/YearViewToggle.jsx";
+import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
+import { useSaldoHeroData } from "../../state/useSaldoHeroData.js";
 
 const RANGE = 12;
 // Schwellen für die Abweichung vom 12-Monats-Schnitt (dev = Ist / Schnitt).
@@ -41,9 +43,12 @@ function classify(dev, isIncome) {
 const fmtK = (v) => v >= 1000 ? (Math.round(v / 100) / 10) + "k" : String(Math.round(v));
 
 function MoneyMoodScreen() {
-  const { cats, groups, txs, year, getActualSum, getBudgetForMonth, getAcc } = useContext(AppCtx);
+  const { cats, groups, txs, year, month, getActualSum, getBudgetForMonth, getAcc } = useContext(AppCtx);
   const [openCat, setOpenCat] = useState(null);   // aufgeklappte Hauptkategorie
   const [detail, setDetail] = useState(null);     // { row, isSub, isIncome }
+  const [heroOpen, setHeroOpen] = useState(false);
+  const heroData = useSaldoHeroData(year, month);
+  const noop = () => {};
 
   const now = new Date();
   const nowY = now.getFullYear(), nowM = now.getMonth();
@@ -82,7 +87,7 @@ function MoneyMoodScreen() {
             return { id: sub.id, name: sub.name, ...s };
           });
           if (cExt.every(v => v === 0) && cBud.every(v => v === 0)) return;
-          out.push({ id: cat.id, name: cat.name, isIncome, ext: cExt, actual: cExt.slice(12), budget: cBud, subs });
+          out.push({ id: cat.id, name: cat.name, icon: cat.icon, color: cat.color, isIncome, ext: cExt, actual: cExt.slice(12), budget: cBud, subs });
         });
       });
       return out;
@@ -114,13 +119,14 @@ function MoneyMoodScreen() {
   // ── Mini-Sparkline: 12 ampelgefärbte Balken, Höhe = relative Größe ──
   const Spark = ({ row, h = 24 }) => {
     const maxV = Math.max(1, ...row.actual);
+    // Schmaler + rechtsbündig → Sparkline beginnt weiter rechts, einheitliche Spalte.
     return (
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 1, height: h, flexShrink: 0 }}>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "flex-end", gap: 1, height: h, width: 60, marginLeft: 16, flexShrink: 0 }}>
         {row.actual.map((v, mi) => {
           const { c } = classify(devAt(row, mi), row.isIncome);
           const bh = Math.max(2, Math.round((v / maxV) * h));
           return <div key={mi} title={`${MONTHS_S[mi]}: ${fmt(v)}`}
-            style={{ width: 5, height: bh, background: v > 0 ? c : T.bd, opacity: v > 0 ? (mi === recentIdx ? 1 : 0.9) : 0.18, borderRadius: 1 }} />;
+            style={{ width: 4, height: bh, background: v > 0 ? c : T.bd, opacity: v > 0 ? (mi === recentIdx ? 1 : 0.9) : 0.18, borderRadius: 1 }} />;
         })}
       </div>
     );
@@ -128,14 +134,21 @@ function MoneyMoodScreen() {
 
   const Row = ({ row, sub }) => {
     const { c, sev } = rowMood(row);
+    const accent = row.color || (row.isIncome ? T.pos : T.neg);
     return (
       <button onClick={() => setDetail({ row, isSub: !!sub, isIncome: row.isIncome })}
         style={{
-          display: "flex", alignItems: "center", gap: 10, width: "100%", textAlign: "left",
-          padding: sub ? "7px 14px 7px 30px" : "9px 14px", background: "transparent",
+          display: "flex", alignItems: "center", gap: 9, width: "100%", textAlign: "left",
+          padding: sub ? "6px 14px 6px 22px" : "8px 14px", background: "transparent",
           border: "none", borderBottom: `1px solid ${T.bd}`, cursor: "pointer", fontFamily: "inherit",
         }}>
-        <span style={{ flex: 1, minWidth: 0, color: sub ? T.txt2 : T.txt, fontSize: sub ? 13 : 14, fontWeight: sub ? 500 : 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {/* Kategorie-Symbol wie im Dashboard (nur Hauptkategorien) */}
+        {!sub && (
+          <div style={{ width: 30, height: 30, borderRadius: 8, background: accent + "22", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            {Li(row.icon || "folder", 18, accent)}
+          </div>
+        )}
+        <span style={{ flex: 1, minWidth: 0, color: sub ? T.txt2 : T.txt, fontSize: sub ? 15 : 20, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {row.name}
         </span>
         <Spark row={row} h={sub ? 18 : 24} />
@@ -173,17 +186,16 @@ function MoneyMoodScreen() {
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto", background: T.bg }}>
       <YearViewToggle active="mood" />
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 14px 8px", position: "sticky", top: 0, background: T.bg, zIndex: 2, borderBottom: `1px solid ${T.bd}` }}>
-        <span style={{ color: T.txt, fontSize: 18, fontWeight: 800, flex: 1, display: "flex", alignItems: "center", gap: 7 }}>
-          {Li("activity", 17, T.gold)} Money Mood
-        </span>
-        <span style={{ color: T.txt, fontSize: 16, fontWeight: 800, fontFamily: NUM_FONT }}>{year}</span>
-      </div>
 
-      <div style={{ color: T.txt2, fontSize: 11, padding: "7px 14px 9px", lineHeight: 1.45 }}>
-        Jede Zeile zeigt 12 Monate gegen den eigenen Schnitt – <b style={{ color: T.pos }}>grün</b> ist im üblichen Rahmen,
-        {" "}<b style={{ color: T.gold }}>gelb</b> liegt spürbar drüber, <b style={{ color: T.neg }}>rot</b> ist massiv drüber.
-        Tippe eine Zeile für den 12-Monats-Verlauf.
+      {/* Hero wie im Dashboard/Monat */}
+      <SaldoHeroV2 year={year} month={month} {...heroData}
+        onDrillBuchIn={noop} onDrillBuchOut={noop} onDrillPendIn={noop} onDrillPendOut={noop}
+        onDrillUncatIn={noop} onDrillUncatOut={noop}
+        detailsOpen={heroOpen} setDetailsOpen={setHeroOpen} />
+
+      <div style={{ color: T.txt2, fontSize: 11, padding: "8px 14px 6px", lineHeight: 1.45 }}>
+        12 Monate gegen den eigenen Schnitt – <b style={{ color: T.pos }}>grün</b> üblich,
+        {" "}<b style={{ color: T.gold }}>gelb</b> spürbar drüber, <b style={{ color: T.neg }}>rot</b> massiv drüber.
       </div>
 
       {renderBlock("Ausgaben", blocks.expense, T.neg)}
