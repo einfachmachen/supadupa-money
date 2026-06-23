@@ -209,31 +209,41 @@ const navBtn = {
 // ── Drilldown: 12 Monatsbalken (Gesamtbetrag oben, klickbar) + Zusammensetzung ──
 function MoodDetail({ row, isSub, isIncome, year, txs, recentIdx, elapsedIdx, devAt, onClose }) {
   const { name, actual, budget } = row;
+  const isCat = !isSub && !!row.subs;
   // Startmonat: jüngster Monat mit Bewegung.
   const initSel = (recentIdx >= 0 && actual[recentIdx] > 0)
     ? recentIdx : (actual.reduce((acc, v, i) => v > 0 ? i : acc, 0));
   const [sel, setSel] = useState(initSel);
+  const [selSub, setSelSub] = useState(null);   // tiefer gedrillter Unterkategorie-Balken
 
-  // Zusammensetzung des gewählten Monats.
-  const breakdown = useMemo(() => {
-    if (!isSub && row.subs) {
-      return row.subs.map(s => ({ name: s.name, val: s.actual[sel] }))
-        .filter(it => it.val > 0).sort((a, b) => b.val - a.val);
-    }
-    // Unterkategorie → einzelne Buchungen des Monats
+  // Einzelbuchungen einer Unterkategorie in Monat mi.
+  const bookingsForSub = (subId, mi) => {
     const out = [];
     (txs || []).forEach(tx => {
       if (tx.pending || tx._linkedTo) return;
       const d = new Date(tx.date);
-      if (d.getFullYear() !== year || d.getMonth() !== sel) return;
+      if (d.getFullYear() !== year || d.getMonth() !== mi) return;
       let amt = 0;
-      (tx.splits || []).forEach(sp => { if (sp.subId === row.id) amt += Math.abs(pn(sp.amount)); });
+      (tx.splits || []).forEach(sp => { if (sp.subId === subId) amt += Math.abs(pn(sp.amount)); });
       if (amt > 0) out.push({ name: tx.desc || "Buchung", sub: d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }), val: amt });
     });
     return out.sort((a, b) => b.val - a.val);
-  }, [isSub, row, sel, txs, year]);
+  };
+
+  const drilledSub = isCat && selSub ? row.subs.find(s => s.id === selSub) : null;
+
+  // Zusammensetzung des gewählten Monats (eine Ebene tiefer, wenn ein
+  // Unterkategorie-Balken gewählt ist).
+  const breakdown = useMemo(() => {
+    if (isCat && !selSub) {
+      return row.subs.map(s => ({ name: s.name, val: s.actual[sel], subId: s.id }))
+        .filter(it => it.val > 0).sort((a, b) => b.val - a.val);
+    }
+    return bookingsForSub(isCat ? selSub : row.id, sel);
+  }, [isCat, selSub, row, sel, txs, year]);
 
   const selTotal = actual[sel] || 0;
+  const headTotal = drilledSub ? (drilledSub.actual[sel] || 0) : selTotal;
   const bdMax = Math.max(1, ...breakdown.map(it => it.val));
 
   const W = 340, H = 178, padL = 4, padTop = 16, padB = 18, chartH = H - padTop - padB;
@@ -250,30 +260,44 @@ function MoodDetail({ row, isSub, isIncome, year, txs, recentIdx, elapsedIdx, de
 
         {/* Detail-Drilldown: Zusammensetzung des gewählten Monats */}
         <div style={{ border: `1px solid ${T.bd}`, borderRadius: 12, padding: "10px 12px", marginBottom: 12, background: "rgba(255,255,255,0.02)" }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 8 }}>
-            <span style={{ flex: 1, color: T.txt, fontSize: 13, fontWeight: 700 }}>{MONTHS_F[sel]} {year}</span>
-            <span style={{ color: isIncome ? T.pos : T.txt, fontSize: 15, fontWeight: 800, fontFamily: NUM_FONT }}>{fmt(selTotal)}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            {drilledSub && (
+              <button onClick={() => setSelSub(null)} title="Zurück"
+                style={{ ...navBtn, width: 24, height: 24, borderRadius: 6 }}>{Li("chevron-left", 14, T.txt2)}</button>
+            )}
+            <span style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {drilledSub ? drilledSub.name : `${MONTHS_F[sel]} ${year}`}
+              {drilledSub && <span style={{ color: T.txt2, fontSize: 11, fontWeight: 400, marginLeft: 6 }}>{MONTHS_S[sel]} {year}</span>}
+            </span>
+            <span style={{ color: isIncome ? T.pos : T.txt, fontSize: 15, fontWeight: 800, fontFamily: NUM_FONT }}>{fmt(headTotal)}</span>
           </div>
           {breakdown.length === 0 ? (
             <div style={{ color: T.txt2, fontSize: 12, padding: "4px 0" }}>Keine Buchungen in diesem Monat.</div>
           ) : (
             <div style={{ maxHeight: 150, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
-              {breakdown.map((it, i) => (
-                <div key={i} style={{ position: "relative", borderRadius: 6, overflow: "hidden", padding: "5px 8px" }}>
-                  <div style={{ position: "absolute", inset: 0, width: `${(it.val / bdMax) * 100}%`, background: (isIncome ? T.pos : T.blue) + "22" }} />
-                  <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {it.name}{it.sub && <span style={{ color: T.txt2, fontSize: 10, marginLeft: 6 }}>{it.sub}</span>}
-                    </span>
-                    <span style={{ color: T.txt, fontSize: 12, fontWeight: 600, fontFamily: NUM_FONT }}>{fmt(it.val)}</span>
+              {breakdown.map((it, i) => {
+                const clickable = !!it.subId;
+                return (
+                  <div key={i} onClick={clickable ? () => setSelSub(it.subId) : undefined}
+                    style={{ position: "relative", borderRadius: 6, overflow: "hidden", padding: "5px 8px", cursor: clickable ? "pointer" : "default" }}>
+                    <div style={{ position: "absolute", inset: 0, width: `${(it.val / bdMax) * 100}%`, background: (isIncome ? T.pos : T.blue) + "22" }} />
+                    <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {it.name}{it.sub && <span style={{ color: T.txt2, fontSize: 10, marginLeft: 6 }}>{it.sub}</span>}
+                      </span>
+                      <span style={{ color: T.txt, fontSize: 12, fontWeight: 600, fontFamily: NUM_FONT }}>{fmt(it.val)}</span>
+                      {clickable && Li("chevron-right", 13, T.txt2)}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
-        <div style={{ color: T.txt2, fontSize: 11, marginBottom: 4 }}>Tippe einen Balken für den jeweiligen Monat · gestrichelt = Budget</div>
+        <div style={{ color: T.txt2, fontSize: 11, marginBottom: 4 }}>
+          {isCat ? "Monatsbalken unten & Kategoriebalken oben sind tippbar" : "Tippe einen Balken für den jeweiligen Monat"} · gestrichelt = Budget
+        </div>
         <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }}>
           {actual.map((a, i) => {
             const x = padL + i * bw;
