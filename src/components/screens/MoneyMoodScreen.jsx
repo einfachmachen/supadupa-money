@@ -360,7 +360,8 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: T.surf || T.bg, zIndex: 300, display: "flex", alignItems: "flex-start" }}>
       <div onClick={e => e.stopPropagation()} style={{ width: "100%", height: "100dvh", maxHeight: "100dvh", overflow: "hidden", background: T.surf || T.bg, display: "flex", flexDirection: "column", paddingLeft: 5, paddingRight: 5, paddingTop: "calc(8px + env(safe-area-inset-top, 0px))", paddingBottom: "58px" }}>
         <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-          <span style={{ flex: 1, color: T.txt, fontSize: 17, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+          {/* Titel (Hauptkategorie) links bündig mit der Kategorieliste darunter. */}
+          <span style={{ flex: 1, paddingLeft: 15, color: T.txt, fontSize: 17, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
           <button onClick={onClose} style={{ ...navBtn, width: 34, height: 34 }}>{Li("x", 16, T.txt2)}</button>
         </div>
 
