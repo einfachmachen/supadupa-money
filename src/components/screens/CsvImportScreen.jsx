@@ -159,6 +159,8 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const [pickSort, setPickSort] = useState("amount"); // "amount" | "date"
   // Filter „nur Einnahmen ohne gefundene Giro-Buchung".
   const [onlyUnmatched, setOnlyUnmatched] = useState(false);
+  // Gestufter Import: zeigt nach einem gefilterten Import „N importiert · M übrig".
+  const [stagedInfo, setStagedInfo] = useState(null);
   const defaultGiroAccId = useMemo(() =>
     accounts.find(a=>a.id==="acc-giro")?.id
     || accounts.find(a=>/giro/i.test(a.name||""))?.id
@@ -236,6 +238,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     (parsed?.acceptedSuggs||[]).forEach(a=>{usedRows.add(a.rowIdx);usedGiro.add(a.giroId);});
     const add = [];
     sugg.forEach(s=>{
+      if(parsed?.newRows?.[s.rowIdx]?._imported) return;
       if(!levels.includes(s.confidence)) return;
       if(usedRows.has(s.rowIdx)||usedGiro.has(s.giroTx.id)) return;
       usedRows.add(s.rowIdx); usedGiro.add(s.giroTx.id);
@@ -253,6 +256,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     const take = lvl => {
       let n=0;
       sugg.forEach(s=>{
+        if(parsed?.newRows?.[s.rowIdx]?._imported) return;
         if(s.confidence!==lvl) return;
         if(usedRows.has(s.rowIdx)||usedGiro.has(s.giroTx.id)) return;
         usedRows.add(s.rowIdx); usedGiro.add(s.giroTx.id); n++;
@@ -300,6 +304,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     const all = parsed?.autoSuggestions || [];
     const q = suggSearch.trim().toLowerCase();
     return all.filter(s=>{
+      if(parsed?.newRows?.[s.rowIdx]?._imported) return false; // gestufter Import
       if(suggAmt(s) > 0) return false; // Einnahmen-Matches → eigene „Einnahmen"-Ansicht
       if(suggConf && s.confidence!==suggConf) return false;
       if(!q) return true;
@@ -310,7 +315,10 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   // Giro-Gutschrift, falls vorhanden).
   const suggByRow = (()=>{
     const m = new Map();
-    (parsed?.autoSuggestions || []).forEach(s=>{ if(!m.has(s.rowIdx)) m.set(s.rowIdx, s); });
+    (parsed?.autoSuggestions || []).forEach(s=>{
+      if(parsed?.newRows?.[s.rowIdx]?._imported) return;   // bereits importiert
+      if(!m.has(s.rowIdx)) m.set(s.rowIdx, s);
+    });
     return m;
   })();
   // Echte Einnahmen-Buchungen (positive Zeilen) mit Original-Index — für den
@@ -343,8 +351,12 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     // „matched" = hat einen Auto-Vorschlag ODER eine manuell gewählte Giro-Buchung.
     const isMatched = (i) => suggByRow.has(i) || accepted.some(a=>a.rowIdx===i);
     return rows.map((r,i)=>({r,i})).filter(({r,i})=>{
+      if(r._imported) return false;          // gestufter Import: schon übernommen
       if(!((r.amount ?? r.totalAmount ?? 0) > 0)) return false;
       if(claimedLegIdx.has(i)) return false; // wird als Detail unter der Auszahlung gezeigt
+      // Konfidenz-Filter: nur Einnahmen, deren bester Giro-Treffer diese Stufe
+      // hat. Ohne Treffer (kein Giro-Gegenstück) → bei aktiver Konfidenz raus.
+      if(suggConf){ const sg=suggByRow.get(i); if(!sg || sg.confidence!==suggConf) return false; }
       // Filter „nur ohne Giro": bereits zugeordnete und interne Legs (laufen über
       // ihre Auszahlung) ausblenden.
       if(onlyUnmatched && (isMatched(i) || r._internalLeg)) return false;
@@ -362,18 +374,46 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     const accepted = parsed?.acceptedSuggs || [];
     const isMatched = (i) => suggByRow.has(i) || accepted.some(a=>a.rowIdx===i);
     return rows.map((r,i)=>({r,i})).filter(({r,i})=>{
+      if(r._imported) return false;                             // gestufter Import
       if(!((r.amount ?? r.totalAmount ?? 0) < 0)) return false; // nur Ausgaben
+      if(suggConf) return false;                                // ohne Giro = keine Konfidenz
       if(claimedLegIdx.has(i) || r._internalLeg) return false;
       if(isMatched(i)) return false;                            // nur ohne Giro
       if(!q) return true;
       return incomeRowText(r).includes(q);
     });
   })();
+  // ── Gefilterter/gestufter Import ────────────────────────────────────────────
+  // Genau die aktuell sichtbaren Zeilen (plus ihre verknüpften Legs) bilden die
+  // Import-Auswahl. Ist KEIN Filter aktiv, bleibt der Import „alles" (rowFilter
+  // = null) und das bisherige Verhalten unverändert.
+  const visibleImportSet = (()=>{
+    const set = new Set();
+    if(showIncomeList) incomeShown.forEach(({i})=>set.add(i));
+    if(showExpenses){
+      if(!onlyUnmatched) shownSuggs.forEach(s=>set.add(s.rowIdx));
+      expenseUnmatched.forEach(({i})=>set.add(i));
+    }
+    [...set].forEach(i=>{ (legsByParent.get(i)||[]).forEach(j=>set.add(j)); });
+    return set;
+  })();
+  const anyImportFilter = !!(suggType || onlyUnmatched || suggConf || suggSearch.trim());
+  // Nur wenn das Vergleichs-Panel offen ist (dort leben die Filter) — sonst
+  // bleibt „alles importieren" das Verhalten.
+  const filteredImport = showAutoSugg && !!parsed?.isPayPal
+    && (parsed?.autoSuggestions||[]).length>0 && anyImportFilter;
+  const importRowFilter = filteredImport ? visibleImportSet : null;
+  // Sichtbare Primär-Buchungen (für die Button-Beschriftung).
+  const visiblePrimaryCount = (showIncomeList?incomeShown.length:0)
+    + (showExpenses?((onlyUnmatched?0:shownSuggs.length)+expenseUnmatched.length):0);
+  const notImportedCount = (parsed?.newRows||[]).filter(r=>!r._imported).length;
+  const importBtnCount = filteredImport ? visiblePrimaryCount : notImportedCount;
   // Anzahl Buchungen (Ein- UND Ausgaben) ohne Giro-Buchung — für den Filter-Chip.
   const unmatchedCount = (()=>{
     const rows = parsed?.newRows || [];
     const accepted = parsed?.acceptedSuggs || [];
     return rows.reduce((n,r,i)=>{
+      if(r._imported) return n;
       const amt = r.amount ?? r.totalAmount ?? 0;
       if(amt===0) return n;
       if(claimedLegIdx.has(i) || r._internalLeg) return n;
@@ -381,11 +421,17 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
       return n+1;
     },0);
   })();
-  // Zähler je Konfidenzstufe (für die Chip-Beschriftung) — nur Ausgaben-Matches.
+  // Zähler je Konfidenzstufe (für die Chip-Beschriftung) — passend zum aktiven
+  // Typ-Filter (Einnahmen und/oder Ausgaben).
   const confCounts = (()=>{
     const all = parsed?.autoSuggestions || [];
     const c = {hoch:0, mittel:0, niedrig:0};
-    all.forEach(s=>{ if(suggAmt(s)<0 && c[s.confidence]!=null) c[s.confidence]++; });
+    all.forEach(s=>{
+      if(parsed?.newRows?.[s.rowIdx]?._imported) return;
+      const amt = suggAmt(s);
+      const fits = (amt>0 && showIncomeList) || (amt<0 && showExpenses);
+      if(fits && c[s.confidence]!=null) c[s.confidence]++;
+    });
     return c;
   })();
 
@@ -600,6 +646,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     // belasten ohnehin das Girokonto, deshalb fast immer gewünscht. Bei anderen
     // Formaten bleibt die Verknüpfung aus (Standard).
     setLinkToGiro(looksLikePayPalCsv(format, resolvedRows));
+    setStagedInfo(null);   // frischer Datensatz → alte Teilimport-Meldung verwerfen
     setStep("review");
   };
 
@@ -614,8 +661,12 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   };
 
   const doImport = () => {
+    setStagedInfo(null);
     const newTxs = [];
     const giroUpdates = {}; // giroTxId → [newTxId, ...]
+    // Gefilterter Import: nur die aktuell sichtbaren Zeilen (importRowFilter).
+    // null ⇒ alles. Bereits importierte Zeilen werden immer übersprungen.
+    const rowFilter = importRowFilter;
 
     // Auto-Verknüpfung vorab berechnen (sicheres 1:1, ohne manuell akzeptierte
     // Zeilen/Giro-Buchungen doppelt zu belegen).
@@ -633,6 +684,8 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     const fpToNewId = {};
     const legLinkByRow = {}; // rowIdx → [fp der Quell-Legs]
     parsed.newRows.forEach((r,i) => {
+      if(r._imported) return;                          // schon importiert (gestuft)
+      if(rowFilter && !rowFilter.has(i)) return;       // außerhalb der Filter-Auswahl
       const {catId="", subId=""} = assign[i]||{};
       const absAmt = Math.abs(r.amount);
       // „PayPal +30": statt der PayPal-Ausgabe eine Giro-Vormerkung für den
@@ -720,6 +773,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     // Doppelzählung.
     if(linkToGiro) Object.entries(legLinkByRow).forEach(([iStr, fps]) => {
       const i = Number(iStr);
+      if(rowFilter && !rowFilter.has(i)) return;
       const acc = (parsed.acceptedSuggs||[]).find(a=>a.rowIdx===i);
       const giroId = acc ? acc.giroId : autoByRow[i]?.id;
       if(!giroId) return;
@@ -778,6 +832,14 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
       });
     }
 
+    // ── Gestufter Import: verarbeitete Zeilen markieren (Indizes bleiben stabil) ──
+    const importedIdx = new Set();
+    parsed.newRows.forEach((r,i)=>{ if(!r._imported && (!rowFilter || rowFilter.has(i))) importedIdx.add(i); });
+    setParsed(p=>({...p,
+      newRows: (p.newRows||[]).map((r,i)=> importedIdx.has(i) ? {...r, _imported:true} : r),
+      acceptedSuggs: (p.acceptedSuggs||[]).filter(a=>!importedIdx.has(a.rowIdx)),
+    }));
+
     // ── Prüfen ob der Vormonat-Ankerpunkt für den ersten importierten Monat fehlt ──
     if(newTxs.length > 0) {
       const importAccId = selAccId || accounts[0]?.id || "acc-giro";
@@ -822,6 +884,13 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
       }
     }
 
+    // Gestufter Import: bleiben Buchungen übrig, im Dialog bleiben (weiter
+    // filtern & erneut importieren); sonst die Erfolgsansicht zeigen.
+    const remainingAfter = (parsed.newRows||[]).filter((r,i)=>!r._imported && !importedIdx.has(i)).length;
+    if(rowFilter && remainingAfter > 0){
+      setStagedInfo({imported:newTxs.length, remaining:remainingAfter});
+      return;
+    }
     setStep("done");
   };
 
@@ -861,14 +930,14 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
         disabled: !csvText.trim(),
       };
     } else if(step === "review") {
-      const n = parsed?.newRows?.length || 0;
+      const n = importBtnCount;
       cfg = n === 0 ? {
         label: "Schließen",
         onConfirm: () => H().onClose(),
         onBack: () => setStep("input"),
         onDismiss: () => H().onClose(),
       } : {
-        label: `${n} importieren${showCatAssign ? " · mit Kategorien ✓" : ""}`,
+        label: `${n}${filteredImport ? " gefilterte" : ""} importieren${showCatAssign ? " · Kat. ✓" : ""}`,
         onConfirm: () => H().doImport(),
         onBack: () => setStep("input"),
         onDismiss: () => H().onClose(),
@@ -883,7 +952,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     }
     setMasterOverride(cfg);
     return () => setMasterOverride(null);
-  }, [step, csvText, parsed, showCatAssign, embedded]);
+  }, [step, csvText, parsed, showCatAssign, embedded, importBtnCount, filteredImport]);
 
   // ── RENDER ──────────────────────────────────────────────────────────────────
   return (
@@ -1112,7 +1181,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
           {!suggFull&&(
           <div style={{background:T.surf2,padding:"10px 16px",borderBottom:`1px solid ${T.bd}`,flexShrink:0,display:"flex",gap:10,flexWrap:"wrap"}}>
             <div style={{textAlign:"center"}}>
-              <div style={{color:T.pos,fontSize:18,fontWeight:800}}>{parsed.newRows.length}</div>
+              <div style={{color:T.pos,fontSize:18,fontWeight:800}}>{notImportedCount}</div>
               <div style={{color:T.txt2,fontSize:10}}>Neu</div>
             </div>
             <div style={{textAlign:"center"}}>
@@ -1278,7 +1347,9 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                   {[["hoch",T.pos,"rgba(34,197,94,0.18)"],["mittel",T.gold,"rgba(245,166,35,0.18)"],
                     ["niedrig",T.txt2,"rgba(255,255,255,0.08)"]].map(([v,col,bg])=>{
                     const active=suggConf===v;
-                    const confDisabled=!showExpenses||onlyUnmatched; // Konfidenz gilt nur für Auto-Ausgaben-Treffer
+                    // Konfidenz gilt für Ein- UND Ausgaben; frei mit den übrigen
+                    // Filtern kombinierbar (ohne Giro + Konfidenz ⇒ 0 Treffer).
+                    const confDisabled=false;
                     return <button key={v} onClick={()=>setSuggConf(c=>c===v?"":v)} disabled={confDisabled}
                       style={{padding:"4px 11px",borderRadius:10,border:`1px solid ${active?col:T.bd}`,
                         background:active?bg:"transparent",color:active?col:T.txt2,opacity:confDisabled?0.4:1,
@@ -1602,12 +1673,13 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
               {!suggFull&&<div style={{color:T.txt2,fontSize:MFSl,padding:"6px 16px 4px",flexShrink:0}}>
                 {showCatAssign
                   ? (search
-                      ? `${parsed.newRows.filter(r=>matchSearch(r.desc,search)).length} von ${parsed.newRows.length} Buchungen`
+                      ? `${parsed.newRows.filter(r=>!r._imported&&matchSearch(r.desc,search)).length} von ${notImportedCount} Buchungen`
                       : "Kategorie zuweisen – die App merkt sich die Regel für gleiche Empfänger:")
-                  : `${parsed.newRows.length} Buchungen werden ohne Kategorie importiert – du kannst sie später unter Erfassen → Buchungen kategorisieren.`}
+                  : `${notImportedCount} Buchungen werden ohne Kategorie importiert – du kannst sie später unter Erfassen → Buchungen kategorisieren.`}
               </div>}
               <div style={{flex:suggFull?"0 0 0px":1,overflowY:"auto",display:suggFull?"none":"block"}}>
                 {parsed.newRows.filter(r=>{
+                  if(r._imported) return false;          // gestuft: bereits importiert
                   if(!search) return true;
                   const isAmt = /^[=<>]?[\d.,]+$/.test(search.trim());
                   if(isAmt) return matchAmount(Math.abs(pn(r.amount||r.totalAmount||0)), search);
@@ -1666,15 +1738,23 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                   <AccountChips accounts={accounts} value={plus30Acc} onChange={setPlus30AccId}/>
                 </div>
               )}
+              {stagedInfo&&(
+                <div style={{padding:"8px 16px",flexShrink:0,display:"flex",alignItems:"center",gap:8,
+                  background:"rgba(34,197,94,0.10)",borderTop:`1px solid ${T.pos}44`,color:T.pos,fontSize:MFSl,fontWeight:600}}>
+                  {Li("check-circle",14,T.pos)} {stagedInfo.imported} importiert · {stagedInfo.remaining} übrig — weiter filtern und erneut importieren.
+                </div>
+              )}
               <div style={{padding:"12px 16px",flexShrink:0,borderTop:`1px solid ${T.bd}`,display:"flex",gap:8}}>
                 <button onClick={()=>setStep("input")}
                   style={{flex:1,padding:"12px",borderRadius:11,border:`1px solid ${T.bds}`,background:"transparent",color:T.txt2,fontSize:MFS,cursor:"pointer"}}>
                   ← Zurück
                 </button>
-                <button onClick={doImport}
-                  style={{flex:2,padding:"12px",borderRadius:11,border:"none",
-                    background:T.pos,color:T.on_accent,fontSize:MFS,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-                  {parsed.newRows.length} Buchungen importieren {showCatAssign?"mit Kategorien ✓":"→"}
+                <button onClick={doImport} disabled={importBtnCount===0}
+                  style={{flex:2,padding:"12px",borderRadius:11,border:"none",opacity:importBtnCount===0?0.5:1,
+                    background:T.pos,color:T.on_accent,fontSize:MFS,fontWeight:700,cursor:importBtnCount===0?"default":"pointer",fontFamily:"inherit"}}>
+                  {filteredImport
+                    ? `${importBtnCount} gefilterte importieren`
+                    : `${importBtnCount} Buchungen importieren`} {showCatAssign?"mit Kategorien ✓":"→"}
                 </button>
               </div>
             </>
