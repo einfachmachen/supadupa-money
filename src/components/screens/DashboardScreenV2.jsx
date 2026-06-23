@@ -563,6 +563,14 @@ function DashboardScreenV2() {
     const _drillH2 = t => { const d=new Date(t.date); return d.getFullYear()===year&&d.getMonth()===month&&d.getDate()<=14; };
     const resolveDrillList = (dd) => {
       if(!dd?.kind) return dd?.txList || [];
+      // Kategorie-/Unterkategorie-Drilldown: live aus den (monatsreaktiven)
+      // _catTxMaps neu aufbauen, damit das Modal beim Monatswechsel mitwandert.
+      if(dd.kind==="cat"){
+        let base = (_catTxMaps.realByCat.get(dd.catId)||[]).concat(_catTxMaps.pendByCat.get(dd.catId)||[]);
+        if(dd.subId) base = base.filter(t=>(t.splits||[]).some(sp=>sp.subId===dd.subId||sp.catId===dd.subId));
+        const maxDay = dd.mitte ? 14 : new Date(year,month+1,0).getDate();
+        return base.filter(t => (dd.realOnly ? !t.pending : true) && new Date(t.date).getDate()<=maxDay);
+      }
       const inM   = arr => _mitteAbg ? [] : arr.filter(_drillH2);
       const pendM = arr => _mitteAbg ? [] : arr.filter(t=>_drillH2(t)&&(!t._budgetSubId||t._budgetSubId.endsWith("_mitte")));
       switch(dd.kind){
@@ -575,14 +583,23 @@ function DashboardScreenV2() {
         default:         return dd.txList || [];
       }
     };
-    const resolveDrillTotal = (dd, list) =>
-      !dd?.kind || dd.kind.startsWith("uncat") ? (dd?.kind ? null : dd?.total)
-        : dd.isPending ? list.reduce((s,t)=>s+pendVmAmt(t),0)
+    const resolveDrillTotal = (dd, list) => {
+      if(!dd?.kind) return dd?.total;
+      if(dd.kind==="cat"){
+        const amt = t => dd.subId
+          ? Math.abs((t.splits||[]).find(sp=>sp.subId===dd.subId||sp.catId===dd.subId)?.amount || (t.pending?Math.abs(t.totalAmount):0))
+          : Math.abs(t.totalAmount||0);
+        return list.filter(t=>!(t.pending&&t._budgetSubId)).reduce((s,t)=>s+amt(t),0);
+      }
+      if(dd.kind.startsWith("uncat")) return null;
+      return dd.isPending ? list.reduce((s,t)=>s+pendVmAmt(t),0)
         : list.reduce((s,t)=>s+Math.abs(t.totalAmount||0),0);
+    };
     const dashDrillList  = dashDrill ? resolveDrillList(dashDrill) : [];
     const dashDrillTotal = dashDrill ? resolveDrillTotal(dashDrill, dashDrillList) : null;
-    // Eingefrorene (nicht-reaktive) Drilldowns beim Monatswechsel schließen, damit
-    // keine veralteten Buchungen stehen bleiben. Reaktive (kind/cat) wandern mit.
+    // Sicherheitsnetz: sollte je ein Drilldown OHNE Deskriptor (kind/cat) offen
+    // sein, beim Monatswechsel schließen, damit keine veralteten Buchungen stehen
+    // bleiben. Alle aktuellen Drilldowns sind reaktiv (kind) und wandern mit.
     React.useEffect(()=>{
       if(dashDrill && !dashDrill.kind && !dashDrill.cat) setDashDrill(null);
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1243,19 +1260,13 @@ function DashboardScreenV2() {
 
                 // Oeffnet direkt die Buchungsliste (kein Sub-Modal) fuer einen Zeitraum
                 const openCatDrill = (maxDay, lbl, val, realOnly) => {
-                  const list = monthCatTxs.filter(t =>
-                    (realOnly ? !t.pending : true) && new Date(t.date).getDate() <= maxDay);
-                  setDashDrill({ cat:null, label:`${cat.name} — ${lbl}`, txList:list,
-                    isIncome, total:val, _subDrillNoBudget:true });
+                  setDashDrill({ kind:"cat", catId:cat.id, mitte:maxDay===14, realOnly, isIncome,
+                    cat:null, label:`${cat.name} — ${lbl}`, _subDrillNoBudget:true });
                   setDashSearch("");
                 };
                 const openSubInlineDrill = (sub, subTxs, maxDay, lbl, val, realOnly) => {
-                  const list = subTxs.filter(t =>
-                    !(t.pending&&t._budgetSubId) &&
-                    (realOnly ? !t.pending : true) &&
-                    new Date(t.date).getDate() <= maxDay);
-                  setDashDrill({ cat:null, label:`${cat.name} / ${sub.name} — ${lbl}`, txList:list,
-                    isIncome, total:val, _subDrillNoBudget:true });
+                  setDashDrill({ kind:"cat", catId:cat.id, subId:sub.id, mitte:maxDay===14, realOnly, isIncome,
+                    cat:null, label:`${cat.name} / ${sub.name} — ${lbl}`, _subDrillNoBudget:true });
                   setDashSearch("");
                 };
 
@@ -1554,17 +1565,11 @@ function DashboardScreenV2() {
                               })();
                               const budgetEndeS = getBudgetForMonth(sub.id,year,month);
                               const openSubDrill = (maxDay, lbl) => {
-                                const txList = subTxs.filter(t=>{
-                                  if(t.pending&&t._budgetSubId) return false;
-                                  const d=new Date(t.date);
-                                  return d.getDate()<=maxDay;
-                                }).sort(drillSort);
                                 setDashDrill({
+                                  kind:"cat", catId:cat.id, subId:sub.id, mitte:maxDay===14, realOnly:false,
                                   label:`${cat.name} / ${sub.name} — ${lbl}`,
-                                  txList,
                                   isIncome: cat.type==="income",
                                   cat: null, // null = zeige Buchungsliste direkt
-                                  uncatCount:0, total:null,
                                   _subDrillNoBudget:true,
                                 });
                                 setDashSearch("");
