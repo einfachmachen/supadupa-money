@@ -359,10 +359,11 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: T.surf || T.bg, zIndex: 300, display: "flex", alignItems: "flex-start" }}>
       <div onClick={e => e.stopPropagation()} style={{ width: "100%", height: "100dvh", maxHeight: "100dvh", overflow: "hidden", background: T.surf || T.bg, display: "flex", flexDirection: "column", paddingLeft: 5, paddingRight: 5, paddingTop: "calc(8px + env(safe-area-inset-top, 0px))", paddingBottom: "58px" }}>
-        <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-          {/* Titel (Hauptkategorie) links bündig mit der Kategorieliste darunter. */}
-          <span style={{ flex: 1, paddingLeft: 15, color: T.txt, fontSize: 17, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
-          <button onClick={onClose} style={{ ...navBtn, width: 34, height: 34 }}>{Li("x", 16, T.txt2)}</button>
+        <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+          {/* Zurück-Pfeil der Hauptkategorie (zurück zur Trend-Übersicht). */}
+          <button onClick={onClose} title="Zurück" style={{ ...navBtn, width: 40, height: 40, borderRadius: 8, flexShrink: 0 }}>{Li("chevron-left", 28, T.txt)}</button>
+          <span style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 21, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+          <button onClick={onClose} style={{ ...navBtn, width: 36, height: 36, flexShrink: 0 }}>{Li("x", 18, T.txt2)}</button>
         </div>
 
         {/* Scrollende Mitte: Inhalte von UNTEN nach oben verankert (direkt über dem
@@ -373,20 +374,19 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
         {/* Oberer Extra-Bereich: Einzelbeträge, je Zeile per Chevron ausklappbar */}
         {bookings && (
           <div style={{ border: `1px solid ${T.bd}`, borderRadius: 12, padding: "8px 6px", marginBottom: 8, background: "rgba(255,255,255,0.02)" }}>
-            {/* Zurück-Pfeil auf eigener Zeile darüber, damit der Kategoriename bündig
-                links mit der Unterkategorie-Liste steht (eine Flucht). */}
-            {drilledSub && (
-              <button onClick={() => setSelSub(null)} title="Zurück"
-                style={{ ...navBtn, width: 40, height: 36, borderRadius: 8, marginBottom: 2 }}>{Li("chevron-left", 26, T.txt)}</button>
-            )}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, paddingLeft: 8 }}>
-              <span style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {/* Unterkategorie-Kopf: Zurück-Pfeil inline links vor dem Namen. */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+              {drilledSub && (
+                <button onClick={() => setSelSub(null)} title="Zurück"
+                  style={{ ...navBtn, width: 40, height: 40, borderRadius: 8, flexShrink: 0 }}>{Li("chevron-left", 28, T.txt)}</button>
+              )}
+              <span style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 20, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {drilledSub ? drilledSub.name : name}
-                <span style={{ color: T.txt2, fontSize: 11, fontWeight: 400, marginLeft: 6 }}>
+                <span style={{ color: T.txt2, fontSize: 12, fontWeight: 400, marginLeft: 6 }}>
                   {bookings.length} {bookings.length === 1 ? "Buchung" : "Buchungen"}
                 </span>
               </span>
-              <span style={{ color: isIncome ? T.pos : T.txt, fontSize: 15, fontWeight: 800, fontFamily: NUM_FONT }}>{fmt(headTotal)}</span>
+              <span style={{ color: isIncome ? T.pos : T.txt, fontSize: 19, fontWeight: 800, fontFamily: NUM_FONT }}>{fmt(headTotal)}</span>
             </div>
             {bookings.length === 0 ? (
               <div style={{ color: T.txt2, fontSize: 12, padding: "4px 0" }}>Keine Buchungen in diesem Monat.</div>
@@ -400,13 +400,13 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
                     return (
                       <div key={i} ref={open ? openRowRef : null} style={{ flexShrink: 0, borderRadius: 6, overflow: "hidden", background: open ? "rgba(255,255,255,0.05)" : "transparent", border: `1px solid ${open ? T.bd : "transparent"}` }}>
                         <button onClick={() => setOpenBk(open ? null : i)}
-                          style={{ position: "relative", width: "100%", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", borderRadius: 6, overflow: "hidden", padding: "5px 8px", display: "block", textAlign: "left" }}>
+                          style={{ position: "relative", width: "100%", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", borderRadius: 6, overflow: "hidden", padding: "7px 8px", display: "block", textAlign: "left" }}>
                           <div style={{ position: "absolute", inset: 0, width: `${(it.val / bkMax) * 100}%`, background: (isIncome ? T.pos : T.blue) + "22" }} />
                           <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8 }}>
-                            {Li(open ? "chevron-down" : "chevron-right", 13, T.txt2)}
-                            <span style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
-                            <span style={{ color: T.txt2, fontSize: 10, flexShrink: 0, whiteSpace: "nowrap" }}>{it.dateStr}</span>
-                            <span style={{ color: T.txt, fontSize: 12, fontWeight: 700, fontFamily: NUM_FONT, flexShrink: 0, whiteSpace: "nowrap" }}>{fmt(it.val)}</span>
+                            {Li(open ? "chevron-down" : "chevron-right", 16, T.txt2)}
+                            <span style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
+                            <span style={{ color: T.txt2, fontSize: 12, flexShrink: 0, whiteSpace: "nowrap" }}>{it.dateStr}</span>
+                            <span style={{ color: T.txt, fontSize: 16, fontWeight: 700, fontFamily: NUM_FONT, flexShrink: 0, whiteSpace: "nowrap" }}>{fmt(it.val)}</span>
                           </div>
                         </button>
                         {open && (
@@ -432,23 +432,23 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
         {isCat && (
           <div style={{ border: `1px solid ${T.bd}`, borderRadius: 12, padding: "8px 6px", marginBottom: 8, background: "rgba(255,255,255,0.02)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-              <span style={{ flex: 1, color: T.txt, fontSize: 13, fontWeight: 700 }}>{MONTHS_F[sel]} {year}</span>
-              <span style={{ color: isIncome ? T.pos : T.txt, fontSize: 15, fontWeight: 800, fontFamily: NUM_FONT }}>{fmt(selTotal)}</span>
+              <span style={{ flex: 1, color: T.txt, fontSize: 15, fontWeight: 700 }}>{MONTHS_F[sel]} {year}</span>
+              <span style={{ color: isIncome ? T.pos : T.txt, fontSize: 18, fontWeight: 800, fontFamily: NUM_FONT }}>{fmt(selTotal)}</span>
             </div>
             {subBreakdown.length === 0 ? (
-              <div style={{ color: T.txt2, fontSize: 12, padding: "4px 0" }}>Keine Buchungen in diesem Monat.</div>
+              <div style={{ color: T.txt2, fontSize: 13, padding: "4px 0" }}>Keine Buchungen in diesem Monat.</div>
             ) : (
-              <div className="sdm-scroll" style={{ maxHeight: 170, overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
+              <div className="sdm-scroll" style={{ maxHeight: 200, overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
                 {subBreakdown.map((it, i) => {
                   const active = it.subId === selSub;
                   return (
                     <div key={i} onClick={() => setSelSub(it.subId)}
-                      style={{ flexShrink: 0, position: "relative", borderRadius: 6, overflow: "hidden", padding: "6px 8px", cursor: "pointer", outline: active ? `1px solid ${T.gold}` : "none" }}>
+                      style={{ flexShrink: 0, position: "relative", borderRadius: 6, overflow: "hidden", padding: "8px 8px", cursor: "pointer", outline: active ? `1px solid ${T.gold}` : "none" }}>
                       <div style={{ position: "absolute", inset: 0, width: `${(it.val / subMax) * 100}%`, background: (isIncome ? T.pos : T.blue) + "22" }} />
                       <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ flex: 1, minWidth: 0, color: active ? T.gold : T.txt, fontSize: 12, fontWeight: active ? 700 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
-                        <span style={{ color: T.txt, fontSize: 12, fontWeight: 600, fontFamily: NUM_FONT, flexShrink: 0 }}>{fmt(it.val)}</span>
-                        {Li("chevron-right", 13, active ? T.gold : T.txt2)}
+                        <span style={{ flex: 1, minWidth: 0, color: active ? T.gold : T.txt, fontSize: 20, fontWeight: active ? 700 : 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
+                        <span style={{ color: T.txt, fontSize: 18, fontWeight: 600, fontFamily: NUM_FONT, flexShrink: 0 }}>{fmt(it.val)}</span>
+                        {Li("chevron-right", 18, active ? T.gold : T.txt2)}
                       </div>
                     </div>
                   );
