@@ -18,9 +18,7 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { MONTHS_S, MONTHS_F } from "../../utils/constants.js";
 import { fmt, pn, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
-import { YearViewToggle } from "../molecules/YearViewToggle.jsx";
-import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
-import { useSaldoHeroData } from "../../state/useSaldoHeroData.js";
+import { YearSectionHeader } from "../molecules/YearSectionHeader.jsx";
 
 const RANGE = 12;
 // Schwellen für die Abweichung vom 12-Monats-Schnitt (dev = Ist / Schnitt).
@@ -43,12 +41,9 @@ function classify(dev, isIncome) {
 const fmtK = (v) => v >= 1000 ? (Math.round(v / 100) / 10) + "k" : String(Math.round(v));
 
 function MoneyMoodScreen() {
-  const { cats, groups, txs, year, month, getActualSum, getBudgetForMonth, getAcc } = useContext(AppCtx);
+  const { cats, groups, txs, year, getActualSum, getBudgetForMonth, getAcc } = useContext(AppCtx);
   const [openCat, setOpenCat] = useState(null);   // aufgeklappte Hauptkategorie
   const [detail, setDetail] = useState(null);     // { row, isSub, isIncome }
-  const [heroOpen, setHeroOpen] = useState(false);
-  const heroData = useSaldoHeroData(year, month);
-  const noop = () => {};
 
   const now = new Date();
   const nowY = now.getFullYear(), nowM = now.getMonth();
@@ -185,13 +180,7 @@ function MoneyMoodScreen() {
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflowY: "auto", background: T.bg }}>
-      <YearViewToggle active="mood" />
-
-      {/* Hero wie im Dashboard/Monat */}
-      <SaldoHeroV2 year={year} month={month} {...heroData}
-        onDrillBuchIn={noop} onDrillBuchOut={noop} onDrillPendIn={noop} onDrillPendOut={noop}
-        onDrillUncatIn={noop} onDrillUncatOut={noop}
-        detailsOpen={heroOpen} setDetailsOpen={setHeroOpen} />
+      <YearSectionHeader active="mood" />
 
       <div style={{ color: T.txt2, fontSize: 11, padding: "8px 14px 6px", lineHeight: 1.45 }}>
         12 Monate gegen den eigenen Schnitt – <b style={{ color: T.pos }}>grün</b> üblich,
