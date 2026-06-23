@@ -41,7 +41,7 @@ function classify(dev, isIncome) {
 const fmtK = (v) => v >= 1000 ? (Math.round(v / 100) / 10) + "k" : String(Math.round(v));
 
 function MoneyMoodScreen() {
-  const { cats, groups, txs, year, getActualSum, getBudgetForMonth, getAcc } = useContext(AppCtx);
+  const { cats, groups, txs, year, getActualSum, getBudgetForMonth, getAcc, getTotalIncome, getTotalExpense } = useContext(AppCtx);
   const [openCat, setOpenCat] = useState(null);   // aufgeklappte Hauptkategorie
   const [detail, setDetail] = useState(null);     // { row, isSub, isIncome }
 
@@ -90,14 +90,40 @@ function MoneyMoodScreen() {
     return { expense: mk(false), income: mk(true) };
   }, [cats, groups, year, getActualSum, getBudgetForMonth]);
 
-  // Abweichung des Monats mi vom Schnitt der vorangehenden 12 Monate (nur Monate
-  // mit Bewegung; <2 Datenpunkte → null = neutral, damit Neues nicht sofort rot wird).
-  const devAt = (row, mi) => {
+  // Monate, in denen die Gesamtlage kippt: Ausgaben > Einnahmen (Schieflage).
+  // Nur dann werden Kategorien überhaupt gelb/rot eingefärbt.
+  const strained = useMemo(() => {
+    const out = [];
+    for (let mi = 0; mi < RANGE; mi++) {
+      const inc = Math.abs(getTotalIncome(year, mi) || 0);
+      const exp = Math.abs(getTotalExpense(year, mi) || 0);
+      out.push(exp > inc);
+    }
+    return out;
+  }, [year, getTotalIncome, getTotalExpense]);
+
+  // Ist-Wert + gleitender 12-Monats-Schnitt + Abweichung (nur Monate mit Bewegung;
+  // <2 Datenpunkte → null = neutral, damit Neues nicht sofort auffällt).
+  const statAt = (row, mi) => {
     const v = row.actual[mi];
     const win = row.ext.slice(mi, mi + 12).filter(x => x > 0);
     if (win.length < 2) return null;
     const avg = win.reduce((s, x) => s + x, 0) / win.length;
-    return avg > 0 ? v / avg : null;
+    return avg > 0 ? { v, avg, dev: v / avg } : null;
+  };
+  // „Gesamtlage zuerst": Kategorie nur einfärben, wenn der Monat insgesamt kippt
+  // UND die Kategorie spürbar (≥ FLOOR €) über ihrem Schnitt liegt (bzw. Einnahmen
+  // darunter). Sonst grün. Passt das Gesamtbild → alles grün.
+  const FLOOR = 75;
+  const monthMood = (row, mi) => {
+    const v = row.actual[mi];
+    if (v <= 0) return { c: T.bd, sev: -1 };
+    if (!strained[mi]) return { c: T.pos, sev: 0 };
+    const st = statAt(row, mi);
+    if (!st) return { c: T.pos, sev: 0 };
+    const gap = row.isIncome ? (st.avg - st.v) : (st.v - st.avg);
+    if (gap < FLOOR) return { c: T.pos, sev: 0 };
+    return classify(st.dev, row.isIncome);
   };
   // Reihen-Stimmung = schlimmster Monat ab dem aktuellen (inkl. kommender Belastungen).
   const rowMood = (row) => {
@@ -105,7 +131,7 @@ function MoneyMoodScreen() {
     const start = recentIdx < 0 ? 0 : recentIdx;
     for (let mi = start; mi < RANGE; mi++) {
       if (row.actual[mi] <= 0) continue;
-      const m = classify(devAt(row, mi), row.isIncome);
+      const m = monthMood(row, mi);
       if (m.sev > best.sev) best = m;
     }
     return best;
@@ -118,7 +144,7 @@ function MoneyMoodScreen() {
     return (
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "flex-end", gap: 1, height: h, width: 60, marginLeft: 16, flexShrink: 0 }}>
         {row.actual.map((v, mi) => {
-          const { c } = classify(devAt(row, mi), row.isIncome);
+          const { c } = monthMood(row, mi);
           const bh = Math.max(2, Math.round((v / maxV) * h));
           return <div key={mi} title={`${MONTHS_S[mi]}: ${fmt(v)}`}
             style={{ width: 4, height: bh, background: v > 0 ? c : T.bd, opacity: v > 0 ? (mi === recentIdx ? 1 : 0.9) : 0.18, borderRadius: 1 }} />;
@@ -183,8 +209,8 @@ function MoneyMoodScreen() {
       <YearSectionHeader active="mood" />
 
       <div style={{ color: T.txt2, fontSize: 11, padding: "8px 14px 6px", lineHeight: 1.45 }}>
-        12 Monate gegen den eigenen Schnitt – <b style={{ color: T.pos }}>grün</b> üblich,
-        {" "}<b style={{ color: T.gold }}>gelb</b> spürbar drüber, <b style={{ color: T.neg }}>rot</b> massiv drüber.
+        <b style={{ color: T.gold }}>Gelb</b>/<b style={{ color: T.neg }}>rot</b> nur in Monaten, in denen insgesamt mehr aus- als einging –
+        {" "}und diese Kategorie auffällig dazu beitrug. Sonst <b style={{ color: T.pos }}>grün</b>.
       </div>
 
       {renderBlock("Ausgaben", blocks.expense, T.neg)}
@@ -195,7 +221,7 @@ function MoneyMoodScreen() {
         </div>
       )}
 
-      {detail && <MoodDetail {...detail} year={year} txs={txs} getAcc={getAcc} recentIdx={recentIdx} elapsedIdx={elapsedIdx} devAt={devAt} onClose={() => setDetail(null)} />}
+      {detail && <MoodDetail {...detail} year={year} txs={txs} getAcc={getAcc} recentIdx={recentIdx} elapsedIdx={elapsedIdx} monthMood={monthMood} onClose={() => setDetail(null)} />}
     </div>
   );
 }
@@ -206,7 +232,7 @@ const navBtn = {
 };
 
 // ── Drilldown: 12 Monatsbalken (Gesamtbetrag oben, klickbar) + Zusammensetzung ──
-function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapsedIdx, devAt, onClose }) {
+function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapsedIdx, monthMood, onClose }) {
   const { name, actual, budget } = row;
   const isCat = !isSub && !!row.subs;
   // Startmonat: jüngster Monat mit Bewegung.
@@ -360,7 +386,7 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
             const x = padL + i * bw;
             const bh = (a / maxV) * chartH;
             const future = i > elapsedIdx && elapsedIdx >= 0;
-            const { c } = classify(devAt(row, i), isIncome);
+            const { c } = monthMood(row, i);
             const seld = i === sel;
             return (
               <g key={i} onClick={() => setSel(i)} style={{ cursor: "pointer" }}>
