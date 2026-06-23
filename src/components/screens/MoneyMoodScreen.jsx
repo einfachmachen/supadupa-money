@@ -276,6 +276,13 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
   const [openBk, setOpenBk] = useState(null);   // ausgeklappte Einzelbuchung
   useEffect(() => { setOpenBk(null); }, [sel, selSub]);
 
+  // + Button (Bottom-Nav) ausblenden, solange dieser Drilldown offen ist —
+  // sonst verdeckt er unten die Monatsbalken. App.jsx hört auf dieses Event.
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("sdm-drill", { detail: true }));
+    return () => window.dispatchEvent(new CustomEvent("sdm-drill", { detail: false }));
+  }, []);
+
   // Einzelbuchungen einer Unterkategorie in Monat mi (inkl. voller Buchung).
   const bookingsForSub = (subId, mi) => {
     const out = [];
@@ -323,7 +330,7 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)", zIndex: 300, display: "flex", alignItems: "flex-end" }}>
-      <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxHeight: "88vh", overflowY: "auto", background: T.surf || T.bg, borderTopLeftRadius: 18, borderTopRightRadius: 18, borderTop: `1px solid ${T.bd}`, padding: "14px 16px 0", paddingBottom: "calc(96px + env(safe-area-inset-bottom, 0px))" }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxHeight: "88vh", overflowY: "auto", background: T.surf || T.bg, borderTopLeftRadius: 18, borderTopRightRadius: 18, borderTop: `1px solid ${T.bd}`, padding: "12px 14px 0", paddingBottom: "calc(64px + env(safe-area-inset-bottom, 0px))" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
           <span style={{ flex: 1, color: T.txt, fontSize: 17, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
           <button onClick={onClose} style={{ ...navBtn, width: 34, height: 34 }}>{Li("x", 16, T.txt2)}</button>
@@ -331,53 +338,58 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
 
         {/* Oberer Extra-Bereich: Einzelbeträge, je Zeile per Chevron ausklappbar */}
         {bookings && (
-          <div style={{ border: `1px solid ${T.bd}`, borderRadius: 12, padding: "10px 12px", marginBottom: 12, background: "rgba(255,255,255,0.02)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+          <div style={{ border: `1px solid ${T.bd}`, borderRadius: 12, padding: "8px 10px", marginBottom: 8, background: "rgba(255,255,255,0.02)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
               {drilledSub && (
                 <button onClick={() => setSelSub(null)} title="Zurück"
                   style={{ ...navBtn, width: 24, height: 24, borderRadius: 6 }}>{Li("chevron-left", 14, T.txt2)}</button>
               )}
               <span style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {drilledSub ? drilledSub.name : name}
-                <span style={{ color: T.txt2, fontSize: 11, fontWeight: 400, marginLeft: 6 }}>{MONTHS_F[sel]} {year}</span>
+                <span style={{ color: T.txt2, fontSize: 11, fontWeight: 400, marginLeft: 6 }}>
+                  {bookings.length} {bookings.length === 1 ? "Buchung" : "Buchungen"}
+                </span>
               </span>
               <span style={{ color: isIncome ? T.pos : T.txt, fontSize: 15, fontWeight: 800, fontFamily: NUM_FONT }}>{fmt(headTotal)}</span>
             </div>
             {bookings.length === 0 ? (
               <div style={{ color: T.txt2, fontSize: 12, padding: "4px 0" }}>Keine Buchungen in diesem Monat.</div>
             ) : (
-              <div style={{ maxHeight: 220, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
-                {bookings.map((it, i) => {
-                  const open = openBk === i;
-                  const acc = (getAcc && it.tx.accountId) ? getAcc(it.tx.accountId) : null;
-                  const txTotal = Math.abs(it.tx.totalAmount || 0);
-                  return (
-                    <div key={i} style={{ flexShrink: 0, borderRadius: 6, overflow: "hidden", background: open ? "rgba(255,255,255,0.04)" : "transparent", border: `1px solid ${open ? T.bd : "transparent"}` }}>
-                      <button onClick={() => setOpenBk(open ? null : i)}
-                        style={{ position: "relative", width: "100%", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", borderRadius: 6, overflow: "hidden", padding: "9px 10px", display: "block", textAlign: "left" }}>
-                        <div style={{ position: "absolute", inset: 0, width: `${(it.val / bkMax) * 100}%`, background: (isIncome ? T.pos : T.blue) + "22" }} />
-                        <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 8 }}>
-                          <span style={{ flexShrink: 0, marginTop: 1, lineHeight: 0 }}>{Li(open ? "chevron-down" : "chevron-right", 13, T.txt2)}</span>
-                          <span style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 12, lineHeight: 1.35, overflowWrap: "anywhere" }}>{it.name}</span>
-                          <span style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1, marginLeft: 4 }}>
-                            <span style={{ color: T.txt, fontSize: 12, fontWeight: 700, fontFamily: NUM_FONT, whiteSpace: "nowrap" }}>{fmt(it.val)}</span>
-                            <span style={{ color: T.txt2, fontSize: 10, whiteSpace: "nowrap" }}>{it.dateStr}</span>
-                          </span>
-                        </div>
-                      </button>
-                      {open && (
-                        <div style={{ padding: "6px 10px 9px 28px", display: "flex", flexDirection: "column", gap: 3 }}>
-                          <Field label="Verwendungszweck" value={it.tx.desc || "—"} wrap />
-                          {it.tx.note && <Field label="Notiz" value={it.tx.note} wrap />}
-                          <Field label="Datum" value={fullDate(it.tx.date)} />
-                          {acc && <Field label="Konto" value={acc.name} />}
-                          <Field label="Betrag (Anteil)" value={fmt(it.val)} />
-                          {Math.round(txTotal * 100) !== Math.round(it.val * 100) && <Field label="Buchung gesamt" value={fmt(txTotal)} />}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+              <div style={{ position: "relative" }}>
+                <div className="sdm-scroll" style={{ maxHeight: 260, overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
+                  {bookings.map((it, i) => {
+                    const open = openBk === i;
+                    const acc = (getAcc && it.tx.accountId) ? getAcc(it.tx.accountId) : null;
+                    const txTotal = Math.abs(it.tx.totalAmount || 0);
+                    return (
+                      <div key={i} style={{ flexShrink: 0, borderRadius: 6, overflow: "hidden", background: open ? "rgba(255,255,255,0.05)" : "transparent", border: `1px solid ${open ? T.bd : "transparent"}` }}>
+                        <button onClick={() => setOpenBk(open ? null : i)}
+                          style={{ position: "relative", width: "100%", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", borderRadius: 6, overflow: "hidden", padding: "5px 10px", display: "block", textAlign: "left" }}>
+                          <div style={{ position: "absolute", inset: 0, width: `${(it.val / bkMax) * 100}%`, background: (isIncome ? T.pos : T.blue) + "22" }} />
+                          <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8 }}>
+                            {Li(open ? "chevron-down" : "chevron-right", 13, T.txt2)}
+                            <span style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 12, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
+                            <span style={{ color: T.txt2, fontSize: 10, flexShrink: 0, whiteSpace: "nowrap" }}>{it.dateStr}</span>
+                            <span style={{ color: T.txt, fontSize: 12, fontWeight: 700, fontFamily: NUM_FONT, flexShrink: 0, whiteSpace: "nowrap" }}>{fmt(it.val)}</span>
+                          </div>
+                        </button>
+                        {open && (
+                          <div style={{ padding: "6px 10px 9px 28px", display: "flex", flexDirection: "column", gap: 3 }}>
+                            <Field label="Verwendungszweck" value={it.tx.desc || "—"} wrap />
+                            {it.tx.note && <Field label="Notiz" value={it.tx.note} wrap />}
+                            <Field label="Datum" value={fullDate(it.tx.date)} />
+                            {acc && <Field label="Konto" value={acc.name} />}
+                            <Field label="Betrag (Anteil)" value={fmt(it.val)} />
+                            {Math.round(txTotal * 100) !== Math.round(it.val * 100) && <Field label="Buchung gesamt" value={fmt(txTotal)} />}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {bookings.length > 7 && (
+                  <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 18, background: `linear-gradient(to bottom, transparent, ${T.surf || T.bg})`, pointerEvents: "none" }} />
+                )}
               </div>
             )}
           </div>
@@ -385,23 +397,23 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
 
         {/* Unterkategorie-Zusammensetzung des Monats (nur Hauptkategorien) */}
         {isCat && (
-          <div style={{ border: `1px solid ${T.bd}`, borderRadius: 12, padding: "10px 12px", marginBottom: 12, background: "rgba(255,255,255,0.02)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+          <div style={{ border: `1px solid ${T.bd}`, borderRadius: 12, padding: "8px 10px", marginBottom: 8, background: "rgba(255,255,255,0.02)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
               <span style={{ flex: 1, color: T.txt, fontSize: 13, fontWeight: 700 }}>{MONTHS_F[sel]} {year}</span>
               <span style={{ color: isIncome ? T.pos : T.txt, fontSize: 15, fontWeight: 800, fontFamily: NUM_FONT }}>{fmt(selTotal)}</span>
             </div>
             {subBreakdown.length === 0 ? (
               <div style={{ color: T.txt2, fontSize: 12, padding: "4px 0" }}>Keine Buchungen in diesem Monat.</div>
             ) : (
-              <div style={{ maxHeight: 150, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+              <div className="sdm-scroll" style={{ maxHeight: 170, overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
                 {subBreakdown.map((it, i) => {
                   const active = it.subId === selSub;
                   return (
                     <div key={i} onClick={() => setSelSub(it.subId)}
-                      style={{ flexShrink: 0, position: "relative", borderRadius: 6, overflow: "hidden", padding: "8px 8px", cursor: "pointer", outline: active ? `1px solid ${T.gold}` : "none" }}>
+                      style={{ flexShrink: 0, position: "relative", borderRadius: 6, overflow: "hidden", padding: "6px 8px", cursor: "pointer", outline: active ? `1px solid ${T.gold}` : "none" }}>
                       <div style={{ position: "absolute", inset: 0, width: `${(it.val / subMax) * 100}%`, background: (isIncome ? T.pos : T.blue) + "22" }} />
                       <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ flex: 1, minWidth: 0, color: active ? T.gold : T.txt, fontSize: 12, fontWeight: active ? 700 : 400, lineHeight: 1.3, overflowWrap: "anywhere" }}>{it.name}</span>
+                        <span style={{ flex: 1, minWidth: 0, color: active ? T.gold : T.txt, fontSize: 12, fontWeight: active ? 700 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
                         <span style={{ color: T.txt, fontSize: 12, fontWeight: 600, fontFamily: NUM_FONT, flexShrink: 0 }}>{fmt(it.val)}</span>
                         {Li("chevron-right", 13, active ? T.gold : T.txt2)}
                       </div>
