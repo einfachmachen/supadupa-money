@@ -41,7 +41,7 @@ function classify(dev, isIncome) {
 const fmtK = (v) => v >= 1000 ? (Math.round(v / 100) / 10) + "k" : String(Math.round(v));
 
 function MoneyMoodScreen() {
-  const { cats, groups, txs, year, setYear, getActualSum, getBudgetForMonth, getAcc } = useContext(AppCtx);
+  const { cats, groups, txs, year, getActualSum, getBudgetForMonth, getAcc } = useContext(AppCtx);
   const [openCat, setOpenCat] = useState(null);   // aufgeklappte Hauptkategorie
   const [detail, setDetail] = useState(null);     // { row, isSub, isIncome }
 
@@ -177,9 +177,7 @@ function MoneyMoodScreen() {
         <span style={{ color: T.txt, fontSize: 18, fontWeight: 800, flex: 1, display: "flex", alignItems: "center", gap: 7 }}>
           {Li("activity", 17, T.gold)} Money Mood
         </span>
-        <button onClick={() => setYear(y => y - 1)} style={navBtn}>{Li("chevron-left", 15, T.txt2)}</button>
-        <span style={{ color: T.txt, fontSize: 15, fontWeight: 700, fontFamily: NUM_FONT, minWidth: 42, textAlign: "center" }}>{year}</span>
-        <button onClick={() => setYear(y => y + 1)} style={navBtn}>{Li("chevron-right", 15, T.txt2)}</button>
+        <span style={{ color: T.txt, fontSize: 16, fontWeight: 800, fontFamily: NUM_FONT }}>{year}</span>
       </div>
 
       <div style={{ color: T.txt2, fontSize: 11, padding: "7px 14px 9px", lineHeight: 1.45 }}>
