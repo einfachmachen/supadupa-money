@@ -2,7 +2,7 @@
 // frische index.html geladen wird (verhindert den alten Ladebildschirm aus dem
 // Cache). Offline gibt es einen Fallback auf die zuletzt gesehene Version.
 // JS/CSS sind content-gehasht und laufen über den normalen Browser-Cache.
-const CACHE = "supadupa-money-v4";
+const CACHE = "supadupa-money-v5";
 
 self.addEventListener("install", e => {
   self.skipWaiting(); // neue Version sofort übernehmen
@@ -10,10 +10,20 @@ self.addEventListener("install", e => {
 
 self.addEventListener("activate", e => {
   e.waitUntil((async () => {
-    // alte Caches aufräumen
+    // ALLE Caches leeren (nicht nur fremde) — entfernt jede veraltete, im SW
+    // gecachte index.html, die auf nicht mehr existierende JS-Chunks zeigt.
     const keys = await caches.keys();
-    await Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)));
+    await Promise.all(keys.map(k => caches.delete(k)));
     await self.clients.claim();
+    // Erzwungene Aktualisierung: jeden offenen Tab einmal neu laden. Der Reload
+    // läuft über den frischen SW (network-first, cache:"reload") und holt
+    // garantiert die aktuelle Version. Verhindert, dass Geräte auf einer alten
+    // Shell „festkleben". Greift nur beim Wechsel auf eine neue SW-Version,
+    // daher keine Endlosschleife.
+    try {
+      const wins = await self.clients.matchAll({ type: "window" });
+      for (const c of wins) { try { await c.navigate(c.url); } catch (_) {} }
+    } catch (_) {}
   })());
 });
 
