@@ -2,7 +2,7 @@
 // frische index.html geladen wird (verhindert den alten Ladebildschirm aus dem
 // Cache). Offline gibt es einen Fallback auf die zuletzt gesehene Version.
 // JS/CSS sind content-gehasht und laufen über den normalen Browser-Cache.
-const CACHE = "supadupa-money-v2";
+const CACHE = "supadupa-money-v3";
 
 self.addEventListener("install", e => {
   self.skipWaiting(); // neue Version sofort übernehmen
