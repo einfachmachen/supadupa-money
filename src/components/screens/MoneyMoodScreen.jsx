@@ -358,11 +358,14 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: T.surf || T.bg, zIndex: 300, display: "flex", alignItems: "flex-start" }}>
-      <div onClick={e => e.stopPropagation()} style={{ width: "100%", height: "100dvh", maxHeight: "100dvh", overflowY: "auto", background: T.surf || T.bg, padding: "10px 5px 0", paddingBottom: "58px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: "100%", height: "100dvh", maxHeight: "100dvh", overflow: "hidden", background: T.surf || T.bg, display: "flex", flexDirection: "column", paddingLeft: 5, paddingRight: 5, paddingTop: "calc(8px + env(safe-area-inset-top, 0px))", paddingBottom: "58px" }}>
+        <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
           <span style={{ flex: 1, color: T.txt, fontSize: 17, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
           <button onClick={onClose} style={{ ...navBtn, width: 34, height: 34 }}>{Li("x", 16, T.txt2)}</button>
         </div>
+
+        {/* Scrollende Mitte: Buchungen + Unterkategorien. Kopf bleibt oben, Chart unten. */}
+        <div className="sdm-scroll" style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
 
         {/* Oberer Extra-Bereich: Einzelbeträge, je Zeile per Chevron ausklappbar */}
         {bookings && (
@@ -370,7 +373,7 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
               {drilledSub && (
                 <button onClick={() => setSelSub(null)} title="Zurück"
-                  style={{ ...navBtn, width: 24, height: 24, borderRadius: 6 }}>{Li("chevron-left", 14, T.txt2)}</button>
+                  style={{ ...navBtn, width: 36, height: 36, borderRadius: 8, flexShrink: 0 }}>{Li("chevron-left", 24, T.txt)}</button>
               )}
               <span style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {drilledSub ? drilledSub.name : name}
@@ -449,7 +452,10 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
             )}
           </div>
         )}
+        </div>{/* Ende scrollende Mitte */}
 
+        {/* Fester Fußbereich: Legende + Monatsbalken — immer unten verankert. */}
+        <div style={{ flexShrink: 0, marginTop: 6 }}>
         <div style={{ color: T.txt2, fontSize: 11, marginBottom: 4 }}>
           {isCat ? "Monatsbalken unten & Kategoriebalken oben sind tippbar" : "Tippe einen Balken für den jeweiligen Monat"} · gestrichelt = Budget
         </div>
@@ -480,6 +486,7 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
             );
           })}
         </svg>
+        </div>{/* Ende Fußbereich */}
       </div>
     </div>
   );
