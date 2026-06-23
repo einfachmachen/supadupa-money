@@ -354,13 +354,15 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
                   return (
                     <div key={i} style={{ borderRadius: 6, overflow: "hidden", background: open ? "rgba(255,255,255,0.04)" : "transparent", border: `1px solid ${open ? T.bd : "transparent"}` }}>
                       <button onClick={() => setOpenBk(open ? null : i)}
-                        style={{ position: "relative", width: "100%", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", borderRadius: 6, overflow: "hidden", padding: "9px 8px", display: "block" }}>
+                        style={{ position: "relative", width: "100%", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", borderRadius: 6, overflow: "hidden", padding: "9px 10px", display: "block", textAlign: "left" }}>
                         <div style={{ position: "absolute", inset: 0, width: `${(it.val / bkMax) * 100}%`, background: (isIncome ? T.pos : T.blue) + "22" }} />
-                        <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8 }}>
-                          {Li(open ? "chevron-down" : "chevron-right", 13, T.txt2)}
-                          <span style={{ flex: 1, minWidth: 0, textAlign: "left", color: T.txt, fontSize: 12, lineHeight: 1.3, overflowWrap: "anywhere" }}>{it.name}</span>
-                          <span style={{ color: T.txt2, fontSize: 10, flexShrink: 0 }}>{it.dateStr}</span>
-                          <span style={{ color: T.txt, fontSize: 12, fontWeight: 600, fontFamily: NUM_FONT, flexShrink: 0 }}>{fmt(it.val)}</span>
+                        <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 8 }}>
+                          <span style={{ flexShrink: 0, marginTop: 1, lineHeight: 0 }}>{Li(open ? "chevron-down" : "chevron-right", 13, T.txt2)}</span>
+                          <span style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 12, lineHeight: 1.35, overflowWrap: "anywhere" }}>{it.name}</span>
+                          <span style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1, marginLeft: 4 }}>
+                            <span style={{ color: T.txt, fontSize: 12, fontWeight: 700, fontFamily: NUM_FONT, whiteSpace: "nowrap" }}>{fmt(it.val)}</span>
+                            <span style={{ color: T.txt2, fontSize: 10, whiteSpace: "nowrap" }}>{it.dateStr}</span>
+                          </span>
                         </div>
                       </button>
                       {open && (
