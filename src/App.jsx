@@ -138,6 +138,14 @@ export default function SupaDupaMoney() {
   // Plus-Button: arretiert (höhere Position + 1,5× Größe) ja/nein
   // NICHT persistiert — beim App-Start immer false (Bottom-Bar-Position)
   const [plusArretiert, setPlusArretiert] = useState(false);
+  // True, solange der Money-Mood/Trend-Drilldown offen ist → + Button ausblenden,
+  // damit er die Monatsbalken unten nicht verdeckt (Event aus MoneyMoodScreen).
+  const [moodDrillOpen, setMoodDrillOpen] = useState(false);
+  useEffect(() => {
+    const h = e => setMoodDrillOpen(!!e.detail);
+    window.addEventListener("sdm-drill", h);
+    return () => window.removeEventListener("sdm-drill", h);
+  }, []);
   const [showMobileBudget, setShowMobileBudget] = useState(false);
   const [showMobileKategorien, setShowMobileKategorien] = useState(false);
   const [showMonthPickerModal, setShowMonthPickerModal] = useState(false);  // für Master-Button
@@ -2911,8 +2919,12 @@ Abbrechen = ${remoteName}-Stand laden`
                   boxShadow: "none",
                   display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
                   position:"relative",
-                  transform: restingTransform,
-                  transition:"transform 0.2s cubic-bezier(.34,1.4,.64,1)",
+                  // Drilldown offen → Button nach unten ausblenden, damit er die
+                  // Monatsbalken nicht verdeckt; sonst normale Ruheposition.
+                  transform: moodDrillOpen ? "translate(0px, 120px) scale(0.7)" : restingTransform,
+                  opacity: moodDrillOpen ? 0 : 1,
+                  pointerEvents: moodDrillOpen ? "none" : "auto",
+                  transition:"transform 0.25s cubic-bezier(.34,1.4,.64,1), opacity 0.2s ease",
                   touchAction:"none",userSelect:"none",cursor:"pointer",
                   WebkitTapHighlightColor:"transparent",padding:0,
                   fontFamily:"inherit",lineHeight:1}}>
