@@ -12,7 +12,7 @@
 // klickbar; darüber zeigt ein Detail-Drilldown, wie sich der Monat zusammensetzt
 // (Hauptkategorie → Unterkategorien, Unterkategorie → einzelne Buchungen).
 
-import React, { useContext, useEffect, useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { MONTHS_S, MONTHS_F } from "../../utils/constants.js";
@@ -276,6 +276,15 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
   const [openBk, setOpenBk] = useState(null);   // ausgeklappte Einzelbuchung
   useEffect(() => { setOpenBk(null); }, [sel, selSub]);
 
+  // Aufgeklappte Buchung in den sichtbaren Bereich scrollen, damit die unterste
+  // Buchung beim Aufklappen nicht vom unteren Rand verdeckt wird.
+  const openRowRef = useRef(null);
+  useEffect(() => {
+    if (openBk != null && openRowRef.current) {
+      openRowRef.current.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [openBk]);
+
   // + Button (Bottom-Nav) ausblenden, solange dieser Drilldown offen ist —
   // sonst verdeckt er unten die Monatsbalken. App.jsx hört auf dieses Event.
   useEffect(() => {
@@ -330,7 +339,7 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)", zIndex: 300, display: "flex", alignItems: "flex-end" }}>
-      <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxHeight: "88vh", overflowY: "auto", background: T.surf || T.bg, borderTopLeftRadius: 18, borderTopRightRadius: 18, borderTop: `1px solid ${T.bd}`, padding: "12px 14px 0", paddingBottom: "calc(64px + env(safe-area-inset-bottom, 0px))" }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxHeight: "88vh", overflowY: "auto", background: T.surf || T.bg, borderTopLeftRadius: 18, borderTopRightRadius: 18, borderTop: `1px solid ${T.bd}`, padding: "12px 14px 0", paddingBottom: "58px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
           <span style={{ flex: 1, color: T.txt, fontSize: 17, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
           <button onClick={onClose} style={{ ...navBtn, width: 34, height: 34 }}>{Li("x", 16, T.txt2)}</button>
@@ -362,7 +371,7 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
                     const acc = (getAcc && it.tx.accountId) ? getAcc(it.tx.accountId) : null;
                     const txTotal = Math.abs(it.tx.totalAmount || 0);
                     return (
-                      <div key={i} style={{ flexShrink: 0, borderRadius: 6, overflow: "hidden", background: open ? "rgba(255,255,255,0.05)" : "transparent", border: `1px solid ${open ? T.bd : "transparent"}` }}>
+                      <div key={i} ref={open ? openRowRef : null} style={{ flexShrink: 0, borderRadius: 6, overflow: "hidden", background: open ? "rgba(255,255,255,0.05)" : "transparent", border: `1px solid ${open ? T.bd : "transparent"}` }}>
                         <button onClick={() => setOpenBk(open ? null : i)}
                           style={{ position: "relative", width: "100%", border: "none", background: "transparent", cursor: "pointer", fontFamily: "inherit", borderRadius: 6, overflow: "hidden", padding: "5px 10px", display: "block", textAlign: "left" }}>
                           <div style={{ position: "absolute", inset: 0, width: `${(it.val / bkMax) * 100}%`, background: (isIncome ? T.pos : T.blue) + "22" }} />

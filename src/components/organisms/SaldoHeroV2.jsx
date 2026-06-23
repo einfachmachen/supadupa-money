@@ -109,7 +109,7 @@ function SaldoHeroV2({
           das Augensymbol (unscharf ↔ sichtbar). Der Kontoname sitzt klein/
           zentriert in der MITTE/ENDE-Zeile. */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"center",
-        gap:8,userSelect:"none"}}>
+        gap:14,userSelect:"none"}}>
         {/* Unsichtbarer Platzhalter links, exakt so breit wie das Auge rechts —
             hält den Kontostand trotz Auge optisch mittig. */}
         <span aria-hidden="true" style={{width:26,flexShrink:0,pointerEvents:"none"}}/>
@@ -117,12 +117,12 @@ function SaldoHeroV2({
           style={{
             color: heroColor(saldo),
             "--bal-col": heroColor(saldo),
-            fontSize:48,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
-            letterSpacing:-1,lineHeight:1.1,
+            fontSize:44,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
+            letterSpacing:-1,lineHeight:1.15,whiteSpace:"nowrap",
             WebkitTextStroke:"0.8px currentColor",
             cursor:allAccIds.length>1?"pointer":"default",
           }}>
-          {saldo>=0?"":"−"}{fmtMoney(Math.abs(saldo||0))} €
+          {saldo>=0?"":"−"}{fmtMoney(Math.abs(saldo||0))}&nbsp;€
         </span>
         <span onClick={toggleEye} title="Beträge ein-/ausblenden"
           style={{cursor:"pointer",userSelect:"none",flexShrink:0,width:26,

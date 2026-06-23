@@ -2637,10 +2637,12 @@ Abbrechen = ${remoteName}-Stand laden`
           const VISUAL_LIMIT = 15;     // Joystick darf max so weit wandern
           const HOLD_MS = 600;         // wie lange in einer Richtung halten für Edge-Jump
           const DOUBLE_TAP_MS = 350;   // Fenster für Doppel-Tap (vergrößern bzw. jumpToToday)
-          // Plus-Button-Rest-Position: Bottom-Bar oder arretiert (80px höher, 1,5× größer)
-          const restingTransform = plusArretiert
-            ? "translate(0px, -94px) scale(1.5)"
-            : "translate(0px, -14px) scale(1)";
+          // Plus-Button-Rest-Position: Bottom-Bar oder arretiert (80px höher, 1,5× größer).
+          // Im Trend-Drilldown nach oben geschoben, damit er die Monatsbalken NICHT
+          // verdeckt, aber per Links/Rechts-Wisch weiter das Jahr umschaltet.
+          const _restYBase = (plusArretiert ? -94 : -14) + (moodDrillOpen ? -270 : 0);
+          const _restScale = moodDrillOpen ? 0.78 : (plusArretiert ? 1.5 : 1);
+          const restingTransform = `translate(0px, ${_restYBase}px) scale(${_restScale})`;
 
           // GESTEN:
           // - Double-Tap = IMMER eine Ebene ZURÜCK:
@@ -2670,8 +2672,8 @@ Abbrechen = ${remoteName}-Stand laden`
               // Rest-Position/-Größe (arretiert: y -94, scale 1,5), damit er beim
               // Links/Rechts-Hold nicht erst verkleinert und wieder vergrößert wird.
               if(btn) {
-                const restY = plusArretiert ? -94 : -14;
-                const base  = plusArretiert ? 1.5 : 1;
+                const restY = (plusArretiert ? -94 : -14) + (moodDrillOpen ? -270 : 0);
+                const base  = moodDrillOpen ? 0.78 : (plusArretiert ? 1.5 : 1);
                 const dir   = ref.dx < 0 ? -1 : 1;
                 btn.style.transition = "transform 0.15s ease-out";
                 btn.style.transform = `translate(${dir*(VISUAL_LIMIT+4)}px, ${restY}px) scale(${base*1.1})`;
@@ -2748,8 +2750,8 @@ Abbrechen = ${remoteName}-Stand laden`
             // rechts) gelockt ist, und folgt dann strikt nur dieser einen Achse.
             // Live-Drag visuell: Translation relativ zur aktuellen Rest-Position
             // (arretiert: y-Offset -94, scale 1.5; sonst y-Offset -14, scale 1)
-            const restY = plusArretiert ? -94 : -14;
-            const dragScale = plusArretiert ? 1.5*1.08 : 1.08;
+            const restY = (plusArretiert ? -94 : -14) + (moodDrillOpen ? -270 : 0);
+            const dragScale = (moodDrillOpen ? 0.78 : (plusArretiert ? 1.5 : 1)) * 1.08;
             if(e.currentTarget) {
               e.currentTarget.style.transform = `translate(${visX}px, ${visY+restY+14}px) scale(${dragScale})`;
               e.currentTarget.style.transition = "none";
@@ -2919,12 +2921,10 @@ Abbrechen = ${remoteName}-Stand laden`
                   boxShadow: "none",
                   display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
                   position:"relative",
-                  // Drilldown offen → Button nach unten ausblenden, damit er die
-                  // Monatsbalken nicht verdeckt; sonst normale Ruheposition.
-                  transform: moodDrillOpen ? "translate(0px, 120px) scale(0.7)" : restingTransform,
-                  opacity: moodDrillOpen ? 0 : 1,
-                  pointerEvents: moodDrillOpen ? "none" : "auto",
-                  transition:"transform 0.25s cubic-bezier(.34,1.4,.64,1), opacity 0.2s ease",
+                  // Ruheposition (im Drilldown nach oben verschoben, s. restingTransform),
+                  // bleibt sichtbar & per Wisch bedienbar.
+                  transform: restingTransform,
+                  transition:"transform 0.25s cubic-bezier(.34,1.4,.64,1)",
                   touchAction:"none",userSelect:"none",cursor:"pointer",
                   WebkitTapHighlightColor:"transparent",padding:0,
                   fontFamily:"inherit",lineHeight:1}}>
