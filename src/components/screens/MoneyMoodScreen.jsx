@@ -372,11 +372,13 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
         {/* Oberer Extra-Bereich: Einzelbeträge, je Zeile per Chevron ausklappbar */}
         {bookings && (
           <div style={{ border: `1px solid ${T.bd}`, borderRadius: 12, padding: "8px 6px", marginBottom: 8, background: "rgba(255,255,255,0.02)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-              {drilledSub && (
-                <button onClick={() => setSelSub(null)} title="Zurück"
-                  style={{ ...navBtn, width: 36, height: 36, borderRadius: 8, flexShrink: 0 }}>{Li("chevron-left", 24, T.txt)}</button>
-              )}
+            {/* Zurück-Pfeil auf eigener Zeile darüber, damit der Kategoriename bündig
+                links mit der Unterkategorie-Liste steht (eine Flucht). */}
+            {drilledSub && (
+              <button onClick={() => setSelSub(null)} title="Zurück"
+                style={{ ...navBtn, width: 40, height: 36, borderRadius: 8, marginBottom: 2 }}>{Li("chevron-left", 26, T.txt)}</button>
+            )}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, paddingLeft: 8 }}>
               <span style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 13, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {drilledSub ? drilledSub.name : name}
                 <span style={{ color: T.txt2, fontSize: 11, fontWeight: 400, marginLeft: 6 }}>
@@ -440,7 +442,7 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
                   const active = it.subId === selSub;
                   return (
                     <div key={i} onClick={() => setSelSub(it.subId)}
-                      style={{ flexShrink: 0, position: "relative", borderRadius: 6, overflow: "hidden", padding: "6px 8px 6px 16px", cursor: "pointer", outline: active ? `1px solid ${T.gold}` : "none" }}>
+                      style={{ flexShrink: 0, position: "relative", borderRadius: 6, overflow: "hidden", padding: "6px 8px", cursor: "pointer", outline: active ? `1px solid ${T.gold}` : "none" }}>
                       <div style={{ position: "absolute", inset: 0, width: `${(it.val / subMax) * 100}%`, background: (isIncome ? T.pos : T.blue) + "22" }} />
                       <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8 }}>
                         <span style={{ flex: 1, minWidth: 0, color: active ? T.gold : T.txt, fontSize: 12, fontWeight: active ? 700 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
