@@ -1,14 +1,15 @@
 // Auto-generated module (siehe app-src.jsx)
 
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useMemo } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
+import { suggestBudget } from "../../utils/budgetSuggest.js";
 
 function BudgetEditorModal({sub, cat, accountId="acc-giro", onClose}) {
-  const { budgets, setBudgets, txs, setTxs, year, setYear, month, setMonth, accounts } = useContext(AppCtx);
+  const { budgets, setBudgets, txs, setTxs, year, setYear, month, setMonth, accounts, getActualSum } = useContext(AppCtx);
   const pad = n => String(n).padStart(2,"0");
   const isLight = isLightTheme();
   const goldBg = isLight?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)";
@@ -43,6 +44,31 @@ function BudgetEditorModal({sub, cat, accountId="acc-giro", onClose}) {
   const amtM = pn(inMitte.replace(",","."));
   const amtG = pn(inGesamt.replace(",","."));
   const amtE = Math.max(0, amtG - amtM); // Ende = Gesamt - Mitte
+
+  // Realitätsnaher Budget-Vorschlag: gewichteter Schnitt aus gebuchter Historie
+  // (höher gewichtet) + Vormerkungen. getActualSum = gebucht je Sub/Monat (Ist),
+  // Vormerkungen direkt aus txs (ohne Budget-Platzhalter).
+  const suggestion = useMemo(() => {
+    const getActual = (y, m) => getActualSum?.(y, m, sub.id, "E") || 0;
+    const getPending = (y, m) => {
+      let s = 0;
+      (txs || []).forEach(t => {
+        if (!t.pending || t._budgetSubId || t._linkedTo) return;
+        const d = new Date(t.date);
+        if (d.getFullYear() !== y || d.getMonth() !== m) return;
+        (t.splits || []).forEach(sp => { if (sp.subId === sub.id) s += Math.abs(pn(sp.amount)); });
+      });
+      return s;
+    };
+    const now = new Date();
+    return suggestBudget({ nowY: now.getFullYear(), nowM: now.getMonth(), getActual, getPending });
+  }, [txs, sub.id, getActualSum]);
+  const suggestAmt = Math.round(suggestion.amount);
+  const applySuggest = () => {
+    setInGesamt(String(suggestAmt).replace(".", ","));
+    setInMitte("");
+    setIntv(1);
+  };
 
   const doDelete = (scope) => {
     const [sY,sM] = sd.split("-").map(Number);
@@ -216,6 +242,24 @@ function BudgetEditorModal({sub, cat, accountId="acc-giro", onClose}) {
                 border:`1px solid ${T.gold}55`,background:goldBg}}/>
           </div>
         </div>
+
+        {/* Realitätsnaher Vorschlag aus Ist-Historie + Vormerkungen */}
+        {suggestion.hasData && suggestAmt>0 && (
+          <button onClick={applySuggest}
+            style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"8px 10px",
+              marginBottom:8,borderRadius:10,border:`1px solid ${T.blue}55`,
+              background:"rgba(74,159,212,0.10)",color:T.txt,cursor:"pointer",
+              fontFamily:"inherit",textAlign:"left"}}>
+            {Li("bar-chart-2",16,T.blue)}
+            <span style={{flex:1,minWidth:0,lineHeight:1.3}}>
+              <span style={{fontSize:12.5}}>Vorschlag: <b style={{color:T.blue}}>{fmt(suggestAmt)} €</b>/Monat</span>
+              <span style={{display:"block",color:T.txt2,fontSize:10.5,marginTop:1}}>
+                Schnitt aus {suggestion.months} Mon. ({suggestion.actualMonths} gebucht · {suggestion.pendingMonths} geplant)
+              </span>
+            </span>
+            <span style={{color:T.blue,fontSize:11,fontWeight:800,flexShrink:0}}>übernehmen</span>
+          </button>
+        )}
 
         {/* Mitte / Ende / Gesamt — eine Zeile */}
         {amtG>0&&(
