@@ -22,7 +22,7 @@ function SaldoHeroV2({
   uInM, uOutM, uInE, uOutE,
   prognoseMitte, prognoseEnde, detailMitte, detailEnde, saldoMitte, saldoEnde,
   onDrillBuchIn, onDrillBuchOut, onDrillPendIn, onDrillPendOut, onDrillUncatIn, onDrillUncatOut,
-  detailsOpen, setDetailsOpen,
+  detailsOpen, setDetailsOpen, hideDetailRows,
 }) {
   const { selAcc, setSelAcc, accounts, getKumulierterSaldo, txs, getCat, getSub, amtMode, setAmtMode } = useContext(AppCtx);
   const [progDrill, setProgDrill] = useState(null);
@@ -195,8 +195,10 @@ function SaldoHeroV2({
         </div>
       </div>
 
-      {/* Detail-Block: Buch / VM / unkat — drei Zeilen mit Drill-Pfaden */}
-      {detailsOpen && (
+      {/* Detail-Block: Buch / VM / unkat — drei Zeilen mit Drill-Pfaden.
+          Im Trend/Jahr (hideDetailRows) ausgeblendet, da dort jährlich gedacht
+          und der Monatsbezug fehlt. */}
+      {detailsOpen && !hideDetailRows && (
         <div style={{marginTop:2,paddingTop:6,borderTop:`1px solid ${T.bd}`}}>
           <DetailRow label="Buch."
             mIn={buchInM} mOut={buchOutM} eIn={buchInE} eOut={buchOutE}
