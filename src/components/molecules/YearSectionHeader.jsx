@@ -14,7 +14,11 @@ const OPTS = [["mood", "Money Mood", "activity"], ["jahr", "Trend", "calendar-ra
 
 function YearSectionHeader({ active, detailsOpen, setDetailsOpen, children }) {   // active: "mood" | "jahr"
   const { year, month, setSubTab } = useContext(AppCtx);
-  const hero = useSaldoHeroData(year, month);
+  // Kontostand jahresabhängig: laufendes Jahr → aktueller Monat; andere (abge-
+  // schlossene oder zukünftige) Jahre → Dezember (Jahresend-Stand bzw. -Prognose).
+  const _now = new Date();
+  const heroMonth = (year === _now.getFullYear()) ? _now.getMonth() : 11;
+  const hero = useSaldoHeroData(year, heroMonth);
   // Kontrolliert vom Screen (MoneyMood braucht den Zustand für die Sparklines),
   // sonst interner Fallback (z. B. JahrScreen).
   const [internalOpen, setInternalOpen] = useState(false);
@@ -23,7 +27,7 @@ function YearSectionHeader({ active, detailsOpen, setDetailsOpen, children }) { 
 
   return (
     <div style={{ flexShrink: 0, background: T.bg }}>
-      <SaldoHeroV2 year={year} month={month} {...hero}
+      <SaldoHeroV2 year={year} month={heroMonth} {...hero}
         onDrillBuchIn={noop} onDrillBuchOut={noop} onDrillPendIn={noop} onDrillPendOut={noop}
         onDrillUncatIn={noop} onDrillUncatOut={noop}
         detailsOpen={open} setDetailsOpen={setOpen} />
