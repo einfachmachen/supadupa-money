@@ -2624,7 +2624,7 @@ Abbrechen = ${remoteName}-Stand laden`
             {Li("alert-triangle",16,"#fff")}
             <div style={{flex:1,minWidth:0,lineHeight:1.25}}>
               <div style={{fontSize:12.5,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                Liquiditäts-Engpass ab {label}: Konto fällt auf {fmt(s.saldoVal)} €
+                Liquiditäts-Engpass ab {label}: Konto fällt auf {s.saldoVal < 0 ? "−" : ""}{fmt(s.saldoVal)} €
               </div>
               <div style={{fontSize:11,opacity:0.92,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                 {fmt(s.deficit)} € unter Puffer ({fmt(w.buffer)} €){w.count>1?` · +${w.count-1} weitere${w.count-1===1?"r":""} Monat${w.count-1===1?"":"e"}`:""} · tippen

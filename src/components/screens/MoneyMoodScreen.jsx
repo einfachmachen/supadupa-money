@@ -356,7 +356,7 @@ function MoneyMoodScreen() {
           )}
 
           <div style={{ color: T.txt, fontSize: 12.5, lineHeight: 1.4, marginBottom: activeStrain.drivers.length ? 7 : 0 }}>
-            <b>{MONTHS_F[activeStrain.mi]}:</b> Konto fällt auf <b style={{ color: T.neg }}>{fmt(activeStrain.saldoVal)} €</b> — <b>{fmt(activeStrain.deficit)} €</b> unter Puffer ({fmt(buffer)} €).
+            <b>{MONTHS_F[activeStrain.mi]}:</b> Konto fällt auf <b style={{ color: T.neg }}>{activeStrain.saldoVal < 0 ? "−" : ""}{fmt(activeStrain.saldoVal)} €</b> — <b style={{ color: T.gold }}>{fmt(activeStrain.deficit)} €</b> unter Puffer ({fmt(buffer)} €).
           </div>
 
           {activeStrain.drivers.length > 0 && (
