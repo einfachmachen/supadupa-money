@@ -41,7 +41,9 @@ import { useLocalSaveDebounce } from "./hooks/useLocalSaveDebounce.js";
 import { useCloudCredentials } from "./hooks/useCloudCredentials.js";
 import { isoAddMonths } from "./utils/date.js";
 import { anchorValue, anchorDay } from "./utils/anchors.js";
-import { pn, uid, sumAmounts } from "./utils/format.js";
+import { pn, uid, sumAmounts, fmt } from "./utils/format.js";
+import { MONTHS_S } from "./utils/constants.js";
+import { pendingForecast, monthlyStrain } from "./utils/moodForecast.js";
 import { Li } from "./utils/icons.jsx";
 import { makeYearData } from "./utils/yearData.js";
 import { isDuplCounterpart, buildTxIdMap } from "./utils/tx.js";
@@ -87,6 +89,7 @@ export default function SupaDupaMoney() {
   // Initial setzen damit erste Render-Pässe es sehen
   if(typeof window!=="undefined") window.MBT_DEBUG = debugFlags;
   const [subTab,        setSubTab]       = useState("dashboard");
+  const [strainDismissedSig, setStrainDismissedSig] = useState(null); // weggewischte Schieflage-Warnung
   const navigateToSparen = () => { setMainTab("erfassen"); setSubTab("dashboard"); setSparOpenRequest(v=>v+1); };
   const LS_KEY = "finanzapp_v9";
 
@@ -1365,6 +1368,35 @@ Abbrechen = ${remoteName}-Stand laden`
   const getTotalIncome =(y,m,col="E")=>actualSums[`${y}:${m}:income:${col}`]||0;
   const getTotalExpense=(y,m,col="E")=>actualSums[`${y}:${m}:expense:${col}`]||0;
 
+  // ── Globale Schieflage-Warnung ──────────────────────────────────────────────
+  // Prüft die rollenden 12 Monate ab jetzt: kippt die Vorschau (geplante Ausgaben
+  // > Einnahmen)? Nutzt EXAKT dieselbe Logik wie die Money-Mood-Ampel (monthlyStrain),
+  // damit Banner und Sparklines nie widersprechen. Folgt dem aktiven Konto-Filter.
+  const _catTypeById = useMemo(()=>{ const m={}; cats.forEach(c=>{m[c.id]=c.type;}); return m; }, [cats]);
+  const strainWarning = useMemo(()=>{
+    const now = new Date(); const nY = now.getFullYear(), nM = now.getMonth();
+    const forYear = (yr) => {
+      const pend = pendingForecast(txs, { year: yr, selAcc, catTypeById: _catTypeById });
+      const isUpcoming = (mi) => yr > nY || (yr === nY && mi >= nM);
+      return monthlyStrain({ year: yr, cats, groups, pend,
+        getActualSum, getBudgetForMonth, getTotalIncome, getTotalExpense, isUpcoming });
+    };
+    const yA = forYear(nY), yB = forYear(nY+1);
+    const hits = [];
+    for (let k=0;k<12;k++){
+      const idx = nM+k, yr = idx<12?nY:nY+1, mi = idx%12, src = idx<12?yA:yB;
+      if (src.strained[mi]) hits.push({ yr, mi, over: Math.round(src.exp[mi]-src.inc[mi]) });
+    }
+    if (!hits.length) return null;
+    const worst = hits.reduce((a,b)=> b.over>a.over?b:a, hits[0]);
+    const soonest = hits[0];
+    return { soonest, worst, count: hits.length,
+      sig: `${soonest.yr}-${soonest.mi}:${worst.yr}-${worst.mi}:${worst.over}` };
+    // Deps = stabile, memoisierte Datenquellen (nicht die je Render neuen Getter-
+    // Closures), damit nur bei echten Daten-Änderungen neu gerechnet wird.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [txs, selAcc, cats, groups, _catTypeById, actualSums, _budgetIdx, budgets]);
+
   // Kumulierter Kontostand bis inkl. Monat m des Jahres y
   const _ksCache = React.useRef({});
   const _ksTxsRef = React.useRef(null);
@@ -2579,6 +2611,36 @@ Abbrechen = ${remoteName}-Stand laden`
 
       {/* Global edit popup */}
       <ErrorBoundary name="EditPopup"><EditPopup/></ErrorBoundary>
+
+      {/* ── Schieflage-Warnung: schlanker, antippbarer Balken ganz oben (alle Screens) ──
+          Erscheint nur, wenn die Vorschau in den nächsten 12 Monaten kippt. Tippen
+          öffnet Money Mood (Details); × blendet bis zur nächsten Verschärfung aus. */}
+      {strainWarning && strainWarning.sig !== strainDismissedSig && (()=>{
+        const w = strainWarning, s = w.soonest;
+        const label = `${MONTHS_S[s.mi]} ${s.yr}`;
+        return (
+          <div onClick={()=>{ setMainTab("erfassen"); setSubTab("mood"); }}
+            style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",
+              background:T.neg,color:"#fff",padding:"7px 12px",flexShrink:0,
+              boxShadow:"0 1px 6px rgba(0,0,0,0.3)"}}>
+            {Li("alert-triangle",16,"#fff")}
+            <div style={{flex:1,minWidth:0,lineHeight:1.25}}>
+              <div style={{fontSize:12.5,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                Schieflage ab {label}: geplante Ausgaben über den Einnahmen
+              </div>
+              <div style={{fontSize:11,opacity:0.92,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                {w.count>1?`${w.count} Monate betroffen · `:""}größte Lücke {fmt(w.worst.over)} € · zum Prüfen tippen
+              </div>
+            </div>
+            <button onClick={(e)=>{ e.stopPropagation(); setStrainDismissedSig(w.sig); }}
+              aria-label="Warnung ausblenden"
+              style={{flexShrink:0,background:"rgba(255,255,255,0.18)",border:"none",borderRadius:6,
+                width:26,height:26,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
+              {Li("x",15,"#fff")}
+            </button>
+          </div>
+        );
+      })()}
 
       {/* ── CONTENT ── */}
       <div style={{flex:1,minHeight:0,overflow:"hidden",display:"flex",flexDirection:"column",

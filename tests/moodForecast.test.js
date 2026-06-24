@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pendingForecast } from "../src/utils/moodForecast.js";
+import { pendingForecast, monthlyStrain } from "../src/utils/moodForecast.js";
 
 // Hilfsfunktion: materialisiert eine wiederkehrende VM-Serie als einzelne
 // pending-Tx je Monat — genau wie MobileWiederkehrendModal es speichert.
@@ -62,6 +62,40 @@ describe("pendingForecast — wiederkehrende Vormerkungen", () => {
     expect(f.expTot.every(v => v === 0)).toBe(true);
     expect(f.incTot.every(v => v === 0)).toBe(true);
     expect(f.sub["3:sub-x"]).toBeUndefined();
+  });
+
+  it("erkennt eine Schieflage durch eine Finanzierungs-Serie (12× 300 €) gegen das Einkommen", () => {
+    const cats = [
+      { id: "c-fin", type: "expense", subs: [{ id: "sub-fin" }] },
+      { id: "c-geh", type: "income", subs: [{ id: "sub-geh" }] },
+    ];
+    const groups = [
+      { type: "expense", behavior: "expense" },
+      { type: "income", behavior: "income" },
+    ];
+    // Finanzierung 12× 300 € (Ausgabe) ab Jan 2026 + Gehalt je Monat (Einnahme).
+    const fin = series({ seriesId: "fin", fromY: 2026, fromM: 0, count: 12, amount: -300, csvType: "expense", catId: "c-fin", subId: "sub-fin" });
+    const geh = (income) => series({ seriesId: "geh", fromY: 2026, fromM: 0, count: 12, amount: income, csvType: "income", catId: "c-geh", subId: "sub-geh" });
+
+    const noBookings = () => 0;            // nichts gebucht (reine Vorschau)
+    const noBudget = () => 0;
+    const call = (txs) => monthlyStrain({
+      year: 2026, cats, groups,
+      pend: pendingForecast(txs, { year: 2026, catTypeById: { "c-fin": "expense", "c-geh": "income" } }),
+      getActualSum: noBookings, getBudgetForMonth: noBudget,
+      getTotalIncome: noBookings, getTotalExpense: noBookings,
+      isUpcoming: () => true,
+    });
+
+    // Gehalt 250 € < Rate 300 € ⇒ jeder Monat kippt.
+    const tight = call([...fin, ...geh(250)]);
+    expect(tight.strained.every(Boolean)).toBe(true);
+    expect(tight.exp[0]).toBe(300);
+    expect(tight.inc[0]).toBe(250);
+
+    // Gehalt 2000 € ⇒ keine Schieflage.
+    const fine = call([...fin, ...geh(2000)]);
+    expect(fine.strained.some(Boolean)).toBe(false);
   });
 
   it("respektiert den Konto-Filter", () => {

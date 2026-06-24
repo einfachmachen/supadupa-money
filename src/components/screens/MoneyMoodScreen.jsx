@@ -18,7 +18,7 @@ import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { MONTHS_S, MONTHS_F } from "../../utils/constants.js";
 import { fmt, pn, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
-import { pendingForecast } from "../../utils/moodForecast.js";
+import { pendingForecast, monthlyStrain } from "../../utils/moodForecast.js";
 import { YearSectionHeader } from "../molecules/YearSectionHeader.jsx";
 
 const RANGE = 12;
@@ -123,20 +123,13 @@ function MoneyMoodScreen() {
   // Monate, in denen die Gesamtlage kippt: Ausgaben > Einnahmen (Schieflage).
   // Nur dann werden Kategorien überhaupt gelb/rot eingefärbt.
   const strained = useMemo(() => {
-    const sumAt = (rows, key, mi) => rows.reduce((s, r) => s + (r[key][mi] || 0), 0);
-    const out = [];
-    for (let mi = 0; mi < RANGE; mi++) {
-      // Vorschau-Schieflage: Ist + Vormerkungen + offenes Budget (geplante Ausgaben)
-      // gegen die Einnahmen. So lösen künftige Belastungen UND zu üppige Budgets die
-      // Ampel aus. Unkategorisierte Beträge (ohne Sub) bleiben über die Tx-Summen drin.
-      const allInc = Math.abs(getTotalIncome(year, mi) || 0) + (pend.incTot[mi] || 0);
-      const allExp = Math.abs(getTotalExpense(year, mi) || 0) + (pend.expTot[mi] || 0);
-      const inc = Math.max(0, allInc - sumAt(blocks.income, "actual", mi)) + sumAt(blocks.income, "fore", mi);
-      const exp = Math.max(0, allExp - sumAt(blocks.expense, "actual", mi)) + sumAt(blocks.expense, "fore", mi);
-      out.push(exp > inc);
-    }
-    return out;
-  }, [blocks, year, getTotalIncome, getTotalExpense, pend]);
+    // Gleiche Quelle wie der globale Warnbanner (utils/moodForecast) → nie widersprüchlich.
+    const isUpcoming = (mi) => year > nowY || (year === nowY && mi >= nowM);
+    return monthlyStrain({
+      year, cats, groups, pend,
+      getActualSum, getBudgetForMonth, getTotalIncome, getTotalExpense, isUpcoming,
+    }).strained;
+  }, [year, cats, groups, pend, getActualSum, getBudgetForMonth, getTotalIncome, getTotalExpense]);
 
   // Ist-Wert + gleitender 12-Monats-Schnitt + Abweichung (nur Monate mit Bewegung;
   // <2 Datenpunkte → null = neutral, damit Neues nicht sofort auffällt).
