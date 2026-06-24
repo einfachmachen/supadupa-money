@@ -89,7 +89,6 @@ export default function SupaDupaMoney() {
   // Initial setzen damit erste Render-Pässe es sehen
   if(typeof window!=="undefined") window.MBT_DEBUG = debugFlags;
   const [subTab,        setSubTab]       = useState("dashboard");
-  const [strainDismissedSig, setStrainDismissedSig] = useState(null); // weggewischte Schieflage-Warnung
   const navigateToSparen = () => { setMainTab("erfassen"); setSubTab("dashboard"); setSparOpenRequest(v=>v+1); };
   const LS_KEY = "finanzapp_v9";
 
@@ -1390,8 +1389,7 @@ Abbrechen = ${remoteName}-Stand laden`
     if (!hits.length) return null;
     const worst = hits.reduce((a,b)=> b.over>a.over?b:a, hits[0]);
     const soonest = hits[0];
-    return { soonest, worst, count: hits.length,
-      sig: `${soonest.yr}-${soonest.mi}:${worst.yr}-${worst.mi}:${worst.over}` };
+    return { soonest, worst, count: hits.length };
     // Deps = stabile, memoisierte Datenquellen (nicht die je Render neuen Getter-
     // Closures), damit nur bei echten Daten-Änderungen neu gerechnet wird.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2613,9 +2611,10 @@ Abbrechen = ${remoteName}-Stand laden`
       <ErrorBoundary name="EditPopup"><EditPopup/></ErrorBoundary>
 
       {/* ── Schieflage-Warnung: schlanker, antippbarer Balken ganz oben (alle Screens) ──
-          Erscheint nur, wenn die Vorschau in den nächsten 12 Monaten kippt. Tippen
-          öffnet Money Mood (Details); × blendet bis zur nächsten Verschärfung aus. */}
-      {strainWarning && strainWarning.sig !== strainDismissedSig && (()=>{
+          Erscheint, solange die Vorschau in den nächsten 12 Monaten kippt — NICHT
+          ausblendbar; verschwindet erst, wenn das Problem behoben ist. Tippen öffnet
+          Money Mood (Details). */}
+      {strainWarning && (()=>{
         const w = strainWarning, s = w.soonest;
         const label = `${MONTHS_S[s.mi]} ${s.yr}`;
         return (
@@ -2632,12 +2631,7 @@ Abbrechen = ${remoteName}-Stand laden`
                 {w.count>1?`${w.count} Monate betroffen · `:""}größte Lücke {fmt(w.worst.over)} € · zum Prüfen tippen
               </div>
             </div>
-            <button onClick={(e)=>{ e.stopPropagation(); setStrainDismissedSig(w.sig); }}
-              aria-label="Warnung ausblenden"
-              style={{flexShrink:0,background:"rgba(255,255,255,0.18)",border:"none",borderRadius:6,
-                width:26,height:26,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>
-              {Li("x",15,"#fff")}
-            </button>
+            {Li("chevron-right",18,"#fff")}
           </div>
         );
       })()}
