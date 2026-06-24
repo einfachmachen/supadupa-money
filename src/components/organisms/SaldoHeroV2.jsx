@@ -108,11 +108,8 @@ function SaldoHeroV2({
           wechselt durch die Konten. Direkt rechts daneben — vertikal zentriert —
           das Augensymbol (unscharf ↔ sichtbar). Der Kontoname sitzt klein/
           zentriert in der MITTE/ENDE-Zeile. */}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"center",
-        gap:14,userSelect:"none"}}>
-        {/* Unsichtbarer Platzhalter links, exakt so breit wie das Auge rechts —
-            hält den Kontostand trotz Auge optisch mittig. */}
-        <span aria-hidden="true" style={{width:26,flexShrink:0,pointerEvents:"none"}}/>
+      <div style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center",
+        userSelect:"none"}}>
         <span onClick={allAccIds.length>1?cycleAcc:undefined} className="heroAmt heroBalance"
           style={{
             color: heroColor(saldo),
@@ -124,10 +121,12 @@ function SaldoHeroV2({
           }}>
           {saldo>=0?"":"−"}{fmtMoney(Math.abs(saldo||0))}&nbsp;€
         </span>
+        {/* Auge ganz rechts am Rand, etwas größer. */}
         <span onClick={toggleEye} title="Beträge ein-/ausblenden"
-          style={{cursor:"pointer",userSelect:"none",flexShrink:0,width:26,
+          style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",
+            cursor:"pointer",userSelect:"none",width:30,height:30,
             display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
-          {Li(eyeIcon,18,eyeCol)}
+          {Li(eyeIcon,23,eyeCol)}
         </span>
       </div>
 
