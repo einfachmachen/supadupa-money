@@ -3073,19 +3073,21 @@ Abbrechen = ${remoteName}-Stand laden`
             );
           }
           // Kleiner Zustand: die 4 Tabs sind NUR Anzeige — sie lösen KEINE
-          // Navigation aus (kein onClick) und sind ausgegraut. Aktiv (tappbar)
-          // werden sie erst nach Doppel-Tap auf den + Button (plusArretiert).
+          // Navigation aus (kein onClick). Aktiv (tappbar) UND die Symbole voll
+          // sichtbar werden sie erst nach Doppel-Tap auf den + Button
+          // (plusArretiert). Die Beschriftung bleibt hier jedoch klar sichtbar,
+          // nur die Symbole sind blass (Hinweis auf den noch inaktiven Zustand).
           return (
             <div key={t.id}
               style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",
                 justifyContent:"center",gap:2,cursor:"default",padding:"6px 0px 4px",minWidth:0,
-                opacity:0.4,WebkitTapHighlightColor:"transparent"}}>
-              <div style={{width:44,height:32,borderRadius:12,
+                WebkitTapHighlightColor:"transparent"}}>
+              <div style={{width:44,height:32,borderRadius:12,opacity:0.35,
                 display:"flex",alignItems:"center",justifyContent:"center",
                 background:"transparent"}}>
                 {Li(t.icon,22,T.txt2,1.5)}
               </div>
-              <span style={{fontSize:11,fontWeight:500,
+              <span style={{fontSize:11,fontWeight:600,
                 color:T.txt2,whiteSpace:"nowrap"}}>{t.label}</span>
             </div>
           );
