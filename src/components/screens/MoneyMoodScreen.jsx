@@ -42,7 +42,7 @@ function classify(dev, isIncome) {
 const fmtK = (v) => v >= 1000 ? (Math.round(v / 100) / 10) + "k" : String(Math.round(v));
 
 function MoneyMoodScreen() {
-  const { cats, groups, txs, year, selAcc, getActualSum, getBudgetForMonth, getAcc, getTotalIncome, getTotalExpense } = useContext(AppCtx);
+  const { cats, groups, txs, year, selAcc, getActualSum, getBudgetForMonth, getAcc, getTotalIncome, getTotalExpense, openEdit } = useContext(AppCtx);
   const [openCat, setOpenCat] = useState(null);   // aufgeklappte Hauptkategorie
   const [detail, setDetail] = useState(null);     // { row, isSub, isIncome }
   const [heroOpen, setHeroOpen] = useState(false);          // Hero-Details auf/zu
@@ -340,7 +340,7 @@ function MoneyMoodScreen() {
         </div>
       )}
 
-      {detail && <MoodDetail {...detail} year={year} txs={txs} getAcc={getAcc} recentIdx={recentIdx} elapsedIdx={elapsedIdx} monthMood={monthMood} onClose={() => setDetail(null)} />}
+      {detail && <MoodDetail {...detail} year={year} txs={txs} getAcc={getAcc} recentIdx={recentIdx} elapsedIdx={elapsedIdx} monthMood={monthMood} openEdit={openEdit} onClose={() => setDetail(null)} />}
     </div>
   );
 }
@@ -351,7 +351,7 @@ const navBtn = {
 };
 
 // ── Drilldown: 12 Monatsbalken (Gesamtbetrag oben, klickbar) + Zusammensetzung ──
-function MoodDetail({ row, isSub, isIncome, focusMi, year, txs, getAcc, recentIdx, elapsedIdx, monthMood, onClose }) {
+function MoodDetail({ row, isSub, isIncome, focusMi, year, txs, getAcc, recentIdx, elapsedIdx, monthMood, openEdit, onClose }) {
   const { name, actual, budget, fore = actual } = row;
   const isCat = !isSub && !!row.subs;
   // Startmonat: bei Aufruf aus der Schieflage-Warnung der betroffene Monat,
@@ -504,6 +504,18 @@ function MoodDetail({ row, isSub, isIncome, focusMi, year, txs, getAcc, recentId
                             {acc && <Field label="Konto" value={acc.name} />}
                             <Field label="Betrag (Anteil)" value={fmt(it.val)} />
                             {Math.round(txTotal * 100) !== Math.round(it.val * 100) && <Field label="Buchung gesamt" value={fmt(txTotal)} />}
+                            {openEdit && (
+                              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 5 }}>
+                                {/* Drilldown schließen, damit der Bearbeiten-/Vormerkungs-Dialog
+                                    sichtbar ist (Drilldown liegt bei zIndex 300). Von dort lässt
+                                    sich die Buchung/Vormerkung ändern oder löschen. */}
+                                <button onClick={(e) => { e.stopPropagation(); onClose(); openEdit(it.tx); }}
+                                  style={{ display: "inline-flex", alignItems: "center", gap: 6, background: T.blue, color: T.on_accent || "#fff", border: "none", borderRadius: 8, padding: "6px 12px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                                  {Li("edit-2", 14, T.on_accent || "#fff")}
+                                  {it.pending ? "Vormerkung bearbeiten" : "Buchung bearbeiten"}
+                                </button>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
