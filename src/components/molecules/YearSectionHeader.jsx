@@ -30,6 +30,7 @@ function YearSectionHeader({ active, detailsOpen, setDetailsOpen, children }) { 
       <SaldoHeroV2 year={year} month={heroMonth} {...hero}
         onDrillBuchIn={noop} onDrillBuchOut={noop} onDrillPendIn={noop} onDrillPendOut={noop}
         onDrillUncatIn={noop} onDrillUncatOut={noop}
+        hideDetailRows
         detailsOpen={open} setDetailsOpen={setOpen} />
 
       {/* Umschalter Money Mood | Jahr, Sortierung & Farb-Legende verstecken sich mit
