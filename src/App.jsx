@@ -43,7 +43,7 @@ import { isoAddMonths } from "./utils/date.js";
 import { anchorValue, anchorDay } from "./utils/anchors.js";
 import { pn, uid, sumAmounts, fmt } from "./utils/format.js";
 import { MONTHS_S } from "./utils/constants.js";
-import { pendingForecast, monthlyStrain } from "./utils/moodForecast.js";
+import { pendingForecast, monthlyStrain, projectStrain } from "./utils/moodForecast.js";
 import { Li } from "./utils/icons.jsx";
 import { makeYearData } from "./utils/yearData.js";
 import { isDuplCounterpart, buildTxIdMap } from "./utils/tx.js";
@@ -1367,36 +1367,9 @@ Abbrechen = ${remoteName}-Stand laden`
   const getTotalIncome =(y,m,col="E")=>actualSums[`${y}:${m}:income:${col}`]||0;
   const getTotalExpense=(y,m,col="E")=>actualSums[`${y}:${m}:expense:${col}`]||0;
 
-  // ── Globale Schieflage-Warnung ──────────────────────────────────────────────
-  // Prüft die rollenden 12 Monate ab jetzt: kippt die Vorschau (geplante Ausgaben
-  // > Einnahmen)? Nutzt EXAKT dieselbe Logik wie die Money-Mood-Ampel (monthlyStrain),
-  // damit Banner und Sparklines nie widersprechen. Folgt dem aktiven Konto-Filter.
   const _catTypeById = useMemo(()=>{ const m={}; cats.forEach(c=>{m[c.id]=c.type;}); return m; }, [cats]);
-  const strainWarning = useMemo(()=>{
-    const now = new Date(); const nY = now.getFullYear(), nM = now.getMonth();
-    const forYear = (yr) => {
-      const pend = pendingForecast(txs, { year: yr, selAcc, catTypeById: _catTypeById });
-      const isUpcoming = (mi) => yr > nY || (yr === nY && mi >= nM);
-      return monthlyStrain({ year: yr, cats, groups, pend,
-        getActualSum, getBudgetForMonth, getTotalIncome, getTotalExpense, isUpcoming });
-    };
-    const yA = forYear(nY), yB = forYear(nY+1);
-    const hits = [];
-    for (let k=0;k<12;k++){
-      const idx = nM+k, yr = idx<12?nY:nY+1, mi = idx%12, src = idx<12?yA:yB;
-      if (src.strained[mi]) {
-        const exp = Math.round(src.exp[mi]), inc = Math.round(src.inc[mi]);
-        hits.push({ yr, mi, inc, exp, over: exp - inc });   // exp − inc geht sichtbar exakt auf
-      }
-    }
-    if (!hits.length) return null;
-    // Immer der FRÜHESTE betroffene Monat — Überschrift und Detailzahlen beziehen
-    // sich auf denselben Monat (keine widersprüchlichen Zahlen mehr).
-    return { soonest: hits[0], count: hits.length };
-    // Deps = stabile, memoisierte Datenquellen (nicht die je Render neuen Getter-
-    // Closures), damit nur bei echten Daten-Änderungen neu gerechnet wird.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [txs, selAcc, cats, groups, _catTypeById, actualSums, _budgetIdx, budgets]);
+  // liquidityStrain + strainWarning werden weiter unten definiert (NACH
+  // getKumulierterSaldo, das sie als Startsaldo brauchen).
 
   // Kumulierter Kontostand bis inkl. Monat m des Jahres y
   const _ksCache = React.useRef({});
@@ -1555,6 +1528,49 @@ Abbrechen = ${remoteName}-Stand laden`
       return gesamtSaldo;
     }
   };
+
+  // ── Liquiditäts-Schieflage: fortlaufender Kontostand vs. Mindestreserve ──────
+  // Ersetzt den reinen Monatsvergleich (exp>inc) durch eine echte Prognose: vom
+  // aktuellen Kontostand ausgehend wird Monat für Monat (Einnahmen − Ausgaben,
+  // inkl. Vormerkungen + Budget) fortgeschrieben. „Schieflage" = der prognosti-
+  // zierte Kontostand fällt unter den Puffer (Summe der Konto-Mindestreserven).
+  // EINE Quelle für Banner UND Money-Mood-Ampel → nie widersprüchlich.
+  const liquidityStrain = useMemo(()=>{
+    const now = new Date(); const nY = now.getFullYear(), nM = now.getMonth();
+    const buffer = (accounts||[]).reduce((s,a)=> s + (pn(a.minPuffer)||0), 0);
+    const prevY = nM===0 ? nY-1 : nY, prevM = nM===0 ? 11 : nM-1;
+    const base = getKumulierterSaldo(prevY, prevM, null);   // Saldo zu Monatsbeginn
+    const hasBase = base != null;
+    const startIdx = nY*12 + nM;
+    const yearCache = {};
+    const getIncExp = (y, m) => {
+      if(!yearCache[y]){
+        const pend = pendingForecast(txs, { year: y, selAcc: null, catTypeById: _catTypeById });
+        yearCache[y] = monthlyStrain({ year: y, cats, groups, pend,
+          getActualSum, getBudgetForMonth, getTotalIncome, getTotalExpense, isUpcoming: ()=>true });
+      }
+      return { inc: yearCache[y].inc[m], exp: yearCache[y].exp[m] };
+    };
+    const map = projectStrain({ startIdx, count: 48, baseBalance: hasBase ? base : 0, buffer, getIncExp });
+    return { map, buffer, hasBase, startIdx, nY, nM };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [txs, cats, groups, accounts, _catTypeById, actualSums, _budgetIdx, budgets, startBalances]);
+
+  // Banner-Daten: frühester Monat im kommenden Jahr, in dem der Kontostand unter
+  // die Reserve fällt (+ wie tief). Ohne gesetzten Startsaldo → kein Banner.
+  const strainWarning = useMemo(()=>{
+    const { map, buffer, hasBase, startIdx } = liquidityStrain;
+    if(!hasBase) return null;
+    const hits = [];
+    for(let k=0;k<12;k++){
+      const idx = startIdx+k, yr = Math.floor(idx/12), mi = idx%12;
+      const e = map[`${yr}:${mi}`];
+      if(e && e.strained) hits.push({ yr, mi,
+        balance: Math.round(e.balance), shortfall: Math.round(e.shortfall) });
+    }
+    if(!hits.length) return null;
+    return { soonest: hits[0], count: hits.length, buffer: Math.round(buffer) };
+  }, [liquidityStrain]);
 
   // ── Prognostizierter Saldo (inkl. offene Vormerkungen bis Halbmonat oder Monatsende) ──
   const _progDetailCache = React.useRef({});
@@ -2507,6 +2523,7 @@ Abbrechen = ${remoteName}-Stand laden`
     _txsInMonthCatSub: (y, m, catId, subId) => _txIndex.byYMCatSub.get(`${y}-${m}-${catId}-${subId}`) || [],
     _txsInMonthAcc, _txsInMonthAccCat, _txsInMonthAccCatSub,
     navigateToSparen, sparOpenRequest,
+    liquidityStrain,
     getJV, setJV, getMV, setMV, getAcc, openEdit, saveEdit, deleteFromEdit,
     updEditSplit, moveCat, moveSub, updateSub, updateCat,
     renameCat, renameSub, deleteCat, deleteSub, saveNewCat, saveNewSub,
@@ -2628,10 +2645,10 @@ Abbrechen = ${remoteName}-Stand laden`
             {Li("alert-triangle",16,"#fff")}
             <div style={{flex:1,minWidth:0,lineHeight:1.25}}>
               <div style={{fontSize:12.5,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                {label}: {fmt(s.exp)} € Ausgaben &gt; {fmt(s.inc)} € Einnahmen
+                Liquiditäts-Engpass ab {label}: Kontostand {fmt(s.balance)} €
               </div>
               <div style={{fontSize:11,opacity:0.92,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                {fmt(s.over)} € zu viel geplant{w.count>1?` · +${w.count-1} weitere${w.count-1===1?"r":""} Monat${w.count-1===1?"":"e"}`:""} · tippen zum Prüfen
+                {fmt(s.shortfall)} € unter Reserve ({fmt(w.buffer)} €){w.count>1?` · +${w.count-1} weitere${w.count-1===1?"r":""} Monat${w.count-1===1?"":"e"}`:""} · tippen
               </div>
             </div>
             {Li("chevron-right",18,"#fff")}

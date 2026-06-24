@@ -89,3 +89,24 @@ export function monthlyStrain({
   }
   return { strained, inc, exp };
 }
+
+// Liquiditäts-Prognose: schreibt den kumulierten Kontostand Monat für Monat fort
+// (Startsaldo + Einnahmen − Ausgaben je Monat) und markiert die Monate, in denen
+// er UNTER den Puffer (Mindestreserve) fällt. Anders als monthlyStrain (reiner
+// Monatsvergleich exp>inc) berücksichtigt das Rücklagen aus Vormonaten.
+//
+//   getIncExp(year, month) → { inc, exp }  (Vorschau-Summen, z. B. aus monthlyStrain)
+//
+// Liefert eine Map `${year}:${month}` → { inc, exp, balance, strained, shortfall }.
+export function projectStrain({ startIdx, count = 12, baseBalance = 0, buffer = 0, getIncExp } = {}) {
+  const out = {};
+  let bal = baseBalance;
+  for (let k = 0; k < count; k++) {
+    const idx = startIdx + k;
+    const y = Math.floor(idx / 12), m = ((idx % 12) + 12) % 12;
+    const { inc = 0, exp = 0 } = getIncExp(y, m) || {};
+    bal += inc - exp;
+    out[`${y}:${m}`] = { inc, exp, balance: bal, strained: bal < buffer, shortfall: buffer - bal };
+  }
+  return out;
+}
