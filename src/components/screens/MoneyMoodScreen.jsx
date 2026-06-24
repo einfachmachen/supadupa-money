@@ -41,7 +41,7 @@ function classify(dev, isIncome) {
 const fmtK = (v) => v >= 1000 ? (Math.round(v / 100) / 10) + "k" : String(Math.round(v));
 
 function MoneyMoodScreen() {
-  const { cats, groups, txs, year, getActualSum, getBudgetForMonth, getAcc, getTotalIncome, getTotalExpense } = useContext(AppCtx);
+  const { cats, groups, txs, year, selAcc, getActualSum, getBudgetForMonth, getAcc, getTotalIncome, getTotalExpense } = useContext(AppCtx);
   const [openCat, setOpenCat] = useState(null);   // aufgeklappte Hauptkategorie
   const [detail, setDetail] = useState(null);     // { row, isSub, isIncome }
   const [heroOpen, setHeroOpen] = useState(false);          // Hero-Details auf/zu
@@ -57,6 +57,42 @@ function MoneyMoodScreen() {
   const recentIdx = year < nowY ? 11 : year > nowY ? -1 : Math.max(0, nowM - 1);
   const elapsedIdx = year < nowY ? 11 : year > nowY ? -1 : nowM;
 
+  // ── Vormerkungen (pending) je Unterkategorie/Monat + als Gesamt-Summen ────────
+  // Damit die Sparklines nicht nur den Ist-Stand zeigen, sondern eine Vorschau:
+  // gebucht + vorgemerkt. So schlagen z. B. künftige Finanzierungsraten schon vor
+  // der Buchung als Schieflage durch. Konto-Filter wie bei den Ist-Summen.
+  const catTypeById = useMemo(() => {
+    const m = {};
+    cats.forEach(c => { m[c.id] = c.type; });
+    return m;
+  }, [cats]);
+  const pend = useMemo(() => {
+    const accOk = (tx) => !selAcc ? true
+      : ((!tx.accountId && selAcc === "acc-giro") ? true : tx.accountId === selAcc);
+    const sub = {};                                  // `${m}:${subId}` → Betrag (abs)
+    const incTot = Array(RANGE).fill(0), expTot = Array(RANGE).fill(0);
+    (txs || []).forEach(tx => {
+      // Budget-Platzhalter (_budgetSubId) sind das Budget selbst (über
+      // getBudgetForMonth abgebildet) — nicht als Vorschau-Ausgabe doppeln.
+      if (!tx.pending || tx._linkedTo || tx._budgetSubId || !accOk(tx)) return;
+      const d = new Date(tx.date);
+      if (d.getFullYear() !== year) return;
+      const m = d.getMonth();
+      (tx.splits || []).forEach(sp => {
+        if (!sp.subId) return;
+        const k = `${m}:${sp.subId}`;
+        sub[k] = (sub[k] || 0) + Math.abs(pn(sp.amount));
+      });
+      // Gesamt-Typ wie in actualSums: Kategorietyp, dann _csvType, dann Vorzeichen.
+      const ct0 = catTypeById[(tx.splits || [])[0]?.catId];
+      const type = ct0 === "income" ? "income" : ct0 === "expense" ? "expense"
+        : (tx._csvType || (tx.totalAmount >= 0 ? "income" : "expense"));
+      const amt = Math.abs(tx.totalAmount || 0);
+      if (type === "income") incTot[m] += amt; else expTot[m] += amt;
+    });
+    return { sub, incTot, expTot };
+  }, [txs, selAcc, year, catTypeById]);
+
   // Reihen je Block (Einnahmen/Ausgaben) mit 12-Monats-Serie + 24-Monats-„ext"
   // (Vorjahr+Jahr) für den gleitenden 12-Monats-Schnitt.
   const blocks = useMemo(() => {
@@ -68,7 +104,10 @@ function MoneyMoodScreen() {
       }
       const budget = [];
       for (let mi = 0; mi < RANGE; mi++) budget.push(Math.abs(getBudgetForMonth(subId, year, mi) || 0));
-      return { ext, actual: ext.slice(12), budget };
+      // Vorschau: gebuchter Ist-Wert + offene Vormerkungen des Monats. Der
+      // 24-Monats-Schnitt (ext) bleibt rein gebucht → Vergleichsbasis = echte Historie.
+      const actual = ext.slice(12).map((v, mi) => v + (pend.sub[`${mi}:${subId}`] || 0));
+      return { ext, actual, budget };
     };
     const add = (a, b) => a.map((v, i) => v + (b[i] || 0));
 
@@ -81,32 +120,34 @@ function MoneyMoodScreen() {
       });
       grps.forEach(grp => {
         cats.filter(c => c.type === grp.type).forEach(cat => {
-          let cExt = Array(24).fill(0), cBud = Array(RANGE).fill(0);
+          let cExt = Array(24).fill(0), cBud = Array(RANGE).fill(0), cAct = Array(RANGE).fill(0);
           const subs = (cat.subs || []).map(sub => {
             const s = extForSub(sub.id);
-            cExt = add(cExt, s.ext); cBud = add(cBud, s.budget);
+            cExt = add(cExt, s.ext); cBud = add(cBud, s.budget); cAct = add(cAct, s.actual);
             return { id: sub.id, name: sub.name, ...s };
           });
-          if (cExt.every(v => v === 0) && cBud.every(v => v === 0)) return;
-          out.push({ id: cat.id, name: cat.name, icon: cat.icon, color: cat.color, isIncome, ext: cExt, actual: cExt.slice(12), budget: cBud, subs });
+          if (cExt.every(v => v === 0) && cBud.every(v => v === 0) && cAct.every(v => v === 0)) return;
+          out.push({ id: cat.id, name: cat.name, icon: cat.icon, color: cat.color, isIncome, ext: cExt, actual: cAct, budget: cBud, subs });
         });
       });
       return out;
     };
     return { expense: mk(false), income: mk(true) };
-  }, [cats, groups, year, getActualSum, getBudgetForMonth]);
+  }, [cats, groups, year, getActualSum, getBudgetForMonth, pend]);
 
   // Monate, in denen die Gesamtlage kippt: Ausgaben > Einnahmen (Schieflage).
   // Nur dann werden Kategorien überhaupt gelb/rot eingefärbt.
   const strained = useMemo(() => {
     const out = [];
     for (let mi = 0; mi < RANGE; mi++) {
-      const inc = Math.abs(getTotalIncome(year, mi) || 0);
-      const exp = Math.abs(getTotalExpense(year, mi) || 0);
+      // Vorschau-Schieflage: Ist + Vormerkungen gegenüberstellen, damit künftige
+      // Belastungen (z. B. eine zu hohe Finanzierungsrate) die Ampel auslösen.
+      const inc = Math.abs(getTotalIncome(year, mi) || 0) + (pend.incTot[mi] || 0);
+      const exp = Math.abs(getTotalExpense(year, mi) || 0) + (pend.expTot[mi] || 0);
       out.push(exp > inc);
     }
     return out;
-  }, [year, getTotalIncome, getTotalExpense]);
+  }, [year, getTotalIncome, getTotalExpense, pend]);
 
   // Ist-Wert + gleitender 12-Monats-Schnitt + Abweichung (nur Monate mit Bewegung;
   // <2 Datenpunkte → null = neutral, damit Neues nicht sofort auffällt).
@@ -253,6 +294,7 @@ function MoneyMoodScreen() {
       <div style={{ color: T.txt2, fontSize: 11, padding: "4px 14px 6px", lineHeight: 1.45 }}>
         <b style={{ color: T.gold }}>Gelb</b>/<b style={{ color: T.neg }}>rot</b> nur in Monaten, in denen insgesamt mehr aus- als einging –
         {" "}und diese Kategorie auffällig dazu beitrug. Sonst <b style={{ color: T.pos }}>grün</b>.
+        {" "}Die Balken zeigen die <b style={{ color: T.txt }}>Vorschau</b>: gebucht + Vormerkungen, damit künftige Belastungen früh sichtbar werden.
       </div>
     </>
   );
@@ -315,12 +357,14 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
   const bookingsForSub = (subId, mi) => {
     const out = [];
     (txs || []).forEach(tx => {
-      if (tx.pending || tx._linkedTo) return;
+      // Vormerkungen (pending) mitnehmen — sie bilden den Vorschau-Anteil der Balken.
+      // Budget-Platzhalter bleiben außen vor (wie bei den Balken oben).
+      if (tx._linkedTo || tx._budgetSubId) return;
       const d = new Date(tx.date);
       if (d.getFullYear() !== year || d.getMonth() !== mi) return;
       let amt = 0;
       (tx.splits || []).forEach(sp => { if (sp.subId === subId) amt += Math.abs(pn(sp.amount)); });
-      if (amt > 0) out.push({ tx, name: tx.desc || "Buchung", dateStr: d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }), val: amt });
+      if (amt > 0) out.push({ tx, name: tx.desc || "Buchung", dateStr: d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" }), val: amt, pending: !!tx.pending });
     });
     return out.sort((a, b) => b.val - a.val);
   };
@@ -405,6 +449,7 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
                           <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8 }}>
                             {Li(open ? "chevron-down" : "chevron-right", 16, T.txt2)}
                             <span style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
+                            {it.pending && <span style={{ background: "rgba(245,166,35,0.15)", color: T.gold, borderRadius: 4, padding: "0 5px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>VM</span>}
                             <span style={{ color: T.txt2, fontSize: 12, flexShrink: 0, whiteSpace: "nowrap" }}>{it.dateStr}</span>
                             <span style={{ color: T.txt, fontSize: 16, fontWeight: 700, fontFamily: NUM_FONT, flexShrink: 0, whiteSpace: "nowrap" }}>{fmt(it.val)}</span>
                           </div>
