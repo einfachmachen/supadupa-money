@@ -52,7 +52,7 @@ function classify(dev, isIncome) {
 const fmtK = (v) => v >= 1000 ? (Math.round(v / 100) / 10) + "k" : String(Math.round(v));
 
 function MoneyMoodScreen() {
-  const { cats, groups, txs, year, selAcc, getActualSum, getBudgetForMonth, getAcc, openEdit, updateCat, liquidityStrain } = useContext(AppCtx);
+  const { cats, groups, txs, year, selAcc, getActualSum, getBudgetForMonth, getAcc, openEdit, updateCat, liquidityWarnings } = useContext(AppCtx);
   const [openCat, setOpenCat] = useState(null);   // aufgeklappte Hauptkategorie
   const [detail, setDetail] = useState(null);     // { row, isSub, isIncome }
   const [heroOpen, setHeroOpen] = useState(false);          // Hero-Details auf/zu
@@ -130,26 +130,29 @@ function MoneyMoodScreen() {
     return { expense: mk(false), income: mk(true) };
   }, [cats, groups, year, getActualSum, getBudgetForMonth, pend]);
 
-  // Schieflage = Liquiditäts-Prognose, zentral in App berechnet (liquidityStrain)
-  // und hier nur gelesen — so sind Banner und Money-Mood-Ampel garantiert gleich.
-  // Map-Eintrag je Monat: { inc, exp, balance, strained, shortfall }. Enthält nur
-  // kommende Monate (ab jetzt), Vergangenheit bleibt automatisch grün.
-  const strainMap = liquidityStrain?.map || {};
-  const buffer = liquidityStrain?.buffer || 0;
+  // Schieflage = taggenaue Liquiditäts-Warnung, zentral in App berechnet
+  // (computeKontoWarnungen — exakt die Dashboard-Logik) und hier nur gelesen. So
+  // sind Banner, Dashboard und Money-Mood-Ampel garantiert identisch.
+  const warnByMi = useMemo(() => {
+    const m = {};
+    (liquidityWarnings || []).forEach(w => { if (w.year === year) m[w.month] = w; });
+    return m;
+  }, [liquidityWarnings, year]);
+  const buffer = (liquidityWarnings || [])[0]?.minPuffer || 0;
   const strained = useMemo(() => {
     const arr = [];
-    for (let mi = 0; mi < RANGE; mi++) arr.push(!!strainMap[`${year}:${mi}`]?.strained);
+    for (let mi = 0; mi < RANGE; mi++) arr.push(!!warnByMi[mi]);
     return arr;
-  }, [strainMap, year]);
-  // Alle kommenden Schieflage-Monate im betrachteten Jahr. Je Monat die Treiber
-  // sortiert nach Priorität (flexibel/kürzbar zuerst, essentiell zuletzt), dann
-  // nach Betrag — so „springt" der oberste Treiber nicht mehr nach Betrag, sondern
-  // zeigt stabil die realistisch kürzbaren Posten.
+  }, [warnByMi]);
+  // Betroffene Monate im betrachteten Jahr. Je Monat die Treiber sortiert nach
+  // Priorität (flexibel/kürzbar zuerst, essentiell zuletzt), dann nach Betrag —
+  // so „springt" der oberste Treiber nicht nach Betrag, sondern zeigt stabil die
+  // realistisch kürzbaren Posten.
   const strainMonths = useMemo(() => {
     const out = [];
     for (let mi = 0; mi < RANGE; mi++) {
-      const e = strainMap[`${year}:${mi}`];
-      if (!e || !e.strained) continue;
+      const w = warnByMi[mi];
+      if (!w) continue;
       const drivers = blocks.expense
         .map(r => ({
           row: r, val: r.fore[mi] || 0, prio: r.priority || "normal",
@@ -160,13 +163,10 @@ function MoneyMoodScreen() {
         .filter(d => d.val > 0)
         .sort((a, b) => (PRIO_RANK[a.prio] - PRIO_RANK[b.prio]) || (b.val - a.val))
         .slice(0, 4);
-      out.push({
-        mi, balance: Math.round(e.balance), shortfall: Math.round(e.shortfall),
-        inc: Math.round(e.inc), exp: Math.round(e.exp), drivers,
-      });
+      out.push({ mi, saldoVal: Math.round(w.saldoVal), deficit: Math.round(w.deficit), drivers });
     }
     return out;
-  }, [strainMap, blocks, year]);
+  }, [warnByMi, blocks]);
   // Im Panel ausgewählter Schieflage-Monat (Default: frühester). Fällt der gewählte
   // Monat weg (z. B. nach dem Kürzen), rutscht die Auswahl automatisch auf den ersten.
   const [selStrainMi, setSelStrainMi] = useState(null);
@@ -348,7 +348,7 @@ function MoneyMoodScreen() {
                   <button key={s.mi} onClick={() => setSelStrainMi(s.mi)}
                     style={{ display: "inline-flex", alignItems: "baseline", gap: 5, background: on ? T.neg + "33" : "rgba(255,255,255,0.05)", border: `1px solid ${on ? T.neg : T.bd}`, borderRadius: 13, padding: "3px 9px", cursor: "pointer", fontFamily: "inherit" }}>
                     <span style={{ color: on ? T.neg : T.txt, fontSize: 11.5, fontWeight: on ? 800 : 600 }}>{MONTHS_S[s.mi]}</span>
-                    <span style={{ color: T.txt2, fontSize: 10.5, fontFamily: NUM_FONT }}>−{fmt(s.shortfall)} €</span>
+                    <span style={{ color: T.txt2, fontSize: 10.5, fontFamily: NUM_FONT }}>−{fmt(s.deficit)} €</span>
                   </button>
                 );
               })}
@@ -356,7 +356,7 @@ function MoneyMoodScreen() {
           )}
 
           <div style={{ color: T.txt, fontSize: 12.5, lineHeight: 1.4, marginBottom: activeStrain.drivers.length ? 7 : 0 }}>
-            <b>{MONTHS_F[activeStrain.mi]}:</b> prognostizierter Kontostand <b style={{ color: T.neg }}>{fmt(activeStrain.balance)} €</b> — <b>{fmt(activeStrain.shortfall)} €</b> unter Reserve ({fmt(buffer)} €).
+            <b>{MONTHS_F[activeStrain.mi]}:</b> Konto fällt auf <b style={{ color: T.neg }}>{fmt(activeStrain.saldoVal)} €</b> — <b>{fmt(activeStrain.deficit)} €</b> unter Puffer ({fmt(buffer)} €).
           </div>
 
           {activeStrain.drivers.length > 0 && (

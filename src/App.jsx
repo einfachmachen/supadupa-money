@@ -43,7 +43,7 @@ import { isoAddMonths } from "./utils/date.js";
 import { anchorValue, anchorDay } from "./utils/anchors.js";
 import { pn, uid, sumAmounts, fmt } from "./utils/format.js";
 import { MONTHS_S } from "./utils/constants.js";
-import { pendingForecast, monthlyStrain, projectStrain } from "./utils/moodForecast.js";
+import { computeKontoWarnungen } from "./utils/kontoWarnungen.js";
 import { Li } from "./utils/icons.jsx";
 import { makeYearData } from "./utils/yearData.js";
 import { isDuplCounterpart, buildTxIdMap } from "./utils/tx.js";
@@ -1368,8 +1368,8 @@ Abbrechen = ${remoteName}-Stand laden`
   const getTotalExpense=(y,m,col="E")=>actualSums[`${y}:${m}:expense:${col}`]||0;
 
   const _catTypeById = useMemo(()=>{ const m={}; cats.forEach(c=>{m[c.id]=c.type;}); return m; }, [cats]);
-  // liquidityStrain + strainWarning werden weiter unten definiert (NACH
-  // getKumulierterSaldo, das sie als Startsaldo brauchen).
+  // liquidityWarnings + strainWarning werden weiter unten definiert (NACH
+  // getKumulierterSaldo/getCat, die sie für die Saldo-Prognose brauchen).
 
   // Kumulierter Kontostand bis inkl. Monat m des Jahres y
   const _ksCache = React.useRef({});
@@ -1529,48 +1529,27 @@ Abbrechen = ${remoteName}-Stand laden`
     }
   };
 
-  // ── Liquiditäts-Schieflage: fortlaufender Kontostand vs. Mindestreserve ──────
-  // Ersetzt den reinen Monatsvergleich (exp>inc) durch eine echte Prognose: vom
-  // aktuellen Kontostand ausgehend wird Monat für Monat (Einnahmen − Ausgaben,
-  // inkl. Vormerkungen + Budget) fortgeschrieben. „Schieflage" = der prognosti-
-  // zierte Kontostand fällt unter den Puffer (Summe der Konto-Mindestreserven).
-  // EINE Quelle für Banner UND Money-Mood-Ampel → nie widersprüchlich.
-  const liquidityStrain = useMemo(()=>{
-    const now = new Date(); const nY = now.getFullYear(), nM = now.getMonth();
-    const buffer = (accounts||[]).reduce((s,a)=> s + (pn(a.minPuffer)||0), 0);
-    const prevY = nM===0 ? nY-1 : nY, prevM = nM===0 ? 11 : nM-1;
-    const base = getKumulierterSaldo(prevY, prevM, null);   // Saldo zu Monatsbeginn
-    const hasBase = base != null;
-    const startIdx = nY*12 + nM;
-    const yearCache = {};
-    const getIncExp = (y, m) => {
-      if(!yearCache[y]){
-        const pend = pendingForecast(txs, { year: y, selAcc: null, catTypeById: _catTypeById });
-        yearCache[y] = monthlyStrain({ year: y, cats, groups, pend,
-          getActualSum, getBudgetForMonth, getTotalIncome, getTotalExpense, isUpcoming: ()=>true });
-      }
-      return { inc: yearCache[y].inc[m], exp: yearCache[y].exp[m] };
-    };
-    const map = projectStrain({ startIdx, count: 48, baseBalance: hasBase ? base : 0, buffer, getIncExp });
-    return { map, buffer, hasBase, startIdx, nY, nM };
+  // ── Liquiditäts-Schieflage: taggenauer Giro-Saldo vs. Mindest-Puffer ─────────
+  // GENAU DIESELBE Berechnung wie die Dashboard-Warnung (KontoWarnungWidget) —
+  // beide rufen computeKontoWarnungen auf, damit Banner, Dashboard und Money-Mood-
+  // Ampel sich nie widersprechen. Prüft den prognostizierten Tagessaldo (inkl.
+  // Vormerkungen + Budget-Reservierung) gegen acc-giro.minPuffer.
+  const _giroPuffer = (accounts||[]).find(a=>a.id==="acc-giro")?.minPuffer || 0;
+  const liquidityWarnings = useMemo(()=>computeKontoWarnungen({
+    txs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth, budgets, puffer: pn(_giroPuffer)||0,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [txs, cats, groups, accounts, _catTypeById, actualSums, _budgetIdx, budgets, startBalances]);
+  }), [txs, cats, accounts, _giroPuffer, budgets, startBalances]);
 
-  // Banner-Daten: frühester Monat im kommenden Jahr, in dem der Kontostand unter
-  // die Reserve fällt (+ wie tief). Ohne gesetzten Startsaldo → kein Banner.
+  // Banner-Daten: frühester betroffener Monat (Konto fällt unter den Puffer).
   const strainWarning = useMemo(()=>{
-    const { map, buffer, hasBase, startIdx } = liquidityStrain;
-    if(!hasBase) return null;
-    const hits = [];
-    for(let k=0;k<12;k++){
-      const idx = startIdx+k, yr = Math.floor(idx/12), mi = idx%12;
-      const e = map[`${yr}:${mi}`];
-      if(e && e.strained) hits.push({ yr, mi,
-        balance: Math.round(e.balance), shortfall: Math.round(e.shortfall) });
-    }
-    if(!hits.length) return null;
-    return { soonest: hits[0], count: hits.length, buffer: Math.round(buffer) };
-  }, [liquidityStrain]);
+    if(!liquidityWarnings.length) return null;
+    const w = liquidityWarnings[0];
+    return {
+      soonest: { yr: w.year, mi: w.month, saldoVal: Math.round(w.saldoVal), deficit: Math.round(w.deficit) },
+      buffer: Math.round(w.minPuffer),
+      count: liquidityWarnings.length,
+    };
+  }, [liquidityWarnings]);
 
   // ── Prognostizierter Saldo (inkl. offene Vormerkungen bis Halbmonat oder Monatsende) ──
   const _progDetailCache = React.useRef({});
@@ -2523,7 +2502,7 @@ Abbrechen = ${remoteName}-Stand laden`
     _txsInMonthCatSub: (y, m, catId, subId) => _txIndex.byYMCatSub.get(`${y}-${m}-${catId}-${subId}`) || [],
     _txsInMonthAcc, _txsInMonthAccCat, _txsInMonthAccCatSub,
     navigateToSparen, sparOpenRequest,
-    liquidityStrain,
+    liquidityWarnings,
     getJV, setJV, getMV, setMV, getAcc, openEdit, saveEdit, deleteFromEdit,
     updEditSplit, moveCat, moveSub, updateSub, updateCat,
     renameCat, renameSub, deleteCat, deleteSub, saveNewCat, saveNewSub,
@@ -2645,10 +2624,10 @@ Abbrechen = ${remoteName}-Stand laden`
             {Li("alert-triangle",16,"#fff")}
             <div style={{flex:1,minWidth:0,lineHeight:1.25}}>
               <div style={{fontSize:12.5,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                Liquiditäts-Engpass ab {label}: Kontostand {fmt(s.balance)} €
+                Liquiditäts-Engpass ab {label}: Konto fällt auf {fmt(s.saldoVal)} €
               </div>
               <div style={{fontSize:11,opacity:0.92,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                {fmt(s.shortfall)} € unter Reserve ({fmt(w.buffer)} €){w.count>1?` · +${w.count-1} weitere${w.count-1===1?"r":""} Monat${w.count-1===1?"":"e"}`:""} · tippen
+                {fmt(s.deficit)} € unter Puffer ({fmt(w.buffer)} €){w.count>1?` · +${w.count-1} weitere${w.count-1===1?"r":""} Monat${w.count-1===1?"":"e"}`:""} · tippen
               </div>
             </div>
             {Li("chevron-right",18,"#fff")}
