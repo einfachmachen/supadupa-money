@@ -1384,12 +1384,15 @@ Abbrechen = ${remoteName}-Stand laden`
     const hits = [];
     for (let k=0;k<12;k++){
       const idx = nM+k, yr = idx<12?nY:nY+1, mi = idx%12, src = idx<12?yA:yB;
-      if (src.strained[mi]) hits.push({ yr, mi, over: Math.round(src.exp[mi]-src.inc[mi]) });
+      if (src.strained[mi]) {
+        const exp = Math.round(src.exp[mi]), inc = Math.round(src.inc[mi]);
+        hits.push({ yr, mi, inc, exp, over: exp - inc });   // exp − inc geht sichtbar exakt auf
+      }
     }
     if (!hits.length) return null;
-    const worst = hits.reduce((a,b)=> b.over>a.over?b:a, hits[0]);
-    const soonest = hits[0];
-    return { soonest, worst, count: hits.length };
+    // Immer der FRÜHESTE betroffene Monat — Überschrift und Detailzahlen beziehen
+    // sich auf denselben Monat (keine widersprüchlichen Zahlen mehr).
+    return { soonest: hits[0], count: hits.length };
     // Deps = stabile, memoisierte Datenquellen (nicht die je Render neuen Getter-
     // Closures), damit nur bei echten Daten-Änderungen neu gerechnet wird.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2618,17 +2621,17 @@ Abbrechen = ${remoteName}-Stand laden`
         const w = strainWarning, s = w.soonest;
         const label = `${MONTHS_S[s.mi]} ${s.yr}`;
         return (
-          <div onClick={()=>{ setMainTab("erfassen"); setSubTab("mood"); }}
+          <div onClick={()=>{ setYear(s.yr); setMainTab("erfassen"); setSubTab("mood"); }}
             style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",
               background:T.neg,color:"#fff",padding:"7px 12px",flexShrink:0,
               boxShadow:"0 1px 6px rgba(0,0,0,0.3)"}}>
             {Li("alert-triangle",16,"#fff")}
             <div style={{flex:1,minWidth:0,lineHeight:1.25}}>
               <div style={{fontSize:12.5,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                Schieflage ab {label}: geplante Ausgaben über den Einnahmen
+                {label}: {fmt(s.exp)} € Ausgaben &gt; {fmt(s.inc)} € Einnahmen
               </div>
               <div style={{fontSize:11,opacity:0.92,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                {w.count>1?`${w.count} Monate betroffen · `:""}größte Lücke {fmt(w.worst.over)} € · zum Prüfen tippen
+                {fmt(s.over)} € zu viel geplant{w.count>1?` · +${w.count-1} weitere${w.count-1===1?"r":""} Monat${w.count-1===1?"":"e"}`:""} · tippen zum Prüfen
               </div>
             </div>
             {Li("chevron-right",18,"#fff")}

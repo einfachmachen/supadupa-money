@@ -122,14 +122,31 @@ function MoneyMoodScreen() {
 
   // Monate, in denen die Gesamtlage kippt: Ausgaben > Einnahmen (Schieflage).
   // Nur dann werden Kategorien überhaupt gelb/rot eingefärbt.
-  const strained = useMemo(() => {
+  const strainFull = useMemo(() => {
     // Gleiche Quelle wie der globale Warnbanner (utils/moodForecast) → nie widersprüchlich.
     const isUpcoming = (mi) => year > nowY || (year === nowY && mi >= nowM);
     return monthlyStrain({
       year, cats, groups, pend,
       getActualSum, getBudgetForMonth, getTotalIncome, getTotalExpense, isUpcoming,
-    }).strained;
+    });
   }, [year, cats, groups, pend, getActualSum, getBudgetForMonth, getTotalIncome, getTotalExpense]);
+  const strained = strainFull.strained;
+  // Erster kommender Schieflage-Monat im betrachteten Jahr + größte Treiber
+  // (Ausgaben-Kategorien mit dem höchsten Vorschau-Wert in dem Monat).
+  const strainInfo = useMemo(() => {
+    for (let mi = 0; mi < RANGE; mi++) {
+      const up = year > nowY || (year === nowY && mi >= nowM);
+      if (!up || !strainFull.strained[mi]) continue;
+      const drivers = blocks.expense
+        .map(r => ({ row: r, val: r.fore[mi] || 0 }))
+        .filter(d => d.val > 0)
+        .sort((a, b) => b.val - a.val)
+        .slice(0, 3);
+      const exp = Math.round(strainFull.exp[mi]), inc = Math.round(strainFull.inc[mi]);
+      return { mi, exp, inc, over: exp - inc, drivers };   // identisch zum Banner (exp − inc exakt)
+    }
+    return null;
+  }, [strainFull, blocks, year]);
 
   // Ist-Wert + gleitender 12-Monats-Schnitt + Abweichung (nur Monate mit Bewegung;
   // <2 Datenpunkte → null = neutral, damit Neues nicht sofort auffällt).
@@ -286,6 +303,32 @@ function MoneyMoodScreen() {
       <YearSectionHeader active="mood" detailsOpen={heroOpen} setDetailsOpen={setHeroOpen}>
         {headerExtras}
       </YearSectionHeader>
+
+      {/* Ursachen-Hinweis: ab wann, wie hoch die Schieflage, größte Treiber (antippbar). */}
+      {strainInfo && (
+        <div style={{ margin: "8px 10px 2px", background: T.neg + "1A", border: `1px solid ${T.neg}66`, borderRadius: 12, padding: "9px 11px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
+            {Li("alert-triangle", 16, T.neg)}
+            <span style={{ color: T.neg, fontWeight: 700, fontSize: 13.5 }}>Schieflage ab {MONTHS_F[strainInfo.mi]} {year}</span>
+          </div>
+          <div style={{ color: T.txt, fontSize: 12.5, lineHeight: 1.4, marginBottom: strainInfo.drivers.length ? 7 : 0 }}>
+            Geplant: <b>{fmt(strainInfo.exp)} €</b> Ausgaben gegen <b>{fmt(strainInfo.inc)} €</b> Einnahmen — <b style={{ color: T.neg }}>{fmt(strainInfo.over)} € zu viel</b>.
+          </div>
+          {strainInfo.drivers.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+              <span style={{ color: T.txt2, fontSize: 11, flexShrink: 0 }}>Größte Treiber:</span>
+              {strainInfo.drivers.map((d, i) => (
+                <button key={d.row.id} onClick={() => setDetail({ row: d.row, isSub: false, isIncome: d.row.isIncome })}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 5, background: i === 0 ? T.neg + "22" : (T.surf || "rgba(255,255,255,0.06)"), border: `1px solid ${i === 0 ? T.neg + "88" : T.bd}`, borderRadius: 14, padding: "3px 9px", cursor: "pointer", fontFamily: "inherit" }}>
+                  {Li(d.row.icon || "folder", 12, d.row.color || T.neg)}
+                  <span style={{ color: T.txt, fontSize: 11.5, fontWeight: i === 0 ? 700 : 600 }}>{d.row.name}</span>
+                  <span style={{ color: T.txt2, fontSize: 11, fontFamily: NUM_FONT }}>{fmt(d.val)} €</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {sortedRows.length === 0 ? (
         <div style={{ color: T.txt2, fontSize: 13, padding: "24px 16px", textAlign: "center" }}>
