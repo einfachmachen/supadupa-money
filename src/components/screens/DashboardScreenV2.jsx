@@ -111,9 +111,12 @@ function DashboardScreenV2() {
       const newItems = res.items.filter((i) => i.status === "new");
       const dupeItems = res.items.filter((i) => i.status !== "new");
       const added = newItems.map(({ row, accId }) => ({
-        id: "eb-" + uid(), date: row.isoDate, totalAmount: Math.abs(row.amount),
-        desc: row.desc, note: "", pending: false, accountId: accId, splits: [],
+        id: "eb-" + uid(), date: row.isoDate,
+        // Vormerkungen signiert (wie manuelle VM), echte Buchungen als Betrag.
+        totalAmount: row.pending ? row.amount : Math.abs(row.amount),
+        desc: row.desc, note: "", pending: !!row.pending, accountId: accId, splits: [],
         _csvType: row.amount > 0 ? "income" : "expense", _fp: row.fp, _csvSource: "Enable Banking",
+        ...(row._ebRef ? { _ebRef: row._ebRef } : {}),
       }));
       if (added.length) setTxs((p) => [...added, ...p].sort((x, y) => y.date.localeCompare(x.date)));
       setBankFetch({ status: "done", newIds: added.map((t) => t.id), dupeItems, aspsp, banks });

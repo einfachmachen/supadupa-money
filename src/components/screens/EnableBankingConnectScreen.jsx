@@ -351,7 +351,7 @@ function EnableBankingConnectScreen({ onClose }) {
         const r = await cl.getTransactions(a.uid, { dateFrom });
         const rows = mapEnableBankingTransactions(r?.transactions || [], appAccId);
         rows.forEach((row) => {
-          if (row.pending) return; // vorgemerkte Bank-Umsätze auslassen
+          // Vorgemerkte Bank-Umsätze (PDNG) werden als Vormerkung übernommen.
           const fpNorm = txFingerprintNorm(row.isoDate, row.amount, row.desc, appAccId);
           const amtKey = `${row.isoDate}|${Math.round(Math.abs(row.amount) * 100)}`;
           let status = "new";
@@ -389,9 +389,12 @@ function EnableBankingConnectScreen({ onClose }) {
     const chosen = (preview || []).filter((i) => i.checked);
     if (!chosen.length) { setMsg({ tone: "warn", text: "Keine Buchung ausgewählt." }); return; }
     const newTxs = chosen.map(({ row, accId }) => ({
-      id: "eb-" + uid(), date: row.isoDate, totalAmount: Math.abs(row.amount),
-      desc: row.desc, note: "", pending: false, accountId: accId, splits: [],
+      id: "eb-" + uid(), date: row.isoDate,
+      // Vormerkungen signiert (wie manuelle VM), echte Buchungen als Betrag.
+      totalAmount: row.pending ? row.amount : Math.abs(row.amount),
+      desc: row.desc, note: "", pending: !!row.pending, accountId: accId, splits: [],
       _csvType: row.amount > 0 ? "income" : "expense", _fp: row.fp, _csvSource: "Enable Banking",
+      ...(row._ebRef ? { _ebRef: row._ebRef } : {}),
     }));
     setTxs((p) => [...newTxs, ...p].sort((x, y) => y.date.localeCompare(x.date)));
     setResult({ added: newTxs.length });
@@ -639,7 +642,15 @@ function EnableBankingConnectScreen({ onClose }) {
                       style={{ marginTop: 3, width: 18, height: 18, flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                        <span style={{ color: T.txt2, fontSize: 12 }}>{it.row.isoDate}</span>
+                        <span style={{ color: T.txt2, fontSize: 12, display: "inline-flex", alignItems: "center", gap: 5 }}>
+                          {it.row.isoDate}
+                          {it.row.pending && (
+                            <span style={{ background: "rgba(245,166,35,0.15)", color: T.gold,
+                              borderRadius: 4, padding: "0 4px", fontSize: 9, fontWeight: 700 }}>
+                              vorgemerkt
+                            </span>
+                          )}
+                        </span>
                         <span style={{ color: it.row.amount < 0 ? T.neg : T.pos, fontSize: 13, fontWeight: 700 }}>
                           {it.row.amount.toFixed(2)} €
                         </span>

@@ -113,6 +113,14 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
                 <div style={{color:T.txt,fontSize:14,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tx.desc||cat?.name}</div>
                 <div style={{color:T.txt2,fontSize:11,display:"flex",alignItems:"center",gap:5}}>
                   <span>{tx.date}{tx._seriesId&&tx._seriesTotal>1&&tx._seriesIdx&&tx._seriesTyp==="finanzierung"?` · ${tx._seriesIdx}/${tx._seriesTotal}`:""}</span>
+                  {/* Bank-Vormerkung (PDNG aus Enable Banking) — von Plan-VM unterscheidbar */}
+                  {tx._csvSource==="Enable Banking"&&(
+                    <span style={{background:"rgba(74,159,212,0.15)",color:T.blue,
+                      borderRadius:4,padding:"0 4px",fontSize:9,fontWeight:700,flexShrink:0,
+                      display:"inline-flex",alignItems:"center",gap:3}}>
+                      {Li("landmark",8,T.blue)} Bank
+                    </span>
+                  )}
                   {/* Flexibler Topf: belastet nicht das Budget der eigenen Kategorie */}
                   {tx._potSubId&&(
                     <span style={{background:"rgba(245,166,35,0.15)",color:T.gold,
