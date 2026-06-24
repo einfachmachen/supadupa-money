@@ -10,6 +10,13 @@ import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
+// Kategorie-Priorität (steuert die Treiber-Reihenfolge im Money-Mood-Schieflage-Panel).
+const PRIO_OPTS = [
+  ["essential", "Essentiell", "lock"],
+  ["normal",    "Normal",     "minus"],
+  ["flex",      "Flexibel",   "scissors"],
+];
+
 function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert}) {
   const goBack = onBack || onClose; // zurück eine Ebene hoch (Mehr-Menü)
   const { cats, setCats, groups, setGroups, budgets, setBudgets, txs, setTxs, accounts,
@@ -95,6 +102,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
   const [editName, setEditName] = useState(""); // für Kategorie bearbeiten
   const [editColor,setEditColor]= useState(T.blue);
   const [editType, setEditType] = useState("expense");
+  const [editPriority, setEditPriority] = useState("normal");
   const [budgetOpen, setBudgetOpen]  = useState({}); // {subId: bool}
   const [budgetEdits, setBudgetEdits] = useState({});
   const [budgetScope, setBudgetScope] = useState({});
@@ -116,16 +124,16 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
   // frisch lesen — so muss der Override-Effekt NICHT pro Tastendruck neu
   // registriert werden (sonst App-weite Re-Renders → Tipp-Lag).
   const liveRef = React.useRef({});
-  liveRef.current = { newName, newColor, newType, editName, editColor, editType, selCat, catAccFilter };
+  liveRef.current = { newName, newColor, newType, editName, editColor, editType, editPriority, selCat, catAccFilter };
   const openNewCat = () => { setNewName(""); setNewColor(T.blue); setView("newCat"); };
   const saveEditCat = () => {
-    const { editName, editColor, editType, selCat, catAccFilter } = liveRef.current;
+    const { editName, editColor, editType, editPriority, selCat, catAccFilter } = liveRef.current;
     if(!editName.trim() || !selCat) return;
     const curGrp = (groups||[]).find(g=>g.type===selCat.type);
     const curAcc = curGrp?.accountId || catAccFilter || "";
     const newCatType = ensureGroupForCat(curAcc, editType);
     setCats(p=>p.map(c=>c.id===selCat.id
-      ?{...c,name:editName.trim(),color:editColor,type:newCatType}:c));
+      ?{...c,name:editName.trim(),color:editColor,type:newCatType,priority:editType==="expense"?editPriority:undefined}:c));
     setView("list");
   };
   const saveNewCat = () => {
@@ -198,6 +206,28 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
             </button>
           ))}
         </div>
+        {editType==="expense" && (<>
+          <div style={{color:T.txt2,fontSize:S.fs-4,marginBottom:6,fontWeight:600}}>Priorität</div>
+          <div style={{display:"flex",gap:S.gap/2,marginBottom:6}}>
+            {PRIO_OPTS.map(([p,l,ic])=>{
+              const c = p==="flex"?T.gold:p==="essential"?T.pos:T.txt2;
+              const on = editPriority===p;
+              return (
+                <button key={p} onClick={()=>setEditPriority(p)}
+                  style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:5,
+                    padding:`${S.pad}px ${S.pad/2}px`,borderRadius:S.radius,
+                    background:on?c+"22":"rgba(255,255,255,0.06)",
+                    border:`2px solid ${on?c:T.bd}`,color:on?c:T.txt2,
+                    fontSize:S.fs-4,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                  {Li(ic,S.fs-8,on?c:T.txt2)} {l}
+                </button>
+              );
+            })}
+          </div>
+          <div style={{color:T.txt2,fontSize:S.fs-8,marginBottom:S.gap*1.2,lineHeight:1.4}}>
+            Bei einer Schieflage werden flexible Posten zuerst als Kürz-Vorschlag gezeigt, essentielle zuletzt.
+          </div>
+        </>)}
         <div style={{color:T.txt2,fontSize:S.fs-4,marginBottom:6,fontWeight:600}}>Farbe</div>
         <div style={{display:"flex",gap:S.gap/2,flexWrap:"wrap",marginBottom:S.gap*1.5}}>
           {COLORS.map(c=>(
@@ -439,6 +469,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                 setEditName(cat.name);
                 setEditColor(cat.color||T.blue);
                 setEditType(beh==="income" ? "income" : "expense");
+                setEditPriority(cat.priority||"normal");
                 setView("editCat");
               }} style={{background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bd}`,
                 borderRadius:S.radius/2,color:T.txt2,cursor:"pointer",
