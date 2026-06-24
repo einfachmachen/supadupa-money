@@ -65,7 +65,7 @@ function friendlyBankError(txt) {
   const s = String(txt || "").toLowerCase();
   // Bankseitiger Serverfehler (ASPSP = die Bank). Typisch vorübergehend.
   if (/aspsp_error|internal server error|httpexception|bad gateway|service unavailable|gateway timeout|\b50[0-4]\b/.test(s))
-    return "Die Bank ist gerade vorübergehend nicht erreichbar (Serverfehler auf Bankseite). Bitte in ein paar Minuten erneut versuchen.";
+    return "Die Bank ist vorübergehend nicht erreichbar (Serverfehler auf Bankseite). Bitte in ein paar Minuten erneut versuchen.";
   if (/\b429\b|rate.?limit|too many/.test(s))
     return "Zu viele Anfragen in kurzer Zeit. Bitte einen Moment warten und erneut versuchen.";
   if (/failed to fetch|networkerror|network error|timeout|timed out|err_|enotfound|econnrefused/.test(s))
