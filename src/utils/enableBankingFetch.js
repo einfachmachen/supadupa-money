@@ -97,7 +97,9 @@ async function fetchNewBankTx({ txs, accounts, dateFrom, aspsp } = {}) {
         const r = await cl.getTransactions(a.uid, { dateFrom: from });
         const rows = mapEnableBankingTransactions(r?.transactions || [], appAccId);
         rows.forEach((row) => {
-          if (row.pending) return; // vorgemerkte Bank-Umsätze auslassen
+          // Vorgemerkte Bank-Umsätze (PDNG) laufen mit durch und werden weiter
+          // unten als Vormerkung (pending) übernommen — Auflösung gegen die
+          // spätere echte Buchung erfolgt manuell im Matching.
           const fpNorm = txFingerprintNorm(row.isoDate, row.amount, row.desc, appAccId);
           const amtKey = `${row.isoDate}|${Math.round(Math.abs(row.amount) * 100)}`;
           let status = "new";
