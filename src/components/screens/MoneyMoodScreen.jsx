@@ -18,6 +18,7 @@ import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { MONTHS_S, MONTHS_F } from "../../utils/constants.js";
 import { fmt, pn, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
+import { pendingForecast } from "../../utils/moodForecast.js";
 import { YearSectionHeader } from "../molecules/YearSectionHeader.jsx";
 
 const RANGE = 12;
@@ -66,32 +67,9 @@ function MoneyMoodScreen() {
     cats.forEach(c => { m[c.id] = c.type; });
     return m;
   }, [cats]);
-  const pend = useMemo(() => {
-    const accOk = (tx) => !selAcc ? true
-      : ((!tx.accountId && selAcc === "acc-giro") ? true : tx.accountId === selAcc);
-    const sub = {};                                  // `${m}:${subId}` → Betrag (abs)
-    const incTot = Array(RANGE).fill(0), expTot = Array(RANGE).fill(0);
-    (txs || []).forEach(tx => {
-      // Budget-Platzhalter (_budgetSubId) sind das Budget selbst (über
-      // getBudgetForMonth abgebildet) — nicht als Vorschau-Ausgabe doppeln.
-      if (!tx.pending || tx._linkedTo || tx._budgetSubId || !accOk(tx)) return;
-      const d = new Date(tx.date);
-      if (d.getFullYear() !== year) return;
-      const m = d.getMonth();
-      (tx.splits || []).forEach(sp => {
-        if (!sp.subId) return;
-        const k = `${m}:${sp.subId}`;
-        sub[k] = (sub[k] || 0) + Math.abs(pn(sp.amount));
-      });
-      // Gesamt-Typ wie in actualSums: Kategorietyp, dann _csvType, dann Vorzeichen.
-      const ct0 = catTypeById[(tx.splits || [])[0]?.catId];
-      const type = ct0 === "income" ? "income" : ct0 === "expense" ? "expense"
-        : (tx._csvType || (tx.totalAmount >= 0 ? "income" : "expense"));
-      const amt = Math.abs(tx.totalAmount || 0);
-      if (type === "income") incTot[m] += amt; else expTot[m] += amt;
-    });
-    return { sub, incTot, expTot };
-  }, [txs, selAcc, year, catTypeById]);
+  const pend = useMemo(
+    () => pendingForecast(txs, { year, selAcc, catTypeById }),
+    [txs, selAcc, year, catTypeById]);
 
   // Reihen je Block (Einnahmen/Ausgaben) mit 12-Monats-Serie + 24-Monats-„ext"
   // (Vorjahr+Jahr) für den gleitenden 12-Monats-Schnitt.
