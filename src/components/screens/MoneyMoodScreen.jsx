@@ -96,6 +96,8 @@ function MoneyMoodScreen() {
   // Reihen je Block (Einnahmen/Ausgaben) mit 12-Monats-Serie + 24-Monats-„ext"
   // (Vorjahr+Jahr) für den gleitenden 12-Monats-Schnitt.
   const blocks = useMemo(() => {
+    // Laufender oder künftiger Monat (nur dort floort das Budget die Vorschau).
+    const upcoming = (mi) => year > nowY || (year === nowY && mi >= nowM);
     const extForSub = (subId) => {
       const ext = [];
       for (let k = 0; k < 24; k++) {
@@ -107,7 +109,12 @@ function MoneyMoodScreen() {
       // Vorschau: gebuchter Ist-Wert + offene Vormerkungen des Monats. Der
       // 24-Monats-Schnitt (ext) bleibt rein gebucht → Vergleichsbasis = echte Historie.
       const actual = ext.slice(12).map((v, mi) => v + (pend.sub[`${mi}:${subId}`] || 0));
-      return { ext, actual, budget };
+      // Forecast-Balken: zusätzlich das Budget als geplante Ausgabe einrechnen –
+      // aber nur für laufende/künftige Monate (Vergangenheit = Realität, kein
+      // Aufblähen auf das Budget). Budget gilt als Untergrenze, nicht additiv:
+      // bereits gebuchtes/vorgemerktes zehrt es auf, Überschreitung schlägt durch.
+      const fore = actual.map((v, mi) => upcoming(mi) ? Math.max(v, budget[mi] || 0) : v);
+      return { ext, actual, budget, fore };
     };
     const add = (a, b) => a.map((v, i) => v + (b[i] || 0));
 
@@ -120,14 +127,14 @@ function MoneyMoodScreen() {
       });
       grps.forEach(grp => {
         cats.filter(c => c.type === grp.type).forEach(cat => {
-          let cExt = Array(24).fill(0), cBud = Array(RANGE).fill(0), cAct = Array(RANGE).fill(0);
+          let cExt = Array(24).fill(0), cBud = Array(RANGE).fill(0), cAct = Array(RANGE).fill(0), cFore = Array(RANGE).fill(0);
           const subs = (cat.subs || []).map(sub => {
             const s = extForSub(sub.id);
-            cExt = add(cExt, s.ext); cBud = add(cBud, s.budget); cAct = add(cAct, s.actual);
+            cExt = add(cExt, s.ext); cBud = add(cBud, s.budget); cAct = add(cAct, s.actual); cFore = add(cFore, s.fore);
             return { id: sub.id, name: sub.name, ...s };
           });
           if (cExt.every(v => v === 0) && cBud.every(v => v === 0) && cAct.every(v => v === 0)) return;
-          out.push({ id: cat.id, name: cat.name, icon: cat.icon, color: cat.color, isIncome, ext: cExt, actual: cAct, budget: cBud, subs });
+          out.push({ id: cat.id, name: cat.name, icon: cat.icon, color: cat.color, isIncome, ext: cExt, actual: cAct, budget: cBud, fore: cFore, subs });
         });
       });
       return out;
@@ -138,21 +145,25 @@ function MoneyMoodScreen() {
   // Monate, in denen die Gesamtlage kippt: Ausgaben > Einnahmen (Schieflage).
   // Nur dann werden Kategorien überhaupt gelb/rot eingefärbt.
   const strained = useMemo(() => {
+    const sumAt = (rows, key, mi) => rows.reduce((s, r) => s + (r[key][mi] || 0), 0);
     const out = [];
     for (let mi = 0; mi < RANGE; mi++) {
-      // Vorschau-Schieflage: Ist + Vormerkungen gegenüberstellen, damit künftige
-      // Belastungen (z. B. eine zu hohe Finanzierungsrate) die Ampel auslösen.
-      const inc = Math.abs(getTotalIncome(year, mi) || 0) + (pend.incTot[mi] || 0);
-      const exp = Math.abs(getTotalExpense(year, mi) || 0) + (pend.expTot[mi] || 0);
+      // Vorschau-Schieflage: Ist + Vormerkungen + offenes Budget (geplante Ausgaben)
+      // gegen die Einnahmen. So lösen künftige Belastungen UND zu üppige Budgets die
+      // Ampel aus. Unkategorisierte Beträge (ohne Sub) bleiben über die Tx-Summen drin.
+      const allInc = Math.abs(getTotalIncome(year, mi) || 0) + (pend.incTot[mi] || 0);
+      const allExp = Math.abs(getTotalExpense(year, mi) || 0) + (pend.expTot[mi] || 0);
+      const inc = Math.max(0, allInc - sumAt(blocks.income, "actual", mi)) + sumAt(blocks.income, "fore", mi);
+      const exp = Math.max(0, allExp - sumAt(blocks.expense, "actual", mi)) + sumAt(blocks.expense, "fore", mi);
       out.push(exp > inc);
     }
     return out;
-  }, [year, getTotalIncome, getTotalExpense, pend]);
+  }, [blocks, year, getTotalIncome, getTotalExpense, pend]);
 
   // Ist-Wert + gleitender 12-Monats-Schnitt + Abweichung (nur Monate mit Bewegung;
   // <2 Datenpunkte → null = neutral, damit Neues nicht sofort auffällt).
   const statAt = (row, mi) => {
-    const v = row.actual[mi];
+    const v = row.fore[mi];
     const win = row.ext.slice(mi, mi + 12).filter(x => x > 0);
     if (win.length < 2) return null;
     const avg = win.reduce((s, x) => s + x, 0) / win.length;
@@ -163,7 +174,7 @@ function MoneyMoodScreen() {
   // darunter). Sonst grün. Passt das Gesamtbild → alles grün.
   const FLOOR = 75;
   const monthMood = (row, mi) => {
-    const v = row.actual[mi];
+    const v = row.fore[mi];
     if (v <= 0) return { c: T.bd, sev: -1 };
     if (!strained[mi]) return { c: T.pos, sev: 0 };
     const st = statAt(row, mi);
@@ -177,7 +188,7 @@ function MoneyMoodScreen() {
     let best = { c: T.bd, sev: -1 };
     const start = recentIdx < 0 ? 0 : recentIdx;
     for (let mi = start; mi < RANGE; mi++) {
-      if (row.actual[mi] <= 0) continue;
+      if (row.fore[mi] <= 0) continue;
       const m = monthMood(row, mi);
       if (m.sev > best.sev) best = m;
     }
@@ -188,11 +199,11 @@ function MoneyMoodScreen() {
   // Hero ausgeklappt → volle Ampelfarben. Eingeklappt (Anfangsansicht) → ruhig
   // weiß wie im Dashboard, rote Monate in der +Button/Kontostand-Akzentfarbe.
   const Spark = ({ row, h = 24 }) => {
-    const maxV = Math.max(1, ...row.actual);
+    const maxV = Math.max(1, ...row.fore);
     // Schmaler + rechtsbündig → Sparkline beginnt weiter rechts, einheitliche Spalte.
     return (
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "flex-end", gap: 1, height: h, width: 60, marginLeft: 16, flexShrink: 0 }}>
-        {row.actual.map((v, mi) => {
+        {row.fore.map((v, mi) => {
           const m = monthMood(row, mi);
           const barC = heroOpen ? m.c : (m.sev >= 2 ? plusAccent : T.txt);
           const bh = Math.max(2, Math.round((v / maxV) * h));
@@ -211,7 +222,7 @@ function MoneyMoodScreen() {
   const renderCard = (row) => {
     const mood = rowMood(row);
     const accent = row.color || (row.isIncome ? T.pos : T.neg);
-    const subs = (row.subs || []).filter(s => s.actual.some(v => v > 0) || s.budget.some(v => v > 0));
+    const subs = (row.subs || []).filter(s => s.fore.some(v => v > 0) || s.budget.some(v => v > 0));
     const open = openCat === row.id;
     return (
       <div key={row.id} style={{ background: cardBg, border: `1px solid ${T.bd}`, borderRadius: 10, padding: "4px 10px" }}>
@@ -251,7 +262,7 @@ function MoneyMoodScreen() {
 
   // Kombinierte, durchsortierbare Liste (Einnahmen + Ausgaben), Modi wie im Dashboard
   // plus „Auffällig" (rötester/auffälligster Monat zuerst).
-  const yearTotal = (row) => row.actual.reduce((s, v) => s + v, 0);
+  const yearTotal = (row) => row.fore.reduce((s, v) => s + v, 0);
   const allRows = [...blocks.income, ...blocks.expense];
 
   // Bei Jahrwechsel (Links/Rechts-Wisch am + Button) den offenen Drilldown auf die
