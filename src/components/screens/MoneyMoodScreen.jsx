@@ -22,6 +22,16 @@ import { pendingForecast, monthlyStrain } from "../../utils/moodForecast.js";
 import { YearSectionHeader } from "../molecules/YearSectionHeader.jsx";
 
 const RANGE = 12;
+// Kategorie-Priorität: bestimmt, welche Posten bei einer Schieflage zuerst als
+// Kürz-Vorschlag erscheinen. flexibel = realistisch kürzbar (zuerst), essentiell
+// = Pflicht (zuletzt, gedämpft). Default „normal" in der Mitte.
+const PRIO_RANK = { flex: 0, normal: 1, essential: 2 };
+const PRIO_META = {
+  flex:      { label: "Flexibel",   short: "kürzbar",    color: T.gold, icon: "scissors" },
+  normal:    { label: "Normal",     short: "",           color: T.txt2, icon: "minus" },
+  essential: { label: "Essentiell", short: "Pflicht",    color: T.pos,  icon: "lock" },
+};
+const PRIO_ORDER = ["essential", "normal", "flex"];
 // Schwellen für die Abweichung vom 12-Monats-Schnitt (dev = Ist / Schnitt).
 const EXP = { warn: 1.2, bad: 1.5 };   // Ausgaben: höher = schlechter
 const INC = { warn: 0.8, bad: 0.5 };   // Einnahmen: niedriger = schlechter
@@ -42,7 +52,7 @@ function classify(dev, isIncome) {
 const fmtK = (v) => v >= 1000 ? (Math.round(v / 100) / 10) + "k" : String(Math.round(v));
 
 function MoneyMoodScreen() {
-  const { cats, groups, txs, year, selAcc, getActualSum, getBudgetForMonth, getAcc, getTotalIncome, getTotalExpense, openEdit } = useContext(AppCtx);
+  const { cats, groups, txs, year, selAcc, getActualSum, getBudgetForMonth, getAcc, getTotalIncome, getTotalExpense, openEdit, updateCat } = useContext(AppCtx);
   const [openCat, setOpenCat] = useState(null);   // aufgeklappte Hauptkategorie
   const [detail, setDetail] = useState(null);     // { row, isSub, isIncome }
   const [heroOpen, setHeroOpen] = useState(false);          // Hero-Details auf/zu
@@ -112,7 +122,7 @@ function MoneyMoodScreen() {
             return { id: sub.id, name: sub.name, ...s };
           });
           if (cExt.every(v => v === 0) && cBud.every(v => v === 0) && cAct.every(v => v === 0)) return;
-          out.push({ id: cat.id, name: cat.name, icon: cat.icon, color: cat.color, isIncome, ext: cExt, actual: cAct, budget: cBud, fore: cFore, subs });
+          out.push({ id: cat.id, name: cat.name, icon: cat.icon, color: cat.color, priority: cat.priority || "normal", isIncome, ext: cExt, actual: cAct, budget: cBud, fore: cFore, subs });
         });
       });
       return out;
@@ -131,22 +141,29 @@ function MoneyMoodScreen() {
     });
   }, [year, cats, groups, pend, getActualSum, getBudgetForMonth, getTotalIncome, getTotalExpense]);
   const strained = strainFull.strained;
-  // Erster kommender Schieflage-Monat im betrachteten Jahr + größte Treiber
-  // (Ausgaben-Kategorien mit dem höchsten Vorschau-Wert in dem Monat).
-  const strainInfo = useMemo(() => {
+  // Alle kommenden Schieflage-Monate im betrachteten Jahr. Je Monat die Treiber
+  // sortiert nach Priorität (flexibel/kürzbar zuerst, essentiell zuletzt), dann
+  // nach Betrag — so „springt" der oberste Treiber nicht mehr nach Betrag, sondern
+  // zeigt stabil die realistisch kürzbaren Posten.
+  const strainMonths = useMemo(() => {
+    const out = [];
     for (let mi = 0; mi < RANGE; mi++) {
       const up = year > nowY || (year === nowY && mi >= nowM);
       if (!up || !strainFull.strained[mi]) continue;
       const drivers = blocks.expense
-        .map(r => ({ row: r, val: r.fore[mi] || 0 }))
+        .map(r => ({ row: r, val: r.fore[mi] || 0, prio: r.priority || "normal" }))
         .filter(d => d.val > 0)
-        .sort((a, b) => b.val - a.val)
-        .slice(0, 3);
+        .sort((a, b) => (PRIO_RANK[a.prio] - PRIO_RANK[b.prio]) || (b.val - a.val))
+        .slice(0, 4);
       const exp = Math.round(strainFull.exp[mi]), inc = Math.round(strainFull.inc[mi]);
-      return { mi, exp, inc, over: exp - inc, drivers };   // identisch zum Banner (exp − inc exakt)
+      out.push({ mi, exp, inc, over: exp - inc, drivers });   // exp − inc geht sichtbar exakt auf (= Banner)
     }
-    return null;
+    return out;
   }, [strainFull, blocks, year]);
+  // Im Panel ausgewählter Schieflage-Monat (Default: frühester). Fällt der gewählte
+  // Monat weg (z. B. nach dem Kürzen), rutscht die Auswahl automatisch auf den ersten.
+  const [selStrainMi, setSelStrainMi] = useState(null);
+  const activeStrain = strainMonths.find(s => s.mi === selStrainMi) || strainMonths[0] || null;
 
   // Ist-Wert + gleitender 12-Monats-Schnitt + Abweichung (nur Monate mit Bewegung;
   // <2 Datenpunkte → null = neutral, damit Neues nicht sofort auffällt).
@@ -304,27 +321,53 @@ function MoneyMoodScreen() {
         {headerExtras}
       </YearSectionHeader>
 
-      {/* Ursachen-Hinweis: ab wann, wie hoch die Schieflage, größte Treiber (antippbar). */}
-      {strainInfo && (
+      {/* Schieflage-Panel: ab wann, wie hoch, kürzbare Treiber zuerst. Mehrere
+          betroffene Monate sind als Pills durchschaltbar (löst „+N weitere Monate"). */}
+      {activeStrain && (
         <div style={{ margin: "8px 10px 2px", background: T.neg + "1A", border: `1px solid ${T.neg}66`, borderRadius: 12, padding: "9px 11px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
             {Li("alert-triangle", 16, T.neg)}
-            <span style={{ color: T.neg, fontWeight: 700, fontSize: 13.5 }}>Schieflage ab {MONTHS_F[strainInfo.mi]} {year}</span>
+            <span style={{ color: T.neg, fontWeight: 700, fontSize: 13.5 }}>
+              {strainMonths.length > 1 ? `Schieflage in ${strainMonths.length} Monaten` : `Schieflage ab ${MONTHS_F[activeStrain.mi]} ${year}`}
+            </span>
           </div>
-          <div style={{ color: T.txt, fontSize: 12.5, lineHeight: 1.4, marginBottom: strainInfo.drivers.length ? 7 : 0 }}>
-            Geplant: <b>{fmt(strainInfo.exp)} €</b> Ausgaben gegen <b>{fmt(strainInfo.inc)} €</b> Einnahmen — <b style={{ color: T.neg }}>{fmt(strainInfo.over)} € zu viel</b>.
+
+          {/* Monats-Pills (nur bei mehreren betroffenen Monaten) */}
+          {strainMonths.length > 1 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 8 }}>
+              {strainMonths.map(s => {
+                const on = s.mi === activeStrain.mi;
+                return (
+                  <button key={s.mi} onClick={() => setSelStrainMi(s.mi)}
+                    style={{ display: "inline-flex", alignItems: "baseline", gap: 5, background: on ? T.neg + "33" : "rgba(255,255,255,0.05)", border: `1px solid ${on ? T.neg : T.bd}`, borderRadius: 13, padding: "3px 9px", cursor: "pointer", fontFamily: "inherit" }}>
+                    <span style={{ color: on ? T.neg : T.txt, fontSize: 11.5, fontWeight: on ? 800 : 600 }}>{MONTHS_S[s.mi]}</span>
+                    <span style={{ color: T.txt2, fontSize: 10.5, fontFamily: NUM_FONT }}>−{fmt(s.over)} €</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <div style={{ color: T.txt, fontSize: 12.5, lineHeight: 1.4, marginBottom: activeStrain.drivers.length ? 7 : 0 }}>
+            <b>{MONTHS_F[activeStrain.mi]}:</b> <b>{fmt(activeStrain.exp)} €</b> Ausgaben gegen <b>{fmt(activeStrain.inc)} €</b> Einnahmen — <b style={{ color: T.neg }}>{fmt(activeStrain.over)} € zu viel</b>.
           </div>
-          {strainInfo.drivers.length > 0 && (
+
+          {activeStrain.drivers.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
-              <span style={{ color: T.txt2, fontSize: 11, flexShrink: 0 }}>Größte Treiber:</span>
-              {strainInfo.drivers.map((d, i) => (
-                <button key={d.row.id} onClick={() => setDetail({ row: d.row, isSub: false, isIncome: d.row.isIncome, focusMi: strainInfo.mi })}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 5, background: i === 0 ? T.neg + "22" : (T.surf || "rgba(255,255,255,0.06)"), border: `1px solid ${i === 0 ? T.neg + "88" : T.bd}`, borderRadius: 14, padding: "3px 9px", cursor: "pointer", fontFamily: "inherit" }}>
-                  {Li(d.row.icon || "folder", 12, d.row.color || T.neg)}
-                  <span style={{ color: T.txt, fontSize: 11.5, fontWeight: i === 0 ? 700 : 600 }}>{d.row.name}</span>
-                  <span style={{ color: T.txt2, fontSize: 11, fontFamily: NUM_FONT }}>{fmt(d.val)} €</span>
-                </button>
-              ))}
+              <span style={{ color: T.txt2, fontSize: 11, flexShrink: 0 }}>Zuerst kürzen:</span>
+              {activeStrain.drivers.map((d) => {
+                const flex = d.prio === "flex", ess = d.prio === "essential";
+                return (
+                  <button key={d.row.id} onClick={() => setDetail({ row: d.row, isSub: false, isIncome: d.row.isIncome, focusMi: activeStrain.mi })}
+                    title={ess ? "Essentiell – schwer kürzbar" : flex ? "Flexibel – am ehesten kürzbar" : undefined}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 5, opacity: ess ? 0.55 : 1, background: flex ? T.gold + "22" : (T.surf || "rgba(255,255,255,0.06)"), border: `1px solid ${flex ? T.gold + "99" : T.bd}`, borderRadius: 14, padding: "3px 9px", cursor: "pointer", fontFamily: "inherit" }}>
+                    {ess && Li("lock", 11, T.txt2)}
+                    {Li(d.row.icon || "folder", 12, d.row.color || T.neg)}
+                    <span style={{ color: T.txt, fontSize: 11.5, fontWeight: flex ? 700 : 600 }}>{d.row.name}</span>
+                    <span style={{ color: T.txt2, fontSize: 11, fontFamily: NUM_FONT }}>{fmt(d.val)} €</span>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
@@ -340,7 +383,7 @@ function MoneyMoodScreen() {
         </div>
       )}
 
-      {detail && <MoodDetail {...detail} year={year} txs={txs} getAcc={getAcc} recentIdx={recentIdx} elapsedIdx={elapsedIdx} monthMood={monthMood} openEdit={openEdit} onClose={() => setDetail(null)} />}
+      {detail && <MoodDetail {...detail} year={year} txs={txs} getAcc={getAcc} recentIdx={recentIdx} elapsedIdx={elapsedIdx} monthMood={monthMood} openEdit={openEdit} updateCat={updateCat} onClose={() => setDetail(null)} />}
     </div>
   );
 }
@@ -351,9 +394,13 @@ const navBtn = {
 };
 
 // ── Drilldown: 12 Monatsbalken (Gesamtbetrag oben, klickbar) + Zusammensetzung ──
-function MoodDetail({ row, isSub, isIncome, focusMi, year, txs, getAcc, recentIdx, elapsedIdx, monthMood, openEdit, onClose }) {
+function MoodDetail({ row, isSub, isIncome, focusMi, year, txs, getAcc, recentIdx, elapsedIdx, monthMood, openEdit, updateCat, onClose }) {
   const { name, actual, budget, fore = actual } = row;
   const isCat = !isSub && !!row.subs;
+  // Priorität nur für Ausgaben-Hauptkategorien (steuert die Treiber-Reihenfolge
+  // im Schieflage-Panel). Lokaler State für sofortiges Feedback beim Umstellen.
+  const canPrioritize = isCat && !isIncome && !!updateCat;
+  const [localPrio, setLocalPrio] = useState(row.priority || "normal");
   // Startmonat: bei Aufruf aus der Schieflage-Warnung der betroffene Monat,
   // sonst der jüngste Monat mit Bewegung.
   const initSel = (focusMi != null && focusMi >= 0)
@@ -443,11 +490,30 @@ function MoodDetail({ row, isSub, isIncome, focusMi, year, txs, getAcc, recentId
           <div style={{ marginTop: "auto" }}>
 
         {/* Titel (Hauptkategorie) — direkt über den Unterkategorien. */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: canPrioritize ? 6 : 10 }}>
           <button onClick={onClose} title="Zurück" style={{ ...navBtn, width: 40, height: 40, borderRadius: 8, flexShrink: 0 }}>{Li("chevron-left", 28, T.txt)}</button>
           <span style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 21, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
           <button onClick={onClose} style={{ ...navBtn, width: 36, height: 36, flexShrink: 0 }}>{Li("x", 18, T.txt2)}</button>
         </div>
+
+        {/* Priorität dieser Kategorie — steuert die Reihenfolge im Schieflage-Panel:
+            „Flexibel" erscheint dort zuerst als Kürz-Vorschlag, „Essentiell" zuletzt. */}
+        {canPrioritize && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+            <span style={{ color: T.txt2, fontSize: 11, flexShrink: 0 }}>Priorität:</span>
+            <div style={{ display: "flex", gap: 4, flex: 1 }}>
+              {PRIO_ORDER.map(p => {
+                const meta = PRIO_META[p], on = localPrio === p;
+                return (
+                  <button key={p} onClick={() => { setLocalPrio(p); updateCat(row.id, "priority", p); }}
+                    style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4, padding: "5px 6px", borderRadius: 8, background: on ? meta.color + "22" : "rgba(255,255,255,0.05)", border: `1.5px solid ${on ? meta.color : T.bd}`, color: on ? meta.color : T.txt2, fontSize: 11.5, fontWeight: on ? 700 : 600, cursor: "pointer", fontFamily: "inherit" }}>
+                    {Li(meta.icon, 12, on ? meta.color : T.txt2)} {meta.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Oberer Extra-Bereich: Einzelbeträge, je Zeile per Chevron ausklappbar */}
         {bookings && (
