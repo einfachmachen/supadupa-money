@@ -318,7 +318,7 @@ function MoneyMoodScreen() {
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
               <span style={{ color: T.txt2, fontSize: 11, flexShrink: 0 }}>Größte Treiber:</span>
               {strainInfo.drivers.map((d, i) => (
-                <button key={d.row.id} onClick={() => setDetail({ row: d.row, isSub: false, isIncome: d.row.isIncome })}
+                <button key={d.row.id} onClick={() => setDetail({ row: d.row, isSub: false, isIncome: d.row.isIncome, focusMi: strainInfo.mi })}
                   style={{ display: "inline-flex", alignItems: "center", gap: 5, background: i === 0 ? T.neg + "22" : (T.surf || "rgba(255,255,255,0.06)"), border: `1px solid ${i === 0 ? T.neg + "88" : T.bd}`, borderRadius: 14, padding: "3px 9px", cursor: "pointer", fontFamily: "inherit" }}>
                   {Li(d.row.icon || "folder", 12, d.row.color || T.neg)}
                   <span style={{ color: T.txt, fontSize: 11.5, fontWeight: i === 0 ? 700 : 600 }}>{d.row.name}</span>
@@ -351,12 +351,15 @@ const navBtn = {
 };
 
 // ── Drilldown: 12 Monatsbalken (Gesamtbetrag oben, klickbar) + Zusammensetzung ──
-function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapsedIdx, monthMood, onClose }) {
+function MoodDetail({ row, isSub, isIncome, focusMi, year, txs, getAcc, recentIdx, elapsedIdx, monthMood, onClose }) {
   const { name, actual, budget, fore = actual } = row;
   const isCat = !isSub && !!row.subs;
-  // Startmonat: jüngster Monat mit Bewegung.
-  const initSel = (recentIdx >= 0 && actual[recentIdx] > 0)
-    ? recentIdx : (actual.reduce((acc, v, i) => v > 0 ? i : acc, 0));
+  // Startmonat: bei Aufruf aus der Schieflage-Warnung der betroffene Monat,
+  // sonst der jüngste Monat mit Bewegung.
+  const initSel = (focusMi != null && focusMi >= 0)
+    ? focusMi
+    : (recentIdx >= 0 && actual[recentIdx] > 0)
+      ? recentIdx : (actual.reduce((acc, v, i) => v > 0 ? i : acc, 0));
   const [sel, setSel] = useState(initSel);
   const [selSub, setSelSub] = useState(null);   // gewählter Unterkategorie-Balken
   const [openBk, setOpenBk] = useState(null);   // ausgeklappte Einzelbuchung
