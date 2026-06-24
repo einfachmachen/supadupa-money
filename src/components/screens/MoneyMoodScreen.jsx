@@ -359,17 +359,17 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: T.surf || T.bg, zIndex: 300, display: "flex", alignItems: "flex-start" }}>
       <div onClick={e => e.stopPropagation()} style={{ width: "100%", height: "100dvh", maxHeight: "100dvh", overflow: "hidden", background: T.surf || T.bg, display: "flex", flexDirection: "column", paddingLeft: 5, paddingRight: 5, paddingTop: "calc(8px + env(safe-area-inset-top, 0px))", paddingBottom: "58px" }}>
-        <div style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-          {/* Zurück-Pfeil der Hauptkategorie (zurück zur Trend-Übersicht). */}
+        {/* Scrollende Mitte: ALLE Inhalte (inkl. Titel) von UNTEN nach oben verankert,
+            direkt über dem Chart. Leerraum entsteht oben. */}
+        <div className="sdm-scroll" style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+          <div style={{ marginTop: "auto" }}>
+
+        {/* Titel (Hauptkategorie) — direkt über den Unterkategorien. */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
           <button onClick={onClose} title="Zurück" style={{ ...navBtn, width: 40, height: 40, borderRadius: 8, flexShrink: 0 }}>{Li("chevron-left", 28, T.txt)}</button>
           <span style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 21, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
           <button onClick={onClose} style={{ ...navBtn, width: 36, height: 36, flexShrink: 0 }}>{Li("x", 18, T.txt2)}</button>
         </div>
-
-        {/* Scrollende Mitte: Inhalte von UNTEN nach oben verankert (direkt über dem
-            Chart), damit keine große Lücke entsteht. */}
-        <div className="sdm-scroll" style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column" }}>
-          <div style={{ marginTop: "auto" }}>
 
         {/* Oberer Extra-Bereich: Einzelbeträge, je Zeile per Chevron ausklappbar */}
         {bookings && (
