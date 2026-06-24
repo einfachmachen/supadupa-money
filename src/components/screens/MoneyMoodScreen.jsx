@@ -316,7 +316,7 @@ const navBtn = {
 
 // ── Drilldown: 12 Monatsbalken (Gesamtbetrag oben, klickbar) + Zusammensetzung ──
 function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapsedIdx, monthMood, onClose }) {
-  const { name, actual, budget } = row;
+  const { name, actual, budget, fore = actual } = row;
   const isCat = !isSub && !!row.subs;
   // Startmonat: jüngster Monat mit Bewegung.
   const initSel = (recentIdx >= 0 && actual[recentIdx] > 0)
@@ -362,8 +362,11 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
 
   // Unterkategorie-Zusammensetzung des Monats (nur Hauptkategorien).
   const subBreakdown = useMemo(() => !isCat ? [] :
-    row.subs.map(s => ({ name: s.name, val: s.actual[sel], subId: s.id }))
-      .filter(it => it.val > 0).sort((a, b) => b.val - a.val),
+    row.subs.map(s => {
+      const act = s.actual[sel] || 0;
+      const val = (s.fore?.[sel] ?? act) || 0;   // budget-gefloort (Vorschau)
+      return { name: s.name, val, subId: s.id, isBudget: act <= 0 && val > 0 };
+    }).filter(it => it.val > 0).sort((a, b) => b.val - a.val),
     [isCat, row, sel]);
 
   // Einzelbeträge für den oberen Extra-Bereich: Blattkategorie immer,
@@ -373,8 +376,11 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
     return bookingsForSub(isCat ? selSub : row.id, sel);
   }, [isCat, selSub, row, sel, txs, year]);
 
-  const selTotal = actual[sel] || 0;
-  const headTotal = drilledSub ? (drilledSub.actual[sel] || 0) : selTotal;
+  const selTotal = (fore[sel] ?? actual[sel]) || 0;
+  const headTotal = drilledSub ? ((drilledSub.fore?.[sel] ?? drilledSub.actual[sel]) || 0) : selTotal;
+  // Budget des aktuell betrachteten Blatts/Subs im gewählten Monat (für den Fall
+  // „Budget gesetzt, aber noch keine Buchungen" → Hinweiszeile statt Leerstand).
+  const bkBudget = drilledSub ? (drilledSub.budget?.[sel] || 0) : (!isCat ? (budget[sel] || 0) : 0);
   const subMax = Math.max(1, ...subBreakdown.map(it => it.val));
   const bkMax = Math.max(1, ...(bookings || []).map(it => it.val));
   const fullDate = (ds) => new Date(ds).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "long", year: "numeric" });
@@ -422,7 +428,15 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
               <span style={{ color: isIncome ? T.pos : T.txt, fontSize: 19, fontWeight: 800, fontFamily: NUM_FONT }}>{fmt(headTotal)}</span>
             </div>
             {bookings.length === 0 ? (
-              <div style={{ color: T.txt2, fontSize: 12, padding: "4px 0" }}>Keine Buchungen in diesem Monat.</div>
+              bkBudget > 0 ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: 6, background: "rgba(255,255,255,0.04)" }}>
+                  <span style={{ background: "rgba(245,166,35,0.15)", color: T.gold, borderRadius: 4, padding: "0 5px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>Budget</span>
+                  <span style={{ flex: 1, color: T.txt2, fontSize: 12 }}>geplant, noch keine Buchungen</span>
+                  <span style={{ color: T.txt, fontSize: 15, fontWeight: 700, fontFamily: NUM_FONT }}>{fmt(bkBudget)}</span>
+                </div>
+              ) : (
+                <div style={{ color: T.txt2, fontSize: 12, padding: "4px 0" }}>Keine Buchungen in diesem Monat.</div>
+              )
             ) : (
               <div style={{ position: "relative" }}>
                 <div className="sdm-scroll" style={{ maxHeight: 260, overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
@@ -478,10 +492,11 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
                   return (
                     <div key={i} onClick={() => setSelSub(it.subId)}
                       style={{ flexShrink: 0, position: "relative", borderRadius: 6, overflow: "hidden", padding: "8px 8px", cursor: "pointer", outline: active ? `1px solid ${T.gold}` : "none" }}>
-                      <div style={{ position: "absolute", inset: 0, width: `${(it.val / subMax) * 100}%`, background: (isIncome ? T.pos : T.blue) + "22" }} />
+                      <div style={{ position: "absolute", inset: 0, width: `${(it.val / subMax) * 100}%`, background: (isIncome ? T.pos : T.blue) + (it.isBudget ? "12" : "22") }} />
                       <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ flex: 1, minWidth: 0, color: active ? T.gold : T.txt, fontSize: 20, fontWeight: active ? 700 : 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
-                        <span style={{ color: T.txt, fontSize: 18, fontWeight: 600, fontFamily: NUM_FONT, flexShrink: 0 }}>{fmt(it.val)}</span>
+                        <span style={{ flex: 1, minWidth: 0, color: active ? T.gold : (it.isBudget ? T.txt2 : T.txt), fontSize: 20, fontWeight: active ? 700 : 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
+                        {it.isBudget && <span style={{ background: "rgba(245,166,35,0.15)", color: T.gold, borderRadius: 4, padding: "0 5px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>Budget</span>}
+                        <span style={{ color: it.isBudget ? T.txt2 : T.txt, fontSize: 18, fontWeight: 600, fontFamily: NUM_FONT, flexShrink: 0 }}>{fmt(it.val)}</span>
                         {Li("chevron-right", 18, active ? T.gold : T.txt2)}
                       </div>
                     </div>
@@ -499,23 +514,33 @@ function MoodDetail({ row, isSub, isIncome, year, txs, getAcc, recentIdx, elapse
         <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }}>
           {actual.map((a, i) => {
             const x = padL + i * bw;
-            const bh = (a / maxV) * chartH;
+            const bdg = budget[i] || 0;
+            const bh = (a / maxV) * chartH;                 // Ist + VM
+            const bhB = (bdg / maxV) * chartH;              // Budget (geplant)
+            const labelV = Math.max(a, fore[i] ?? a);       // angezeigter Vorschau-Wert
+            const bhTop = (labelV / maxV) * chartH;
             const future = i > elapsedIdx && elapsedIdx >= 0;
             const { c } = monthMood(row, i);
             const seld = i === sel;
             return (
               <g key={i} onClick={() => setSel(i)} style={{ cursor: "pointer" }}>
                 <rect x={x} y={padTop} width={bw} height={chartH + padB} fill="transparent" />
-                <rect x={x + bw * 0.12} y={padTop + chartH - bh} width={bw * 0.76} height={Math.max(0, bh)}
-                  rx={2} fill={a > 0 ? c : T.bd} opacity={seld ? 1 : (future ? 0.3 : 0.5)}
-                  stroke={seld ? T.txt : "none"} strokeWidth={seld ? 1 : 0} />
-                {a > 0 && (
-                  <text x={x + bw / 2} y={padTop + chartH - bh - 3} textAnchor="middle" fontSize="7"
-                    fill={seld ? T.gold : T.txt2} fontWeight={seld ? 700 : 400}>{fmtK(a)}</text>
+                {/* Budget als schwächerer Balken dahinter — gibt künftigen Monaten
+                    einen sichtbaren, anklickbaren Balken (zeigt die Budget-Beträge). */}
+                {bdg > 0 && (
+                  <rect x={x + bw * 0.12} y={padTop + chartH - bhB} width={bw * 0.76} height={Math.max(0, bhB)}
+                    rx={2} fill={T.txt2} opacity={seld ? 0.4 : 0.2}
+                    stroke={seld ? T.txt : "none"} strokeWidth={seld ? 1 : 0} />
                 )}
-                {budget[i] > 0 && (
-                  <line x1={x + bw * 0.05} x2={x + bw * 0.95} y1={padTop + chartH - (budget[i] / maxV) * chartH} y2={padTop + chartH - (budget[i] / maxV) * chartH}
-                    stroke={T.txt} strokeWidth={1.5} strokeDasharray="3 2" opacity={0.6} />
+                {/* Ist + Vormerkungen davor, in Ampelfarbe. */}
+                {a > 0 && (
+                  <rect x={x + bw * 0.12} y={padTop + chartH - bh} width={bw * 0.76} height={Math.max(0, bh)}
+                    rx={2} fill={c} opacity={seld ? 1 : (future ? 0.3 : 0.5)}
+                    stroke={seld && bdg <= 0 ? T.txt : "none"} strokeWidth={seld && bdg <= 0 ? 1 : 0} />
+                )}
+                {labelV > 0 && (
+                  <text x={x + bw / 2} y={padTop + chartH - bhTop - 3} textAnchor="middle" fontSize="7"
+                    fill={seld ? T.gold : T.txt2} fontWeight={seld ? 700 : 400}>{fmtK(labelV)}</text>
                 )}
                 <text x={x + bw / 2} y={H - 5} textAnchor="middle" fontSize="8" fill={seld ? T.gold : T.txt2}
                   fontWeight={seld ? 700 : 400}>{MONTHS_S[i]}</text>
