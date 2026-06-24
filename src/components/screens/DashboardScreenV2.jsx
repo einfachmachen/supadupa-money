@@ -107,7 +107,7 @@ function DashboardScreenV2() {
       const banks = await listConnectedBanks();
       setBankFetch({ status: "loading", aspsp, banks });
       const res = await fetchNewBankTx({ txs, accounts, aspsp });
-      if (!res.ok) { setBankFetch({ status: "error", reason: res.reason, message: res.message, aspsp, banks }); return; }
+      if (!res.ok) { setBankFetch({ status: "error", reason: res.reason, message: res.message, detail: res.detail, aspsp, banks }); return; }
       const newItems = res.items.filter((i) => i.status === "new");
       const dupeItems = res.items.filter((i) => i.status !== "new");
       const added = newItems.map(({ row, accId }) => ({

@@ -59,10 +59,26 @@ async function listConnectedBanks() {
   }));
 }
 
+// Übersetzt rohe Fehlertexte (oft JSON von Enable Banking / der Bank) in eine
+// verständliche Klartext-Meldung. Der Rohtext bleibt separat als `detail` erhalten.
+function friendlyBankError(txt) {
+  const s = String(txt || "").toLowerCase();
+  // Bankseitiger Serverfehler (ASPSP = die Bank). Typisch vorübergehend.
+  if (/aspsp_error|internal server error|httpexception|bad gateway|service unavailable|gateway timeout|\b50[0-4]\b/.test(s))
+    return "Die Bank ist gerade vorübergehend nicht erreichbar (Serverfehler auf Bankseite). Bitte in ein paar Minuten erneut versuchen.";
+  if (/\b429\b|rate.?limit|too many/.test(s))
+    return "Zu viele Anfragen in kurzer Zeit. Bitte einen Moment warten und erneut versuchen.";
+  if (/failed to fetch|networkerror|network error|timeout|timed out|err_|enotfound|econnrefused/.test(s))
+    return "Keine Verbindung zum Bank-Dienst. Internetverbindung prüfen und erneut versuchen.";
+  if (/\b400\b/.test(s))
+    return "Der Bankabruf wurde von der Bank abgelehnt. Oft hilft „Erneut versuchen“; bleibt es bestehen, die Bank-Verbindung neu freigeben.";
+  return "Der Bankabruf ist fehlgeschlagen. Bitte erneut versuchen.";
+}
+
 // Ruft neue Umsätze ab und klassifiziert sie gegen die vorhandenen Buchungen.
 // Ergebnis:
 //   { ok:true, items:[{ accId, row, status:"new"|"exact"|"maybe" }], validUntil }
-//   { ok:false, reason:"no-creds"|"no-session"|"expired"|"error", message }
+//   { ok:false, reason:"no-creds"|"no-session"|"expired"|"error", message, detail? }
 async function fetchNewBankTx({ txs, accounts, dateFrom, aspsp } = {}) {
   const creds = await loadEbCreds();
   if (!creds.relayUrl || !creds.appId || !creds.privateKey) {
@@ -111,14 +127,14 @@ async function fetchNewBankTx({ txs, accounts, dateFrom, aspsp } = {}) {
     }
   } catch (e) {
     const txt = String(e?.message || e);
-    if (/\b(401|404)\b|expired|session|consent/i.test(txt)) {
-      return { ok: false, reason: "expired", message: "Bank-Freigabe abgelaufen oder ungültig." };
+    if (/\b(401|403|404)\b|expired|session|consent/i.test(txt)) {
+      return { ok: false, reason: "expired", message: "Bank-Freigabe abgelaufen oder ungültig.", detail: txt };
     }
-    return { ok: false, reason: "error", message: txt };
+    return { ok: false, reason: "error", message: friendlyBankError(txt), detail: txt };
   }
 
   items.sort((x, y) => y.row.isoDate.localeCompare(x.row.isoDate));
   return { ok: true, items, validUntil: lastValidUntil };
 }
 
-export { fetchNewBankTx, listConnectedBanks, buildKnownFps, loadEbSessions, sessionValid };
+export { fetchNewBankTx, listConnectedBanks, buildKnownFps, loadEbSessions, sessionValid, friendlyBankError };
