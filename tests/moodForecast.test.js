@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pendingForecast, monthlyStrain } from "../src/utils/moodForecast.js";
+import { pendingForecast, monthlyStrain, projectStrain } from "../src/utils/moodForecast.js";
 
 // Hilfsfunktion: materialisiert eine wiederkehrende VM-Serie als einzelne
 // pending-Tx je Monat — genau wie MobileWiederkehrendModal es speichert.
@@ -106,5 +106,40 @@ describe("pendingForecast — wiederkehrende Vormerkungen", () => {
     expect(pendingForecast(txs, { year: 2026 }).incTot[1]).toBe(4000);             // GESAMT
     expect(pendingForecast(txs, { year: 2026, selAcc: "acc-giro" }).incTot[1]).toBe(3000);
     expect(pendingForecast(txs, { year: 2026, selAcc: "acc-tagesgeld" }).incTot[1]).toBe(1000);
+  });
+});
+
+describe("projectStrain — Liquiditäts-Prognose (fortlaufender Saldo vs. Puffer)", () => {
+  // Konstante Monatswerte: jeden Monat 1000 rein, 1200 raus (−200/Monat).
+  const flat = () => ({ inc: 1000, exp: 1200 });
+
+  it("schreibt den Saldo Monat für Monat fort (berücksichtigt Vormonatssaldo)", () => {
+    const map = projectStrain({ startIdx: 2026 * 12 + 0, count: 3, baseBalance: 1000, buffer: 0, getIncExp: flat });
+    expect(map["2026:0"].balance).toBe(800);   // 1000 − 200
+    expect(map["2026:1"].balance).toBe(600);   // 800 − 200
+    expect(map["2026:2"].balance).toBe(400);   // 600 − 200
+  });
+
+  it("markiert nur Monate, in denen der Saldo UNTER den Puffer fällt", () => {
+    const map = projectStrain({ startIdx: 2026 * 12 + 0, count: 5, baseBalance: 1000, buffer: 500, getIncExp: flat });
+    expect(map["2026:0"].strained).toBe(false); // 800 ≥ 500
+    expect(map["2026:1"].strained).toBe(false); // 600 ≥ 500
+    expect(map["2026:2"].strained).toBe(true);  // 400 < 500
+    expect(map["2026:2"].shortfall).toBe(100);  // 500 − 400
+    expect(map["2026:3"].strained).toBe(true);  // 200 < 500
+  });
+
+  it("ein hoher Startsaldo trägt mehrere Defizit-Monate (kein Fehlalarm pro Monat)", () => {
+    // Pro Monat −200, aber 10.000 Startsaldo → in 12 Monaten nie unter 0.
+    const map = projectStrain({ startIdx: 2026 * 12 + 0, count: 12, baseBalance: 10000, buffer: 0, getIncExp: flat });
+    const anyStrained = Object.values(map).some(e => e.strained);
+    expect(anyStrained).toBe(false);
+  });
+
+  it("rollt korrekt über den Jahreswechsel", () => {
+    const map = projectStrain({ startIdx: 2026 * 12 + 11, count: 2, baseBalance: 100, buffer: 0, getIncExp: flat });
+    expect(map["2026:11"].balance).toBe(-100);
+    expect(map["2027:0"].balance).toBe(-300);
+    expect(map["2027:0"].strained).toBe(true);
   });
 });
