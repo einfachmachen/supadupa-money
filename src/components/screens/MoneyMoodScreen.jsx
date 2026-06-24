@@ -151,7 +151,12 @@ function MoneyMoodScreen() {
       const up = year > nowY || (year === nowY && mi >= nowM);
       if (!up || !strainFull.strained[mi]) continue;
       const drivers = blocks.expense
-        .map(r => ({ row: r, val: r.fore[mi] || 0, prio: r.priority || "normal" }))
+        .map(r => ({
+          row: r, val: r.fore[mi] || 0, prio: r.priority || "normal",
+          // Vom Budget gehalten? Dann senkt das Löschen von Vormerkungen den Posten
+          // NICHT — die Vorschau floort auf das geplante Budget (max(Ist+VM, Budget)).
+          fromBudget: (r.budget[mi] || 0) > (r.actual[mi] || 0) + 0.5,
+        }))
         .filter(d => d.val > 0)
         .sort((a, b) => (PRIO_RANK[a.prio] - PRIO_RANK[b.prio]) || (b.val - a.val))
         .slice(0, 4);
@@ -365,9 +370,15 @@ function MoneyMoodScreen() {
                     {Li(d.row.icon || "folder", 12, d.row.color || T.neg)}
                     <span style={{ color: T.txt, fontSize: 11.5, fontWeight: flex ? 700 : 600 }}>{d.row.name}</span>
                     <span style={{ color: T.txt2, fontSize: 11, fontFamily: NUM_FONT }}>{fmt(d.val)} €</span>
+                    {d.fromBudget && <span style={{ background: T.gold + "22", color: T.gold, borderRadius: 4, padding: "0 4px", fontSize: 9.5, fontWeight: 700, flexShrink: 0 }}>Budget</span>}
                   </button>
                 );
               })}
+            </div>
+          )}
+          {activeStrain.drivers.some(d => d.fromBudget) && (
+            <div style={{ marginTop: 7, color: T.txt2, fontSize: 10.5, lineHeight: 1.45 }}>
+              <b style={{ color: T.gold }}>„Budget"</b>-Posten werden über die geplanten Budgets gehalten, nicht über Buchungen — gelöschte Vormerkungen senken sie nicht. Zum Reduzieren das <b>Budget der Kategorie</b> anpassen.
             </div>
           )}
         </div>
