@@ -15,6 +15,7 @@ import { CatPicker } from "../molecules/CatPicker.jsx";
 function BankFetchPanel({ state, onClose, onRefetch }) {
   const { txs, setTxs, selAcc, getCat } = useContext(AppCtx);
   const [showExisting, setShowExisting] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
 
   const isSel = (accId) =>
     !selAcc || accId === selAcc || (!accId && selAcc === "acc-giro");
@@ -103,6 +104,22 @@ function BankFetchPanel({ state, onClose, onRefetch }) {
                 background: T.blue, color: T.on_accent, fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
               Erneut versuchen
             </button>
+          )}
+          {state.detail && (
+            <div style={{ marginTop: 10 }}>
+              <button onClick={() => setShowDetail((v) => !v)}
+                style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "transparent",
+                  border: "none", color: T.txt2, fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: 0 }}>
+                {Li(showDetail ? "chevron-down" : "chevron-right", 14, T.txt2)}
+                Technische Details {showDetail ? "verbergen" : "anzeigen"}
+              </button>
+              {showDetail && (
+                <pre style={{ marginTop: 6, maxHeight: 160, overflow: "auto", whiteSpace: "pre-wrap",
+                  wordBreak: "break-word", background: "rgba(255,255,255,0.04)", border: `1px solid ${T.bd}`,
+                  borderRadius: 8, padding: "8px 10px", color: T.txt2, fontSize: 11, lineHeight: 1.45,
+                  fontFamily: NUM_FONT }}>{state.detail}</pre>
+              )}
+            </div>
           )}
         </div>
       </>
