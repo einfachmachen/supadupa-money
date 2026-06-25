@@ -3201,7 +3201,7 @@ Abbrechen = ${remoteName}-Stand laden`
             // Größerer Radius + höhere Basis → Monde klar abgesetzt vom + (kein Überlappen).
             // Hintergrund = identisch zum +-Button (bg). Aktiver Mond: dicker weißer Rand.
             const R=98, CY=126, SIZE=58;
-            const ang=[155,105,75,25][i]*Math.PI/180;
+            const ang=[153,111,69,27][i]*Math.PI/180;
             const dx=Math.cos(ang)*R, dy=Math.sin(ang)*R;
             const active=i===activeMoon;
             return (
@@ -3209,12 +3209,17 @@ Abbrechen = ${remoteName}-Stand laden`
                 style={{position:"absolute",left:"50%",bottom:(CY+dy)+"px",
                   transform:`translate(calc(-50% + ${dx}px), 50%) scale(${active?1.1:1})`,
                   width:SIZE,height:SIZE,borderRadius:"50%",boxSizing:"border-box",
-                  border:active?"4px solid #fff":(isFlat?`2px solid ${fg}`:`3px solid ${T.surf}`),
+                  border:isFlat?`2px solid ${fg}`:`3px solid ${T.surf}`,
                   background:bg,
-                  boxShadow:"0 6px 16px rgba(0,0,0,0.55)",
+                  // Aktiver Mond: dicker weißer Ring per box-shadow — überlebt den
+                  // Randlos-Modus (.no-borders entfernt border/outline global, box-shadow
+                  // auf Buttons bleibt). Plus normaler Tiefen-Schatten.
+                  boxShadow:active
+                    ? "0 0 0 4px #fff, 0 6px 16px rgba(0,0,0,0.55)"
+                    : "0 6px 16px rgba(0,0,0,0.55)",
                   cursor:"pointer",pointerEvents:"auto",fontFamily:"inherit",
                   display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
-                  transition:"transform 0.18s, border 0.18s",padding:0}}>
+                  transition:"transform 0.18s, box-shadow 0.18s",padding:0}}>
                 {Li(mn.icon,21,fg)}
                 <span style={{fontSize:9,fontWeight:700,lineHeight:1,color:fg,
                   whiteSpace:"nowrap"}}>{mn.label}</span>
