@@ -453,17 +453,17 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
           // Strikt: nur Kategorien deren Gruppe zum gewählten Konto gehört
           return grpAccId === catAccFilter;
         }).map(cat=>(
-          <div key={cat.id} style={{marginBottom:S.gap/2}}>
+          <div key={cat.id} style={{marginBottom:4}}>
 
             {/* Kategorie-Header */}
             <div style={{display:"flex",alignItems:"center",gap:8,
-              padding:"4px 10px",borderRadius:S.radius/2,
+              padding:"2px 10px",borderRadius:S.radius/2,
               background:cat.color+"18",
               border:`2px solid ${cat.color}44`,
               marginBottom:2}}>
               {/* Icon — antippen öffnet Icon-Picker (mit Farb-Picker integriert) */}
               <button onClick={()=>setIconPickFor({type:"cat", id:cat.id})}
-                style={{width:30,height:30,minWidth:30,minHeight:30,maxWidth:30,maxHeight:30,
+                style={{width:28,height:28,minWidth:28,minHeight:28,maxWidth:28,maxHeight:28,
                 aspectRatio:"1 / 1",boxSizing:"border-box",borderRadius:8,
                 background:cat.color+"33",border:`1.5px solid ${cat.color}66`,
                 display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
@@ -493,7 +493,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                 setView("editCat");
               }} style={{background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bd}`,
                 borderRadius:S.radius/2,color:T.txt2,cursor:"pointer",
-                width:32,height:32,minWidth:32,minHeight:32,padding:0,flexShrink:0,
+                width:28,height:28,minWidth:28,minHeight:28,padding:0,flexShrink:0,
                 display:"flex",alignItems:"center",justifyContent:"center"}}>
                 {Li("edit-2",16,T.txt2)}
               </button>
@@ -588,7 +588,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                     padding:"2px 10px",gap:8}}>
                     {/* Icon — antippen öffnet Icon-Picker (mit Farb-Picker integriert) */}
                     <button onClick={()=>setIconPickFor({type:"sub", id:sub.id})}
-                      style={{width:26,height:26,minWidth:26,minHeight:26,maxWidth:26,maxHeight:26,
+                      style={{width:24,height:24,minWidth:24,minHeight:24,maxWidth:24,maxHeight:24,
                       aspectRatio:"1 / 1",boxSizing:"border-box",borderRadius:5,
                       background:(sub.color||cat.color)+"22",
                       border:`1px solid ${(sub.color||cat.color)}55`,
@@ -615,6 +615,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                     }} style={{background:"none",border:"none",
                       color:editing?T.gold:T.txt2,
                       cursor:"pointer",padding:0,fontFamily:"inherit",
+                      width:30,height:30,minHeight:30,
                       display:"flex",alignItems:"center",justifyContent:"center",
                       flexShrink:0,lineHeight:0}}>
                       {editing ? Li("arrow-left",18,T.gold) : Li("target",18,T.gold)}
