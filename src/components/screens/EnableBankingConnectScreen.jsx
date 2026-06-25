@@ -31,6 +31,7 @@ import {
   loadEbDiag,
   clearEbDiag,
 } from "../../utils/enableBankingStore.js";
+import { friendlyBankError } from "../../utils/enableBankingFetch.js";
 
 // Vom Betreiber bereitgestellter Standard-Relay (datenlos, geteilt). Editierbar —
 // wer einen eigenen Relay deployt, trägt hier seine eigene URL ein.
@@ -221,7 +222,8 @@ function EnableBankingConnectScreen({ onClose }) {
       if (list.length && !bank) setBank(list[0]);
       setMsg({ tone: "tip", text: `${list.length} Banken geladen.` });
     } catch (e) {
-      setMsg({ tone: "danger", text: String(e.message || e) });
+      const raw = String(e.message || e);
+      setMsg({ tone: "danger", text: friendlyBankError(raw), detail: raw });
     }
     setBusy(false);
   };
@@ -252,7 +254,12 @@ function EnableBankingConnectScreen({ onClose }) {
         setBusy(false);
       }
     } catch (e) {
-      setMsg({ tone: "danger", text: String(e.message || e) });
+      // Klartext für den Nutzer (z. B. ASPSP_ERROR → „Bank vorübergehend nicht
+      // erreichbar"), Rohtext zur Diagnose festhalten.
+      const raw = String(e.message || e);
+      saveEbDiag({ outcome: "auth-fehler", error: raw });
+      setDiag({ ts: new Date().toISOString(), outcome: "auth-fehler", error: raw });
+      setMsg({ tone: "danger", text: friendlyBankError(raw), detail: raw });
       setBusy(false);
     }
   };
@@ -321,10 +328,11 @@ function EnableBankingConnectScreen({ onClose }) {
       setMsg({ tone: "tip", text: `${aspsp || "Bank"} verbunden (gültig bis ${String(vu).slice(0, 10)}). Zuordnen und „Buchungen abrufen“.` });
     } catch (e) {
       // Bestehende Banken erhalten bleiben — Fehler nur melden + diagnostizieren.
-      const rec = { outcome: "fehler", error: String(e.message || e) };
+      const raw = String(e.message || e);
+      const rec = { outcome: "fehler", error: raw };
       saveEbDiag(rec); setDiag({ ts: new Date().toISOString(), ...rec });
       await refreshConnected();
-      setMsg({ tone: "danger", text: String(e.message || e) });
+      setMsg({ tone: "danger", text: friendlyBankError(raw), detail: raw });
     }
     setBusy(false);
   };
@@ -510,24 +518,39 @@ function EnableBankingConnectScreen({ onClose }) {
             </div>
           )}
 
-          {/* Redirect-URL zum Eintragen im Enable-Banking-Portal */}
+          {/* Verbindungs-Check: genau das, was die App an Enable Banking sendet —
+              zum 1:1-Abgleich mit dem Enable-Banking-Portal. */}
           <div style={{ marginTop: 18 }}>
-            <label style={labelStyle}>Deine Redirect-URL (im Enable-Banking-Portal eintragen)</label>
-            <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
-              <div style={{ ...inputStyle, flex: 1, fontFamily: "monospace", fontSize: 12.5,
-                wordBreak: "break-all", display: "flex", alignItems: "center" }}>
-                {redirectUrl}
+            <label style={labelStyle}>Verbindungs-Check (mit dem Enable-Banking-Portal abgleichen)</label>
+            <div style={{ background: T.bg, border: `1px solid ${T.bds}`, borderRadius: 11,
+              padding: "10px 12px", fontSize: 12.5, lineHeight: 1.5 }}>
+              <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
+                <span style={{ color: T.txt2, flexShrink: 0, minWidth: 92 }}>Redirect-URL</span>
+                <span style={{ flex: 1, fontFamily: "monospace", fontSize: 12, wordBreak: "break-all",
+                  color: redirectUrl ? T.txt : T.neg }}>{redirectUrl || "—"}</span>
               </div>
-              <button onClick={copyRedirect}
-                style={{ flexShrink: 0, padding: "0 14px", borderRadius: 11, border: "none",
-                  background: copied ? T.pos : T.blue, color: T.on_accent, fontSize: 14, fontWeight: 800,
-                  cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>
-                {Li(copied ? "check" : "copy", 16, T.on_accent)}
-                {copied ? "Kopiert" : "Kopieren"}
-              </button>
+              <div style={{ display: "flex", gap: 8, alignItems: "baseline", marginTop: 6 }}>
+                <span style={{ color: T.txt2, flexShrink: 0, minWidth: 92 }}>Application-ID</span>
+                <span style={{ flex: 1, fontFamily: "monospace", fontSize: 12, wordBreak: "break-all",
+                  color: appId ? T.txt : T.neg }}>{appId || "(fehlt — oben eintragen)"}</span>
+              </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "baseline", marginTop: 6 }}>
+                <span style={{ color: T.txt2, flexShrink: 0, minWidth: 92 }}>Relay-URL</span>
+                <span style={{ flex: 1, fontFamily: "monospace", fontSize: 12, wordBreak: "break-all",
+                  color: relayUrl ? T.txt : T.neg }}>{relayUrl || "(fehlt)"}</span>
+              </div>
             </div>
-            <div style={{ color: T.txt2, fontSize: 12, marginTop: 6, lineHeight: 1.45 }}>
-              Genau diese Adresse muss im Portal als Redirect-URL hinterlegt sein (exakte Schreibweise).
+            <button onClick={copyRedirect}
+              style={{ marginTop: 8, padding: "8px 14px", borderRadius: 11, border: "none",
+                background: copied ? T.pos : T.blue, color: T.on_accent, fontSize: 14, fontWeight: 800,
+                cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6 }}>
+              {Li(copied ? "check" : "copy", 16, T.on_accent)}
+              {copied ? "Redirect-URL kopiert" : "Redirect-URL kopieren"}
+            </button>
+            <div style={{ color: T.txt2, fontSize: 12, marginTop: 8, lineHeight: 1.45 }}>
+              Die <b>Redirect-URL</b> muss im Portal <b>exakt</b> so als Redirect-URL hinterlegt sein
+              (gleiche Schreibweise, gleicher Pfad). Die <b>Application-ID</b> muss zur Application im
+              Portal gehören. Stimmt etwas nicht überein, scheitert die Anmeldung.
             </div>
           </div>
 
@@ -675,7 +698,18 @@ function EnableBankingConnectScreen({ onClose }) {
           )}
 
           {busy && <Box tone="info">Bitte warten…</Box>}
-          {msg && <Box tone={msg.tone}>{msg.text}</Box>}
+          {msg && (
+            <Box tone={msg.tone}>
+              {msg.text}
+              {msg.detail && (
+                <details style={{ marginTop: 6 }}>
+                  <summary style={{ cursor: "pointer", color: T.txt2, fontSize: 12 }}>Technische Details</summary>
+                  <div style={{ fontFamily: "monospace", fontSize: 11, color: T.txt2,
+                    wordBreak: "break-all", marginTop: 4, whiteSpace: "pre-wrap" }}>{msg.detail}</div>
+                </details>
+              )}
+            </Box>
+          )}
           {result && (
             <Box tone="tip">
               <b>{result.added}</b> neue Umsätze importiert · {result.dup} Duplikate · {result.skipped} vorgemerkt übersprungen.

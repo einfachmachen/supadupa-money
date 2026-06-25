@@ -174,8 +174,11 @@ function createEnableBankingClient({ relayUrl, appId, privateKeyPem }) {
     listAspsps: (country = "DE") =>
       req(`/aspsps?country=${encodeURIComponent(country)}`),
 
-    // Autorisierung starten → liefert { url } zur Weiterleitung an die Bank
-    startAuth: ({ aspspName, country = "DE", redirectUrl, state, validUntilDays = 90, psuType = "personal" }) =>
+    // Autorisierung starten → liefert { url } zur Weiterleitung an die Bank.
+    // valid_until: max. 90 Tage (PSD2). Bewusst 89 statt 90 — ein Tag Puffer,
+    // damit eine voreilende Gerätezeit das Maximum nicht überschreitet (manche
+    // Banken quittieren das mit ASPSP_ERROR / „Internal server error").
+    startAuth: ({ aspspName, country = "DE", redirectUrl, state, validUntilDays = 89, psuType = "personal" }) =>
       req(`/auth`, {
         method: "POST",
         body: {
