@@ -207,7 +207,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
   // ── Kategorie bearbeiten ──
   if(view==="editCat"&&selCat) return (
     <div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,
-      zIndex:300,display:"flex",flexDirection:"column","--mob-fs":S.fs+"px"}}>
+      zIndex:300,display:"flex",flexDirection:"column","--mob-fs":"18px"}}>
       {header(`bearbeiten: ${selCat.name}`,()=>setView("list"))}
       <div style={{flex:1,padding:S.padL,overflowY:"auto"}}>
         <div style={{color:T.txt2,fontSize:S.fs-4,marginBottom:6,fontWeight:600}}>Name</div>
@@ -277,7 +277,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
   // ── Neue Kategorie ──
   if(view==="newCat") return (
     <div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,
-      zIndex:300,display:"flex",flexDirection:"column","--mob-fs":S.fs+"px"}}>
+      zIndex:300,display:"flex",flexDirection:"column","--mob-fs":"18px"}}>
       {header("neue Kategorie",()=>setView("list"))}
       <div style={{flex:1,padding:S.padL,overflowY:"auto"}}>
         <div style={{color:T.txt2,fontSize:S.fs-4,marginBottom:6,fontWeight:600}}>Name</div>
@@ -316,7 +316,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
   // ── Neue Unterkategorie ──
   if(view==="newSub"&&selCat) return (
     <div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,
-      zIndex:300,display:"flex",flexDirection:"column","--mob-fs":S.fs+"px"}}>
+      zIndex:300,display:"flex",flexDirection:"column","--mob-fs":"18px"}}>
       {header(`neue Unterkategorie`,()=>setView("list"))}
       <div style={{flex:1,padding:S.padL,overflowY:"auto"}}>
         <div style={{color:T.txt2,fontSize:S.fs-6,marginBottom:S.gap,
@@ -339,7 +339,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
   // ── Hauptliste ──
   return (
     <div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,
-      zIndex:300,display:"flex",flexDirection:"column","--mob-fs":S.fs+"px"}}>
+      zIndex:300,display:"flex",flexDirection:"column","--mob-fs":"18px"}}>
       {header("Kategorien & Budget",goBack)}
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",touchAction:"pan-y",WebkitOverflowScrolling:"touch",
         padding:`${S.gap}px ${S.pad}px ${S.padL}px`}}>
@@ -463,20 +463,20 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
               marginBottom:2}}>
               {/* Icon — antippen öffnet Icon-Picker (mit Farb-Picker integriert) */}
               <button onClick={()=>setIconPickFor({type:"cat", id:cat.id})}
-                style={{width:38,height:38,minWidth:38,minHeight:38,maxWidth:38,maxHeight:38,
-                aspectRatio:"1 / 1",boxSizing:"border-box",borderRadius:6,
+                style={{width:30,height:30,minWidth:30,minHeight:30,maxWidth:30,maxHeight:30,
+                aspectRatio:"1 / 1",boxSizing:"border-box",borderRadius:8,
                 background:cat.color+"33",border:`1.5px solid ${cat.color}66`,
                 display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
                 cursor:"pointer",fontFamily:"inherit",padding:0,lineHeight:0}}>
-                {cat.icon ? Li(cat.icon,S.fs-2,cat.color||T.blue) : null}
+                {cat.icon ? Li(cat.icon,18,cat.color||T.blue) : null}
               </button>
-              <span style={{flex:1,minWidth:0,color:T.txt,fontSize:S.fs,fontWeight:700,
+              <span style={{flex:1,minWidth:0,color:T.txt,fontSize:20,fontWeight:600,
                 overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{cat.name}</span>
               {(()=>{
                 const grp = (groups||[]).find(g=>g.type===cat.type);
                 const isInc = (grp?.behavior || cat.type)==="income";
                 return (
-                  <span style={{color:isInc?T.pos:T.neg,fontSize:S.fs,fontWeight:800,
+                  <span style={{color:isInc?T.pos:T.neg,fontSize:18,fontWeight:800,
                     flexShrink:0,lineHeight:1,padding:"0 2px"}}>
                     {isInc ? "+" : "−"}
                   </span>
@@ -493,9 +493,9 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                 setView("editCat");
               }} style={{background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bd}`,
                 borderRadius:S.radius/2,color:T.txt2,cursor:"pointer",
-                width:38,height:38,minWidth:38,minHeight:38,padding:0,flexShrink:0,
+                width:32,height:32,minWidth:32,minHeight:32,padding:0,flexShrink:0,
                 display:"flex",alignItems:"center",justifyContent:"center"}}>
-                {Li("edit-2",S.fs-6,T.txt2)}
+                {Li("edit-2",16,T.txt2)}
               </button>
             </div>
 
@@ -588,21 +588,21 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                     padding:"2px 10px",gap:8}}>
                     {/* Icon — antippen öffnet Icon-Picker (mit Farb-Picker integriert) */}
                     <button onClick={()=>setIconPickFor({type:"sub", id:sub.id})}
-                      style={{width:30,height:30,minWidth:30,minHeight:30,maxWidth:30,maxHeight:30,
+                      style={{width:26,height:26,minWidth:26,minHeight:26,maxWidth:26,maxHeight:26,
                       aspectRatio:"1 / 1",boxSizing:"border-box",borderRadius:5,
                       background:(sub.color||cat.color)+"22",
                       border:`1px solid ${(sub.color||cat.color)}55`,
                       display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
                       cursor:"pointer",fontFamily:"inherit",padding:0,lineHeight:0}}>
-                      {sub.icon ? Li(sub.icon,S.fs-6,sub.color||cat.color||T.blue) : null}
+                      {sub.icon ? Li(sub.icon,15,sub.color||cat.color||T.blue) : null}
                     </button>
                     {/* Name – Klick zeigt Rahmen + Lösch-Button */}
                     <SubNameField sub={sub} cat={cat} setCats={setCats} S={S} T={T} />
                     {/* Budget-Anzeige */}
                     {curGesamt>0&&!editing&&(
                       <div style={{textAlign:"right",flexShrink:0}}>
-                        <div style={{color:T.gold,fontSize:S.fs-4,fontWeight:700}}>{fmt(curGesamt)}</div>
-                        {curMitte>0&&<div style={{color:T.txt2,fontSize:S.fs-8}}>Mitte: {fmt(curMitte)}</div>}
+                        <div style={{color:T.gold,fontSize:17,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(curGesamt)}</div>
+                        {curMitte>0&&<div style={{color:T.txt2,fontSize:11}}>Mitte: {fmt(curMitte)}</div>}
                       </div>
                     )}
                     {/* Budget öffnen/schließen – Pfeil wenn offen, Zielscheibe wenn zu */}
@@ -617,14 +617,14 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                       cursor:"pointer",padding:0,fontFamily:"inherit",
                       display:"flex",alignItems:"center",justifyContent:"center",
                       flexShrink:0,lineHeight:0}}>
-                      {editing ? Li("arrow-left",S.fs-4,T.gold) : Li("target",S.fs-4,T.gold)}
+                      {editing ? Li("arrow-left",18,T.gold) : Li("target",18,T.gold)}
                     </button>
                   </div>
 
                   {/* Budget-Editor */}
                   {editing&&(
                     <div style={{padding:`0 ${S.pad}px ${S.pad}px`,borderTop:`1px solid ${T.bd}`}}>
-                      <div style={{color:T.txt2,fontSize:S.fs-6,margin:`${S.gap/2}px 0 4px`}}>
+                      <div style={{color:T.txt2,fontSize:13,fontWeight:600,margin:`${S.gap/2}px 0 4px`}}>
                         Budget {MONTHS[month]} {year}
                       </div>
                       {/* Realitätsnaher Vorschlag aus Ist-Historie + Vormerkungen,
@@ -660,7 +660,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                       {/* Mitte / Gesamt */}
                       <div style={{display:"flex",gap:S.gap,marginBottom:4}}>
                         <div style={{flex:1}}>
-                          <div style={{color:T.txt2,fontSize:S.fs-8,marginBottom:3}}>Mitte (bis 14.)</div>
+                          <div style={{color:T.txt2,fontSize:12,marginBottom:3}}>Mitte (bis 14.)</div>
                           <input type="text" inputMode="decimal"
                             value={budgetEdits[sub.id+"_M"]||""}
                             onChange={e=>setBudgetEdits(p=>({...p,[sub.id+"_M"]:e.target.value.replace(/[^0-9,.]/g,"")}))}
@@ -668,7 +668,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                             style={{...inp({fontWeight:700,textAlign:"right",fontFamily:NUM_FONT,marginBottom:0})}}/>
                         </div>
                         <div style={{flex:1}}>
-                          <div style={{color:T.txt2,fontSize:S.fs-8,marginBottom:3}}>Gesamt</div>
+                          <div style={{color:T.txt2,fontSize:12,marginBottom:3}}>Gesamt</div>
                           <input type="text" inputMode="decimal"
                             value={budgetEdits[sub.id+"_G"]||""}
                             onChange={e=>setBudgetEdits(p=>({...p,[sub.id+"_G"]:e.target.value.replace(/[^0-9,.]/g,"")}))}
@@ -676,7 +676,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                             style={{...inp({fontWeight:700,textAlign:"right",fontFamily:NUM_FONT,marginBottom:0})}}/>
                         </div>
                       </div>
-                      {amtG>0&&<div style={{color:T.txt2,fontSize:S.fs-8,marginBottom:S.gap/2,textAlign:"right"}}>
+                      {amtG>0&&<div style={{color:T.txt2,fontSize:12,marginBottom:S.gap/2,textAlign:"right"}}>
                         2. Hälfte: {fmt(amtE)}
                       </div>}
                       {/* Rhythmus */}
@@ -714,7 +714,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                             style={{padding:`${S.pad}px ${S.padL}px`,borderRadius:S.radius,
                               border:`1px solid ${T.neg}44`,background:`${T.neg}11`,
                               color:T.neg,cursor:"pointer",fontFamily:"inherit",fontSize:S.fs-4}}>
-                            {Li("trash-2",S.fs-6,T.neg)}
+                            {Li("trash-2",16,T.neg)}
                           </button>
                         )}
                       </div>
