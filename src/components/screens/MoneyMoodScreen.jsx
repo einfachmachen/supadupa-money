@@ -92,8 +92,12 @@ function MoneyMoodScreen() {
         const y = k < 12 ? year - 1 : year, m = k % 12;
         ext.push(Math.abs(getActualSum(y, m, subId, "E") || 0));
       }
+      // Budgets gehören (wie im Dashboard) zum Giro-Konto: bei Auswahl eines
+      // ANDEREN Kontos NICHT als Forecast anrechnen — sonst erscheinen Sparklines
+      // für Konten ohne eigene Buchungen/Budgets (z. B. inaktives Zweitkonto).
+      const budgetApplies = !selAcc || selAcc === "acc-giro";
       const budget = [];
-      for (let mi = 0; mi < RANGE; mi++) budget.push(Math.abs(getBudgetForMonth(subId, year, mi) || 0));
+      for (let mi = 0; mi < RANGE; mi++) budget.push(budgetApplies ? Math.abs(getBudgetForMonth(subId, year, mi) || 0) : 0);
       // Vorschau: gebuchter Ist-Wert + offene Vormerkungen des Monats. Der
       // 24-Monats-Schnitt (ext) bleibt rein gebucht → Vergleichsbasis = echte Historie.
       const actual = ext.slice(12).map((v, mi) => v + (pend.sub[`${mi}:${subId}`] || 0));
@@ -128,7 +132,7 @@ function MoneyMoodScreen() {
       return out;
     };
     return { expense: mk(false), income: mk(true) };
-  }, [cats, groups, year, getActualSum, getBudgetForMonth, pend]);
+  }, [cats, groups, year, selAcc, getActualSum, getBudgetForMonth, pend]);
 
   // Schieflage = taggenaue Liquiditäts-Warnung, zentral in App berechnet
   // (computeKontoWarnungen — exakt die Dashboard-Logik) und hier nur gelesen. So
