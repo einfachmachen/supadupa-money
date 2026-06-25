@@ -3047,10 +3047,13 @@ Abbrechen = ${remoteName}-Stand laden`
                   WebkitTapHighlightColor:"transparent",padding:0,
                   fontFamily:"inherit",lineHeight:1}}>
                 {plusArretiert && !moodDrillOpen ? (
-                  <div style={{pointerEvents:"none",textAlign:"center"}}>
-                    <div style={{fontSize:16,fontWeight:800,color:fg,lineHeight:1,letterSpacing:3}}>‹ ›</div>
-                    <div style={{fontSize:12,fontWeight:800,color:fg,lineHeight:1.1,marginTop:2,whiteSpace:"nowrap"}}>{MOONS[activeMoon].label}</div>
-                    <div style={{fontSize:7.5,fontWeight:700,color:fg,opacity:0.8,letterSpacing:0.3,marginTop:2,whiteSpace:"nowrap"}}>tippen zum Öffnen</div>
+                  <div style={{pointerEvents:"none",textAlign:"center",width:"86%"}}>
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                      <span style={{fontSize:19,fontWeight:800,color:fg,lineHeight:1}}>‹</span>
+                      <span style={{fontSize:13,fontWeight:800,color:fg,lineHeight:1}}>Öffnen</span>
+                      <span style={{fontSize:19,fontWeight:800,color:fg,lineHeight:1}}>›</span>
+                    </div>
+                    <div style={{fontSize:8,fontWeight:700,color:fg,opacity:0.8,letterSpacing:0.3,marginTop:4,whiteSpace:"nowrap"}}>2× schließen</div>
                   </div>
                 ) : (<>
                   {_dayStr && !onMoodScreen && (
@@ -3206,9 +3209,9 @@ Abbrechen = ${remoteName}-Stand laden`
                 style={{position:"absolute",left:"50%",bottom:(CY+dy)+"px",
                   transform:`translate(calc(-50% + ${dx}px), 50%) scale(${active?1.14:1})`,
                   width:SIZE,height:SIZE,borderRadius:"50%",
-                  border:`2px solid ${mn.color}`,
-                  background:mn.color+(active?"66":"33"),
-                  boxShadow:active?`0 0 18px ${mn.color}cc`:"0 6px 16px rgba(0,0,0,0.55)",
+                  border:`2px solid ${T.blue}`,
+                  background:T.blue+(active?"66":"33"),
+                  boxShadow:active?`0 0 18px ${T.blue}cc`:"0 6px 16px rgba(0,0,0,0.55)",
                   cursor:"pointer",pointerEvents:"auto",fontFamily:"inherit",
                   display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
                   transition:"transform 0.18s, box-shadow 0.18s, background 0.18s",padding:0}}>
