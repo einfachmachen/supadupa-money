@@ -42,8 +42,6 @@ function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
   const [desc,         setDesc]         = useState("");
   const [note,         setNote]         = useState("");
   const [valueDate,    setValueDate]    = useState("");
-  const [giltFuer,     setGiltFuer]     = useState("all");
-  const [giltFuerDate, setGiltFuerDate] = useState(today);
   const [saved,        setSaved]        = useState(false);
   const [showNewAcc,   setShowNewAcc]   = useState(false);
 
@@ -319,6 +317,20 @@ function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
           <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}
             style={{...inp({colorScheme:"dark"}),marginBottom:S.gap}}/>
 
+          {/* verursacht (optional) — bei den anderen Datumsfeldern. Datum immer
+              sichtbar, „heute"/„löschen" als Knopf daneben. */}
+          {fieldLabel("verursacht (optional)")}
+          <div style={{display:"flex",gap:S.gap/2,marginBottom:S.gap}}>
+            <input type="date" value={valueDate} onChange={e=>setValueDate(e.target.value)}
+              style={{...inp({colorScheme:"dark"}),flex:1,marginBottom:0}}/>
+            <button onClick={()=>setValueDate(valueDate?"":today)}
+              style={{flexShrink:0,padding:`0 ${S.padL}px`,borderRadius:S.radius,
+                border:`2px solid ${T.bd}`,background:"rgba(255,255,255,0.06)",
+                color:T.blue,fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
+              {valueDate?"löschen":"heute"}
+            </button>
+          </div>
+
           {/* Anzahl / Enddatum */}
           <div style={{display:"flex",gap:S.gap,marginBottom:S.gap/2}}>
             <div style={{flex:1}}>
@@ -434,39 +446,6 @@ function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
               minHeight:S.fs*1.5+S.padL*2}}
             onInput={e=>{e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
           />
-
-          {/* verursacht (optional) — Label oben, Datum immer sichtbar, Aktion daneben
-              (kein transparenter Text mehr → Tippen ist sofort sichtbar; „heute"/
-              „löschen" als eigener Knopf statt überlagerndem Symbol) */}
-          {fieldLabel("verursacht (optional)")}
-          <div style={{display:"flex",gap:S.gap/2,marginBottom:S.gap}}>
-            <input type="date" value={valueDate} onChange={e=>setValueDate(e.target.value)}
-              style={{...inp({colorScheme:"dark"}),flex:1,marginBottom:0}}/>
-            <button onClick={()=>setValueDate(valueDate?"":today)}
-              style={{flexShrink:0,padding:`0 ${S.padL}px`,borderRadius:S.radius,
-                border:`2px solid ${T.bd}`,background:"rgba(255,255,255,0.06)",
-                color:T.blue,fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
-              {valueDate?"löschen":"heute"}
-            </button>
-          </div>
-
-          {/* gilt für (Scope) */}
-          {fieldLabel("gilt für")}
-          <div style={{display:"flex",gap:S.gap/2,marginBottom:S.gap}}>
-            {[["all","alle"],["from","ab dieser"],["single","nur diese"]].map(([v,l])=>(
-              <button key={v} onClick={()=>setGiltFuer(v)}
-                style={{flex:1,...btnCenter,padding:`${S.pad}px 4px`,
-                  background:giltFuer===v?T.blue:"rgba(255,255,255,0.08)",
-                  border:"none",color:giltFuer===v?"#fff":T.txt2,
-                  fontSize:S.fs-6,fontWeight:700,borderRadius:S.radius/2}}>
-                {l}
-              </button>
-            ))}
-          </div>
-          {giltFuer!=="all"&&(
-            <input type="date" value={giltFuerDate} onChange={e=>setGiltFuerDate(e.target.value)}
-              style={{...inp({colorScheme:"dark",marginBottom:S.gap})}}/>
-          )}
         </div>
       </>}
 
@@ -487,7 +466,6 @@ function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
             ...(isFinanz?[["Gesamtbetrag", gesamtbetrag||"—"]]:[]),
             ["Startdatum", startDate.split("-").reverse().join(".")],
             ...(valueDate?[["verursacht", valueDate.split("-").reverse().join(".")]]:[]),
-            ...(giltFuer!=="all"?[["gilt für", giltFuer==="from"?"ab "+giltFuerDate.split("-").reverse().join("."):"nur "+giltFuerDate.split("-").reverse().join(".")]]:[]),
             ["Kategorie",  catId?(getCat(catId)?.name||"?")+(subId?" / "+(getSub(catId,subId)?.name||""):""):"—"],
             ["Beschreibung",desc],
             ["Notiz",      note||"—"],
