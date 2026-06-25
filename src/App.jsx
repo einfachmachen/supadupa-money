@@ -152,14 +152,13 @@ export default function SupaDupaMoney() {
     {id:"einstellungen",label:"Optionen",   icon:"settings", color:T.txt2},
   ];
   const openMoon = (id) => {
-    // vormerken & Budget belegen den Master-Button (Aktions-+): + bleibt VERGRÖSSERT
-    // (plusArretiert true), damit der Knopf nahtlos groß weiterläuft. Die Monde
-    // selbst werden ausgeblendet, sobald das Modal offen ist (siehe Overlay-Bedingung).
-    // Daten (Liste) & Optionen (Tab) haben keinen Aktions-+ → dort + verkleinern.
+    // Der + bleibt in ALLEN Mond-Funktionen VERGRÖSSERT (plusArretiert true).
+    // Das Mond-Overlay wird ausgeblendet, sobald eine Funktion offen ist
+    // (Modal-Flags bzw. nicht-erfassen-Tab — siehe Overlay-Bedingung).
     if(id==="vormerken")          setShowMobileVormerken(true);
     else if(id==="kategorien")    setShowMobileKategorien(true);
-    else if(id==="daten")        { setPlusArretiert(false); reopenMobilePicker("daten"); }
-    else if(id==="einstellungen"){ setPlusArretiert(false); setMainTab("struktur"); setActiveStructurTab("einstellungen"); }
+    else if(id==="daten")         reopenMobilePicker("daten");
+    else if(id==="einstellungen"){ setMainTab("struktur"); setActiveStructurTab("einstellungen"); }
   };
   // True, solange der Money-Mood/Trend-Drilldown offen ist. Dort wird der + Button
   // vergrößert angezeigt und ist frei vertikal verschiebbar (drillBtnY); Links/
@@ -3198,7 +3197,7 @@ Abbrechen = ${remoteName}-Stand laden`
       {/* ── Monde: 4 runde Buttons rund um den vergrößerten + (ersetzt den Mehr-Screen).
             Doppeltipp auf den kleinen + blendet sie ein; ←/→ schaltet durch,
             Tipp auf einen Mond ODER Tipp auf den + (aktiver Mond) öffnet die Funktion. ── */}
-      {plusArretiert && !moodDrillOpen && !showMobilePicker && !showMonthPickerModal && !showCloudSave && !showMobileVormerken && !showMobileKategorien && (
+      {plusArretiert && !moodDrillOpen && !showMobilePicker && !showMonthPickerModal && !showCloudSave && !showMobileVormerken && !showMobileKategorien && mainTab!=="struktur" && (
         <div style={{position:"fixed",left:0,right:0,bottom:0,height:0,zIndex:600,pointerEvents:"none"}}>
           {(()=>{ const {bg,fg,isFlat}=plusBtnColors(T); return MOONS.map((mn,i)=>{
             // Größerer Radius + höhere Basis → Monde klar abgesetzt vom + (kein Überlappen).
