@@ -3197,9 +3197,9 @@ Abbrechen = ${remoteName}-Stand laden`
             Tipp auf einen Mond ODER Tipp auf den + (aktiver Mond) öffnet die Funktion. ── */}
       {plusArretiert && !moodDrillOpen && !showMobilePicker && !showMonthPickerModal && !showCloudSave && (
         <div style={{position:"fixed",left:0,right:0,bottom:0,height:0,zIndex:600,pointerEvents:"none"}}>
-          {MOONS.map((mn,i)=>{
-            // Größerer Radius + höhere Basis → die Monde sitzen klar abgesetzt vom +
-            // (kein Überlappen). Akzentfarbe als Hintergrund (aktiver Mond kräftiger).
+          {(()=>{ const {bg,fg,isFlat}=plusBtnColors(T); return MOONS.map((mn,i)=>{
+            // Größerer Radius + höhere Basis → Monde klar abgesetzt vom + (kein Überlappen).
+            // Hintergrund = identisch zum +-Button (bg). Aktiver Mond: dicker weißer Rand.
             const R=120, CY=150, SIZE=58;
             const ang=[150,108,72,30][i]*Math.PI/180;
             const dx=Math.cos(ang)*R, dy=Math.sin(ang)*R;
@@ -3207,20 +3207,20 @@ Abbrechen = ${remoteName}-Stand laden`
             return (
               <button key={mn.id} onClick={()=>openMoon(mn.id)}
                 style={{position:"absolute",left:"50%",bottom:(CY+dy)+"px",
-                  transform:`translate(calc(-50% + ${dx}px), 50%) scale(${active?1.14:1})`,
-                  width:SIZE,height:SIZE,borderRadius:"50%",
-                  border:`2px solid ${T.blue}`,
-                  background:T.blue+(active?"66":"33"),
-                  boxShadow:active?`0 0 18px ${T.blue}cc`:"0 6px 16px rgba(0,0,0,0.55)",
+                  transform:`translate(calc(-50% + ${dx}px), 50%) scale(${active?1.1:1})`,
+                  width:SIZE,height:SIZE,borderRadius:"50%",boxSizing:"border-box",
+                  border:active?"4px solid #fff":(isFlat?`2px solid ${fg}`:`3px solid ${T.surf}`),
+                  background:bg,
+                  boxShadow:"0 6px 16px rgba(0,0,0,0.55)",
                   cursor:"pointer",pointerEvents:"auto",fontFamily:"inherit",
                   display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
-                  transition:"transform 0.18s, box-shadow 0.18s, background 0.18s",padding:0}}>
-                {Li(mn.icon,21,T.txt)}
-                <span style={{fontSize:9,fontWeight:700,lineHeight:1,color:T.txt,
+                  transition:"transform 0.18s, border 0.18s",padding:0}}>
+                {Li(mn.icon,21,fg)}
+                <span style={{fontSize:9,fontWeight:700,lineHeight:1,color:fg,
                   whiteSpace:"nowrap"}}>{mn.label}</span>
               </button>
             );
-          })}
+          }); })()}
         </div>
       )}
 
