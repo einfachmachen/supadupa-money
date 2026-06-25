@@ -139,6 +139,25 @@ export default function SupaDupaMoney() {
   // Plus-Button: arretiert (höhere Position + 1,5× Größe) ja/nein
   // NICHT persistiert — beim App-Start immer false (Bottom-Bar-Position)
   const [plusArretiert, setPlusArretiert] = useState(false);
+  // „Monde": 4 runde Buttons rund um den vergrößerten + (ersetzt den Mehr-Screen).
+  // activeMoon = der per ←/→ ausgewählte Mond; Ref für Gesten-Closures (Timer).
+  const [activeMoon, setActiveMoon] = useState(0);
+  const activeMoonRef = useRef(0);
+  const setMoon = (u) => setActiveMoon(p => { const n = typeof u==="function" ? u(p) : u; activeMoonRef.current = n; return n; });
+  // Die 4 Monde des vergrößerten +-Buttons (ersetzen den „Was möchtest du tun?"-Screen).
+  const MOONS = [
+    {id:"vormerken",    label:"Vormerkung", icon:"calendar", color:T.gold},
+    {id:"kategorien",   label:"Budget",     icon:"tag",      color:T.blue},
+    {id:"daten",        label:"Daten",      icon:"database", color:T.pos},
+    {id:"einstellungen",label:"Optionen",   icon:"settings", color:T.txt2},
+  ];
+  const openMoon = (id) => {
+    setPlusArretiert(false);
+    if(id==="vormerken")          setShowMobileVormerken(true);
+    else if(id==="kategorien")    setShowMobileKategorien(true);
+    else if(id==="daten")         reopenMobilePicker("daten");
+    else if(id==="einstellungen"){ setMainTab("struktur"); setActiveStructurTab("einstellungen"); }
+  };
   // True, solange der Money-Mood/Trend-Drilldown offen ist. Dort wird der + Button
   // vergrößert angezeigt und ist frei vertikal verschiebbar (drillBtnY); Links/
   // Rechts-Wisch schaltet weiter das Jahr. Standard-Y bei jedem Öffnen.
@@ -2893,6 +2912,7 @@ Abbrechen = ${remoteName}-Stand laden`
                       e.currentTarget.style.transition = "transform 0.42s cubic-bezier(0.34, 1.45, 0.5, 1)";
                       e.currentTarget.style.transform = "translate(0px, -94px) scale(1.5)";
                     }
+                    setMoon(0);
                     setPlusArretiert(true);
                   }
                 } else {
@@ -2935,8 +2955,10 @@ Abbrechen = ${remoteName}-Stand laden`
             }
             if(axis === "x" && Math.abs(dx) > DRAG_THRESHOLD) {
               ref.consumed = true;
-              if(dx < 0) stepPeriod(-1);
-              else       stepPeriod(1);
+              // Vergrößerter +: ←/→ schaltet zwischen den Monden um (kein Monatswechsel;
+              // Monat weiterhin über Wisch ↑ Monatsauswahl).
+              setMoon(m => (m + (dx < 0 ? -1 : 1) + MOONS.length) % MOONS.length);
+              try { if(navigator.vibrate) navigator.vibrate(8); } catch(_) {}
               return;
             }
             // Tap (ohne nennenswerte Bewegung) im GROSSEN Zustand:
@@ -2969,7 +2991,7 @@ Abbrechen = ${remoteName}-Stand laden`
                 const timer = setTimeout(()=>{
                   masterLastTapRef.current = {zone:null, t:0, timer:null};
                   try { if(navigator.vibrate) navigator.vibrate(10); } catch(_) {}
-                  doPlus();
+                  openMoon(MOONS[activeMoonRef.current].id);
                 }, DOUBLE_TAP_MS);
                 masterLastTapRef.current = {zone:"center", t:now, timer};
               }
@@ -3159,9 +3181,39 @@ Abbrechen = ${remoteName}-Stand laden`
         );
       })()}
 
+      {/* ── Monde: 4 runde Buttons rund um den vergrößerten + (ersetzt den Mehr-Screen).
+            Doppeltipp auf den kleinen + blendet sie ein; ←/→ schaltet durch,
+            Tipp auf einen Mond ODER Tipp auf den + (aktiver Mond) öffnet die Funktion. ── */}
+      {plusArretiert && !moodDrillOpen && !showMobilePicker && !showMonthPickerModal && !showCloudSave && (
+        <div style={{position:"fixed",left:0,right:0,bottom:0,height:0,zIndex:600,pointerEvents:"none"}}>
+          {MOONS.map((mn,i)=>{
+            const R=98, CY=124, SIZE=60;
+            const ang=[144,108,72,36][i]*Math.PI/180;
+            const dx=Math.cos(ang)*R, dy=Math.sin(ang)*R;
+            const active=i===activeMoon;
+            return (
+              <button key={mn.id} onClick={()=>openMoon(mn.id)}
+                style={{position:"absolute",left:"50%",bottom:(CY+dy)+"px",
+                  transform:`translate(calc(-50% + ${dx}px), 50%) scale(${active?1.12:1})`,
+                  width:SIZE,height:SIZE,borderRadius:"50%",
+                  border:`2px solid ${active?mn.color:T.bd}`,
+                  background:active?mn.color+"26":(T.surf||"rgba(22,24,34,0.97)"),
+                  boxShadow:active?`0 0 16px ${mn.color}aa`:"0 6px 16px rgba(0,0,0,0.55)",
+                  cursor:"pointer",pointerEvents:"auto",fontFamily:"inherit",
+                  display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
+                  transition:"transform 0.18s, box-shadow 0.18s, border-color 0.18s",padding:0}}>
+                {Li(mn.icon,21,active?mn.color:T.txt)}
+                <span style={{fontSize:9,fontWeight:700,lineHeight:1,color:active?mn.color:T.txt2,
+                  whiteSpace:"nowrap"}}>{mn.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* ── MOBILE UI TEST ── */}
       {showMobileVormerken&&<MobileVormerkenModal onClose={()=>setShowMobileVormerken(false)}
-        onBack={()=>{setShowMobileVormerken(false);reopenMobilePicker("main");}}/>}
+        onBack={()=>{setShowMobileVormerken(false);setPlusArretiert(true);}}/>}
       {showMobileWiederkehrend&&<MobileVormerkenModal
         initialRecurring={true} initialFinanz={showMobileWiederkehrendTyp==="finanzierung"}
         onClose={()=>setShowMobileWiederkehrend(false)}
@@ -3169,12 +3221,12 @@ Abbrechen = ${remoteName}-Stand laden`
       {showMobileBudget&&<MobileBudgetModal onClose={()=>setShowMobileBudget(false)}/>}
       {showMobileKategorien&&<MobileKategorienModal
         onClose={()=>setShowMobileKategorien(false)}
-        onBack={()=>{setShowMobileKategorien(false);reopenMobilePicker("main");}}
+        onBack={()=>{setShowMobileKategorien(false);setPlusArretiert(true);}}
         onKonten={()=>{setShowMobileKategorien(false);setMainTab("struktur");setActiveStructurTab("konten");}}
         onKategorienErweitert={()=>{setShowMobileKategorien(false);setMainTab("struktur");setActiveStructurTab("kategorien");}}/>}
       {showMobilePicker&&<MobileActionPicker
         initialScreen={mobilePickerScreen}
-        onClose={()=>{setShowMobilePicker(false);setMobilePickerScreen("main");setPlusArretiert(false);}}
+        onClose={()=>{setShowMobilePicker(false);setMobilePickerScreen("main");setPlusArretiert(true);}}
         onSelect={(action)=>{
           setShowMobilePicker(false);
           setMobilePickerScreen("main");
@@ -3203,7 +3255,7 @@ Abbrechen = ${remoteName}-Stand laden`
           setYear={setYear} setMonth={setMonth}
           plusArretiert={plusArretiert}
           onClose={()=>{ setShowMonthPickerModal(false); setPlusArretiert(false); }}
-          onSwitchToMore={()=>{ setShowMonthPickerModal(false); setShowMobilePicker(true); }}/>
+          onSwitchToMore={()=>{ setShowMonthPickerModal(false); setPlusArretiert(true); }}/>
       )}
 
       {/* ── Cloud-Speichern-Modal (Master-Button Wisch ↓) ── */}
