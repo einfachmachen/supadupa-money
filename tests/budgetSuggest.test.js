@@ -55,4 +55,26 @@ describe("suggestBudget — gewichteter Schnitt aus Ist + Vormerkungen", () => {
     expect(r.actualMonths).toBe(0);
     expect(r.pendingMonths).toBe(3);
   });
+
+  it("monatliche Zahlung → interval 1, intervalAmount = Monatsbetrag", () => {
+    const past = { "2026-2": 300, "2026-3": 300, "2026-4": 300 };
+    const r = suggestBudget({ ...NOW, getActual: lookup(past), getPending: () => 0 });
+    expect(r.interval).toBe(1);
+    expect(Math.round(r.intervalAmount)).toBe(300);
+  });
+
+  it("quartalsweise Zahlung (z. B. Rundfunkbeitrag) → interval 3, intervalAmount = Quartalssumme", () => {
+    // 60 € alle 3 Monate: Jun/Sep/Dez 2025 + Mär 2026 (alles vor Jun 2026).
+    const past = { "2025-5": 60, "2025-8": 60, "2025-11": 60, "2026-2": 60 };
+    const r = suggestBudget({ ...NOW, getActual: lookup(past), getPending: () => 0 });
+    expect(r.interval).toBe(3);
+    expect(Math.round(r.intervalAmount)).toBe(60); // 20 €/Mon × 3
+  });
+
+  it("jährliche Zahlung mit zwei Vorkommen → interval 12", () => {
+    const past = { "2024-5": 1200, "2025-5": 1200 };
+    const r = suggestBudget({ ...NOW, getActual: lookup(past), getPending: () => 0 });
+    expect(r.interval).toBe(12);
+    expect(Math.round(r.intervalAmount)).toBe(1200);
+  });
 });

@@ -624,29 +624,34 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                       <div style={{color:T.txt2,fontSize:S.fs-6,margin:`${S.gap/2}px 0 4px`}}>
                         Budget {MONTHS[month]} {year}
                       </div>
-                      {/* Realitätsnaher Vorschlag aus Ist-Historie + Vormerkungen */}
+                      {/* Realitätsnaher Vorschlag aus Ist-Historie + Vormerkungen,
+                          inkl. erkanntem Rhythmus (z. B. Rundfunkbeitrag quartalsweise) */}
                       {(()=>{
                         const sug = calcSuggestion(sub.id);
-                        const sugAmt = Math.round(sug.amount);
+                        const sugAmt = Math.round(sug.intervalAmount);
                         if(!(sug.hasData && sugAmt>0)) return null;
+                        const RL = {1:"monatlich",3:"quartalsweise",6:"halbjährlich",12:"jährlich"}[sug.interval];
                         return (
-                          <button onClick={()=>{
+                          <div onClick={()=>{
                             setBudgetEdits(p=>({...p,[sub.id+"_G"]:String(sugAmt).replace(".",","),[sub.id+"_M"]:""}));
-                            setBudgetRhythm(p=>({...p,[sub.id]:1}));
+                            setBudgetRhythm(p=>({...p,[sub.id]:sug.interval}));
                           }}
-                            style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"8px 10px",
-                              marginBottom:6,borderRadius:10,border:`1px solid ${T.blue}55`,
-                              background:"rgba(74,159,212,0.10)",color:T.txt,cursor:"pointer",
-                              fontFamily:"inherit",textAlign:"left"}}>
-                            {Li("bar-chart-2",16,T.blue)}
-                            <span style={{flex:1,minWidth:0,lineHeight:1.3}}>
-                              <span style={{fontSize:S.fs-8}}>Vorschlag: <b style={{color:T.blue}}>{fmt(sugAmt)} €</b>/Monat</span>
-                              <span style={{display:"block",color:T.txt2,fontSize:S.fs-12,marginTop:1}}>
-                                Schnitt aus {sug.months} Mon. ({sug.actualMonths} gebucht · {sug.pendingMonths} geplant)
-                              </span>
-                            </span>
-                            <span style={{color:T.blue,fontSize:S.fs-10,fontWeight:800,flexShrink:0}}>übernehmen</span>
-                          </button>
+                            style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",
+                              marginBottom:8,borderRadius:12,border:`1px solid ${T.blue}55`,
+                              background:"rgba(74,159,212,0.10)",cursor:"pointer"}}>
+                            {Li("bar-chart-2",18,T.blue)}
+                            <div style={{flex:1,minWidth:0}}>
+                              <div style={{display:"flex",alignItems:"baseline",gap:6,flexWrap:"wrap"}}>
+                                <span style={{fontSize:14,color:T.txt2}}>Vorschlag</span>
+                                <b style={{fontSize:18,color:T.blue,fontFamily:NUM_FONT}}>{fmt(sugAmt)} €</b>
+                                <span style={{fontSize:13,color:T.txt2}}>· {RL}</span>
+                              </div>
+                              <div style={{color:T.txt2,fontSize:11.5,marginTop:2}}>
+                                Ø aus {sug.months} Mon. · {sug.actualMonths} gebucht · {sug.pendingMonths} geplant
+                              </div>
+                            </div>
+                            <span style={{color:T.blue,fontSize:13,fontWeight:800,flexShrink:0}}>übernehmen</span>
+                          </div>
                         );
                       })()}
                       {/* Mitte / Gesamt */}

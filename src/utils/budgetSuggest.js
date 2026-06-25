@@ -40,13 +40,33 @@ export function suggestBudget({
   const end = lastData < nowIdx ? (nowIdx - 1) : lastData;
 
   let vSum = 0, wSum = 0, actualMonths = 0, pendingMonths = 0;
+  const paymentIdxs = []; // Monate MIT Bewegung — für die Rhythmus-Erkennung
   for (let idx = start; idx <= end; idx++) {
     const { v, w, past } = valAt(idx);
     vSum += v * w; wSum += w;
     if (past) actualMonths++; else pendingMonths++;
+    if (v > 0) paymentIdxs.push(idx);
   }
+  const amount = wSum > 0 ? vSum / wSum : 0;
+
+  // Zahlungs-Rhythmus aus den Abständen zwischen Monaten mit Bewegung ableiten
+  // (z. B. Rundfunkbeitrag quartalsweise → Abstände 3 → interval 3). Median der
+  // Abstände, auf den nächsten Standard-Rhythmus {1,3,6,12} gerundet. Bei nur
+  // einer Bewegung bleibt es monatlich (zu wenig Info).
+  let interval = 1;
+  if (paymentIdxs.length >= 2) {
+    const gaps = [];
+    for (let i = 1; i < paymentIdxs.length; i++) gaps.push(paymentIdxs[i] - paymentIdxs[i - 1]);
+    gaps.sort((a, b) => a - b);
+    const medGap = gaps[Math.floor(gaps.length / 2)];
+    interval = [1, 3, 6, 12].reduce(
+      (best, c) => (Math.abs(c - medGap) < Math.abs(best - medGap) ? c : best), 1);
+  }
+
   return {
-    amount: wSum > 0 ? vSum / wSum : 0,
+    amount,                          // gewichteter MONATS-Schnitt (Rückwärtskompatibel)
+    interval,                        // erkannter Rhythmus in Monaten (1|3|6|12)
+    intervalAmount: amount * interval, // Betrag PRO Rhythmus-Periode (z. B. Quartalssumme)
     hasData: true,
     months: end - start + 1,
     actualMonths, pendingMonths,
