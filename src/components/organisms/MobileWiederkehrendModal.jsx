@@ -11,6 +11,7 @@ import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { isoAddMonths } from "../../utils/date.js";
 import { fmt, pn, uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
+import { SchieflageVorwarnung } from "../atoms/SchieflageVorwarnung.jsx";
 
 function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
   const { cats, setCats, accounts, setAccounts, setTxs, getCat, getSub, setMasterOverride } = useContext(AppCtx);
@@ -63,6 +64,23 @@ function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
   const intervalLabel = {1:"monatlich",3:"quartalsweise",6:"halbjährlich",12:"jährlich"}[interval_]||`alle ${interval_} Monate`;
   const amt = ()=>pn(amount.replace(",","."));
   const gesamtbetrag = isFinanz&&amt()>0 ? fmt(amt()*totalCount) : null;
+
+  // Entwurf der noch nicht gespeicherten Reihe — für die Live-Schieflage-Vorwarnung
+  // (Schritt 4). Spiegelt die Tx-Erzeugung in doSave, ohne Seiteneffekte.
+  const draftTxs = React.useMemo(()=>{
+    const a = pn((amount||"").replace(",","."));
+    if(!(a>0)) return [];
+    const n = totalCount;
+    const firstAmt = customFL&&firstAmount ? pn(firstAmount.replace(",",".")) : null;
+    const lastAmt  = customFL&&lastAmount  ? pn(lastAmount.replace(",","."))  : null;
+    return Array.from({length:n},(_,i)=>{
+      const offset = (!firstIsStart || i>0) ? i*interval_ : 0;
+      const date = isoAddMonths(startDate, offset, lastOfMon);
+      const txAmt = (i===0&&firstAmt!=null)?firstAmt:(i===n-1&&lastAmt!=null)?lastAmt:a;
+      return { id:`draft-${i}`, date, totalAmount:txAmt, pending:true,
+        _csvType:csvType, accountId:accId, splits:[] };
+    });
+  }, [amount, totalCount, customFL, firstAmount, lastAmount, firstIsStart, interval_, startDate, lastOfMon, csvType, accId]);
 
   const btnBase = {width:"100%",padding:`${S.padL}px`,borderRadius:S.radius,
     border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:S.fs,fontWeight:700,
@@ -475,6 +493,8 @@ function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
       {step===4&&<>
         {header("bestätigen","Alles korrekt?",4,()=>setStep(3))}
         <div style={{flex:1,padding:S.padL,paddingBottom:120,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+          <SchieflageVorwarnung draftTxs={draftTxs}
+            kind={isFinanz?"finanzierung":"serie"} style={{marginBottom:S.gap}}/>
           {[
             ["Art",        csvType==="expense"?"Ausgabe":"Einnahme"],
             ["Konto",      (accounts||[]).find(a=>a.id===accId)?.name||accId],
