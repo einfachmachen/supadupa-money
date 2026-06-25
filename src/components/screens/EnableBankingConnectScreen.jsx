@@ -381,9 +381,11 @@ function EnableBankingConnectScreen({ onClose }) {
         clearEbSession();
         setSessionAccounts(null);
         setValidUntil(null);
-        setMsg({ tone: "warn", text: "Bank-Freigabe abgelaufen oder ungültig — bitte unten neu mit der Bank verbinden." });
+        setMsg({ tone: "warn", text: "Bank-Freigabe abgelaufen oder ungültig — bitte unten neu mit der Bank verbinden.", detail: txt });
       } else {
-        setMsg({ tone: "danger", text: txt });
+        // Klartext (z. B. ASPSP_ERROR → „Bank meldet internen Fehler…"),
+        // Rohtext ausklappbar als Detail.
+        setMsg({ tone: "danger", text: friendlyBankError(txt), detail: txt });
       }
     }
     setBusy(false);
