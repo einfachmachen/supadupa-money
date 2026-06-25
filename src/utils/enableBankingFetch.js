@@ -60,19 +60,56 @@ async function listConnectedBanks() {
 }
 
 // Übersetzt rohe Fehlertexte (oft JSON von Enable Banking / der Bank) in eine
-// verständliche Klartext-Meldung. Der Rohtext bleibt separat als `detail` erhalten.
+// verständliche, möglichst konkrete Klartext-Meldung mit klarem nächsten Schritt.
+// Wertet den Schritt aus, den req() in den Fehler schreibt
+// ([Anmeldung starten] / [Session erstellen] / [Umsätze abrufen] / [Banken laden]).
+// Der Rohtext bleibt separat als `detail` erhalten (ausklappbar).
 function friendlyBankError(txt) {
   const s = String(txt || "").toLowerCase();
-  // Bankseitiger Serverfehler (ASPSP = die Bank). Typisch vorübergehend.
+  const step = /umsätze abrufen/.test(s) ? "fetch"
+    : /session erstellen/.test(s) ? "session"
+    : /anmeldung starten/.test(s) ? "auth"
+    : /banken laden/.test(s) ? "banks"
+    : null;
+
+  // Bankseitiger Serverfehler (ASPSP = die Bank). Liegt an der Bank-Schnittstelle,
+  // betrifft alle Banking-Apps gleichermaßen und ist meist nur vorübergehend.
   if (/aspsp_error|internal server error|httpexception|bad gateway|service unavailable|gateway timeout|\b50[0-4]\b/.test(s))
-    return "Die Bank ist vorübergehend nicht erreichbar (Serverfehler auf Bankseite). Bitte in ein paar Minuten erneut versuchen.";
+    return "Die Bank meldet gerade einen internen Fehler an ihrer Schnittstelle für Banking-Apps (PSD2). "
+      + "Das liegt an der Bank – nicht an dieser App – und betrifft alle Banking-Apps gleichermaßen. "
+      + "Meist ist es nur vorübergehend: bitte in ein paar Minuten bis Stunden erneut versuchen.";
+
   if (/\b429\b|rate.?limit|too many/.test(s))
-    return "Zu viele Anfragen in kurzer Zeit. Bitte einen Moment warten und erneut versuchen.";
+    return "Zu viele Anfragen in kurzer Zeit. Bitte ein, zwei Minuten warten und dann erneut versuchen.";
+
   if (/failed to fetch|networkerror|network error|timeout|timed out|err_|enotfound|econnrefused/.test(s))
-    return "Keine Verbindung zum Bank-Dienst. Internetverbindung prüfen und erneut versuchen.";
-  if (/\b400\b/.test(s))
-    return "Der Bankabruf wurde von der Bank abgelehnt. Oft hilft „Erneut versuchen“; bleibt es bestehen, die Bank-Verbindung neu freigeben.";
-  return "Der Bankabruf ist fehlgeschlagen. Bitte erneut versuchen.";
+    return "Keine Verbindung zum Bank-Dienst. Bitte Internetverbindung prüfen und erneut versuchen.";
+
+  // Abgelaufene/zurückgezogene Freigabe oder ungültige Sitzung.
+  if (/\b401\b|\b403\b|expired|consent|unauthor|invalid.*token|token.*invalid/.test(s))
+    return "Die Bank-Freigabe ist abgelaufen oder wurde zurückgezogen. Bitte die Bank unten neu verbinden "
+      + "(eine Freigabe gilt aus Sicherheitsgründen höchstens 90 Tage).";
+
+  if (/\b404\b/.test(s))
+    return step === "fetch"
+      ? "Das zugeordnete Konto wurde bei der Bank nicht gefunden. Bitte die Bank neu verbinden und die Konten neu zuordnen."
+      : "Die Bank-Verbindung wurde nicht gefunden. Bitte die Bank unten neu verbinden.";
+
+  if (/\b400\b/.test(s)) {
+    if (step === "session")
+      return "Die Bank-Anmeldung konnte nicht abgeschlossen werden – oft, weil sie abgebrochen oder die Freigabe "
+        + "in der Bank-App zu spät bestätigt wurde. Bitte die Verbindung erneut starten und die TAN/Freigabe zügig bestätigen.";
+    if (step === "auth")
+      return "Die Anmelde-Anfrage wurde von der Bank abgelehnt. Bitte erneut versuchen; bleibt es bestehen, im "
+        + "Verbindungs-Check unten Redirect-URL und Application-ID mit dem Enable-Banking-Portal abgleichen.";
+    return "Die Anfrage wurde von der Bank abgelehnt. Oft hilft „Erneut versuchen“; bleibt es bestehen, die Bank-Verbindung neu freigeben.";
+  }
+
+  const wo = step === "auth" ? " (beim Starten der Bank-Anmeldung)"
+    : step === "session" ? " (beim Abschließen der Bank-Anmeldung)"
+    : step === "fetch" ? " (beim Abrufen der Umsätze)"
+    : step === "banks" ? " (beim Laden der Bankenliste)" : "";
+  return `Der Bankabruf ist fehlgeschlagen${wo}. Bitte erneut versuchen – Details siehe unten.`;
 }
 
 // Ruft neue Umsätze ab und klassifiziert sie gegen die vorhandenen Buchungen.
