@@ -9,7 +9,7 @@
 //              memoisiert, damit nicht jeder Tastendruck neu rechnet).
 //   kind     — "vormerkung" | "serie" | "finanzierung" (nur fürs Wording).
 
-import React, { useContext, useMemo } from "react";
+import React, { useContext, useMemo, useState, useEffect } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, pn } from "../../utils/format.js";
@@ -21,10 +21,19 @@ export function SchieflageVorwarnung({ draftTxs, kind = "vormerkung", style }) {
   const { txs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth, budgets } = useContext(AppCtx);
   const giroPuffer = (accounts || []).find((a) => a.id === "acc-giro")?.minPuffer || 0;
 
+  // Entkoppeln vom Tippen: Die (recht teure) Schieflage-Berechnung erst nach einer
+  // kurzen Pause auslösen — sonst rechnet sie bei JEDEM Tastendruck neu und die
+  // Eingabe wird träge.
+  const [debDraft, setDebDraft] = useState(draftTxs);
+  useEffect(() => {
+    const id = setTimeout(() => setDebDraft(draftTxs), 350);
+    return () => clearTimeout(id);
+  }, [draftTxs]);
+
   const res = useMemo(() => {
     try {
       return schieflagePreview({
-        draftTxs, txs, cats, accounts,
+        draftTxs: debDraft, txs, cats, accounts,
         getKumulierterSaldo, getCat, getBudgetForMonth, budgets,
         puffer: pn(giroPuffer) || 0,
       });
@@ -34,7 +43,7 @@ export function SchieflageVorwarnung({ draftTxs, kind = "vormerkung", style }) {
       return { hasImpact: false };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draftTxs, txs, cats, accounts, budgets, giroPuffer]);
+  }, [debDraft, txs, cats, accounts, budgets, giroPuffer]);
 
   if (!res.hasImpact) return null;
 
@@ -43,7 +52,7 @@ export function SchieflageVorwarnung({ draftTxs, kind = "vormerkung", style }) {
     : kind === "serie" ? "Diese wiederkehrende Vormerkung"
     : "Diese Vormerkung";
   const saldoStr = `${res.saldoVal < 0 ? "−" : ""}${fmt(Math.abs(res.saldoVal))} €`;
-  const saldoColor = res.saldoVal < 0 ? T.neg : T.gold; // negativer Kontostand rot, sonst gold
+  const saldoColor = res.saldoVal < 0 ? T.neg : T.txt; // nur negativer Kontostand rot, sonst normal (weiß)
 
   return (
     <div style={{ display: "flex", alignItems: "flex-start", gap: 10,

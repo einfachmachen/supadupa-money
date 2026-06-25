@@ -332,14 +332,14 @@ function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
                 borderRadius:"50%",background:"#fff",transition:"left 0.2s"}}/>
             </div>
             <span style={{color:firstIsStart?T.txt:T.txt2,fontSize:S.fs}}>
-              Erste Buchung = Startdatum
+              erste Buchung = Startdatum
             </span>
           </div>
 
           {/* Anzahl / Enddatum */}
           <div style={{display:"flex",gap:S.gap,marginBottom:S.gap/2}}>
             <div style={{flex:1}}>
-              {fieldLabel(isFinanz?"Anzahl Raten":"Anzahl (leer=7J)")}
+              {fieldLabel(isFinanz?"Raten":"Anzahl (leer=7J)")}
               <input type="text" inputMode="numeric" value={count}
                 onChange={e=>{setCount(e.target.value);if(e.target.value)setEndDate("");}}
                 placeholder={`${calcCount()}`}
@@ -367,13 +367,13 @@ function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
                 borderRadius:"50%",background:"#fff",transition:"left 0.2s"}}/>
             </div>
             <span style={{color:customFL?T.txt:T.txt2,fontSize:S.fs}}>
-              Abweichende Anzahlung / Schlussrate
+              1. Rate / Schlussrate
             </span>
           </div>
           {customFL&&(
             <div style={{display:"flex",gap:S.gap,marginBottom:S.gap}}>
               <div style={{flex:1}}>
-                {fieldLabel("Anzahlung (1. Rate)")}
+                {fieldLabel("1. Rate")}
                 <input type="text" inputMode="decimal" value={firstAmount}
                   onChange={e=>setFirstAmount(e.target.value.replace(/[^0-9,\.]/g,""))}
                   placeholder={amount||"0,00"}
@@ -424,9 +424,10 @@ function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
         {header("details","Beschreibung & Notiz",3,()=>setStep(2))}
         <div style={{flex:1,padding:S.padL,paddingBottom:120,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
 
-          {/* Beschreibung — auto-grow, Placeholder */}
+          {/* Beschreibung — Label (mit Pflicht-Badge) oben, kurzer Platzhalter */}
+          {fieldLabel("Beschreibung", true)}
           <textarea value={desc} onChange={e=>setDesc(e.target.value)}
-            placeholder={isFinanz?"Beschreibung (Pflichtfeld), z.B. Autokredit VW":"Beschreibung (Pflichtfeld), z.B. Miete"}
+            placeholder={isFinanz?"z. B. Autokredit VW":"z. B. Miete"}
             rows={1}
             style={{width:"100%",boxSizing:"border-box",padding:`${S.padL}px`,
               borderRadius:S.radius,border:`2px solid ${desc?T.blue:T.neg}`,
@@ -437,9 +438,10 @@ function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
             onInput={e=>{e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
           />
 
-          {/* Notiz — auto-grow, Placeholder */}
+          {/* Notiz — Label oben, kurzer Platzhalter */}
+          {fieldLabel("Notiz (optional)")}
           <textarea value={note} onChange={e=>setNote(e.target.value)}
-            placeholder="Notiz (optional), z.B. Vertragsnummer"
+            placeholder="z. B. Vertragsnummer"
             rows={1}
             style={{width:"100%",boxSizing:"border-box",padding:`${S.padL}px`,
               borderRadius:S.radius,border:`2px solid ${note?T.blue:T.bd}`,
