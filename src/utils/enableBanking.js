@@ -161,7 +161,17 @@ function createEnableBankingClient({ relayUrl, appId, privateKeyPem }) {
       body: body ? JSON.stringify(body) : undefined,
     });
     const text = await res.text();
-    if (!res.ok) throw new Error(`Enable Banking ${res.status}: ${text.slice(0, 300)}`);
+    if (!res.ok) {
+      // Den Endpunkt mit in den Fehler schreiben — so ist sofort erkennbar, an
+      // welchem Schritt es scheitert: /auth (Anmeldung starten), /sessions
+      // (Session erstellen) oder /accounts/…/transactions (Umsätze abrufen).
+      const step = path.startsWith("/auth") ? "Anmeldung starten"
+        : path.startsWith("/sessions") ? "Session erstellen"
+        : /\/transactions/.test(path) ? "Umsätze abrufen"
+        : path.startsWith("/aspsps") ? "Banken laden"
+        : path;
+      throw new Error(`Enable Banking ${res.status} [${step}: ${method} ${path.split("?")[0]}]: ${text.slice(0, 300)}`);
+    }
     try {
       return text ? JSON.parse(text) : null;
     } catch {
