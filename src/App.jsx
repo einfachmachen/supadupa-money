@@ -3200,8 +3200,8 @@ Abbrechen = ${remoteName}-Stand laden`
           {(()=>{ const {bg,fg,isFlat}=plusBtnColors(T); return MOONS.map((mn,i)=>{
             // Größerer Radius + höhere Basis → Monde klar abgesetzt vom + (kein Überlappen).
             // Hintergrund = identisch zum +-Button (bg). Aktiver Mond: dicker weißer Rand.
-            const R=120, CY=150, SIZE=58;
-            const ang=[150,108,72,30][i]*Math.PI/180;
+            const R=98, CY=126, SIZE=58;
+            const ang=[155,105,75,25][i]*Math.PI/180;
             const dx=Math.cos(ang)*R, dy=Math.sin(ang)*R;
             const active=i===activeMoon;
             return (
