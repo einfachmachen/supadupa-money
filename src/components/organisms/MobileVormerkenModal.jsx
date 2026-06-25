@@ -334,7 +334,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
           : recurring ? (isFinanz?"neue Finanzierung":"neue Serie")
           : "neue Vormerkung",
           "Betrag & Typ",1,goBack)}
-        <div style={{flex:1,padding:S.padL,paddingBottom:120,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+        <div style={{flex:1,padding:S.padL,paddingBottom:170,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
 
           {/* Ausgabe / Einnahme / Umbuchung */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:S.gap,marginBottom:S.gap}}>
@@ -573,7 +573,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
         };
         return (<>
           {header(title, subtitle, 2, back)}
-          <div style={{flex:1,padding:S.padL,paddingBottom:120,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+          <div style={{flex:1,padding:S.padL,paddingBottom:170,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
             <MobileCatStep
               key={isTgt ? "tgt" : "src"}
               csvType={sideCsv}
@@ -589,7 +589,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
       {/* ── Schritt 3: Details ── */}
       {step===3&&<>
         {header("details","Beschreibung & Notiz",3,()=>setStep(2))}
-        <div style={{flex:1,padding:S.padL,paddingBottom:120,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+        <div style={{flex:1,padding:S.padL,paddingBottom:170,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
 
           {/* Beschreibung */}
           <textarea value={desc} onChange={e=>setDesc(e.target.value)}
@@ -646,7 +646,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
       {/* ── Schritt 4: Bestätigung ── */}
       {step===4&&<>
         {header("bestätigen","Alles korrekt?",4,()=>setStep(3))}
-        <div style={{flex:1,padding:S.padL,paddingBottom:120,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+        <div style={{flex:1,padding:S.padL,paddingBottom:170,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
           <SchieflageVorwarnung draftTxs={draftTxs}
             kind={isTransfer?"umbuchung":(recurring?(isFinanz?"finanzierung":"serie"):"vormerkung")} style={{marginBottom:S.gap}}/>
           {[

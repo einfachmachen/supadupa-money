@@ -2,6 +2,24 @@
 
 Kurze, umsetzbare Liste offener Punkte. Format: `- [ ] Titel — Kontext/Akzeptanz.`
 
+## Auswertungen / Features
+
+- [ ] **Tank-Erfassung & Verbrauchs-/Preisauswertung.** Bei Buchungen oder
+  Vormerkungen, die als „Tanken" erkannt werden (Kategorie/Empfänger), optionale
+  Zusatzfelder erfassen:
+  - **€/Liter** (Literpreis),
+  - **Tank-Menge** (Liter),
+  - **km-Stand** (Kilometerstand beim Tanken).
+  Daraus später ableiten:
+  - **Verbrauch** (l/100 km) aus Differenz der km-Stände zweier Tankvorgänge und
+    getankter Menge,
+  - **Preisentwicklung** (€/Liter über Zeit),
+  - Auswertung nach verschiedenen Kriterien (Zeitraum, Konto/Fahrzeug, Tankstelle
+    falls aus Empfänger ableitbar, Strecke).
+  Offene Designfragen: Wo werden die Zusatzfelder gespeichert (Tx-Felder wie
+  `_fuelLiters`/`_fuelPricePerL`/`_odometer`)? Erfassung im Vormerken-/Edit-Dialog
+  nur einblenden, wenn Kategorie = Tanken. Mehrere Fahrzeuge?
+
 ## Liquidität & Warnungen
 
 - [ ] **Puffer-Warnung für beliebige Konten (nicht nur Giro).**
