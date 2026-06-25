@@ -972,7 +972,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
                 </div>
                 <div style={{flex:1}}>
                   <div style={{color:T.txt2,fontSize:10,marginBottom:3}}>
-                    {typ==="einmalig"?"Buchung am":"Startdatum"}
+                    {typ==="einmalig"?"Banktag":"Startdatum"}
                   </div>
                   <input type="date" value={startDate} onChange={e=>{setStartDate(e.target.value);setStartDateManual(true);}}
                     style={{...INP,marginBottom:0,width:"100%",boxSizing:"border-box",
