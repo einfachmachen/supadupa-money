@@ -2,6 +2,33 @@
 
 Kurze, umsetzbare Liste offener Punkte. Format: `- [ ] Titel — Kontext/Akzeptanz.`
 
+## Mobile-UI vervollständigen (Voraussetzung zum Ausblenden der Desktop-Modals)
+
+Ziel: Desktop-Modals (AddTxModal, EditPopup, BudgetEditorModal …) aus der
+Oberfläche ausblenden — NICHT löschen, für große Geräte/späteren dynamischen
+Umschalter behalten. Vorher müssen die Mobile-Dialoge funktional gleichziehen.
+Heute öffnet JEDER Bearbeiten-Tipp das Desktop-`EditPopup` (App.jsx:2609,
+`openEdit → setEditTx → <EditPopup/>`), es gibt KEINEN Mobile-Edit.
+
+- [ ] **Mobile-Bearbeiten-Dialog** (größte Lücke). `MobileVormerkenModal` um
+  einen Edit-Modus erweitern (`initialTx`-Prop) ODER eigener MobileEditModal:
+  bestehende Buchung/Vormerkung bearbeiten (Betrag/Datum/Kategorie/Notiz/
+  Verursacherdatum/pending/Topf), **löschen**, Umbuchung & Finanzierung
+  bearbeiten.
+- [ ] **Serien-Scope auf Mobile** (nur diese / ab hier / alle) — Dialog wie
+  Desktop `saveEdit(scope)` (App.jsx:2041+).
+- [ ] **Splits auf Mobile** (mehrere Kategorien je Buchung) — beim Neu-Anlegen
+  UND beim Bearbeiten. Mobile erzeugt aktuell immer genau 1 Split.
+- [ ] **Budget-Scope auf Mobile** (ab Monat / alle) verifizieren und ggf.
+  nachrüsten (Desktop: `BudgetEditorModal`).
+- [ ] **Konto bearbeiten/löschen inline auf Mobile** (statt Link in den
+  Struktur-Screen).
+- [ ] **Dynamischer Umschalter Desktop↔Mobile-Dialoge** je Viewport/Einstellung,
+  sobald die Mobile-Dialoge alles abdecken.
+- [ ] **Landmine entschärfen:** `MobileBudgetModal` (App.jsx:3169) ist gerendert,
+  aber nicht importiert/definiert; `setShowMobileBudget(true)` wird nie
+  aufgerufen → toten Verweis + State entfernen oder echtes Modal bauen.
+
 ## Auswertungen / Features
 
 - [ ] **Tank-Erfassung & Verbrauchs-/Preisauswertung.** Bei Buchungen oder
