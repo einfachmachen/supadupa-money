@@ -472,6 +472,9 @@ function TransactionsScreen() {
                           </div>
                           <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap",marginTop:1}}>
                             <span style={{color:T.txt2,fontSize:10}}>{tx.date}</span>
+                            {tx.pending&&<span style={{fontSize:9,background:"rgba(245,166,35,0.18)",
+                              color:T.gold,borderRadius:4,padding:"0px 5px",fontWeight:700,
+                              border:`1px solid ${T.gold}44`,flexShrink:0}}>VM</span>}
                             {acc&&<span style={{background:acc.color+"22",color:acc.color,borderRadius:4,
                               padding:"0px 5px",fontSize:9,fontWeight:700,display:"inline-flex",alignItems:"center",gap:2}}>
                               {Li(acc.icon,9,acc.color)}{acc.name}{acc.delayDays>0&&<span style={{color:T.gold,fontSize:"0.8em",fontWeight:700,marginLeft:2}}>+{acc.delayDays}d</span>}
