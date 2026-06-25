@@ -44,7 +44,10 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
   const [recurring,   setRecurring]   = useState(initialRecurring || initialFinanz);
   const [isFinanz,    setIsFinanz]    = useState(initialFinanz);
   const [interval_,   setInterval_]   = useState(1);
-  const [lastOfMon,   setLastOfMon]   = useState(false);
+  // Tag-im-Monat-Schnellwahl für Serien: null | "1" | "15" | "last".
+  // "last" → echtes Monatsende (isoAddMonths klemmt pro Monat); "1"/"15" setzen
+  // nur den Tag im Startdatum. lastOfMon (= "last") steuert die alte _lastOfMonth-Logik.
+  const [dayMode,     setDayMode]     = useState(null);
   const [count,       setCount]       = useState("");
   const [endDate,     setEndDate]     = useState("");
   const [customFL,    setCustomFL]    = useState(false);
@@ -111,6 +114,35 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
       <span style={{color:on?T.txt:T.txt2,fontSize:S.fs}}>{label}</span>
     </div>
   );
+
+  const lastOfMon = dayMode === "last";
+
+  // Tag-Schnellwahl: setzt den Tag im Startdatum. Erneut auf denselben tippen →
+  // aus → Datum springt aufs heutige Tagesdatum zurück. Es ist immer höchstens
+  // einer aktiv (radio-artig, aber abwählbar).
+  const setDay = (mode) => {
+    const next = dayMode === mode ? null : mode;
+    setDayMode(next);
+    setDateTouched(true);
+    if(next === null) { setDate(today); return; }
+    const base = date || today;
+    const [y,m] = base.split("-").map(Number);
+    const day = next==="1" ? 1 : next==="15" ? 15 : new Date(y, m, 0).getDate();
+    setDate(`${y}-${pad(m)}-${pad(day)}`);
+  };
+  const dayChip = (mode, label) => {
+    const on = dayMode === mode;
+    return (
+      <button onClick={()=>setDay(mode)}
+        style={{padding:"6px 10px",borderRadius:S.radius/1.6,cursor:"pointer",
+          fontFamily:"inherit",fontSize:S.fs-11,fontWeight:700,whiteSpace:"nowrap",
+          border:`2px solid ${on?T.blue:T.bd}`,
+          background:on?T.blue:"rgba(255,255,255,0.04)",
+          color:on?"#fff":T.txt2}}>
+        {label}
+      </button>
+    );
+  };
 
   const header = (title, sub, stepNum, onBack) => (
     <MobileHeader title={title} onBack={onBack} onClose={onClose}
@@ -437,21 +469,17 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:S.gap,marginBottom:6,minHeight:30}}>
             <span style={{color:T.txt2,fontSize:S.fs-4,fontWeight:600}}>{recurring?"Startdatum":"Banktag"}</span>
             {recurring && (
-              <div onClick={()=>{
-                const n=!lastOfMon; setLastOfMon(n);
-                if(n&&date){ const[y,m]=date.split("-").map(Number);
-                  const ld=new Date(y,m,0).getDate();
-                  setDate(`${y}-${pad(m)}-${pad(ld)}`); setDateTouched(true); }
-              }} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",flexShrink:0}}>
-                <span style={{color:lastOfMon?T.txt:T.txt2,fontSize:S.fs-6,fontWeight:600}}>Monatsletzter</span>
-                {switchPill(lastOfMon)}
+              <div style={{display:"flex",gap:6,flexShrink:0}}>
+                {dayChip("1","1.")}
+                {dayChip("15","15.")}
+                {dayChip("last","Letzter")}
               </div>
             )}
           </div>
           <div style={{display:"flex",gap:S.gap/2,marginBottom:S.gap}}>
-            <input type="date" value={date} onChange={e=>{setDate(e.target.value);setDateTouched(true);}}
+            <input type="date" value={date} onChange={e=>{setDate(e.target.value);setDateTouched(true);setDayMode(null);}}
               style={{...inpBase, flex:1, border:`2px solid ${date?T.blue:T.bd}`, colorScheme:"dark"}}/>
-            <button onClick={()=>{ setDate(date?"":today); setDateTouched(true); }}
+            <button onClick={()=>{ setDate(date?"":today); setDateTouched(true); setDayMode(null); }}
               style={{flexShrink:0,padding:`0 ${S.padL}px`,borderRadius:S.radius,
                 border:`2px solid ${T.bd}`,background:"rgba(255,255,255,0.06)",
                 color:T.blue,fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
