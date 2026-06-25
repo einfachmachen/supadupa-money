@@ -74,9 +74,15 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
     textAlign:"left",
   };
   const btnCenter = {...btnBase, justifyContent:"center"};
-  const recInp = {width:"100%",boxSizing:"border-box",padding:`${S.padL}px`,borderRadius:S.radius,
-    background:"rgba(255,255,255,0.06)",color:T.txt,fontSize:S.fs,fontFamily:"inherit",
-    outline:"none",border:`2px solid ${T.bd}`};
+  // Einheitliche Feldhöhe für ALLE Eingabefelder (Text, Zahl, Datum). Auf iOS
+  // rendert <input type="date"> sonst höher als type="text", egal welches Padding
+  // — daher feste Höhe + appearance:none statt padding-basierter Höhe.
+  const INPUT_H = S.fs + S.padL*2; // 54px
+  const inpBase = {boxSizing:"border-box", height:INPUT_H, padding:`0 ${S.padL}px`,
+    borderRadius:S.radius, background:"rgba(255,255,255,0.06)", color:T.txt,
+    fontSize:S.fs, fontFamily:"inherit", outline:"none",
+    WebkitAppearance:"none", appearance:"none"};
+  const recInp = {...inpBase, width:"100%", border:`2px solid ${T.bd}`};
 
   // Einzeilig + feste Zeilenhöhe: so beginnen nebeneinanderliegende Eingabefelder
   // immer auf gleicher Höhe (kein Versatz durch unterschiedlich lange Labels).
@@ -404,13 +410,10 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
               type="text" inputMode="decimal" value={amount}
               onChange={e=>setAmount(e.target.value.replace(/[^0-9,.]/g,""))}
               placeholder={isFinanz?"Rate €":"Betrag €"}
-              style={{width:"100%",boxSizing:"border-box",
-                padding:`${S.padL}px`,paddingRight:`${S.padL+S.fs}px`,
-                borderRadius:S.radius,
+              style={{...inpBase, width:"100%",
+                paddingRight:`${S.padL+S.fs}px`,
                 border:`2px solid ${amount?T.blue:T.bd}`,
-                background:"rgba(255,255,255,0.06)",color:T.txt,
-                fontSize:S.fs,fontWeight:700,fontFamily:NUM_FONT,
-                textAlign:"right",outline:"none"}}
+                fontWeight:700, fontFamily:NUM_FONT, textAlign:"right"}}
             />
             {amount&&<span style={{position:"absolute",right:S.padL,top:"50%",
               transform:"translateY(-50%)",color:T.txt2,fontSize:S.fs,
@@ -421,10 +424,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
           <div style={{color:T.txt2,fontSize:S.fs-4,fontWeight:600,marginBottom:6}}>verursacht (optional)</div>
           <div style={{display:"flex",gap:S.gap/2,marginBottom:S.gap}}>
             <input type="date" value={valueDate} onChange={e=>setValueDate(e.target.value)}
-              style={{flex:1,boxSizing:"border-box",padding:`${S.padL}px`,
-                borderRadius:S.radius,border:`2px solid ${valueDate?T.blue:T.bd}`,
-                background:"rgba(255,255,255,0.06)",color:T.txt,
-                fontSize:S.fs,fontFamily:"inherit",outline:"none",colorScheme:"dark"}}/>
+              style={{...inpBase, flex:1, border:`2px solid ${valueDate?T.blue:T.bd}`, colorScheme:"dark"}}/>
             <button onClick={()=>setValueDate(valueDate?"":today)}
               style={{flexShrink:0,padding:`0 ${S.padL}px`,borderRadius:S.radius,
                 border:`2px solid ${T.bd}`,background:"rgba(255,255,255,0.06)",
@@ -450,10 +450,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
           </div>
           <div style={{display:"flex",gap:S.gap/2,marginBottom:S.gap}}>
             <input type="date" value={date} onChange={e=>{setDate(e.target.value);setDateTouched(true);}}
-              style={{flex:1,boxSizing:"border-box",padding:`${S.padL}px`,
-                borderRadius:S.radius,border:`2px solid ${date?T.blue:T.bd}`,
-                background:"rgba(255,255,255,0.06)",color:T.txt,
-                fontSize:S.fs,fontFamily:"inherit",outline:"none",colorScheme:"dark"}}/>
+              style={{...inpBase, flex:1, border:`2px solid ${date?T.blue:T.bd}`, colorScheme:"dark"}}/>
             <button onClick={()=>{ setDate(date?"":today); setDateTouched(true); }}
               style={{flexShrink:0,padding:`0 ${S.padL}px`,borderRadius:S.radius,
                 border:`2px solid ${T.bd}`,background:"rgba(255,255,255,0.06)",
