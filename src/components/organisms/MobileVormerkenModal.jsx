@@ -78,8 +78,20 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
     background:"rgba(255,255,255,0.06)",color:T.txt,fontSize:S.fs,fontFamily:"inherit",
     outline:"none",border:`2px solid ${T.bd}`};
 
+  // Einzeilig + feste Zeilenhöhe: so beginnen nebeneinanderliegende Eingabefelder
+  // immer auf gleicher Höhe (kein Versatz durch unterschiedlich lange Labels).
   const fieldLabel = (txt) => (
-    <div style={{color:T.txt2,fontSize:S.fs-3,marginBottom:6,fontWeight:600}}>{txt}</div>
+    <div style={{color:T.txt2,fontSize:S.fs-3,marginBottom:6,fontWeight:600,
+      whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",lineHeight:1.2}}>{txt}</div>
+  );
+
+  // Pille (nur der Schalter selbst) — überall identisch, damit Schalter gleich aussehen
+  const switchPill = (on) => (
+    <div style={{width:44,height:26,borderRadius:13,position:"relative",flexShrink:0,
+      background:on?T.blue:"rgba(255,255,255,0.15)",transition:"background 0.2s"}}>
+      <div style={{position:"absolute",top:3,left:on?21:3,width:20,height:20,
+        borderRadius:"50%",background:"#fff",transition:"left 0.2s"}}/>
+    </div>
   );
 
   // Schiebeschalter-Zeile (wiederverwendbar)
@@ -89,11 +101,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
         borderRadius:S.radius,cursor:"pointer",marginBottom:S.gap,
         background:on?"rgba(74,159,212,0.12)":"rgba(255,255,255,0.04)",
         border:`2px solid ${on?T.blue:T.bd}`}}>
-      <div style={{width:44,height:26,borderRadius:13,position:"relative",flexShrink:0,
-        background:on?T.blue:"rgba(255,255,255,0.15)",transition:"background 0.2s"}}>
-        <div style={{position:"absolute",top:3,left:on?21:3,width:20,height:20,
-          borderRadius:"50%",background:"#fff",transition:"left 0.2s"}}/>
-      </div>
+      {switchPill(on)}
       <span style={{color:on?T.txt:T.txt2,fontSize:S.fs}}>{label}</span>
     </div>
   );
@@ -425,8 +433,21 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
             </button>
           </div>
 
-          {/* Banktag (einmalig) / Startdatum (wiederkehrend) */}
-          <div style={{color:T.txt2,fontSize:S.fs-4,fontWeight:600,marginBottom:6}}>{recurring?"Startdatum":"Banktag"}</div>
+          {/* Banktag (einmalig) / Startdatum (wiederkehrend) — bei Serie: Monatsletzter-Schalter daneben */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:S.gap,marginBottom:6,minHeight:30}}>
+            <span style={{color:T.txt2,fontSize:S.fs-4,fontWeight:600}}>{recurring?"Startdatum":"Banktag"}</span>
+            {recurring && (
+              <div onClick={()=>{
+                const n=!lastOfMon; setLastOfMon(n);
+                if(n&&date){ const[y,m]=date.split("-").map(Number);
+                  const ld=new Date(y,m,0).getDate();
+                  setDate(`${y}-${pad(m)}-${pad(ld)}`); setDateTouched(true); }
+              }} style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",flexShrink:0}}>
+                <span style={{color:lastOfMon?T.txt:T.txt2,fontSize:S.fs-6,fontWeight:600}}>Monatsletzter</span>
+                {switchPill(lastOfMon)}
+              </div>
+            )}
+          </div>
           <div style={{display:"flex",gap:S.gap/2,marginBottom:S.gap}}>
             <input type="date" value={date} onChange={e=>{setDate(e.target.value);setDateTouched(true);}}
               style={{flex:1,boxSizing:"border-box",padding:`${S.padL}px`,
@@ -462,18 +483,10 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
                 ))}
               </div>
 
-              {/* Immer letzter Tag des Monats */}
-              {toggleRow("Immer letzter Tag des Monats", lastOfMon, ()=>{
-                const n=!lastOfMon; setLastOfMon(n);
-                if(n&&date){ const[y,m]=date.split("-").map(Number);
-                  const ld=new Date(y,m,0).getDate();
-                  setDate(`${y}-${pad(m)}-${pad(ld)}`); setDateTouched(true); }
-              })}
-
               {/* Anzahl / Enddatum */}
               <div style={{display:"flex",gap:S.gap,marginBottom:S.gap}}>
                 <div style={{flex:1}}>
-                  {fieldLabel(isFinanz?"Raten":"Anzahl (leer=7J)")}
+                  {fieldLabel(isFinanz?"Raten":"Anzahl")}
                   <input type="text" inputMode="numeric" value={count}
                     onChange={e=>{setCount(e.target.value);if(e.target.value)setEndDate("");}}
                     placeholder={`${calcCount()}`} style={{...recInp}}/>
