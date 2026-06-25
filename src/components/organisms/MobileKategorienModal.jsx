@@ -9,6 +9,7 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
+import { suggestBudget } from "../../utils/budgetSuggest.js";
 
 // Kategorie-Priorität (steuert die Treiber-Reihenfolge im Money-Mood-Schieflage-Panel).
 const PRIO_OPTS = [
@@ -20,7 +21,7 @@ const PRIO_OPTS = [
 function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert}) {
   const goBack = onBack || onClose; // zurück eine Ebene hoch (Mehr-Menü)
   const { cats, setCats, groups, setGroups, budgets, setBudgets, txs, setTxs, accounts,
-    getBudgetForMonth, year, setYear, month, setMonth, selAcc, csvRules, setCsvRules, setMasterOverride } = useContext(AppCtx);
+    getBudgetForMonth, getActualSum, year, setYear, month, setMonth, selAcc, csvRules, setCsvRules, setMasterOverride } = useContext(AppCtx);
   const S = {fs:26, pad:10, padL:14, radius:16, gap:14};
   const MONTHS = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
 
@@ -107,6 +108,25 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
   const [budgetEdits, setBudgetEdits] = useState({});
   const [budgetScope, setBudgetScope] = useState({});
   const [budgetRhythm, setBudgetRhythm] = useState({}); // {subId: 1|3|6|12}
+
+  // Budget-Vorschlag je Unterkategorie: gewichteter Schnitt aus gebuchter
+  // Historie + Vormerkungen — dieselbe Util wie das Desktop-BudgetEditorModal.
+  // Nur lazy beim geöffneten Editor je Sub aufgerufen (sonst zu teuer).
+  const calcSuggestion = (subId) => {
+    const getActual = (y,m) => getActualSum?.(y,m,subId,"E") || 0;
+    const getPending = (y,m) => {
+      let s = 0;
+      (txs||[]).forEach(t=>{
+        if(!t.pending || t._budgetSubId || t._linkedTo) return;
+        const d = new Date(t.date);
+        if(d.getFullYear()!==y || d.getMonth()!==m) return;
+        (t.splits||[]).forEach(sp=>{ if(sp.subId===subId) s += Math.abs(pn(sp.amount)); });
+      });
+      return s;
+    };
+    const now = new Date();
+    return suggestBudget({ nowY: now.getFullYear(), nowM: now.getMonth(), getActual, getPending });
+  };
 
   const btnBase = {width:"100%",padding:`${S.padL}px`,borderRadius:S.radius,
     border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:S.fs,fontWeight:700,
@@ -604,6 +624,31 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                       <div style={{color:T.txt2,fontSize:S.fs-6,margin:`${S.gap/2}px 0 4px`}}>
                         Budget {MONTHS[month]} {year}
                       </div>
+                      {/* Realitätsnaher Vorschlag aus Ist-Historie + Vormerkungen */}
+                      {(()=>{
+                        const sug = calcSuggestion(sub.id);
+                        const sugAmt = Math.round(sug.amount);
+                        if(!(sug.hasData && sugAmt>0)) return null;
+                        return (
+                          <button onClick={()=>{
+                            setBudgetEdits(p=>({...p,[sub.id+"_G"]:String(sugAmt).replace(".",","),[sub.id+"_M"]:""}));
+                            setBudgetRhythm(p=>({...p,[sub.id]:1}));
+                          }}
+                            style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"8px 10px",
+                              marginBottom:6,borderRadius:10,border:`1px solid ${T.blue}55`,
+                              background:"rgba(74,159,212,0.10)",color:T.txt,cursor:"pointer",
+                              fontFamily:"inherit",textAlign:"left"}}>
+                            {Li("bar-chart-2",16,T.blue)}
+                            <span style={{flex:1,minWidth:0,lineHeight:1.3}}>
+                              <span style={{fontSize:S.fs-8}}>Vorschlag: <b style={{color:T.blue}}>{fmt(sugAmt)} €</b>/Monat</span>
+                              <span style={{display:"block",color:T.txt2,fontSize:S.fs-12,marginTop:1}}>
+                                Schnitt aus {sug.months} Mon. ({sug.actualMonths} gebucht · {sug.pendingMonths} geplant)
+                              </span>
+                            </span>
+                            <span style={{color:T.blue,fontSize:S.fs-10,fontWeight:800,flexShrink:0}}>übernehmen</span>
+                          </button>
+                        );
+                      })()}
                       {/* Mitte / Gesamt */}
                       <div style={{display:"flex",gap:S.gap,marginBottom:4}}>
                         <div style={{flex:1}}>
