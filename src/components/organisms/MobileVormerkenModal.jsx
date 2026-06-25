@@ -11,6 +11,7 @@ import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { nextBankWorkday } from "../../utils/date.js";
 import { Li } from "../../utils/icons.jsx";
+import { SchieflageVorwarnung } from "../atoms/SchieflageVorwarnung.jsx";
 
 function MobileVormerkenModal({onClose, onBack}) {
   const { cats, setCats, accounts, setAccounts, txs, setTxs, year, month, getCat, getSub, setMasterOverride } = useContext(AppCtx);
@@ -87,6 +88,17 @@ function MobileVormerkenModal({onClose, onBack}) {
     <MobileHeader title={title} onBack={onBack} onClose={onClose}
       subtitle={<><span style={{color:T.blue,fontWeight:700}}>{stepNum}v4</span><span>{sub}</span></>}/>
   );
+
+  // Entwurf der noch nicht gespeicherten Vormerkung — für die Live-Schieflage-
+  // Vorwarnung (Schritt 4). Umbuchungen bleiben außen vor (verknüpfte Gegenbuchung
+  // ist ein eigener Fall); für normale Vormerkungen genügt eine einfache pending-Tx.
+  const draftTxs = React.useMemo(()=>{
+    if(isTransfer) return [];
+    const a = pn((amount||"").replace(",","."));
+    if(!(a>0)) return [];
+    return [{ id:"draft-1", date, totalAmount:a, pending:true,
+      _csvType:csvType, accountId:accId, splits:[] }];
+  }, [isTransfer, amount, date, csvType, accId]);
 
   const doSave = () => {
     const amt = pn(amount.replace(",","."));
@@ -448,6 +460,7 @@ function MobileVormerkenModal({onClose, onBack}) {
       {step===4&&<>
         {header("bestätigen","Alles korrekt?",4,()=>setStep(3))}
         <div style={{flex:1,padding:S.padL,paddingBottom:120,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+          <SchieflageVorwarnung draftTxs={draftTxs} kind="vormerkung" style={{marginBottom:S.gap}}/>
           {[
             ["Typ",            isTransfer?"Umbuchung":(csvType==="expense"?"Ausgabe":"Einnahme")],
             [isTransfer?"Quelle":"Konto",  (accounts||[]).find(a=>a.id===accId)?.name||accId],
