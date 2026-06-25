@@ -42,7 +42,6 @@ function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
   const [desc,         setDesc]         = useState("");
   const [note,         setNote]         = useState("");
   const [valueDate,    setValueDate]    = useState("");
-  const [firstIsStart, setFirstIsStart] = useState(false);
   const [giltFuer,     setGiltFuer]     = useState("all");
   const [giltFuerDate, setGiltFuerDate] = useState(today);
   const [saved,        setSaved]        = useState(false);
@@ -74,13 +73,13 @@ function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
     const firstAmt = customFL&&firstAmount ? pn(firstAmount.replace(",",".")) : null;
     const lastAmt  = customFL&&lastAmount  ? pn(lastAmount.replace(",","."))  : null;
     return Array.from({length:n},(_,i)=>{
-      const offset = (!firstIsStart || i>0) ? i*interval_ : 0;
+      const offset = i*interval_;
       const date = isoAddMonths(startDate, offset, lastOfMon);
       const txAmt = (i===0&&firstAmt!=null)?firstAmt:(i===n-1&&lastAmt!=null)?lastAmt:a;
       return { id:`draft-${i}`, date, totalAmount:txAmt, pending:true,
         _csvType:csvType, accountId:accId, splits:[] };
     });
-  }, [amount, totalCount, customFL, firstAmount, lastAmount, firstIsStart, interval_, startDate, lastOfMon, csvType, accId]);
+  }, [amount, totalCount, customFL, firstAmount, lastAmount, interval_, startDate, lastOfMon, csvType, accId]);
 
   const btnBase = {width:"100%",padding:`${S.padL}px`,borderRadius:S.radius,
     border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:S.fs,fontWeight:700,
@@ -114,7 +113,7 @@ function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
     const firstAmt = customFL&&firstAmount ? pn(firstAmount.replace(",",".")) : null;
     const lastAmt  = customFL&&lastAmount  ? pn(lastAmount.replace(",","."))  : null;
     const newTxs = Array.from({length:n},(_,i)=>{
-      const offset = (!firstIsStart || i>0) ? i*interval_ : 0;
+      const offset = i*interval_;
       const date = isoAddMonths(startDate, offset, lastOfMon);
       const txAmt = (i===0&&firstAmt!=null)?firstAmt:(i===n-1&&lastAmt!=null)?lastAmt:a;
       return {
@@ -320,22 +319,6 @@ function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
           <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}
             style={{...inp({colorScheme:"dark"}),marginBottom:S.gap}}/>
 
-          {/* Erste Buchung = Startdatum Toggle */}
-          <div onClick={()=>setFirstIsStart(v=>!v)}
-            style={{display:"flex",alignItems:"center",gap:12,padding:`${S.pad}px ${S.padL}px`,
-              borderRadius:S.radius,cursor:"pointer",marginBottom:S.gap,
-              background:firstIsStart?"rgba(74,159,212,0.12)":"rgba(255,255,255,0.04)",
-              border:`2px solid ${firstIsStart?T.blue:T.bd}`}}>
-            <div style={{width:44,height:26,borderRadius:13,position:"relative",flexShrink:0,
-              background:firstIsStart?T.blue:"rgba(255,255,255,0.15)",transition:"background 0.2s"}}>
-              <div style={{position:"absolute",top:3,left:firstIsStart?21:3,width:20,height:20,
-                borderRadius:"50%",background:"#fff",transition:"left 0.2s"}}/>
-            </div>
-            <span style={{color:firstIsStart?T.txt:T.txt2,fontSize:S.fs}}>
-              erste Buchung = Startdatum
-            </span>
-          </div>
-
           {/* Anzahl / Enddatum */}
           <div style={{display:"flex",gap:S.gap,marginBottom:S.gap/2}}>
             <div style={{flex:1}}>
@@ -504,7 +487,6 @@ function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
             ...(isFinanz?[["Gesamtbetrag", gesamtbetrag||"—"]]:[]),
             ["Startdatum", startDate.split("-").reverse().join(".")],
             ...(valueDate?[["verursacht", valueDate.split("-").reverse().join(".")]]:[]),
-            ...(firstIsStart?[["erste Buchung","= Startdatum"]]:[]),
             ...(giltFuer!=="all"?[["gilt für", giltFuer==="from"?"ab "+giltFuerDate.split("-").reverse().join("."):"nur "+giltFuerDate.split("-").reverse().join(".")]]:[]),
             ["Kategorie",  catId?(getCat(catId)?.name||"?")+(subId?" / "+(getSub(catId,subId)?.name||""):""):"—"],
             ["Beschreibung",desc],
