@@ -3046,17 +3046,25 @@ Abbrechen = ${remoteName}-Stand laden`
                   touchAction:"none",userSelect:"none",cursor:"pointer",
                   WebkitTapHighlightColor:"transparent",padding:0,
                   fontFamily:"inherit",lineHeight:1}}>
-                {_dayStr && !onMoodScreen && (
-                  <div style={{fontSize:24,fontWeight:800,color:fg,lineHeight:1,pointerEvents:"none"}}>
-                    {_dayStr}
+                {plusArretiert && !moodDrillOpen ? (
+                  <div style={{pointerEvents:"none",textAlign:"center"}}>
+                    <div style={{fontSize:16,fontWeight:800,color:fg,lineHeight:1,letterSpacing:3}}>‹ ›</div>
+                    <div style={{fontSize:12,fontWeight:800,color:fg,lineHeight:1.1,marginTop:2,whiteSpace:"nowrap"}}>{MOONS[activeMoon].label}</div>
+                    <div style={{fontSize:7.5,fontWeight:700,color:fg,opacity:0.8,letterSpacing:0.3,marginTop:2,whiteSpace:"nowrap"}}>tippen zum Öffnen</div>
                   </div>
-                )}
-                <div style={{fontSize:onMoodScreen?20:13,fontWeight:800,color:fg,letterSpacing:-0.3,whiteSpace:"nowrap",pointerEvents:"none"}}>
-                  {onMoodScreen ? year : `${monthNames[month]} ${year}`}
-                </div>
-                <div style={{fontSize:8,fontWeight:700,color:fg,opacity:0.75,letterSpacing:0.6,marginTop:2,pointerEvents:"none"}}>
-                  WISCHEN
-                </div>
+                ) : (<>
+                  {_dayStr && !onMoodScreen && (
+                    <div style={{fontSize:24,fontWeight:800,color:fg,lineHeight:1,pointerEvents:"none"}}>
+                      {_dayStr}
+                    </div>
+                  )}
+                  <div style={{fontSize:onMoodScreen?20:13,fontWeight:800,color:fg,letterSpacing:-0.3,whiteSpace:"nowrap",pointerEvents:"none"}}>
+                    {onMoodScreen ? year : `${monthNames[month]} ${year}`}
+                  </div>
+                  <div style={{fontSize:8,fontWeight:700,color:fg,opacity:0.75,letterSpacing:0.6,marginTop:2,pointerEvents:"none"}}>
+                    WISCHEN
+                  </div>
+                </>)}
               </button>
             </div>
           );
@@ -3187,23 +3195,25 @@ Abbrechen = ${remoteName}-Stand laden`
       {plusArretiert && !moodDrillOpen && !showMobilePicker && !showMonthPickerModal && !showCloudSave && (
         <div style={{position:"fixed",left:0,right:0,bottom:0,height:0,zIndex:600,pointerEvents:"none"}}>
           {MOONS.map((mn,i)=>{
-            const R=98, CY=124, SIZE=60;
-            const ang=[144,108,72,36][i]*Math.PI/180;
+            // Größerer Radius + höhere Basis → die Monde sitzen klar abgesetzt vom +
+            // (kein Überlappen). Akzentfarbe als Hintergrund (aktiver Mond kräftiger).
+            const R=120, CY=150, SIZE=58;
+            const ang=[150,108,72,30][i]*Math.PI/180;
             const dx=Math.cos(ang)*R, dy=Math.sin(ang)*R;
             const active=i===activeMoon;
             return (
               <button key={mn.id} onClick={()=>openMoon(mn.id)}
                 style={{position:"absolute",left:"50%",bottom:(CY+dy)+"px",
-                  transform:`translate(calc(-50% + ${dx}px), 50%) scale(${active?1.12:1})`,
+                  transform:`translate(calc(-50% + ${dx}px), 50%) scale(${active?1.14:1})`,
                   width:SIZE,height:SIZE,borderRadius:"50%",
-                  border:`2px solid ${active?mn.color:T.bd}`,
-                  background:active?mn.color+"26":(T.surf||"rgba(22,24,34,0.97)"),
-                  boxShadow:active?`0 0 16px ${mn.color}aa`:"0 6px 16px rgba(0,0,0,0.55)",
+                  border:`2px solid ${mn.color}`,
+                  background:mn.color+(active?"66":"33"),
+                  boxShadow:active?`0 0 18px ${mn.color}cc`:"0 6px 16px rgba(0,0,0,0.55)",
                   cursor:"pointer",pointerEvents:"auto",fontFamily:"inherit",
                   display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
-                  transition:"transform 0.18s, box-shadow 0.18s, border-color 0.18s",padding:0}}>
-                {Li(mn.icon,21,active?mn.color:T.txt)}
-                <span style={{fontSize:9,fontWeight:700,lineHeight:1,color:active?mn.color:T.txt2,
+                  transition:"transform 0.18s, box-shadow 0.18s, background 0.18s",padding:0}}>
+                {Li(mn.icon,21,T.txt)}
+                <span style={{fontSize:9,fontWeight:700,lineHeight:1,color:T.txt,
                   whiteSpace:"nowrap"}}>{mn.label}</span>
               </button>
             );
