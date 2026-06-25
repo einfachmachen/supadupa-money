@@ -144,24 +144,39 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
     const amt = amtVal();
     if(amt<=0) return;
 
-    // ── Umbuchung: Abgang + verknüpfter Zugang ──
+    // ── Umbuchung: Abgang + verknüpfter Zugang (einmalig oder als Serie) ──
     if(isTransfer) {
       if(!tgtAccId || tgtAccId===accId) return;
-      const abgang = {
-        id:"pend-"+uid(), date, desc:desc||"Umbuchung",
-        totalAmount:-amt, pending:true, _csvType:"expense",
-        accountId:accId, repeatMonths:1,
-        note: note||undefined, valueDate: valueDate||undefined,
-        splits: catId ? [{id:uid(),catId,subId,amount:-amt}] : [],
-      };
-      const zugang = {
-        id:"pend-"+uid(), date, desc:desc||"Umbuchung",
-        totalAmount:amt, pending:true, _csvType:"income",
-        accountId:tgtAccId, _linkedTo:abgang.id, repeatMonths:1,
-        note: note||undefined, valueDate: valueDate||undefined,
-        splits: tgtCatId ? [{id:uid(),catId:tgtCatId,subId:tgtSubId,amount:amt}] : [],
-      };
-      setTxs(p=>[...p, abgang, zugang]);
+      if(recurring && !date) return;
+      const n = recurring ? totalCount : 1;
+      const seriesId = recurring ? uid() : null;
+      const newTxs = [];
+      for(let i=0;i<n;i++){
+        const d = recurring ? isoAddMonths(date, i*interval_, lastOfMon) : date;
+        const vd = (!recurring || i===0) && valueDate ? valueDate : undefined;
+        const seriesMeta = recurring ? {
+          _seriesId:seriesId, _seriesIdx:i+1, _seriesTotal:n,
+          ...(lastOfMon?{_lastOfMonth:true}:{}),
+        } : {};
+        const abgang = {
+          id:"pend-"+uid(), date:d, desc:desc||"Umbuchung",
+          totalAmount:-amt, pending:true, _csvType:"expense",
+          accountId:accId, repeatMonths:recurring?interval_:1,
+          note: note||undefined, valueDate: vd,
+          splits: catId ? [{id:uid(),catId,subId,amount:-amt}] : [],
+          ...seriesMeta,
+        };
+        const zugang = {
+          id:"pend-"+uid(), date:d, desc:desc||"Umbuchung",
+          totalAmount:amt, pending:true, _csvType:"income",
+          accountId:tgtAccId, _linkedTo:abgang.id, repeatMonths:recurring?interval_:1,
+          note: note||undefined, valueDate: vd,
+          splits: tgtCatId ? [{id:uid(),catId:tgtCatId,subId:tgtSubId,amount:amt}] : [],
+          ...seriesMeta,
+        };
+        newTxs.push(abgang, zugang);
+      }
+      setTxs(p=>[...p, ...newTxs]);
       setSaved(true); setTimeout(()=>onClose(), 1200);
       return;
     }
@@ -242,7 +257,8 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
       };
     } else if(step === 4) {
       cfg = {
-        label: isTransfer ? "✓ Umbuchung speichern"
+        label: isTransfer
+          ? (recurring ? `✓ ${totalCount}× Umbuchung anlegen` : "✓ Umbuchung speichern")
           : recurring ? `✓ ${totalCount}× ${isFinanz?"Finanzierung":"wiederkehrend"} anlegen`
           : "✓ Vormerkung speichern",
         onConfirm: doSave,
@@ -281,7 +297,11 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
 
       {/* ── Schritt 1: Betrag & Typ ── */}
       {step===1&&<>
-        {header(recurring?(isFinanz?"neue Finanzierung":"neue Serie"):"neue Vormerkung","Betrag & Typ",1,goBack)}
+        {header(
+          isTransfer ? (recurring?"wiederkehrende Umbuchung":"neue Umbuchung")
+          : recurring ? (isFinanz?"neue Finanzierung":"neue Serie")
+          : "neue Vormerkung",
+          "Betrag & Typ",1,goBack)}
         <div style={{flex:1,padding:S.padL,paddingBottom:120,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
 
           {/* Ausgabe / Einnahme / Umbuchung */}
@@ -297,7 +317,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
                   if(trans) {
                     setIsTransfer(true);
                     setCsvType("expense");
-                    setRecurring(false); setIsFinanz(false); // Umbuchung ist immer einmalig
+                    setIsFinanz(false); setCustomFL(false); // Finanzierung gibt's bei Umbuchung nicht; wiederkehrend bleibt erlaubt
                     if(!dateTouched) { setDate(today); setValueDate(today); }
                     if(!tgtAccId || tgtAccId===accId) {
                       const other = (accounts||[]).find(a=>a.id!==accId);
@@ -403,8 +423,8 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
             </button>
           </div>
 
-          {/* ── Erweiterung per Schiebeschalter (nicht bei Umbuchung) ── */}
-          {!isTransfer && (<>
+          {/* ── Erweiterung per Schiebeschalter ── */}
+          {(<>
             {toggleRow("wiederkehrend", recurring, ()=>{
               const n=!recurring; setRecurring(n); if(!n){ setIsFinanz(false); setCustomFL(false); }
             })}
@@ -448,29 +468,31 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
                 </div>
               </div>
 
-              {/* Finanzierung */}
-              {toggleRow("Finanzierung", isFinanz, ()=>{
-                const n=!isFinanz; setIsFinanz(n); if(!n){ setCustomFL(false); setFirstAmount(""); setLastAmount(""); }
-              })}
+              {/* Finanzierung (nur bei Ausgabe/Einnahme, nicht bei Umbuchung) */}
+              {!isTransfer && (<>
+                {toggleRow("Finanzierung", isFinanz, ()=>{
+                  const n=!isFinanz; setIsFinanz(n); if(!n){ setCustomFL(false); setFirstAmount(""); setLastAmount(""); }
+                })}
 
-              {isFinanz && (<>
-                {toggleRow("1. Rate / Schlussrate", customFL, ()=>{setCustomFL(v=>!v);setFirstAmount("");setLastAmount("");})}
-                {customFL && (
-                  <div style={{display:"flex",gap:S.gap,marginBottom:S.gap}}>
-                    <div style={{flex:1}}>
-                      {fieldLabel("1. Rate")}
-                      <input type="text" inputMode="decimal" value={firstAmount}
-                        onChange={e=>setFirstAmount(e.target.value.replace(/[^0-9,\.]/g,""))}
-                        placeholder={amount||"0,00"} style={{...recInp,border:`2px solid ${T.blue}66`}}/>
+                {isFinanz && (<>
+                  {toggleRow("1. Rate / Schlussrate", customFL, ()=>{setCustomFL(v=>!v);setFirstAmount("");setLastAmount("");})}
+                  {customFL && (
+                    <div style={{display:"flex",gap:S.gap,marginBottom:S.gap}}>
+                      <div style={{flex:1}}>
+                        {fieldLabel("1. Rate")}
+                        <input type="text" inputMode="decimal" value={firstAmount}
+                          onChange={e=>setFirstAmount(e.target.value.replace(/[^0-9,\.]/g,""))}
+                          placeholder={amount||"0,00"} style={{...recInp,border:`2px solid ${T.blue}66`}}/>
+                      </div>
+                      <div style={{flex:1}}>
+                        {fieldLabel("Schlussrate")}
+                        <input type="text" inputMode="decimal" value={lastAmount}
+                          onChange={e=>setLastAmount(e.target.value.replace(/[^0-9,\.]/g,""))}
+                          placeholder={amount||"0,00"} style={{...recInp,border:`2px solid ${T.blue}66`}}/>
+                      </div>
                     </div>
-                    <div style={{flex:1}}>
-                      {fieldLabel("Schlussrate")}
-                      <input type="text" inputMode="decimal" value={lastAmount}
-                        onChange={e=>setLastAmount(e.target.value.replace(/[^0-9,\.]/g,""))}
-                        placeholder={amount||"0,00"} style={{...recInp,border:`2px solid ${T.blue}66`}}/>
-                    </div>
-                  </div>
-                )}
+                  )}
+                </>)}
               </>)}
 
               {/* Vorschau */}
