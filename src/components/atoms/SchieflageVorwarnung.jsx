@@ -43,19 +43,21 @@ export function SchieflageVorwarnung({ draftTxs, kind = "vormerkung", style }) {
     : kind === "serie" ? "Diese wiederkehrende Vormerkung"
     : "Diese Vormerkung";
   const saldoStr = `${res.saldoVal < 0 ? "−" : ""}${fmt(Math.abs(res.saldoVal))} €`;
+  const saldoColor = res.saldoVal < 0 ? T.neg : T.gold; // negativer Kontostand rot, sonst gold
 
   return (
     <div style={{ display: "flex", alignItems: "flex-start", gap: 10,
       background: T.neg + "1f", border: `1.5px solid ${T.neg}`, borderRadius: 12,
-      padding: "11px 13px", color: T.txt, lineHeight: 1.4, ...style }}>
+      padding: "11px 13px", lineHeight: 1.4, ...style }}>
       {Li("alert-triangle", 18, T.neg)}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 800, color: T.neg, fontSize: 14, marginBottom: 2 }}>
           {res.isNew ? "Achtung: führt zu einer Schieflage" : "Achtung: verschärft eine Schieflage"}
         </div>
-        <div style={{ fontSize: 13 }}>
-          {subj} drückt das Giro-Konto ab <b>{label}</b> auf <b>{saldoStr}</b> — {fmt(res.deficit)} € unter
-          deinen Puffer ({fmt(res.buffer)} €).
+        <div style={{ fontSize: 13, color: T.gold }}>
+          {subj} drückt das Giro-Konto ab <b>{label}</b> auf{" "}
+          <b style={{ color: saldoColor }}>{saldoStr}</b> —{" "}
+          <b style={{ color: T.gold }}>{fmt(res.deficit)} €</b> unter deinen Puffer ({fmt(res.buffer)} €).
           {res.count > 1 ? ` Betroffen: ${res.count} Monate.` : ""}
         </div>
         <div style={{ fontSize: 11.5, color: T.txt2, marginTop: 3 }}>
