@@ -69,7 +69,7 @@ function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
   // (Schritt 4). Spiegelt die Tx-Erzeugung in doSave, ohne Seiteneffekte.
   const draftTxs = React.useMemo(()=>{
     const a = pn((amount||"").replace(",","."));
-    if(!(a>0)) return [];
+    if(!(a>0) || !startDate) return [];
     const n = totalCount;
     const firstAmt = customFL&&firstAmount ? pn(firstAmount.replace(",",".")) : null;
     const lastAmt  = customFL&&lastAmount  ? pn(lastAmount.replace(",","."))  : null;
@@ -398,6 +398,10 @@ function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
             {gesamtbetrag&&<>{" · "}Gesamt: {gesamtbetrag}</>}
             {startDate&&<>{" · "}ab {startDate.split("-").reverse().join(".")}</>}
           </div>
+
+          {/* Frühe Live-Vorwarnung: sobald der Betrag steht (Anzahl & Startdatum
+              haben Defaults), schon hier in Schritt 1 sichtbar — aktualisiert live. */}
+          <SchieflageVorwarnung draftTxs={draftTxs} kind={isFinanz?"finanzierung":"serie"}/>
         </div>
       </>}
 

@@ -323,19 +323,20 @@ function MobileVormerkenModal({onClose, onBack}) {
             </button>
           </div>
 
-          {/* Buchung am — Label oben, Datum immer sichtbar, „Banktag"/„löschen" daneben */}
-          <div style={{color:T.txt2,fontSize:S.fs-4,fontWeight:600,marginBottom:6}}>Buchung am</div>
+          {/* Banktag — Tag, an dem die Buchung das Konto trifft. Datum immer
+              sichtbar, „heute"/„löschen" als Knopf daneben. */}
+          <div style={{color:T.txt2,fontSize:S.fs-4,fontWeight:600,marginBottom:6}}>Banktag</div>
           <div style={{display:"flex",gap:S.gap/2,marginBottom:S.gap}}>
             <input type="date" value={date} onChange={e=>{setDate(e.target.value);setDateTouched(true);}}
               style={{flex:1,boxSizing:"border-box",padding:`${S.padL}px`,
                 borderRadius:S.radius,border:`2px solid ${date?T.blue:T.bd}`,
                 background:"rgba(255,255,255,0.06)",color:T.txt,
                 fontSize:S.fs,fontFamily:"inherit",outline:"none",colorScheme:"dark"}}/>
-            <button onClick={()=>{ if(date){setDate("");} else {setDate(nextBankWorkday(today));} setDateTouched(true); }}
+            <button onClick={()=>{ setDate(date?"":today); setDateTouched(true); }}
               style={{flexShrink:0,padding:`0 ${S.padL}px`,borderRadius:S.radius,
                 border:`2px solid ${T.bd}`,background:"rgba(255,255,255,0.06)",
                 color:T.blue,fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
-              {date?"löschen":"Banktag"}
+              {date?"löschen":"heute"}
             </button>
           </div>
 
@@ -456,7 +457,7 @@ function MobileVormerkenModal({onClose, onBack}) {
             ...(isTransfer ? [["Ziel", (accounts||[]).find(a=>a.id===tgtAccId)?.name||tgtAccId]] : []),
             ["Betrag",         (isTransfer?"":(csvType==="expense"?"−":"+"))+fmt(pn(amount.replace(",",".")))],
             ["verursacht", valueDate?valueDate.split("-").reverse().join("."):"—"],
-            ["Buchung am", date?date.split("-").reverse().join("."):"—"],
+            ["Banktag", date?date.split("-").reverse().join("."):"—"],
             ...(isTransfer
               ? [
                   ["Kategorie Quelle", catId?(getCat(catId)?.name||"?")+(subId?" / "+(getSub(catId,subId)?.name||""):""):"—"],

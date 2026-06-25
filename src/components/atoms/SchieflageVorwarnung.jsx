@@ -54,7 +54,7 @@ export function SchieflageVorwarnung({ draftTxs, kind = "vormerkung", style }) {
         <div style={{ fontWeight: 800, color: T.neg, fontSize: 14, marginBottom: 2 }}>
           {res.isNew ? "Achtung: führt zu einer Schieflage" : "Achtung: verschärft eine Schieflage"}
         </div>
-        <div style={{ fontSize: 13, color: T.gold }}>
+        <div style={{ fontSize: 13, color: T.txt }}>
           {subj} drückt das Giro-Konto ab <b>{label}</b> auf{" "}
           <b style={{ color: saldoColor }}>{saldoStr}</b> —{" "}
           <b style={{ color: T.gold }}>{fmt(res.deficit)} €</b> unter deinen Puffer ({fmt(res.buffer)} €).
