@@ -194,7 +194,7 @@ function MobileActionPicker({onClose, onSelect, onSwitchToMonth, initialScreen="
       {/* Header */}
       <div {...swipeHandlers} style={{background:T.surf,borderBottom:`1px solid ${T.bd}`,
         padding:"calc(12px + env(safe-area-inset-top, 0px)) 16px 12px",display:"flex",alignItems:"center",gap:12,flexShrink:0,touchAction:"none"}}>
-        <button onClick={isDaten ? ()=>setScreen("main") : onClose}
+        <button onClick={isDaten ? (initialScreen==="daten" ? onClose : ()=>setScreen("main")) : onClose}
           style={{background:"rgba(255,255,255,0.08)",border:"none",color:T.txt2,
             width:44,height:44,borderRadius:14,cursor:"pointer",fontSize:20,
             display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
