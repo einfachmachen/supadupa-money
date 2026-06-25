@@ -306,48 +306,37 @@ function MobileVormerkenModal({onClose, onBack}) {
               pointerEvents:"none",fontWeight:700}}>€</span>}
           </div>
 
-          {/* verursacht — Klick füllt heute, eigene Zeile */}
-          <div style={{position:"relative",marginBottom:S.gap}}>
-            {!valueDate&&<div onClick={()=>setValueDate(today)}
-              style={{position:"absolute",inset:0,display:"flex",alignItems:"center",
-                paddingLeft:S.padL,color:T.txt2,fontSize:S.fs-4,
-                cursor:"pointer",borderRadius:S.radius,zIndex:1}}>
-              {Li("calendar",S.fs-4,T.txt2)}
-              <span style={{marginLeft:8}}>verursacht (optional) — tippe für heute</span>
-            </div>}
+          {/* verursacht (optional) — Label oben, Datum immer sichtbar (kein
+              transparenter Text → Tippen sofort sichtbar), Aktion als Knopf daneben */}
+          <div style={{color:T.txt2,fontSize:S.fs-4,fontWeight:600,marginBottom:6}}>verursacht (optional)</div>
+          <div style={{display:"flex",gap:S.gap/2,marginBottom:S.gap}}>
             <input type="date" value={valueDate} onChange={e=>setValueDate(e.target.value)}
-              style={{width:"100%",boxSizing:"border-box",padding:`${S.padL}px`,
+              style={{flex:1,boxSizing:"border-box",padding:`${S.padL}px`,
                 borderRadius:S.radius,border:`2px solid ${valueDate?T.blue:T.bd}`,
-                background:"rgba(255,255,255,0.06)",
-                color:valueDate?T.txt:"transparent",
+                background:"rgba(255,255,255,0.06)",color:T.txt,
                 fontSize:S.fs,fontFamily:"inherit",outline:"none",colorScheme:"dark"}}/>
-            {valueDate&&<button onClick={()=>setValueDate("")}
-              style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",
-                background:"none",border:"none",color:T.txt2,cursor:"pointer",
-                fontSize:S.fs,padding:4}}>✕</button>}
+            <button onClick={()=>setValueDate(valueDate?"":today)}
+              style={{flexShrink:0,padding:`0 ${S.padL}px`,borderRadius:S.radius,
+                border:`2px solid ${T.bd}`,background:"rgba(255,255,255,0.06)",
+                color:T.blue,fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
+              {valueDate?"löschen":"heute"}
+            </button>
           </div>
 
-          {/* Buchung am — nächster Banktag als Default */}
-          <div style={{position:"relative",marginBottom:S.gap}}>
-            {!date&&<div onClick={()=>{
-              // Nächster Banktag (inkl. TARGET2-Feiertage)
-              setDate(nextBankWorkday(today)); setDateTouched(true);
-            }} style={{position:"absolute",inset:0,display:"flex",alignItems:"center",
-                paddingLeft:S.padL,color:T.txt2,fontSize:S.fs-4,
-                cursor:"pointer",borderRadius:S.radius,zIndex:1}}>
-              {Li("calendar",S.fs-4,T.txt2)}
-              <span style={{marginLeft:8}}>Buchung am — tippe für nächsten Banktag</span>
-            </div>}
+          {/* Buchung am — Label oben, Datum immer sichtbar, „Banktag"/„löschen" daneben */}
+          <div style={{color:T.txt2,fontSize:S.fs-4,fontWeight:600,marginBottom:6}}>Buchung am</div>
+          <div style={{display:"flex",gap:S.gap/2,marginBottom:S.gap}}>
             <input type="date" value={date} onChange={e=>{setDate(e.target.value);setDateTouched(true);}}
-              style={{width:"100%",boxSizing:"border-box",padding:`${S.padL}px`,
+              style={{flex:1,boxSizing:"border-box",padding:`${S.padL}px`,
                 borderRadius:S.radius,border:`2px solid ${date?T.blue:T.bd}`,
-                background:"rgba(255,255,255,0.06)",
-                color:date?T.txt:"transparent",
+                background:"rgba(255,255,255,0.06)",color:T.txt,
                 fontSize:S.fs,fontFamily:"inherit",outline:"none",colorScheme:"dark"}}/>
-            {date&&<button onClick={()=>{setDate("");setDateTouched(true);}}
-              style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",
-                background:"none",border:"none",color:T.txt2,cursor:"pointer",
-                fontSize:S.fs,padding:4}}>✕</button>}
+            <button onClick={()=>{ if(date){setDate("");} else {setDate(nextBankWorkday(today));} setDateTouched(true); }}
+              style={{flexShrink:0,padding:`0 ${S.padL}px`,borderRadius:S.radius,
+                border:`2px solid ${T.bd}`,background:"rgba(255,255,255,0.06)",
+                color:T.blue,fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
+              {date?"löschen":"Banktag"}
+            </button>
           </div>
 
           {/* Bei Umbuchung Hinweis, falls kein Ziel gewählt */}

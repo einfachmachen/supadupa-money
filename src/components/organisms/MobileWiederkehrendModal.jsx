@@ -315,6 +315,27 @@ function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
             </span>
           </div>
 
+          {/* Startdatum — logisch VOR Anzahl/Enddatum (Datum immer sichtbar) */}
+          {fieldLabel("Startdatum")}
+          <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}
+            style={{...inp({colorScheme:"dark"}),marginBottom:S.gap}}/>
+
+          {/* Erste Buchung = Startdatum Toggle */}
+          <div onClick={()=>setFirstIsStart(v=>!v)}
+            style={{display:"flex",alignItems:"center",gap:12,padding:`${S.pad}px ${S.padL}px`,
+              borderRadius:S.radius,cursor:"pointer",marginBottom:S.gap,
+              background:firstIsStart?"rgba(74,159,212,0.12)":"rgba(255,255,255,0.04)",
+              border:`2px solid ${firstIsStart?T.blue:T.bd}`}}>
+            <div style={{width:44,height:26,borderRadius:13,position:"relative",flexShrink:0,
+              background:firstIsStart?T.blue:"rgba(255,255,255,0.15)",transition:"background 0.2s"}}>
+              <div style={{position:"absolute",top:3,left:firstIsStart?21:3,width:20,height:20,
+                borderRadius:"50%",background:"#fff",transition:"left 0.2s"}}/>
+            </div>
+            <span style={{color:firstIsStart?T.txt:T.txt2,fontSize:S.fs}}>
+              Erste Buchung = Startdatum
+            </span>
+          </div>
+
           {/* Anzahl / Enddatum */}
           <div style={{display:"flex",gap:S.gap,marginBottom:S.gap/2}}>
             <div style={{flex:1}}>
@@ -396,7 +417,7 @@ function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
 
       {/* ── Schritt 3: Beschreibung, Datum ── */}
       {step===3&&<>
-        {header("details","Beschreibung & Startdatum",3,()=>setStep(2))}
+        {header("details","Beschreibung & Notiz",3,()=>setStep(2))}
         <div style={{flex:1,padding:S.padL,paddingBottom:120,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
 
           {/* Beschreibung — auto-grow, Placeholder */}
@@ -425,48 +446,19 @@ function MobileWiederkehrendModal({onClose, onBack, typ="wiederkehrend"}) {
             onInput={e=>{e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
           />
 
-          {/* verursacht — Klick füllt heute */}
-          <div style={{position:"relative",marginBottom:S.gap}}>
-            {!valueDate&&<div onClick={()=>setValueDate(today)}
-              style={{position:"absolute",inset:0,display:"flex",alignItems:"center",
-                paddingLeft:S.padL,color:T.txt2,fontSize:S.fs-4,
-                cursor:"pointer",borderRadius:S.radius,zIndex:1}}>
-              {Li("calendar",S.fs-4,T.txt2)}
-              <span style={{marginLeft:8}}>verursacht (optional) — tippe für heute</span>
-            </div>}
+          {/* verursacht (optional) — Label oben, Datum immer sichtbar, Aktion daneben
+              (kein transparenter Text mehr → Tippen ist sofort sichtbar; „heute"/
+              „löschen" als eigener Knopf statt überlagerndem Symbol) */}
+          {fieldLabel("verursacht (optional)")}
+          <div style={{display:"flex",gap:S.gap/2,marginBottom:S.gap}}>
             <input type="date" value={valueDate} onChange={e=>setValueDate(e.target.value)}
-              style={{...inp({colorScheme:"dark",marginBottom:0,
-                color:valueDate?T.txt:"transparent"})}}/>
-            {valueDate&&<button onClick={()=>setValueDate("")}
-              style={{position:"absolute",right:8,top:"50%",transform:"translateY(-50%)",
-                background:"none",border:"none",color:T.txt2,cursor:"pointer",
-                fontSize:S.fs,padding:4}}>✕</button>}
-          </div>
-
-          {/* Startdatum */}
-          <div style={{position:"relative",marginBottom:S.gap}}>
-            {!startDate&&<div style={{position:"absolute",left:S.padL,top:"50%",
-              transform:"translateY(-50%)",color:T.txt2,fontSize:S.fs-4,
-              pointerEvents:"none"}}>Startdatum</div>}
-            <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}
-              style={{...inp({colorScheme:"dark",marginBottom:0,
-                color:startDate?T.txt:"transparent"})}}/>
-          </div>
-
-          {/* Erste Buchung = Startdatum Toggle */}
-          <div onClick={()=>setFirstIsStart(v=>!v)}
-            style={{display:"flex",alignItems:"center",gap:12,padding:`${S.pad}px ${S.padL}px`,
-              borderRadius:S.radius,cursor:"pointer",marginBottom:S.gap,
-              background:firstIsStart?"rgba(74,159,212,0.12)":"rgba(255,255,255,0.04)",
-              border:`2px solid ${firstIsStart?T.blue:T.bd}`}}>
-            <div style={{width:44,height:26,borderRadius:13,position:"relative",flexShrink:0,
-              background:firstIsStart?T.blue:"rgba(255,255,255,0.15)",transition:"background 0.2s"}}>
-              <div style={{position:"absolute",top:3,left:firstIsStart?21:3,width:20,height:20,
-                borderRadius:"50%",background:"#fff",transition:"left 0.2s"}}/>
-            </div>
-            <span style={{color:firstIsStart?T.txt:T.txt2,fontSize:S.fs}}>
-              Erste Buchung = Startdatum
-            </span>
+              style={{...inp({colorScheme:"dark"}),flex:1,marginBottom:0}}/>
+            <button onClick={()=>setValueDate(valueDate?"":today)}
+              style={{flexShrink:0,padding:`0 ${S.padL}px`,borderRadius:S.radius,
+                border:`2px solid ${T.bd}`,background:"rgba(255,255,255,0.06)",
+                color:T.blue,fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
+              {valueDate?"löschen":"heute"}
+            </button>
           </div>
 
           {/* gilt für (Scope) */}
