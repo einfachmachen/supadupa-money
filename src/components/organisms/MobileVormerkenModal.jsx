@@ -411,7 +411,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
               onChange={e=>setAmount(e.target.value.replace(/[^0-9,.]/g,""))}
               placeholder={isFinanz?"Rate €":"Betrag €"}
               style={{...inpBase, width:"100%",
-                paddingRight:`${S.padL+S.fs}px`,
+                paddingRight:`${amount?S.padL+S.fs:S.padL}px`,
                 border:`2px solid ${amount?T.blue:T.bd}`,
                 fontWeight:700, fontFamily:NUM_FONT, textAlign:"right"}}
             />
