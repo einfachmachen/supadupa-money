@@ -14,7 +14,6 @@ import { ExportDialog } from "./components/organisms/ExportDialog.jsx";
 import { MobileActionPicker } from "./components/organisms/MobileActionPicker.jsx";
 import { MobileKategorienModal } from "./components/organisms/MobileKategorienModal.jsx";
 import { MobileVormerkenModal } from "./components/organisms/MobileVormerkenModal.jsx";
-import { MobileWiederkehrendModal } from "./components/organisms/MobileWiederkehrendModal.jsx";
 import { MonthPickerModal } from "./components/organisms/MonthPickerModal.jsx";
 import { CloudSaveModal } from "./components/organisms/CloudSaveModal.jsx";
 import { CsvImportScreen } from "./components/screens/CsvImportScreen.jsx";
@@ -3163,7 +3162,9 @@ Abbrechen = ${remoteName}-Stand laden`
       {/* ── MOBILE UI TEST ── */}
       {showMobileVormerken&&<MobileVormerkenModal onClose={()=>setShowMobileVormerken(false)}
         onBack={()=>{setShowMobileVormerken(false);reopenMobilePicker("main");}}/>}
-      {showMobileWiederkehrend&&<MobileWiederkehrendModal typ={showMobileWiederkehrendTyp} onClose={()=>setShowMobileWiederkehrend(false)}
+      {showMobileWiederkehrend&&<MobileVormerkenModal
+        initialRecurring={true} initialFinanz={showMobileWiederkehrendTyp==="finanzierung"}
+        onClose={()=>setShowMobileWiederkehrend(false)}
         onBack={()=>{setShowMobileWiederkehrend(false);reopenMobilePicker("main");}}/>}
       {showMobileBudget&&<MobileBudgetModal onClose={()=>setShowMobileBudget(false)}/>}
       {showMobileKategorien&&<MobileKategorienModal

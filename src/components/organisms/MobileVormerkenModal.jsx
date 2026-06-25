@@ -1,22 +1,24 @@
-// Auto-generated module (siehe app-src.jsx)
+// EIN universeller Erfassungs-Dialog (iPhone): startet als einmalige Vormerkung
+// und wächst per Schiebeschalter mit —
+//   „wiederkehrend"  → Serie (Rhythmus + Anzahl/Enddatum)
+//   darin „Finanzierung" → Finanzierung (abw. 1./Schlussrate, Betrag = „Rate")
+// Die erzeugten Transaktionen sind byte-gleich zur früheren Trennung in zwei
+// Dialoge (einmalig vs. MobileWiederkehrendModal) — kein Daten-Bruch.
 
 import React, { useContext, useState } from "react";
 import { MobileCatStep } from "../molecules/MobileCatStep.jsx";
 import { MobileNewAccOverlay } from "../molecules/MobileNewAccOverlay.jsx";
 import { AccountChips } from "../molecules/AccountChips.jsx";
-import { MobileWiederkehrendModal } from "./MobileWiederkehrendModal.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
-import { nextBankWorkday } from "../../utils/date.js";
+import { nextBankWorkday, isoAddMonths } from "../../utils/date.js";
 import { Li } from "../../utils/icons.jsx";
 import { SchieflageVorwarnung } from "../atoms/SchieflageVorwarnung.jsx";
 
-function MobileVormerkenModal({onClose, onBack}) {
+function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialFinanz=false}) {
   const { cats, setCats, accounts, setAccounts, txs, setTxs, year, month, getCat, getSub, setMasterOverride } = useContext(AppCtx);
-  // Zurück eine Ebene hoch (ins "Mehr"-Menü). Fallback auf onClose, falls der
-  // Screen ohne onBack geöffnet wurde.
   const goBack = onBack || onClose;
   const pad = n => String(n).padStart(2,"0");
   const today = new Date().toISOString().split("T")[0];
@@ -27,48 +29,42 @@ function MobileVormerkenModal({onClose, onBack}) {
   const [isTransfer, setIsTransfer] = useState(false);
   const [tgtAccId, setTgtAccId] = useState("");
   const [amount, setAmount] = useState("");
-  // Default für normale Buchungen: "verursacht am" = heute, Buchung = nächster
-  // Banktag (eine heute ausgelöste Buchung bucht frühestens am nächsten
-  // Geschäftstag). Bei Umbuchungen Giro→Tagesgeld bucht die Bank sofort →
-  // Buchung = heute (siehe Umschalter unten). dateTouched verhindert, dass eine
-  // manuelle Datumseingabe beim Typ-Wechsel überschrieben wird.
-  const [date, setDate] = useState(nextBankWorkday(today));
+  const [date, setDate] = useState(nextBankWorkday(today)); // einmalig: Banktag · wiederkehrend: Startdatum
   const [dateTouched, setDateTouched] = useState(false);
   const [desc, setDesc] = useState("");
   const [valueDate, setValueDate] = useState(today); // Verursacherdatum
   const [note, setNote] = useState("");
   const [catId, setCatId] = useState("");
   const [subId, setSubId] = useState("");
-  // Umbuchung: zweite Kategorie für das Ziel-Konto
   const [tgtCatId, setTgtCatId] = useState("");
   const [tgtSubId, setTgtSubId] = useState("");
-  // Welche Seite wird in Schritt 2 gerade gewählt? "source" | "target" (nur relevant bei Umbuchung)
   const [catSide, setCatSide] = useState("source");
   const [accId, setAccId] = useState(accounts?.[0]?.id||"acc-giro");
-  const [catStep, setCatStep] = useState("cat"); // "cat" | "sub"
-  const [selCat, setSelCat] = useState(null);
+  // ── Schiebeschalter, die den Dialog erweitern ──
+  const [recurring,   setRecurring]   = useState(initialRecurring || initialFinanz);
+  const [isFinanz,    setIsFinanz]    = useState(initialFinanz);
+  const [interval_,   setInterval_]   = useState(1);
+  const [lastOfMon,   setLastOfMon]   = useState(false);
+  const [count,       setCount]       = useState("");
+  const [endDate,     setEndDate]     = useState("");
+  const [customFL,    setCustomFL]    = useState(false);
+  const [firstAmount, setFirstAmount] = useState("");
+  const [lastAmount,  setLastAmount]  = useState("");
   const [showNewCat, setShowNewCat] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [newCatType, setNewCatType] = useState("expense");
   const [saved, setSaved] = useState(false);
   const [showNewAcc, setShowNewAcc] = useState(false);
-  const [newAccName, setNewAccName] = useState("");
-  const [newAccIcon, setNewAccIcon] = useState("landmark");
-  const [newAccColor,setNewAccColor]= useState(T.blue);
-  const [newAccDelay,setNewAccDelay]= useState("");
-  // Flexibler Topf "Unvorhergesehenes": diese Buchung aus dem Topf-Budget bezahlen.
+  // Flexibler Topf "Unvorhergesehenes" (nur einmalige Ausgabe, nicht für Serien)
   const [potOn, setPotOn] = useState(false);
   const _potSub = (()=>{
     for(const c of (cats||[])) for(const s of (c.subs||[]))
       if((s.name||"").trim().toLowerCase()==="unvorhergesehenes") return s;
     return null;
   })();
-  const _showPotToggle = !isTransfer && csvType==="expense" && _potSub && subId !== _potSub.id;
+  const _showPotToggle = !isTransfer && !recurring && csvType==="expense" && _potSub && subId !== _potSub.id;
 
   const S = {fs:26, fsL:64, pad:10, padL:14, radius:16, gap:14};
-  const expCats = cats.filter(c=>c.type==="expense"||c.type==="tagesgeld");
-  const incCats = cats.filter(c=>c.type==="income");
-  const shownCats = csvType==="expense" ? expCats : incCats;
 
   const btnBase = {
     width:"100%", padding:`${S.padL}px`, borderRadius:S.radius,
@@ -78,33 +74,78 @@ function MobileVormerkenModal({onClose, onBack}) {
     textAlign:"left",
   };
   const btnCenter = {...btnBase, justifyContent:"center"};
+  const recInp = {width:"100%",boxSizing:"border-box",padding:`${S.padL}px`,borderRadius:S.radius,
+    background:"rgba(255,255,255,0.06)",color:T.txt,fontSize:S.fs,fontFamily:"inherit",
+    outline:"none",border:`2px solid ${T.bd}`};
 
   const fieldLabel = (txt) => (
     <div style={{color:T.txt2,fontSize:S.fs-3,marginBottom:6,fontWeight:600}}>{txt}</div>
   );
 
+  // Schiebeschalter-Zeile (wiederverwendbar)
+  const toggleRow = (label, on, onClick) => (
+    <div onClick={onClick}
+      style={{display:"flex",alignItems:"center",gap:12,padding:`${S.pad}px ${S.padL}px`,
+        borderRadius:S.radius,cursor:"pointer",marginBottom:S.gap,
+        background:on?"rgba(74,159,212,0.12)":"rgba(255,255,255,0.04)",
+        border:`2px solid ${on?T.blue:T.bd}`}}>
+      <div style={{width:44,height:26,borderRadius:13,position:"relative",flexShrink:0,
+        background:on?T.blue:"rgba(255,255,255,0.15)",transition:"background 0.2s"}}>
+        <div style={{position:"absolute",top:3,left:on?21:3,width:20,height:20,
+          borderRadius:"50%",background:"#fff",transition:"left 0.2s"}}/>
+      </div>
+      <span style={{color:on?T.txt:T.txt2,fontSize:S.fs}}>{label}</span>
+    </div>
+  );
 
   const header = (title, sub, stepNum, onBack) => (
     <MobileHeader title={title} onBack={onBack} onClose={onClose}
       subtitle={<><span style={{color:T.blue,fontWeight:700}}>{stepNum}v4</span><span>{sub}</span></>}/>
   );
 
-  // Entwurf der noch nicht gespeicherten Vormerkung — für die Live-Schieflage-
-  // Vorwarnung (Schritt 4). Umbuchungen bleiben außen vor (verknüpfte Gegenbuchung
-  // ist ein eigener Fall); für normale Vormerkungen genügt eine einfache pending-Tx.
+  const amtVal = () => pn((amount||"").replace(",","."));
+  const calcCount = () => {
+    if(count) return parseInt(count)||1;
+    if(endDate&&date){
+      const s=new Date(date), e=new Date(endDate);
+      return Math.max(1,Math.round(((e.getFullYear()-s.getFullYear())*12+(e.getMonth()-s.getMonth()))/interval_)+1);
+    }
+    const s=new Date(date||today);
+    const endY=s.getFullYear()+6;
+    return Math.max(1,Math.round(((endY-s.getFullYear())*12+(11-s.getMonth()))/interval_)+1);
+  };
+  const totalCount = recurring ? calcCount() : 1;
+  const intervalLabel = {1:"monatlich",3:"quartalsweise",6:"halbjährlich",12:"jährlich"}[interval_]||`alle ${interval_} Monate`;
+  const gesamtbetrag = isFinanz&&amtVal()>0 ? fmt(amtVal()*totalCount) : null;
+
+  // Entwurf der noch nicht gespeicherten Buchung(en) — für die Live-Schieflage-
+  // Vorwarnung. Umbuchungen bleiben außen vor (verknüpfte Gegenbuchung = eigener Fall).
   const draftTxs = React.useMemo(()=>{
     if(isTransfer) return [];
-    const a = pn((amount||"").replace(",","."));
+    const a = amtVal();
     if(!(a>0)) return [];
-    return [{ id:"draft-1", date, totalAmount:a, pending:true,
-      _csvType:csvType, accountId:accId, splits:[] }];
-  }, [isTransfer, amount, date, csvType, accId]);
+    if(!recurring){
+      return [{ id:"draft-1", date, totalAmount:a, pending:true, _csvType:csvType, accountId:accId, splits:[] }];
+    }
+    if(!date) return [];
+    const n = totalCount;
+    const firstAmt = customFL&&firstAmount ? pn(firstAmount.replace(",",".")) : null;
+    const lastAmt  = customFL&&lastAmount  ? pn(lastAmount.replace(",","."))  : null;
+    return Array.from({length:n},(_,i)=>{
+      const d = isoAddMonths(date, i*interval_, lastOfMon);
+      const txAmt = (i===0&&firstAmt!=null)?firstAmt:(i===n-1&&lastAmt!=null)?lastAmt:a;
+      return { id:`draft-${i}`, date:d, totalAmount:txAmt, pending:true,
+        _csvType:csvType, accountId:accId, splits:[] };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTransfer, recurring, amount, date, csvType, accId, totalCount, customFL, firstAmount, lastAmount, interval_, lastOfMon]);
 
   const doSave = () => {
-    const amt = pn(amount.replace(",","."));
+    const amt = amtVal();
     if(amt<=0) return;
+
+    // ── Umbuchung: Abgang + verknüpfter Zugang ──
     if(isTransfer) {
-      // Umbuchung: Abgang auf Quellkonto + verknüpfter Zugang auf Zielkonto
       if(!tgtAccId || tgtAccId===accId) return;
       const abgang = {
         id:"pend-"+uid(), date, desc:desc||"Umbuchung",
@@ -121,10 +162,37 @@ function MobileVormerkenModal({onClose, onBack}) {
         splits: tgtCatId ? [{id:uid(),catId:tgtCatId,subId:tgtSubId,amount:amt}] : [],
       };
       setTxs(p=>[...p, abgang, zugang]);
-      setSaved(true);
-      setTimeout(()=>onClose(), 1200);
+      setSaved(true); setTimeout(()=>onClose(), 1200);
       return;
     }
+
+    // ── Wiederkehrend / Finanzierung: Serie ──
+    if(recurring) {
+      if(!date) return;
+      const n = totalCount;
+      const seriesId = uid();
+      const firstAmt = customFL&&firstAmount ? pn(firstAmount.replace(",",".")) : null;
+      const lastAmt  = customFL&&lastAmount  ? pn(lastAmount.replace(",","."))  : null;
+      const newTxs = Array.from({length:n},(_,i)=>{
+        const d = isoAddMonths(date, i*interval_, lastOfMon);
+        const txAmt = (i===0&&firstAmt!=null)?firstAmt:(i===n-1&&lastAmt!=null)?lastAmt:amt;
+        return {
+          id:uid(), date:d, desc:desc||"neue Buchung", totalAmount:txAmt, pending:true,
+          _csvType:csvType, accountId:accId, repeatMonths:interval_,
+          note:note||undefined,
+          valueDate: i===0&&valueDate ? valueDate : undefined,
+          splits:catId?[{id:uid(),catId,subId:subId||"",amount:txAmt}]:[],
+          _seriesId:seriesId, _seriesIdx:i+1, _seriesTotal:n,
+          ...(isFinanz?{_seriesTyp:"finanzierung"}:{}),
+          ...(lastOfMon?{_lastOfMonth:true}:{}),
+        };
+      });
+      setTxs(p=>[...p,...newTxs]);
+      setSaved(true); setTimeout(()=>onClose(), 1200);
+      return;
+    }
+
+    // ── Einmalige Vormerkung ──
     setTxs(p=>[...p,{
       id:uid(), date, desc:desc||"neue Buchung",
       totalAmount:amt, pending:true, _csvType:csvType,
@@ -134,16 +202,11 @@ function MobileVormerkenModal({onClose, onBack}) {
       splits:[{id:uid(),catId,subId,amount:amt}],
       _potSubId: (_showPotToggle && potOn && _potSub) ? _potSub.id : undefined,
     }]);
-    setSaved(true);
-    setTimeout(()=>onClose(), 1200);
+    setSaved(true); setTimeout(()=>onClose(), 1200);
   };
 
-  // Master-Button-Override: Der große grüne Plus-Knopf am unteren Rand
-  // übernimmt die Schritt-Aktion (Tipp = bestätigen, Wisch ← = zurück,
-  // Wisch ↓ = abbrechen). WICHTIG: Der Effekt darf NICHT pro Tastendruck feuern —
-  // setMasterOverride löst App-weite Re-Renders aus (Tipp-Lag). Daher hängt er nur
-  // an Bool-Readiness (Betrag>0 / Text vorhanden), nicht an den Rohtexten.
-  const _amt = pn(amount.replace(",","."));
+  // Master-Button-Override (Tipp = bestätigen, Wisch ← = zurück, Wisch ↓ = abbrechen).
+  const _amt = amtVal();
   const step1Ready = _amt > 0 && (!isTransfer || (tgtAccId && tgtAccId !== accId));
   const descReady = !!desc.trim();
   React.useEffect(() => {
@@ -153,7 +216,7 @@ function MobileVormerkenModal({onClose, onBack}) {
       cfg = {
         label: "Weiter → Kategorie",
         onConfirm: () => { if(!step1Ready) return; setCatSide("source"); setStep(2); },
-        onBack: goBack, // erste Stufe → zurück ins Mehr-Menü
+        onBack: goBack,
         onDismiss: onClose,
         disabled: !step1Ready,
       };
@@ -179,7 +242,9 @@ function MobileVormerkenModal({onClose, onBack}) {
       };
     } else if(step === 4) {
       cfg = {
-        label: isTransfer ? "✓ Umbuchung speichern" : "✓ Vormerkung speichern",
+        label: isTransfer ? "✓ Umbuchung speichern"
+          : recurring ? `✓ ${totalCount}× ${isFinanz?"Finanzierung":"wiederkehrend"} anlegen`
+          : "✓ Vormerkung speichern",
         onConfirm: doSave,
         onBack: () => setStep(3),
         onDismiss: onClose,
@@ -187,7 +252,8 @@ function MobileVormerkenModal({onClose, onBack}) {
     }
     setMasterOverride(cfg);
     return () => setMasterOverride(null);
-  }, [step, step1Ready, descReady, isTransfer, catSide, showNewAcc, saved]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, step1Ready, descReady, isTransfer, catSide, showNewAcc, saved, recurring, isFinanz]);
 
   if(showNewAcc) return (
     <MobileNewAccOverlay S={S} onClose={(newId)=>{
@@ -201,7 +267,9 @@ function MobileVormerkenModal({onClose, onBack}) {
       zIndex:300,display:"flex",alignItems:"center",justifyContent:"center"}}>
       <div style={{textAlign:"center"}}>
         <div style={{fontSize:64,marginBottom:16}}>✓</div>
-        <div style={{color:T.pos,fontSize:24,fontWeight:700}}>Gespeichert!</div>
+        <div style={{color:T.pos,fontSize:24,fontWeight:700}}>
+          {recurring ? `${totalCount}× gespeichert!` : "Gespeichert!"}
+        </div>
       </div>
     </div>
   );
@@ -211,9 +279,9 @@ function MobileVormerkenModal({onClose, onBack}) {
       display:"flex",flexDirection:"column",overflowY:"auto",
       "--mob-fs": S.fs+"px"}}>
 
-      {/* ── Schritt 1: Betrag ── */}
+      {/* ── Schritt 1: Betrag & Typ ── */}
       {step===1&&<>
-        {header("neue Vormerkung","Betrag & Typ",1,goBack)}
+        {header(recurring?(isFinanz?"neue Finanzierung":"neue Serie"):"neue Vormerkung","Betrag & Typ",1,goBack)}
         <div style={{flex:1,padding:S.padL,paddingBottom:120,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
 
           {/* Ausgabe / Einnahme / Umbuchung */}
@@ -229,10 +297,8 @@ function MobileVormerkenModal({onClose, onBack}) {
                   if(trans) {
                     setIsTransfer(true);
                     setCsvType("expense");
-                    // Umbuchung Giro→Tagesgeld bucht sofort → Buchung = heute.
-                    // "verursacht" trotzdem mit heute vorbelegen (anpassbar).
+                    setRecurring(false); setIsFinanz(false); // Umbuchung ist immer einmalig
                     if(!dateTouched) { setDate(today); setValueDate(today); }
-                    // Default-Ziel: erstes anderes Konto
                     if(!tgtAccId || tgtAccId===accId) {
                       const other = (accounts||[]).find(a=>a.id!==accId);
                       if(other) setTgtAccId(other.id);
@@ -240,7 +306,6 @@ function MobileVormerkenModal({onClose, onBack}) {
                   } else {
                     setIsTransfer(false);
                     setCsvType(t);
-                    // Normale Buchung: verursacht = heute, Buchung = nächster Banktag
                     if(!dateTouched) { setDate(nextBankWorkday(today)); setValueDate(today); }
                   }
                 }}
@@ -274,7 +339,7 @@ function MobileVormerkenModal({onClose, onBack}) {
               onAddAccount={()=>setShowNewAcc(true)} addLabel="Konto" S={S}/>
           </div>
 
-          {/* Bei Umbuchung: Zielkonto-Picker (auf Quell-Breite gehalten) */}
+          {/* Bei Umbuchung: Zielkonto-Picker */}
           {isTransfer && (<>
             <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,color:T.txt2,fontSize:S.fs-4,fontWeight:600}}>
               {Li("arrow-down",S.fs-4,T.blue)}
@@ -287,12 +352,12 @@ function MobileVormerkenModal({onClose, onBack}) {
             </div>
           </>)}
 
-          {/* Betrag — Placeholder statt Label, € nach Eingabe */}
+          {/* Betrag (Label „Rate" bei Finanzierung) */}
           <div style={{position:"relative",marginBottom:S.gap}}>
             <input
               type="text" inputMode="decimal" value={amount}
               onChange={e=>setAmount(e.target.value.replace(/[^0-9,.]/g,""))}
-              placeholder="Betrag €"
+              placeholder={isFinanz?"Rate €":"Betrag €"}
               style={{width:"100%",boxSizing:"border-box",
                 padding:`${S.padL}px`,paddingRight:`${S.padL+S.fs}px`,
                 borderRadius:S.radius,
@@ -306,8 +371,7 @@ function MobileVormerkenModal({onClose, onBack}) {
               pointerEvents:"none",fontWeight:700}}>€</span>}
           </div>
 
-          {/* verursacht (optional) — Label oben, Datum immer sichtbar (kein
-              transparenter Text → Tippen sofort sichtbar), Aktion als Knopf daneben */}
+          {/* verursacht (optional) */}
           <div style={{color:T.txt2,fontSize:S.fs-4,fontWeight:600,marginBottom:6}}>verursacht (optional)</div>
           <div style={{display:"flex",gap:S.gap/2,marginBottom:S.gap}}>
             <input type="date" value={valueDate} onChange={e=>setValueDate(e.target.value)}
@@ -323,9 +387,8 @@ function MobileVormerkenModal({onClose, onBack}) {
             </button>
           </div>
 
-          {/* Banktag — Tag, an dem die Buchung das Konto trifft. Datum immer
-              sichtbar, „heute"/„löschen" als Knopf daneben. */}
-          <div style={{color:T.txt2,fontSize:S.fs-4,fontWeight:600,marginBottom:6}}>Banktag</div>
+          {/* Banktag (einmalig) / Startdatum (wiederkehrend) */}
+          <div style={{color:T.txt2,fontSize:S.fs-4,fontWeight:600,marginBottom:6}}>{recurring?"Startdatum":"Banktag"}</div>
           <div style={{display:"flex",gap:S.gap/2,marginBottom:S.gap}}>
             <input type="date" value={date} onChange={e=>{setDate(e.target.value);setDateTouched(true);}}
               style={{flex:1,boxSizing:"border-box",padding:`${S.padL}px`,
@@ -340,12 +403,97 @@ function MobileVormerkenModal({onClose, onBack}) {
             </button>
           </div>
 
+          {/* ── Erweiterung per Schiebeschalter (nicht bei Umbuchung) ── */}
+          {!isTransfer && (<>
+            {toggleRow("wiederkehrend", recurring, ()=>{
+              const n=!recurring; setRecurring(n); if(!n){ setIsFinanz(false); setCustomFL(false); }
+            })}
+
+            {recurring && (<>
+              {/* Rhythmus */}
+              {fieldLabel("Rhythmus")}
+              <div style={{display:"flex",gap:S.gap/2,marginBottom:S.gap}}>
+                {[[1,"monatl."],[3,"quartl."],[6,"halbj."],[12,"jährl."]].map(([v,l])=>(
+                  <button key={v} onClick={()=>setInterval_(v)}
+                    style={{flex:1,...btnCenter,padding:`${S.pad}px 4px`,
+                      background:interval_===v?T.blue:"rgba(255,255,255,0.08)",
+                      border:"none",color:interval_===v?"#fff":T.txt2,
+                      fontSize:S.fs-4,fontWeight:700,borderRadius:S.radius/2}}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+
+              {/* Immer letzter Tag des Monats */}
+              {toggleRow("Immer letzter Tag des Monats", lastOfMon, ()=>{
+                const n=!lastOfMon; setLastOfMon(n);
+                if(n&&date){ const[y,m]=date.split("-").map(Number);
+                  const ld=new Date(y,m,0).getDate();
+                  setDate(`${y}-${pad(m)}-${pad(ld)}`); setDateTouched(true); }
+              })}
+
+              {/* Anzahl / Enddatum */}
+              <div style={{display:"flex",gap:S.gap,marginBottom:S.gap}}>
+                <div style={{flex:1}}>
+                  {fieldLabel(isFinanz?"Raten":"Anzahl (leer=7J)")}
+                  <input type="text" inputMode="numeric" value={count}
+                    onChange={e=>{setCount(e.target.value);if(e.target.value)setEndDate("");}}
+                    placeholder={`${calcCount()}`} style={{...recInp}}/>
+                </div>
+                <div style={{flex:1}}>
+                  {fieldLabel("Enddatum")}
+                  <input type="date" value={endDate}
+                    onChange={e=>{setEndDate(e.target.value);setCount("");}}
+                    style={{...recInp,colorScheme:"dark"}}/>
+                </div>
+              </div>
+
+              {/* Finanzierung */}
+              {toggleRow("Finanzierung", isFinanz, ()=>{
+                const n=!isFinanz; setIsFinanz(n); if(!n){ setCustomFL(false); setFirstAmount(""); setLastAmount(""); }
+              })}
+
+              {isFinanz && (<>
+                {toggleRow("1. Rate / Schlussrate", customFL, ()=>{setCustomFL(v=>!v);setFirstAmount("");setLastAmount("");})}
+                {customFL && (
+                  <div style={{display:"flex",gap:S.gap,marginBottom:S.gap}}>
+                    <div style={{flex:1}}>
+                      {fieldLabel("1. Rate")}
+                      <input type="text" inputMode="decimal" value={firstAmount}
+                        onChange={e=>setFirstAmount(e.target.value.replace(/[^0-9,\.]/g,""))}
+                        placeholder={amount||"0,00"} style={{...recInp,border:`2px solid ${T.blue}66`}}/>
+                    </div>
+                    <div style={{flex:1}}>
+                      {fieldLabel("Schlussrate")}
+                      <input type="text" inputMode="decimal" value={lastAmount}
+                        onChange={e=>setLastAmount(e.target.value.replace(/[^0-9,\.]/g,""))}
+                        placeholder={amount||"0,00"} style={{...recInp,border:`2px solid ${T.blue}66`}}/>
+                    </div>
+                  </div>
+                )}
+              </>)}
+
+              {/* Vorschau */}
+              <div style={{background:"rgba(0,0,0,0.2)",borderRadius:S.radius/2,
+                padding:"10px 14px",marginBottom:S.gap,fontSize:S.fs-4,color:T.txt2,lineHeight:1.7}}>
+                <span style={{color:T.pos,fontWeight:700}}>{totalCount}× {intervalLabel}</span>
+                {amount&&<>{" · "}{isFinanz?"Rate":""} {fmt(amtVal())}</>}
+                {gesamtbetrag&&<>{" · "}Gesamt: {gesamtbetrag}</>}
+                {date&&<>{" · "}ab {date.split("-").reverse().join(".")}</>}
+              </div>
+            </>)}
+          </>)}
+
           {/* Bei Umbuchung Hinweis, falls kein Ziel gewählt */}
           {isTransfer && !tgtAccId && (
             <div style={{color:T.gold,fontSize:S.fs-6,marginBottom:S.gap,textAlign:"center"}}>
               Bitte Zielkonto wählen
             </div>
           )}
+
+          {/* Frühe Live-Schieflage-Vorwarnung */}
+          <SchieflageVorwarnung draftTxs={draftTxs}
+            kind={recurring?(isFinanz?"finanzierung":"serie"):"vormerkung"}/>
 
         </div>
       </>}
@@ -362,8 +510,8 @@ function MobileVormerkenModal({onClose, onBack}) {
           : "Kategorie";
         const sideAcc = (accounts||[]).find(a=>a.id===sideAccId);
         const subtitle = isTransfer
-          ? `${fmt(pn(amount.replace(",",".")))} • ${sideAcc?.name || ""}`
-          : fmt(pn(amount.replace(",",".")));
+          ? `${fmt(amtVal())} • ${sideAcc?.name || ""}`
+          : fmt(amtVal());
         const advance = (cId, sId) => {
           if(isTgt) { setTgtCatId(cId); setTgtSubId(sId); setStep(3); }
           else if(isTransfer) { setCatId(cId); setSubId(sId); setCatSide("target"); }
@@ -393,7 +541,7 @@ function MobileVormerkenModal({onClose, onBack}) {
         {header("details","Beschreibung & Notiz",3,()=>setStep(2))}
         <div style={{flex:1,padding:S.padL,paddingBottom:120,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
 
-          {/* Beschreibung — auto-grow, Placeholder */}
+          {/* Beschreibung */}
           <textarea value={desc} onChange={e=>setDesc(e.target.value)}
             placeholder="Beschreibung (Pflichtfeld)"
             rows={1}
@@ -407,7 +555,7 @@ function MobileVormerkenModal({onClose, onBack}) {
             onInput={e=>{e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
           />
 
-          {/* Notiz — auto-grow, Placeholder */}
+          {/* Notiz */}
           <textarea value={note} onChange={e=>setNote(e.target.value)}
             placeholder="Notiz (optional)"
             rows={1}
@@ -421,8 +569,7 @@ function MobileVormerkenModal({onClose, onBack}) {
             onInput={e=>{e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
           />
 
-          {/* Flexibler Topf: diese Ausgabe aus dem Unvorhergesehenes-Budget bezahlen.
-              Kategorie & Betrag bleiben, nur die Budget-Anrechnung wandert in den Topf. */}
+          {/* Flexibler Topf (nur einmalige Ausgabe) */}
           {_showPotToggle&&(
             <div style={{background:"rgba(255,255,255,0.06)",borderRadius:S.radius,
               padding:`${S.padL}px`,marginBottom:S.gap}}>
@@ -450,14 +597,19 @@ function MobileVormerkenModal({onClose, onBack}) {
       {step===4&&<>
         {header("bestätigen","Alles korrekt?",4,()=>setStep(3))}
         <div style={{flex:1,padding:S.padL,paddingBottom:120,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
-          <SchieflageVorwarnung draftTxs={draftTxs} kind="vormerkung" style={{marginBottom:S.gap}}/>
+          <SchieflageVorwarnung draftTxs={draftTxs}
+            kind={recurring?(isFinanz?"finanzierung":"serie"):"vormerkung"} style={{marginBottom:S.gap}}/>
           {[
-            ["Typ",            isTransfer?"Umbuchung":(csvType==="expense"?"Ausgabe":"Einnahme")],
+            ["Typ",            isTransfer?"Umbuchung":(recurring?(isFinanz?"Finanzierung":"wiederkehrend"):(csvType==="expense"?"Ausgabe":"Einnahme"))],
             [isTransfer?"Quelle":"Konto",  (accounts||[]).find(a=>a.id===accId)?.name||accId],
             ...(isTransfer ? [["Ziel", (accounts||[]).find(a=>a.id===tgtAccId)?.name||tgtAccId]] : []),
-            ["Betrag",         (isTransfer?"":(csvType==="expense"?"−":"+"))+fmt(pn(amount.replace(",",".")))],
+            [isFinanz?"Rate":"Betrag", (isTransfer?"":(csvType==="expense"?"−":"+"))+fmt(amtVal())],
+            ...(customFL&&firstAmount?[["1. Rate",(csvType==="expense"?"−":"+")+fmt(pn(firstAmount.replace(",",".")))]]:[]),
+            ...(customFL&&lastAmount?[["Schlussrate",(csvType==="expense"?"−":"+")+fmt(pn(lastAmount.replace(",",".")))]]:[]),
+            ...(recurring?[["Rhythmus",intervalLabel],[isFinanz?"Raten":"Anzahl",`${totalCount}×`]]:[]),
+            ...(recurring&&gesamtbetrag?[["Gesamtbetrag",gesamtbetrag]]:[]),
             ["verursacht", valueDate?valueDate.split("-").reverse().join("."):"—"],
-            ["Banktag", date?date.split("-").reverse().join("."):"—"],
+            [recurring?"Startdatum":"Banktag", date?date.split("-").reverse().join("."):"—"],
             ...(isTransfer
               ? [
                   ["Kategorie Quelle", catId?(getCat(catId)?.name||"?")+(subId?" / "+(getSub(catId,subId)?.name||""):""):"—"],
@@ -479,12 +631,8 @@ function MobileVormerkenModal({onClose, onBack}) {
         </div>
       </>}
 
-
     </div>
   );
 }
-
-// ══════════════════════════════════════════════════════════════════════
-// MobileWiederkehrendModal — 4 Schritte für Wiederkehrend & Finanzierung
 
 export { MobileVormerkenModal };
