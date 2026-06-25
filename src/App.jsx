@@ -146,7 +146,7 @@ export default function SupaDupaMoney() {
   const setMoon = (u) => setActiveMoon(p => { const n = typeof u==="function" ? u(p) : u; activeMoonRef.current = n; return n; });
   // Die 4 Monde des vergrößerten +-Buttons (ersetzen den „Was möchtest du tun?"-Screen).
   const MOONS = [
-    {id:"vormerken",    label:"Vormerkung", icon:"calendar", color:T.gold},
+    {id:"vormerken",    label:"vormerken",  icon:"calendar", color:T.gold},
     {id:"kategorien",   label:"Budget",     icon:"tag",      color:T.blue},
     {id:"daten",        label:"Daten",      icon:"database", color:T.pos},
     {id:"einstellungen",label:"Optionen",   icon:"settings", color:T.txt2},
