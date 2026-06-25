@@ -342,7 +342,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
       zIndex:300,display:"flex",flexDirection:"column","--mob-fs":S.fs+"px"}}>
       {header("Kategorien & Budget",goBack)}
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",touchAction:"pan-y",WebkitOverflowScrolling:"touch",
-        padding:`${S.gap}px ${S.padL}px ${S.padL}px`}}>
+        padding:`${S.gap}px ${S.pad}px ${S.padL}px`}}>
 
         <button onClick={openNewCat}
           style={{...btnCenter,background:"rgba(74,159,212,0.1)",
@@ -510,6 +510,8 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                 .reduce((s,t)=>s+Math.abs(t.totalAmount),0);
               const curE = curGesamt - curMitte; // Ende = Gesamt - Mitte
               const editing = !!budgetOpen[sub.id];
+              // Budget-Vorschlag (inkl. erkanntem Rhythmus) nur für den GEÖFFNETEN Sub.
+              const sug = editing ? calcSuggestion(sub.id) : null;
               const scope = budgetScope[sub.id]||"month";
               const eKey = sub.id;
               const mKey = sub.id+"_mitte";
@@ -520,7 +522,8 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
               const amtE = Math.max(0, amtG - amtM);
               const isRenamingSub = !!budgetOpen[sub.id+"_rename"];
 
-              const rhythm = budgetRhythm[sub.id] || budgets[sub.id]?.months || 1;
+              // Rhythmus: manuelle Wahl > bestehendes Budget > erkannter Vorschlag > monatlich.
+              const rhythm = budgetRhythm[sub.id] || budgets[sub.id]?.months || sug?.interval || 1;
               const doSaveBudget = () => {
                 const acc = accounts?.[0];
                 const pfx = `${year}-${pad2(month+1)}-`;
@@ -576,7 +579,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
               };
 
               return (
-                <div key={sub.id} style={{marginLeft:S.padL,marginBottom:4,
+                <div key={sub.id} style={{marginLeft:S.pad,marginBottom:4,
                   borderRadius:S.radius,background:"rgba(255,255,255,0.03)",
                   border:`1px solid ${T.bd}`,overflow:"hidden"}}>
 
@@ -620,14 +623,14 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
 
                   {/* Budget-Editor */}
                   {editing&&(
-                    <div style={{padding:`0 ${S.padL}px ${S.padL}px`,borderTop:`1px solid ${T.bd}`}}>
+                    <div style={{padding:`0 ${S.pad}px ${S.pad}px`,borderTop:`1px solid ${T.bd}`}}>
                       <div style={{color:T.txt2,fontSize:S.fs-6,margin:`${S.gap/2}px 0 4px`}}>
                         Budget {MONTHS[month]} {year}
                       </div>
                       {/* Realitätsnaher Vorschlag aus Ist-Historie + Vormerkungen,
                           inkl. erkanntem Rhythmus (z. B. Rundfunkbeitrag quartalsweise) */}
                       {(()=>{
-                        const sug = calcSuggestion(sub.id);
+                        if(!sug) return null;
                         const sugAmt = Math.round(sug.intervalAmount);
                         if(!(sug.hasData && sugAmt>0)) return null;
                         const RL = {1:"monatlich",3:"quartalsweise",6:"halbjährlich",12:"jährlich"}[sug.interval];
