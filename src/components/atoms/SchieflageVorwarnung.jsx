@@ -7,7 +7,7 @@
 // Props:
 //   draftTxs — Array der pending-Tx, die gespeichert würden (vom Aufrufer
 //              memoisiert, damit nicht jeder Tastendruck neu rechnet).
-//   kind     — "vormerkung" | "serie" | "finanzierung" (nur fürs Wording).
+//   kind     — "vormerkung" | "serie" | "finanzierung" | "umbuchung" (nur fürs Wording).
 
 import React, { useContext, useMemo, useState, useEffect } from "react";
 import { AppCtx } from "../../state/AppContext.js";
@@ -49,6 +49,7 @@ export function SchieflageVorwarnung({ draftTxs, kind = "vormerkung", style }) {
 
   const label = `${MONTHS_S[res.month]} ${res.year}`;
   const subj = kind === "finanzierung" ? "Diese Finanzierung"
+    : kind === "umbuchung" ? "Diese Umbuchung"
     : kind === "serie" ? "Diese wiederkehrende Vormerkung"
     : "Diese Vormerkung";
   const saldoStr = `${res.saldoVal < 0 ? "−" : ""}${fmt(Math.abs(res.saldoVal))} €`;

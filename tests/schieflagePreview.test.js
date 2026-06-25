@@ -70,6 +70,33 @@ describe("schieflagePreview — Live-Vorwarnung vor dem Speichern", () => {
     expect(schieflagePreview({ ...baseCtx(existing), draftTxs: draft }).hasImpact).toBe(false);
   });
 
+  // Umbuchung als Entwurf: das Abgang-Bein (Quelle) zählt fürs Giro, das
+  // verknüpfte Zugang-Bein (_linkedTo) wird neutralisiert.
+  const transferDraft = (i, date, amount, srcId, tgtId) => [
+    { id:`draft-out-${i}`, date, totalAmount:-amount, _csvType:"expense", pending:true, accountId:srcId, splits:[] },
+    { id:`draft-in-${i}`,  date, totalAmount: amount, _csvType:"income",  pending:true, accountId:tgtId, _linkedTo:`draft-out-${i}`, splits:[] },
+  ];
+  const transferCtx = (txs = []) => ({
+    ...baseCtx(txs),
+    accounts: [{ id:"acc-giro", minPuffer:0 }, { id:"acc-tg", minPuffer:0 }],
+  });
+
+  it("warnt, wenn eine Umbuchung RAUS aus dem Giro es unter den Puffer drückt", () => {
+    const m = monthsAhead(3);
+    const draft = transferDraft(0, isoDay(m, 15), 500, "acc-giro", "acc-tg"); // Giro 100 − 500 = −400
+    const r = schieflagePreview({ ...transferCtx([]), draftTxs: draft });
+    expect(r.hasImpact).toBe(true);
+    expect(r.isNew).toBe(true);
+    expect(r.saldoVal).toBe(-400);
+    expect(r.deficit).toBe(400);
+  });
+
+  it("warnt NICHT bei einer Umbuchung INS Giro (Zugang hebt den Saldo)", () => {
+    const m = monthsAhead(3);
+    const draft = transferDraft(0, isoDay(m, 15), 500, "acc-tg", "acc-giro");
+    expect(schieflagePreview({ ...transferCtx([]), draftTxs: draft }).hasImpact).toBe(false);
+  });
+
   it("eine Finanzierungs-Serie über mehrere Monate zählt korrekt nach (frühester Monat zuerst)", () => {
     const m1 = monthsAhead(2), m2 = monthsAhead(3), m3 = monthsAhead(4);
     // Drei Raten à 250 €. Startsaldo 100 → schon die erste Rate kippt das Konto.

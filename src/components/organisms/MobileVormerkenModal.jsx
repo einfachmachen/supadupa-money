@@ -119,11 +119,29 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
   const gesamtbetrag = isFinanz&&amtVal()>0 ? fmt(amtVal()*totalCount) : null;
 
   // Entwurf der noch nicht gespeicherten Buchung(en) — für die Live-Schieflage-
-  // Vorwarnung. Umbuchungen bleiben außen vor (verknüpfte Gegenbuchung = eigener Fall).
+  // Vorwarnung. Umbuchungen sind jetzt enthalten: das Abgang-Bein (Quelle) zählt,
+  // sodass die Warnung greift, wenn die Umbuchung das Giro unter den Puffer drückt.
+  // Das verknüpfte Zugang-Bein wird in der Preview (signedGiro: _linkedTo→0)
+  // ohnehin neutralisiert, eine Umbuchung INS Giro warnt also nie.
   const draftTxs = React.useMemo(()=>{
-    if(isTransfer) return [];
     const a = amtVal();
     if(!(a>0)) return [];
+
+    if(isTransfer){
+      if(!tgtAccId || tgtAccId===accId) return [];
+      if(recurring && !date) return [];
+      const n = recurring ? totalCount : 1;
+      const out = [];
+      for(let i=0;i<n;i++){
+        const d = recurring ? isoAddMonths(date, i*interval_, lastOfMon) : date;
+        out.push({ id:`draft-out-${i}`, date:d, totalAmount:-a, pending:true,
+          _csvType:"expense", accountId:accId, splits:[] });
+        out.push({ id:`draft-in-${i}`, date:d, totalAmount:a, pending:true,
+          _csvType:"income", accountId:tgtAccId, _linkedTo:`draft-out-${i}`, splits:[] });
+      }
+      return out;
+    }
+
     if(!recurring){
       return [{ id:"draft-1", date, totalAmount:a, pending:true, _csvType:csvType, accountId:accId, splits:[] }];
     }
@@ -138,7 +156,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
         _csvType:csvType, accountId:accId, splits:[] };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isTransfer, recurring, amount, date, csvType, accId, totalCount, customFL, firstAmount, lastAmount, interval_, lastOfMon]);
+  }, [isTransfer, tgtAccId, recurring, amount, date, csvType, accId, totalCount, customFL, firstAmount, lastAmount, interval_, lastOfMon]);
 
   const doSave = () => {
     const amt = amtVal();
@@ -515,7 +533,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
 
           {/* Frühe Live-Schieflage-Vorwarnung */}
           <SchieflageVorwarnung draftTxs={draftTxs}
-            kind={recurring?(isFinanz?"finanzierung":"serie"):"vormerkung"}/>
+            kind={isTransfer?"umbuchung":(recurring?(isFinanz?"finanzierung":"serie"):"vormerkung")}/>
 
         </div>
       </>}
@@ -620,7 +638,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
         {header("bestätigen","Alles korrekt?",4,()=>setStep(3))}
         <div style={{flex:1,padding:S.padL,paddingBottom:120,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
           <SchieflageVorwarnung draftTxs={draftTxs}
-            kind={recurring?(isFinanz?"finanzierung":"serie"):"vormerkung"} style={{marginBottom:S.gap}}/>
+            kind={isTransfer?"umbuchung":(recurring?(isFinanz?"finanzierung":"serie"):"vormerkung")} style={{marginBottom:S.gap}}/>
           {[
             ["Typ",            isTransfer?"Umbuchung":(recurring?(isFinanz?"Finanzierung":"wiederkehrend"):(csvType==="expense"?"Ausgabe":"Einnahme"))],
             [isTransfer?"Quelle":"Konto",  (accounts||[]).find(a=>a.id===accId)?.name||accId],
