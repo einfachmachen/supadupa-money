@@ -38,10 +38,8 @@ function MobileActionPicker({onClose, onSelect, onSwitchToMonth, initialScreen="
 
   const mainActions = [
     {id:"daten",        label:"Daten",               icon:"database",    color:T.pos},
-    {id:"vormerken",    label:"vormerken",           icon:"calendar",    color:T.gold},
+    {id:"vormerken",    label:"Vormerkung",          icon:"calendar",    color:T.gold},
     {id:"matching",     label:"zuordnen",            icon:"git-merge",   color:T.blue},
-    {id:"wiederkehrend",label:"Serien",              icon:"repeat",      color:T.blue},
-    {id:"finanzierung", label:"Finanzierungen",      icon:"credit-card", color:T.txt2},
     {id:"kategorien",   label:"Kategorien & Budgets",icon:"tag",         color:T.blue},
     {id:"einstellungen",label:"Einstellungen",       icon:"settings",    color:T.txt2},
     {id:"desktop",      label:"Desktop-Modal",       icon:"monitor",     color:T.txt2},
@@ -65,7 +63,7 @@ function MobileActionPicker({onClose, onSelect, onSwitchToMonth, initialScreen="
   // ── TERMINAL ────────────────────────────────────────────────────────────
   if(T.themeName==="terminal") {
     const G=T.pos, D=T.txt2, A=T.txt;
-    const shortcuts = {csv:"1",vormerken:"2",wiederkehrend:"3",finanzierung:"4",kategorien:"5"};
+    const shortcuts = {csv:"1",vormerken:"2",kategorien:"5"};
     return (
       <div style={{position:"fixed",inset:0,background:"#0D0D0D",zIndex:300,
         display:"flex",flexDirection:"column",fontFamily:"monospace"}}>
