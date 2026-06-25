@@ -128,6 +128,30 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
     return suggestBudget({ nowY: now.getFullYear(), nowM: now.getMonth(), getActual, getPending });
   };
 
+  // Unterkategorien, für die bereits eine WIEDERKEHRENDE Planung existiert
+  // (pending Serie/Finanzierung). Für die ist ein Budget unnötig → kein Hinweis.
+  const recurringPlanSubs = React.useMemo(() => {
+    const s = new Set();
+    (txs||[]).forEach(t=>{
+      if(t.pending && !t._budgetSubId && !t._linkedTo && t._seriesId)
+        (t.splits||[]).forEach(sp=>{ if(sp.subId) s.add(sp.subId); });
+    });
+    return s;
+  }, [txs]);
+
+  // „Regelmäßige Belastungen": in ≥3 der letzten 12 abgeschlossenen Monate
+  // gebucht (fängt monatlich & quartalsweise zuverlässig, ohne Fehlalarme).
+  // Nur Ist (getActualSum, O(1)-Lookup) → günstig für alle Subs.
+  const hasRegularCharges = (subId) => {
+    const now = new Date();
+    let cnt = 0;
+    for(let k=1;k<=12;k++){
+      const d = new Date(now.getFullYear(), now.getMonth()-k, 1);
+      if((getActualSum?.(d.getFullYear(), d.getMonth(), subId, "E")||0) > 0) cnt++;
+    }
+    return cnt >= 3;
+  };
+
   const btnBase = {width:"100%",padding:`${S.padL}px`,borderRadius:S.radius,
     border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:S.fs,fontWeight:700,
     display:"flex",alignItems:"center",justifyContent:"flex-start",gap:10,textAlign:"left"};
@@ -512,6 +536,10 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
               const editing = !!budgetOpen[sub.id];
               // Budget-Vorschlag (inkl. erkanntem Rhythmus) nur für den GEÖFFNETEN Sub.
               const sug = editing ? calcSuggestion(sub.id) : null;
+              // Budget-Hinweis: regelmäßige Belastungen, aber noch kein Budget und
+              // keine wiederkehrende Planung → Budgetsymbol hervorheben.
+              const budgetHint = !editing && !(curGesamt>0)
+                && !recurringPlanSubs.has(sub.id) && hasRegularCharges(sub.id);
               const scope = budgetScope[sub.id]||"month";
               const eKey = sub.id;
               const mKey = sub.id+"_mitte";
@@ -612,7 +640,11 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                       if(next) setBudgetEdits(p=>({...p,
                         [sub.id+"_G"]:curGesamt?String(curGesamt).replace(".",","):"",
                         [sub.id+"_M"]:curMitte?String(curMitte).replace(".",","):""}));
-                    }} style={{background:"none",border:"none",
+                    }} title={budgetHint?"Regelmäßige Belastungen — Budget setzen sinnvoll":undefined}
+                      style={{background:budgetHint?T.gold+"26":"none",
+                      border:budgetHint?`1.5px solid ${T.gold}`:"none",
+                      borderRadius:budgetHint?"50%":0,
+                      boxShadow:budgetHint?`0 0 7px ${T.gold}77`:"none",
                       color:editing?T.gold:T.txt2,
                       cursor:"pointer",padding:0,fontFamily:"inherit",
                       width:30,height:30,minHeight:30,
