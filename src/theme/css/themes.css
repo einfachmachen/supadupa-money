@@ -5,6 +5,11 @@
   #root {
     overflow-x: hidden;
   }
+  /* Mond-Menü: gestaffeltes Aufpoppen vom + (von unten/klein/transparent) */
+  @keyframes moonIn {
+    from { opacity: 0; transform: translateY(26px) scale(0.3); }
+    to   { opacity: 1; transform: translateY(0)    scale(1);   }
+  }
   /* ── Brutalist-Theme ── */
   .theme-brutalist * {
     border-radius: 0 !important;

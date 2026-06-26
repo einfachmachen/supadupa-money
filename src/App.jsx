@@ -3221,8 +3221,11 @@ Abbrechen = ${remoteName}-Stand laden`
             const active=i===activeMoon;
             return (
               <button key={mn.id} onClick={()=>openMoon(mn.id)}
-                style={{position:"absolute",left:"50%",bottom:(CY+dy)+"px",
-                  transform:`translate(calc(-50% + ${dx}px), 50%) scale(${active?1.1:1})`,
+                style={{position:"absolute",left:"50%",
+                  // Positionierung über margin/bottom statt transform → transform bleibt
+                  // frei für die Aufpopp-Animation (moonIn).
+                  marginLeft:(dx - SIZE/2)+"px",
+                  bottom:(CY + dy - SIZE/2)+"px",
                   width:SIZE,height:SIZE,borderRadius:"50%",boxSizing:"border-box",
                   border:isFlat?`2px solid ${fg}`:`3px solid ${T.surf}`,
                   background:bg,
@@ -3234,7 +3237,10 @@ Abbrechen = ${remoteName}-Stand laden`
                     : "0 6px 16px rgba(0,0,0,0.55)",
                   cursor:"pointer",pointerEvents:"auto",fontFamily:"inherit",
                   display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
-                  transition:"transform 0.18s, box-shadow 0.18s",padding:0}}>
+                  // Gestaffeltes Erscheinen vom + her (von unten/klein/transparent).
+                  animation:"moonIn 0.30s cubic-bezier(.34,1.45,.6,1) both",
+                  animationDelay:(i*0.045)+"s",
+                  transition:"box-shadow 0.18s",padding:0}}>
                 {Li(mn.icon,21,fg)}
                 <span style={{fontSize:9,fontWeight:700,lineHeight:1,color:fg,
                   whiteSpace:"nowrap"}}>{mn.label}</span>
