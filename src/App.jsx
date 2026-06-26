@@ -144,6 +144,11 @@ export default function SupaDupaMoney() {
   const [activeMoon, setActiveMoon] = useState(0);
   const activeMoonRef = useRef(0);
   const setMoon = (u) => setActiveMoon(p => { const n = typeof u==="function" ? u(p) : u; activeMoonRef.current = n; return n; });
+  // Monde erscheinen NICHT schon beim Vergrößern (Doppeltipp), sondern erst beim
+  // 1. Tipp auf den bereits vergrößerten +. moonsShownRef für die Tap-Timer-Closure.
+  const [moonsShown, setMoonsShown] = useState(false);
+  const moonsShownRef = useRef(false);
+  const showMoons = (v) => { moonsShownRef.current = v; setMoonsShown(v); };
   // Die 4 Monde des vergrößerten +-Buttons (ersetzen den „Was möchtest du tun?"-Screen).
   const MOONS = [
     {id:"vormerken",    label:"vormerken",  icon:"calendar", color:T.gold},
@@ -2915,6 +2920,7 @@ Abbrechen = ${remoteName}-Stand laden`
                       e.currentTarget.style.transform = "translate(0px, -94px) scale(1.5)";
                     }
                     setMoon(0);
+                    showMoons(false);   // Monde erst beim nächsten Tipp zeigen
                     setPlusArretiert(true);
                   }
                 } else {
@@ -2988,12 +2994,15 @@ Abbrechen = ${remoteName}-Stand laden`
                   e.currentTarget.style.transform = "translate(0px, -14px) scale(1)";
                 }
                 setPlusArretiert(false);
+                showMoons(false);
               } else {
-                // Erster Tap: Mehr öffnen, sobald das Doppel-Tap-Fenster abgelaufen ist
+                // Erster Tap auf den vergrößerten +: zeigt zuerst die Monde;
+                // ein weiterer Tap öffnet dann den aktiven Mond.
                 const timer = setTimeout(()=>{
                   masterLastTapRef.current = {zone:null, t:0, timer:null};
                   try { if(navigator.vibrate) navigator.vibrate(10); } catch(_) {}
-                  openMoon(MOONS[activeMoonRef.current].id);
+                  if(!moonsShownRef.current) showMoons(true);
+                  else openMoon(MOONS[activeMoonRef.current].id);
                 }, DOUBLE_TAP_MS);
                 masterLastTapRef.current = {zone:"center", t:now, timer};
               }
@@ -3049,14 +3058,21 @@ Abbrechen = ${remoteName}-Stand laden`
                   WebkitTapHighlightColor:"transparent",padding:0,
                   fontFamily:"inherit",lineHeight:1}}>
                 {plusArretiert && !moodDrillOpen ? (
-                  <div style={{pointerEvents:"none",textAlign:"center",width:"86%"}}>
-                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                      <span style={{fontSize:19,fontWeight:800,color:fg,lineHeight:1}}>‹</span>
-                      <span style={{fontSize:13,fontWeight:800,color:fg,lineHeight:1}}>Öffnen</span>
-                      <span style={{fontSize:19,fontWeight:800,color:fg,lineHeight:1}}>›</span>
+                  moonsShown ? (
+                    <div style={{pointerEvents:"none",textAlign:"center",width:"86%"}}>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                        <span style={{fontSize:19,fontWeight:800,color:fg,lineHeight:1}}>‹</span>
+                        <span style={{fontSize:13,fontWeight:800,color:fg,lineHeight:1}}>Öffnen</span>
+                        <span style={{fontSize:19,fontWeight:800,color:fg,lineHeight:1}}>›</span>
+                      </div>
+                      <div style={{fontSize:8,fontWeight:700,color:fg,opacity:0.8,letterSpacing:0.3,marginTop:4,whiteSpace:"nowrap"}}>2× schließen</div>
                     </div>
-                    <div style={{fontSize:8,fontWeight:700,color:fg,opacity:0.8,letterSpacing:0.3,marginTop:4,whiteSpace:"nowrap"}}>2× schließen</div>
-                  </div>
+                  ) : (
+                    <div style={{pointerEvents:"none",textAlign:"center"}}>
+                      <div style={{fontSize:24,fontWeight:800,color:fg,lineHeight:1}}>＋</div>
+                      <div style={{fontSize:8.5,fontWeight:700,color:fg,opacity:0.85,letterSpacing:0.3,marginTop:3,whiteSpace:"nowrap"}}>Menü antippen</div>
+                    </div>
+                  )
                 ) : (<>
                   {_dayStr && !onMoodScreen && (
                     <div style={{fontSize:24,fontWeight:800,color:fg,lineHeight:1,pointerEvents:"none"}}>
@@ -3197,7 +3213,7 @@ Abbrechen = ${remoteName}-Stand laden`
       {/* ── Monde: 4 runde Buttons rund um den vergrößerten + (ersetzt den Mehr-Screen).
             Doppeltipp auf den kleinen + blendet sie ein; ←/→ schaltet durch,
             Tipp auf einen Mond ODER Tipp auf den + (aktiver Mond) öffnet die Funktion. ── */}
-      {plusArretiert && !moodDrillOpen && !showMobilePicker && !showMonthPickerModal && !showCloudSave && !showMobileVormerken && !showMobileKategorien && mainTab!=="struktur" && (
+      {plusArretiert && moonsShown && !moodDrillOpen && !showMobilePicker && !showMonthPickerModal && !showCloudSave && !showMobileVormerken && !showMobileKategorien && mainTab!=="struktur" && (
         <div style={{position:"fixed",left:0,right:0,bottom:0,height:0,zIndex:600,pointerEvents:"none"}}>
           {(()=>{ const {bg,fg,isFlat}=plusBtnColors(T); return MOONS.map((mn,i)=>{
             // Größerer Radius + höhere Basis → Monde klar abgesetzt vom + (kein Überlappen).
