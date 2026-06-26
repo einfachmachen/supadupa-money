@@ -2963,10 +2963,14 @@ Abbrechen = ${remoteName}-Stand laden`
             }
             if(axis === "x" && Math.abs(dx) > DRAG_THRESHOLD) {
               ref.consumed = true;
-              // Vergrößerter +: ←/→ schaltet zwischen den Monden um (kein Monatswechsel;
-              // Monat weiterhin über Wisch ↑ Monatsauswahl).
-              setMoon(m => (m + (dx < 0 ? -1 : 1) + MOONS.length) % MOONS.length);
-              try { if(navigator.vibrate) navigator.vibrate(8); } catch(_) {}
+              if(moonsShownRef.current) {
+                // Monde sichtbar: ←/→ schaltet zwischen den Monden um.
+                setMoon(m => (m + (dx < 0 ? -1 : 1) + MOONS.length) % MOONS.length);
+                try { if(navigator.vibrate) navigator.vibrate(8); } catch(_) {}
+              } else {
+                // Nur vergrößert (Datumsanzeige): ←/→ wechselt den Monat (wie früher).
+                if(dx < 0) stepPeriod(-1); else stepPeriod(1);
+              }
               return;
             }
             // Tap (ohne nennenswerte Bewegung) im GROSSEN Zustand:
@@ -3057,22 +3061,15 @@ Abbrechen = ${remoteName}-Stand laden`
                   touchAction:"none",userSelect:"none",cursor:"pointer",
                   WebkitTapHighlightColor:"transparent",padding:0,
                   fontFamily:"inherit",lineHeight:1}}>
-                {plusArretiert && !moodDrillOpen ? (
-                  moonsShown ? (
-                    <div style={{pointerEvents:"none",textAlign:"center",width:"86%"}}>
-                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                        <span style={{fontSize:19,fontWeight:800,color:fg,lineHeight:1}}>‹</span>
-                        <span style={{fontSize:13,fontWeight:800,color:fg,lineHeight:1}}>Öffnen</span>
-                        <span style={{fontSize:19,fontWeight:800,color:fg,lineHeight:1}}>›</span>
-                      </div>
-                      <div style={{fontSize:8,fontWeight:700,color:fg,opacity:0.8,letterSpacing:0.3,marginTop:4,whiteSpace:"nowrap"}}>2× schließen</div>
+                {plusArretiert && !moodDrillOpen && moonsShown ? (
+                  <div style={{pointerEvents:"none",textAlign:"center",width:"86%"}}>
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                      <span style={{fontSize:19,fontWeight:800,color:fg,lineHeight:1}}>‹</span>
+                      <span style={{fontSize:13,fontWeight:800,color:fg,lineHeight:1}}>Öffnen</span>
+                      <span style={{fontSize:19,fontWeight:800,color:fg,lineHeight:1}}>›</span>
                     </div>
-                  ) : (
-                    <div style={{pointerEvents:"none",textAlign:"center"}}>
-                      <div style={{fontSize:24,fontWeight:800,color:fg,lineHeight:1}}>＋</div>
-                      <div style={{fontSize:8.5,fontWeight:700,color:fg,opacity:0.85,letterSpacing:0.3,marginTop:3,whiteSpace:"nowrap"}}>Menü antippen</div>
-                    </div>
-                  )
+                    <div style={{fontSize:8,fontWeight:700,color:fg,opacity:0.8,letterSpacing:0.3,marginTop:4,whiteSpace:"nowrap"}}>2× schließen</div>
+                  </div>
                 ) : (<>
                   {_dayStr && !onMoodScreen && (
                     <div style={{fontSize:24,fontWeight:800,color:fg,lineHeight:1,pointerEvents:"none"}}>
