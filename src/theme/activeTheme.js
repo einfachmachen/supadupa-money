@@ -15,6 +15,7 @@ export function setActiveTheme(name, extra = {}) {
 const LIGHT_THEMES = new Set([
   "light", "ios", "material", "paper", "dkb",
   "sand", "clean", "brutalist", "swiss", "hellgrau",
+  "kontrasthell", "creme", "cleancorporate", "softecotech",
 ]);
 export const isLightTheme = (name = _state.current.themeName) =>
   LIGHT_THEMES.has(name);
