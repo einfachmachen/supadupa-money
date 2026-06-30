@@ -15,6 +15,9 @@ import { AccountChips } from "../molecules/AccountChips.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { budgetPlaceholderActive } from "../../utils/saldo.js";
 
+const MON_SHORT = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
+const monthName = (key) => { const [y,m]=key.split("-"); return `${MON_SHORT[(+m||1)-1]} ${y}`; };
+
 function TransactionsScreen() {
   const { cats,setCats,groups,setGroups,txs,setTxs,accounts,setAccounts,
     yearData,setYearData,year,setYear,month,setMonth,isLand,
@@ -45,6 +48,9 @@ function TransactionsScreen() {
     // volle Liste; nur das DOM ist gedeckelt. Bei Filter-/Suchwechsel zurücksetzen.
     const PAGE = 80;
     const [visibleCount, setVisibleCount] = useState(PAGE);
+    // Monats-Fenster: wie viele Monate vor/nach dem gewählten Monat eingeblendet
+    const [showNewer, setShowNewer] = useState(0);
+    const [showOlder, setShowOlder] = useState(0);
     const [showAllCats, setShowAllCats] = useState(false);
     const [activeCatTxId, setActiveCatTxId] = useState(null);
     const pendingCatsRef = useRef({});
@@ -111,7 +117,49 @@ function TransactionsScreen() {
 
     // Sichtbare Anzahl bei Filter-/Suchwechsel zurücksetzen
     useEffect(()=>{ setVisibleCount(PAGE); }, [filt,search,filtAcc,hideLinked]);
-    const shownList = filteredList.slice(0, visibleCount);
+
+    // ── Monats-Fenster (wie Monatsansicht) ────────────────────────────────
+    // Standardmäßig wird NUR der über den Monatswähler gewählte Monat gezeigt.
+    // Ältere/neuere Monate werden über die Buttons unten/oben schrittweise
+    // sichtbar gemacht, damit beim Monatswechsel nicht alles geladen wird.
+    // In Such-/Review-Modi (suchen, ？, ⚠ Falsch) gilt das Fenster nicht.
+    const monthScoped = !search.trim() && filt!=="mismatch" && filt!=="uncat";
+    const selKey = `${year}-${String(month+1).padStart(2,"0")}`;
+    // Fenster beim Monats-/Filterwechsel zurücksetzen → Sprung zum Monat
+    useEffect(()=>{ setShowNewer(0); setShowOlder(0); }, [selKey,filt,filtAcc]);
+
+    const monthKeys = useMemo(()=>{
+      const s = new Set(filteredList.map(t=>t.date.slice(0,7)));
+      return [...s].sort().reverse(); // absteigend, neueste zuerst
+    },[filteredList]);
+    const newerKeys = useMemo(()=>monthKeys.filter(k=>k>selKey),[monthKeys,selKey]); // oben
+    const olderKeys = useMemo(()=>monthKeys.filter(k=>k<selKey),[monthKeys,selKey]); // unten
+
+    const visibleKeys = useMemo(()=>{
+      const set = new Set([selKey]);
+      newerKeys.slice(Math.max(0,newerKeys.length-showNewer)).forEach(k=>set.add(k));
+      olderKeys.slice(0,showOlder).forEach(k=>set.add(k));
+      return set;
+    },[selKey,newerKeys,olderKeys,showNewer,showOlder]);
+
+    const windowList = useMemo(()=>{
+      if(!monthScoped) return filteredList;
+      return filteredList.filter(t=>visibleKeys.has(t.date.slice(0,7)));
+    },[monthScoped,filteredList,visibleKeys]);
+
+    // Anzahl noch versteckter Buchungen ober-/unterhalb des Fensters
+    const newerHiddenCount = useMemo(()=>{
+      if(!monthScoped) return 0;
+      const hidden = new Set(newerKeys.slice(0,Math.max(0,newerKeys.length-showNewer)));
+      return filteredList.filter(t=>hidden.has(t.date.slice(0,7))).length;
+    },[monthScoped,filteredList,newerKeys,showNewer]);
+    const olderHiddenCount = useMemo(()=>{
+      if(!monthScoped) return 0;
+      const hidden = new Set(olderKeys.slice(showOlder));
+      return filteredList.filter(t=>hidden.has(t.date.slice(0,7))).length;
+    },[monthScoped,filteredList,olderKeys,showOlder]);
+
+    const shownList = monthScoped ? windowList : filteredList.slice(0, visibleCount);
 
     const allSelected = filteredList.length>0 && filteredList.every(t=>selected.has(t.id));
     const toggleAll   = () => setSelected(allSelected
@@ -403,6 +451,21 @@ function TransactionsScreen() {
               </div>
             : <div style={{background:"rgba(255,255,255,0.04)",borderRadius:18,
                 padding:"4px 14px",border:`1px solid ${T.bd}`}}>
+                {/* Neuere Monate einblenden (oben) */}
+                {monthScoped && newerHiddenCount>0 && (
+                  <div onClick={()=>setShowNewer(n=>n+1)}
+                    style={{textAlign:"center",padding:"10px",cursor:"pointer",
+                      color:T.blue,fontSize:13,fontWeight:600,borderBottom:`1px solid ${T.bd}`,
+                      display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                    {Li("chevron-up",14,T.blue)} + {newerHiddenCount} neuere anzeigen
+                  </div>
+                )}
+                {/* Hinweis, wenn der gewählte Monat selbst leer ist */}
+                {monthScoped && shownList.length===0 && (
+                  <div style={{color:T.txt2,textAlign:"center",padding:"18px 8px",fontSize:12}}>
+                    keine Buchungen in {monthName(selKey)}
+                  </div>
+                )}
                 {shownList.map((tx,i)=>{
                   const cat=getCat((tx.splits||[])[0]?.catId);
                   const type=txType(tx);
@@ -585,7 +648,17 @@ function TransactionsScreen() {
                     </div>
                   );
                 })}
-                {filteredList.length>visibleCount && (
+                {/* Ältere Monate einblenden (unten) */}
+                {monthScoped && olderHiddenCount>0 && (
+                  <div onClick={()=>setShowOlder(n=>n+1)}
+                    style={{textAlign:"center",padding:"12px",cursor:"pointer",
+                      color:T.blue,fontSize:13,fontWeight:600,borderTop:`1px solid ${T.bd}`,
+                      display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                    {Li("chevron-down",14,T.blue)} + {olderHiddenCount} ältere anzeigen
+                  </div>
+                )}
+                {/* Such-/Review-Modus: klassisches Paging */}
+                {!monthScoped && filteredList.length>visibleCount && (
                   <div onClick={()=>setVisibleCount(c=>c+PAGE*4)}
                     style={{textAlign:"center",padding:"12px",cursor:"pointer",
                       color:T.blue,fontSize:13,borderTop:`1px solid ${T.bd}`}}>
