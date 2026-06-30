@@ -734,7 +734,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
           r._enrichedMerchant ? `Händler: ${r._enrichedMerchant}${r._enrichedPlus30?" (PayPal +30)":r._enrichedWithdrawal?" (Auszahlung)":""}` : "",
           r._detailNote || "",
         ].filter(Boolean).join(" · "),
-        pending: false,
+        pending: !!r.pending,   // aus der CSV erkannte Vormerkung (z.B. DKB-Status „Vorgemerkt") übernehmen
         accountId: resolvedAccId,
         splits,
         _csvType: r.amount > 0 ? "income" : "expense",

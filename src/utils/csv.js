@@ -155,6 +155,11 @@ function parseCSV(text, {noGroup=false}={}) {
   const umbuchungCol    = headers.indexOf("umbuchung"); // Finanzblick: Gegenkonto bei internem Transfer
   // Gläubiger-ID (SEPA Creditor-ID) — eindeutiges Merkmal z.B. für PayPal.
   const creditorCol     = headers.findIndex(h=>h.includes("gläubiger")||h.includes("glaubiger")||h.includes("creditor"));
+  // Status-Spalte (z.B. DKB: „Gebucht"/„Vorgemerkt") → Vormerkung erkennen.
+  // Bei PayPal NICHT (deren „Status" = Completed/Pending ist etwas anderes und
+  // wird über die PayPal-+30-Logik behandelt).
+  const isPayPalFmt = (format||"").toLowerCase().includes("paypal");
+  const statusCol   = isPayPalFmt ? -1 : headers.findIndex(h=>h==="status"||h.includes("status"));
 
   // Finanzblick pending-Flag Spalte suchen — NUR für Finanzblick-Format
   let pendingFlagCol = -1;
@@ -227,7 +232,9 @@ function parseCSV(text, {noGroup=false}={}) {
     const rowType = typeCol>=0    ? cols[typeCol]     : rawBtext||null;
     // Finanzblick: pending-Flag auslesen
     const isFbPending = pendingFlagCol>=0 && cols[pendingFlagCol]?.toLowerCase()==="true";
-    rows.push({ isoDate, amount, desc, fp: txFingerprint(isoDate, amount, desc), txCode, refCode, rowType, _konto: rawKonto, _fbPending: isFbPending, ...(rawRecip ? {_recipient: rawRecip} : {}), ...(rawUmb && rawUmb.trim() ? {_umbuchung: rawUmb.trim()} : {}), ...(rawCreditor ? {_creditorId: rawCreditor} : {}) });
+    // Status-Spalte → echte Vormerkung (z.B. DKB „Vorgemerkt", generisch reserviert/ausstehend)
+    const isVorgemerkt = statusCol>=0 && /vorgemerkt|reserviert|ausstehend|nicht gebucht/i.test(cols[statusCol]||"");
+    rows.push({ isoDate, amount, desc, fp: txFingerprint(isoDate, amount, desc), txCode, refCode, rowType, _konto: rawKonto, _fbPending: isFbPending, pending: isVorgemerkt, ...(rawRecip ? {_recipient: rawRecip} : {}), ...(rawUmb && rawUmb.trim() ? {_umbuchung: rawUmb.trim()} : {}), ...(rawCreditor ? {_creditorId: rawCreditor} : {}) });
   }
 
   // Finanzblick: pending=true Detailzeilen als Notiz an Hauptbuchung anhängen

@@ -132,7 +132,10 @@ function mapEnableBankingTx(tx, accountId) {
     amount,
     desc,
     fp: txFingerprint(isoDate, amount, desc, accountId),
-    pending: String(tx?.status || "").toUpperCase() === "PDNG",
+    // Vorgemerkt erkennen — robust über mögliche Statusfelder/-werte der ASPSPs
+    // (Enable Banking Standard: status "PDNG"; manche Banken liefern es abweichend).
+    pending: /pdng|pend|hold|reserv|vorgemerkt/i.test(
+      String(tx?.status ?? tx?.booking_status ?? tx?.transaction_status ?? tx?.credit_debit_status ?? "")),
     _ebRef: tx?.entry_reference || tx?.transaction_id || null,
     _resolvedAccId: accountId,
   };
