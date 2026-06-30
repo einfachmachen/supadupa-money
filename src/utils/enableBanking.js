@@ -128,16 +128,17 @@ function mapEnableBankingTx(tx, accountId) {
   // (Enable Banking Standard: status "PDNG"; manche Banken liefern es abweichend).
   const pending = /pdng|pend|hold|reserv|vorgemerkt/i.test(
     String(tx?.status ?? tx?.booking_status ?? tx?.transaction_status ?? tx?.credit_debit_status ?? ""));
-  // Datum: bei VORGEMERKTEN Buchungen das tatsächliche Verursachungsdatum
-  // bevorzugen — also wann der Umsatz entstanden ist (transaction_date, z. B.
-  // der Zeitpunkt an der Kasse), dann das voraussichtliche Wertstellungs-/
-  // Ausführungsdatum (value_date), erst zuletzt das Beobachtungs-/Buchungs-
-  // datum (booking_date, = Banktag). Sonst stempeln manche Banken eine
-  // Vormerkung mit dem Banktag, wodurch sie im falschen Monat landet.
+  // Datum: maßgeblich ist, WANN der Umsatz das Konto belastet — das bestimmt
+  // Tagessaldo und Budget. Bei VORGEMERKTEN Buchungen daher die voraussichtliche
+  // Wertstellung (value_date) bevorzugen, erst als Fallback den Banktag
+  // (booking_date). Das Verursachungsdatum (transaction_date, z. B. Zeitpunkt an
+  // der Kasse) dient NUR der Nachvollziehbarkeit und wird hier bewusst NICHT zur
+  // Einordnung genutzt: Eine heute verursachte, aber erst im Folgemonat belastete
+  // Zahlung gehört saldo-/budgetseitig in den Folgemonat.
   // Bei echten (gebuchten) Buchungen bleibt booking_date führend, damit die
   // Dubletten-Erkennung bereits importierter Umsätze stabil bleibt.
   const isoDate = (pending
-    ? String(tx?.transaction_date || tx?.value_date || tx?.booking_date || "")
+    ? String(tx?.value_date || tx?.booking_date || "")
     : String(tx?.booking_date || tx?.value_date || "")).slice(0, 10);
   const amount = ebSignedAmount(tx);
   const desc = ebDescription(tx);
