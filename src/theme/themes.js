@@ -681,11 +681,11 @@ THEMES.cleancorporate = {
 // ── Deep Ocean — tiefes Marineblau, helle Schrift, Cyan-Akzent, Chartreuse-Grün
 THEMES.deepocean = {
   ...THEMES.dark,
-  bg:"#0B132B", surf:"#1C2541", surf2:"#243056", surf3:"#080F22",
+  bg:"#0B132B", surf:"#1C2541", surf2:"#2A2A2E", surf3:"#080F22",
   bd:"rgba(150,180,220,0.18)", bds:"rgba(150,180,220,0.34)",
   txt:"#F4F6F9", txt2:"rgba(200,215,240,0.72)", lbl:"rgba(200,215,240,0.54)",
   blue:"#48CAE4", pos:"#BFFF00", neg:"#FF5252", gold:"#FFC861",
-  on_accent:"#06121A", disabled:"#243056", warn:"#FFB54A", override:"#C2820F",
+  on_accent:"#06121A", disabled:"#2A2A2E", warn:"#FFB54A", override:"#C2820F",
   mid:"#67E8F9",
   cell_inc:"#BFFF00", cell_inc_bg:"#141F00", cell_inc_bd:"#4A6600",
   tab_exp:"#3A1010", tab_inc:"#1C2A00", tab_pend:"#332600",
