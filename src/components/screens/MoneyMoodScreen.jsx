@@ -684,6 +684,7 @@ function MoodDetail({ row, isSub, isIncome, focusMi, year, txs, getAcc, recentId
           {actual.map((a, i) => {
             const x = padL + i * bw;
             const bdg = budget[i] || 0;
+            const overBudget = bdg > 0 && a > bdg + 0.005;  // Ist+VM über Budget
             const bh = (a / maxV) * chartH;                 // Ist + VM
             const bhB = (bdg / maxV) * chartH;              // Budget (geplant)
             const labelV = Math.max(a, fore[i] ?? a);       // angezeigter Vorschau-Wert
@@ -705,12 +706,12 @@ function MoodDetail({ row, isSub, isIncome, focusMi, year, txs, getAcc, recentId
                     überschritten ist (Ist+VM > Budget), sonst Ampelfarbe. */}
                 {a > 0 && (
                   <rect x={x + bw * 0.12} y={padTop + chartH - bh} width={bw * 0.76} height={Math.max(0, bh)}
-                    rx={2} fill={(bdg > 0 && a > bdg + 0.005) ? T.neg : c} opacity={seld ? 1 : (future ? 0.3 : 0.5)}
+                    rx={2} fill={overBudget ? T.neg : c} opacity={seld ? 1 : (future ? 0.3 : 0.5)}
                     stroke={seld && bdg <= 0 ? T.txt : "none"} strokeWidth={seld && bdg <= 0 ? 1 : 0} />
                 )}
                 {labelV > 0 && (
                   <text x={x + bw / 2} y={padTop + chartH - bhTop - 3} textAnchor="middle" fontSize="7"
-                    fill={seld ? T.gold : T.txt2} fontWeight={seld ? 700 : 400}>{fmtK(labelV)}</text>
+                    fill={overBudget ? T.neg : (seld ? T.gold : T.txt2)} fontWeight={(seld || overBudget) ? 700 : 400}>{fmtK(labelV)}</text>
                 )}
                 <text x={x + bw / 2} y={H - 5} textAnchor="middle" fontSize="8" fill={seld ? T.gold : T.txt2}
                   fontWeight={seld ? 700 : 400}>{MONTHS_S[i]}</text>
