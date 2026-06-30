@@ -1713,7 +1713,13 @@ function DashboardScreenV2() {
                   ].sort(drillSort)
                   : [...dashDrillList.map(t=>txs.find(x=>x.id===t.id)||t)]
                       .filter(t=>!(dashDrill._subDrillNoBudget&&t.pending&&t._budgetSubId))
-                      .sort((a,b)=>{const da=a.date||"",db=b.date||"";return db.localeCompare(da);})
+                      // Budget-Kategorien (Platzhalter) zuerst gruppiert (wie im
+                      // Dashboard „Offene Vormerkungen"), danach der Rest nach Datum.
+                      .sort((a,b)=>{
+                        const ba=a._budgetSubId?0:1, bb=b._budgetSubId?0:1;
+                        if(ba!==bb) return ba-bb;
+                        const da=a.date||"",db=b.date||"";return db.localeCompare(da);
+                      })
                   ).filter(t=>{
                     if(!dashSearch) return true;
                     const isAmtSearch = /^[=<>]?[\d.,]+$/.test(dashSearch.trim());
