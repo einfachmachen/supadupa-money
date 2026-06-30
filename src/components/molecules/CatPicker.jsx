@@ -9,7 +9,7 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, pn, uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
-function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAmount=0, onSplit=null, filterType=null, openUp=false, accountId=null}) {
+function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAmount=0, onSplit=null, filterType=null, openUp=false, accountId=null, noMargin=false}) {
   const { cats, groups, accounts, setCats, setGroups, quickBtns, setQuickBtns } = useContext(AppCtx);
   const [step,    setStep]    = useState(0);  // 0=Gruppe 1=Kat 2=Unterkat
   const [selGrp,  setSelGrp]  = useState(null);
@@ -130,7 +130,7 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
   };
 
   return (
-    <div style={{position:"relative",width:"100%",marginBottom:8}}>
+    <div style={{position:"relative",width:"100%",marginBottom:noMargin?0:8}}>
       {/* Trigger */}
       <div style={{display:"flex",gap:4}}>
         <button ref={triggerRef} onClick={openPanel}
