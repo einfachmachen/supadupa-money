@@ -469,8 +469,9 @@ function MoodDetail({ row, isSub, isIncome, focusMi, year, txs, getAcc, recentId
   const subBreakdown = useMemo(() => !isCat ? [] :
     row.subs.map(s => {
       const act = s.actual[sel] || 0;
+      const bud = Math.abs(s.budget?.[sel] || 0);   // gesetztes Budget im Monat
       const val = (s.fore?.[sel] ?? act) || 0;   // budget-gefloort (Vorschau)
-      return { name: s.name, val, subId: s.id, isBudget: act <= 0 && val > 0 };
+      return { name: s.name, val, subId: s.id, isBudget: act <= 0 && val > 0, spent: act, budget: bud };
     }).filter(it => it.val > 0).sort((a, b) => b.val - a.val),
     [isCat, row, sel]);
 
@@ -486,7 +487,6 @@ function MoodDetail({ row, isSub, isIncome, focusMi, year, txs, getAcc, recentId
   // Budget des aktuell betrachteten Blatts/Subs im gewählten Monat (für den Fall
   // „Budget gesetzt, aber noch keine Buchungen" → Hinweiszeile statt Leerstand).
   const bkBudget = drilledSub ? (drilledSub.budget?.[sel] || 0) : (!isCat ? (budget[sel] || 0) : 0);
-  const subMax = Math.max(1, ...subBreakdown.map(it => it.val));
   const bkMax = Math.max(1, ...(bookings || []).map(it => it.val));
   const fullDate = (ds) => new Date(ds).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "long", year: "numeric" });
   const Field = ({ label, value, wrap }) => (
@@ -625,14 +625,47 @@ function MoodDetail({ row, isSub, isIncome, focusMi, year, txs, getAcc, recentId
               <div className="sdm-scroll" style={{ maxHeight: 200, overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
                 {subBreakdown.map((it, i) => {
                   const active = it.subId === selSub;
+                  // Budget-Anzeige wie in den Vormerkungen: Symbol + Fortschritts-
+                  // balken (verbraucht/Budget) + „verbraucht … Rest:/zuviel:".
+                  const budgetFull = it.budget || 0;
+                  const hasBudget = budgetFull > 0 && !isIncome;
+                  const spent = it.spent || 0;
+                  const open = budgetFull - spent;                  // Rest (negativ = überzogen)
+                  const isOver = hasBudget && open < 0;
+                  const ratio = budgetFull > 0 ? Math.min(1, spent / budgetFull) : 0;
+                  const mainCol = isIncome ? T.pos : (isOver ? T.neg : T.gold);
+                  const barCol = isIncome ? T.pos : (ratio >= 1 ? T.neg : ratio >= 0.75 ? T.gold : T.pos);
+                  const usedCol = spent === 0 ? T.txt2 : (isOver ? T.neg : T.txt);
+                  const restCol = isOver ? T.neg : (open > 0 ? T.gold : T.txt2);
                   return (
                     <div key={i} onClick={() => setSelSub(it.subId)}
-                      style={{ flexShrink: 0, position: "relative", borderRadius: 6, overflow: "hidden", padding: "8px 8px", cursor: "pointer", outline: active ? `1px solid ${T.gold}` : "none" }}>
-                      <div style={{ position: "absolute", inset: 0, width: `${(it.val / subMax) * 100}%`, background: (isIncome ? T.pos : T.blue) + (it.isBudget ? "12" : "22") }} />
-                      <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ flex: 1, minWidth: 0, color: active ? T.gold : (it.isBudget ? T.txt2 : T.txt), fontSize: 20, fontWeight: active ? 700 : 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
-                        {it.isBudget && <span style={{ background: "rgba(245,166,35,0.15)", color: T.gold, borderRadius: 4, padding: "0 5px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>Budget</span>}
-                        <span style={{ color: it.isBudget ? T.txt2 : T.txt, fontSize: 18, fontWeight: 600, fontFamily: NUM_FONT, flexShrink: 0 }}>{fmt(it.val)}</span>
+                      style={{ flexShrink: 0, borderRadius: 8, padding: "6px 8px", cursor: "pointer",
+                        outline: active ? `1px solid ${T.gold}` : "none",
+                        background: active ? "rgba(245,166,35,0.06)" : "transparent" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ width: 30, height: 30, borderRadius: 9, flexShrink: 0, background: mainCol + "22",
+                          border: `1px solid ${T.bd}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          {Li(isOver ? "alert-triangle" : "target", 15, mainCol)}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ color: active ? T.gold : (isOver ? T.neg : T.txt), fontSize: 15,
+                            fontWeight: active ? 700 : 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</div>
+                          {hasBudget && (
+                            <div style={{ marginTop: 5, position: "relative", height: 8, maxWidth: 120 }}>
+                              <div style={{ position: "absolute", left: 0, right: 0, top: 3.25, height: 1.5, background: T.bd, borderRadius: 1 }} />
+                              <div style={{ position: "absolute", left: `calc(3px + (100% - 6px) * ${ratio})`, top: 1, width: 6, height: 6, borderRadius: "50%", background: barCol, transform: "translateX(-50%)" }} />
+                            </div>
+                          )}
+                        </div>
+                        {hasBudget ? (
+                          <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexShrink: 0 }}>
+                            <span style={{ color: usedCol, fontSize: 16, fontWeight: 700, fontFamily: NUM_FONT, fontVariantNumeric: "tabular-nums" }}>{spent === 0 ? "—" : fmt(Math.abs(spent))}</span>
+                            <span style={{ color: T.txt2, fontSize: 10 }}>{isOver ? "zuviel:" : "Rest:"}</span>
+                            <span style={{ color: restCol, fontSize: 16, fontWeight: 800, fontFamily: NUM_FONT, fontVariantNumeric: "tabular-nums" }}>{fmt(Math.abs(open))}</span>
+                          </div>
+                        ) : (
+                          <span style={{ color: isIncome ? T.pos : T.txt, fontSize: 16, fontWeight: 700, fontFamily: NUM_FONT, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{fmt(it.val)}</span>
+                        )}
                         {Li("chevron-right", 18, active ? T.gold : T.txt2)}
                       </div>
                     </div>
