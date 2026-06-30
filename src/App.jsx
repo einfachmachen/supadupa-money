@@ -2686,6 +2686,13 @@ Abbrechen = ${remoteName}-Stand laden`
           setShowMobilePicker(true);
         };
         const onTap = (t) => {
+          // Offene Mobile-Overlays/Picker beim Tab-Wechsel schließen — sonst läge
+          // der Picker über der neuen Ansicht und es "passiert nichts".
+          setShowMobilePicker(false); setMobilePickerScreen("main");
+          setShowMobileVormerken(false); setShowMobileKategorien(false);
+          setShowMobileBudget(false); setShowMobileWiederkehrend(false);
+          setShowDataMgr(false); setShowCsv(false); setShowVormHub(false);
+          setPlusArretiert(false);
           if(t.id==="home")      { setMainTab("erfassen"); setSubTab("dashboard"); }
           else if(t.id==="monat")     { setMainTab("erfassen"); setSubTab("monat"); }
           else if(t.id==="optionen")  { setMainTab("struktur"); setActiveStructurTab("einstellungen"); }
@@ -2994,6 +3001,11 @@ Abbrechen = ${remoteName}-Stand laden`
                 }
                 setPlusArretiert(false);
                 showMoons(false);
+              } else if(showMobilePicker) {
+                // Picker („Was möchtest du tun?") offen: Einzel-Tap auf den + =
+                // zurück (Picker schließen, Knopf wieder klein).
+                setShowMobilePicker(false); setMobilePickerScreen("main"); setPlusArretiert(false);
+                masterLastTapRef.current = {zone:null, t:0, timer:null};
               } else {
                 // Erster Tap auf den vergrößerten +: zeigt zuerst die Monde;
                 // ein weiterer Tap öffnet dann den aktiven Mond.
@@ -3056,7 +3068,15 @@ Abbrechen = ${remoteName}-Stand laden`
                   touchAction:"none",userSelect:"none",cursor:"pointer",
                   WebkitTapHighlightColor:"transparent",padding:0,
                   fontFamily:"inherit",lineHeight:1}}>
-                {plusArretiert && !moodDrillOpen && moonsShown ? (
+                {showMobilePicker ? (
+                  <div style={{pointerEvents:"none",textAlign:"center",width:"86%"}}>
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+                      <span style={{fontSize:19,fontWeight:800,color:fg,lineHeight:1}}>‹</span>
+                      <span style={{fontSize:14,fontWeight:800,color:fg,lineHeight:1}}>zurück</span>
+                    </div>
+                    <div style={{fontSize:8,fontWeight:700,color:fg,opacity:0.8,letterSpacing:0.3,marginTop:4,whiteSpace:"nowrap"}}>tippen</div>
+                  </div>
+                ) : plusArretiert && !moodDrillOpen && moonsShown ? (
                   <div style={{pointerEvents:"none",textAlign:"center",width:"86%"}}>
                     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                       <span style={{fontSize:19,fontWeight:800,color:fg,lineHeight:1}}>‹</span>
