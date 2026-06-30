@@ -203,7 +203,7 @@ function CloudSetupWizard({ onClose }) {
 
       {/* Inhalt */}
       <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch",
-        padding: "8px 18px calc(96px + env(safe-area-inset-bottom, 0px))" }}>
+        padding: "8px 18px calc(190px + env(safe-area-inset-bottom, 0px))" }}>
         <div style={{ maxWidth: 480, margin: "0 auto" }}>
 
           {k === "konto" && (

@@ -3223,7 +3223,7 @@ Abbrechen = ${remoteName}-Stand laden`
       {/* ── Monde: 4 runde Buttons rund um den vergrößerten + (ersetzt den Mehr-Screen).
             Doppeltipp auf den kleinen + blendet sie ein; ←/→ schaltet durch,
             Tipp auf einen Mond ODER Tipp auf den + (aktiver Mond) öffnet die Funktion. ── */}
-      {plusArretiert && moonsShown && !moodDrillOpen && !showMobilePicker && !showMonthPickerModal && !showCloudSave && !showMobileVormerken && !showMobileKategorien && mainTab!=="struktur" && (
+      {plusArretiert && moonsShown && !masterOverride && !moodDrillOpen && !showMobilePicker && !showMonthPickerModal && !showCloudSave && !showMobileVormerken && !showMobileKategorien && mainTab!=="struktur" && (
         <div style={{position:"fixed",left:0,right:0,bottom:0,height:0,zIndex:600,pointerEvents:"none"}}>
           {(()=>{ const {bg,fg,isFlat}=plusBtnColors(T); return MOONS.map((mn,i)=>{
             // Größerer Radius + höhere Basis → Monde klar abgesetzt vom + (kein Überlappen).
