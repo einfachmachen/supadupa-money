@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { nextBankWorkday, isBankWorkday, parseGermanDate, isoAddDays } from "../src/utils/date.js";
+import { nextBankWorkday, isBankWorkday, parseGermanDate, isoAddDays, pendingDebitDate } from "../src/utils/date.js";
 
 describe("isoAddDays", () => {
   it("addiert Kalendertage", () => {
@@ -67,5 +67,23 @@ describe("nextBankWorkday — TARGET2-Banktage", () => {
     expect(isBankWorkday(new Date(2026,4,1))).toBe(false);  // 1. Mai
     expect(isBankWorkday(new Date(2026,3,3))).toBe(false);  // Karfreitag 3.4.2026
     expect(isBankWorkday(new Date(2026,5,15))).toBe(true);  // Mo 15.6.
+  });
+});
+
+describe("pendingDebitDate — Vormerkung frühestens am nächsten Banktag", () => {
+  it("heute (Di 30.6.) verursacht → Belastung Mi 1.7.", () => {
+    expect(pendingDebitDate("2026-06-30", "2026-06-30")).toBe("2026-07-01");
+  });
+  it("Freitag → nächster Banktag ist Montag", () => {
+    expect(pendingDebitDate("2026-06-12", "2026-06-12")).toBe("2026-06-15"); // Fr→Mo
+  });
+  it("bereits in der Zukunft datierte Vormerkung bleibt unverändert", () => {
+    expect(pendingDebitDate("2026-07-15", "2026-06-30")).toBe("2026-07-15");
+  });
+  it("vergangenes Datum (noch offen) wird auf den Banktag danach gesetzt", () => {
+    expect(pendingDebitDate("2026-06-29", "2026-06-30")).toBe("2026-06-30"); // Mo 29.6.→Di 30.6.
+  });
+  it("leeres Datum bleibt leer", () => {
+    expect(pendingDebitDate("", "2026-06-30")).toBe("");
   });
 });

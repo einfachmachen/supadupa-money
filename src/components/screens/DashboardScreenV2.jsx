@@ -20,6 +20,7 @@ import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { txFingerprint, isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
 import { saldoAt, budgetPlaceholderActive } from "../../utils/saldo.js";
+import { pendingDebitDate } from "../../utils/date.js";
 import { fetchNewBankTx, listConnectedBanks } from "../../utils/enableBankingFetch.js";
 
 function DashboardScreenV2() {
@@ -110,8 +111,14 @@ function DashboardScreenV2() {
       if (!res.ok) { setBankFetch({ status: "error", reason: res.reason, message: res.message, detail: res.detail, aspsp, banks }); return; }
       const newItems = res.items.filter((i) => i.status === "new");
       const dupeItems = res.items.filter((i) => i.status !== "new");
+      // "heute" für die Banktag-Logik der Vormerkungen.
+      const _tn = new Date();
+      const todayIso = `${_tn.getFullYear()}-${String(_tn.getMonth()+1).padStart(2,"0")}-${String(_tn.getDate()).padStart(2,"0")}`;
       const added = newItems.map(({ row, accId }) => ({
-        id: "eb-" + uid(), date: row.isoDate,
+        id: "eb-" + uid(),
+        // Vormerkungen: frühestens am nächsten Banktag belastet (wie manuelle VM);
+        // das Roh-Datum bleibt im Fingerprint (_fp) → stabile Dubletten-Erkennung.
+        date: row.pending ? pendingDebitDate(row.isoDate, todayIso) : row.isoDate,
         // Vormerkungen signiert (wie manuelle VM), echte Buchungen als Betrag.
         totalAmount: row.pending ? row.amount : Math.abs(row.amount),
         desc: row.desc, note: "", pending: !!row.pending, accountId: accId, splits: [],
