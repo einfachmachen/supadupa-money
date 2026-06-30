@@ -412,7 +412,7 @@ function TransactionsScreen() {
         </div>
 
         {/* Liste */}
-        <div style={{flex:1,padding:"6px 12px 20px",overflowY:"auto"}}>
+        <div style={{flex:1,padding:"6px 8px 20px",overflowY:"auto"}}>
           {filt==="mismatch"&&filteredList.length>0&&(
             <div style={{margin:"0 0 6px",padding:"8px 12px",borderRadius:10,
               background:"rgba(245,166,35,0.08)",border:`1px solid ${T.gold}44`}}>
@@ -449,8 +449,8 @@ function TransactionsScreen() {
             ? <div style={{color:T.txt2,textAlign:"center",padding:32,fontSize:13}}>
                 {filt==="mismatch" ? "Keine Fehlzuordnungen gefunden ✓" : search ? `Keine Buchungen für „${search}"` : "keine Buchungen"}
               </div>
-            : <div style={{background:"rgba(255,255,255,0.04)",borderRadius:18,
-                padding:"4px 6px",border:`1px solid ${T.bd}`}}>
+            : <div style={{background:"rgba(255,255,255,0.04)",borderRadius:12,
+                padding:"4px 0",border:`1px solid ${T.bd}`,overflow:"hidden"}}>
                 {/* Neuere Monate einblenden (oben) */}
                 {monthScoped && newerHiddenCount>0 && (
                   <div onClick={()=>setShowNewer(n=>n+1)}
@@ -493,8 +493,7 @@ function TransactionsScreen() {
                     <div key={tx.id}
                       style={{borderTop:i>0?`1px solid ${T.bd}`:"none",
                         background:isSel?"rgba(74,159,212,0.06)":"transparent",
-                        borderRadius:isSel?8:0,margin:isSel?"2px -4px":"0",
-                        padding:"1px 0"}}>
+                        borderRadius:0,margin:0}}>
                       {/* Hauptzeile */}
                       <div style={{display:"flex",alignItems:"center",gap:8,padding:"3px 8px",
                         userSelect:"none",WebkitUserSelect:"none"}}>
@@ -534,7 +533,7 @@ function TransactionsScreen() {
                             {cleanDesc}
                           </div>
                           <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap",marginTop:1}}>
-                            <span style={{color:T.txt2,fontSize:10}}>{tx.date}</span>
+                            <span style={{color:T.txt2,fontSize:10}}>{tx.date.slice(8)}.{tx.date.slice(5,7)}.</span>
                             {tx.pending&&<span style={{fontSize:9,background:"rgba(245,166,35,0.18)",
                               color:T.gold,borderRadius:4,padding:"0px 5px",fontWeight:700,
                               border:`1px solid ${T.gold}44`,flexShrink:0}}>VM</span>}
