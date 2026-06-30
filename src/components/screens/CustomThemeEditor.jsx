@@ -240,10 +240,10 @@ function CustomThemeEditor() {
               border:`1.5px solid ${themeName===key ? theme.blue : T.bd}`,
               borderRadius:10,padding:"5px 8px 5px 10px",cursor:"pointer"}}
               onClick={()=>{ setThemeName(key); kvStore.setItem("mbt_theme",key); }}>
-              {/* Color swatch row */}
-              <div style={{display:"flex",gap:2,marginRight:4}}>
-                {["bg","blue","pos","neg","gold"].map(f=>(
-                  <div key={f} style={{width:8,height:8,borderRadius:"50%",background:theme[f],border:"1px solid rgba(255,255,255,0.2)"}}/>
+              {/* 4-Farbpunkte-Symbol (2×2) */}
+              <div style={{display:"grid",gridTemplateColumns:"7px 7px",gridTemplateRows:"7px 7px",gap:2,marginRight:5,flexShrink:0}}>
+                {["blue","pos","neg","gold"].map(f=>(
+                  <div key={f} style={{width:7,height:7,borderRadius:"50%",background:theme[f],border:"1px solid rgba(255,255,255,0.25)"}}/>
                 ))}
               </div>
               <span style={{fontSize:11,color:T.txt,fontWeight:themeName===key?700:400,maxWidth:90,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>

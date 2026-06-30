@@ -7,7 +7,6 @@ import { CustomThemeEditor } from "./CustomThemeEditor.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
-import { THEMES } from "../../theme/themes.js";
 import { Li } from "../../utils/icons.jsx";
 import { makeYearData } from "../../utils/yearData.js";
 import { kvStore } from "../../utils/kvStore.js";
@@ -38,41 +37,7 @@ function SettingsInline() {
   return (
     <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 14px 24px"}}>
 
-      {/* Theme-Auswahl */}
-      <div style={{marginBottom:14}}>
-        <div style={{color:T.lbl||T.txt2,fontSize:11,fontWeight:600,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
-          {Li("palette",13,T.blue)} Farbschema
-        </div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
-          {[...Object.entries(THEMES), ...Object.entries(JSON.parse(kvStore.getItem("mbt_custom_themes")||"{}"))
-            .filter(([k])=>!THEMES[k])].map(([key,theme])=>(
-            <button key={key} onClick={()=>{setThemeName(key);kvStore.setItem("mbt_theme",key);}}
-              style={{padding:"8px 4px",borderRadius:12,cursor:"pointer",fontFamily:"inherit",minWidth:0,
-                border:`2px solid ${themeName===key?theme.blue:"transparent"}`,
-                background:theme.bg,
-                boxShadow:themeName===key?`0 0 0 1px ${theme.blue}44`:"none",
-                display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
-              {/* Mini-Preview */}
-              <div style={{width:"100%",borderRadius:8,overflow:"hidden",border:`1px solid ${theme.bds}`}}>
-                <div style={{background:theme.surf,padding:"4px 6px",display:"flex",gap:3,alignItems:"center"}}>
-                  <div style={{width:6,height:6,borderRadius:"50%",background:theme.blue}}/>
-                  <div style={{height:4,borderRadius:2,background:theme.blue,flex:1,opacity:0.7}}/>
-                </div>
-                <div style={{background:theme.bg,padding:"4px 6px",display:"flex",flexDirection:"column",gap:2}}>
-                  <div style={{height:3,borderRadius:2,background:theme.txt,opacity:0.6,width:"80%"}}/>
-                  <div style={{height:3,borderRadius:2,background:theme.txt2,width:"60%"}}/>
-                  <div style={{height:3,borderRadius:2,background:theme.pos,width:"40%"}}/>
-                </div>
-              </div>
-              <span style={{fontSize:10,fontWeight:themeName===key?700:400,color:theme.txt,
-                textShadow:key==="light"?"none":"none"}}>{theme.name}</span>
-              {themeName===key&&<span style={{fontSize:8,color:theme.blue,fontWeight:700}}>✓ Aktiv</span>}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── Custom Theme Editor ──────────────────────────────────────── */}
+      {/* ── Custom Theme Editor (eigene Farbschemas) ─────────────────── */}
       <CustomThemeEditor/>
 
       {/* ── Randlos-Modus ── */}
