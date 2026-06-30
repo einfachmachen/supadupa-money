@@ -701,10 +701,11 @@ function MoodDetail({ row, isSub, isIncome, focusMi, year, txs, getAcc, recentId
                     rx={2} fill={T.txt2} opacity={seld ? 0.4 : 0.2}
                     stroke={seld ? T.txt : "none"} strokeWidth={seld ? 1 : 0} />
                 )}
-                {/* Ist + Vormerkungen davor, in Ampelfarbe. */}
+                {/* Ist + Vormerkungen davor — ROT, wenn das Monatsbudget
+                    überschritten ist (Ist+VM > Budget), sonst Ampelfarbe. */}
                 {a > 0 && (
                   <rect x={x + bw * 0.12} y={padTop + chartH - bh} width={bw * 0.76} height={Math.max(0, bh)}
-                    rx={2} fill={c} opacity={seld ? 1 : (future ? 0.3 : 0.5)}
+                    rx={2} fill={(bdg > 0 && a > bdg + 0.005) ? T.neg : c} opacity={seld ? 1 : (future ? 0.3 : 0.5)}
                     stroke={seld && bdg <= 0 ? T.txt : "none"} strokeWidth={seld && bdg <= 0 ? 1 : 0} />
                 )}
                 {labelV > 0 && (
