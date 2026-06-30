@@ -450,7 +450,7 @@ function TransactionsScreen() {
                 {filt==="mismatch" ? "Keine Fehlzuordnungen gefunden ✓" : search ? `Keine Buchungen für „${search}"` : "keine Buchungen"}
               </div>
             : <div style={{background:"rgba(255,255,255,0.04)",borderRadius:18,
-                padding:"4px 14px",border:`1px solid ${T.bd}`}}>
+                padding:"4px 6px",border:`1px solid ${T.bd}`}}>
                 {/* Neuere Monate einblenden (oben) */}
                 {monthScoped && newerHiddenCount>0 && (
                   <div onClick={()=>setShowNewer(n=>n+1)}
@@ -491,12 +491,12 @@ function TransactionsScreen() {
                     : rawDesc;
                   return (
                     <div key={tx.id}
-                      style={{borderBottom:i<shownList.length-1?"1px solid rgba(255,255,255,0.05)":"none",
+                      style={{borderTop:i>0?`1px solid ${T.bd}`:"none",
                         background:isSel?"rgba(74,159,212,0.06)":"transparent",
                         borderRadius:isSel?8:0,margin:isSel?"2px -4px":"0",
                         padding:"1px 0"}}>
                       {/* Hauptzeile */}
-                      <div style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",
+                      <div style={{display:"flex",alignItems:"center",gap:8,padding:"3px 8px",
                         userSelect:"none",WebkitUserSelect:"none"}}>
                         {/* Checkbox links — nur im Suchmodus sichtbar */}
                         {inSearchMode&&(
@@ -514,7 +514,7 @@ function TransactionsScreen() {
                             background:(cat?.color||"#888")+"22",display:"flex",alignItems:"center",
                             justifyContent:"center",flexShrink:0,cursor:"pointer",
                             border:`1px solid ${txIconPick===tx.id?(cat?.color||T.blue)+"66":T.bd}`}}>
-                          {tx.pending?(tx._seriesTyp==="finanzierung"?Li("credit-card",14,T.gold):tx._seriesId?Li("repeat",14,T.pos):Li("calendar",14,T.gold)):isUncat?Li("help-circle",14,T.txt2):isS?Li("arrow-left-right",14,T.blue):Li(cat?.icon,14,cat?.color||T.txt2)}
+                          {tx.pending?(tx._seriesTyp==="finanzierung"?Li("credit-card",16,T.gold):tx._seriesId?Li("repeat",16,T.pos):Li("calendar",16,T.gold)):isUncat?Li("help-circle",16,T.txt2):isS?Li("arrow-left-right",16,T.blue):Li(cat?.icon,16,cat?.color||T.txt2)}
                         </div>
                         {txIconPick===tx.id&&(
                           <IconPickerDialog
@@ -529,7 +529,7 @@ function TransactionsScreen() {
                         {/* Text — Klick öffnet Edit */}
                         <div onClick={()=>{toggleOne(tx.id);openEdit(tx);}}
                           style={{flex:1,minWidth:0,cursor:"pointer"}}>
-                          <div style={{color:T.txt,fontSize:12,fontWeight:600,
+                          <div style={{color:T.txt,fontSize:13,fontWeight:700,
                             overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                             {cleanDesc}
                           </div>
@@ -618,7 +618,7 @@ function TransactionsScreen() {
                         {/* Betrag */}
                         <div style={{textAlign:"right",flexShrink:0}}>
                           <div style={{...amtStyle(tx.pending?"gold":type==="income"?"pos":"neg"),
-                            fontSize:12,fontWeight:700,fontFamily:NUM_FONT,whiteSpace:"nowrap"}}>
+                            fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",whiteSpace:"nowrap"}}>
                             {type==="income"?"+":"−"}{fmt(tx.totalAmount)}
                           </div>
                         </div>
@@ -626,7 +626,7 @@ function TransactionsScreen() {
                       {/* Kategorie-Button — öffnet separaten Dialog */}
                       {showAllCats&&(
                         <div onClick={e=>e.stopPropagation()}
-                          style={{marginLeft:40,marginBottom:4,marginRight:28}}>
+                          style={{marginLeft:48,marginBottom:4,marginRight:28}}>
                           <button onClick={()=>setActiveCatTxId(tx.id)}
                             style={{width:"100%",padding:"6px 10px",borderRadius:8,
                               border:`1px solid ${(pendingCatsRef.current[tx.id]||(tx.splits||[])[0]?.catId)?T.gold+"55":T.bd}`,
