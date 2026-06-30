@@ -1,6 +1,6 @@
 // Auto-generated module (siehe app-src.jsx)
 
-import React, { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { CatPicker } from "../molecules/CatPicker.jsx";
 import { MitteEndeFields } from "../molecules/MitteEndeFields.jsx";
 import { BudgetEditorModal } from "../organisms/BudgetEditorModal.jsx";
@@ -156,7 +156,7 @@ function MonatScreen() {
     const listRef = useRef(null);
     const stickyRef = useRef(null);
     const spyTick = useRef(false);
-    const scrollAnchorRef = useRef(null); // Position-Erhalt beim Laden NACH OBEN
+    const spyTimerRef = useRef(null);     // Scroll-Spy entprellt (s. u.)
     const lastScrollTopRef = useRef(null);// für die Scroll-Richtung
     // Pro Wisch nur EIN Monat: bei jedem touchstart wird genau ein Nachladen
     // freigegeben; danach erst wieder beim nächsten Wisch.
@@ -168,7 +168,10 @@ function MonatScreen() {
       requestAnimationFrame(()=>{
         spyTick.current = false;
         const el = listRef.current; if(!el) return;
-        // 1) Scroll-Spy: Monat (Hero/+ Button) folgt der Scrollposition.
+        // 1) Scroll-Spy — ENTPRELLT: Monat (Hero/+ Button) folgt erst, wenn das
+        //    Scrollen kurz ruht. Würde der Monat schon WÄHREND des Wischens
+        //    wechseln, löste jeder Monatswechsel eine teure Budget-Neuberechnung
+        //    (calcOpenBudgetDetails) aus → die Liste flackerte/leerte sich.
         const refTop = stickyRef.current ? stickyRef.current.getBoundingClientRect().bottom
                                           : el.getBoundingClientRect().top;
         let cur = null;
@@ -176,9 +179,15 @@ function MonatScreen() {
           if(c.getBoundingClientRect().top - refTop <= 8) cur = c.getAttribute("data-month");
           else break;
         }
-        if(cur){ const [yy,mm]=cur.split("-").map(Number); if(yy!==year||(mm-1)!==month){ setYear(yy); setMonth(mm-1); } }
-        // 2) Infinite-Scroll: am unteren Rand (nach unten) ein ÄLTERER, am oberen
-        //    Rand (nach oben) ein NEUERER Monat — je Wisch genau einer.
+        if(cur){
+          const [yy,mm]=cur.split("-").map(Number);
+          if(yy!==year||(mm-1)!==month){
+            clearTimeout(spyTimerRef.current);
+            spyTimerRef.current = setTimeout(()=>{ setYear(yy); setMonth(mm-1); }, 170);
+          }
+        }
+        // 2) Infinite-Scroll: je Wisch GENAU EIN Monat — exakt wie der Button
+        //    (nur revealOlder/revealNewer, keine Scroll-Manipulation).
         const st = el.scrollTop;
         const prev = lastScrollTopRef.current;
         lastScrollTopRef.current = st;
@@ -188,22 +197,10 @@ function MonatScreen() {
           const nearBottom = el.scrollHeight - (st + el.clientHeight) < 90;
           const atTop      = st < 6;
           if(nearBottom && goingDown && olderHidden>0){ canRevealRef.current = false; revealOlder(); }
-          else if(atTop && goingUp && newerHidden>0){
-            // Beim Laden nach OBEN die Position halten (Abstand vom unteren Ende).
-            scrollAnchorRef.current = el.scrollHeight - st;
-            canRevealRef.current = false; revealNewer();
-          }
+          else if(atTop && goingUp && newerHidden>0){ canRevealRef.current = false; revealNewer(); }
         }
       });
     };
-    // Nach Bereichsänderung: Scrollposition beim Laden nach oben wiederherstellen.
-    useLayoutEffect(()=>{
-      const el = listRef.current;
-      if(el && scrollAnchorRef.current!=null){
-        el.scrollTop = el.scrollHeight - scrollAnchorRef.current;
-        scrollAnchorRef.current = null;
-      }
-    }, [range]);
     // Tages-Quelle: im Mehr-Monats-Modus über den Bereich, sonst der Anker-Monat.
     const dayTxsAll = multiMonth
       ? txs.filter(t=>{
