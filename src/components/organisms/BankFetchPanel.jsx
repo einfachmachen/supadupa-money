@@ -50,6 +50,10 @@ function BankFetchPanel({ state, onClose, onRefetch }) {
       ? { ...t, splits: catId ? [{ id: uid(), catId, subId, amount: t.totalAmount }] : [] }
       : t));
 
+  // Falsch abgerufenen Eintrag direkt entfernen — ohne ihn vorher kategorisieren
+  // zu müssen. (Beim nächsten Abruf würde er ggf. wieder als neu erkannt.)
+  const removeRow = (id) => setTxs((p) => p.filter((t) => t.id !== id));
+
   const wrap = (children) => (
     <div style={{ margin: "6px 4px 0", border: `1px solid ${T.blue}55`, borderRadius: 14,
       background: T.surf || "rgba(255,255,255,0.03)", overflow: "hidden" }}>
@@ -148,11 +152,16 @@ function BankFetchPanel({ state, onClose, onRefetch }) {
     const isInc = t._csvType === "income";
     return (
       <div style={{ padding: "9px 12px", borderTop: `1px solid ${T.bd}` }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ color: T.txt2, fontSize: 12, flexShrink: 0 }}>{t.date.slice(8)}.{t.date.slice(5, 7)}.</span>
+          {t.pending && (
+            <span style={{ fontSize: 9, background: "rgba(245,166,35,0.18)", color: T.gold,
+              borderRadius: 4, padding: "1px 5px", fontWeight: 800, border: `1px solid ${T.gold}55`,
+              flexShrink: 0, letterSpacing: 0.3 }}>VORGEMERKT</span>
+          )}
           <span style={{ flex: 1, color: T.txt, fontSize: 13.5, fontWeight: 600, overflow: "hidden",
             textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.desc || "Buchung"}</span>
-          <span style={{ color: isInc ? T.pos : T.neg, fontSize: 14, fontWeight: 800,
+          <span style={{ color: t.pending ? T.gold : (isInc ? T.pos : T.neg), fontSize: 14, fontWeight: 800,
             fontVariantNumeric: "tabular-nums", fontFamily: NUM_FONT, flexShrink: 0 }}>
             {isInc ? "" : "−"}{fmt(Math.abs(t.totalAmount))} €
           </span>
@@ -168,6 +177,11 @@ function BankFetchPanel({ state, onClose, onRefetch }) {
             />
           </div>
           {categorized && Li("check-circle", 18, T.pos)}
+          <button onClick={() => removeRow(t.id)} title="Eintrag löschen"
+            style={{ background: "transparent", border: "none", cursor: "pointer", padding: 4,
+              display: "inline-flex", alignItems: "center", flexShrink: 0 }}>
+            {Li("trash-2", 16, T.neg)}
+          </button>
         </div>
       </div>
     );
