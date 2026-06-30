@@ -1359,9 +1359,13 @@ function DashboardScreenV2() {
                             style={{display:"flex",alignItems:"center",gap:8,
                               marginBottom:subViewMode==="pegel"?0:6,
                               cursor:sAkt>0?"pointer":"default"}}>
-                            <span style={{flexShrink:0,display:"inline-flex"}}>
-                              {Li("corner-down-right",13,T.txt2)}
-                            </span>
+                            {/* Unterkategorie: kleineres, eingerücktes Icon-Kästchen (wie Kategorie-Ansicht) */}
+                            <div style={{width:22,height:22,borderRadius:5,flexShrink:0,marginLeft:10,
+                              background:(sub.color||catColor)+"22",
+                              border:`1px solid ${(sub.color||catColor)}55`,
+                              display:"flex",alignItems:"center",justifyContent:"center"}}>
+                              {sub.icon ? Li(sub.icon,13,sub.color||catColor) : null}
+                            </div>
                             <div style={{flex:1,minWidth:0,color:T.txt,fontSize:17,fontWeight:600,
                               overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                               {sub.name}
