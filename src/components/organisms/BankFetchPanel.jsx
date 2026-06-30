@@ -89,9 +89,11 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }
       ? "Noch kein Bank-Zugang eingerichtet. Unter Mehr → Daten → Bank-Konto verbinden anlegen."
       : state.reason === "no-session"
         ? "Keine aktive Bank-Verbindung. Unter Mehr → Daten → Bank-Konto verbinden einmalig freigeben."
-        : state.reason === "expired"
-          ? "Die Bank-Freigabe ist abgelaufen. Unter Mehr → Daten → Bank-Konto verbinden neu freigeben."
-          : (state.message || "Abruf fehlgeschlagen.");
+        : state.reason === "rate-limit"
+          ? "Tageslimit für automatische Bank-Abrufe erreicht — die Bank erlaubt nur eine begrenzte Zahl pro Tag. Die Freigabe ist weiterhin gültig; bitte später (i. d. R. morgen) erneut abrufen."
+          : state.reason === "expired"
+            ? "Die Bank-Freigabe ist abgelaufen. Unter Mehr → Daten → Bank-Konto verbinden neu freigeben."
+            : (state.message || "Abruf fehlgeschlagen.");
     return wrap(
       <>
         <Header title="Buchungen abrufen" />

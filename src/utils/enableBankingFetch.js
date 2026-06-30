@@ -164,6 +164,12 @@ async function fetchNewBankTx({ txs, accounts, dateFrom, aspsp } = {}) {
     }
   } catch (e) {
     const txt = String(e?.message || e);
+    // WICHTIG: Rate-Limit ZUERST prüfen — die 429-Meldung enthält das Wort
+    // "consent" (… exceeding the daily multiplicity for consent …) und würde
+    // sonst fälschlich als abgelaufene Freigabe eingeordnet.
+    if (/\b429\b|rate.?limit|multiplicity|too many/i.test(txt)) {
+      return { ok: false, reason: "rate-limit", message: "Tageslimit für Bank-Abrufe erreicht.", detail: txt };
+    }
     if (/\b(401|403|404)\b|expired|session|consent/i.test(txt)) {
       return { ok: false, reason: "expired", message: "Bank-Freigabe abgelaufen oder ungültig.", detail: txt };
     }
