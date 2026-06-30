@@ -26,6 +26,7 @@ function SaldoHeroV2({
 }) {
   const { selAcc, setSelAcc, accounts, getKumulierterSaldo, txs, getCat, getSub, amtMode, setAmtMode } = useContext(AppCtx);
   const [progDrill, setProgDrill] = useState(null);
+  const [accMenuOpen, setAccMenuOpen] = useState(false);
   // Augensymbol: nur 2 Stufen — unscharf (0) ↔ sichtbar. Sichtbar ist neutral-
   // weiß (1), solange der Detail-Block eingeklappt ist; farbig (2) nur, wenn er
   // über das Ausklapp-Chevron geöffnet wurde.
@@ -168,10 +169,10 @@ function SaldoHeroV2({
         <div style={{position:"absolute",left:0,right:0,top:0,bottom:0,
           display:"flex",flexDirection:"column",alignItems:"center",
           padding:"2px 0 4px",pointerEvents:"none"}}>
-          <span style={{display:"inline-flex",alignItems:"center",gap:3,
+          <span style={{position:"relative",display:"inline-flex",alignItems:"center",gap:3,
             marginBottom:2,pointerEvents:"auto"}}>
             <span onClick={allAccIds.length>1?cycleAcc:undefined}
-              title={allAccIds.length>1?"Konto wechseln":undefined}
+              title={allAccIds.length>1?"Konto wechseln (tippen) – Liste über ▾":undefined}
               style={{userSelect:"none",
                 cursor:allAccIds.length>1?"pointer":"default",
                 color:selAcc===null ? T.txt2 : T.blue,
@@ -180,11 +181,36 @@ function SaldoHeroV2({
               {accLabel}
             </span>
             {allAccIds.length>1 && (
-              <span onClick={cycleAcc} title="Konto wechseln"
+              <span onClick={(e)=>{e.stopPropagation();setAccMenuOpen(o=>!o);}} title="Konto wählen"
                 style={{cursor:"pointer",display:"inline-flex",alignItems:"center",padding:"2px"}}>
-                {Li("refresh-cw",9, selAcc===null ? T.txt2 : T.blue)}
+                {Li(accMenuOpen?"chevron-up":"chevron-down",11, selAcc===null ? T.txt2 : T.blue)}
               </span>
             )}
+            {accMenuOpen && (<>
+              {/* Klick-außerhalb schließt das Menü */}
+              <div onClick={()=>setAccMenuOpen(false)}
+                style={{position:"fixed",inset:0,zIndex:49,pointerEvents:"auto"}}/>
+              <div style={{position:"absolute",top:"100%",left:"50%",transform:"translateX(-50%)",
+                marginTop:5,zIndex:50,background:T.surf2||T.surf,border:`1px solid ${T.bds}`,
+                borderRadius:10,padding:4,minWidth:150,maxHeight:260,overflowY:"auto",
+                boxShadow:"0 10px 28px rgba(0,0,0,0.45)"}}>
+                {allAccIds.map(id=>{
+                  const a = id===null ? null : accounts.find(x=>x.id===id);
+                  const label = id===null ? "Gesamt" : (a?.name||"");
+                  const active = selAcc===id;
+                  return (
+                    <div key={id||"__all__"} onClick={(e)=>{e.stopPropagation();setSelAcc(id);setAccMenuOpen(false);}}
+                      style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",borderRadius:8,
+                        cursor:"pointer",background:active?(T.blue+"22"):"transparent",
+                        color:active?T.blue:T.txt,fontSize:13,fontWeight:active?700:500,whiteSpace:"nowrap"}}>
+                      {id===null ? Li("layers",14,active?T.blue:T.txt2) : Li(a?.icon||"wallet",14,a?.color||T.txt2)}
+                      <span style={{flex:1}}>{label}</span>
+                      {active && Li("check",14,T.blue)}
+                    </div>
+                  );
+                })}
+              </div>
+            </>)}
           </span>
           <span onClick={toggleDetails}
             title={detailsOpen?"Details ausblenden":"Details anzeigen"}
