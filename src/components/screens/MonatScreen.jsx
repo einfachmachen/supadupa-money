@@ -129,10 +129,24 @@ function MonatScreen() {
     const allSel = mTxs.length>0 && mTxs.every(t=>selected.has(t.id));
     const toggleAll = () => setSelected(allSel ? new Set() : new Set(mTxs.map(t=>t.id)));
     const toggleOne = (id) => setSelected(p=>{const n=new Set(p);n.has(id)?n.delete(id):n.add(id);return n;});
+    // Typ einer Buchung (Ausgabe?) bzw. der gewählten Kategorie — für die
+    // typ-sichere Massenzuordnung.
+    const _txIsExpense = (tx) => tx.totalAmount<0 || tx._csvType==="expense";
     const applyBulk = () => {
       if(!bulkCat.catId||selected.size===0) return;
-      setTxs(p=>p.map(tx=>!selected.has(tx.id)?tx:{...tx,splits:[{id:uid(),catId:bulkCat.catId,subId:bulkCat.subId,amount:tx.totalAmount}]}));
-      setSelected(new Set()); setBulkCat({catId:"",subId:""});
+      const cat = getCat(bulkCat.catId);
+      const catIsExp = cat?.type==="expense";
+      const catIsInc = cat?.type==="income"||cat?.type==="tagesgeld";
+      // Nur Buchungen mit PASSENDEM Vorzeichen/Typ erhalten die Kategorie —
+      // sonst landete z. B. eine Einnahme in einer Ausgaben-Kategorie.
+      const matchType = (tx) => catIsExp ? _txIsExpense(tx) : catIsInc ? !_txIsExpense(tx) : true;
+      setTxs(p=>p.map(tx=>(selected.has(tx.id)&&matchType(tx))
+        ? {...tx,splits:[{id:uid(),catId:bulkCat.catId,subId:bulkCat.subId,amount:tx.totalAmount}]}
+        : tx));
+      // Nicht passende (anderer Typ) bleiben markiert → können separat mit einer
+      // passenden Kategorie zugeordnet werden.
+      const remaining = new Set([...selected].filter(id=>{ const tx=txs.find(t=>t.id===id); return tx && !matchType(tx); }));
+      setSelected(remaining); setBulkCat({catId:"",subId:""});
     };
     const inSearchMode = search.trim().length>0;
     const selCount = [...selected].filter(id=>mTxs.some(t=>t.id===id)).length;
@@ -817,27 +831,35 @@ function MonatScreen() {
                 color:T.blue,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>
               {Li(allSel?"check-square":"square",12,T.blue)} Alle ({mTxs.length})
             </button>
-            {selected.size>0&&<>
-              <div style={{flex:1,minWidth:120}}>
-                {(()=>{
-                  const selTxs=[...selected].map(id=>txs.find(t=>t.id===id)).filter(Boolean);
-                  const hasNeg=selTxs.some(t=>t.totalAmount<0||t._csvType==="expense");
-                  const hasPos=selTxs.some(t=>t.totalAmount>0&&t._csvType!=="expense");
-                  const fType=selTxs.length===0?null:(hasNeg&&!hasPos?"expense":(!hasNeg&&hasPos?"income":null));
-                  return <CatPicker value={bulkCat.catId+"|"+bulkCat.subId}
+            {selected.size>0&&(()=>{
+              const selTxs=[...selected].map(id=>txs.find(t=>t.id===id)).filter(Boolean);
+              const hasNeg=selTxs.some(_txIsExpense);
+              const hasPos=selTxs.some(t=>!_txIsExpense(t));
+              const fType=selTxs.length===0?null:(hasNeg&&!hasPos?"expense":(!hasNeg&&hasPos?"income":null));
+              const mixed=hasNeg&&hasPos;
+              return (<>
+                <div style={{flex:1,minWidth:120}}>
+                  <CatPicker value={bulkCat.catId+"|"+bulkCat.subId}
                     onChange={(c,s)=>setBulkCat({catId:c,subId:s})}
                     filterType={fType} noMargin
-                    placeholder={fType==="expense"?"— Ausgaben-Kategorie —":fType==="income"?"— Einnahmen-Kategorie —":"— Kategorie —"}/>;
-                })()}
-              </div>
-              <button onClick={applyBulk} disabled={!bulkCat.catId}
-                style={{background:bulkCat.catId?T.blue:T.disabled,
-                  border:"none",borderRadius:8,padding:"5px 10px",color:"#fff",
-                  fontSize:11,fontWeight:700,cursor:bulkCat.catId?"pointer":"default",
-                  opacity:bulkCat.catId?1:0.4,flexShrink:0}}>✓</button>
-              <button onClick={()=>setSelected(new Set())}
-                style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",fontSize:11}}>{Li("x",13)}</button>
-            </>}
+                    placeholder={mixed?"— Kategorie (typgenau) —":fType==="expense"?"— Ausgaben-Kategorie —":fType==="income"?"— Einnahmen-Kategorie —":"— Kategorie —"}/>
+                </div>
+                <button onClick={applyBulk} disabled={!bulkCat.catId}
+                  style={{background:bulkCat.catId?T.blue:T.disabled,
+                    border:"none",borderRadius:8,padding:"5px 10px",color:"#fff",
+                    fontSize:11,fontWeight:700,cursor:bulkCat.catId?"pointer":"default",
+                    opacity:bulkCat.catId?1:0.4,flexShrink:0}}>✓</button>
+                <button onClick={()=>setSelected(new Set())}
+                  style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",fontSize:11}}>{Li("x",13)}</button>
+                {mixed&&(
+                  <div style={{flexBasis:"100%",color:T.gold,fontSize:10,lineHeight:1.4,
+                    display:"flex",alignItems:"flex-start",gap:5,paddingTop:2}}>
+                    <span style={{flexShrink:0,marginTop:1}}>{Li("alert-triangle",12,T.gold)}</span>
+                    <span>Auswahl enthält Einnahmen UND Ausgaben — die gewählte Kategorie wird nur auf den passenden Typ angewendet; der Rest bleibt markiert (separat zuordnen).</span>
+                  </div>
+                )}
+              </>);
+            })()}
           </div>
         )}
 
