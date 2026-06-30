@@ -9,11 +9,13 @@ import { MonatScreen } from "./MonatScreen.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { amtStyle, readableOn } from "../../theme/amtPill.js";
-import { fmt, uid, NUM_FONT } from "../../utils/format.js";
+import { dayOf, fmt, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { AccountChips } from "../molecules/AccountChips.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
-import { budgetPlaceholderActive } from "../../utils/saldo.js";
+import { budgetPlaceholderActive, saldoAt, saldoIst } from "../../utils/saldo.js";
+
+const DAY_NAMES = ["So","Mo","Di","Mi","Do","Fr","Sa"];
 
 const MON_SHORT = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
 const monthName = (key) => { const [y,m]=key.split("-"); return `${MON_SHORT[(+m||1)-1]} ${y}`; };
@@ -25,6 +27,7 @@ function TransactionsScreen() {
     editTx,setEditTx,newTx,setNewTx,newCat,setNewCat,
     newSubName,setNewSubName,exportModal,setExportModal,
     getCat,getSub,txType,getActualSum,getTotalIncome,getTotalExpense,getPendingSum,pendingItemsFor,
+    getBudgetForMonth,getKumulierterSaldo,
     getJV,setJV,getMV,setMV,getAcc,openEdit,saveEdit,deleteFromEdit,
     updEditSplit,moveCat,moveSub,updateSub,updateCat,
     renameCat,renameSub,deleteCat,deleteSub,saveNewCat,saveNewSub,
@@ -160,6 +163,23 @@ function TransactionsScreen() {
     },[monthScoped,filteredList,olderKeys,showOlder]);
 
     const shownList = monthScoped ? windowList : filteredList.slice(0, visibleCount);
+
+    // ── Tages-Gruppierung + Tagessaldo (wie Monatsansicht) ────────────────
+    // Im Monats-Modus werden die Buchungen pro Tag in einer Karte gebündelt,
+    // mit demselben Tagessaldo wie im Monat (saldoAt = nach Budget, saldoIst =
+    // reiner Ist-Verlauf). Konto = aktiver Konto-Filter (filtAcc), sonst Gesamt.
+    const _saldoCtx = useMemo(()=>({ txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth }),
+      [txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth]);
+    const saldoAcc = filtAcc || null;
+    const getDaySaldo = (iso)=>{ const [yy,mm,dd]=iso.split("-").map(Number);
+      const v=saldoAt(yy,mm-1,dd,saldoAcc,_saldoCtx); return (v==null||isNaN(v))?null:v; };
+    const getDayIst   = (iso)=>{ const [yy,mm,dd]=iso.split("-").map(Number);
+      const v=saldoIst(yy,mm-1,dd,saldoAcc,_saldoCtx); return (v==null||isNaN(v))?null:v; };
+    const dayGroups = useMemo(()=>{
+      const m = new Map();
+      for(const tx of shownList){ if(!m.has(tx.date)) m.set(tx.date,[]); m.get(tx.date).push(tx); }
+      return [...m.entries()].sort((a,b)=>b[0].localeCompare(a[0]));
+    },[shownList]);
 
     const allSelected = filteredList.length>0 && filteredList.every(t=>selected.has(t.id));
     const toggleAll   = () => setSelected(allSelected
@@ -449,24 +469,8 @@ function TransactionsScreen() {
             ? <div style={{color:T.txt2,textAlign:"center",padding:32,fontSize:13}}>
                 {filt==="mismatch" ? "Keine Fehlzuordnungen gefunden ✓" : search ? `Keine Buchungen für „${search}"` : "keine Buchungen"}
               </div>
-            : <div style={{background:"rgba(255,255,255,0.04)",borderRadius:12,
-                padding:"4px 0",border:`1px solid ${T.bd}`,overflow:"hidden"}}>
-                {/* Neuere Monate einblenden (oben) */}
-                {monthScoped && newerHiddenCount>0 && (
-                  <div onClick={()=>setShowNewer(n=>n+1)}
-                    style={{textAlign:"center",padding:"10px",cursor:"pointer",
-                      color:T.blue,fontSize:13,fontWeight:600,borderBottom:`1px solid ${T.bd}`,
-                      display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-                    {Li("chevron-up",14,T.blue)} + {newerHiddenCount} neuere anzeigen
-                  </div>
-                )}
-                {/* Hinweis, wenn der gewählte Monat selbst leer ist */}
-                {monthScoped && shownList.length===0 && (
-                  <div style={{color:T.txt2,textAlign:"center",padding:"18px 8px",fontSize:12}}>
-                    keine Buchungen in {monthName(selKey)}
-                  </div>
-                )}
-                {shownList.map((tx,i)=>{
+            : (()=>{
+                const renderRow = (tx, showTop) => {
                   const cat=getCat((tx.splits||[])[0]?.catId);
                   const type=txType(tx);
                   const isS=(tx.splits||[]).length>1;
@@ -491,7 +495,7 @@ function TransactionsScreen() {
                     : rawDesc;
                   return (
                     <div key={tx.id}
-                      style={{borderTop:i>0?`1px solid ${T.bd}`:"none",
+                      style={{borderTop:showTop?`1px solid ${T.bd}`:"none",
                         background:isSel?"rgba(74,159,212,0.06)":"transparent",
                         borderRadius:0,margin:0}}>
                       {/* Hauptzeile */}
@@ -646,25 +650,83 @@ function TransactionsScreen() {
                       )}
                     </div>
                   );
-                })}
-                {/* Ältere Monate einblenden (unten) */}
-                {monthScoped && olderHiddenCount>0 && (
-                  <div onClick={()=>setShowOlder(n=>n+1)}
-                    style={{textAlign:"center",padding:"12px",cursor:"pointer",
-                      color:T.blue,fontSize:13,fontWeight:600,borderTop:`1px solid ${T.bd}`,
-                      display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                };
+                // Tageskopf mit Tagessaldo — wie in der Monatsansicht
+                const renderDayHeader = (date) => {
+                  const daySaldo = getDaySaldo(date);
+                  const dayIst   = getDayIst(date);
+                  const hasRes   = dayIst!==null && daySaldo!==null && Math.round(dayIst*100)!==Math.round(daySaldo*100);
+                  const big      = daySaldo!==null ? daySaldo : dayIst;
+                  const dd       = (date.split("-")[2]||"").replace(/^0/,"");
+                  return (
+                    <div style={{display:"flex",alignItems:"center",padding:"7px 10px 6px",gap:8,background:"rgba(255,255,255,0.04)"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
+                        <span style={{color:T.txt,fontSize:12,fontWeight:700}}>{dd}.</span>
+                        <span style={{color:T.txt2,fontSize:10}}>{DAY_NAMES[new Date(date).getDay()]}</span>
+                        {dayOf(date)<=14&&<span style={{color:T.mid,fontSize:9,fontWeight:700,background:"rgba(103,232,249,0.1)",borderRadius:5,padding:"1px 5px"}}>Mitte</span>}
+                      </div>
+                      <div style={{flex:1,height:2,background:(big!=null?big:0)>=0?T.pos:T.neg,opacity:0.85,borderRadius:1,minWidth:10}}/>
+                      {big!=null&&(
+                        <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+                          {hasRes&&(
+                            <span style={{...amtStyle(dayIst>=0?"txt2":"neg"),fontSize:11,fontFamily:NUM_FONT,fontWeight:600,whiteSpace:"nowrap"}}>
+                              ohne Budget {dayIst>=0?"":"−"}{fmt(Math.abs(dayIst))}
+                            </span>
+                          )}
+                          <span style={{...amtStyle(big>=0?"pos":"neg"),fontSize:18,fontWeight:800,fontFamily:NUM_FONT,whiteSpace:"nowrap"}}>
+                            {big>=0?"":"−"}{fmt(Math.abs(big))}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                };
+                const TopBtn = monthScoped && newerHiddenCount>0 ? (
+                  <div onClick={()=>setShowNewer(n=>n+1)} style={{textAlign:"center",padding:"10px 0 0",cursor:"pointer",
+                    color:T.blue,fontSize:13,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                    {Li("chevron-up",14,T.blue)} + {newerHiddenCount} neuere anzeigen
+                  </div>
+                ) : null;
+                const OlderBtn = monthScoped && olderHiddenCount>0 ? (
+                  <div onClick={()=>setShowOlder(n=>n+1)} style={{textAlign:"center",padding:"14px 0 0",cursor:"pointer",
+                    color:T.blue,fontSize:13,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
                     {Li("chevron-down",14,T.blue)} + {olderHiddenCount} ältere anzeigen
                   </div>
-                )}
-                {/* Such-/Review-Modus: klassisches Paging */}
-                {!monthScoped && filteredList.length>visibleCount && (
-                  <div onClick={()=>setVisibleCount(c=>c+PAGE*4)}
-                    style={{textAlign:"center",padding:"12px",cursor:"pointer",
-                      color:T.blue,fontSize:13,borderTop:`1px solid ${T.bd}`}}>
-                    + {filteredList.length-visibleCount} weitere anzeigen
+                ) : null;
+                // Monats-Modus: pro Tag eine Karte mit Tagessaldo (wie Monatsansicht)
+                if(monthScoped) return (
+                  <>
+                    {TopBtn}
+                    {shownList.length===0 && (
+                      <div style={{color:T.txt2,textAlign:"center",padding:"18px 8px",fontSize:12}}>
+                        keine Buchungen in {monthName(selKey)}
+                      </div>
+                    )}
+                    {dayGroups.map(([date,dayTxs])=>(
+                      <div key={date} style={{margin:"10px 0 0",border:`1px solid ${T.bd}`,borderRadius:12,
+                        overflow:"hidden",background:T.surf||"rgba(255,255,255,0.04)"}}>
+                        {renderDayHeader(date)}
+                        {dayTxs.map(tx=>renderRow(tx,true))}
+                      </div>
+                    ))}
+                    {OlderBtn}
+                  </>
+                );
+                // Such-/Review-Modus: flache Liste mit klassischem Paging
+                return (
+                  <div style={{background:"rgba(255,255,255,0.04)",borderRadius:12,
+                    padding:"4px 0",border:`1px solid ${T.bd}`,overflow:"hidden"}}>
+                    {shownList.map((tx,i)=>renderRow(tx,i>0))}
+                    {filteredList.length>visibleCount && (
+                      <div onClick={()=>setVisibleCount(c=>c+PAGE*4)}
+                        style={{textAlign:"center",padding:"12px",cursor:"pointer",
+                          color:T.blue,fontSize:13,borderTop:`1px solid ${T.bd}`}}>
+                        + {filteredList.length-visibleCount} weitere anzeigen
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                );
+              })()
           }
         </div>
       </div>
