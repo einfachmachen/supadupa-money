@@ -108,14 +108,14 @@ describe("mapEnableBankingTx", () => {
     const row = mapEnableBankingTx({ booking_date: "2026-01-01", amount: "1.00", credit_debit_indicator: "CRDT", status: "PDNG" }, "acc-giro");
     expect(row.pending).toBe(true);
   });
-  it("Vormerkung: Verursachungsdatum (transaction_date) hat Vorrang vor Banktag", () => {
-    // Bank stempelt die Vormerkung mit booking_date = Banktag (1.7.), der Umsatz
-    // entstand aber am 30.6. (transaction_date). → 30.6. muss gewinnen.
+  it("Vormerkung: Wertstellung (value_date) ist maßgeblich, nicht das Verursachungsdatum", () => {
+    // Heute verursacht (transaction_date 30.6.), aber erst im Folgemonat belastet
+    // (value_date 1.7.). Für Saldo/Budget zählt die Belastung → 1.7. (Juli).
     const row = mapEnableBankingTx({
       transaction_date: "2026-06-30", value_date: "2026-07-01", booking_date: "2026-07-01",
       transaction_amount: { amount: "2.98", currency: "EUR" }, credit_debit_indicator: "DBIT", status: "PDNG",
     }, "acc-giro");
-    expect(row.isoDate).toBe("2026-06-30");
+    expect(row.isoDate).toBe("2026-07-01");
     expect(row.pending).toBe(true);
   });
   it("gebuchte Buchung: booking_date bleibt führend (stabile Dubletten-Erkennung)", () => {
