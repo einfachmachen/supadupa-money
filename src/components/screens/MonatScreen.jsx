@@ -1,6 +1,6 @@
 // Auto-generated module (siehe app-src.jsx)
 
-import React, { useContext, useMemo, useRef, useState } from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { CatPicker } from "../molecules/CatPicker.jsx";
 import { MitteEndeFields } from "../molecules/MitteEndeFields.jsx";
 import { BudgetEditorModal } from "../organisms/BudgetEditorModal.jsx";
@@ -62,9 +62,8 @@ function MonatScreen() {
     // _linkedTo-Counterparts: in Globalansicht ausblenden (sonst werden Umbuchungen doppelt
     // gezählt). In Konto-spezifischer Ansicht (selAcc gesetzt) MÜSSEN sie sichtbar sein,
     // sonst fehlen z. B. die Einnahme-Vormerkungen auf Tagesgeld komplett.
-    const allMTxs = txs.filter(t=>{
-      const d=new Date(t.date);
-      if(d.getFullYear()!==year||d.getMonth()!==month) return false;
+    // Sichtbarkeits-Prädikat OHNE Monats-Filter (für Anker-Monat UND Bereich).
+    const _txVisible = t => {
       if(t._budgetSubId) return false;
       if(!_isSelAcc(t)) return false;
       if(t._linkedTo) {
@@ -76,6 +75,11 @@ function MonatScreen() {
         if(!selAcc) return false;
       }
       return true;
+    };
+    const allMTxs = txs.filter(t=>{
+      const d=new Date(t.date);
+      if(d.getFullYear()!==year||d.getMonth()!==month) return false;
+      return _txVisible(t);
     }).sort((a,b)=>new Date(b.date)-new Date(a.date));
     const filtByType = filt==="all" ? allMTxs : filt==="pending" ? allMTxs.filter(t=>t.pending) : filt==="uncat" ? allMTxs.filter(t=>(t.splits||[]).length===0||(t.splits||[]).every(s=>!s.catId)) : filt==="mismatch" ? allMTxs.filter(t=>{ const ct=t._csvType; if(!ct) return false; const tt=txType(t); return (ct==="expense"&&tt==="income")||(ct==="income"&&tt==="expense"); }) : allMTxs.filter(t=>!t.pending&&txType(t)===filt);
     const mTxs = search.trim() ? filtByType.filter(t=>{
@@ -94,6 +98,53 @@ function MonatScreen() {
     };
     const inSearchMode = search.trim().length>0;
     const selCount = [...selected].filter(id=>mTxs.some(t=>t.id===id)).length;
+
+    // ── Mehr-Monats-Bereich [from..to] (wie Buchungen) ──────────────────────
+    // Im Normalmodus zeigt die Liste standardmäßig nur den Anker-Monat; über die
+    // Buttons oben/unten werden angrenzende Monate dazugeladen. Bei Suche/Review
+    // (？/⚠) bleibt das bisherige (Anker-)Verhalten.
+    const selKey = `${year}-${String(month+1).padStart(2,"0")}`;
+    const [range, setRange] = useState(()=>({from:selKey,to:selKey}));
+    useEffect(()=>{ setRange({from:selKey,to:selKey}); }, [filt,selAcc]);
+    useEffect(()=>{ setRange(r => (selKey>=r.from && selKey<=r.to) ? r : {from:selKey,to:selKey}); }, [selKey]);
+    const multiMonth = !inSearchMode && filt!=="uncat" && filt!=="mismatch";
+    const monthKeys = useMemo(()=>[...new Set(txs.filter(_txVisible).map(t=>t.date.slice(0,7)))], [txs,selAcc]);
+    const newerHidden = useMemo(()=> multiMonth ? txs.filter(t=>_txVisible(t)&&t.date.slice(0,7)>range.to).length : 0, [txs,selAcc,multiMonth,range]);
+    const olderHidden = useMemo(()=> multiMonth ? txs.filter(t=>_txVisible(t)&&t.date.slice(0,7)<range.from).length : 0, [txs,selAcc,multiMonth,range]);
+    const revealNewer = ()=> setRange(r=>{ const n=monthKeys.filter(k=>k>r.to).sort(); return n.length?{...r,to:n[0]}:r; });
+    const revealOlder = ()=> setRange(r=>{ const o=monthKeys.filter(k=>k<r.from).sort(); return o.length?{...r,from:o[o.length-1]}:r; });
+    // Scroll-Spy: der Monat (Hero/+ Button) folgt der Scrollposition. Bezugslinie
+    // ist die Unterkante des stickyen Hero (sonst lägen die Tage dahinter).
+    const listRef = useRef(null);
+    const stickyRef = useRef(null);
+    const spyTick = useRef(false);
+    const onListScroll = ()=>{
+      if(!multiMonth || spyTick.current) return;
+      spyTick.current = true;
+      requestAnimationFrame(()=>{
+        spyTick.current = false;
+        const el = listRef.current; if(!el) return;
+        const refTop = stickyRef.current ? stickyRef.current.getBoundingClientRect().bottom
+                                          : el.getBoundingClientRect().top;
+        let cur = null;
+        for(const c of el.querySelectorAll("[data-month]")){
+          if(c.getBoundingClientRect().top - refTop <= 8) cur = c.getAttribute("data-month");
+          else break;
+        }
+        if(cur){ const [yy,mm]=cur.split("-").map(Number); if(yy!==year||(mm-1)!==month){ setYear(yy); setMonth(mm-1); } }
+      });
+    };
+    // Tages-Quelle: im Mehr-Monats-Modus über den Bereich, sonst der Anker-Monat.
+    const dayTxsAll = multiMonth
+      ? txs.filter(t=>{
+          const k = t.date.slice(0,7);
+          if(k<range.from || k>range.to) return false;
+          if(!_txVisible(t)) return false;
+          if(filt==="all") return true;
+          if(filt==="pending") return t.pending;
+          return !t.pending && txType(t)===filt;
+        }).sort((a,b)=>new Date(b.date)-new Date(a.date))
+      : mTxs;
 
     const totalIn  = getTotalIncome(year, month);
     const totalOut = getTotalExpense(year, month);
@@ -207,7 +258,7 @@ function MonatScreen() {
       return idx;
     })();
 
-    const byDate  = mTxs.reduce((acc,tx)=>{ if(!acc[tx.date])acc[tx.date]=[]; acc[tx.date].push(tx); return acc; },{});
+    const byDate  = dayTxsAll.reduce((acc,tx)=>{ if(!acc[tx.date])acc[tx.date]=[]; acc[tx.date].push(tx); return acc; },{});
     // Stelle sicher dass der 14. und Monatsletzt immer im Rendering auftauchen (Restbudget-Zeilen)
     const pad2 = n=>String(n).padStart(2,"0");
     const lastDayOfMonth = new Date(year, month+1, 0).getDate();
@@ -476,10 +527,10 @@ function MonatScreen() {
     };
 
     return (<>
-      <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",position:"relative"}} onTouchStart={onTS} onTouchEnd={onTE}>
+      <div ref={listRef} onScroll={onListScroll} style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",position:"relative"}} onTouchStart={onTS} onTouchEnd={onTE}>
 
         {/* Hero — SaldoHeroV2 (gemeinsamer Hero mit dem Dashboard) */}
-        <div style={window.MBT_DEBUG?.disable_sticky?{}:{position:"sticky",top:0,zIndex:10,background:T.bg}}>
+        <div ref={stickyRef} style={window.MBT_DEBUG?.disable_sticky?{}:{position:"sticky",top:0,zIndex:10,background:T.bg}}>
         {(()=>{
           const _tb=new Date(),_todayY=_tb.getFullYear(),_todayM=_tb.getMonth(),_todayD=_tb.getDate();
           const _isCurS=year===_todayY&&month===_todayM,_isPastS=year<_todayY||(year===_todayY&&month<_todayM);
@@ -726,7 +777,14 @@ function MonatScreen() {
 
 
         {/* Transaction cards */}
-        {mTxs.length===0
+        {/* Neuere Monate einblenden (oben) */}
+        {multiMonth && newerHidden>0 && (
+          <div onClick={revealNewer} style={{textAlign:"center",padding:"12px 0 0",cursor:"pointer",
+            color:T.blue,fontSize:13,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+            {Li("chevron-up",14,T.blue)} + {newerHidden} neuere anzeigen
+          </div>
+        )}
+        {dayTxsAll.length===0
           ? <div style={{color:T.txt2,textAlign:"center",padding:"40px 20px"}}>
               <div style={{marginBottom:10,opacity:0.4}}>{Li("inbox",36,T.txt2,1)}</div>
               <div style={{fontSize:13}}>Keine Buchungen im {MONTHS_F[month]}</div>
@@ -746,7 +804,7 @@ function MonatScreen() {
             // Hat dieser Tag Vormerkungen?
             const hasDayPend = dayTxs.some(t=>t.pending);
             return (
-              <div key={date} style={{margin:"14px 8px 0",border:`1px solid ${T.bd}`,borderRadius:12,overflow:"hidden",background:T.surf||"rgba(255,255,255,0.03)"}}>
+              <div key={date} data-month={date.slice(0,7)} style={{margin:"14px 8px 0",border:`1px solid ${T.bd}`,borderRadius:12,overflow:"hidden",background:T.surf||"rgba(255,255,255,0.03)"}}>
                 <div style={{display:"flex",alignItems:"center",
                   padding:"7px 10px 6px",gap:8,background:"rgba(255,255,255,0.04)"}}>
                   <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
@@ -901,8 +959,9 @@ function MonatScreen() {
                   );
                 })}
 
-                {/* Budget-Restanzeige am 14. und Monatsletzten — als einzelne Buchungszeilen */}
-                {(()=>{
+                {/* Budget-Restanzeige am 14. und Monatsletzten — als einzelne Buchungszeilen.
+                    Nur für den Anker-Monat (budgetDetails/lastDayOfMonth gelten dafür). */}
+                {date.slice(0,7)===selKey && (()=>{
                   const [,, dd] = date.split("-");
                   const dayNum = parseInt(dd);
                   const isMitteDay = dayNum===14;
@@ -1090,6 +1149,13 @@ function MonatScreen() {
             );
           })
         }
+        {/* Ältere Monate einblenden (unten) */}
+        {multiMonth && olderHidden>0 && (
+          <div onClick={revealOlder} style={{textAlign:"center",padding:"14px 0 4px",cursor:"pointer",
+            color:T.blue,fontSize:13,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+            {Li("chevron-down",14,T.blue)} + {olderHidden} ältere anzeigen
+          </div>
+        )}
         <div style={{height:8}}/>
         {/* ── Ankerpunkt-Info ── */}
         {(()=>{
