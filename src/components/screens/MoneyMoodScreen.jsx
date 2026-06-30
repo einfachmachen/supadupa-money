@@ -419,11 +419,13 @@ function MoodDetail({ row, isSub, isIncome, focusMi, year, txs, getAcc, recentId
   const canPrioritize = isCat && !isIncome && !!updateCat;
   const [localPrio, setLocalPrio] = useState(row.priority || "normal");
   // Startmonat: bei Aufruf aus der Schieflage-Warnung der betroffene Monat,
-  // sonst der jüngste Monat mit Bewegung.
+  // sonst der AKTUELLE Monat (elapsedIdx = nowM; in abgeschlossenen Jahren Dez.).
+  // Vorher recentIdx (= jüngster ABGESCHLOSSENER Monat = Vormonat) → wählte fälschlich
+  // den Vormonat statt des laufenden Monats aus.
   const initSel = (focusMi != null && focusMi >= 0)
     ? focusMi
-    : (recentIdx >= 0 && actual[recentIdx] > 0)
-      ? recentIdx : (actual.reduce((acc, v, i) => v > 0 ? i : acc, 0));
+    : elapsedIdx >= 0
+      ? elapsedIdx : (actual.reduce((acc, v, i) => v > 0 ? i : acc, 0));
   const [sel, setSel] = useState(initSel);
   const [selSub, setSelSub] = useState(null);   // gewählter Unterkategorie-Balken
   const [openBk, setOpenBk] = useState(null);   // ausgeklappte Einzelbuchung
