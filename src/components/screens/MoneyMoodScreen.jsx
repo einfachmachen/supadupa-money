@@ -635,7 +635,9 @@ function MoodDetail({ row, isSub, isIncome, focusMi, year, txs, getAcc, recentId
                   const ratio = budgetFull > 0 ? Math.min(1, spent / budgetFull) : 0;
                   const mainCol = isIncome ? T.pos : (isOver ? T.neg : T.gold);
                   const barCol = isIncome ? T.pos : (ratio >= 1 ? T.neg : ratio >= 0.75 ? T.gold : T.pos);
-                  const usedCol = spent === 0 ? T.txt2 : (isOver ? T.neg : T.txt);
+                  // Verbraucht-Betrag farbig wie im VM-Drilldown: Gold im Rahmen,
+                  // Rot bei Überschreitung (nicht weiß).
+                  const usedCol = spent === 0 ? T.txt2 : mainCol;
                   const restCol = isOver ? T.neg : (open > 0 ? T.gold : T.txt2);
                   return (
                     <div key={i} onClick={() => setSelSub(it.subId)}
