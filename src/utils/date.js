@@ -82,4 +82,14 @@ function nextBankWorkday(isoDate) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 }
 
-export { isoAddMonths, isoAddDays, parseGermanDate, isBankWorkday, nextBankWorkday };
+// Voraussichtliches Belastungsdatum einer Vormerkung. Eine heute (oder früher)
+// datierte, noch nicht gebuchte Zahlung wird frühestens am nächsten Banktag dem
+// Konto belastet — genau wie bei der manuellen Vormerkung. Bereits in der
+// Zukunft datierte Vormerkungen (z. B. geplante Lastschriften, deren Bank das
+// Wertstellungsdatum schon kennt) bleiben unverändert.
+function pendingDebitDate(isoDate, todayIso) {
+  if (!isoDate) return isoDate;
+  return isoDate <= todayIso ? nextBankWorkday(isoDate) : isoDate;
+}
+
+export { isoAddMonths, isoAddDays, parseGermanDate, isBankWorkday, nextBankWorkday, pendingDebitDate };
