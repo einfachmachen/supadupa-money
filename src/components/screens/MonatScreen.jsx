@@ -157,8 +157,11 @@ function MonatScreen() {
     const stickyRef = useRef(null);
     const spyTick = useRef(false);
     const scrollAnchorRef = useRef(null); // Position-Erhalt beim Laden NACH OBEN
-    const revealingRef = useRef(false);   // verhindert Mehrfach-Laden je Bereichswechsel
     const lastScrollTopRef = useRef(null);// für die Scroll-Richtung
+    // Pro Wisch nur EIN Monat: bei jedem touchstart wird genau ein Nachladen
+    // freigegeben; danach erst wieder beim nächsten Wisch.
+    const canRevealRef = useRef(false);
+    const onListTouchStart = (e)=>{ canRevealRef.current = true; onTS?.(e); };
     const onListScroll = ()=>{
       if(!multiMonth || spyTick.current) return;
       spyTick.current = true;
@@ -174,36 +177,32 @@ function MonatScreen() {
           else break;
         }
         if(cur){ const [yy,mm]=cur.split("-").map(Number); if(yy!==year||(mm-1)!==month){ setYear(yy); setMonth(mm-1); } }
-        // 2) Infinite-Scroll: beim Scrollen NACH UNTEN ans Ende → ältere Monate,
-        //    beim Scrollen NACH OBEN an den Anfang → neuere Monate. Die Richtung
-        //    verhindert, dass das Hinunterscrollen vom oberen Rand fälschlich
-        //    "neuere" lädt.
+        // 2) Infinite-Scroll: am unteren Rand (nach unten) ein ÄLTERER, am oberen
+        //    Rand (nach oben) ein NEUERER Monat — je Wisch genau einer.
         const st = el.scrollTop;
         const prev = lastScrollTopRef.current;
         lastScrollTopRef.current = st;
         const goingUp   = prev!=null && st < prev - 0.5;
         const goingDown = prev!=null && st > prev + 0.5;
-        if(!revealingRef.current){
+        if(canRevealRef.current){
           const nearBottom = el.scrollHeight - (st + el.clientHeight) < 90;
           const atTop      = st < 6;
-          if(nearBottom && goingDown && olderHidden>0){ revealingRef.current = true; revealOlder(); }
+          if(nearBottom && goingDown && olderHidden>0){ canRevealRef.current = false; revealOlder(); }
           else if(atTop && goingUp && newerHidden>0){
             // Beim Laden nach OBEN die Position halten (Abstand vom unteren Ende).
             scrollAnchorRef.current = el.scrollHeight - st;
-            revealingRef.current = true; revealNewer();
+            canRevealRef.current = false; revealNewer();
           }
         }
       });
     };
-    // Nach Bereichsänderung: Scrollposition beim Laden nach oben wiederherstellen
-    // und die Lade-Sperre lösen.
+    // Nach Bereichsänderung: Scrollposition beim Laden nach oben wiederherstellen.
     useLayoutEffect(()=>{
       const el = listRef.current;
       if(el && scrollAnchorRef.current!=null){
         el.scrollTop = el.scrollHeight - scrollAnchorRef.current;
         scrollAnchorRef.current = null;
       }
-      revealingRef.current = false;
     }, [range]);
     // Tages-Quelle: im Mehr-Monats-Modus über den Bereich, sonst der Anker-Monat.
     const dayTxsAll = multiMonth
@@ -603,7 +602,7 @@ function MonatScreen() {
     };
 
     return (<>
-      <div ref={listRef} onScroll={onListScroll} style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",position:"relative"}} onTouchStart={onTS} onTouchEnd={onTE}>
+      <div ref={listRef} onScroll={onListScroll} style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",position:"relative"}} onTouchStart={onListTouchStart} onTouchEnd={onTE}>
 
         {/* Hero — SaldoHeroV2 (gemeinsamer Hero mit dem Dashboard) */}
         <div ref={stickyRef} style={window.MBT_DEBUG?.disable_sticky?{}:{position:"sticky",top:0,zIndex:10,background:T.bg}}>
