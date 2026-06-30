@@ -295,18 +295,19 @@ function isFuture(year, month, day, ctx) {
   if(month < tM) return false;
   return day >= tD;
 }
-// Ist das Restbudget einer Phase überhaupt noch verbrauchbar?
-// Eine HEUTE ausgelöste Buchung bucht erst am nächsten Banktag. Sobald dieser
-// über das Phasenende (14. bzw. Monatsletzter) hinausreicht, kann das Budget
-// nicht mehr in dieser Phase verbraucht werden → Reservierung entfällt schon
-// VOR dem Kalender-Stichtag (z.B. am Wochenende/Feiertag am Monatsende).
+// Ist das Restbudget einer Phase überhaupt noch verbrauchbar / die Reservierung
+// noch aktiv? Maßgeblich ist der KALENDER-Stichtag: Die Phase (14. bzw. Monats-
+// letzter) gilt bis EINSCHLIESSLICH diesem Tag — das Budget bleibt also sichtbar/
+// reserviert, bis der Stichtag komplett vorbei ist (am Folgetag entfällt es).
+// (Früher: nextBankWorkday(today) — dadurch verschwand die Reservierung schon am
+// letzten Banktag, also am Stichtag selbst, was verwirrte.)
 function phaseStillReachable(year, month, phaseEndDay, ctx) {
   const today = ctx.today || new Date();
   const pad = n => String(n).padStart(2,"0");
   const todayIso = `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}`;
   const phaseEndIso = `${year}-${pad(month+1)}-${pad(phaseEndDay)}`;
   // ISO-Strings vergleichen sich chronologisch
-  return nextBankWorkday(todayIso) <= phaseEndIso;
+  return todayIso <= phaseEndIso;
 }
 // Ist ein Budget-Platzhalter (pending tx mit _budgetSubId) noch "aktiv", d. h.
 // seine Phase noch erreichbar? Sonst ist das Restbudget freigegeben (die nächste
