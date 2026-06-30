@@ -124,7 +124,18 @@ function ebDescription(tx) {
 
 // Eine Enable-Banking-Transaktion → SupaDupa-Money-Zeilenform.
 function mapEnableBankingTx(tx, accountId) {
-  const isoDate = String(tx?.booking_date || tx?.value_date || "").slice(0, 10);
+  // Vorgemerkt erkennen — robust über mögliche Statusfelder/-werte der ASPSPs
+  // (Enable Banking Standard: status "PDNG"; manche Banken liefern es abweichend).
+  const pending = /pdng|pend|hold|reserv|vorgemerkt/i.test(
+    String(tx?.status ?? tx?.booking_status ?? tx?.transaction_status ?? tx?.credit_debit_status ?? ""));
+  // Datum: bei VORGEMERKTEN Buchungen das voraussichtliche Ausführungs-/
+  // Wertstellungsdatum (value_date) bevorzugen — manche Banken stempeln eine
+  // Vormerkung mit dem Beobachtungstag (booking_date), wodurch z. B. eine
+  // Vormerkung fürs 1.7. fälschlich als 30.6. einsortiert würde. Bei echten
+  // Buchungen bleibt booking_date führend.
+  const isoDate = (pending
+    ? String(tx?.value_date || tx?.booking_date || "")
+    : String(tx?.booking_date || tx?.value_date || "")).slice(0, 10);
   const amount = ebSignedAmount(tx);
   const desc = ebDescription(tx);
   return {
@@ -132,10 +143,7 @@ function mapEnableBankingTx(tx, accountId) {
     amount,
     desc,
     fp: txFingerprint(isoDate, amount, desc, accountId),
-    // Vorgemerkt erkennen — robust über mögliche Statusfelder/-werte der ASPSPs
-    // (Enable Banking Standard: status "PDNG"; manche Banken liefern es abweichend).
-    pending: /pdng|pend|hold|reserv|vorgemerkt/i.test(
-      String(tx?.status ?? tx?.booking_status ?? tx?.transaction_status ?? tx?.credit_debit_status ?? "")),
+    pending,
     _ebRef: tx?.entry_reference || tx?.transaction_id || null,
     _resolvedAccId: accountId,
   };

@@ -96,7 +96,7 @@ function DashboardScreenV2() {
     const [detailsOpen, setDetailsOpen] = useState(false);
 
     // ── Bank-Abruf direkt im Dashboard (Pull-to-Refresh) ──
-    // bankFetch: null | {status:"loading"|"done"|"error", reason?, message?, newIds?, dupeItems?}
+    // bankFetch: null | {status:"loading"|"done"|"error", reason?, message?, staged?, dupeItems?}
     const [bankFetch, setBankFetch] = useState(null);
     const dashScrollRef = useRef(null);
     const pullRef = useRef({ startY: 0, active: false });
@@ -118,9 +118,22 @@ function DashboardScreenV2() {
         _csvType: row.amount > 0 ? "income" : "expense", _fp: row.fp, _csvSource: "Enable Banking",
         ...(row._ebRef ? { _ebRef: row._ebRef } : {}),
       }));
-      if (added.length) setTxs((p) => [...added, ...p].sort((x, y) => y.date.localeCompare(x.date)));
-      setBankFetch({ status: "done", newIds: added.map((t) => t.id), dupeItems, aspsp, banks });
-    }, [txs, accounts, setTxs]);
+      // NICHT direkt importieren — die abgerufenen Einträge werden zunächst nur
+      // zur Prüfung "geparkt" (staged) und erst beim Tippen auf „Übernehmen"
+      // tatsächlich in die Buchungen/den Saldo übernommen.
+      setBankFetch({ status: "done", staged: added, dupeItems, aspsp, banks });
+    }, [txs, accounts]);
+    // Geparkte Einträge bearbeiten (Kategorie/Löschen) ohne sie schon zu importieren.
+    const updateStaged = React.useCallback((updater) =>
+      setBankFetch((bf) => bf && bf.status === "done"
+        ? { ...bf, staged: updater(bf.staged || []) } : bf), []);
+    // „Übernehmen": geparkte Einträge endgültig in die Buchungen schreiben.
+    // Items werden vom Panel übergeben (kein setState im setState-Updater).
+    const commitStaged = React.useCallback((items) => {
+      const staged = items || [];
+      if (staged.length) setTxs((p) => [...staged, ...p].sort((x, y) => y.date.localeCompare(x.date)));
+      setBankFetch(null);
+    }, [setTxs]);
     // Pull-to-Refresh: nur greifen, wenn ganz oben gescrollt — sonst normaler Scroll.
     const onPullStart = (e) => {
       const el = dashScrollRef.current;
@@ -875,7 +888,8 @@ function DashboardScreenV2() {
         {/* Per Pull-to-Refresh abgerufene Bank-Buchungen — zwischen Hero und
             erster Kategorie, gefiltert nach aktueller Kontosicht (selAcc). */}
         {bankFetch && (
-          <BankFetchPanel state={bankFetch} onClose={()=>setBankFetch(null)} onRefetch={runBankFetch}/>
+          <BankFetchPanel state={bankFetch} onClose={()=>setBankFetch(null)} onRefetch={runBankFetch}
+            onUpdateStaged={updateStaged} onConfirm={commitStaged}/>
         )}
 
         {/* Schalter: Umbuchungen (interne Transfers) + Erstattungen aus den
