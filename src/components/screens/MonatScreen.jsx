@@ -411,6 +411,10 @@ function MonatScreen() {
     if(!inSearchMode && budgetDetailsEnde.items.length  && !byDate[endeIso])  byDate[endeIso]=[];
     const dates   = Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
     const fmtD    = iso=>{ const[,,d]=iso.split("-"); return `${d}.`; };
+    // Vollständiges Datum dd.mm.jjjj — bei Suche/Mehr-Monats-Ansicht nötig, damit
+    // erkennbar bleibt, aus welchem Monat/Jahr ein Tag stammt.
+    const fmtDFull = iso=>{ const[y,m,d]=iso.split("-"); return `${d}.${m}.${y}`; };
+    const showFullDate = inSearchMode || range.from !== range.to;
     const dayName = iso=>["So","Mo","Di","Mi","Do","Fr","Sa"][new Date(iso).getDay()];
 
     // Tagessaldo-Basis: PrognoseE des Vormonats — gleiche Logik wie Dashboard (getProgEnde)
@@ -838,7 +842,7 @@ function MonatScreen() {
                 <div style={{display:"flex",alignItems:"center",
                   padding:"7px 10px 6px",gap:8,background:"rgba(255,255,255,0.04)"}}>
                   <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
-                    <span style={{color:T.txt,fontSize:12,fontWeight:700}}>{fmtD(date)}</span>
+                    <span style={{color:T.txt,fontSize:12,fontWeight:700}}>{showFullDate?fmtDFull(date):fmtD(date)}</span>
                     <span style={{color:T.txt2,fontSize:10}}>{dayName(date)}</span>
                     {dayOf(date)<=14&&<span style={{color:T.mid,fontSize:9,fontWeight:700,
                       background:"rgba(103,232,249,0.1)",borderRadius:5,padding:"1px 5px"}}>Mitte</span>}
