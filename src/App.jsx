@@ -27,7 +27,6 @@ import { MatchingScreen } from "./components/screens/MatchingScreen.jsx";
 import { MonatScreen } from "./components/screens/MonatScreen.jsx";
 import { MoneyMoodScreen } from "./components/screens/MoneyMoodScreen.jsx";
 import { RecurringDetectionScreen } from "./components/screens/RecurringDetectionScreen.jsx";
-import { TransactionsScreen } from "./components/screens/TransactionsScreen.jsx";
 import { VormerkungHub } from "./components/screens/VormerkungHub.jsx";
 import { AppCtx } from "./state/AppContext.js";
 import { theme as T, setActiveTheme, isLightTheme } from "./theme/activeTheme.js";
@@ -52,7 +51,7 @@ import { exportEbForSync, importEbFromSync } from "./utils/enableBankingStore.js
 import { saldoAt, saldoEnde, saldoMitte } from "./utils/saldo.js";
 
 export default function SupaDupaMoney() {
-  const [mainTab,       setMainTab]      = useState("erfassen"); // erfassen|buchungen|struktur|mehr
+  const [mainTab,       setMainTab]      = useState("erfassen"); // erfassen|struktur|mehr
   const [sparOpenRequest, setSparOpenRequest] = useState(0);
   const [activeStructurTab, setActiveStructurTab] = useState("einstellungen");
   const [hideEmptyRows, setHideEmptyRows] = useState(true);
@@ -154,7 +153,6 @@ export default function SupaDupaMoney() {
     {id:"vormerken",    label:"vormerken",  icon:"calendar", color:T.gold},
     {id:"kategorien",   label:"Budget",     icon:"tag",      color:T.blue},
     {id:"daten",        label:"Daten",      icon:"database", color:T.pos},
-    {id:"einstellungen",label:"Optionen",   icon:"settings", color:T.txt2},
   ];
   const openMoon = (id) => {
     // Der + bleibt in ALLEN Mond-Funktionen VERGRÖSSERT (plusArretiert true).
@@ -163,7 +161,6 @@ export default function SupaDupaMoney() {
     if(id==="vormerken")          setShowMobileVormerken(true);
     else if(id==="kategorien")    setShowMobileKategorien(true);
     else if(id==="daten")         reopenMobilePicker("daten");
-    else if(id==="einstellungen"){ setMainTab("struktur"); setActiveStructurTab("einstellungen"); }
   };
   // True, solange der Money-Mood/Trend-Drilldown offen ist. Dort wird der + Button
   // vergrößert angezeigt und ist frei vertikal verschiebbar (drillBtnY); Links/
@@ -2599,10 +2596,10 @@ Abbrechen = ${remoteName}-Stand laden`
     {id:"home",      label:"Home",     icon:"home"},
     {id:"jahr",      label:"Trend",    icon:"activity"},
     {id:"monat",     label:"Monat",    icon:"calendar"},
-    {id:"buchungen", label:"Buchungen",icon:"list"},
+    {id:"optionen",  label:"Optionen", icon:"settings"},
   ];
   const activeNavTab =
-    mainTab==="buchungen" ? "buchungen" :
+    mainTab==="struktur" ? "optionen" :
     mainTab==="erfassen"&&subTab==="monat" ? "monat" :
     // „Money Mood" wird aus der Jahresansicht geöffnet → Jahr bleibt aktiv.
     mainTab==="erfassen"&&(subTab==="jahr"||subTab==="mood") ? "jahr" :
@@ -2612,8 +2609,7 @@ Abbrechen = ${remoteName}-Stand laden`
     showCsv||showVormHub||showRecurring||showMatching||!!modal||dashDrillOpen;
 
   const showMonthPicker = anyMobileModalOpen ||
-    activeNavTab==="home"||activeNavTab==="monat"||
-    activeNavTab==="buchungen"||activeNavTab==="jahr";
+    activeNavTab==="home"||activeNavTab==="monat"||activeNavTab==="jahr";
 
   return (
   <AppCtx.Provider value={cx}>
@@ -2672,7 +2668,6 @@ Abbrechen = ${remoteName}-Stand laden`
         {mainTab==="erfassen"&&subTab==="monat"    &&<ErrorBoundary name="MonatScreen"><MonatScreen/></ErrorBoundary>}
         {mainTab==="erfassen"&&subTab==="jahr"      &&<ErrorBoundary name="JahrScreen"><JahrScreen forceSingle={false}/></ErrorBoundary>}
         {mainTab==="erfassen"&&subTab==="mood"      &&<ErrorBoundary name="MoneyMoodScreen"><MoneyMoodScreen/></ErrorBoundary>}
-        {mainTab==="buchungen"                      &&<ErrorBoundary name="TransactionsScreen"><TransactionsScreen/></ErrorBoundary>}
         {mainTab==="struktur"                       &&<ManagementScreen activeTab={activeStructurTab}/>}
 
         {/* ── MEHR-SCREEN (inline) ── */}
@@ -2693,7 +2688,7 @@ Abbrechen = ${remoteName}-Stand laden`
         const onTap = (t) => {
           if(t.id==="home")      { setMainTab("erfassen"); setSubTab("dashboard"); }
           else if(t.id==="monat")     { setMainTab("erfassen"); setSubTab("monat"); }
-          else if(t.id==="buchungen") { setMainTab("buchungen"); }
+          else if(t.id==="optionen")  { setMainTab("struktur"); setActiveStructurTab("einstellungen"); }
           else if(t.id==="jahr")      { setMainTab("erfassen"); setSubTab("mood"); }
         };
 
@@ -3102,7 +3097,7 @@ Abbrechen = ${remoteName}-Stand laden`
               {items.map((item,idx) => {
                 if(item==="plus") return renderMasterButton("master");
                 const isActive = activeNavTab===item.id;
-                const labels = {home:"HOME",monat:"MONAT",buchungen:"BUCH.",jahr:"JAHR",mehr:"MEHR"};
+                const labels = {home:"HOME",monat:"MONAT",optionen:"OPT.",jahr:"JAHR",mehr:"MEHR"};
                 return (
                   <div key={item.id} onClick={()=>onTap(item)}
                     style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",
@@ -3216,7 +3211,10 @@ Abbrechen = ${remoteName}-Stand laden`
             // Größerer Radius + höhere Basis → Monde klar abgesetzt vom + (kein Überlappen).
             // Hintergrund = identisch zum +-Button (bg). Aktiver Mond: dicker weißer Rand.
             const R=98, CY=126, SIZE=58;
-            const ang=[153,111,69,27][i]*Math.PI/180;
+            // Monde gleichmäßig über den oberen Bogen verteilen (links→rechts),
+            // unabhängig von ihrer Anzahl.
+            const _n=MOONS.length, _a0=150, _a1=30;
+            const ang=(_n<=1 ? 90 : _a0 + (_a1-_a0)*(i/(_n-1)))*Math.PI/180;
             const dx=Math.cos(ang)*R, dy=Math.sin(ang)*R;
             const active=i===activeMoon;
             return (

@@ -175,14 +175,15 @@ function SaldoHeroV2({
                 zusätzlich auf dem großen Kontostand-Betrag erhalten. */}
             <span onClick={allAccIds.length>1?(e)=>{e.stopPropagation();setAccMenuOpen(o=>!o);}:undefined}
               title={allAccIds.length>1?"Konto wählen":undefined}
-              style={{display:"inline-flex",alignItems:"center",gap:4,userSelect:"none",
+              style={{display:"inline-flex",alignItems:"center",gap:3,userSelect:"none",lineHeight:1,
+                position:"relative",top:"-2px",   // auf die MITTE/ENDE-Label-Linie heben
                 cursor:allAccIds.length>1?"pointer":"default",
                 background:allAccIds.length>1?"rgba(255,255,255,0.07)":"transparent",
                 border:allAccIds.length>1?`1px solid ${T.bd}`:"none",
-                borderRadius:999,padding:allAccIds.length>1?"2px 5px 2px 9px":"0",
-                color:selAcc===null ? T.txt2 : T.blue,fontSize:11,fontWeight:700,letterSpacing:0.5}}>
+                borderRadius:999,padding:allAccIds.length>1?"1px 5px 1px 8px":"0",
+                color:selAcc===null ? T.txt2 : T.blue,fontSize:10,fontWeight:700,letterSpacing:0.5}}>
               <span style={{maxWidth:118,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{accLabel}</span>
-              {allAccIds.length>1 && Li(accMenuOpen?"chevron-up":"chevron-down",14, selAcc===null ? T.txt2 : T.blue)}
+              {allAccIds.length>1 && Li(accMenuOpen?"chevron-up":"chevron-down",13, selAcc===null ? T.txt2 : T.blue)}
             </span>
             {accMenuOpen && (<>
               {/* Klick-außerhalb schließt das Menü */}
