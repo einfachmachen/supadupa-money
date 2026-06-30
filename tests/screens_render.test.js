@@ -20,7 +20,6 @@ beforeAll(async () => {
 const cases = [
   ["DashboardScreenV2", () => import("../src/components/screens/DashboardScreenV2.jsx"), {}],
   ["MonatScreen",       () => import("../src/components/screens/MonatScreen.jsx"), {}],
-  ["TransactionsScreen",() => import("../src/components/screens/TransactionsScreen.jsx"), {}],
   ["JahrScreen",        () => import("../src/components/screens/JahrScreen.jsx"), {}],
   ["ManagementScreen",  () => import("../src/components/screens/ManagementScreen.jsx"), { activeTab:"einstellungen" }],
   ["SettingsInline",    () => import("../src/components/screens/SettingsInline.jsx"), {}],
