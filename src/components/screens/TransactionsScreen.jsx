@@ -51,9 +51,6 @@ function TransactionsScreen() {
     // volle Liste; nur das DOM ist gedeckelt. Bei Filter-/Suchwechsel zurücksetzen.
     const PAGE = 80;
     const [visibleCount, setVisibleCount] = useState(PAGE);
-    // Monats-Fenster: wie viele Monate vor/nach dem gewählten Monat eingeblendet
-    const [showNewer, setShowNewer] = useState(0);
-    const [showOlder, setShowOlder] = useState(0);
     const [showAllCats, setShowAllCats] = useState(false);
     const [activeCatTxId, setActiveCatTxId] = useState(null);
     const pendingCatsRef = useRef({});
@@ -121,46 +118,40 @@ function TransactionsScreen() {
     // Sichtbare Anzahl bei Filter-/Suchwechsel zurücksetzen
     useEffect(()=>{ setVisibleCount(PAGE); }, [filt,search,filtAcc,hideLinked]);
 
-    // ── Monats-Fenster (wie Monatsansicht) ────────────────────────────────
-    // Standardmäßig wird NUR der über den Monatswähler gewählte Monat gezeigt.
-    // Ältere/neuere Monate werden über die Buttons unten/oben schrittweise
-    // sichtbar gemacht, damit beim Monatswechsel nicht alles geladen wird.
-    // In Such-/Review-Modi (suchen, ？, ⚠ Falsch) gilt das Fenster nicht.
+    // ── Monats-Bereich [from..to] (wie Monatsansicht) ─────────────────────
+    // Standardmäßig nur der über den Monatswähler gewählte Monat. Über die
+    // Buttons oben/unten werden angrenzende Monate in den Bereich aufgenommen.
+    // Der Bereich bleibt beim Scrollen erhalten — der + Button (Monat) folgt
+    // der Scrollposition (onListScroll), ohne den Bereich zu kollabieren.
+    // In Such-/Review-Modi (suchen, ？, ⚠ Falsch) gilt der Bereich nicht.
     const monthScoped = !search.trim() && filt!=="mismatch" && filt!=="uncat";
     const selKey = `${year}-${String(month+1).padStart(2,"0")}`;
-    // Fenster beim Monats-/Filterwechsel zurücksetzen → Sprung zum Monat
-    useEffect(()=>{ setShowNewer(0); setShowOlder(0); }, [selKey,filt,filtAcc]);
+    const [range, setRange] = useState(()=>({from:selKey,to:selKey}));
+    // Filter-/Kontowechsel → Bereich neu auf den gewählten Monat setzen.
+    useEffect(()=>{ setRange({from:selKey,to:selKey}); }, [filt,filtAcc]);
+    // Monatswechsel: nur neu verankern, wenn der Zielmonat AUSSERHALB des
+    // geladenen Bereichs liegt (echter Sprung via Wähler). Liegt er innerhalb
+    // (Scroll-Spy hat den Monat aktualisiert), bleibt der Bereich erhalten.
+    useEffect(()=>{ setRange(r => (selKey>=r.from && selKey<=r.to) ? r : {from:selKey,to:selKey}); }, [selKey]);
 
-    const monthKeys = useMemo(()=>{
-      const s = new Set(filteredList.map(t=>t.date.slice(0,7)));
-      return [...s].sort().reverse(); // absteigend, neueste zuerst
-    },[filteredList]);
-    const newerKeys = useMemo(()=>monthKeys.filter(k=>k>selKey),[monthKeys,selKey]); // oben
-    const olderKeys = useMemo(()=>monthKeys.filter(k=>k<selKey),[monthKeys,selKey]); // unten
-
-    const visibleKeys = useMemo(()=>{
-      const set = new Set([selKey]);
-      newerKeys.slice(Math.max(0,newerKeys.length-showNewer)).forEach(k=>set.add(k));
-      olderKeys.slice(0,showOlder).forEach(k=>set.add(k));
-      return set;
-    },[selKey,newerKeys,olderKeys,showNewer,showOlder]);
+    const monthKeys = useMemo(()=>[...new Set(filteredList.map(t=>t.date.slice(0,7)))],[filteredList]);
 
     const windowList = useMemo(()=>{
       if(!monthScoped) return filteredList;
-      return filteredList.filter(t=>visibleKeys.has(t.date.slice(0,7)));
-    },[monthScoped,filteredList,visibleKeys]);
+      return filteredList.filter(t=>{ const k=t.date.slice(0,7); return k>=range.from && k<=range.to; });
+    },[monthScoped,filteredList,range]);
 
-    // Anzahl noch versteckter Buchungen ober-/unterhalb des Fensters
-    const newerHiddenCount = useMemo(()=>{
-      if(!monthScoped) return 0;
-      const hidden = new Set(newerKeys.slice(0,Math.max(0,newerKeys.length-showNewer)));
-      return filteredList.filter(t=>hidden.has(t.date.slice(0,7))).length;
-    },[monthScoped,filteredList,newerKeys,showNewer]);
-    const olderHiddenCount = useMemo(()=>{
-      if(!monthScoped) return 0;
-      const hidden = new Set(olderKeys.slice(showOlder));
-      return filteredList.filter(t=>hidden.has(t.date.slice(0,7))).length;
-    },[monthScoped,filteredList,olderKeys,showOlder]);
+    // Anzahl noch versteckter Buchungen ober-/unterhalb des Bereichs
+    const newerHiddenCount = useMemo(()=> monthScoped
+      ? filteredList.filter(t=>t.date.slice(0,7)>range.to).length : 0,
+      [monthScoped,filteredList,range]);
+    const olderHiddenCount = useMemo(()=> monthScoped
+      ? filteredList.filter(t=>t.date.slice(0,7)<range.from).length : 0,
+      [monthScoped,filteredList,range]);
+
+    // Nächsten vorhandenen Monat ober-/unterhalb in den Bereich aufnehmen.
+    const revealNewer = ()=> setRange(r=>{ const n=monthKeys.filter(k=>k>r.to).sort(); return n.length?{...r,to:n[0]}:r; });
+    const revealOlder = ()=> setRange(r=>{ const o=monthKeys.filter(k=>k<r.from).sort(); return o.length?{...r,from:o[o.length-1]}:r; });
 
     const shownList = monthScoped ? windowList : filteredList.slice(0, visibleCount);
 
@@ -180,6 +171,31 @@ function TransactionsScreen() {
       for(const tx of shownList){ if(!m.has(tx.date)) m.set(tx.date,[]); m.get(tx.date).push(tx); }
       return [...m.entries()].sort((a,b)=>b[0].localeCompare(a[0]));
     },[shownList]);
+
+    // ── Scroll-Spy: der + Button (Monat) folgt der Scrollposition ─────────
+    // Beim Scrollen durch mehrere geladene Monate wird der oben sichtbare
+    // Monat ermittelt und der globale Monat (= Anzeige im + Button) angepasst.
+    // Da der Zielmonat im geladenen Bereich liegt, bleibt die Liste stehen.
+    const listRef = useRef(null);
+    const spyTick = useRef(false);
+    const onListScroll = ()=>{
+      if(!monthScoped || spyTick.current) return;
+      spyTick.current = true;
+      requestAnimationFrame(()=>{
+        spyTick.current = false;
+        const el = listRef.current; if(!el) return;
+        const top = el.getBoundingClientRect().top;
+        let cur = null;
+        for(const c of el.querySelectorAll("[data-month]")){
+          if(c.getBoundingClientRect().top - top <= 8) cur = c.getAttribute("data-month");
+          else break;
+        }
+        if(cur){
+          const [yy,mm] = cur.split("-").map(Number);
+          if(yy!==year || (mm-1)!==month){ setYear(yy); setMonth(mm-1); }
+        }
+      });
+    };
 
     const allSelected = filteredList.length>0 && filteredList.every(t=>selected.has(t.id));
     const toggleAll   = () => setSelected(allSelected
@@ -432,7 +448,7 @@ function TransactionsScreen() {
         </div>
 
         {/* Liste */}
-        <div style={{flex:1,padding:"6px 8px 20px",overflowY:"auto"}}>
+        <div ref={listRef} onScroll={onListScroll} style={{flex:1,padding:"6px 8px 20px",overflowY:"auto"}}>
           {filt==="mismatch"&&filteredList.length>0&&(
             <div style={{margin:"0 0 6px",padding:"8px 12px",borderRadius:10,
               background:"rgba(245,166,35,0.08)",border:`1px solid ${T.gold}44`}}>
@@ -537,7 +553,9 @@ function TransactionsScreen() {
                             {cleanDesc}
                           </div>
                           <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap",marginTop:1}}>
-                            <span style={{color:T.txt2,fontSize:10}}>{tx.date.slice(8)}.{tx.date.slice(5,7)}.</span>
+                            {/* Datum nur in der flachen Such-/Review-Liste — im Tages-Modus
+                                steht der Tag bereits im Tageskopf. */}
+                            {!monthScoped && <span style={{color:T.txt2,fontSize:10}}>{tx.date.slice(8)}.{tx.date.slice(5,7)}.</span>}
                             {tx.pending&&<span style={{fontSize:9,background:"rgba(245,166,35,0.18)",
                               color:T.gold,borderRadius:4,padding:"0px 5px",fontWeight:700,
                               border:`1px solid ${T.gold}44`,flexShrink:0}}>VM</span>}
@@ -682,13 +700,13 @@ function TransactionsScreen() {
                   );
                 };
                 const TopBtn = monthScoped && newerHiddenCount>0 ? (
-                  <div onClick={()=>setShowNewer(n=>n+1)} style={{textAlign:"center",padding:"10px 0 0",cursor:"pointer",
+                  <div onClick={revealNewer} style={{textAlign:"center",padding:"10px 0 0",cursor:"pointer",
                     color:T.blue,fontSize:13,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
                     {Li("chevron-up",14,T.blue)} + {newerHiddenCount} neuere anzeigen
                   </div>
                 ) : null;
                 const OlderBtn = monthScoped && olderHiddenCount>0 ? (
-                  <div onClick={()=>setShowOlder(n=>n+1)} style={{textAlign:"center",padding:"14px 0 0",cursor:"pointer",
+                  <div onClick={revealOlder} style={{textAlign:"center",padding:"14px 0 0",cursor:"pointer",
                     color:T.blue,fontSize:13,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
                     {Li("chevron-down",14,T.blue)} + {olderHiddenCount} ältere anzeigen
                   </div>
@@ -703,7 +721,8 @@ function TransactionsScreen() {
                       </div>
                     )}
                     {dayGroups.map(([date,dayTxs])=>(
-                      <div key={date} style={{margin:"10px 0 0",border:`1px solid ${T.bd}`,borderRadius:12,
+                      <div key={date} data-month={date.slice(0,7)}
+                        style={{margin:"10px 0 0",border:`1px solid ${T.bd}`,borderRadius:12,
                         overflow:"hidden",background:T.surf||"rgba(255,255,255,0.04)"}}>
                         {renderDayHeader(date)}
                         {dayTxs.map(tx=>renderRow(tx,true))}
