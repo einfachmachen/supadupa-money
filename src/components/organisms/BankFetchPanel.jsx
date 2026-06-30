@@ -5,20 +5,15 @@
 // jede mit einer Inline-Kategorie-Auswahl wie beim CSV-Import. Bereits
 // vorhandene/erkannte Dubletten bleiben eingeklappt und lassen sich ausklappen.
 
-import React, { useContext, useState } from "react";
-import { AppCtx } from "../../state/AppContext.js";
+import React, { useState } from "react";
 import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { CatPicker } from "../molecules/CatPicker.jsx";
 
-function BankFetchPanel({ state, onClose, onRefetch }) {
-  const { txs, setTxs, selAcc, getCat } = useContext(AppCtx);
+function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }) {
   const [showExisting, setShowExisting] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
-
-  const isSel = (accId) =>
-    !selAcc || accId === selAcc || (!accId && selAcc === "acc-giro");
 
   // Bank-Auswahl: „Alle" + je verbundene Bank. Tippen ruft genau diese Bank ab
   // (bzw. alle). Nur sinnvoll ab 2 Banken; während des Ladens deaktiviert.
@@ -45,14 +40,15 @@ function BankFetchPanel({ state, onClose, onRefetch }) {
     );
   };
 
+  // Kategorie/Löschen wirken auf die noch NICHT importierten (geparkten) Einträge.
   const setRowCat = (id, catId, subId) =>
-    setTxs((p) => p.map((t) => t.id === id
+    onUpdateStaged((list) => list.map((t) => t.id === id
       ? { ...t, splits: catId ? [{ id: uid(), catId, subId, amount: t.totalAmount }] : [] }
       : t));
 
   // Falsch abgerufenen Eintrag direkt entfernen — ohne ihn vorher kategorisieren
   // zu müssen. (Beim nächsten Abruf würde er ggf. wieder als neu erkannt.)
-  const removeRow = (id) => setTxs((p) => p.filter((t) => t.id !== id));
+  const removeRow = (id) => onUpdateStaged((list) => list.filter((t) => t.id !== id));
 
   const wrap = (children) => (
     <div style={{ margin: "6px 4px 0", border: `1px solid ${T.blue}55`, borderRadius: 14,
@@ -130,9 +126,11 @@ function BankFetchPanel({ state, onClose, onRefetch }) {
     );
   }
 
-  // status === "done"
-  const newTxs = (txs || []).filter((t) => (state.newIds || []).includes(t.id) && isSel(t.accountId));
-  const dupeItems = (state.dupeItems || []).filter((i) => isSel(i.accId));
+  // status === "done" — geparkte (noch nicht importierte) Einträge.
+  // Alle abgerufenen Einträge werden gezeigt (Abruf ist kontoübergreifend) —
+  // so geht beim Verwerfen/Übernehmen nichts versehentlich verloren.
+  const newTxs = state.staged || [];
+  const dupeItems = state.dupeItems || [];
 
   if (newTxs.length === 0 && dupeItems.length === 0) {
     return wrap(
@@ -198,6 +196,13 @@ function BankFetchPanel({ state, onClose, onRefetch }) {
         )}
       />
       <BankChips />
+      {newTxs.length > 0 && (
+        <div style={{ padding: "7px 12px", borderTop: `1px solid ${T.bd}`, color: T.txt2,
+          fontSize: 11.5, lineHeight: 1.4, display: "flex", alignItems: "center", gap: 6 }}>
+          {Li("info", 13, T.blue)}
+          <span>Noch nicht importiert — prüfen, ggf. kategorisieren oder löschen, dann <b style={{ color: T.txt }}>Übernehmen</b>.</span>
+        </div>
+      )}
       {newTxs.map((t) => <Row key={t.id} t={t} />)}
 
       {dupeItems.length > 0 && (
@@ -228,12 +233,28 @@ function BankFetchPanel({ state, onClose, onRefetch }) {
         </>
       )}
 
-      <button onClick={onClose}
-        style={{ width: "100%", padding: "11px", border: "none", borderTop: `1px solid ${T.bd}`,
-          background: T.pos, color: T.on_accent, fontSize: 14, fontWeight: 800, cursor: "pointer",
-          fontFamily: "inherit" }}>
-        Fertig
-      </button>
+      {newTxs.length > 0 ? (
+        <div style={{ display: "flex", borderTop: `1px solid ${T.bd}` }}>
+          <button onClick={onClose} title="Abgerufene Einträge verwerfen (nichts importieren)"
+            style={{ flex: "0 0 38%", padding: "11px", border: "none", background: "transparent",
+              color: T.txt2, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+            Verwerfen
+          </button>
+          <button onClick={() => onConfirm(newTxs)}
+            style={{ flex: 1, padding: "11px", border: "none", borderLeft: `1px solid ${T.bd}`,
+              background: T.pos, color: T.on_accent, fontSize: 14, fontWeight: 800, cursor: "pointer",
+              fontFamily: "inherit", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            {Li("check", 16, T.on_accent)} {newTxs.length} übernehmen
+          </button>
+        </div>
+      ) : (
+        <button onClick={onClose}
+          style={{ width: "100%", padding: "11px", border: "none", borderTop: `1px solid ${T.bd}`,
+            background: T.pos, color: T.on_accent, fontSize: 14, fontWeight: 800, cursor: "pointer",
+            fontFamily: "inherit" }}>
+          Fertig
+        </button>
+      )}
     </>
   );
 }
