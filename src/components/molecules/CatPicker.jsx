@@ -51,7 +51,7 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
     width:"100%", textAlign:"left", padding:"6px 8px", borderRadius:8,
     border:`1px solid ${active?(col||T.blue)+"66":T.bd}`,
     background:active?(col||T.blue)+"18":"rgba(255,255,255,0.04)",
-    color:T.txt, fontSize:12, cursor:"pointer", marginBottom:2,
+    color:T.txt, fontSize:14, cursor:"pointer", marginBottom:2,
     display:"flex", alignItems:"center", gap:8,
   });
 
@@ -325,8 +325,7 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
                     <button key={g.id} onClick={()=>{setSelGrp(g);setStep(1);}} style={{...btnS(false,g.accent)}}>
                       <span style={{display:"flex",alignItems:"center",justifyContent:"center",width:18,flexShrink:0}}>{Li(g.icon,15,g.accent||T.txt2)}</span>
                       <span style={{flex:1,fontWeight:600,color:(g.behavior==="expense"||g.type==="expense")?T.neg:(g.behavior==="income"||g.type==="income")?T.pos:g.accent,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{g.label}</span>
-                      <span style={{color:T.txt2,fontSize:9,flexShrink:0}}>{cats.filter(c=>c.type===g.type).length} K.</span>
-                      <span style={{color:T.txt2,fontSize:11,flexShrink:0}}>{Li("chevron-right",14)}</span>
+                      <span style={{color:T.txt2,fontSize:11,flexShrink:0}}>{Li("chevron-right",16)}</span>
                     </button>
                   );
                   return [...byAcc.entries()].map(([accId, grps])=>{
@@ -390,9 +389,8 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
                   }} style={{...btnS(curCatId===cat.id,cat.color)}}>
                     <div style={{width:24,height:24,borderRadius:7,background:cat.color+"33",
                       display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{Li(cat.icon,14,cat.color||T.txt2)||<span style={{opacity:0.3}}>·</span>}</div>
-                    <span style={{flex:1}}>{cat.name}</span>
-                    <span style={{color:T.txt2,fontSize:10}}>{(cat.subs||[]).length} Unterk.</span>
-                    <span style={{color:T.txt2,fontSize:11}}>{Li("chevron-right",14)}</span>
+                    <span style={{flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{cat.name}</span>
+                    {(cat.subs||[]).length>0 && <span style={{color:T.txt2,fontSize:11}}>{Li("chevron-right",16)}</span>}
                   </button>
                 ))}
                 <button onClick={()=>setNewMode("cat")}

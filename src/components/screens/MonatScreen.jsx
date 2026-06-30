@@ -818,8 +818,7 @@ function MonatScreen() {
               {Li(allSel?"check-square":"square",12,T.blue)} Alle ({mTxs.length})
             </button>
             {selected.size>0&&<>
-              <span style={{color:T.txt2,fontSize:11,flexShrink:0}}>{selCount} ausgewählt</span>
-              <div style={{flex:1,minWidth:100}}>
+              <div style={{flex:1,minWidth:120}}>
                 {(()=>{
                   const selTxs=[...selected].map(id=>txs.find(t=>t.id===id)).filter(Boolean);
                   const hasNeg=selTxs.some(t=>t.totalAmount<0||t._csvType==="expense");
