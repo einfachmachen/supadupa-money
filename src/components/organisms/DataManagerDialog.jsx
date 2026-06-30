@@ -19,11 +19,11 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
     yearData, setYearData, col3Name, setCol3Name,
     quickBtns, setQuickBtns, quickColors, setQuickColors,
     budgets, setBudgets, customIcons, setCustomIcons,
-    setMainTab, setActiveStructurTab, setShowBankConnect } = useContext(AppCtx);
+    setMainTab, setActiveStructurTab, setShowBankWizard } = useContext(AppCtx);
 
   // Navigation zu den jeweils zuständigen Stellen (statt direkt hier zu löschen).
   const openKonten = () => { onClose?.(); setMainTab?.("struktur"); setActiveStructurTab?.("konten"); };
-  const openBankConnect = () => { onClose?.(); setShowBankConnect?.(true); };
+  const openBankConnect = () => { onClose?.(); setShowBankWizard?.(true); };
 
   const MONTHS_G=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
   const today = new Date();

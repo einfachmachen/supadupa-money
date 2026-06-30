@@ -53,8 +53,7 @@ function MobileActionPicker({onClose, onSelect, onSwitchToMonth, initialScreen="
 
   const datenActions = [
     {id:"csv",       label:"CSV importieren", icon:"download",    color:T.pos,  sub:"Buchungen aus Banking-App"},
-    {id:"bankguide",   label:"Bank verbinden – Anleitung", icon:"landmark", color:T.gold, sub:"Schritt für Schritt erklärt"},
-    {id:"bankconnect", label:"Bank-Konto verbinden",       icon:"link",     color:T.gold, sub:"Echte Umsätze via Enable Banking"},
+    {id:"bankwizard",label:"Bank verbinden",  icon:"landmark",    color:T.gold, sub:"Schritt für Schritt · Enable Banking"},
     {id:"datenmgr",  label:"Daten-Manager",   icon:"database",    color:T.pos,  sub:"Export / Import / Löschen"},
     {id:"cloudsetup",label:"Cloud-Sync einrichten", icon:"cloud",  color:T.cf||T.blue, sub:"Eigene Cloud-DB · geführt"},
   ];
