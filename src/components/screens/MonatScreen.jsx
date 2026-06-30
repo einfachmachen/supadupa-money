@@ -6,6 +6,7 @@ import { MitteEndeFields } from "../molecules/MitteEndeFields.jsx";
 import { BudgetEditorModal } from "../organisms/BudgetEditorModal.jsx";
 import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
 import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
+import { WerkzeugeSection } from "../organisms/WerkzeugeSection.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { PAL } from "../../theme/palette.js";
@@ -745,6 +746,10 @@ function MonatScreen() {
             });
           })()}
         </div>
+
+        {/* Werkzeuge: „Nur unkategorisierte zuordnen" / „Alle Buchungen neu
+            zuordnen" (+ Typ-Prüfung) — einklappbar, aus der Buchungen-Ansicht. */}
+        <WerkzeugeSection/>
 
         {/* Mismatch-Autokorrektur-Banner */}
         {filt==="mismatch"&&mTxs.length>0&&(

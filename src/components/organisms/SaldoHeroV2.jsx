@@ -169,23 +169,21 @@ function SaldoHeroV2({
         <div style={{position:"absolute",left:0,right:0,top:0,bottom:0,
           display:"flex",flexDirection:"column",alignItems:"center",
           padding:"2px 0 4px",pointerEvents:"none"}}>
-          <span style={{position:"relative",display:"inline-flex",alignItems:"center",gap:3,
+          <span style={{position:"relative",display:"inline-flex",alignItems:"center",
             marginBottom:2,pointerEvents:"auto"}}>
-            <span onClick={allAccIds.length>1?cycleAcc:undefined}
-              title={allAccIds.length>1?"Konto wechseln (tippen) – Liste über ▾":undefined}
-              style={{userSelect:"none",
+            {/* Konto-Pille: Tippen öffnet die Schnellwahl. Durchklicken bleibt
+                zusätzlich auf dem großen Kontostand-Betrag erhalten. */}
+            <span onClick={allAccIds.length>1?(e)=>{e.stopPropagation();setAccMenuOpen(o=>!o);}:undefined}
+              title={allAccIds.length>1?"Konto wählen":undefined}
+              style={{display:"inline-flex",alignItems:"center",gap:4,userSelect:"none",
                 cursor:allAccIds.length>1?"pointer":"default",
-                color:selAcc===null ? T.txt2 : T.blue,
-                fontSize:11,fontWeight:700,letterSpacing:0.5,
-                maxWidth:118,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-              {accLabel}
+                background:allAccIds.length>1?"rgba(255,255,255,0.07)":"transparent",
+                border:allAccIds.length>1?`1px solid ${T.bd}`:"none",
+                borderRadius:999,padding:allAccIds.length>1?"2px 5px 2px 9px":"0",
+                color:selAcc===null ? T.txt2 : T.blue,fontSize:11,fontWeight:700,letterSpacing:0.5}}>
+              <span style={{maxWidth:118,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{accLabel}</span>
+              {allAccIds.length>1 && Li(accMenuOpen?"chevron-up":"chevron-down",14, selAcc===null ? T.txt2 : T.blue)}
             </span>
-            {allAccIds.length>1 && (
-              <span onClick={(e)=>{e.stopPropagation();setAccMenuOpen(o=>!o);}} title="Konto wählen"
-                style={{cursor:"pointer",display:"inline-flex",alignItems:"center",padding:"2px"}}>
-                {Li(accMenuOpen?"chevron-up":"chevron-down",11, selAcc===null ? T.txt2 : T.blue)}
-              </span>
-            )}
             {accMenuOpen && (<>
               {/* Klick-außerhalb schließt das Menü */}
               <div onClick={()=>setAccMenuOpen(false)}
