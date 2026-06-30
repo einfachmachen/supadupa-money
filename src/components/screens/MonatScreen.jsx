@@ -81,12 +81,17 @@ function MonatScreen() {
       if(d.getFullYear()!==year||d.getMonth()!==month) return false;
       return _txVisible(t);
     }).sort((a,b)=>new Date(b.date)-new Date(a.date));
-    const filtByType = filt==="all" ? allMTxs : filt==="pending" ? allMTxs.filter(t=>t.pending) : filt==="uncat" ? allMTxs.filter(t=>(t.splits||[]).length===0||(t.splits||[]).every(s=>!s.catId)) : filt==="mismatch" ? allMTxs.filter(t=>{ const ct=t._csvType; if(!ct) return false; const tt=txType(t); return (ct==="expense"&&tt==="income")||(ct==="income"&&tt==="expense"); }) : allMTxs.filter(t=>!t.pending&&txType(t)===filt);
-    const mTxs = search.trim() ? filtByType.filter(t=>{
+    const _applyFilt = (list) => filt==="all" ? list : filt==="pending" ? list.filter(t=>t.pending) : filt==="uncat" ? list.filter(t=>(t.splits||[]).length===0||(t.splits||[]).every(s=>!s.catId)) : filt==="mismatch" ? list.filter(t=>{ const ct=t._csvType; if(!ct) return false; const tt=txType(t); return (ct==="expense"&&tt==="income")||(ct==="income"&&tt==="expense"); }) : list.filter(t=>!t.pending&&txType(t)===filt);
+    const filtByType = _applyFilt(allMTxs);
+    // Globale Suche: durchsucht ALLE Buchungen (alle Monate, gleicher Sichtbarkeits-
+    // + Filter-Filter), nicht nur den Anker-Monat. Ohne Suche bleibt es der Monat.
+    const _searchPred = (t) => {
       const isAmt = /^[=<>]?[\d.,]+$/.test(search.trim());
       if(isAmt) return matchAmount(Math.abs(t.totalAmount), search);
       return matchSearch(t.desc,search)||(t.splits||[]).some(sp=>matchSearch(getCat(sp.catId)?.name,search)||matchSearch(getSub(sp.catId,sp.subId)?.name,search));
-    }) : filtByType;
+    };
+    const allVisibleTxs = useMemo(()=> txs.filter(_txVisible).sort((a,b)=>new Date(b.date)-new Date(a.date)), [txs,selAcc]);
+    const mTxs = search.trim() ? _applyFilt(allVisibleTxs).filter(_searchPred) : filtByType;
 
     const allSel = mTxs.length>0 && mTxs.every(t=>selected.has(t.id));
     const toggleAll = () => setSelected(allSel ? new Set() : new Set(mTxs.map(t=>t.id)));
@@ -369,8 +374,9 @@ function MonatScreen() {
     const budgetDetailsEnde  = useMemo(()=>calcOpenBudgetDetails(lastDayOfMonth),[year,month,txs,selAcc]);
     const openBudgetMitte = budgetDetailsMitte.totalOpen;
     const openBudgetEnde  = budgetDetailsEnde.totalOpen;
-    if(budgetDetailsMitte.items.length && !byDate[mitteIso]) byDate[mitteIso]=[];
-    if(budgetDetailsEnde.items.length  && !byDate[endeIso])  byDate[endeIso]=[];
+    // Budget-Restzeilen nicht in Suchergebnisse einstreuen.
+    if(!inSearchMode && budgetDetailsMitte.items.length && !byDate[mitteIso]) byDate[mitteIso]=[];
+    if(!inSearchMode && budgetDetailsEnde.items.length  && !byDate[endeIso])  byDate[endeIso]=[];
     const dates   = Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
     const fmtD    = iso=>{ const[,,d]=iso.split("-"); return `${d}.`; };
     const dayName = iso=>["So","Mo","Di","Mi","Do","Fr","Sa"][new Date(iso).getDay()];
@@ -490,7 +496,7 @@ function MonatScreen() {
     // Für die Minus-Warnung: ersten zukünftigen Tag mit positivem Saldo finden
     // (= Datum an dem z.B. das Gehalt eingeht und den Saldo dreht)
     const warningDates = new Map(); // isoDate → {deficit, nextPosDate, nextPosName, neededAmount}
-    if(baseSaldo !== null && baseSaldo !== undefined) {
+    if(!inSearchMode && baseSaldo !== null && baseSaldo !== undefined) {
       const allDates = [...dates].sort((a,b)=>a.localeCompare(b)); // aufsteigend
       allDates.forEach((d, idx) => {
         const saldo = getDaySaldo(d);
@@ -787,7 +793,7 @@ function MonatScreen() {
         {dayTxsAll.length===0
           ? <div style={{color:T.txt2,textAlign:"center",padding:"40px 20px"}}>
               <div style={{marginBottom:10,opacity:0.4}}>{Li("inbox",36,T.txt2,1)}</div>
-              <div style={{fontSize:13}}>Keine Buchungen im {MONTHS_F[month]}</div>
+              <div style={{fontSize:13}}>{inSearchMode ? `Keine Treffer für „${search.trim()}"` : `Keine Buchungen im ${MONTHS_F[month]}`}</div>
             </div>
           : dates.map(date=>{
             const dayTxs = [...byDate[date]].sort((a,b)=>{
@@ -961,7 +967,7 @@ function MonatScreen() {
 
                 {/* Budget-Restanzeige am 14. und Monatsletzten — als einzelne Buchungszeilen.
                     Nur für den Anker-Monat (budgetDetails/lastDayOfMonth gelten dafür). */}
-                {date.slice(0,7)===selKey && (()=>{
+                {!inSearchMode && date.slice(0,7)===selKey && (()=>{
                   const [,, dd] = date.split("-");
                   const dayNum = parseInt(dd);
                   const isMitteDay = dayNum===14;
