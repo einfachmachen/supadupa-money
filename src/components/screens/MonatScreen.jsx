@@ -827,7 +827,7 @@ function MonatScreen() {
                   const fType=selTxs.length===0?null:(hasNeg&&!hasPos?"expense":(!hasNeg&&hasPos?"income":null));
                   return <CatPicker value={bulkCat.catId+"|"+bulkCat.subId}
                     onChange={(c,s)=>setBulkCat({catId:c,subId:s})}
-                    filterType={fType}
+                    filterType={fType} noMargin
                     placeholder={fType==="expense"?"— Ausgaben-Kategorie —":fType==="income"?"— Einnahmen-Kategorie —":"— Kategorie —"}/>;
                 })()}
               </div>
