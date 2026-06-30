@@ -51,7 +51,7 @@ function BankFetchPanel({ state, onClose, onRefetch }) {
       : t));
 
   const wrap = (children) => (
-    <div style={{ margin: "6px 10px 0", border: `1px solid ${T.blue}55`, borderRadius: 14,
+    <div style={{ margin: "6px 4px 0", border: `1px solid ${T.blue}55`, borderRadius: 14,
       background: T.surf || "rgba(255,255,255,0.03)", overflow: "hidden" }}>
       {children}
     </div>

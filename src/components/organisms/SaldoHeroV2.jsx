@@ -218,9 +218,10 @@ function SaldoHeroV2({
         </div>
       )}
 
-      {/* Prognose-Drilldown (Mitte oder Ende) */}
+      {/* Prognose-Drilldown (Mitte oder Ende) — über das 20px-Hero-Padding hinaus
+          ziehen, damit die Liste fast die volle Breite nutzt (Saldo-Anzeige bleibt). */}
       {progDrill && (
-        <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${T.bd}`}}>
+        <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${T.bd}`,marginLeft:-15,marginRight:-15}}>
           <SaldoPrognose year={year} month={month} txs={[]}
             detailMitte={detailMitte} detailEnde={detailEnde}
             saldoMitte={saldoMitte} saldoEnde={saldoEnde}
