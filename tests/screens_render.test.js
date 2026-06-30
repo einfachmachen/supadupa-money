@@ -23,8 +23,7 @@ const cases = [
   ["JahrScreen",        () => import("../src/components/screens/JahrScreen.jsx"), {}],
   ["ManagementScreen",  () => import("../src/components/screens/ManagementScreen.jsx"), { activeTab:"einstellungen" }],
   ["SettingsInline",    () => import("../src/components/screens/SettingsInline.jsx"), {}],
-  ["EnableBankingGuide", () => import("../src/components/screens/EnableBankingGuide.jsx"), {}],
-  ["EnableBankingConnectScreen", () => import("../src/components/screens/EnableBankingConnectScreen.jsx"), {}],
+  ["EnableBankingWizard", () => import("../src/components/screens/EnableBankingWizard.jsx"), {}],
 ];
 
 describe("Screen-Render (TDZ-Regression)", () => {

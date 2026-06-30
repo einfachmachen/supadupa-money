@@ -1,6 +1,6 @@
 // Wiederverwendbarer Bank-Abruf (Enable Banking) — ohne UI.
 //
-// Kapselt genau die Logik, die bisher nur im EnableBankingConnectScreen lag:
+// Kapselt genau die Logik, die bisher nur im EnableBankingWizard lag:
 // gespeicherte Bank-Session(s) + Konto-Mapping laden, Umsätze je Konto abrufen,
 // auf die App-Zeilenform mappen und gegen die vorhandenen Buchungen auf
 // Dubletten prüfen. So kann sie sowohl der Verbinden-Screen als auch das

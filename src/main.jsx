@@ -18,7 +18,7 @@ installLegacyBridge();
 
 // Enable-Banking-Redirect abfangen: Die Bank leitet nach der Freigabe mit
 // ?code=…&state=ebmoney… zurück. Code zwischenspeichern und die URL säubern,
-// damit der Connect-Screen ihn aufgreifen kann (siehe EnableBankingConnectScreen).
+// damit der Bank-Assistent ihn aufgreifen kann (siehe EnableBankingWizard).
 try {
   const sp = new URLSearchParams(window.location.search);
   const code = sp.get("code");

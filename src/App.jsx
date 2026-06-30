@@ -17,8 +17,7 @@ import { MobileVormerkenModal } from "./components/organisms/MobileVormerkenModa
 import { MonthPickerModal } from "./components/organisms/MonthPickerModal.jsx";
 import { CloudSaveModal } from "./components/organisms/CloudSaveModal.jsx";
 import { CsvImportScreen } from "./components/screens/CsvImportScreen.jsx";
-import { EnableBankingGuide } from "./components/screens/EnableBankingGuide.jsx";
-import { EnableBankingConnectScreen } from "./components/screens/EnableBankingConnectScreen.jsx";
+import { EnableBankingWizard } from "./components/screens/EnableBankingWizard.jsx";
 import { CloudSetupWizard } from "./components/screens/CloudSetupWizard.jsx";
 import { DashboardScreenV2 } from "./components/screens/DashboardScreenV2.jsx";
 import { JahrScreen } from "./components/screens/JahrScreen.jsx";
@@ -227,8 +226,7 @@ export default function SupaDupaMoney() {
   // Bridge initialisieren
   React.useEffect(()=>{ window._customIcons = customIcons; }, [customIcons]); // globaler Review-Dialog
   const [showCsv,       setShowCsv]       = useState(false);
-  const [showBankGuide, setShowBankGuide] = useState(false);
-  const [showBankConnect, setShowBankConnect] = useState(false);
+  const [showBankWizard, setShowBankWizard] = useState(false);
   const [showCloudSetup, setShowCloudSetup] = useState(false);
   const [importText,    setImportText]     = useState("");
   const [importStatus,  setImportStatus]   = useState(null);
@@ -267,7 +265,7 @@ export default function SupaDupaMoney() {
     try {
       if(sessionStorage.getItem("eb_open_connect")) {
         sessionStorage.removeItem("eb_open_connect");
-        setShowBankConnect(true);
+        setShowBankWizard(true);
       }
     } catch(e) {}
   }, []);
@@ -281,8 +279,8 @@ export default function SupaDupaMoney() {
   // Schließen-/Override-Logik mit (eigene Kopfzeile bzw. eigener Override).
   const _structOverlayOpen =
     showMobilePicker || showDataMgr || showMobileKategorien || showMobileVormerken ||
-    showMobileWiederkehrend || showMobileBudget || showCsv || showBankConnect ||
-    showCloudSetup || showBankGuide || showMatching || showVormHub || showVormMenu ||
+    showMobileWiederkehrend || showMobileBudget || showCsv || showBankWizard ||
+    showCloudSetup || showMatching || showVormHub || showVormMenu ||
     showRecurring || showKategorisieren || showMonthPickerModal || showCloudSave ||
     showSettings || showSupaQuick || showQuickPicker || !!modal || !!exportModal ||
     !!exportDialog || !!reviewQueue || dashDrillOpen || !!accIconPick || !!editTx;
@@ -2557,7 +2555,7 @@ Abbrechen = ${remoteName}-Stand laden`
     cfActive, cfSave, cfLoad, cfStatus, setCfStatus, cfUrl, cfSecret, setCfUrl, setCfSecret,
     syncPass, setSyncPass, syncEncActive,
     showCloudSetup, setShowCloudSetup,
-    setActiveStructurTab, setShowBankConnect,
+    setActiveStructurTab, setShowBankWizard,
     syncStatus, setSyncStatus, syncError, isDirty,
     cfSaveOnClose, setCfSaveOnClose,
     dashDrillOpen, setDashDrillOpen,
@@ -3293,8 +3291,7 @@ Abbrechen = ${remoteName}-Stand laden`
           else if(action==="vormerken") setShowMobileVormerken(true);
           else if(action==="matching") setShowMatching(true);
           else if(action==="csv") setShowCsv(true);
-          else if(action==="bankguide") setShowBankGuide(true);
-          else if(action==="bankconnect") setShowBankConnect(true);
+          else if(action==="bankwizard") setShowBankWizard(true);
           else if(action==="datenmgr") setShowDataMgr(true);
           else if(action==="cloudsetup") setShowCloudSetup(true);
           else if(action==="wiederkehrend") { setShowMobileWiederkehrendTyp("wiederkehrend"); setShowMobileWiederkehrend(true); }
@@ -3323,10 +3320,7 @@ Abbrechen = ${remoteName}-Stand laden`
       {showCsv&&<CsvImportScreen onClose={()=>setShowCsv(false)}
         onBack={()=>{setShowCsv(false);reopenMobilePicker("daten");}}
         csvRules={csvRules} setCsvRules={setCsvRules} mobileMode={mobileMode}/>}
-      {showBankGuide&&<EnableBankingGuide onClose={()=>setShowBankGuide(false)}
-        onBack={()=>{setShowBankGuide(false);reopenMobilePicker("daten");}}
-        onStart={()=>{setShowBankGuide(false);setShowBankConnect(true);}}/>}
-      {showBankConnect&&<EnableBankingConnectScreen onClose={()=>setShowBankConnect(false)}/>}
+      {showBankWizard&&<EnableBankingWizard onClose={()=>setShowBankWizard(false)}/>}
       {showCloudSetup&&<CloudSetupWizard onClose={()=>setShowCloudSetup(false)}/>}
       {showMatching&&<MatchingScreen onClose={()=>setShowMatching(false)}
         onBack={()=>{setShowMatching(false);reopenMobilePicker("main");}}/>}
