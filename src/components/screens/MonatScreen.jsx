@@ -46,7 +46,10 @@ function MonatScreen() {
     const [activeCatTxId, setActiveCatTxId] = useState(null);
     const pendingCatsRef = useRef({});
     const [txIconPickM, setTxIconPickM] = useState(null);
-    const [search,   setSearch]   = useState("");
+    const [search,   setSearch]   = useState("");      // abgeschickte Suche (filtert)
+    const [searchInput, setSearchInput] = useState(""); // Eingabe-Entwurf (Enter schickt ab)
+    const submitSearch = () => { setSearch(searchInput.trim()); setSelected(new Set()); };
+    const clearSearch  = () => { setSearchInput(""); setSearch(""); setSelected(new Set()); };
     const [selected, setSelected] = useState(new Set());
     const [bulkCat,  setBulkCat]  = useState({catId:"",subId:""});
     const [budgetEditSub, setBudgetEditSub] = useState(null);
@@ -661,13 +664,22 @@ function MonatScreen() {
               intrinsische Mindestbreite und schoben sonst den Kategorien-
               Schalter rechts aus dem Bild. */}
           <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center",background:"rgba(255,255,255,0.06)",
-            border:`1px solid ${search?T.blue:T.bds}`,borderRadius:11,padding:"8px 10px",gap:6}}>
-            {Li("search",14,T.txt2)}
-            <input value={search} onChange={e=>{setSearch(e.target.value);setSelected(new Set());}}
-              placeholder="suchen…"
+            border:`1px solid ${(searchInput||search)?T.blue:T.bds}`,borderRadius:11,padding:"8px 10px",gap:6}}>
+            <button onClick={submitSearch} title="Suchen (Enter)"
+              style={{background:"none",border:"none",padding:0,cursor:"pointer",display:"inline-flex",flexShrink:0}}>
+              {Li("search",14,T.txt2)}
+            </button>
+            <input value={searchInput}
+              onChange={e=>{ const v=e.target.value; setSearchInput(v); if(v==="") clearSearch(); }}
+              onKeyDown={e=>{ if(e.key==="Enter") submitSearch(); }}
+              placeholder="suchen… (Enter)"
               style={{flex:1,minWidth:0,background:"transparent",border:"none",color:T.txt,fontSize:12,outline:"none"}}/>
-            {search&&<button onClick={()=>{setSearch("");setSelected(new Set());}}
-              style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",fontSize:13}}>{Li("x",13)}</button>}
+            {/* Hinweis: getippt, aber noch nicht abgeschickt */}
+            {searchInput.trim() && searchInput.trim()!==search && (
+              <span onClick={submitSearch} style={{color:T.blue,fontSize:10,fontWeight:700,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>Enter ↵</span>
+            )}
+            {(searchInput||search)&&<button onClick={clearSearch}
+              style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",fontSize:13,flexShrink:0}}>{Li("x",13)}</button>}
           </div>
           <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
             <span style={{color:T.txt2,fontSize:11}}>Kategorien</span>
