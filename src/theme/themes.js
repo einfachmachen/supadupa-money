@@ -681,7 +681,7 @@ THEMES.cleancorporate = {
 // ── Deep Ocean — tiefes Marineblau, helle Schrift, Cyan-Akzent, Chartreuse-Grün
 THEMES.deepocean = {
   ...THEMES.dark,
-  bg:"#0B132B", surf:"#1C2541", surf2:"#2A2A2E", surf3:"#080F22",
+  bg:"#0B132B", surf:"#2B2D32", surf2:"#2A2A2E", surf3:"#080F22",
   bd:"rgba(150,180,220,0.18)", bds:"rgba(150,180,220,0.34)",
   txt:"#F4F6F9", txt2:"rgba(200,215,240,0.72)", lbl:"rgba(200,215,240,0.54)",
   blue:"#48CAE4", pos:"#BFFF00", neg:"#FF5252", gold:"#FFC861",
@@ -694,7 +694,7 @@ THEMES.deepocean = {
   pal_inc_bg:"#141F00", pal_inc_bd:"#4A6600", pal_inc_hdr:"#BFFF00", pal_inc_fld:"#1A2600", pal_inc_val:"#D4FF4D",
   pal_exp_bg:"#2A0C0C", pal_exp_bd:"#5C1818", pal_exp_fld:"#330E0E",
   pal_tg_bg:"#0A1B2E", pal_tg_bd:"#1A4658", pal_tg_hdr:"#48CAE4", pal_tg_fld:"#08182A", pal_tg_val:"#8AE0F0",
-  hero_bg:"linear-gradient(135deg,#080F22,#1C2541)", logo_c1:"#6FA800", logo_c2:"#BFFF00",
+  hero_bg:"linear-gradient(135deg,#080F22,#2B2D32)", logo_c1:"#6FA800", logo_c2:"#BFFF00",
   cond_neg:"#FF5252", cond_warn:"#FFB54A", cond_gold:"#FFD263", cond_pos:"#BFFF00",
   name:"Deep Ocean",
 };
