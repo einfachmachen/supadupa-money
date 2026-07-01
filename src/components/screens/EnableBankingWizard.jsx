@@ -189,8 +189,18 @@ function EnableBankingWizard({ onClose }) {
   const client = () => createEnableBankingClient({ relayUrl, appId, privateKeyPem: privateKey });
   const credsComplete = !!(relayUrl && appId && privateKey);
 
-  // Eingaben sofort lokal persistieren (wie beim Cloud-Sync-Assistenten).
-  useEffect(() => { saveEbCreds({ relayUrl, appId, privateKey }); }, [relayUrl, appId, privateKey]);
+  // Eingaben sofort lokal persistieren (wie beim Cloud-Sync-Assistenten) —
+  // ABER erst, nachdem der initiale Ladevorgang unten (siehe useEffect mit
+  // loadEbCreds) abgeschlossen ist. Sonst feuert dieser Effekt beim allerersten
+  // Render noch mit den leeren Anfangswerten (relayUrl=DEFAULT, appId="",
+  // privateKey="") und überschreibt eine bereits gespeicherte Application-ID/
+  // einen bereits hinterlegten Schlüssel, BEVOR der Ladevorgang sie wieder-
+  // herstellen konnte — genau das ließ die Application-ID "verschwinden".
+  const credsHydratedRef = useRef(false);
+  useEffect(() => {
+    if (!credsHydratedRef.current) return;
+    saveEbCreds({ relayUrl, appId, privateKey });
+  }, [relayUrl, appId, privateKey]);
 
   useEffect(() => {
     if (!banks) return;
@@ -334,6 +344,7 @@ function EnableBankingWizard({ onClose }) {
       setRelayUrl(c.relayUrl || DEFAULT_RELAY);
       setAppId(c.appId);
       setPrivateKey(c.privateKey);
+      credsHydratedRef.current = true; // ab jetzt darf der Live-Speichern-Effekt greifen
       setAccMap(await loadEbAccountMap());
       setDiag(await loadEbDiag());
       const code = sessionStorage.getItem("eb_pending_code");
@@ -484,30 +495,68 @@ function EnableBankingWizard({ onClose }) {
         <div style={{ maxWidth: 480, margin: "0 auto" }}>
 
           {stepKey === "intro" && (
-            <>
-              <Box tone="info">
-                Statt CSV-Dateien zu exportieren, holst du deine Bankumsätze direkt —
-                über deinen eigenen, kostenlosen Zugang bei <b>Enable Banking</b>.
-              </Box>
-              <Steps items={[
-                "Komplett kostenlos für dich.",
-                "Dein Bank-Login bleibt bei deiner Bank — wir sehen ihn nie.",
-                "Einmalige Einrichtung (ca. 10 Minuten), danach nur noch „Aktualisieren“.",
-              ]}/>
-              <Box tone="info">
-                Funktioniert aktuell mit Banken in <b>EU &amp; UK</b>.
-              </Box>
-              {connectedBanks.length > 0 && (
+            credsComplete ? (
+              // Bereits eingerichtet: eine zusammengefasste Status-Seite statt
+              // erneut durch die Erklär-Schritte zu müssen — mit klaren
+              // Sprungzielen, statt die bestehenden Zugangsdaten "nebenbei"
+              // beim Durchklicken versehentlich zu verändern.
+              <>
                 <Box tone="tip">
-                  Du hast schon {connectedBanks.length} Bank{connectedBanks.length !== 1 ? "en" : ""} verbunden.
-                  <button onClick={() => setStep(idxOf("zuordnen"))}
-                    style={{ display: "block", marginTop: 8, background: "transparent", border: `1px solid ${T.pos}66`,
-                      color: T.pos, borderRadius: 9, padding: "8px 12px", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
-                    Direkt zu „Konten zuordnen“ springen →
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 800, marginBottom: 6 }}>
+                    {Li("check-circle", 17, T.pos)} Zugang eingerichtet
+                  </div>
+                  <div style={{ fontSize: 13.5, lineHeight: 1.7 }}>
+                    <div>Application-ID: <code style={{ fontFamily: "monospace" }}>{appId}</code></div>
+                    <div>Schlüssel: hinterlegt ✓</div>
+                  </div>
+                  <button onClick={() => setStep(idxOf("zugang"))}
+                    style={{ display: "block", marginTop: 10, background: "transparent", border: `1px solid ${T.bd}`,
+                      color: T.txt2, borderRadius: 9, padding: "8px 12px", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+                    Zugangsdaten ansehen/ändern →
                   </button>
                 </Box>
-              )}
-            </>
+
+                {connectedBanks.length > 0 ? (
+                  <Box tone="tip">
+                    {connectedBanks.length} Bank{connectedBanks.length !== 1 ? "en" : ""} verbunden.
+                    <button onClick={() => setStep(idxOf("zuordnen"))}
+                      style={{ display: "block", marginTop: 8, background: "transparent", border: `1px solid ${T.pos}66`,
+                        color: T.pos, borderRadius: 9, padding: "8px 12px", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+                      Buchungen abrufen →
+                    </button>
+                    <button onClick={() => setStep(idxOf("bank"))}
+                      style={{ display: "block", marginTop: 8, background: "transparent", border: `1px solid ${T.bd}`,
+                        color: T.txt2, borderRadius: 9, padding: "8px 12px", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+                      Weitere Bank verbinden →
+                    </button>
+                  </Box>
+                ) : (
+                  <Box tone="info">
+                    Noch keine Bank verbunden.
+                    <button onClick={() => setStep(idxOf("bank"))}
+                      style={{ display: "block", marginTop: 8, background: "transparent", border: `1px solid ${ACCENT}66`,
+                        color: ACCENT, borderRadius: 9, padding: "8px 12px", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+                      Jetzt Bank verbinden →
+                    </button>
+                  </Box>
+                )}
+              </>
+            ) : (
+              <>
+                <Box tone="info">
+                  Statt CSV-Dateien zu exportieren, holst du deine Bankumsätze direkt —
+                  über deinen eigenen, kostenlosen Zugang bei <b>Enable Banking</b>.
+                </Box>
+                <Steps items={[
+                  "Komplett kostenlos für dich.",
+                  "Dein Bank-Login bleibt bei deiner Bank — wir sehen ihn nie.",
+                  "Einmalige Einrichtung (ca. 10 Minuten), danach nur noch „Aktualisieren“.",
+                ]}/>
+                <Box tone="info">
+                  Funktioniert aktuell mit Banken in <b>EU &amp; UK</b>.
+                </Box>
+              </>
+            )
           )}
 
           {stepKey === "portal" && (

@@ -439,12 +439,27 @@ drei Reiter:
 - **Bank-Verbinden-Einrichtung**: analog geführt über **`EnableBankingWizard`**
   (9 Schritte: Übersicht → Portal-Konto → App/Schlüssel → Zugangsdaten →
   Konten-freischalten-Hinweis → Bank wählen/verbinden → Konten zuordnen →
-  Vorschau/Import → Fertig) — erreichbar über „+" → Daten → **Bank verbinden**
-  (`App.jsx`-State `showBankWizard`). Springt nach Bank-Redirect automatisch zum
-  passenden Schritt zurück. `enableBankingFetch.js: friendlyBankError()` prüft
-  **Rate-Limit (429) vor** abgelaufener Freigabe — die 429-Meldung der Bank
-  enthält zufällig das Wort „consent" und würde sonst fälschlich als
-  „Freigabe abgelaufen" angezeigt.
+  Vorschau/Import → Fertig) — erreichbar über den Bottom-Tab **Daten** →
+  **Bank verbinden** (`App.jsx`-State `showBankWizard`). Springt nach
+  Bank-Redirect automatisch zum passenden Schritt zurück. Ist bereits alles
+  eingerichtet, zeigt Schritt „Übersicht" statt der Erklär-Texte eine
+  **Status-Zusammenfassung** (Application-ID, Schlüssel-Status, verbundene
+  Banken) mit direkten Sprungzielen („Zugangsdaten ansehen/ändern“, „Buchungen
+  abrufen“, „Weitere Bank verbinden“) — man muss sich nicht durch die
+  Erklär-Schritte klicken, um an bereits hinterlegte Werte zu kommen.
+  `enableBankingFetch.js: friendlyBankError()` prüft **Rate-Limit (429) vor**
+  abgelaufener Freigabe — die 429-Meldung der Bank enthält zufällig das Wort
+  „consent" und würde sonst fälschlich als „Freigabe abgelaufen" angezeigt.
+- **Wichtige Falle bei „live speichern" auf Formularen mit asynchronem
+  Erst-Laden** (`EnableBankingWizard`): Ein `useEffect`, der bei jeder Eingabe
+  sofort persistiert (`[relayUrl, appId, privateKey]` als Deps), feuert beim
+  **allerersten Render bereits mit den leeren Anfangswerten** — noch bevor ein
+  zweiter, asynchroner `useEffect` die zuvor gespeicherten Werte geladen hat.
+  Ohne Schutz überschreibt der erste Effekt damit sofort eine bereits
+  gespeicherte Application-ID/einen Schlüssel mit `""`. Fix: ein Hydration-Flag
+  (`credsHydratedRef`), das der Speichern-Effekt erst nach erfolgreichem Laden
+  respektiert. Dieses Muster gilt für **jedes** Formular, das „sofort
+  speichern" mit asynchronem Laden bestehender Werte kombiniert.
 
 ---
 
