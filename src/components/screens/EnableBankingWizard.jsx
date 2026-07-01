@@ -367,10 +367,14 @@ function EnableBankingWizard({ onClose }) {
     try {
       saveEbAccountMap(accMap);
       const known = buildKnownFps(txs);
+      // Konto-gebunden, NICHT global — sonst versteckt eine zufällig
+      // betragsgleiche Buchung auf einem ANDEREN Konto (z. B. eine
+      // Tagesgeld-Zinsgutschrift vs. eine unabhängige Giro-Rate am selben Tag)
+      // die echte neue Buchung fälschlich als "vorhanden".
       const amtIndex = new Set();
       (txs || []).forEach((t) => {
         if (t.pending) return;
-        amtIndex.add(`${t.date}|${Math.round(Math.abs(t.totalAmount) * 100)}`);
+        amtIndex.add(`${t.accountId}|${t.date}|${Math.round(Math.abs(t.totalAmount) * 100)}`);
       });
       const cl = client();
       const items = [];
@@ -380,7 +384,7 @@ function EnableBankingWizard({ onClose }) {
         const rows = mapEnableBankingTransactions(r?.transactions || [], appAccId);
         rows.forEach((row) => {
           const fpNorm = txFingerprintNorm(row.isoDate, row.amount, row.desc, appAccId);
-          const amtKey = `${row.isoDate}|${Math.round(Math.abs(row.amount) * 100)}`;
+          const amtKey = `${appAccId}|${row.isoDate}|${Math.round(Math.abs(row.amount) * 100)}`;
           let status = "new";
           if (known.has(row.fp) || known.has(fpNorm)) status = "exact";
           else if (amtIndex.has(amtKey)) status = "maybe";

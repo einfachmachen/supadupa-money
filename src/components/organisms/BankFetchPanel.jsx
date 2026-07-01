@@ -5,15 +5,18 @@
 // jede mit einer Inline-Kategorie-Auswahl wie beim CSV-Import. Bereits
 // vorhandene/erkannte Dubletten bleiben eingeklappt und lassen sich ausklappen.
 
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
+import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { CatPicker } from "../molecules/CatPicker.jsx";
 
 function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }) {
+  const { accounts } = useContext(AppCtx);
   const [showExisting, setShowExisting] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
+  const accName = (accId) => (accounts || []).find((a) => a.id === accId)?.name || accId;
 
   // Bank-Auswahl: „Alle" + je verbundene Bank. Tippen ruft genau diese Bank ab
   // (bzw. alle). Nur sinnvoll ab 2 Banken; während des Ladens deaktiviert.
@@ -140,7 +143,7 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }
         <Header title="Keine neuen Buchungen" />
         <BankChips />
         <div style={{ padding: "12px", color: T.txt2, fontSize: 13.5 }}>
-          Für diese Kontosicht wurden keine neuen Umsätze gefunden.
+          Für alle verbundenen Konten wurden keine neuen Umsätze gefunden.
         </div>
       </>
     );
@@ -159,6 +162,10 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }
               borderRadius: 4, padding: "1px 5px", fontWeight: 800, border: `1px solid ${T.gold}55`,
               flexShrink: 0, letterSpacing: 0.3 }}>VORGEMERKT</span>
           )}
+          <span style={{ fontSize: 9, background: "rgba(255,255,255,0.08)", color: T.txt2,
+            borderRadius: 4, padding: "1px 5px", fontWeight: 700, flexShrink: 0, letterSpacing: 0.2 }}>
+            {accName(t.accountId)}
+          </span>
           <span style={{ flex: 1, color: T.txt, fontSize: 13.5, fontWeight: 600, overflow: "hidden",
             textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.desc || "Buchung"}</span>
           <span style={{ color: t.pending ? T.gold : (isInc ? T.pos : T.neg), fontSize: 14, fontWeight: 800,
@@ -221,6 +228,10 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }
               style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "6px 12px",
                 borderTop: `1px solid ${T.bd}`, opacity: 0.65 }}>
               <span style={{ color: T.txt2, fontSize: 11.5, flexShrink: 0 }}>{it.row.isoDate.slice(5)}</span>
+              <span style={{ fontSize: 9, background: "rgba(255,255,255,0.08)", color: T.txt2,
+                borderRadius: 4, padding: "1px 5px", fontWeight: 700, flexShrink: 0, letterSpacing: 0.2 }}>
+                {accName(it.accId)}
+              </span>
               <span style={{ flex: 1, color: T.txt2, fontSize: 12.5, overflow: "hidden",
                 textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.row.desc}</span>
               <span style={{ color: T.txt2, fontSize: 11, flexShrink: 0 }}>
