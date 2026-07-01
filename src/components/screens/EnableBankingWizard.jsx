@@ -224,8 +224,9 @@ function EnableBankingWizard({ onClose }) {
     const m = { ...(await loadEbAccountMap()) };
     union.forEach((a) => { if (!m[a.uid]) m[a.uid] = accounts[0]?.id || "acc-giro"; });
     setAccMap(m);
-    setMsg({ tone: "tip", text: `${valid.length} Bank${valid.length !== 1 ? "en" : ""} verbunden.`,
-      action: { label: "Weiter zu „Konten zuordnen“ →", onClick: () => setStep(idxOf("zuordnen")) } });
+    // Kein setMsg hier mehr — der Verbindungs-Status steht jetzt dauerhaft
+    // oben im Banner (statt bei jedem Refresh erneut unten aufzupoppen und
+    // auf jedem Schritt liegen zu bleiben, siehe Banner weiter unten).
   };
 
   const disconnectBank = async (sess) => {
@@ -490,6 +491,26 @@ function EnableBankingWizard({ onClose }) {
         ))}
       </div>
 
+      {/* Verbindungs-Status: dauerhaft sichtbar oben, auf JEDEM Schritt (statt
+          als Meldung unten, die auf jeder Seite erneut/veraltet auftaucht).
+          Nur "Konten zuordnen" selbst blendet ihn aus — dort wäre er sinnlos. */}
+      {validUntil && stepKey !== "zuordnen" && (
+        <div style={{ margin: "10px 18px 0", padding: "10px 14px", borderRadius: 12,
+          background: T.pos + "18", border: `1px solid ${T.pos}55`,
+          display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+          {Li("check-circle", 18, T.pos)}
+          <div style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 13, lineHeight: 1.4 }}>
+            Bank-Verbindung ist schon aktiv — gültig bis <b>{String(validUntil).slice(0, 10)}</b>.
+          </div>
+          <button onClick={() => setStep(idxOf("zuordnen"))}
+            style={{ flexShrink: 0, background: T.pos, border: "none", borderRadius: 9,
+              padding: "8px 11px", color: T.on_accent, fontSize: 12.5, fontWeight: 800, cursor: "pointer",
+              whiteSpace: "nowrap" }}>
+            Konten zuordnen →
+          </button>
+        </div>
+      )}
+
       {/* Inhalt */}
       <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch",
         padding: "8px 18px calc(190px + env(safe-area-inset-bottom, 0px))" }}>
@@ -518,13 +539,10 @@ function EnableBankingWizard({ onClose }) {
                 </Box>
 
                 {connectedBanks.length > 0 ? (
+                  // "Konten zuordnen" steht schon dauerhaft im Banner oben —
+                  // hier nur der Weg zu einer WEITEREN Bank.
                   <Box tone="tip">
                     {connectedBanks.length} Bank{connectedBanks.length !== 1 ? "en" : ""} verbunden.
-                    <button onClick={() => setStep(idxOf("zuordnen"))}
-                      style={{ display: "block", marginTop: 8, background: "transparent", border: `1px solid ${T.pos}66`,
-                        color: T.pos, borderRadius: 9, padding: "8px 12px", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
-                      Buchungen abrufen →
-                    </button>
                     <button onClick={() => setStep(idxOf("bank"))}
                       style={{ display: "block", marginTop: 8, background: "transparent", border: `1px solid ${T.bd}`,
                         color: T.txt2, borderRadius: 9, padding: "8px 12px", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
@@ -703,16 +721,7 @@ function EnableBankingWizard({ onClose }) {
                 </div>
               )}
 
-              {validUntil && (
-                <Box tone="tip">
-                  ✓ Bank-Verbindung aktiv — gültig bis <b>{String(validUntil).slice(0, 10)}</b>.
-                  <button onClick={() => setStep(idxOf("zuordnen"))}
-                    style={{ display: "block", marginTop: 8, background: "transparent", border: `1px solid ${T.pos}66`,
-                      color: T.pos, borderRadius: 9, padding: "8px 12px", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
-                    Weiter zu „Konten zuordnen“ →
-                  </button>
-                </Box>
-              )}
+              {/* Verbindungs-Status steht jetzt dauerhaft im Banner oben. */}
 
               {diag && (
                 <div style={{ marginTop: 12, border: `1px solid ${diag.outcome === "ok" ? T.pos : T.gold}55`,
