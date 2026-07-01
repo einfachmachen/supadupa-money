@@ -235,17 +235,33 @@ reservierten Prognosewert.
 ## 5. Layout & Navigation
 
 - **Bottom-Tabbar** (`NAV_TABS` in `App.jsx`, visuell mit dem Master-Button in
-  der Mitte): **Home · Trend · [+] · Monat · Optionen**. „Trend" ist
+  der Mitte): **Home · Trend · [+] · Monat · Daten**. „Trend" ist
   `JahrScreen`/`MoneyMoodScreen`-Land (`subTab==="mood"`), „Monat" ist die
-  vereinte Monats-/Buchungsansicht (§6), „Optionen" ersetzt das frühere
-  Mond-Menü „Einstellungen" als eigener Tab (führt in `ManagementScreen`/
-  `SettingsInline`).
-- **Zentraler Master-Button** (runder „+"/Monats-Knopf): Normalzustand zeigt den
-  aktuellen Monat („WISCHEN"); **Tipp** öffnet das Aktions-Menü
-  (`MobileActionPicker`), **Wisch** wechselt den Monat. **Doppel-Tipp** arretiert
-  ihn größer und blendet **3 Monde** ein (`vormerken`/gold, `kategorien`
-  „Budget"/blau, `daten`/grün — **nicht mehr 4**, „Einstellungen" wurde als
-  eigener Bottom-Tab „Optionen" herausgelöst, §10).
+  vereinte Monats-/Buchungsansicht (§6). „Daten" (vormals „Optionen") führt in
+  `ManagementScreen` mit `activeStructurTab==="daten"` — eine Übersicht mit
+  Zeilen zu CSV-Import, Bank verbinden, Daten-Manager, Cloud-Sync sowie einem
+  Link zu „Konten" und einem Zahnrad oben rechts zu „Einstellungen"
+  (`SettingsInline`). Der Bottom-Tab ist der direkteste, immer sichtbare Weg zu
+  diesen Werkzeugen — bewusst wichtiger eingestuft als „Einstellungen", das
+  seltener gebraucht wird und stattdessen über den dritten Mond bzw. das
+  Zahnrad erreichbar ist (§10).
+- **Zentraler Master-Button** (runder „+"/Monats-Knopf) — Kleinzustand: **nur
+  Doppel-Tipp wirkt** (vergrößert ihn; Einzel-Tipp und Wisch tun im Kleinzustand
+  bewusst nichts, damit der Doppel-Tipp zuverlässig erkannt wird). Vergrößerter
+  Zustand: **Tipp** zeigt erst die **3 Monde** (`vormerken`/gold, `kategorien`
+  „Budget"/blau, `einstellungen`/grau — **nicht mehr `daten`**, das hat jetzt
+  einen eigenen Bottom-Tab, s. o.), ein **weiterer Tipp** öffnet die gerade
+  aktive Mond-Funktion (oder direkt einen Mond antippen); **Wisch ←/→** blättert
+  zwischen den Monden, **Doppel-Tipp** geht eine Ebene zurück/verkleinert wieder.
+  **Wichtige Invariante:** JEDER Vollbild-Flow, der über den + geöffnet wird,
+  **muss** beim Schließen (`onClose`, nicht `onBack`) `setPlusArretiert(false)`
+  setzen — sonst bleibt der Button in der vergrößerten Mond-Bereitschaft hängen
+  und der nächste Tipp wirkt scheinbar nicht (Symptom: „ich muss ständig
+  doppeltippen"). Genau das war einmal kaputt (`MobileActionPicker`s `onClose`
+  setzte fälschlich `true` statt `false`, plus mehrere fehlende Resets bei
+  `CsvImportScreen`/`EnableBankingWizard`/`CloudSetupWizard`/`MatchingScreen`/
+  `VormerkungHub`/`RecurringDetectionScreen`/`DataManagerDialog` u. a.) — bei
+  neuen Vollbild-Flows diese Invariante von Anfang an einhalten.
 - **Master-Override** (`masterOverride` im Context, `MasterOverrideSlot` in `App.jsx`):
   Vollbild-Flows (Vormerken, Kategorien, **Cloud-Wizard**, **Bank-Wizard** …)
   übernehmen den „+"-Button. Config `{label, onConfirm, onBack, onDismiss, disabled}`:
@@ -355,8 +371,16 @@ entfernt). Der Hero ist `organisms/SaldoHeroV2`.
   wurde **in `MonatScreen` vereint** (multi-monatiges Durchblättern per
   Swipe/Infinite-Scroll mit Scroll-Spy, globale Suche per Enter, Tages-Gruppierung
   mit Tagessaldo, eingebettete `WerkzeugeSection`). Bottom-Tabbar entsprechend
-  von „Home · Monat · Buchungen · Jahr" auf „Home · Trend · Monat · Optionen"
-  geändert (§5).
+  von „Home · Monat · Buchungen · Jahr" zunächst auf „Home · Trend · Monat ·
+  Optionen" geändert.
+- **Bottom-Tab „Optionen"**: kurzlebig — durch **„Daten"** ersetzt (§5). Ein
+  reiner Einstellungen-Tab war zu selten gebraucht für den wertvollsten
+  Bottom-Bar-Platz; „Daten" (CSV/Bank/Cloud-Sync/Backup) ist es häufiger.
+  Einstellungen sind seither über den dritten Mond bzw. ein Zahnrad im
+  Daten-Screen erreichbar. Der dritte Mond hieß vorher `daten` — jetzt
+  `einstellungen`, da Daten den eigenen Tab hat. Die dadurch verwaiste
+  `MobileActionPicker`-„daten"-Unteransicht (samt `initialScreen`/
+  `mobilePickerScreen`-Umweg) wurde mit entfernt.
 - **~29 Preset-Farbschema-Buttons** in den Einstellungen: entfernt.
   `SettingsInline`/`CustomThemeEditor` zeigen nur noch **selbst angelegte**
   Farbschemata (§4.3) — die 29 fest verdrahteten `themes.js`-Themes (§4.2)

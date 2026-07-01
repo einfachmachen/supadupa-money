@@ -32,6 +32,7 @@ function ManagementScreen({activeTab="kategorien"}) {
     quickBtns=[],setQuickBtns,
     budgets={}, setBudgets,
     onTS,onTE, globalDrag,
+    setShowCsv, setShowBankWizard, setShowDataMgr, setShowCloudSetup,
   } = useContext(AppCtx);
   const [mergeTarget, setMergeTarget] = useState(null);
   const [showNewGroup, setShowNewGroup] = useState(false);
@@ -203,10 +204,53 @@ function ManagementScreen({activeTab="kategorien"}) {
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
         {/* Tab-Navigation jetzt in Bottom-Bar — keine interne Tab-Bar nötig */}
         {mgrTab==="einstellungen"&&<SettingsInline/>}
+        {mgrTab==="daten"&&(
+          <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 14px 24px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
+              <div style={{flex:1,color:T.lbl||T.txt2,fontSize:11,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
+                {Li("database",13,T.blue)} Daten &amp; Verbindungen
+              </div>
+              <button onClick={()=>setMgrTab("einstellungen")} title="Einstellungen"
+                style={{background:"rgba(255,255,255,0.05)",border:`1px solid ${T.bd}`,borderRadius:9,
+                  width:30,height:30,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
+                {Li("settings",15,T.txt2)}
+              </button>
+            </div>
+            {[
+              {icon:"download",   color:T.pos,          label:"CSV importieren",       sub:"Buchungen aus Banking-App",       onClick:()=>setShowCsv?.(true)},
+              {icon:"landmark",   color:T.gold,         label:"Bank verbinden",        sub:"Schritt für Schritt · Enable Banking", onClick:()=>setShowBankWizard?.(true)},
+              {icon:"database",   color:T.pos,          label:"Daten-Manager",         sub:"Export / Import / Löschen",       onClick:()=>setShowDataMgr?.(true)},
+              {icon:"cloud",      color:T.cf||T.blue,   label:"Cloud-Sync einrichten", sub:"Eigene Cloud-DB · geführt",       onClick:()=>setShowCloudSetup?.(true)},
+              {icon:"credit-card",color:T.blue,         label:"Konten",                sub:"Verwalten, Reihenfolge, Puffer",  onClick:()=>setMgrTab("konten")},
+            ].map((it,i)=>(
+              <button key={i} onClick={it.onClick}
+                style={{display:"flex",alignItems:"center",gap:10,width:"100%",textAlign:"left",
+                  background:"rgba(255,255,255,0.04)",border:`1px solid ${T.bd}`,borderRadius:12,
+                  padding:"11px 12px",marginBottom:8,cursor:"pointer",fontFamily:"inherit"}}>
+                <div style={{width:34,height:34,borderRadius:10,background:`${it.color}22`,flexShrink:0,
+                  display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  {Li(it.icon,17,it.color)}
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{color:T.txt,fontSize:14,fontWeight:700}}>{it.label}</div>
+                  <div style={{color:T.txt2,fontSize:11.5,marginTop:1}}>{it.sub}</div>
+                </div>
+                {Li("chevron-right",16,T.txt2)}
+              </button>
+            ))}
+          </div>
+        )}
         {mgrTab==="konten"&&(
           <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 14px 24px"}}>
-            <div style={{color:T.lbl||T.txt2,fontSize:11,fontWeight:600,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
-              {Li("credit-card",13,T.blue)} Konten / Zahlungsarten
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
+              <button onClick={()=>setMgrTab("daten")} title="Zurück zu Daten"
+                style={{background:"rgba(255,255,255,0.05)",border:`1px solid ${T.bd}`,borderRadius:8,
+                  width:26,height:26,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
+                {Li("arrow-left",14,T.txt2)}
+              </button>
+              <div style={{flex:1,color:T.lbl||T.txt2,fontSize:11,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
+                {Li("credit-card",13,T.blue)} Konten / Zahlungsarten
+              </div>
             </div>
             {_accounts.map((acc,ai)=>(
               <div key={acc.id} style={{display:"flex",alignItems:"center",gap:8,background:"rgba(255,255,255,0.04)",borderRadius:10,padding:"6px 8px",marginBottom:3,border:`1px solid ${T.bd}`}}>
@@ -313,7 +357,7 @@ function ManagementScreen({activeTab="kategorien"}) {
             })()}
           </div>
         )}
-        {mgrTab!=="einstellungen"&&mgrTab!=="konten"&&(
+        {mgrTab!=="einstellungen"&&mgrTab!=="konten"&&mgrTab!=="daten"&&(
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch",display:"flex",flexDirection:"column"}}>
 
         {/* ── Kategorie-Zuordnungen ── */}
