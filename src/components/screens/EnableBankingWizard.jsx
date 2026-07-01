@@ -224,7 +224,8 @@ function EnableBankingWizard({ onClose }) {
     const m = { ...(await loadEbAccountMap()) };
     union.forEach((a) => { if (!m[a.uid]) m[a.uid] = accounts[0]?.id || "acc-giro"; });
     setAccMap(m);
-    setMsg({ tone: "tip", text: `${valid.length} Bank${valid.length !== 1 ? "en" : ""} verbunden. Weiter zu „Konten zuordnen".` });
+    setMsg({ tone: "tip", text: `${valid.length} Bank${valid.length !== 1 ? "en" : ""} verbunden.`,
+      action: { label: "Weiter zu „Konten zuordnen“ →", onClick: () => setStep(idxOf("zuordnen")) } });
   };
 
   const disconnectBank = async (sess) => {
@@ -323,7 +324,7 @@ function EnableBankingWizard({ onClose }) {
       const aspsp = aspspName || pendingAspsp || bank || "";
       await upsertEbSession({ sessionId, accounts: accs, validUntil: vu, aspsp });
       await refreshConnected();
-      setMsg({ tone: "tip", text: `${aspsp || "Bank"} verbunden (gültig bis ${String(vu).slice(0, 10)}). Weiter zu „Konten zuordnen".` });
+      setMsg({ tone: "tip", text: `${aspsp || "Bank"} verbunden (gültig bis ${String(vu).slice(0, 10)}).` });
       setStep(idxOf("zuordnen"));
     } catch (e) {
       const raw = String(e.message || e);
@@ -705,7 +706,11 @@ function EnableBankingWizard({ onClose }) {
               {validUntil && (
                 <Box tone="tip">
                   ✓ Bank-Verbindung aktiv — gültig bis <b>{String(validUntil).slice(0, 10)}</b>.
-                  Weiter zu „Konten zuordnen“.
+                  <button onClick={() => setStep(idxOf("zuordnen"))}
+                    style={{ display: "block", marginTop: 8, background: "transparent", border: `1px solid ${T.pos}66`,
+                      color: T.pos, borderRadius: 9, padding: "8px 12px", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+                    Weiter zu „Konten zuordnen“ →
+                  </button>
                 </Box>
               )}
 
@@ -905,6 +910,13 @@ function EnableBankingWizard({ onClose }) {
           {msg && (
             <Box tone={msg.tone}>
               {msg.text}
+              {msg.action && (
+                <button onClick={msg.action.onClick}
+                  style={{ display: "block", marginTop: 8, background: "transparent", border: `1px solid ${T.pos}66`,
+                    color: T.pos, borderRadius: 9, padding: "8px 12px", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+                  {msg.action.label}
+                </button>
+              )}
               {msg.detail && (
                 <details style={{ marginTop: 6 }}>
                   <summary style={{ cursor: "pointer", color: T.txt2, fontSize: 12 }}>Technische Details</summary>
