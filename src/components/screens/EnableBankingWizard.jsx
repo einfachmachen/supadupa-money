@@ -741,7 +741,16 @@ function EnableBankingWizard({ onClose }) {
                   <div key={a.uid} style={{ marginTop: 14 }}>
                     <div style={{ color: T.txt2, fontSize: 12.5, marginBottom: 5 }}>{a.label}</div>
                     <select style={inputStyle} value={accMap[a.uid] || ""}
-                      onChange={(e) => setAccMap((m) => ({ ...m, [a.uid]: e.target.value }))}>
+                      onChange={(e) => setAccMap((m) => {
+                        // Sofort persistieren (wie bei den Zugangsdaten) — nicht erst
+                        // beim späteren "Buchungen abrufen" speichern. Sonst geht eine
+                        // Zuordnung verloren, sobald der Assistent zwischendurch neu
+                        // gemountet wird (z. B. über die Bottom-Tabbar), und sie landet
+                        // nie im Cloud-Sync-Export (der liest den gespeicherten Stand).
+                        const next = { ...m, [a.uid]: e.target.value };
+                        saveEbAccountMap(next);
+                        return next;
+                      })}>
                       {accounts.map((acc) => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
                     </select>
                   </div>
