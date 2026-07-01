@@ -1,15 +1,13 @@
 // Auto-generated module (siehe app-src.jsx)
 
-import React, { useRef, useState } from "react";
+import React from "react";
 import { MonthPicker } from "../molecules/MonthPicker.jsx";
 import { MobileVormerkenModal } from "./MobileVormerkenModal.jsx";
 import { theme as T } from "../../theme/activeTheme.js";
 import { Li } from "../../utils/icons.jsx";
 
-function MobileActionPicker({onClose, onSelect, onSwitchToMonth, initialScreen="main"}) {
+function MobileActionPicker({onClose, onSelect, onSwitchToMonth}) {
   const fs = 26;
-  const [screen, setScreen] = React.useState(initialScreen);
-  const isDaten = screen==="daten";
 
   // TOGGLE-GESTE auf Header:
   // - Swipe-Up   → Mehr schließen + MonthPicker öffnen (onSwitchToMonth)
@@ -36,12 +34,12 @@ function MobileActionPicker({onClose, onSelect, onSwitchToMonth, initialScreen="
     onPointerCancel: () => { swipeRef.current.active = false; },
   };
 
+  // "Daten" (eigener Bottom-Tab) und "Einstellungen" (dritter Mond) sind hier
+  // bewusst nicht mehr gelistet — sie haben inzwischen einen direkteren Weg.
   const mainActions = [
-    {id:"daten",        label:"Daten",               icon:"database",    color:T.pos},
     {id:"vormerken",    label:"Vormerkung",          icon:"calendar",    color:T.gold},
     {id:"matching",     label:"zuordnen",            icon:"git-merge",   color:T.blue},
     {id:"kategorien",   label:"Kategorien & Budgets",icon:"tag",         color:T.blue},
-    {id:"einstellungen",label:"Einstellungen",       icon:"settings",    color:T.txt2},
     {id:"desktop",      label:"Desktop-Modal",       icon:"monitor",     color:T.txt2},
   ];
 
@@ -51,13 +49,7 @@ function MobileActionPicker({onClose, onSelect, onSwitchToMonth, initialScreen="
 
 
 
-  const datenActions = [
-    {id:"csv",       label:"CSV importieren", icon:"download",    color:T.pos,  sub:"Buchungen aus Banking-App"},
-    {id:"bankwizard",label:"Bank verbinden",  icon:"landmark",    color:T.gold, sub:"Schritt für Schritt · Enable Banking"},
-    {id:"datenmgr",  label:"Daten-Manager",   icon:"database",    color:T.pos,  sub:"Export / Import / Löschen"},
-    {id:"cloudsetup",label:"Cloud-Sync einrichten", icon:"cloud",  color:T.cf||T.blue, sub:"Eigene Cloud-DB · geführt"},
-  ];
-  const actions = isDaten ? datenActions : mainActions;
+  const actions = mainActions;
 
   // ── TERMINAL ────────────────────────────────────────────────────────────
   if(T.themeName==="terminal") {
@@ -193,24 +185,23 @@ function MobileActionPicker({onClose, onSelect, onSwitchToMonth, initialScreen="
       {/* Header */}
       <div {...swipeHandlers} style={{background:T.surf,borderBottom:`1px solid ${T.bd}`,
         padding:"calc(12px + env(safe-area-inset-top, 0px)) 16px 12px",display:"flex",alignItems:"center",gap:12,flexShrink:0,touchAction:"none"}}>
-        <button onClick={isDaten ? (initialScreen==="daten" ? onClose : ()=>setScreen("main")) : onClose}
+        <button onClick={onClose}
           style={{background:"rgba(255,255,255,0.08)",border:"none",color:T.txt2,
             width:44,height:44,borderRadius:14,cursor:"pointer",fontSize:20,
             display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-          {isDaten ? Li("arrow-left",22,T.txt) : "✕"}
+          ✕
         </button>
         <div style={{flex:1}}>
           <div style={{color:T.txt,fontSize:fs+2,fontWeight:700}}>
-            {isDaten ? "Daten" : "Was möchtest du tun?"}
+            Was möchtest du tun?
           </div>
-          {isDaten&&<div style={{color:T.txt2,fontSize:fs-10,marginTop:2}}>Import, Export & Verwaltung</div>}
         </div>
       </div>
 
       {/* Aktionen */}
       <div style={{flex:1,overflowY:"auto",padding:"6px 8px",WebkitOverflowScrolling:"touch"}}>
         {actions.map(({id,label,icon,color})=>(
-          <button key={id} onClick={()=>id==="daten" ? setScreen("daten") : onSelect(id)}
+          <button key={id} onClick={()=>onSelect(id)}
             style={{width:"100%",padding:"6px 8px",borderRadius:10,
               border:`1px solid ${T.bd}`,
               background:"rgba(255,255,255,0.04)",

@@ -52,7 +52,7 @@ import { saldoAt, saldoEnde, saldoMitte } from "./utils/saldo.js";
 export default function SupaDupaMoney() {
   const [mainTab,       setMainTab]      = useState("erfassen"); // erfassen|struktur|mehr
   const [sparOpenRequest, setSparOpenRequest] = useState(0);
-  const [activeStructurTab, setActiveStructurTab] = useState("einstellungen");
+  const [activeStructurTab, setActiveStructurTab] = useState("daten");
   const [hideEmptyRows, setHideEmptyRows] = useState(true);
   const [themeName, setThemeName] = useState(()=>kvStore.getItem("mbt_theme")||"dark");
   const [noBorders, setNoBorders] = useState(()=>kvStore.getItem("mbt_noborders")==="0" ? false : true);
@@ -129,11 +129,8 @@ export default function SupaDupaMoney() {
   const [showMobileWiederkehrend, setShowMobileWiederkehrend] = useState(false);
   const [showMobileWiederkehrendTyp, setShowMobileWiederkehrendTyp] = useState("wiederkehrend");
   const [showMobilePicker, setShowMobilePicker] = useState(false);
-  // Welcher Screen im "Mehr"-Picker beim Öffnen aktiv ist ("main" | "daten").
-  // Wird gesetzt, damit ein Sub-Screen per Zurück ins richtige (Unter-)Menü kehrt.
-  const [mobilePickerScreen, setMobilePickerScreen] = useState("main");
-  // Öffnet das Mehr-Menü (optional direkt im Daten-Untermenü) — für Zurück-Navigation.
-  const reopenMobilePicker = (screen="main") => { setMobilePickerScreen(screen); setShowMobilePicker(true); };
+  // Öffnet das Mehr-Menü wieder — für Zurück-Navigation aus Vormerken/Zuordnen.
+  const reopenMobilePicker = () => setShowMobilePicker(true);
   // Plus-Button: arretiert (höhere Position + 1,5× Größe) ja/nein
   // NICHT persistiert — beim App-Start immer false (Bottom-Bar-Position)
   const [plusArretiert, setPlusArretiert] = useState(false);
@@ -149,17 +146,19 @@ export default function SupaDupaMoney() {
   const showMoons = (v) => { moonsShownRef.current = v; setMoonsShown(v); };
   // Die 4 Monde des vergrößerten +-Buttons (ersetzen den „Was möchtest du tun?"-Screen).
   const MOONS = [
-    {id:"vormerken",    label:"vormerken",  icon:"calendar", color:T.gold},
-    {id:"kategorien",   label:"Budget",     icon:"tag",      color:T.blue},
-    {id:"daten",        label:"Daten",      icon:"database", color:T.pos},
+    {id:"vormerken",    label:"vormerken",   icon:"calendar", color:T.gold},
+    {id:"kategorien",   label:"Budget",      icon:"tag",      color:T.blue},
+    {id:"einstellungen",label:"Einstellungen",icon:"settings",color:T.txt2},
   ];
   const openMoon = (id) => {
     // Der + bleibt in ALLEN Mond-Funktionen VERGRÖSSERT (plusArretiert true).
     // Das Mond-Overlay wird ausgeblendet, sobald eine Funktion offen ist
     // (Modal-Flags bzw. nicht-erfassen-Tab — siehe Overlay-Bedingung).
+    // "Daten" hat inzwischen einen eigenen Bottom-Tab (§5 Design-Guide) — der
+    // dritte Mond führt stattdessen zu Einstellungen, die dadurch ihren Tab verloren haben.
     if(id==="vormerken")          setShowMobileVormerken(true);
     else if(id==="kategorien")    setShowMobileKategorien(true);
-    else if(id==="daten")         reopenMobilePicker("daten");
+    else if(id==="einstellungen"){ setMainTab("struktur"); setActiveStructurTab("einstellungen"); }
   };
   // True, solange der Money-Mood/Trend-Drilldown offen ist. Dort wird der + Button
   // vergrößert angezeigt und ist frei vertikal verschiebbar (drillBtnY); Links/
@@ -298,10 +297,10 @@ export default function SupaDupaMoney() {
           // bedient. Verkleinern passiert nur beim Doppel-Tap (onDismiss).
           const p = prevTabRef.current;
           setMainTab(p.mainTab); setSubTab(p.subTab);
-          reopenMobilePicker("main");
+          reopenMobilePicker();
         },
         onDismiss: () => {                                 // Doppel-Tap → schließen, zurück zum vorherigen Tab (Dashboard)
-          setShowMobilePicker(false); setMobilePickerScreen("main");
+          setShowMobilePicker(false);
           const p = prevTabRef.current;
           setMainTab(p.mainTab); setSubTab(p.subTab);
           setPlusArretiert(false);
@@ -2556,6 +2555,7 @@ Abbrechen = ${remoteName}-Stand laden`
     syncPass, setSyncPass, syncEncActive,
     showCloudSetup, setShowCloudSetup,
     setActiveStructurTab, setShowBankWizard,
+    setShowCsv, setShowDataMgr,
     syncStatus, setSyncStatus, syncError, isDirty,
     cfSaveOnClose, setCfSaveOnClose,
     dashDrillOpen, setDashDrillOpen,
@@ -2594,10 +2594,10 @@ Abbrechen = ${remoteName}-Stand laden`
     {id:"home",      label:"Home",     icon:"home"},
     {id:"jahr",      label:"Trend",    icon:"activity"},
     {id:"monat",     label:"Monat",    icon:"calendar"},
-    {id:"optionen",  label:"Optionen", icon:"settings"},
+    {id:"daten",     label:"Daten",    icon:"database"},
   ];
   const activeNavTab =
-    mainTab==="struktur" ? "optionen" :
+    mainTab==="struktur" ? "daten" :
     mainTab==="erfassen"&&subTab==="monat" ? "monat" :
     // „Money Mood" wird aus der Jahresansicht geöffnet → Jahr bleibt aktiv.
     mainTab==="erfassen"&&(subTab==="jahr"||subTab==="mood") ? "jahr" :
@@ -2686,14 +2686,14 @@ Abbrechen = ${remoteName}-Stand laden`
         const onTap = (t) => {
           // Offene Mobile-Overlays/Picker beim Tab-Wechsel schließen — sonst läge
           // der Picker über der neuen Ansicht und es "passiert nichts".
-          setShowMobilePicker(false); setMobilePickerScreen("main");
+          setShowMobilePicker(false);
           setShowMobileVormerken(false); setShowMobileKategorien(false);
           setShowMobileBudget(false); setShowMobileWiederkehrend(false);
           setShowDataMgr(false); setShowCsv(false); setShowVormHub(false);
           setPlusArretiert(false);
           if(t.id==="home")      { setMainTab("erfassen"); setSubTab("dashboard"); }
           else if(t.id==="monat")     { setMainTab("erfassen"); setSubTab("monat"); }
-          else if(t.id==="optionen")  { setMainTab("struktur"); setActiveStructurTab("einstellungen"); }
+          else if(t.id==="daten")     { setMainTab("struktur"); setActiveStructurTab("daten"); }
           else if(t.id==="jahr")      { setMainTab("erfassen"); setSubTab("mood"); }
         };
 
@@ -3002,7 +3002,7 @@ Abbrechen = ${remoteName}-Stand laden`
               } else if(showMobilePicker) {
                 // Picker („Was möchtest du tun?") offen: Einzel-Tap auf den + =
                 // zurück (Picker schließen, Knopf wieder klein).
-                setShowMobilePicker(false); setMobilePickerScreen("main"); setPlusArretiert(false);
+                setShowMobilePicker(false); setPlusArretiert(false);
                 masterLastTapRef.current = {zone:null, t:0, timer:null};
               } else {
                 // Erster Tap auf den vergrößerten +: zeigt zuerst die Monde;
@@ -3271,20 +3271,18 @@ Abbrechen = ${remoteName}-Stand laden`
         onBack={()=>{setShowMobileVormerken(false);setPlusArretiert(true);}}/>}
       {showMobileWiederkehrend&&<MobileVormerkenModal
         initialRecurring={true} initialFinanz={showMobileWiederkehrendTyp==="finanzierung"}
-        onClose={()=>setShowMobileWiederkehrend(false)}
+        onClose={()=>{setShowMobileWiederkehrend(false);setPlusArretiert(false);}}
         onBack={()=>{setShowMobileWiederkehrend(false);reopenMobilePicker("main");}}/>}
-      {showMobileBudget&&<MobileBudgetModal onClose={()=>setShowMobileBudget(false)}/>}
+      {showMobileBudget&&<MobileBudgetModal onClose={()=>{setShowMobileBudget(false);setPlusArretiert(false);}}/>}
       {showMobileKategorien&&<MobileKategorienModal
         onClose={()=>{setShowMobileKategorien(false);setPlusArretiert(false);}}
         onBack={()=>{setShowMobileKategorien(false);setPlusArretiert(true);}}
         onKonten={()=>{setShowMobileKategorien(false);setMainTab("struktur");setActiveStructurTab("konten");}}
         onKategorienErweitert={()=>{setShowMobileKategorien(false);setMainTab("struktur");setActiveStructurTab("kategorien");}}/>}
       {showMobilePicker&&<MobileActionPicker
-        initialScreen={mobilePickerScreen}
-        onClose={()=>{setShowMobilePicker(false);setMobilePickerScreen("main");setPlusArretiert(true);}}
+        onClose={()=>{setShowMobilePicker(false);setPlusArretiert(false);}}
         onSelect={(action)=>{
           setShowMobilePicker(false);
-          setMobilePickerScreen("main");
 
           if(action==="addTx") setShowMobileVormerken(true);
           else if(action==="desktop") setModal("addTx");
@@ -3317,16 +3315,16 @@ Abbrechen = ${remoteName}-Stand laden`
 
       {/* ── MODALS ── */}
       {modal==="addTx"&&<AddTxModal/>}
-      {showCsv&&<CsvImportScreen onClose={()=>setShowCsv(false)}
-        onBack={()=>{setShowCsv(false);reopenMobilePicker("daten");}}
+      {showCsv&&<CsvImportScreen onClose={()=>{setShowCsv(false);setPlusArretiert(false);}}
+        onBack={()=>{setShowCsv(false);setPlusArretiert(false);}}
         csvRules={csvRules} setCsvRules={setCsvRules} mobileMode={mobileMode}/>}
-      {showBankWizard&&<EnableBankingWizard onClose={()=>setShowBankWizard(false)}/>}
-      {showCloudSetup&&<CloudSetupWizard onClose={()=>setShowCloudSetup(false)}/>}
-      {showMatching&&<MatchingScreen onClose={()=>setShowMatching(false)}
+      {showBankWizard&&<EnableBankingWizard onClose={()=>{setShowBankWizard(false);setPlusArretiert(false);}}/>}
+      {showCloudSetup&&<CloudSetupWizard onClose={()=>{setShowCloudSetup(false);setPlusArretiert(false);}}/>}
+      {showMatching&&<MatchingScreen onClose={()=>{setShowMatching(false);setPlusArretiert(false);}}
         onBack={()=>{setShowMatching(false);reopenMobilePicker("main");}}/>}
-      {showVormHub&&<VormerkungHub onClose={()=>{setShowVormHub(false);setEditVormTx(null);}} editVorm={editVormTx} mobileMode={mobileMode}/>}
-      {showRecurring&&<RecurringDetectionScreen onClose={()=>setShowRecurring(false)}/>}
-      {showKategorisieren&&<RecurringDetectionScreen initialTab="kategorisieren" onClose={()=>setShowKategorisieren(false)}/>}
+      {showVormHub&&<VormerkungHub onClose={()=>{setShowVormHub(false);setEditVormTx(null);setPlusArretiert(false);}} editVorm={editVormTx} mobileMode={mobileMode}/>}
+      {showRecurring&&<RecurringDetectionScreen onClose={()=>{setShowRecurring(false);setPlusArretiert(false);}}/>}
+      {showKategorisieren&&<RecurringDetectionScreen initialTab="kategorisieren" onClose={()=>{setShowKategorisieren(false);setPlusArretiert(false);}}/>}
       {showSettings&&(
         <div onClick={()=>setShowSettings(false)}
           style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",backdropFilter:"blur(8px)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
@@ -3343,8 +3341,8 @@ Abbrechen = ${remoteName}-Stand laden`
           </div>
         </div>
       )}
-      {showDataMgr&&<DataManagerDialog onClose={()=>setShowDataMgr(false)} mobileMode={mobileMode}
-        onBack={()=>{setShowDataMgr(false);reopenMobilePicker("daten");}}/>}
+      {showDataMgr&&<DataManagerDialog onClose={()=>{setShowDataMgr(false);setPlusArretiert(false);}} mobileMode={mobileMode}
+        onBack={()=>{setShowDataMgr(false);setPlusArretiert(false);}}/>}
       {exportDialog&&(
         <ExportDialog title={exportDialog.title} defaultName={exportDialog.defaultName}
           data={exportDialog.data} onClose={()=>setExportDialog(null)} onDone={()=>setExportDialog(null)}/>
