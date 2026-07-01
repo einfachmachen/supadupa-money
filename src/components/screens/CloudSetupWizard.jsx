@@ -34,6 +34,7 @@ const STEPS = [
   { key: "pass",    title: "Verschlüsselung" },
   { key: "test",    title: "Test" },
 ];
+const idxOf = (key) => STEPS.findIndex((s) => s.key === key);
 
 function Box({ tone = "info", children }) {
   const map = { info: T.blue, tip: T.pos, warn: T.gold, danger: T.neg };
@@ -201,21 +202,72 @@ function CloudSetupWizard({ onClose }) {
         ))}
       </div>
 
+      {/* Verbindungs-Status: dauerhaft sichtbar oben, auf JEDEM Schritt (statt
+          erst nach dem letzten Schritt sichtbar). Nur "Test" selbst blendet
+          ihn aus — dort wäre er redundant. */}
+      {cfActive && k !== "test" && (
+        <div style={{ margin: "10px 18px 0", padding: "10px 14px", borderRadius: 12,
+          background: T.pos + "18", border: `1px solid ${T.pos}55`,
+          display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+          {Li("check-circle", 18, T.pos)}
+          <div style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 13, lineHeight: 1.4 }}>
+            Cloud-Sync ist schon eingerichtet.
+          </div>
+          <button onClick={() => setStep(idxOf("test"))}
+            style={{ flexShrink: 0, background: T.pos, border: "none", borderRadius: 9,
+              padding: "8px 11px", color: T.on_accent, fontSize: 12.5, fontWeight: 800, cursor: "pointer",
+              whiteSpace: "nowrap" }}>
+            Verbindung testen →
+          </button>
+        </div>
+      )}
+
       {/* Inhalt */}
       <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch",
         padding: "8px 18px calc(190px + env(safe-area-inset-bottom, 0px))" }}>
         <div style={{ maxWidth: 480, margin: "0 auto" }}>
 
           {k === "konto" && (
-            <>
-              <Box tone="info">
-                Deine Buchungen liegen in <b>deiner eigenen</b> kleinen Cloud-DB bei
-                Cloudflare — kostenlos, kein zentraler Server. Einmal einrichten, danach
-                auf allen Geräten verfügbar.
-              </Box>
-              <LinkBtn href={SIGNUP_URL} icon="user-plus" color={T.pos}>Cloudflare-Konto anlegen</LinkBtn>
-              <Box tone="tip">Hast du schon ein Konto? Dann einfach weiter.</Box>
-            </>
+            cfActive ? (
+              // Bereits eingerichtet: Status-Übersicht mit direkten Sprungzielen,
+              // statt erneut durch die Cloudflare-Einrichtungs-Schritte zu müssen.
+              <>
+                <Box tone="tip">
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 800, marginBottom: 6 }}>
+                    {Li("check-circle", 17, T.pos)} Cloud-Sync eingerichtet
+                  </div>
+                  <div style={{ fontSize: 13.5, lineHeight: 1.7 }}>
+                    <div>Worker-URL: <code style={{ fontFamily: "monospace", wordBreak: "break-all" }}>{cfUrl}</code></div>
+                    <div>Secret: hinterlegt ✓</div>
+                    <div>Verschlüsselung: {syncEncActive ? "aktiv ✓" : "aus (unverschlüsselt)"}</div>
+                  </div>
+                  <button onClick={() => setStep(idxOf("url"))}
+                    style={{ display: "block", marginTop: 10, background: "transparent", border: `1px solid ${T.bd}`,
+                      color: T.txt2, borderRadius: 9, padding: "8px 12px", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+                    Zugangsdaten ansehen/ändern →
+                  </button>
+                </Box>
+                <Box tone="info">
+                  Weiteres Gerät verbinden? Dort dieselbe URL, dasselbe Secret und
+                  (falls genutzt) dieselbe Passphrase eintragen, dann testen.
+                  <button onClick={() => setStep(idxOf("test"))}
+                    style={{ display: "block", marginTop: 8, background: "transparent", border: `1px solid ${T.pos}66`,
+                      color: T.pos, borderRadius: 9, padding: "8px 12px", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+                    Verbindung testen →
+                  </button>
+                </Box>
+              </>
+            ) : (
+              <>
+                <Box tone="info">
+                  Deine Buchungen liegen in <b>deiner eigenen</b> kleinen Cloud-DB bei
+                  Cloudflare — kostenlos, kein zentraler Server. Einmal einrichten, danach
+                  auf allen Geräten verfügbar.
+                </Box>
+                <LinkBtn href={SIGNUP_URL} icon="user-plus" color={T.pos}>Cloudflare-Konto anlegen</LinkBtn>
+                <Box tone="tip">Hast du schon ein Konto? Dann einfach weiter.</Box>
+              </>
+            )
           )}
 
           {k === "worker" && (
