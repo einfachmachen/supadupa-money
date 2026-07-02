@@ -177,13 +177,13 @@
   /* iOS Safari Fix + nav-bottom-Überlappung:
      Die nav-bottom (Home/Monat/Jahr-Buttons) ist position:fixed bottom:0,
      height:57px, z-index:9999 — sitzt also bündig am UNTEREN Bildschirmrand
-     und deckt im Ruhezustand exakt die untersten 57 echten Pixel ab. Der
-     "+"-Button kann darüber hinaus aber VERGRÖSSERT ("arretiert") sein
-     (scale 1.5, weit nach oben verschoben) — dann reicht sein Kreis deutlich
-     höher als 57px und würde Inhalte am unteren Rand überdecken/abschneiden.
-     Reservierung daher über die CSS-Variable --mm-bottom (von den einzelnen
-     Screens anhand von plusArretiert gesetzt, s. AppCtx) statt eines festen
-     Werts: 57px im Ruhezustand, mehr wenn der Button vergrößert ist.
+     und deckt exakt die untersten 57 echten Pixel ab. Der "+"-Button
+     übernimmt in jedem Vollbild-Dialog per masterOverride die Steuerung und
+     bleibt dabei IMMER klein (s. MasterOverrideSlot in App.jsx) — die
+     "vergrößerte"/arretierte Darstellung ist nur für die Monats-Wisch-
+     Navigation auf Home/Monat/Jahr gedacht, nicht innerhalb von Dialogen.
+     Damit reicht hier ein fester Wert, ohne dass jeder Dialog selbst um
+     variable Zusatzhöhe wissen müsste (fehleranfällig bei neuen Screens).
      - 100svh = small viewport height: stabil (kein Nachrechnen beim Scrollen →
        kein Wackeln), beruecksichtigt aber die iOS-Safari-Bottom-Bar */
   .mobile-modal {
@@ -191,7 +191,7 @@
     top: 0 !important;
     height: 100vh !important;
     height: 100svh !important;
-    padding-bottom: var(--mm-bottom, 57px) !important;
+    padding-bottom: 57px !important;
     box-sizing: border-box;
   }
   .mobile-modal button { min-height: 48px; font-size: 18px !important; }

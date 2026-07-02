@@ -19,7 +19,7 @@ import { SchieflageVorwarnung } from "../atoms/SchieflageVorwarnung.jsx";
 import { isFuelSelection, checkOdometerPlausibility } from "../../utils/fuel.js";
 
 function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialFinanz=false}) {
-  const { cats, setCats, accounts, setAccounts, vehicles, setVehicles, txs, setTxs, year, month, getCat, getSub, setMasterOverride, plusArretiert } = useContext(AppCtx);
+  const { cats, setCats, accounts, setAccounts, vehicles, setVehicles, txs, setTxs, year, month, getCat, getSub, setMasterOverride } = useContext(AppCtx);
   const goBack = onBack || onClose;
   const pad = n => String(n).padStart(2,"0");
   const today = new Date().toISOString().split("T")[0];
@@ -418,7 +418,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
   return (
     <div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,zIndex:300,
       display:"flex",flexDirection:"column",overflowY:"auto",
-      "--mob-fs": S.fs+"px", "--mm-bottom":plusArretiert?"190px":"57px"}}>
+      "--mob-fs": S.fs+"px"}}>
 
       {/* ── Schritt 1: Betrag & Typ ── */}
       {step===1&&<>

@@ -20,7 +20,7 @@ import { isoAddDays, nextBankWorkday } from "../../utils/date.js";
 import { liveLinkedGiroIds } from "../../utils/links.js";
 
 function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
-  const { cats, groups, txs, setTxs, accounts, csvRules, setCsvRules, startBalances, setStartBalances, setMasterOverride, plusArretiert } = useContext(AppCtx);
+  const { cats, groups, txs, setTxs, accounts, csvRules, setCsvRules, startBalances, setStartBalances, setMasterOverride } = useContext(AppCtx);
   const MFS = mobileMode ? 22 : 13; // mobile font size base
   const MFSl = mobileMode ? 18 : 11; // mobile font size small
   const MPad = mobileMode ? "14px 16px" : "8px 12px"; // mobile padding
@@ -962,12 +962,9 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
       : {position:"fixed",inset:0,background:T.bg,zIndex:15,display:"flex",flexDirection:"column",
          fontFamily:"'SF Pro Text',-apple-system,sans-serif",
          // Reserve unten: die nav-bottom (Home/Monat/Jahr) ist position:fixed, bottom:0,
-         // height:57px im Ruhezustand — ist der + Button aber vergrößert/"arretiert",
-         // reicht sein Kreis deutlich höher und würde sonst Inhalte am unteren Rand
-         // überdecken/abschneiden. --mm-bottom (CSS, per mobile-modal-Klasse) deckt den
-         // mobileMode-Fall ab; dieser Inline-Wert den (seltenen) Nicht-mobileMode-Fall.
-         "--mm-bottom":plusArretiert?"190px":"57px",
-         paddingBottom:plusArretiert?"190px":"57px"}}>
+         // height:57px — deckt exakt die untersten 57px ab. Der + Button bleibt hier
+         // (masterOverride) immer klein, braucht also nie mehr Platz als das.
+         paddingBottom:"57px"}}>
       {/* Header — einheitlich mit den anderen Daten-Tab-Dialogen (siehe MobileHeader),
           unabhängig von mobileMode. Zurück führt review/done → input, input → Mehr-Menü. */}
       {!embedded && (
@@ -994,7 +991,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
 
       {/* STEP: INPUT */}
       {step==="input"&&(
-        <div style={{flex:1,overflowY:"auto",padding:mobileMode?20:16,
+        <div style={{flex:1,overflowY:"auto",padding:mobileMode?20:16,paddingBottom:240,
           fontSize:mobileMode?"inherit":"inherit",
           "--csv-fs": mobileMode?"18px":"12px",
           "--csv-fs-s": mobileMode?"15px":"11px",
@@ -1673,7 +1670,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                       : "Kategorie zuweisen – die App merkt sich die Regel für gleiche Empfänger:")
                   : `${notImportedCount} Buchungen werden ohne Kategorie importiert – du kannst sie später unter Erfassen → Buchungen kategorisieren.`}
               </div>}
-              <div style={{flex:suggFull?"0 0 0px":1,overflowY:"auto",display:suggFull?"none":"block"}}>
+              <div style={{flex:suggFull?"0 0 0px":1,overflowY:"auto",display:suggFull?"none":"block",paddingBottom:240}}>
                 {parsed.newRows.filter(r=>{
                   if(r._imported) return false;          // gestuft: bereits importiert
                   if(!search) return true;

@@ -21,9 +21,8 @@ const PRIO_OPTS = [
 function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert}) {
   const goBack = onBack || onClose; // zurück eine Ebene hoch (Mehr-Menü)
   const { cats, setCats, groups, setGroups, budgets, setBudgets, txs, setTxs, accounts,
-    getBudgetForMonth, getActualSum, year, setYear, month, setMonth, selAcc, csvRules, setCsvRules, setMasterOverride, plusArretiert } = useContext(AppCtx);
+    getBudgetForMonth, getActualSum, year, setYear, month, setMonth, selAcc, csvRules, setCsvRules, setMasterOverride } = useContext(AppCtx);
   const S = {fs:26, pad:10, padL:14, radius:16, gap:14};
-  const mmBottom = {"--mm-bottom":plusArretiert?"190px":"57px"};
   const MONTHS = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
 
   // Konto-Filter — initial vom aktuell aktiven Konto
@@ -236,9 +235,9 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
   // ── Kategorie bearbeiten ──
   if(view==="editCat"&&selCat) return (
     <div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,
-      zIndex:300,display:"flex",flexDirection:"column","--mob-fs":"18px",...mmBottom}}>
+      zIndex:300,display:"flex",flexDirection:"column","--mob-fs":"18px"}}>
       {header(`bearbeiten: ${selCat.name}`,()=>setView("list"))}
-      <div style={{flex:1,padding:S.padL,overflowY:"auto"}}>
+      <div style={{flex:1,padding:S.padL,paddingBottom:240,overflowY:"auto"}}>
         <div style={{color:T.txt2,fontSize:S.fs-4,marginBottom:6,fontWeight:600}}>Name</div>
         <input value={editName} onChange={e=>setEditName(e.target.value)}
           autoFocus style={{...inp(),marginBottom:S.gap}}/>
@@ -306,9 +305,9 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
   // ── Neue Kategorie ──
   if(view==="newCat") return (
     <div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,
-      zIndex:300,display:"flex",flexDirection:"column","--mob-fs":"18px",...mmBottom}}>
+      zIndex:300,display:"flex",flexDirection:"column","--mob-fs":"18px"}}>
       {header("neue Kategorie",()=>setView("list"))}
-      <div style={{flex:1,padding:S.padL,overflowY:"auto"}}>
+      <div style={{flex:1,padding:S.padL,paddingBottom:240,overflowY:"auto"}}>
         <div style={{color:T.txt2,fontSize:S.fs-4,marginBottom:6,fontWeight:600}}>Name</div>
         <input value={newName} onChange={e=>setNewName(e.target.value)}
           placeholder="z.B. Freizeit" autoFocus style={{...inp(),marginBottom:S.gap}}/>
@@ -345,9 +344,9 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
   // ── Neue Unterkategorie ──
   if(view==="newSub"&&selCat) return (
     <div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,
-      zIndex:300,display:"flex",flexDirection:"column","--mob-fs":"18px",...mmBottom}}>
+      zIndex:300,display:"flex",flexDirection:"column","--mob-fs":"18px"}}>
       {header(`neue Unterkategorie`,()=>setView("list"))}
-      <div style={{flex:1,padding:S.padL,overflowY:"auto"}}>
+      <div style={{flex:1,padding:S.padL,paddingBottom:240,overflowY:"auto"}}>
         <div style={{color:T.txt2,fontSize:S.fs-6,marginBottom:S.gap,
           display:"flex",alignItems:"center",gap:8}}>
           {Li(selCat.icon||"tag",S.fs,selCat.color||T.blue)}
@@ -368,10 +367,13 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
   // ── Hauptliste ──
   return (
     <div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,
-      zIndex:300,display:"flex",flexDirection:"column","--mob-fs":"18px",...mmBottom}}>
+      zIndex:300,display:"flex",flexDirection:"column","--mob-fs":"18px"}}>
       {header("Kategorien & Budget",goBack,"target")}
+      {/* paddingBottom großzügig: lässt genug Platz zum Durchscrollen, damit
+          die letzten Kategorien auch bei vergrößertem + Button vollständig
+          sichtbar werden (Vorbild: MobileVormerkenModal paddingBottom:240). */}
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",touchAction:"pan-y",WebkitOverflowScrolling:"touch",
-        padding:`${S.gap}px ${S.pad}px ${S.padL}px`}}>
+        padding:`${S.gap}px ${S.pad}px 240px`}}>
 
         <button onClick={openNewCat}
           style={{...btnCenter,background:"rgba(74,159,212,0.1)",

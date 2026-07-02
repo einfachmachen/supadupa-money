@@ -123,7 +123,7 @@ function normalizeAccounts(r) {
 }
 
 function EnableBankingWizard({ onClose, onBack }) {
-  const { txs, setTxs, accounts, setMasterOverride, plusArretiert } = useContext(AppCtx);
+  const { txs, setTxs, accounts, setMasterOverride } = useContext(AppCtx);
 
   const [relayUrl, setRelayUrl] = useState(DEFAULT_RELAY);
   const [appId, setAppId] = useState("");
@@ -456,7 +456,7 @@ function EnableBankingWizard({ onClose, onBack }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, background: T.bg, zIndex: 320, display: "flex", flexDirection: "column",
-      paddingBottom: plusArretiert ? "190px" : "57px" }}>
+      paddingBottom: "57px" }}>
       {/* Header — einheitlich mit den anderen Daten-Tab-Dialogen (siehe MobileHeader) */}
       <MobileHeader title="Bank verbinden"
         subtitle={`Schritt ${step + 1}/${STEPS.length} · ${STEPS[step].title}`}
