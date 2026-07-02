@@ -13,7 +13,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { Li } from "../../utils/icons.jsx";
 import { uid } from "../../utils/format.js";
-import { txFingerprint, txFingerprintNorm } from "../../utils/tx.js";
+import { txFingerprintNorm } from "../../utils/tx.js";
 import {
   createEnableBankingClient,
   mapEnableBankingTransactions,
@@ -30,7 +30,7 @@ import {
   loadEbDiag,
   clearEbDiag,
 } from "../../utils/enableBankingStore.js";
-import { friendlyBankError, fetchAllTransactions } from "../../utils/enableBankingFetch.js";
+import { friendlyBankError, fetchAllTransactions, buildKnownFps } from "../../utils/enableBankingFetch.js";
 
 // Vom Betreiber bereitgestellter Standard-Relay (datenlos, geteilt).
 const DEFAULT_RELAY = "https://enable-banking-proxy.relay-url-supadupa-money.workers.dev";
@@ -105,26 +105,6 @@ function ActionBtn({ onClick, disabled, children, bg, icon }) {
       {icon && Li(icon, 16, disabled ? "#888" : T.on_accent)} {children}
     </button>
   );
-}
-
-// Alle bekannten Fingerprints aus vorhandenen Buchungen (wie im CSV-Import)
-function buildKnownFps(txs) {
-  const s = new Set();
-  (txs || []).forEach((t) => {
-    if (t._fp) s.add(t._fp);
-    const abs = Math.abs(t.totalAmount);
-    s.add(txFingerprint(t.date, t.totalAmount, t.desc));
-    s.add(txFingerprint(t.date, abs, t.desc));
-    s.add(txFingerprintNorm(t.date, t.totalAmount, t.desc));
-    s.add(txFingerprintNorm(t.date, abs, t.desc));
-    if (t.accountId) {
-      s.add(txFingerprint(t.date, t.totalAmount, t.desc, t.accountId));
-      s.add(txFingerprint(t.date, abs, t.desc, t.accountId));
-      s.add(txFingerprintNorm(t.date, t.totalAmount, t.desc, t.accountId));
-      s.add(txFingerprintNorm(t.date, abs, t.desc, t.accountId));
-    }
-  });
-  return s;
 }
 
 // Session-Antwort → einheitliche Kontoliste [{uid, label}]

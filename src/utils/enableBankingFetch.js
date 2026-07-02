@@ -14,9 +14,16 @@ import { createEnableBankingClient, mapEnableBankingTransactions } from "./enabl
 import { loadEbCreds, loadEbAccountMap, loadEbSessionList } from "./enableBankingStore.js";
 
 // Alle bekannten Fingerprints aus vorhandenen Buchungen (identisch zum Import).
+// WICHTIG: Vormerkungen (pending) NICHT mit aufnehmen — sonst erkennt der
+// Bankabruf eine noch offene Vormerkung (gleiches Datum/Betrag/Text) fälschlich
+// als „bereits vorhanden" und importiert die passende echte Bank-Buchung nie
+// (sie taucht dann nur noch als eingeklappte „Dublette" auf, ohne je real zu
+// werden). Der Betrags-Index (amtIndex, s. u.) schließt Vormerkungen aus
+// demselben Grund schon länger aus — hier fehlte das Gegenstück.
 function buildKnownFps(txs) {
   const s = new Set();
   (txs || []).forEach((t) => {
+    if (t.pending) return;
     if (t._fp) s.add(t._fp);
     const abs = Math.abs(t.totalAmount);
     s.add(txFingerprint(t.date, t.totalAmount, t.desc));
