@@ -10,7 +10,7 @@ import { INP } from "../../theme/palette.js";
 import { isoAddMonths } from "../../utils/date.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
-import { isFuelCat } from "../../utils/fuel.js";
+import { isFuelSelection } from "../../utils/fuel.js";
 
 function EditPopup() {
   const { cats,setCats,groups,setGroups,txs,setTxs,accounts,setAccounts,
@@ -47,9 +47,11 @@ function EditPopup() {
     })();
     const _showPotToggle = !editTx._budgetSubId && _potSub && txType(editTx)==="expense"
       && (editTx.splits||[])[0]?.subId !== _potSub.id;
-    // Tank-Erfassung: nur bei Ausgaben mit Kategorie "Tanken" (siehe TODO.md)
+    // Tank-Erfassung: nur bei Ausgaben mit Kategorie "Tanken" (siehe TODO.md).
+    // "Tanken" kann Haupt- ODER Unterkategorie sein (z.B. Auto/Tanken).
+    const _editSplit0 = (editTx.splits||[])[0];
     const _showFuelFields = !editTx._budgetSubId && txType(editTx)==="expense"
-      && isFuelCat(getCat((editTx.splits||[])[0]?.catId));
+      && isFuelSelection(getCat(_editSplit0?.catId), getSub(_editSplit0?.catId, _editSplit0?.subId));
     const addVehicle = () => {
       const name = newVehicleName.trim();
       if(!name) return;

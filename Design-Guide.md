@@ -468,6 +468,10 @@ drei Reiter:
 
 - **Erkennung**: feste Kategorie **„Tanken"** (exakt, case-insensitive —
   `utils/fuel.js: isFuelCat()`), kein Fuzzy-Match auf Empfänger/Notiz.
+  **„Tanken" kann Haupt- ODER Unterkategorie sein** (typisch: Hauptkategorie
+  „Auto" mit Unterkategorie „Tanken") — deshalb prüft `isFuelSelection(cat, sub)`
+  **beide Ebenen**; ein Check nur auf die Hauptkategorie übersieht den in der
+  Praxis häufigeren Fall (Kategorie als Unterpunkt einer Oberkategorie).
 - **Zusatzfelder an der Buchung** (nur gesetzt, wenn beim Erfassen ausgefüllt):
   `_fuelVehicleId`, `_fuelLiters`, `_fuelPricePerL`, `_odometer`.
 - **Mehrere Fahrzeuge**: eigenes Top-Level-Array `vehicles` (`{id,name}`) —

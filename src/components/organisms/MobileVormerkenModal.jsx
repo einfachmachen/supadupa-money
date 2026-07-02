@@ -16,7 +16,7 @@ import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { nextBankWorkday, isoAddMonths } from "../../utils/date.js";
 import { Li } from "../../utils/icons.jsx";
 import { SchieflageVorwarnung } from "../atoms/SchieflageVorwarnung.jsx";
-import { isFuelCat } from "../../utils/fuel.js";
+import { isFuelSelection } from "../../utils/fuel.js";
 
 function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialFinanz=false}) {
   const { cats, setCats, accounts, setAccounts, vehicles, setVehicles, txs, setTxs, year, month, getCat, getSub, setMasterOverride } = useContext(AppCtx);
@@ -75,7 +75,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
   const [odometer,      setOdometer]      = useState("");
   const [showNewVehicle, setShowNewVehicle] = useState(false);
   const [newVehicleName, setNewVehicleName] = useState("");
-  const _showFuelFields = !isTransfer && !recurring && csvType==="expense" && isFuelCat(getCat(catId));
+  const _showFuelFields = !isTransfer && !recurring && csvType==="expense" && isFuelSelection(getCat(catId), getSub(catId,subId));
   const fuelComputedTotal = (() => {
     const l = pn((fuelLiters||"").replace(",","."));
     const p = pn((fuelPricePerL||"").replace(",","."));

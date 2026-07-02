@@ -13,7 +13,7 @@ import { MONTHS_F } from "../../utils/constants.js";
 import { isoAddMonths, nextBankWorkday } from "../../utils/date.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
-import { isFuelCat } from "../../utils/fuel.js";
+import { isFuelSelection } from "../../utils/fuel.js";
 
 function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}) {
   const { cats, groups, txs, setTxs, accounts, vehicles, setVehicles, year, month, getCat, getSub, setMasterOverride } = useContext(AppCtx);
@@ -362,7 +362,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
   const selCat = cats.find(c=>c.id===catId);
   const subOpts = selCat?.subs||[];
   const _showFuelFields = typ==="einmalig" && csvType==="expense"
-    && !(transferToAcc && transferToAcc!==accountId) && isFuelCat(selCat);
+    && !(transferToAcc && transferToAcc!==accountId) && isFuelSelection(selCat, getSub(catId,subId));
   const fuelComputedTotal = (() => {
     const l = pn((fuelLiters||"").replace(",","."));
     const p = pn((fuelPricePerL||"").replace(",","."));

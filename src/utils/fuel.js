@@ -8,6 +8,13 @@ function isFuelCat(cat) {
   return (cat?.name || "").trim().toLowerCase() === "tanken";
 }
 
+// "Tanken" kann sowohl Haupt- als auch Unterkategorie sein (z.B. Auto/Tanken)
+// — beide Ebenen prüfen, sonst wird eine als Unterkategorie angelegte
+// "Tanken"-Kategorie nicht erkannt.
+function isFuelSelection(cat, sub) {
+  return isFuelCat(sub) || isFuelCat(cat);
+}
+
 function hasFuelData(tx) {
   return !!(tx && (tx._fuelLiters != null || tx._odometer != null));
 }
@@ -35,4 +42,4 @@ function buildFuelSeries(txs, vehicleId) {
   });
 }
 
-export { isFuelCat, hasFuelData, calcConsumption, buildFuelSeries };
+export { isFuelCat, isFuelSelection, hasFuelData, calcConsumption, buildFuelSeries };

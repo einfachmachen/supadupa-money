@@ -18,7 +18,7 @@ import { INP } from "../../theme/palette.js";
 import { isoAddMonths } from "../../utils/date.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
-import { isFuelCat } from "../../utils/fuel.js";
+import { isFuelSelection } from "../../utils/fuel.js";
 
 function AddTxModal() {
   const { cats,groups,txs,setTxs,accounts,vehicles,setVehicles,
@@ -98,7 +98,8 @@ function AddTxModal() {
   const [odometer,      setOdometer]      = React.useState("");
   const [showNewVehicle,setShowNewVehicle]= React.useState(false);
   const [newVehicleName,setNewVehicleName]= React.useState("");
-  const _showFuelFields = typ==="einmalig" && csvType==="expense" && isFuelCat(selCat);
+  const _showFuelFields = typ==="einmalig" && csvType==="expense"
+    && isFuelSelection(selCat, subOpts.find(s=>s.id===subId));
   const fuelComputedTotal = (() => {
     const l = pn((fuelLiters||"").replace(",","."));
     const p = pn((fuelPricePerL||"").replace(",","."));

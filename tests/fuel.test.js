@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isFuelCat, hasFuelData, calcConsumption, buildFuelSeries } from "../src/utils/fuel.js";
+import { isFuelCat, isFuelSelection, hasFuelData, calcConsumption, buildFuelSeries } from "../src/utils/fuel.js";
 
 describe("isFuelCat", () => {
   it("erkennt 'Tanken' exakt, case-insensitive, getrimmt", () => {
@@ -13,6 +13,24 @@ describe("isFuelCat", () => {
     expect(isFuelCat(null)).toBe(false);
     expect(isFuelCat(undefined)).toBe(false);
     expect(isFuelCat({})).toBe(false);
+  });
+});
+
+// Regression: "Tanken" wird in der Praxis oft als UNTERkategorie einer
+// Hauptkategorie "Auto" angelegt (Auto/Tanken), nicht als eigene
+// Hauptkategorie. isFuelCat allein prüft nur die Hauptkategorie — damit
+// blieben die Tank-Zusatzfelder bei so einer Struktur unsichtbar.
+describe("isFuelSelection", () => {
+  it("erkennt 'Tanken' als Hauptkategorie", () => {
+    expect(isFuelSelection({name:"Tanken"}, undefined)).toBe(true);
+  });
+  it("erkennt 'Tanken' als Unterkategorie einer anderen Hauptkategorie (z.B. Auto/Tanken)", () => {
+    expect(isFuelSelection({name:"Auto"}, {name:"Tanken"})).toBe(true);
+  });
+  it("lehnt ab, wenn weder Haupt- noch Unterkategorie 'Tanken' heißt", () => {
+    expect(isFuelSelection({name:"Auto"}, {name:"Waschen & Pflege"})).toBe(false);
+    expect(isFuelSelection({name:"Auto"}, undefined)).toBe(false);
+    expect(isFuelSelection(null, null)).toBe(false);
   });
 });
 
