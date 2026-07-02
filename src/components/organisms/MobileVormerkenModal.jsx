@@ -346,7 +346,13 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
     } else if(step === 3) {
       cfg = {
         label: "Weiter → Bestätigen",
-        onConfirm: () => { if(descReady) setStep(4); },
+        onConfirm: () => {
+          if(!descReady) return;
+          // Tank-Erfassung: berechneten Betrag (Liter × €/Liter) beim Weiterschalten
+          // automatisch übernehmen — kein eigener Button dafür (siehe unten).
+          if(_showFuelFields && fuelComputedTotal!=null) setAmount(fuelComputedTotal.toFixed(2).replace(".",","));
+          setStep(4);
+        },
         onBack: () => setStep(2),
         onDismiss: onClose,
         disabled: !descReady,
@@ -365,7 +371,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
     setMasterOverride(cfg);
     return () => setMasterOverride(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, step1Ready, descReady, isTransfer, catSide, showNewAcc, saved, recurring, isFinanz]);
+  }, [step, step1Ready, descReady, isTransfer, catSide, showNewAcc, saved, recurring, isFinanz, _showFuelFields, fuelComputedTotal]);
 
   if(showNewAcc) return (
     <MobileNewAccOverlay S={S} onClose={(newId)=>{
@@ -772,19 +778,15 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
                 onChange={e=>setOdometer(e.target.value.replace(/[^0-9]/g,""))}
                 placeholder="km" style={{...recInp,marginBottom:fuelComputedTotal!=null?S.gap:0}}/>
 
-              {/* Berechneter Betrag → optional übernehmen */}
+              {/* Berechneter Betrag — wird beim Weiter-Tipp auf den Master-Button
+                  automatisch übernommen (kein eigener Button, siehe masterOverride oben) */}
               {fuelComputedTotal!=null && (
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:S.gap,
+                <div style={{display:"flex",alignItems:"center",gap:6,
                   background:"rgba(0,0,0,0.2)",borderRadius:S.radius/2,padding:"10px 14px"}}>
+                  {Li("arrow-down-circle",S.fs-10,T.blue)}
                   <span style={{color:T.txt2,fontSize:S.fs-8}}>
-                    berechnet: <b style={{color:T.txt}}>{fmt(fuelComputedTotal)}</b>
+                    berechnet: <b style={{color:T.txt}}>{fmt(fuelComputedTotal)}</b> — wird bei „Weiter" übernommen
                   </span>
-                  <button onClick={()=>setAmount(fuelComputedTotal.toFixed(2).replace(".",","))}
-                    style={{padding:"6px 12px",borderRadius:S.radius/1.6,border:"none",
-                      background:T.blue,color:"#fff",fontFamily:"inherit",fontSize:S.fs-10,
-                      fontWeight:700,cursor:"pointer"}}>
-                    Betrag übernehmen
-                  </button>
                 </div>
               )}
             </div>

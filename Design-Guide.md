@@ -484,8 +484,17 @@ drei Reiter:
 - **Erfassung**: Felder erscheinen **nur**, wenn Kategorie = „Tanken" **und**
   es sich um eine einmalige Ausgabe handelt (nicht bei Serie/Umbuchung) —
   `MobileVormerkenModal` Schritt 3 („Details") bzw. `EditPopup` direkt unter
-  dem „aus Unvorhergesehenes"-Baustein. Liter × €/Liter wird live berechnet
-  und kann per Button „Betrag übernehmen" in den Betrag (Schritt 1) sync­en.
+  dem „aus Unvorhergesehenes"-Baustein. Liter × €/Liter wird live berechnet.
+  In `MobileVormerkenModal` (steuert Weiterschalten über den Master-„+"-Knopf,
+  **kein** eigener „Weiter"-Button auf dem Screen) wird der berechnete Betrag
+  beim Tipp auf „Weiter → Bestätigen" **automatisch** in den Betrag
+  übernommen — bewusst **kein zweiter, eigenständiger** „Betrag
+  übernehmen"-Button neben dem Master-Knopf (führte zu Verwirrung:
+  „doppelter Button"). `VormerkungHub`/`AddTxModal` haben dagegen einen
+  normalen sichtbaren „Speichern"-Button statt Master-Knopf-Navigation —
+  dort bleibt ein expliziter „Betrag übernehmen"-Button passend, da kein
+  Master-Knopf-Konflikt besteht. `EditPopup` bearbeitet einen bereits
+  existierenden Betrag direkt (kein Sync-Button nötig).
 - **Vier separate Erfassungs-/Bearbeiten-Formulare, EINE Regel**: Es gibt
   keinen einzigen zentralen Vormerkung-Dialog — `MobileVormerkenModal` (Mobile,
   Neu-Anlegen), `VormerkungHub` (Mobile, Bearbeiten bestehender Vormerkungen
