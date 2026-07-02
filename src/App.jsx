@@ -2697,7 +2697,10 @@ Abbrechen = ${remoteName}-Stand laden`
           setShowMobileVormerken(false); setShowMobileKategorien(false);
           setShowMobileBudget(false); setShowMobileWiederkehrend(false);
           setShowDataMgr(false); setShowCsv(false); setShowVormHub(false);
-          setPlusArretiert(false);
+          // WICHTIG: plusArretiert hier NICHT zurücksetzen — der vergrößerte
+          // + Button soll ausschließlich per Doppel-Tap (auf den Knopf selbst)
+          // verkleinert werden, nicht schon durch einen einfachen Tab-Wechsel
+          // in der unteren Navigation.
           if(t.id==="home")      { setMainTab("erfassen"); setSubTab("dashboard"); }
           else if(t.id==="monat")     { setMainTab("erfassen"); setSubTab("monat"); }
           else if(t.id==="daten")     { setMainTab("struktur"); setActiveStructurTab("daten"); }
