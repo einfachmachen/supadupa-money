@@ -30,7 +30,7 @@ import {
   loadEbDiag,
   clearEbDiag,
 } from "../../utils/enableBankingStore.js";
-import { friendlyBankError } from "../../utils/enableBankingFetch.js";
+import { friendlyBankError, fetchAllTransactions } from "../../utils/enableBankingFetch.js";
 
 // Vom Betreiber bereitgestellter Standard-Relay (datenlos, geteilt).
 const DEFAULT_RELAY = "https://enable-banking-proxy.relay-url-supadupa-money.workers.dev";
@@ -380,8 +380,8 @@ function EnableBankingWizard({ onClose }) {
       const items = [];
       for (const a of sessionAccounts) {
         const appAccId = accMap[a.uid] || accounts[0]?.id || "acc-giro";
-        const r = await cl.getTransactions(a.uid, { dateFrom });
-        const rows = mapEnableBankingTransactions(r?.transactions || [], appAccId);
+        const rawTx = await fetchAllTransactions(cl, a.uid, dateFrom);
+        const rows = mapEnableBankingTransactions(rawTx, appAccId);
         rows.forEach((row) => {
           const fpNorm = txFingerprintNorm(row.isoDate, row.amount, row.desc, appAccId);
           const amtKey = `${appAccId}|${row.isoDate}|${Math.round(Math.abs(row.amount) * 100)}`;
