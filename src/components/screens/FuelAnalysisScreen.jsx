@@ -2,7 +2,7 @@
 // Fahrzeug, berechnet aus den Tankbuchungen (_fuelVehicleId/_fuelLiters/
 // _fuelPricePerL/_odometer, siehe utils/fuel.js und TODO.md).
 
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
@@ -11,9 +11,23 @@ import { Li } from "../../utils/icons.jsx";
 import { buildFuelSeries } from "../../utils/fuel.js";
 
 function FuelAnalysisScreen({onClose, onBack, mobileMode=false}) {
-  const { txs, vehicles } = useContext(AppCtx);
+  const { txs, vehicles, setMasterOverride } = useContext(AppCtx);
   const [vehicleId, setVehicleId] = useState((vehicles||[])[0]?.id || "");
   const [hoverIdx, setHoverIdx] = useState(null);
+
+  // "+"-Button übernehmen — sonst kann er in seinem zuletzt genutzten,
+  // ggf. vergrößerten Zustand hängen bleiben und unteren Inhalt überlappen
+  // (wie bei den anderen Daten-Tab-Dialogen, s. DataManagerDialog).
+  useEffect(() => {
+    if(!setMasterOverride) return;
+    setMasterOverride({
+      label: "Schließen",
+      onConfirm: () => (onBack||onClose)?.(),
+      onBack: null,
+      onDismiss: () => onClose?.(),
+    });
+    return () => setMasterOverride(null);
+  }, [onBack, onClose]);
 
   const series = buildFuelSeries(txs, vehicleId);
   const withConsumption = series.filter(t=>t._consumption!=null);

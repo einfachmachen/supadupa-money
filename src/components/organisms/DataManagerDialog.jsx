@@ -19,7 +19,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
     yearData, setYearData, col3Name, setCol3Name,
     quickBtns, setQuickBtns, quickColors, setQuickColors,
     budgets, setBudgets, customIcons, setCustomIcons,
-    setMainTab, setActiveStructurTab, setShowBankWizard } = useContext(AppCtx);
+    setMainTab, setActiveStructurTab, setShowBankWizard, setMasterOverride } = useContext(AppCtx);
 
   // Navigation zu den jeweils zuständigen Stellen (statt direkt hier zu löschen).
   const openKonten = () => { onClose?.(); setMainTab?.("struktur"); setActiveStructurTab?.("konten"); };
@@ -28,6 +28,21 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   const MONTHS_G=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
   const today = new Date();
   const [tab, setTab] = useState("export"); // export | import | delete
+
+  // "+"-Button übernehmen (wie bei den anderen Daten-Tab-Dialogen) — sonst
+  // bleibt er in seinem zuletzt genutzten Standard-Zustand (kann vergrößert/
+  // "arretiert" sein) und überlappt mit dem eigenen Reserve-Abstand am
+  // unteren Bildschirmrand die Aktions-Buttons (Kopieren/Als JSON speichern).
+  useEffect(() => {
+    if(!setMasterOverride) return;
+    setMasterOverride({
+      label: "Schließen",
+      onConfirm: () => (onBack||onClose)?.(),
+      onBack: null,
+      onDismiss: () => onClose?.(),
+    });
+    return () => setMasterOverride(null);
+  }, [onBack, onClose]);
 
   // Voller Zeitraum als Standard: vom frühesten bis zum spätesten Buchungsdatum.
   // So enthält ein Export mit allen Haken wirklich ALLE Buchungen (inkl. alter
