@@ -19,6 +19,15 @@
 //                zusätzlicher expliziter Schließen-Button bei Assistenten mit
 //                Zurück UND Schließen gleichzeitig — s. EnableBankingWizard/
 //                CloudSetupWizard)
+//   safeAreaTop – Default true, reserviert env(safe-area-inset-top) im eigenen
+//                Padding. NUR auf false setzen, wenn der Screen NICHT
+//                position:fixed/Vollbild ist, sondern inline innerhalb der
+//                App-Content-Fläche rendert — die hat bereits ihr eigenes
+//                paddingTop:env(safe-area-inset-top) (App.jsx-Wurzel-Div).
+//                Sonst wird die Notch-Aussparung doppelt gerechnet und der
+//                Header rutscht mit unnötig großem Abstand nach unten (z.B.
+//                „Konten"/„Einstellungen" in ManagementScreen, die inline im
+//                struktur-Tab sitzen statt als eigener Vollbild-Screen).
 
 import React from "react";
 import { theme as T } from "../../theme/activeTheme.js";
@@ -33,13 +42,13 @@ const ICON_SZ = 40;   // Icon-Kachel-Kantenlänge
 const FS_TITLE = 26;  // Titel-Schriftgröße
 const FS_SUB   = 13;  // Unterzeilen-Schriftgröße
 
-function MobileHeader({ title, subtitle, icon, iconColor, onBack, onClose, titleColor, right }) {
+function MobileHeader({ title, subtitle, icon, iconColor, onBack, onClose, titleColor, right, safeAreaTop=true }) {
   const isBack = typeof onBack === "function";
   const handler = isBack ? onBack : onClose;
   const iCol = iconColor || T.blue;
   return (
     <div style={{background:T.surf, borderBottom:`1px solid ${T.bd}`,
-      padding:`calc(${H_PAD_V}px + env(safe-area-inset-top, 0px)) ${H_PAD_H}px ${H_PAD_V}px`,
+      padding:`calc(${H_PAD_V}px + ${safeAreaTop ? "env(safe-area-inset-top, 0px)" : "0px"}) ${H_PAD_H}px ${H_PAD_V}px`,
       display:"flex", alignItems:"center", gap:12, flexShrink:0}}>
       <button onClick={handler} aria-label={isBack ? "Zurück" : "Schließen"}
         style={{background:"rgba(255,255,255,0.08)", border:"none", color:T.txt2,

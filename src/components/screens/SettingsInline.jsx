@@ -4,6 +4,7 @@ import React, { useContext, useState } from "react";
 import { Lbl } from "../atoms/Lbl.jsx";
 import { SupaField } from "../atoms/SupaField.jsx";
 import { CustomThemeEditor } from "./CustomThemeEditor.jsx";
+import { IconSwipePicker } from "../organisms/IconSwipePicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
@@ -42,10 +43,12 @@ function SettingsInline() {
     confirmReset, setConfirmReset,
     cats, setCats, groups, setGroups, txs, setTxs, yearData, setYearData,
     noBorders, setNoBorders,
+    favIcons,
   } = useContext(AppCtx);
 
   const [showDebugExpand, setShowDebugExpand] = useState(false);
   const [workerCodeCopied, setWorkerCodeCopied] = useState(false);
+  const [showIconSwipe, setShowIconSwipe] = useState(false);
 
   return (
     <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 14px 24px"}}>
@@ -74,8 +77,26 @@ function SettingsInline() {
 
         <Lbl>Eigene Bezeichnung der 3. Spalte (aktueller Ist-Stand)</Lbl>
         <input value={col3Name} onChange={e=>setCol3Name(e.target.value)} placeholder="z.B. aktuell, DKB, ING…" style={{...INP,marginBottom:8}}/>
-        <div style={{color:T.txt2,fontSize:11}}>Erscheint als dritte Spaltenüberschrift (gold) im Jahres- und Monatsplan.</div>
+        <div style={{color:T.txt2,fontSize:11,marginBottom:14}}>Erscheint als dritte Spaltenüberschrift (gold) im Jahres- und Monatsplan.</div>
+
+        <button onClick={()=>setShowIconSwipe(true)}
+          style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"10px 12px",
+            borderRadius:10,cursor:"pointer",background:"rgba(255,255,255,0.04)",
+            border:`1px solid ${T.bd}`,color:T.txt,fontFamily:"inherit",textAlign:"left"}}>
+          <div style={{width:32,height:32,borderRadius:9,background:`${T.gold}22`,flexShrink:0,
+            display:"flex",alignItems:"center",justifyContent:"center"}}>
+            {Li("star",16,T.gold)}
+          </div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:12,fontWeight:600}}>Icon-Favoriten pflegen</div>
+            <div style={{color:T.txt2,fontSize:10,marginTop:1}}>
+              {favIcons.length>0 ? `${favIcons.length} Favoriten · per Wisch durchgehen` : "Icons per Wisch durchgehen & favorisieren"}
+            </div>
+          </div>
+          {Li("chevron-right",15,T.txt2)}
+        </button>
       </div>
+      {showIconSwipe && <IconSwipePicker onClose={()=>setShowIconSwipe(false)}/>}
 
       {/* ── Cloudflare Workers Sync ── */}
       <div style={SECTION}>

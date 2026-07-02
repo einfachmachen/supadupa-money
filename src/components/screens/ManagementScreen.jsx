@@ -208,7 +208,7 @@ function ManagementScreen({activeTab="kategorien"}) {
         {mgrTab==="einstellungen"&&(
           <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
             <MobileHeader title="Einstellungen" subtitle="Theme, Beträge, Sicherheit …"
-              icon="settings" iconColor={T.txt2}
+              icon="settings" iconColor={T.txt2} safeAreaTop={false}
               onBack={()=>setMgrTab("daten")}/>
             <SettingsInline/>
           </div>
@@ -248,7 +248,7 @@ function ManagementScreen({activeTab="kategorien"}) {
         {mgrTab==="konten"&&(
           <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
             <MobileHeader title="Konten" subtitle="Verwalten, Reihenfolge, Puffer"
-              icon="credit-card" iconColor={T.blue}
+              icon="credit-card" iconColor={T.blue} safeAreaTop={false}
               onBack={()=>setMgrTab("daten")}/>
             <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 14px 24px"}}>
             {_accounts.map((acc,ai)=>(
