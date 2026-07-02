@@ -137,32 +137,6 @@ export default function SupaDupaMoney() {
   // Plus-Button: arretiert (höhere Position + 1,5× Größe) ja/nein
   // NICHT persistiert — beim App-Start immer false (Bottom-Bar-Position)
   const [plusArretiert, setPlusArretiert] = useState(false);
-  // „Monde": 4 runde Buttons rund um den vergrößerten + (ersetzt den Mehr-Screen).
-  // activeMoon = der per ←/→ ausgewählte Mond; Ref für Gesten-Closures (Timer).
-  const [activeMoon, setActiveMoon] = useState(0);
-  const activeMoonRef = useRef(0);
-  const setMoon = (u) => setActiveMoon(p => { const n = typeof u==="function" ? u(p) : u; activeMoonRef.current = n; return n; });
-  // Monde erscheinen NICHT schon beim Vergrößern (Doppeltipp), sondern erst beim
-  // 1. Tipp auf den bereits vergrößerten +. moonsShownRef für die Tap-Timer-Closure.
-  const [moonsShown, setMoonsShown] = useState(false);
-  const moonsShownRef = useRef(false);
-  const showMoons = (v) => { moonsShownRef.current = v; setMoonsShown(v); };
-  // Die 4 Monde des vergrößerten +-Buttons (ersetzen den „Was möchtest du tun?"-Screen).
-  const MOONS = [
-    {id:"vormerken",    label:"vormerken",   icon:"calendar", color:T.gold},
-    {id:"kategorien",   label:"Budget",      icon:"tag",      color:T.blue},
-    {id:"einstellungen",label:"Einstellungen",icon:"settings",color:T.txt2},
-  ];
-  const openMoon = (id) => {
-    // Der + bleibt in ALLEN Mond-Funktionen VERGRÖSSERT (plusArretiert true).
-    // Das Mond-Overlay wird ausgeblendet, sobald eine Funktion offen ist
-    // (Modal-Flags bzw. nicht-erfassen-Tab — siehe Overlay-Bedingung).
-    // "Daten" hat inzwischen einen eigenen Bottom-Tab (§5 Design-Guide) — der
-    // dritte Mond führt stattdessen zu Einstellungen, die dadurch ihren Tab verloren haben.
-    if(id==="vormerken")          setShowMobileVormerken(true);
-    else if(id==="kategorien")    setShowMobileKategorien(true);
-    else if(id==="einstellungen"){ setMainTab("struktur"); setActiveStructurTab("einstellungen"); }
-  };
   // True, solange der Money-Mood/Trend-Drilldown offen ist. Dort wird der + Button
   // vergrößert angezeigt und ist frei vertikal verschiebbar (drillBtnY); Links/
   // Rechts-Wisch schaltet weiter das Jahr. Standard-Y bei jedem Öffnen.
@@ -2583,6 +2557,7 @@ Abbrechen = ${remoteName}-Stand laden`
     syncPass, setSyncPass, syncEncActive,
     showCloudSetup, setShowCloudSetup,
     showFuelAnalysis, setShowFuelAnalysis,
+    setShowMobileKategorien,
     setActiveStructurTab, setShowBankWizard,
     setShowCsv, setShowDataMgr,
     syncStatus, setSyncStatus, syncError, isDirty,
@@ -2702,16 +2677,6 @@ Abbrechen = ${remoteName}-Stand laden`
 
       {/* ── BOTTOM NAV BAR — 5 Tabs + + Button ── */}
       {(()=>{
-        const doPlus = () => {
-          setNewTx({
-            date: new Date().toISOString().split("T")[0],
-            totalAmount:"", desc:"", note:"",
-            _csvType:"expense",
-            pending: false, repeatMonths: 1, accountId: "acc-giro",
-            splits:[{id:uid(),catId:"",subId:"",amount:""}],
-          });
-          setShowMobilePicker(true);
-        };
         const onTap = (t) => {
           // Offene Mobile-Overlays/Picker beim Tab-Wechsel schließen — sonst läge
           // der Picker über der neuen Ansicht und es "passiert nichts".
@@ -2921,11 +2886,10 @@ Abbrechen = ${remoteName}-Stand laden`
               }
               return;
             }
-            // ── START-ZUSTAND (klein): NUR der Doppel-Tap wirkt. Er geht eine
-            //    Ebene ZURÜCK (Mehr/Monatsauswahl schließen, Unteransicht →
-            //    Dashboard). Ist man bereits auf dem Dashboard (Startpunkt),
-            //    vergrößert der Doppel-Tap den Button (Zugang zu Mehr). Einfacher
-            //    Tap und Wische bewirken nichts (hält den Doppel-Tap zuverlässig). ──
+            // ── START-ZUSTAND (klein): Einzel-Tap öffnet — nach kurzer Verzögerung,
+            //    damit ein Doppel-Tap ihn noch abfangen kann — DIREKT den
+            //    Vormerken-Dialog (ersetzt die frühere Monde-Auswahl). Doppel-Tap
+            //    vergrößert weiterhin für die Datums-/Monatsnavigation (Wisch). ──
             if(!plusArretiert) {
               if(e.currentTarget) {
                 e.currentTarget.style.transition = "transform 0.2s cubic-bezier(.34,1.4,.64,1)";
@@ -2937,23 +2901,29 @@ Abbrechen = ${remoteName}-Stand laden`
                 const now = Date.now();
                 const lt = masterLastTapRef.current;
                 if(lt.t && (now - lt.t) < DOUBLE_TAP_MS) {
+                  if(lt.timer) clearTimeout(lt.timer);   // wartenden Einzel-Tap verwerfen
                   masterLastTapRef.current = {zone:null, t:0, timer:null};
                   try { if(navigator.vibrate) navigator.vibrate(15); } catch(_) {}
                   if(showMobilePicker)          setShowMobilePicker(false);       // Mehr offen → schließen
                   else if(showMonthPickerModal) setShowMonthPickerModal(false);   // Monatsauswahl → schließen
                   else if(showCloudSave)        setShowCloudSave(false);          // Cloud-Modal → schließen
                   else {
-                    // klein → vergrößern (Zugang zu Mehr); KEIN Tab-Wechsel
+                    // klein → vergrößern (Datums-/Monatsnavigation); KEIN Tab-Wechsel
                     if(e.currentTarget) {
                       e.currentTarget.style.transition = "transform 0.42s cubic-bezier(0.34, 1.45, 0.5, 1)";
                       e.currentTarget.style.transform = "translate(0px, -94px) scale(1.5)";
                     }
-                    setMoon(0);
-                    showMoons(false);   // Monde erst beim nächsten Tipp zeigen
                     setPlusArretiert(true);
                   }
                 } else {
-                  masterLastTapRef.current = {zone:"center", t:now, timer:null};
+                  // Einzel-Tap: nach kurzer Verzögerung (Doppel-Tap-Fenster) direkt
+                  // den Vormerken-Dialog öffnen.
+                  const timer = setTimeout(()=>{
+                    masterLastTapRef.current = {zone:null, t:0, timer:null};
+                    try { if(navigator.vibrate) navigator.vibrate(10); } catch(_) {}
+                    setShowMobileVormerken(true);
+                  }, DOUBLE_TAP_MS);
+                  masterLastTapRef.current = {zone:"center", t:now, timer};
                 }
               }
               return;
@@ -2992,26 +2962,20 @@ Abbrechen = ${remoteName}-Stand laden`
             }
             if(axis === "x" && Math.abs(dx) > DRAG_THRESHOLD) {
               ref.consumed = true;
-              if(moonsShownRef.current) {
-                // Monde sichtbar: ←/→ schaltet zwischen den Monden um.
-                setMoon(m => (m + (dx < 0 ? -1 : 1) + MOONS.length) % MOONS.length);
-                try { if(navigator.vibrate) navigator.vibrate(8); } catch(_) {}
-              } else {
-                // Nur vergrößert (Datumsanzeige): ←/→ wechselt den Monat (wie früher).
-                if(dx < 0) stepPeriod(-1); else stepPeriod(1);
-              }
+              // Vergrößert (Datumsanzeige): ←/→ wechselt den Monat.
+              if(dx < 0) stepPeriod(-1); else stepPeriod(1);
               return;
             }
             // Tap (ohne nennenswerte Bewegung) im GROSSEN Zustand:
-            //   Einzel-Tap  → Mehr-Ansicht (läuft über einen kurzen Timer, damit
-            //                 ein Doppel-Tap ihn noch abfangen kann)
+            //   Einzel-Tap  → öffnet nach kurzer Verzögerung direkt den
+            //                 Vormerken-Dialog (ersetzt die frühere Monde-Auswahl)
             //   Doppel-Tap  → zurück zum Dashboard, Button wird wieder klein und
             //                 zeigt das aktuelle Datum.
             if(!ref.moved && dt < 700) {
               const now = Date.now();
               const lt = masterLastTapRef.current;
               if(lt.t && (now - lt.t) < DOUBLE_TAP_MS) {
-                if(lt.timer) clearTimeout(lt.timer);   // wartenden Mehr-Tap verwerfen
+                if(lt.timer) clearTimeout(lt.timer);   // wartenden Einzel-Tap verwerfen
                 masterLastTapRef.current = {zone:null, t:0, timer:null};
                 try { if(navigator.vibrate) navigator.vibrate(15); } catch(_) {}
                 // Doppel-Tap = eine Ebene zurück: offene Overlays schließen, sonst
@@ -3027,20 +2991,18 @@ Abbrechen = ${remoteName}-Stand laden`
                   e.currentTarget.style.transform = "translate(0px, -14px) scale(1)";
                 }
                 setPlusArretiert(false);
-                showMoons(false);
               } else if(showMobilePicker) {
                 // Picker („Was möchtest du tun?") offen: Einzel-Tap auf den + =
                 // zurück (Picker schließen, Knopf wieder klein).
                 setShowMobilePicker(false); setPlusArretiert(false);
                 masterLastTapRef.current = {zone:null, t:0, timer:null};
               } else {
-                // Erster Tap auf den vergrößerten +: zeigt zuerst die Monde;
-                // ein weiterer Tap öffnet dann den aktiven Mond.
+                // Einzel-Tap im vergrößerten Zustand: nach kurzer Verzögerung
+                // direkt den Vormerken-Dialog öffnen.
                 const timer = setTimeout(()=>{
                   masterLastTapRef.current = {zone:null, t:0, timer:null};
                   try { if(navigator.vibrate) navigator.vibrate(10); } catch(_) {}
-                  if(!moonsShownRef.current) showMoons(true);
-                  else openMoon(MOONS[activeMoonRef.current].id);
+                  setShowMobileVormerken(true);
                 }, DOUBLE_TAP_MS);
                 masterLastTapRef.current = {zone:"center", t:now, timer};
               }
@@ -3102,15 +3064,6 @@ Abbrechen = ${remoteName}-Stand laden`
                       <span style={{fontSize:14,fontWeight:800,color:fg,lineHeight:1}}>zurück</span>
                     </div>
                     <div style={{fontSize:8,fontWeight:700,color:fg,opacity:0.8,letterSpacing:0.3,marginTop:4,whiteSpace:"nowrap"}}>tippen</div>
-                  </div>
-                ) : plusArretiert && !moodDrillOpen && moonsShown ? (
-                  <div style={{pointerEvents:"none",textAlign:"center",width:"86%"}}>
-                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                      <span style={{fontSize:19,fontWeight:800,color:fg,lineHeight:1}}>‹</span>
-                      <span style={{fontSize:13,fontWeight:800,color:fg,lineHeight:1}}>Öffnen</span>
-                      <span style={{fontSize:19,fontWeight:800,color:fg,lineHeight:1}}>›</span>
-                    </div>
-                    <div style={{fontSize:8,fontWeight:700,color:fg,opacity:0.8,letterSpacing:0.3,marginTop:4,whiteSpace:"nowrap"}}>2× schließen</div>
                   </div>
                 ) : (<>
                   {_dayStr && !onMoodScreen && (
@@ -3249,52 +3202,6 @@ Abbrechen = ${remoteName}-Stand laden`
         );
       })()}
 
-      {/* ── Monde: 4 runde Buttons rund um den vergrößerten + (ersetzt den Mehr-Screen).
-            Doppeltipp auf den kleinen + blendet sie ein; ←/→ schaltet durch,
-            Tipp auf einen Mond ODER Tipp auf den + (aktiver Mond) öffnet die Funktion. ── */}
-      {plusArretiert && moonsShown && !masterOverride && !moodDrillOpen && !showMobilePicker && !showMonthPickerModal && !showCloudSave && !showMobileVormerken && !showMobileKategorien && mainTab!=="struktur" && (
-        <div style={{position:"fixed",left:0,right:0,bottom:0,height:0,zIndex:600,pointerEvents:"none"}}>
-          {(()=>{ const {bg,fg,isFlat}=plusBtnColors(T); return MOONS.map((mn,i)=>{
-            // Größerer Radius + höhere Basis → Monde klar abgesetzt vom + (kein Überlappen).
-            // Hintergrund = identisch zum +-Button (bg). Aktiver Mond: dicker weißer Rand.
-            const R=98, CY=126, SIZE=58;
-            // Monde gleichmäßig über den oberen Bogen verteilen (links→rechts),
-            // unabhängig von ihrer Anzahl.
-            const _n=MOONS.length, _a0=150, _a1=30;
-            const ang=(_n<=1 ? 90 : _a0 + (_a1-_a0)*(i/(_n-1)))*Math.PI/180;
-            const dx=Math.cos(ang)*R, dy=Math.sin(ang)*R;
-            const active=i===activeMoon;
-            return (
-              <button key={mn.id} onClick={()=>openMoon(mn.id)}
-                style={{position:"absolute",left:"50%",
-                  // Positionierung über margin/bottom statt transform → transform bleibt
-                  // frei für die Aufpopp-Animation (moonIn).
-                  marginLeft:(dx - SIZE/2)+"px",
-                  bottom:(CY + dy - SIZE/2)+"px",
-                  width:SIZE,height:SIZE,borderRadius:"50%",boxSizing:"border-box",
-                  border:isFlat?`2px solid ${fg}`:`3px solid ${T.surf}`,
-                  background:bg,
-                  // Aktiver Mond: dicker weißer Ring per box-shadow — überlebt den
-                  // Randlos-Modus (.no-borders entfernt border/outline global, box-shadow
-                  // auf Buttons bleibt). Plus normaler Tiefen-Schatten.
-                  boxShadow:active
-                    ? "0 0 0 4px #fff, 0 6px 16px rgba(0,0,0,0.55)"
-                    : "0 6px 16px rgba(0,0,0,0.55)",
-                  cursor:"pointer",pointerEvents:"auto",fontFamily:"inherit",
-                  display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:3,
-                  // Gestaffeltes Erscheinen vom + her (von unten/klein/transparent).
-                  animation:"moonIn 0.30s cubic-bezier(.34,1.45,.6,1) both",
-                  animationDelay:(i*0.045)+"s",
-                  transition:"box-shadow 0.18s",padding:0}}>
-                {Li(mn.icon,21,fg)}
-                <span style={{fontSize:9,fontWeight:700,lineHeight:1,color:fg,
-                  whiteSpace:"nowrap"}}>{mn.label}</span>
-              </button>
-            );
-          }); })()}
-        </div>
-      )}
-
       {/* ── MOBILE UI TEST ── */}
       {showMobileVormerken&&<MobileVormerkenModal onClose={()=>{setShowMobileVormerken(false);setPlusArretiert(false);}}
         onBack={()=>{setShowMobileVormerken(false);setPlusArretiert(true);}}/>}
@@ -3305,7 +3212,7 @@ Abbrechen = ${remoteName}-Stand laden`
       {showMobileBudget&&<MobileBudgetModal onClose={()=>{setShowMobileBudget(false);setPlusArretiert(false);}}/>}
       {showMobileKategorien&&<MobileKategorienModal
         onClose={()=>{setShowMobileKategorien(false);setPlusArretiert(false);}}
-        onBack={()=>{setShowMobileKategorien(false);setPlusArretiert(true);}}
+        onBack={()=>{setShowMobileKategorien(false);setPlusArretiert(false);}}
         onKonten={()=>{setShowMobileKategorien(false);setMainTab("struktur");setActiveStructurTab("konten");}}
         onKategorienErweitert={()=>{setShowMobileKategorien(false);setMainTab("struktur");setActiveStructurTab("kategorien");}}/>}
       {showMobilePicker&&<MobileActionPicker

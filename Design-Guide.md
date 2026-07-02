@@ -240,24 +240,32 @@ reservierten Prognosewert.
   `JahrScreen`/`MoneyMoodScreen`-Land (`subTab==="mood"`), „Monat" ist die
   vereinte Monats-/Buchungsansicht (§6). „Daten" (vormals „Optionen") führt in
   `ManagementScreen` mit `activeStructurTab==="daten"` — eine Übersicht mit
-  Zeilen zu CSV-Import, Bank verbinden, Daten-Manager, Cloud-Sync sowie einem
-  Link zu „Konten" und einem Zahnrad oben rechts zu „Einstellungen"
-  (`SettingsInline`). Der Bottom-Tab ist der direkteste, immer sichtbare Weg zu
-  diesen Werkzeugen — bewusst wichtiger eingestuft als „Einstellungen", das
-  seltener gebraucht wird und stattdessen über den dritten Mond bzw. das
-  Zahnrad erreichbar ist (§10).
-- **Zentraler Master-Button** (runder „+"/Monats-Knopf) — Kleinzustand: **nur
-  Doppel-Tipp wirkt** (vergrößert ihn; Einzel-Tipp und Wisch tun im Kleinzustand
-  bewusst nichts, damit der Doppel-Tipp zuverlässig erkannt wird). Vergrößerter
-  Zustand: **Tipp** zeigt erst die **3 Monde** (`vormerken`/gold, `kategorien`
-  „Budget"/blau, `einstellungen`/grau — **nicht mehr `daten`**, das hat jetzt
-  einen eigenen Bottom-Tab, s. o.), ein **weiterer Tipp** öffnet die gerade
-  aktive Mond-Funktion (oder direkt einen Mond antippen); **Wisch ←/→** blättert
-  zwischen den Monden, **Doppel-Tipp** geht eine Ebene zurück/verkleinert wieder.
+  Zeilen zu CSV-Import, Bank verbinden, Daten-Manager, Cloud-Sync, Tankverbrauch,
+  Konten, **Budget** und **Einstellungen** (letztere beiden vormals über die
+  „Monde" erreichbar, s. u. — jetzt gleichwertige Zeilen; „Einstellungen" hat
+  wie „Konten" einen eigenen Zurück-Pfeil zu „Daten"). Der Bottom-Tab ist der
+  direkteste, immer sichtbare Weg zu diesen Werkzeugen.
+- **Zentraler Master-Button** (runder „+"/Monats-Knopf) — **Einzel-Tipp öffnet
+  direkt die Vormerken-Erfassung** (`MobileVormerkenModal`), sowohl im
+  Kleinzustand (Ruheposition in der Bottom-Bar) als auch im vergrößerten
+  Zustand — jeweils nach einer kurzen Verzögerung (`DOUBLE_TAP_MS` = 350 ms),
+  damit ein Doppel-Tipp den Einzel-Tipp noch abfangen kann (`clearTimeout` auf
+  den wartenden Timer). **Doppel-Tipp** vergrößert den Button (Kleinzustand)
+  bzw. verkleinert ihn wieder und springt aufs aktuelle Datum (vergrößerter
+  Zustand) — für die **Datums-/Monatsnavigation**: **Wisch ←/→** wechselt im
+  vergrößerten Zustand den Monat, **Wisch ↑/↓** öffnet Monatsauswahl bzw.
+  Cloud-Speichern-Modal. **(Historie: früher zeigte der erste Tipp im
+  vergrößerten Zustand „3 Monde" — `vormerken`/gold, `kategorien` „Budget"/blau,
+  `einstellungen`/grau — zur Auswahl; ein Nutzer-Sohn fand das „zu verspielt".
+  Entfernt, weil Budget/Einstellungen jetzt eigene Zeilen im Daten-Tab haben und
+  Vormerken die mit Abstand häufigste Aktion ist — kein Zwischenschritt mehr
+  nötig. Der `moonIn`-Keyframe in `theme/css/themes.css` blieb bewusst
+  erhalten, falls ein ähnlicher „aufpoppender Kreis"-Effekt später für einen
+  Tutorial-/Onboarding-Modus wiederverwendet wird.)**
   **Wichtige Invariante:** JEDER Vollbild-Flow, der über den + geöffnet wird,
   **muss** beim Schließen (`onClose`, nicht `onBack`) `setPlusArretiert(false)`
-  setzen — sonst bleibt der Button in der vergrößerten Mond-Bereitschaft hängen
-  und der nächste Tipp wirkt scheinbar nicht (Symptom: „ich muss ständig
+  setzen — sonst bleibt der Button im vergrößerten Zustand hängen und der
+  nächste Tipp wirkt scheinbar nicht (Symptom: „ich muss ständig
   doppeltippen"). Genau das war einmal kaputt (`MobileActionPicker`s `onClose`
   setzte fälschlich `true` statt `false`, plus mehrere fehlende Resets bei
   `CsvImportScreen`/`EnableBankingWizard`/`CloudSetupWizard`/`MatchingScreen`/
@@ -270,12 +278,15 @@ reservierten Prognosewert.
   - **Wisch ←** = `onBack` (Hinweis: **‹** am linken Rand),
   - **Wisch ↓** = `onDismiss` (Hinweis: **⌄** am unteren Rand).
   Der Effekt darf **nur an Bool-Readiness** hängen (nicht an Rohtexten), sonst Tipp-Lag.
-  Die 3 Monde werden **unterdrückt, solange `masterOverride` aktiv ist**
-  (Render-Bedingung verlangt `!masterOverride`) — sie würden sonst Inhalte
-  des Wizards verdecken. Vollbild-Wizards, die den Override nutzen, brauchen
-  entsprechend **viel Scroll-Reserve unten** (`calc(190px + safe-area-inset-bottom)`
-  in `CloudSetupWizard`/`EnableBankingWizard`), weil der übernommene Knopf im
+  Vollbild-Wizards, die den Override nutzen, brauchen entsprechend **viel
+  Scroll-Reserve unten** (`calc(190px + safe-area-inset-bottom)` in
+  `CloudSetupWizard`/`EnableBankingWizard`), weil der übernommene Knopf im
   Override-Zustand auf 1,5× skaliert und weit nach oben transformiert wird.
+- **`MobileActionPicker`** („Mehr"-Menü, `showMobilePicker`) ist kein primärer
+  „+"-Einstiegspunkt mehr — nur noch `onBack`-Ziel für Wiederkehrend/Zuordnen/
+  Struktur-Screens (`reopenMobilePicker()`). Listet noch „Vormerkung",
+  „zuordnen", „Kategorien & Budgets", „Desktop-Modal" (bewusst unverändert
+  gelassen, außerhalb des Moon-Umbaus).
 - **Drilldown-Muster**: state-basiertes Vollbild-Overlay, **immer Zurück-Pfeil links
   und X rechts**, Safe-Area-Header (`MobileHeader`), Suchfeld oben. Kein URL-Routing.
 - **Vollbild-Screens** reservieren unten Platz für die fixe Nav-Bar:
@@ -393,6 +404,17 @@ entfernt). Der Hero ist `organisms/SaldoHeroV2`.
   verbinden" statt zweier getrennter Einträge „Anleitung"/„Bank-Konto
   verbinden"; `App.jsx` hält nur noch `showBankWizard` statt zweier
   Einzel-States.
+- **Die „3 Monde"** (`MOONS`-Array, `activeMoon`/`moonsShown`-States, `openMoon()`):
+  komplett entfernt (§5). Auslöser: ein Nutzer-Sohn fand die aufpoppenden
+  Kreis-Buttons „zu verspielt". Einzel-Tipp auf den „+" öffnet jetzt **direkt**
+  die Vormerken-Erfassung — die zwei verbliebenen Mond-Ziele „Budget"
+  (`kategorien`) und „Einstellungen" sind als gleichwertige Zeilen in den
+  Daten-Tab gewandert (`ManagementScreen.jsx`, `mgrTab==="daten"`). Der dabei
+  ebenfalls entfernte, nie aufgerufene `doPlus()`-Handler (toter Code aus einer
+  früheren Bottom-Tab-„+"-Variante) ging mit weg. Der `moonIn`-CSS-Keyframe
+  (`theme/css/themes.css`) blieb — als möglicher Baustein für einen künftigen
+  Tutorial-/Onboarding-Modus (Idee aus derselben Konversation, noch nicht
+  umgesetzt).
 
 ---
 

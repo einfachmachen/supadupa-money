@@ -33,6 +33,7 @@ function ManagementScreen({activeTab="kategorien"}) {
     budgets={}, setBudgets,
     onTS,onTE, globalDrag,
     setShowCsv, setShowBankWizard, setShowDataMgr, setShowCloudSetup, setShowFuelAnalysis,
+    setShowMobileKategorien,
   } = useContext(AppCtx);
   const [mergeTarget, setMergeTarget] = useState(null);
   const [showNewGroup, setShowNewGroup] = useState(false);
@@ -203,18 +204,25 @@ function ManagementScreen({activeTab="kategorien"}) {
     return (
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
         {/* Tab-Navigation jetzt in Bottom-Bar — keine interne Tab-Bar nötig */}
-        {mgrTab==="einstellungen"&&<SettingsInline/>}
+        {mgrTab==="einstellungen"&&(
+          <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,padding:"12px 14px 0"}}>
+              <button onClick={()=>setMgrTab("daten")} title="Zurück zu Daten"
+                style={{background:"rgba(255,255,255,0.05)",border:`1px solid ${T.bd}`,borderRadius:8,
+                  width:26,height:26,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
+                {Li("arrow-left",14,T.txt2)}
+              </button>
+              <div style={{flex:1,color:T.lbl||T.txt2,fontSize:11,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
+                {Li("settings",13,T.blue)} Einstellungen
+              </div>
+            </div>
+            <SettingsInline/>
+          </div>
+        )}
         {mgrTab==="daten"&&(
           <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 14px 24px"}}>
-            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
-              <div style={{flex:1,color:T.lbl||T.txt2,fontSize:11,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
-                {Li("database",13,T.blue)} Daten &amp; Verbindungen
-              </div>
-              <button onClick={()=>setMgrTab("einstellungen")} title="Einstellungen"
-                style={{background:"rgba(255,255,255,0.05)",border:`1px solid ${T.bd}`,borderRadius:9,
-                  width:30,height:30,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
-                {Li("settings",15,T.txt2)}
-              </button>
+            <div style={{color:T.lbl||T.txt2,fontSize:11,fontWeight:600,display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
+              {Li("database",13,T.blue)} Daten &amp; Verbindungen
             </div>
             {[
               {icon:"download",   color:T.pos,          label:"CSV importieren",       sub:"Buchungen aus Banking-App",       onClick:()=>setShowCsv?.(true)},
@@ -223,6 +231,8 @@ function ManagementScreen({activeTab="kategorien"}) {
               {icon:"cloud",      color:T.cf||T.blue,   label:"Cloud-Sync einrichten", sub:"Eigene Cloud-DB · geführt",       onClick:()=>setShowCloudSetup?.(true)},
               {icon:"fuel",       color:T.gold,         label:"Tankverbrauch",         sub:"Verbrauch & Preisentwicklung",    onClick:()=>setShowFuelAnalysis?.(true)},
               {icon:"credit-card",color:T.blue,         label:"Konten",                sub:"Verwalten, Reihenfolge, Puffer",  onClick:()=>setMgrTab("konten")},
+              {icon:"target",     color:T.mid,          label:"Budget",                sub:"Budgets je Kategorie festlegen",  onClick:()=>setShowMobileKategorien?.(true)},
+              {icon:"settings",   color:T.txt2,         label:"Einstellungen",         sub:"Theme, Beträge, Sicherheit …",    onClick:()=>setMgrTab("einstellungen")},
             ].map((it,i)=>(
               <button key={i} onClick={it.onClick}
                 style={{display:"flex",alignItems:"center",gap:10,width:"100%",textAlign:"left",
