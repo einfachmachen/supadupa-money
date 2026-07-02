@@ -18,16 +18,22 @@ function FuelAnalysisScreen({onClose, onBack, mobileMode=false}) {
   // "+"-Button übernehmen — sonst kann er in seinem zuletzt genutzten,
   // ggf. vergrößerten Zustand hängen bleiben und unteren Inhalt überlappen
   // (wie bei den anderen Daten-Tab-Dialogen, s. DataManagerDialog).
+  // WICHTIG: onBack/onClose NICHT als Dependency — neue Funktionsobjekte bei
+  // jedem App.jsx-Render würden den Effect ständig neu feuern lassen (+
+  // Button flackert/wirkt wie "minimiert"). Aktuelle Handler per Ref.
+  const _faHandlersRef = React.useRef({});
+  _faHandlersRef.current = { onBack, onClose };
   useEffect(() => {
     if(!setMasterOverride) return;
+    const H = () => _faHandlersRef.current;
     setMasterOverride({
       label: "Schließen",
-      onConfirm: () => (onBack||onClose)?.(),
+      onConfirm: () => (H().onBack||H().onClose)?.(),
       onBack: null,
-      onDismiss: () => onClose?.(),
+      onDismiss: () => H().onClose?.(),
     });
     return () => setMasterOverride(null);
-  }, [onBack, onClose]);
+  }, []);
 
   const series = buildFuelSeries(txs, vehicleId);
   const withConsumption = series.filter(t=>t._consumption!=null);

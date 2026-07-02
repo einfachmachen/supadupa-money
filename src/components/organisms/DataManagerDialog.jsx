@@ -33,16 +33,24 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   // bleibt er in seinem zuletzt genutzten Standard-Zustand (kann vergrößert/
   // "arretiert" sein) und überlappt mit dem eigenen Reserve-Abstand am
   // unteren Bildschirmrand die Aktions-Buttons (Kopieren/Als JSON speichern).
+  // WICHTIG: onBack/onClose NICHT in die Dependency-Liste — die sind bei
+  // jedem App.jsx-Render neue Funktionsobjekte (inline-Closures), das würde
+  // den Effect ständig neu feuern lassen (ab-/wieder anmelden → + Button
+  // flackert/wirkt wie "minimiert"). Aktuelle Handler stattdessen per Ref,
+  // analog zu CsvImportScreen.
+  const _dmHandlersRef = React.useRef({});
+  _dmHandlersRef.current = { onBack, onClose };
   useEffect(() => {
     if(!setMasterOverride) return;
+    const H = () => _dmHandlersRef.current;
     setMasterOverride({
       label: "Schließen",
-      onConfirm: () => (onBack||onClose)?.(),
+      onConfirm: () => (H().onBack||H().onClose)?.(),
       onBack: null,
-      onDismiss: () => onClose?.(),
+      onDismiss: () => H().onClose?.(),
     });
     return () => setMasterOverride(null);
-  }, [onBack, onClose]);
+  }, []);
 
   // Voller Zeitraum als Standard: vom frühesten bis zum spätesten Buchungsdatum.
   // So enthält ein Export mit allen Haken wirklich ALLE Buchungen (inkl. alter
