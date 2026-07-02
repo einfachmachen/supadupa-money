@@ -229,18 +229,18 @@ function ManagementScreen({activeTab="kategorien"}) {
               {icon:"settings",   color:T.txt2,         label:"Einstellungen",         sub:"Theme, Beträge, Sicherheit …",    onClick:()=>setMgrTab("einstellungen")},
             ].map((it,i)=>(
               <button key={i} onClick={it.onClick}
-                style={{display:"flex",alignItems:"center",gap:10,width:"100%",textAlign:"left",
-                  background:"rgba(255,255,255,0.04)",border:`1px solid ${T.bd}`,borderRadius:12,
-                  padding:"11px 12px",marginBottom:8,cursor:"pointer",fontFamily:"inherit"}}>
-                <div style={{width:34,height:34,borderRadius:10,background:`${it.color}22`,flexShrink:0,
+                style={{display:"flex",alignItems:"center",gap:12,width:"100%",textAlign:"left",
+                  background:"rgba(255,255,255,0.04)",border:`1px solid ${T.bd}`,borderRadius:14,
+                  padding:"14px 14px",marginBottom:10,cursor:"pointer",fontFamily:"inherit"}}>
+                <div style={{width:42,height:42,borderRadius:12,background:`${it.color}22`,flexShrink:0,
                   display:"flex",alignItems:"center",justifyContent:"center"}}>
-                  {Li(it.icon,17,it.color)}
+                  {Li(it.icon,21,it.color)}
                 </div>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{color:T.txt,fontSize:14,fontWeight:700}}>{it.label}</div>
-                  <div style={{color:T.txt2,fontSize:11.5,marginTop:1}}>{it.sub}</div>
+                  <div style={{color:T.txt,fontSize:19,fontWeight:700}}>{it.label}</div>
+                  <div style={{color:T.txt2,fontSize:14,marginTop:2}}>{it.sub}</div>
                 </div>
-                {Li("chevron-right",16,T.txt2)}
+                {Li("chevron-right",20,T.txt2)}
               </button>
             ))}
           </div>
@@ -252,27 +252,27 @@ function ManagementScreen({activeTab="kategorien"}) {
               onBack={()=>setMgrTab("daten")}/>
             <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 14px 24px"}}>
             {_accounts.map((acc,ai)=>(
-              <div key={acc.id} style={{display:"flex",alignItems:"center",gap:8,background:"rgba(255,255,255,0.04)",borderRadius:10,padding:"9px 8px",marginBottom:3,border:`1px solid ${T.bd}`}}>
+              <div key={acc.id} style={{display:"flex",alignItems:"center",gap:10,background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"12px 10px",marginBottom:6,border:`1px solid ${T.bd}`}}>
                 <div style={{display:"flex",flexDirection:"column",gap:1,flexShrink:0}}>
                   <button onClick={()=>moveAcc(acc.id,-1)} disabled={ai===0}
-                    style={{background:"none",border:"none",color:ai===0?"rgba(255,255,255,0.1)":T.txt2,cursor:ai===0?"default":"pointer",fontSize:11,padding:"1px 3px",lineHeight:1}}>{Li("chevron-up",10)}</button>
+                    style={{background:"none",border:"none",color:ai===0?"rgba(255,255,255,0.1)":T.txt2,cursor:ai===0?"default":"pointer",fontSize:13,padding:"1px 3px",lineHeight:1}}>{Li("chevron-up",12)}</button>
                   <button onClick={()=>moveAcc(acc.id,+1)} disabled={ai===_accounts.length-1}
-                    style={{background:"none",border:"none",color:ai===_accounts.length-1?"rgba(255,255,255,0.1)":T.txt2,cursor:ai===_accounts.length-1?"default":"pointer",fontSize:11,padding:"1px 3px",lineHeight:1}}>{Li("chevron-down",10)}</button>
+                    style={{background:"none",border:"none",color:ai===_accounts.length-1?"rgba(255,255,255,0.1)":T.txt2,cursor:ai===_accounts.length-1?"default":"pointer",fontSize:13,padding:"1px 3px",lineHeight:1}}>{Li("chevron-down",12)}</button>
                 </div>
                 <button onClick={()=>setAccIconPick(acc.id)}
-                  style={{width:34,height:34,borderRadius:9,border:`1.5px solid ${(acc.color||T.blue)}55`,background:`${acc.color||T.blue}22`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0}}>
-                  {Li(acc.icon,18,acc.color||T.blue)}
+                  style={{width:42,height:42,borderRadius:11,border:`1.5px solid ${(acc.color||T.blue)}55`,background:`${acc.color||T.blue}22`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0}}>
+                  {Li(acc.icon,22,acc.color||T.blue)}
                 </button>
                 {accIconPick===acc.id&&<IconPickerDialog selectedIcon={acc.icon} selectedColor={acc.color||T.blue}
                   onSelect={ic=>{setAccounts(p=>p.map(a=>a.id===acc.id?{...a,icon:ic}:a));setAccIconPick(null);}}
                   onClose={()=>setAccIconPick(null)}/>}
-                <span style={{flex:1,color:T.txt,fontSize:16,fontWeight:700,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                  {acc.name}{acc.delayDays>0&&<span style={{color:T.gold,fontSize:"0.7em",fontWeight:700,marginLeft:2}}>+{acc.delayDays}d</span>}
+                <span style={{flex:1,color:T.txt,fontSize:19,fontWeight:700,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                  {acc.name}{acc.delayDays>0&&<span style={{color:T.gold,fontSize:"0.6em",fontWeight:700,marginLeft:2}}>+{acc.delayDays}d</span>}
                 </span>
                 {/* Mindest-Puffer */}
-                <div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}
+                <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}
                   title="Mindest-Puffer: Warnung wenn Saldo darunter fällt">
-                  {Li("shield",13,T.txt2)}
+                  {Li("shield",15,T.txt2)}
                   <input type="number" inputMode="numeric"
                     value={acc.minPuffer||""} placeholder="0"
                     onChange={e=>{
@@ -280,13 +280,13 @@ function ManagementScreen({activeTab="kategorien"}) {
                       setAccounts(p=>p.map(a=>a.id===acc.id?{...a,minPuffer:v}:a));
                       window.dispatchEvent(new Event("mbt-puffer-changed"));
                     }}
-                    style={{width:82,padding:"7px 8px",borderRadius:8,
+                    style={{width:92,padding:"9px 10px",borderRadius:9,
                       border:`1px solid ${T.bd}`,background:"rgba(255,255,255,0.05)",
-                      color:T.txt,fontSize:16,fontWeight:600,fontFamily:NUM_FONT,textAlign:"right",outline:"none"}}/>
-                  <span style={{color:T.txt2,fontSize:12}}>€</span>
+                      color:T.txt,fontSize:18,fontWeight:600,fontFamily:NUM_FONT,textAlign:"right",outline:"none"}}/>
+                  <span style={{color:T.txt2,fontSize:14}}>€</span>
                 </div>
                 <button onClick={()=>{ setDelTarget(null); setDelAccPrompt(acc); }}
-                  style={{background:"none",border:"none",color:T.neg,opacity:0.6,cursor:"pointer",fontSize:14}}>{Li("trash-2",14)}</button>
+                  style={{background:"none",border:"none",color:T.neg,opacity:0.6,cursor:"pointer",fontSize:17}}>{Li("trash-2",17)}</button>
               </div>
             ))}
             <ErrorBoundary name="AddAccountForm"><AddAccountForm setAccounts={setAccounts}/></ErrorBoundary>
