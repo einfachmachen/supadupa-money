@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>SupaDupa Money</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <meta name="theme-color" content="#2C3035">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SupaDupa Money">
+  <link rel="apple-touch-icon" href="icon.svg">
+
+  <!-- Ladebildschirm sofort korrekt stylen (bevor das gebündelte CSS lädt) —
+       sonst blitzt er weiß/Serif auf. -->
+  <style>
+    html,body{margin:0;background:#2C3035;}
+    #loading{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;
+      justify-content:center;gap:4px;background:#2C3035;color:#AACC00;z-index:9999;
+      font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif;}
+  </style>
+
+  <script>
+    // Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+    }
+
+    // Boot-Notbremse / Selbstheilung: Hängt der Ladescreen (z. B. weil ein alter
+    // Service Worker oder CDN-Edge-Cache eine veraltete index.html mit Verweisen
+    // auf nicht mehr existierende JS-Chunks liefert), läuft kein App-Code und der
+    // Spinner bliebe ewig. Dieses Skript läuft IMMER (sobald die Seite lädt) und
+    // repariert sich selbst: einmal Service Worker abmelden + Caches leeren +
+    // frisch laden. Schlägt es erneut fehl → Hinweis statt Endlos-Spinner.
+    window.__appMounted = false;
+    setTimeout(function () {
+      var root = document.getElementById('root');
+      if (window.__appMounted || (root && root.childElementCount > 0)) return; // App läuft
+      try {
+        if (!sessionStorage.getItem('sdm_boot_retry')) {
+          sessionStorage.setItem('sdm_boot_retry', '1');
+          var done = 0, total = 2, go = function () {
+            if (++done < total) return;
+            location.replace(location.pathname + '?b=' + Date.now());
+          };
+          if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+            navigator.serviceWorker.getRegistrations()
+              .then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); })
+              .catch(function () {}).then(go);
+          } else { go(); }
+          if (window.caches && caches.keys) {
+            caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); })
+              .catch(function () {}).then(go);
+          } else { go(); }
+        } else {
+          var l = document.getElementById('loading');
+          if (l) l.innerHTML = '<div style="text-align:center;padding:24px;font-family:-apple-system,BlinkMacSystemFont,sans-serif;color:#AACC00;line-height:1.5">Die App konnte nicht laden.<br><span style="opacity:0.6;font-size:13px">(Cache-/Netzwerkproblem)</span><br><br><button onclick="sessionStorage.removeItem(\'sdm_boot_retry\');location.replace(location.pathname+\'?b=\'+Date.now())" style="padding:11px 20px;font-size:16px;border-radius:9px;border:1px solid #AACC00;background:transparent;color:#AACC00">Erneut versuchen</button></div>';
+        }
+      } catch (e) {}
+    }, 8000);
+
+    // Globale Error-Anzeige (wie im Original) — aber NICHT für Fehler, die nicht
+    // aus der App stammen: Browser-Erweiterungen injizieren eigene Skripte
+    // (moz-extension://, chrome-extension:// …); deren Fehler dürfen das rote
+    // Crash-Banner nicht auslösen. Ebenso opake Cross-Origin-Fehler, die der
+    // Browser nur als "Script error." ohne Datei/Zeile meldet (CORS) — die
+    // tragen keine verwertbare Info und kommen praktisch immer von Drittskripten.
+    window.addEventListener('error', function(e) {
+      const file = e.filename || '';
+      const isExtension = /^(moz-extension|chrome-extension|safari-web-extension|safari-extension|webkit-masked-url|extension):\/\//.test(file);
+      const isOpaqueCrossOrigin = !e.error && !file && (e.lineno === 0 || e.lineno == null) && /^Script error\.?$/.test(e.message || '');
+      if (isExtension || isOpaqueCrossOrigin) {
+        console.warn('Ignoriere externen Fehler (nicht aus der App):', e.message, file);
+        return;
+      }
+      const msg = `CRASH: ${e.message} | File: ${e.filename} | Line: ${e.lineno} | Col: ${e.colno}`;
+      document.title = msg;
+      console.error(msg, e.error?.stack);
+      const div = document.createElement('div');
+      div.style.cssText = 'position:fixed;top:0;left:0;right:0;background:red;color:white;padding:10px;font:12px monospace;z-index:99999;white-space:pre-wrap;';
+      div.textContent = msg + '\n\n' + (e.error?.stack || '');
+      document.body?.appendChild(div);
+    });
+  </script>
+  <script type="module" crossorigin src="/supadupa-money/assets/index-DCfIzibS.js"></script>
+  <link rel="stylesheet" crossorigin href="/supadupa-money/assets/index-DVaKs7TW.css">
+</head>
+<body>
+  <div id="root"></div>
+  <div id="loading">
+    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#AACC00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:12px">
+      <path d="M2 20 L6.2 16 L10.4 18.9 L14.6 11.5 L18.8 14.4 L22 4"/>
+      <circle cx="22" cy="4" r="1.5" fill="#AACC00" stroke="none"/>
+    </svg>
+    <div style="font-size:16px;font-weight:700;letter-spacing:0.5px">SupaDupa Money</div>
+    <div style="font-size:12px;margin-top:4px;opacity:0.6">lädt…</div>
+  </div>
+
+</body>
+</html>
