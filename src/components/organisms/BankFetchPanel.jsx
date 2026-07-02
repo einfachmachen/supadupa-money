@@ -136,15 +136,32 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }
   // so geht beim Verwerfen/Übernehmen nichts versehentlich verloren.
   const newTxs = state.staged || [];
   const dupeItems = state.dupeItems || [];
+  const unmapped = state.unmapped || [];
+
+  // Konten ohne Zuordnung wurden bewusst ÜBERSPRUNGEN (nicht geraten) — sonst
+  // landen z. B. Tagesgeld-Umsätze unbemerkt auf Giro. Das muss auffallen.
+  const UnmappedWarning = () => unmapped.length > 0 && (
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "10px 12px",
+      borderTop: `1px solid ${T.bd}`, background: T.gold + "14", color: T.txt, fontSize: 12.5, lineHeight: 1.5 }}>
+      {Li("alert-triangle", 15, T.gold)}
+      <span>
+        {unmapped.length} Konto{unmapped.length !== 1 ? "en" : ""} noch <b>nicht zugeordnet</b> ({unmapped.join(", ")})
+        — deren Umsätze wurden übersprungen. Bitte unter <b>Daten → Bank verbinden → Konten zuordnen</b> zuweisen.
+      </span>
+    </div>
+  );
 
   if (newTxs.length === 0 && dupeItems.length === 0) {
     return wrap(
       <>
-        <Header title="Keine neuen Buchungen" />
+        <Header title={unmapped.length > 0 ? "Konten nicht zugeordnet" : "Keine neuen Buchungen"} />
         <BankChips />
-        <div style={{ padding: "12px", color: T.txt2, fontSize: 13.5 }}>
-          Für alle verbundenen Konten wurden keine neuen Umsätze gefunden.
-        </div>
+        <UnmappedWarning />
+        {unmapped.length === 0 && (
+          <div style={{ padding: "12px", color: T.txt2, fontSize: 13.5 }}>
+            Für alle verbundenen Konten wurden keine neuen Umsätze gefunden.
+          </div>
+        )}
       </>
     );
   }
@@ -205,6 +222,7 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }
         )}
       />
       <BankChips />
+      <UnmappedWarning />
       {newTxs.length > 0 && (
         <div style={{ padding: "7px 12px", borderTop: `1px solid ${T.bd}`, color: T.txt2,
           fontSize: 11.5, lineHeight: 1.4, display: "flex", alignItems: "center", gap: 6 }}>
