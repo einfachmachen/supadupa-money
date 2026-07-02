@@ -33,6 +33,22 @@ function buildKnownFps(txs) {
   return s;
 }
 
+// Ruft ALLE Umsätze eines Kontos ab, inkl. Pagination über continuation_key.
+// Manche ASPSPs (z. B. bei Tagesgeld mit täglicher Zins-Vormerkung) liefern
+// pro Aufruf nur eine begrenzte Seite; ohne diese Schleife ginge der Rest
+// kommentarlos verloren — es kämen nur die ersten paar Buchungen an, der Rest
+// würde weder als neu noch als Dublette erkannt, sondern schlicht ignoriert.
+async function fetchAllTransactions(client, accountUid, dateFrom) {
+  const all = [];
+  let continuationKey;
+  do {
+    const r = await client.getTransactions(accountUid, { dateFrom, continuationKey });
+    all.push(...(r?.transactions || []));
+    continuationKey = r?.continuation_key || null;
+  } while (continuationKey);
+  return all;
+}
+
 // Gültig = noch nicht abgelaufen UND hat Konten. Die sessionId ist NICHT nötig
 // (der Abruf läuft über die Konto-UIDs); manche ASPSPs liefern keine.
 function sessionValid(sess) {
@@ -151,8 +167,8 @@ async function fetchNewBankTx({ txs, accounts, dateFrom, aspsp } = {}) {
       lastValidUntil = sess.validUntil || lastValidUntil;
       for (const a of sess.accounts || []) {
         const appAccId = accountMap[a.uid] || fallbackAcc;
-        const r = await cl.getTransactions(a.uid, { dateFrom: from });
-        const rows = mapEnableBankingTransactions(r?.transactions || [], appAccId);
+        const rawTx = await fetchAllTransactions(cl, a.uid, from);
+        const rows = mapEnableBankingTransactions(rawTx, appAccId);
         rows.forEach((row) => {
           // Vorgemerkte Bank-Umsätze (PDNG) laufen mit durch und werden weiter
           // unten als Vormerkung (pending) übernommen — Auflösung gegen die
@@ -184,4 +200,12 @@ async function fetchNewBankTx({ txs, accounts, dateFrom, aspsp } = {}) {
   return { ok: true, items, validUntil: lastValidUntil };
 }
 
-export { fetchNewBankTx, listConnectedBanks, buildKnownFps, loadEbSessions, sessionValid, friendlyBankError };
+export {
+  fetchNewBankTx,
+  listConnectedBanks,
+  buildKnownFps,
+  fetchAllTransactions,
+  loadEbSessions,
+  sessionValid,
+  friendlyBankError,
+};
