@@ -11,6 +11,7 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
+import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { uid } from "../../utils/format.js";
 import { txFingerprintNorm } from "../../utils/tx.js";
@@ -448,30 +449,19 @@ function EnableBankingWizard({ onClose }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, background: T.bg, zIndex: 320, display: "flex", flexDirection: "column" }}>
-      {/* Header */}
-      <div style={{ background: T.surf, borderBottom: `1px solid ${T.bd}`,
-        padding: "calc(12px + env(safe-area-inset-top, 0px)) 16px 12px",
-        display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
-        <button onClick={back}
-          style={{ background: "rgba(255,255,255,0.08)", border: "none", color: T.txt2,
-            width: 44, height: 44, borderRadius: 14, cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          {Li("arrow-left", 22, T.txt)}
-        </button>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ color: ACCENT, fontSize: 12.5, fontWeight: 800, letterSpacing: 0.4, textTransform: "uppercase" }}>
-            Bank verbinden · Schritt {step + 1}/{STEPS.length}
-          </div>
-          <div style={{ color: T.txt, fontSize: 18, fontWeight: 800, lineHeight: 1.2, marginTop: 1 }}>
-            {STEPS[step].title}
-          </div>
-        </div>
-        <button onClick={() => onCloseRef.current?.()} title="Schließen"
-          style={{ background: "transparent", border: "none", color: T.txt2, cursor: "pointer",
-            width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          {Li("x", 22, T.txt2)}
-        </button>
-      </div>
+      {/* Header — einheitlich mit den anderen Daten-Tab-Dialogen (siehe MobileHeader) */}
+      <MobileHeader title="Bank verbinden"
+        subtitle={`Schritt ${step + 1}/${STEPS.length} · ${STEPS[step].title}`}
+        icon="landmark" iconColor={ACCENT}
+        onBack={back}
+        right={
+          <button onClick={() => onCloseRef.current?.()} title="Schließen" aria-label="Schließen"
+            style={{ background: "rgba(255,255,255,0.08)", border: "none", color: T.txt2,
+              width: 36, height: 36, borderRadius: 12, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            {Li("x", 18, T.txt2)}
+          </button>
+        }/>
 
       {/* Fortschritts-Punkte */}
       <div style={{ display: "flex", gap: 6, padding: "10px 18px 0", flexShrink: 0 }}>

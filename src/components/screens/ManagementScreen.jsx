@@ -10,6 +10,7 @@ import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
 import { KategorieAnlegen } from "../organisms/KategorieAnlegen.jsx";
 import { SubRow } from "../organisms/SubRow.jsx";
 import { SettingsInline } from "./SettingsInline.jsx";
+import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
@@ -206,16 +207,9 @@ function ManagementScreen({activeTab="kategorien"}) {
         {/* Tab-Navigation jetzt in Bottom-Bar — keine interne Tab-Bar nötig */}
         {mgrTab==="einstellungen"&&(
           <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-            <div style={{display:"flex",alignItems:"center",gap:6,padding:"12px 14px 0"}}>
-              <button onClick={()=>setMgrTab("daten")} title="Zurück zu Daten"
-                style={{background:"rgba(255,255,255,0.05)",border:`1px solid ${T.bd}`,borderRadius:8,
-                  width:26,height:26,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
-                {Li("arrow-left",14,T.txt2)}
-              </button>
-              <div style={{flex:1,color:T.lbl||T.txt2,fontSize:11,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
-                {Li("settings",13,T.blue)} Einstellungen
-              </div>
-            </div>
+            <MobileHeader title="Einstellungen" subtitle="Theme, Beträge, Sicherheit …"
+              icon="settings" iconColor={T.txt2}
+              onBack={()=>setMgrTab("daten")}/>
             <SettingsInline/>
           </div>
         )}
@@ -252,17 +246,11 @@ function ManagementScreen({activeTab="kategorien"}) {
           </div>
         )}
         {mgrTab==="konten"&&(
-          <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 14px 24px"}}>
-            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
-              <button onClick={()=>setMgrTab("daten")} title="Zurück zu Daten"
-                style={{background:"rgba(255,255,255,0.05)",border:`1px solid ${T.bd}`,borderRadius:8,
-                  width:26,height:26,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
-                {Li("arrow-left",14,T.txt2)}
-              </button>
-              <div style={{flex:1,color:T.lbl||T.txt2,fontSize:11,fontWeight:600,display:"flex",alignItems:"center",gap:6}}>
-                {Li("credit-card",13,T.blue)} Konten / Zahlungsarten
-              </div>
-            </div>
+          <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+            <MobileHeader title="Konten" subtitle="Verwalten, Reihenfolge, Puffer"
+              icon="credit-card" iconColor={T.blue}
+              onBack={()=>setMgrTab("daten")}/>
+            <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 14px 24px"}}>
             {_accounts.map((acc,ai)=>(
               <div key={acc.id} style={{display:"flex",alignItems:"center",gap:8,background:"rgba(255,255,255,0.04)",borderRadius:10,padding:"6px 8px",marginBottom:3,border:`1px solid ${T.bd}`}}>
                 <div style={{display:"flex",flexDirection:"column",gap:1,flexShrink:0}}>
@@ -366,6 +354,7 @@ function ManagementScreen({activeTab="kategorien"}) {
                 </div>
               );
             })()}
+          </div>
           </div>
         )}
         {mgrTab!=="einstellungen"&&mgrTab!=="konten"&&mgrTab!=="daten"&&(

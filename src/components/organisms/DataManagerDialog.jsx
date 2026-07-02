@@ -520,25 +520,10 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   return wrap(
     <>
 
-        {/* Header */}
-        {mobileMode ? (
-          <MobileHeader title="Daten-Manager" subtitle="Exportieren · Importieren · Löschen"
-            onBack={onBack||onClose} onClose={onClose}/>
-        ) : (
-        <div style={{display:"flex",alignItems:"center",gap:8,padding:"14px 16px 0",flexShrink:0}}>
-          <div style={{width:34,height:34,borderRadius:10,background:"rgba(170,204,0,0.12)",
-            display:"flex",alignItems:"center",justifyContent:"center"}}>
-            {Li("database",17,T.pos)}
-          </div>
-          <div style={{flex:1}}>
-            <div style={{color:T.txt,fontSize:15,fontWeight:700}}>Daten-Manager</div>
-            <div style={{color:T.txt2,fontSize:10}}>Exportieren · Importieren · Löschen</div>
-          </div>
-          <button onClick={onClose}
-            style={{background:"rgba(255,255,255,0.07)",border:"none",color:T.txt2,
-              borderRadius:8,padding:"6px 10px",cursor:"pointer",fontSize:12}}>✕</button>
-        </div>
-        )}
+        {/* Header — einheitlich mit den anderen Daten-Tab-Dialogen, unabhängig vom Layout */}
+        <MobileHeader title="Daten-Manager" subtitle="Exportieren · Importieren · Löschen"
+          icon="database" iconColor={T.pos}
+          onBack={onBack||onClose} onClose={onClose}/>
 
         {/* Tabs */}
         <div style={{display:"flex",gap:4,padding:"10px 16px 0",flexShrink:0}}>

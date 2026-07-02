@@ -107,7 +107,9 @@ früheren getrennten Screens `EnableBankingConnectScreen` + `EnableBankingGuide`
   genutzt), `CatPicker` (mit `noMargin`-Prop für enge Toolbars, §9),
   `ThemeDropdown`, **`ThemeSwitcherMini`** (Hero-Theme-Umschalter, 4-Punkte-
   Symbol), `MitteEndeFields`, `CategoryChart`/`ChartBlock` (Chart-Bausteine).
-- **atoms/**: `MobileHeader` (Safe-Area + Zurück/X), `SupaField`, `Lbl`, `PBtn`, …
+- **atoms/**: `MobileHeader` (Safe-Area + Zurück/X, optionale Icon-Kachel via
+  `icon`/`iconColor` — verbindlicher Header aller Daten-Tab-Dialoge, §5),
+  `SupaField`, `Lbl`, `PBtn`, …
 - **buttons/**: Werkzeug-Buttons (`NachkategorisierenButton`, `RegenRulesButton`, …).
 
 ### Worker (außerhalb `src/`, getrennt deploybar)
@@ -291,6 +293,34 @@ reservierten Prognosewert.
   und X rechts**, Safe-Area-Header (`MobileHeader`), Suchfeld oben. Kein URL-Routing.
 - **Vollbild-Screens** reservieren unten Platz für die fixe Nav-Bar:
   `calc(57px + env(safe-area-inset-bottom))`.
+- **Einheitlicher Dialog-Header** (`atoms/MobileHeader.jsx`) — **verbindlich für
+  alle 8 Daten-Tab-Dialoge** (CSV importieren, Bank verbinden, Daten-Manager,
+  Cloud-Sync einrichten, Tankverbrauch, Konten, Budget, Einstellungen), damit
+  sie „aus einem Guss" wirken: großer Titel (26px/700) = der Funktionsname
+  **identisch zur zugehörigen Zeile im Daten-Tab**, darunter eine gut lesbare
+  Unterzeile (13px, gedämpft) für Kontext/Status, links davon optional eine
+  **Icon-Kachel** (Props `icon`/`iconColor`, 40px, `background:${farbe}1f`) —
+  bewusst **dasselbe Icon + dieselbe Farbe wie die auslösende Zeile im
+  Daten-Tab** (Wiedererkennung „Kachel angetippt → genau dieses Icon oben").
+  Zuordnung: CSV importieren = `download`/`T.pos`, Bank verbinden = `landmark`/
+  `T.gold`, Daten-Manager = `database`/`T.pos`, Cloud-Sync = `cloud`/
+  `T.cf||T.blue`, Tankverbrauch = `fuel`/`T.gold`, Konten = `credit-card`/
+  `T.blue`, Budget = `target`/`T.mid`, Einstellungen = `settings`/`T.txt2`.
+  **Mehrstufige Assistenten** (`EnableBankingWizard`/`CloudSetupWizard`)
+  zeigen als Titel den **festen Funktionsnamen** („Bank verbinden", nicht den
+  wechselnden Schritt-Titel) und packen „Schritt X/Y · aktueller Schritt-Titel"
+  in die Unterzeile — der Schritt-Titel wandert aus einer früheren, separaten
+  Eyebrow-Zeile OBERHALB des Titels in die reguläre Unterzeile darunter, damit
+  das Muster mit den anderen 6 Dialogen identisch bleibt. Assistenten
+  brauchen zusätzlich zum Zurück-Pfeil (`onBack`, Schritt zurück) einen
+  **expliziten Schließen-Button** (Assistent ganz verlassen) — dafür den
+  bestehenden `right`-Slot nutzen (36px-Button im selben abgerundeten Stil wie
+  der Header-eigene Button, nur kleiner/dezenter), **nicht** `MobileHeader`
+  selbst um einen zweiten Button erweitern. Frühere bespoke Header-Varianten
+  (Desktop-Icon-Badge in `DataManagerDialog`, Mobile-vs-Desktop-Split in
+  `CsvImportScreen`, winzige 11px-Breadcrumb-Header für „Konten"/„Einstellungen"
+  in `ManagementScreen`) sind entfernt — `MobileHeader` läuft jetzt
+  **unabhängig von `mobileMode`/Viewport überall identisch**.
 
 ---
 

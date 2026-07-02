@@ -222,9 +222,13 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
   }, [view, newNameReady, editNameReady, iconPickFor]);
 
   // onBack ist hier IMMER gesetzt (entweder zur Listenansicht oder, im Root, ins
-  // Mehr-Menü) — der Button zeigt also stets den Zurück-Pfeil.
-  const header = (title, onBack) => (
-    <MobileHeader title={title} onBack={onBack||onClose} onClose={onClose}/>
+  // Mehr-Menü) — der Button zeigt also stets den Zurück-Pfeil. Icon-Kachel nur
+  // auf der Hauptliste (identisch zur "Budget"-Zeile im Daten-Tab) — Unteransichten
+  // (neue Kategorie, bearbeiten …) bleiben ohne Icon, da sie kein eigenständiger
+  // "Funktionsname" sind, sondern ein Schritt innerhalb dieser Funktion.
+  const header = (title, onBack, icon) => (
+    <MobileHeader title={title} onBack={onBack||onClose} onClose={onClose}
+      icon={icon} iconColor={T.mid}/>
   );
 
 
@@ -364,7 +368,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
   return (
     <div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,
       zIndex:300,display:"flex",flexDirection:"column","--mob-fs":"18px"}}>
-      {header("Kategorien & Budget",goBack)}
+      {header("Kategorien & Budget",goBack,"target")}
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",touchAction:"pan-y",WebkitOverflowScrolling:"touch",
         padding:`${S.gap}px ${S.pad}px ${S.padL}px`}}>
 

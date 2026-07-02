@@ -963,23 +963,14 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
          // Reserve unten: die nav-bottom (Home/Monat/Jahr) ist position:fixed z-index:9999
          // und überdeckt sonst den Footer mit dem "Buchungen importieren"-Button.
          paddingBottom:"calc(60px + env(safe-area-inset-bottom, 0px))"}}>
-      {/* Header */}
-      {!embedded && (mobileMode ? (
-        // Mobile: einheitlicher Header. Zurück führt review/done → input, input → Mehr-Menü.
-        <MobileHeader title="CSV-Import" titleColor={T.blue}
+      {/* Header — einheitlich mit den anderen Daten-Tab-Dialogen (siehe MobileHeader),
+          unabhängig von mobileMode. Zurück führt review/done → input, input → Mehr-Menü. */}
+      {!embedded && (
+        <MobileHeader title="CSV importieren" icon="download" iconColor={T.pos}
           subtitle={step==="review"&&parsed?.format ? parsed.format : "DKB · Finanzblick · beliebiges Format"}
           onBack={step!=="input" ? ()=>setStep("input") : (onBack||onClose)}
           onClose={onClose}/>
-      ) : (
-        <div style={{background:T.surf,borderBottom:`1px solid ${T.bds}`,padding:MPad,paddingTop:"calc(10px + env(safe-area-inset-top, 0px))",display:"flex",alignItems:"center",gap:12,flexShrink:0}}>
-          <button onClick={onClose} style={{background:"rgba(255,255,255,0.08)",border:"none",color:T.txt,borderRadius:10,width:34,height:34,cursor:"pointer",fontSize:18}}>{Li("arrow-left",13)}</button>
-          <div style={{flex:1}}>
-            <div style={{color:T.blue,fontSize:16,fontWeight:700}}>{Li("upload-cloud",16,T.blue)} CSV-Import</div>
-            <div style={{color:T.txt2,fontSize:MFSl}}>DKB · Finanzblick · beliebiges Format</div>
-          </div>
-          {step==="review"&&<div style={{color:T.txt2,fontSize:MFSl}}>{parsed?.format}</div>}
-        </div>
-      ))}
+      )}
 
       {/* ── Kontoauswahl — sichtbar auf allen Steps, außer im Vorschlags-Vollbild ── */}
       {accounts.length>0&&!suggFull&&(

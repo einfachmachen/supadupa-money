@@ -80,6 +80,7 @@ function FuelAnalysisScreen({onClose, onBack, mobileMode=false}) {
     <div className={mobileMode?"mobile-modal":undefined} style={{position:"fixed",inset:0,background:T.bg,
       zIndex:300,display:"flex",flexDirection:"column"}}>
       <MobileHeader title="Tankverbrauch" subtitle="Verbrauch & Preisentwicklung"
+        icon="fuel" iconColor={T.gold}
         onBack={onBack||onClose} onClose={onClose}/>
 
       <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 16px 32px"}}>
