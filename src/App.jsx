@@ -86,6 +86,17 @@ export default function SupaDupaMoney() {
   React.useEffect(()=>{ window.MBT_DEBUG = debugFlags; }, [debugFlags]);
   // Initial setzen damit erste Render-Pässe es sehen
   if(typeof window!=="undefined") window.MBT_DEBUG = debugFlags;
+  // ── Icon-Favoriten (per Swipe-Picker kuratiert) — Schnellwahl im Icon-Picker ──
+  const [favIcons, setFavIconsState] = useState(()=>{
+    try { return JSON.parse(kvStore.getItem("mbt_fav_icons")||"[]"); } catch { return []; }
+  });
+  const setFavIcons = (updater) => {
+    setFavIconsState(prev=>{
+      const next = typeof updater==="function" ? updater(prev) : updater;
+      kvStore.setItem("mbt_fav_icons", JSON.stringify(next));
+      return next;
+    });
+  };
   const [subTab,        setSubTab]       = useState("dashboard");
   const navigateToSparen = () => { setMainTab("erfassen"); setSubTab("dashboard"); setSparOpenRequest(v=>v+1); };
   const LS_KEY = "finanzapp_v9";
@@ -2567,6 +2578,7 @@ Abbrechen = ${remoteName}-Stand laden`
     amtFont, setAmtFont,
     noBorders, setNoBorders,
     masterOverride, setMasterOverride,
+    favIcons, setFavIcons,
   }), [
     cats, groups, txs, accounts, vehicles, yearData,
     frozenYear, frozenMonth, year, selAcc, isLand,
@@ -2585,6 +2597,7 @@ Abbrechen = ${remoteName}-Stand laden`
     syncPass, syncEncActive, showCloudSetup, showFuelAnalysis,
     syncStatus, syncError, isDirty, cfSaveOnClose,
     dashDrillOpen, amtMode, amtFont, noBorders, masterOverride,
+    favIcons,
   ]);
 
   // ═══════════════════════════════════════════════════════════════════════════

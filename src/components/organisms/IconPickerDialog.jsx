@@ -7,16 +7,18 @@ import { ColorPickerPopup } from "../molecules/ColorPickerPopup.jsx";
 import { BankIconsGrid } from "./BankIconsGrid.jsx";
 import { PagedIconGrid } from "./PagedIconGrid.jsx";
 import { SimpleIconsGrid } from "./SimpleIconsGrid.jsx";
+import { IconSwipePicker } from "./IconSwipePicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { ICON_CATEGORIES, Li } from "../../utils/icons.jsx";
 
 function IconPickerDialog({selectedIcon, selectedColor, onSelect, onSelectColor, onClose, showUsed}) {
-  const { cats, groups } = useContext(AppCtx);
+  const { cats, groups, favIcons, setFavIcons } = useContext(AppCtx);
   const [search, setSearch] = React.useState("");
   const [catIdx, setCatIdx] = React.useState(0);
   const [nav, setNav] = React.useState({page:0,totalPages:1,prev:()=>{},next:()=>{}});
   const [showColorPicker, setShowColorPicker] = React.useState(false);
+  const [showSwipePicker, setShowSwipePicker] = React.useState(false);
   const activeCat = ICON_CATEGORIES[catIdx] || ICON_CATEGORIES[0];
 
   // Bereits in Kategorien/Unterkategorien verwendete Icon+Farbe-Kombinationen sammeln
@@ -50,6 +52,13 @@ function IconPickerDialog({selectedIcon, selectedColor, onSelect, onSelectColor,
         {/* Titelzeile: Titel | Kategorie-Dropdown | Seitennavigation | ✕ */}
         <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
           <span style={{color:T.blue,fontSize:15,fontWeight:700,flexShrink:0}}>Icon wählen</span>
+          {/* Favoriten-Swipe-Picker öffnen (Tinder-artige Icon-Kuratierung) */}
+          <button onClick={()=>setShowSwipePicker(true)} title="Icon-Favoriten pflegen"
+            style={{background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bd}`,borderRadius:8,
+              color:T.gold,cursor:"pointer",padding:"4px 7px",display:"flex",alignItems:"center",
+              gap:4,fontSize:11,fontWeight:700,flexShrink:0,fontFamily:"inherit"}}>
+            {Li("star",13,T.gold)} {favIcons.length>0?favIcons.length:""}
+          </button>
           {/* Aktuelle Farbe — antippen öffnet Farb-Picker */}
           {onSelectColor && (
             <button onClick={()=>setShowColorPicker(true)}
@@ -88,6 +97,40 @@ function IconPickerDialog({selectedIcon, selectedColor, onSelect, onSelectColor,
             {Li("x",16)}
           </button>
         </div>
+        {/* Favoriten-Schnellwahl (per Swipe-Picker kuratiert) */}
+        {favIcons.length>0 && (
+          <div style={{flexShrink:0}}>
+            <div style={{color:T.txt2,fontSize:10,fontWeight:600,marginBottom:4,opacity:0.7,
+              display:"flex",alignItems:"center",gap:4}}>
+              {Li("star",10,T.gold)} Favoriten ({favIcons.length})
+            </div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:5,maxHeight:80,overflowY:"auto"}}>
+              {favIcons.map((ic,i)=>{
+                const isSel = ic===selectedIcon;
+                const col = selectedColor || T.blue;
+                return (
+                  <div key={i} style={{position:"relative",flexShrink:0}}>
+                    <button onClick={()=>{ onSelect(ic); onClose(); }}
+                      style={{width:34,height:34,borderRadius:8,
+                        background:col+"22",
+                        border:`2px solid ${isSel?T.blue:col+"55"}`,
+                        display:"flex",alignItems:"center",justifyContent:"center",
+                        cursor:"pointer",padding:0,fontFamily:"inherit"}}>
+                      {Li(ic,16,col)}
+                    </button>
+                    <button onClick={()=>setFavIcons(prev=>prev.filter(x=>x!==ic))}
+                      title="Aus Favoriten entfernen"
+                      style={{position:"absolute",top:-5,right:-5,width:16,height:16,borderRadius:"50%",
+                        background:T.neg,border:`1.5px solid ${T.surf2}`,color:"#fff",fontSize:9,
+                        lineHeight:1,cursor:"pointer",padding:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      ✕
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
         {/* Bereits-verwendete-Icons-Bereich */}
         {showUsed && usedIcons.length>0 && (
           <div style={{flexShrink:0}}>
@@ -143,6 +186,8 @@ function IconPickerDialog({selectedIcon, selectedColor, onSelect, onSelectColor,
           }}
         />
       )}
+      {/* Favoriten-Swipe-Picker (Vollbild, über allem) */}
+      {showSwipePicker && <IconSwipePicker onClose={()=>setShowSwipePicker(false)}/>}
     </div>
   );
   // Portal: direkt in document.body rendern um Stacking-Context-Probleme zu vermeiden

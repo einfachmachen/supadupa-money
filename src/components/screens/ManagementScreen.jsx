@@ -252,7 +252,7 @@ function ManagementScreen({activeTab="kategorien"}) {
               onBack={()=>setMgrTab("daten")}/>
             <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 14px 24px"}}>
             {_accounts.map((acc,ai)=>(
-              <div key={acc.id} style={{display:"flex",alignItems:"center",gap:8,background:"rgba(255,255,255,0.04)",borderRadius:10,padding:"6px 8px",marginBottom:3,border:`1px solid ${T.bd}`}}>
+              <div key={acc.id} style={{display:"flex",alignItems:"center",gap:8,background:"rgba(255,255,255,0.04)",borderRadius:10,padding:"9px 8px",marginBottom:3,border:`1px solid ${T.bd}`}}>
                 <div style={{display:"flex",flexDirection:"column",gap:1,flexShrink:0}}>
                   <button onClick={()=>moveAcc(acc.id,-1)} disabled={ai===0}
                     style={{background:"none",border:"none",color:ai===0?"rgba(255,255,255,0.1)":T.txt2,cursor:ai===0?"default":"pointer",fontSize:11,padding:"1px 3px",lineHeight:1}}>{Li("chevron-up",10)}</button>
@@ -270,9 +270,9 @@ function ManagementScreen({activeTab="kategorien"}) {
                   {acc.name}{acc.delayDays>0&&<span style={{color:T.gold,fontSize:"0.7em",fontWeight:700,marginLeft:2}}>+{acc.delayDays}d</span>}
                 </span>
                 {/* Mindest-Puffer */}
-                <div style={{display:"flex",alignItems:"center",gap:3,flexShrink:0}}
+                <div style={{display:"flex",alignItems:"center",gap:4,flexShrink:0}}
                   title="Mindest-Puffer: Warnung wenn Saldo darunter fällt">
-                  {Li("shield",11,T.txt2)}
+                  {Li("shield",13,T.txt2)}
                   <input type="number" inputMode="numeric"
                     value={acc.minPuffer||""} placeholder="0"
                     onChange={e=>{
@@ -280,10 +280,10 @@ function ManagementScreen({activeTab="kategorien"}) {
                       setAccounts(p=>p.map(a=>a.id===acc.id?{...a,minPuffer:v}:a));
                       window.dispatchEvent(new Event("mbt-puffer-changed"));
                     }}
-                    style={{width:54,padding:"3px 5px",borderRadius:6,
+                    style={{width:82,padding:"7px 8px",borderRadius:8,
                       border:`1px solid ${T.bd}`,background:"rgba(255,255,255,0.05)",
-                      color:T.txt,fontSize:11,fontFamily:NUM_FONT,textAlign:"right",outline:"none"}}/>
-                  <span style={{color:T.txt2,fontSize:10}}>€</span>
+                      color:T.txt,fontSize:16,fontWeight:600,fontFamily:NUM_FONT,textAlign:"right",outline:"none"}}/>
+                  <span style={{color:T.txt2,fontSize:12}}>€</span>
                 </div>
                 <button onClick={()=>{ setDelTarget(null); setDelAccPrompt(acc); }}
                   style={{background:"none",border:"none",color:T.neg,opacity:0.6,cursor:"pointer",fontSize:14}}>{Li("trash-2",14)}</button>

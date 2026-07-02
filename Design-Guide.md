@@ -96,7 +96,13 @@ früheren getrennten Screens `EnableBankingConnectScreen` + `EnableBankingGuide`
 ### Organisms / Molecules / Atoms / Buttons
 - **organisms/**: `SaldoHeroV2` (Hero, von Dashboard **und** Monat genutzt —
   inkl. Konto-Dropdown-Pille zum Kontowechsel), `SaldoPrognose`, `PendingList`,
-  `DataManagerDialog`, `MobileActionPicker` (das „+"-Menü), `BankFetchPanel`
+  `DataManagerDialog`, `MobileActionPicker` (das „+"-Menü), `IconPickerDialog`
+  (alle Lucide-Icons, Suche/Kategorien, „Bereits verwendet"- und „Favoriten"-
+  Schnellwahlzeile), **`IconSwipePicker`** (Vollbild-Dialog, Tinder-artig: ein
+  Icon nach dem anderen, per Wisch/Buttons als Favorit (★, rechts) sammeln
+  oder überspringen (✕, links); Fortschritt (`mbt_fav_icons_idx`) und
+  Favoriten (`AppCtx.favIcons`, kvStore `mbt_fav_icons`) persistiert — Aufruf
+  über den ★-Button im `IconPickerDialog`-Header), `BankFetchPanel`
   (Pull-to-Refresh-Vorschau/Staging für PSD2-Bankabruf, §6/§12),
   `WerkzeugeSection` (Massen-Zuordnungs-Werkzeuge, in `MonatScreen` eingebettet),
   `KontoWarnungWidget`, `AnchorSection`, `MobileKategorienModal`,
