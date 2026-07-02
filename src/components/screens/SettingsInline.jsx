@@ -12,6 +12,19 @@ import { makeYearData } from "../../utils/yearData.js";
 import { kvStore } from "../../utils/kvStore.js";
 import WORKER_CODE from "../../../worker-data/data-store-worker.js?raw";
 
+// Einheitlicher Section-Rahmen: Trennlinie oben + Icon-Label-Header, damit
+// alle Blöcke (Darstellung, Anzeige, Cloud-Sync, Gefahrenzone, Debug …)
+// gleich aussehen statt wie eine lose Aneinanderreihung unterschiedlicher Stile.
+const SECTION = { borderTop:`1px solid ${T.bd}`, marginTop:18, paddingTop:16, marginBottom:4 };
+function SectionHeader({ icon, color, label, right }) {
+  return (
+    <div style={{color:T.lbl||T.txt2,fontSize:12,fontWeight:700,marginBottom:12,
+      display:"flex",alignItems:"center",gap:7}}>
+      {Li(icon,14,color)} <span style={{flex:1}}>{label}</span> {right}
+    </div>
+  );
+}
+
 function SettingsInline() {
   const {
     col3Name, setCol3Name,
@@ -37,18 +50,17 @@ function SettingsInline() {
   return (
     <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 14px 24px"}}>
 
-      {/* ── Custom Theme Editor (eigene Farbschemas) ─────────────────── */}
+      {/* ── Design (eigenes Farbschema) ─────────────────── */}
       <CustomThemeEditor/>
 
-      {/* ── Randlos-Modus ── */}
-      <div style={{marginBottom:14}}>
-        <div style={{color:T.lbl||T.txt2,fontSize:11,fontWeight:600,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
-          {Li("square",13,T.blue)} Darstellung
-        </div>
+      {/* ── Anzeige: Rahmen & 3. Spalte ── */}
+      <div style={SECTION}>
+        <SectionHeader icon="eye" color={T.blue} label="Anzeige"/>
+
         <div onClick={()=>{const v=!noBorders;setNoBorders(v);kvStore.setItem("mbt_noborders",v?"1":"0");}}
           style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:10,
             cursor:"pointer",background:noBorders?`${T.blue}18`:"rgba(255,255,255,0.04)",
-            border:`1px solid ${noBorders?T.blue:T.bd}`}}>
+            border:`1px solid ${noBorders?T.blue:T.bd}`,marginBottom:14}}>
           <div style={{width:36,height:22,borderRadius:11,position:"relative",flexShrink:0,
             background:noBorders?T.blue:"rgba(255,255,255,0.15)",transition:"background 0.2s"}}>
             <div style={{position:"absolute",top:3,left:noBorders?15:3,width:16,height:16,
@@ -59,33 +71,33 @@ function SettingsInline() {
             <div style={{color:T.txt2,fontSize:10}}>Alle Rahmenlinien ausblenden</div>
           </div>
         </div>
+
+        <Lbl>Eigene Bezeichnung der 3. Spalte (aktueller Ist-Stand)</Lbl>
+        <input value={col3Name} onChange={e=>setCol3Name(e.target.value)} placeholder="z.B. aktuell, DKB, ING…" style={{...INP,marginBottom:8}}/>
+        <div style={{color:T.txt2,fontSize:11}}>Erscheint als dritte Spaltenüberschrift (gold) im Jahres- und Monatsplan.</div>
       </div>
 
-      <Lbl>Eigene Bezeichnung der 3. Spalte (aktueller Ist-Stand)</Lbl>
-      <input value={col3Name} onChange={e=>setCol3Name(e.target.value)} placeholder="z.B. aktuell, DKB, ING…" style={{...INP,marginBottom:8}}/>
-      <div style={{color:T.txt2,fontSize:11,marginBottom:18}}>Erscheint als dritte Spaltenüberschrift (gold) im Jahres- und Monatsplan.</div>
-
-      {/* Cloudflare Workers Sync */}
-      <div style={{borderTop:`1px solid ${T.bd}`,marginTop:8,paddingTop:10,marginBottom:8}}>
-        <div style={{color:T.lbl||T.txt2,fontSize:11,fontWeight:600,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
-          {Li("cloud",13,T.cf)} Cloudflare Workers Sync
-          <span style={{marginLeft:"auto",fontSize:10,
-            color:cfStatus==="ok"?T.pos:cfStatus==="error"?T.neg:cfStatus==="saving"?T.gold:T.txt2,fontWeight:700}}>
-            {cfStatus==="ok"?"● aktiv":cfStatus==="error"?"● Fehler":cfStatus==="saving"?"● speichert…":"● nicht verbunden"}
-          </span>
-        </div>
-        <div style={{color:T.txt2,fontSize:10,marginBottom:8,lineHeight:1.5}}>
+      {/* ── Cloudflare Workers Sync ── */}
+      <div style={SECTION}>
+        <SectionHeader icon="cloud" color={T.cf} label="Cloudflare Workers Sync"
+          right={
+            <span style={{fontSize:10,
+              color:cfStatus==="ok"?T.pos:cfStatus==="error"?T.neg:cfStatus==="saving"?T.gold:T.txt2,fontWeight:700}}>
+              {cfStatus==="ok"?"● aktiv":cfStatus==="error"?"● Fehler":cfStatus==="saving"?"● speichert…":"● nicht verbunden"}
+            </span>
+          }/>
+        <div style={{color:T.txt2,fontSize:11,marginBottom:10,lineHeight:1.5}}>
           <b style={{color:T.gold}}>Empfohlen</b> — kostenlos, kein Limit, kein CORS-Problem.
           Einrichtung: siehe Anleitung <b style={{color:T.txt}}>Cloudflare-Setup.md</b>.
         </div>
         {/* GitHub-freie Einrichtung: Worker-Code kopieren und im Dashboard einfügen */}
         <button onClick={()=>{try{navigator.clipboard?.writeText(WORKER_CODE);setWorkerCodeCopied(true);setTimeout(()=>setWorkerCodeCopied(false),1800);}catch(e){}}}
           style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,width:"100%",
-            marginBottom:6,padding:"10px 8px",borderRadius:9,border:"none",
+            marginBottom:8,padding:"10px 8px",borderRadius:9,border:"none",
             background:T.cf,color:T.on_accent,fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>
           {Li(workerCodeCopied?"check":"copy",13,T.on_accent)} {workerCodeCopied?"Code kopiert!":"Worker-Code kopieren (ohne GitHub)"}
         </button>
-        <div style={{color:T.txt2,fontSize:10,marginBottom:8,lineHeight:1.5}}>
+        <div style={{color:T.txt2,fontSize:11,marginBottom:12,lineHeight:1.5}}>
           Dashboard → Workers &amp; Pages → <b>Create Worker</b> → Code einfügen → <b>SYNC_KV</b> (KV) binden,
           <b> SYNC_SECRET</b> setzen. (Geführt im Cloud-Wizard.) GitHub-Deploy-Button nur mit öffentlichem Repo.
         </div>
@@ -100,7 +112,7 @@ function SettingsInline() {
             const s = btoa(String.fromCharCode(...b)).replace(/[+/=]/g,"").slice(0,32);
             setCfSecret(s); kvStore.setItem("cf_secret",s);
             try { navigator.clipboard?.writeText(s); } catch(e){}
-          }} style={{marginBottom:8,padding:"6px 10px",borderRadius:8,
+          }} style={{marginBottom:10,padding:"6px 10px",borderRadius:8,
             border:`1px solid ${T.bd}`,background:"rgba(255,255,255,0.04)",color:T.txt2,
             fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",
             display:"flex",alignItems:"center",gap:5}}>
@@ -109,7 +121,7 @@ function SettingsInline() {
         <Lbl>Verschlüsselung — Passphrase (optional, Zero-Knowledge)</Lbl>
         <SupaField value={syncPass||""} onChange={v=>setSyncPass?.(v)}
           placeholder="leer = Daten unverschlüsselt in der Cloud" locked={false} type="password"/>
-        <div style={{color:T.txt2,fontSize:10,marginTop:-2,marginBottom:8,lineHeight:1.5,
+        <div style={{color:T.txt2,fontSize:11,marginTop:-2,marginBottom:10,lineHeight:1.5,
           display:"flex",alignItems:"flex-start",gap:5}}>
           {Li(syncEncActive?"lock":"unlock",12,syncEncActive?T.pos:T.gold)}
           <span>
@@ -218,7 +230,7 @@ function SettingsInline() {
         })()}
       </div>
 
-      {/* Budget-Wartung */}
+      {/* ── Budget-Wartung ── */}
       {(()=>{
         const allBudgetTxs = txs.filter(t=>t._budgetSubId && t.pending);
         if(allBudgetTxs.length === 0) return null;
@@ -229,11 +241,9 @@ function SettingsInline() {
           bySubId[t._budgetSubId].push(t);
         });
         return (
-          <div style={{borderTop:`1px solid ${T.bd}`,marginTop:8,paddingTop:10,marginBottom:8}}>
-            <div style={{color:T.txt2,fontSize:11,fontWeight:600,marginBottom:8,display:"flex",alignItems:"center",gap:5}}>
-              {Li("target",12,T.gold)} Budget-Platzhalter Wartung
-            </div>
-            <div style={{color:T.txt2,fontSize:10,marginBottom:10,lineHeight:1.5}}>
+          <div style={SECTION}>
+            <SectionHeader icon="target" color={T.gold} label="Budget-Platzhalter Wartung"/>
+            <div style={{color:T.txt2,fontSize:11,marginBottom:10,lineHeight:1.5}}>
               Alle Budget-Platzhalter nach Unterkategorie. Löschen macht Platz für einen sauberen Neustart — Budget-Einstellungen bleiben erhalten, neue Platzhalter werden beim nächsten Speichern automatisch erzeugt.
             </div>
             {Object.entries(bySubId).map(([subId, entries])=>{
@@ -281,17 +291,17 @@ function SettingsInline() {
         );
       })()}
 
-      {/* Gefahrenzone */}
-      <div style={{borderTop:`1px solid ${T.bd}`,marginTop:8,paddingTop:10}}>
-        <div style={{color:T.txt2,fontSize:11,fontWeight:600,marginBottom:6}}>Gefahrenzone</div>
+      {/* ── Gefahrenzone ── */}
+      <div style={SECTION}>
+        <SectionHeader icon="alert-triangle" color={T.neg} label="Gefahrenzone"/>
         {!confirmReset
           ? <button onClick={()=>setConfirmReset(true)}
               style={{width:"100%",padding:"11px",borderRadius:11,border:`1px solid rgba(224,80,96,0.4)`,
                 background:"rgba(224,80,96,0.08)",color:T.neg,fontSize:13,fontWeight:600,
-                cursor:"pointer",marginBottom:12,textAlign:"left"}}>
+                cursor:"pointer",textAlign:"left"}}>
               {Li("trash-2",14)} alle Daten zurücksetzen
             </button>
-          : <div style={{background:"rgba(224,80,96,0.12)",border:`1px solid ${T.neg}`,borderRadius:11,padding:14,marginBottom:12}}>
+          : <div style={{background:"rgba(224,80,96,0.12)",border:`1px solid ${T.neg}`,borderRadius:11,padding:14}}>
               <div style={{color:T.neg,fontSize:13,fontWeight:700,marginBottom:6}}>{Li("alert-circle",14,T.neg)} Wirklich alles löschen?</div>
               <div style={{color:T.txt2,fontSize:11,marginBottom:12,lineHeight:1.5}}>
                 Kategorien, Gruppen, Buchungen, Jahresplan und Zahlungsarten werden unwiderruflich entfernt.
@@ -317,11 +327,11 @@ function SettingsInline() {
       </div>
 
       {/* ── Performance-Debug (einklappbar, am Ende, für Diagnose) ── */}
-      <div style={{marginTop:24,paddingTop:14,borderTop:`1px solid ${T.bd}`}}>
+      <div style={SECTION}>
         <div onClick={()=>setShowDebugExpand(v=>!v)}
-          style={{cursor:"pointer",display:"flex",alignItems:"center",gap:6,
-            color:T.lbl||T.txt2,fontSize:11,fontWeight:600}}>
-          {Li("zap",13,Object.values(debugFlags||{}).some(v=>v)?T.gold:T.txt2)}
+          style={{cursor:"pointer",display:"flex",alignItems:"center",gap:7,
+            color:T.lbl||T.txt2,fontSize:12,fontWeight:700,marginBottom:showDebugExpand?12:0}}>
+          {Li("zap",14,Object.values(debugFlags||{}).some(v=>v)?T.gold:T.txt2)}
           <span style={{flex:1}}>
             Performance-Debug
             {Object.values(debugFlags||{}).some(v=>v) && (
@@ -330,13 +340,13 @@ function SettingsInline() {
               </span>
             )}
           </span>
-          {Li(showDebugExpand?"chevron-up":"chevron-down",12,T.txt2)}
+          {Li(showDebugExpand?"chevron-up":"chevron-down",13,T.txt2)}
         </div>
         {showDebugExpand && (
-          <div style={{marginTop:10,padding:"10px 12px",
+          <div style={{padding:"10px 12px",
             background:T.surf2||"rgba(255,255,255,0.03)",border:`1px solid ${T.bd}`,
             borderRadius:10}}>
-            <div style={{color:T.txt2,fontSize:10,marginBottom:8,lineHeight:1.4}}>
+            <div style={{color:T.txt2,fontSize:11,marginBottom:8,lineHeight:1.4}}>
               Funktionen einzeln deaktivieren, um Bottlenecks zu finden.
               Nur für Diagnose — im Normalbetrieb alles aktiv lassen.
             </div>

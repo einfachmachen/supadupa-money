@@ -266,8 +266,8 @@ function ManagementScreen({activeTab="kategorien"}) {
                 {accIconPick===acc.id&&<IconPickerDialog selectedIcon={acc.icon} selectedColor={acc.color||T.blue}
                   onSelect={ic=>{setAccounts(p=>p.map(a=>a.id===acc.id?{...a,icon:ic}:a));setAccIconPick(null);}}
                   onClose={()=>setAccIconPick(null)}/>}
-                <span style={{flex:1,color:T.txt,fontSize:12,fontWeight:600,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                  {acc.name}{acc.delayDays>0&&<span style={{color:T.gold,fontSize:"0.8em",fontWeight:700,marginLeft:2}}>+{acc.delayDays}d</span>}
+                <span style={{flex:1,color:T.txt,fontSize:16,fontWeight:700,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                  {acc.name}{acc.delayDays>0&&<span style={{color:T.gold,fontSize:"0.7em",fontWeight:700,marginLeft:2}}>+{acc.delayDays}d</span>}
                 </span>
                 {/* Mindest-Puffer */}
                 <div style={{display:"flex",alignItems:"center",gap:3,flexShrink:0}}

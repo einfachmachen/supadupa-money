@@ -321,6 +321,27 @@ reservierten Prognosewert.
   `CsvImportScreen`, winzige 11px-Breadcrumb-Header für „Konten"/„Einstellungen"
   in `ManagementScreen`) sind entfernt — `MobileHeader` läuft jetzt
   **unabhängig von `mobileMode`/Viewport überall identisch**.
+- **Nachschärfung nach Nutzer-Feedback zum einheitlichen Header** (Screenshots
+  zeigten: Erklärtexte in CSV importieren zu winzig, Daten-Manager noch als
+  Overlay-Karte statt Vollbild, Kontennamen zu klein, Einstellungen unstrukturiert):
+  - **Erklärtext-Schriftgröße**: eigene Konstante `MFSd` (mobil ~15px, Desktop
+    ~11px) in `CsvImportScreen.jsx`, analog zu `Box`/`Steps` in
+    `EnableBankingWizard`/`CloudSetupWizard` (~14.5–15px) — für **Fließtext-
+    Erklärungen** (Toggle-Beschreibungen, Hinweise unter Buttons), nicht für
+    funktionale Mikro-Labels (Slider-Endbeschriftung, Tages-Chips).
+  - `DataManagerDialog.jsx`s `wrap()` rendert jetzt **immer** Vollbild
+    (`position:fixed;inset:0`) — die alte `mobileMode`-Verzweigung auf ein
+    zentriertes Overlay-Karten-Modal ist entfernt, damit der Dialog nie mehr
+    als schwebende Karte über gedimmtem Hintergrund erscheint.
+  - Kontonamen in „Konten" (`ManagementScreen.jsx`) von 12px/600 auf 16px/700
+    angehoben — passend zur größeren 26px-Kopfzeile.
+  - **Einstellungen neu strukturiert** (`SettingsInline.jsx`): einheitlicher
+    `SECTION`-Rahmen (`borderTop` + Abstand) und `SectionHeader`-Helper
+    (Icon + Label, 12px/700) für jeden Block — Anzeige (Randlos + 3.-Spalte-
+    Bezeichnung, vorher ohne jede Überschrift lose im Fließtext), Cloudflare
+    Workers Sync, Budget-Platzhalter Wartung, Gefahrenzone (jetzt mit
+    `alert-triangle`-Icon statt nacktem Text), Performance-Debug — statt einer
+    unstrukturierten Mischung aus beschrifteten und unbeschrifteten Blöcken.
 
 ---
 

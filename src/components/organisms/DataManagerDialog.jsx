@@ -502,21 +502,14 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   );
 
   // Mobile: Vollbild mit einheitlichem Header (Zurück → Daten-Untermenü).
-  // Desktop: zentriertes Overlay-Dialog wie bisher.
+  // Vollbild wie alle anderen Daten-Tab-Dialoge (einheitliches Erscheinungsbild —
+  // kein zentriertes Overlay-Modal mehr, unabhängig von mobileMode).
   // WICHTIG: als reine Funktion (nicht als <Wrapper/>-Komponente) rendern — sonst
   // bekäme der Wrapper bei jedem Tastendruck eine neue Identität und der ganze
   // Dialog würde neu gemountet (Scroll springt nach oben, Eingabe verliert Fokus).
-  const wrap = (children) => mobileMode
-    ? (<div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,
-        zIndex:300,display:"flex",flexDirection:"column"}}>{children}</div>)
-    : (<div onClick={onClose}
-        style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",
-          zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"}}>
-        <div onClick={e=>e.stopPropagation()}
-          style={{background:T.surf,borderRadius:20,width:"100%",maxWidth:480,
-            maxHeight:"85vh",display:"flex",flexDirection:"column",
-            border:`1px solid ${T.bds}`,boxShadow:"0 8px 40px rgba(0,0,0,0.5)"}}>{children}</div>
-      </div>);
+  const wrap = (children) =>
+    (<div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,
+        zIndex:300,display:"flex",flexDirection:"column"}}>{children}</div>);
   return wrap(
     <>
 

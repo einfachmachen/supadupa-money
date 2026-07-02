@@ -24,6 +24,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const MFS = mobileMode ? 22 : 13; // mobile font size base
   const MFSl = mobileMode ? 18 : 11; // mobile font size small
   const MPad = mobileMode ? "14px 16px" : "8px 12px"; // mobile padding
+  const MFSd = mobileMode ? 15 : 11; // mobile font size für Erklärtexte (wie Bank verbinden/Cloud-Sync)
   const S = {fs:26, pad:10, padL:14, radius:16, gap:14}; // für mobile Konto-Kacheln
   const [csvText, setCsvText]       = useState("");
   const [csvSources, setCsvSources] = useState([]); // Dateinamen der importierten CSVs
@@ -1012,7 +1013,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
               <div style={{color:autoGroup?T.blue:T.txt2,fontSize:MFSl,fontWeight:700}}>
                 Zusammengehörige Zeilen automatisch gruppieren
               </div>
-              <div style={{color:T.txt2,fontSize:10,lineHeight:1.4}}>
+              <div style={{color:T.txt2,fontSize:MFSd,lineHeight:1.4}}>
                 {autoGroup
                   ? "Aktiv — Zeilen mit gleicher Rechnungs-Nr. / PP-Referenz werden zusammengefasst"
                   : "Inaktiv — jede CSV-Zeile wird als eigene Buchung importiert (empfohlen für manuelle Kontrolle)"}
@@ -1036,7 +1037,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                   <div style={{color:linkToGiro?T.gold:T.txt2,fontSize:MFSl,fontWeight:700}}>
                     Mit Giro-Buchungen verknüpfen
                   </div>
-                  <div style={{color:T.txt2,fontSize:10}}>
+                  <div style={{color:T.txt2,fontSize:MFSd}}>
                     Gleicher Betrag innerhalb ±{linkDays} Tage → automatisch verknüpfen
                   </div>
                 </div>
@@ -1110,14 +1111,14 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                 e.target.value="";
               }}/>
           </label>
-          <div style={{color:T.txt2,fontSize:10,marginBottom:10,marginTop:-4}}>
+          <div style={{color:T.txt2,fontSize:MFSd,marginBottom:10,marginTop:-4}}>
             PDF: Wirecard/N26-Kontoauszüge
           </div>
-          {pdfBusy && <div style={{color:T.blue,fontSize:11,fontWeight:600,marginBottom:10}}>PDF wird analysiert…</div>}
-          {pdfError && <div style={{color:T.neg,fontSize:11,marginBottom:10}}>PDF-Import: {pdfError}</div>}
+          {pdfBusy && <div style={{color:T.blue,fontSize:MFSd,fontWeight:600,marginBottom:10}}>PDF wird analysiert…</div>}
+          {pdfError && <div style={{color:T.neg,fontSize:MFSd,marginBottom:10}}>PDF-Import: {pdfError}</div>}
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
             <div style={{flex:1,height:1,background:T.bd}}/>
-            <span style={{color:T.txt2,fontSize:10}}>oder Text einfügen</span>
+            <span style={{color:T.txt2,fontSize:MFSd}}>oder Text einfügen</span>
             <div style={{flex:1,height:1,background:T.bd}}/>
           </div>
           <textarea value={csvText} onChange={e=>setCsvText(e.target.value)}
@@ -1826,7 +1827,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                   benötigt.
                 </div>
                 <div style={{marginTop:6,display:"flex",flexDirection:"column",gap:4}}>
-                  <div style={{color:T.txt2,fontSize:10,display:"flex",gap:6,alignItems:"flex-start"}}>
+                  <div style={{color:T.txt2,fontSize:MFSd,display:"flex",gap:6,alignItems:"flex-start"}}>
                     <span style={{color:T.gold,flexShrink:0}}>①</span>
                     <span>Den Endkontostand von{" "}
                       <span style={{color:T.txt,fontWeight:600}}>
@@ -1835,7 +1836,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                       oben unter <span style={{color:T.blue,fontWeight:600}}>Kontostand-Ankerpunkte</span> eintragen (Konto: {anchorWarning.accName||"gewähltes Konto"}).
                     </span>
                   </div>
-                  <div style={{color:T.txt2,fontSize:10,display:"flex",gap:6,alignItems:"flex-start"}}>
+                  <div style={{color:T.txt2,fontSize:MFSd,display:"flex",gap:6,alignItems:"flex-start"}}>
                     <span style={{color:T.gold,flexShrink:0}}>②</span>
                     <span>Oder: Den CSV-Export für{" "}
                       <span style={{color:T.txt,fontWeight:600}}>
