@@ -1,21 +1,31 @@
 name: Deploy to GitHub Pages
 
+# Veröffentlicht über den klassischen gh-pages-Branch (peaceiris/actions-gh-pages)
+# statt über die neuere GitHub-Pages-"Deployments API" (actions/deploy-pages).
+# Grund: die Deployments-API hing wiederholt in der Warteschlange fest
+# ("deployment_queued" bis zum 10-Minuten-Timeout, teils auch sofortiges
+# "Deployment cancelled") — ein GitHub-seitiges Problem, keine Fehlkonfiguration
+# (Environment-Schutzregeln waren leer/Standard). Der gh-pages-Branch-Weg
+# braucht diese API nicht und ist seit Jahren battle-tested.
+#
+# EINMALIGER Schritt nach diesem Workflow-Wechsel: In den Repo-Einstellungen
+# unter Settings → Pages die "Source" von "GitHub Actions" auf
+# "Deploy from a branch" (Branch: gh-pages, Ordner: /) umstellen.
+
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -41,18 +51,9 @@ jobs:
           echo "── Site-Inhalt ──"
           find _site -maxdepth 2 -type f | head -30
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v5
+      - name: Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: _site
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: _site
+          publish_branch: gh-pages
