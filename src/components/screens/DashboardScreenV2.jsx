@@ -750,6 +750,31 @@ function DashboardScreenV2() {
 
     // ── Prognose: Vormonatssaldo + Einnahmen - Ausgaben (Mitte/Ende) ──
     return (<>
+      {/* Proaktiver Hinweis: nicht zugeordnete Bank-Konten — bewusst AUSSERHALB
+          des scrollbaren Bereichs (eigenes Flex-Geschwister, nicht Teil des
+          scrollenden/sticky Hero-Bereichs). So schiebt er den gesamten Inhalt
+          inkl. Hero einfach nach unten, statt ihn zu überlagern (der sticky
+          Hero hätte sonst beim Scrollen über dem Banner gelegen und Buchungen/
+          Buttons direkt darunter verdeckt). Bottom-Bar liegt außerhalb dieser
+          Komponente und bleibt unberührt. */}
+      {unmappedEbAccounts.length > 0 && !bankFetch && (
+        <div style={{ flexShrink: 0, margin: "6px 10px 0", padding: "10px 12px", borderRadius: 12,
+          background: T.gold + "18", border: `1px solid ${T.gold}55`,
+          display: "flex", alignItems: "center", gap: 10 }}>
+          {Li("alert-triangle", 18, T.gold)}
+          <div style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 12.5, lineHeight: 1.4 }}>
+            {unmappedEbAccounts.length} Bank-Konto{unmappedEbAccounts.length !== 1 ? "en" : ""} noch{" "}
+            <b>nicht zugeordnet</b> ({unmappedEbAccounts.map((a) => a.label).join(", ")}) —
+            Umsätze werden beim Abruf übersprungen.
+          </div>
+          <button onClick={() => setShowBankWizard?.(true)}
+            style={{ flexShrink: 0, background: T.gold, border: "none", borderRadius: 9,
+              padding: "8px 11px", color: T.on_accent || "#1A1E00", fontSize: 12.5, fontWeight: 800,
+              cursor: "pointer", whiteSpace: "nowrap" }}>
+            Zuordnen →
+          </button>
+        </div>
+      )}
       <div ref={dashScrollRef}
         onTouchStart={onPullStart} onTouchMove={onPullMove} onTouchEnd={onPullEnd}
         style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch"}}>
@@ -890,27 +915,6 @@ function DashboardScreenV2() {
           }
         })()}
         </div>
-
-        {/* Proaktiver Hinweis: nicht zugeordnete Bank-Konten — sofort sichtbar
-            beim Öffnen, unabhängig von Pull-to-Refresh oder Bank-Assistent. */}
-        {unmappedEbAccounts.length > 0 && !bankFetch && (
-          <div style={{ margin: "6px 10px 0", padding: "10px 12px", borderRadius: 12,
-            background: T.gold + "18", border: `1px solid ${T.gold}55`,
-            display: "flex", alignItems: "center", gap: 10 }}>
-            {Li("alert-triangle", 18, T.gold)}
-            <div style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 12.5, lineHeight: 1.4 }}>
-              {unmappedEbAccounts.length} Bank-Konto{unmappedEbAccounts.length !== 1 ? "en" : ""} noch{" "}
-              <b>nicht zugeordnet</b> ({unmappedEbAccounts.map((a) => a.label).join(", ")}) —
-              Umsätze werden beim Abruf übersprungen.
-            </div>
-            <button onClick={() => setShowBankWizard?.(true)}
-              style={{ flexShrink: 0, background: T.gold, border: "none", borderRadius: 9,
-                padding: "8px 11px", color: T.on_accent || "#1A1E00", fontSize: 12.5, fontWeight: 800,
-                cursor: "pointer", whiteSpace: "nowrap" }}>
-              Zuordnen →
-            </button>
-          </div>
-        )}
 
         {/* Pull-to-Refresh-Indikator: erscheint beim Herunterziehen zwischen dem
             fest positionierten Hero und der ersten Kategorie. */}
