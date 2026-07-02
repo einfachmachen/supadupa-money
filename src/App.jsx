@@ -3270,8 +3270,10 @@ Abbrechen = ${remoteName}-Stand laden`
       {showCsv&&<CsvImportScreen onClose={()=>{setShowCsv(false);setPlusArretiert(false);}}
         onBack={()=>{setShowCsv(false);setPlusArretiert(true);}}
         csvRules={csvRules} setCsvRules={setCsvRules} mobileMode={mobileMode}/>}
-      {showBankWizard&&<EnableBankingWizard onClose={()=>{setShowBankWizard(false);setPlusArretiert(false);}}/>}
-      {showCloudSetup&&<CloudSetupWizard onClose={()=>{setShowCloudSetup(false);setPlusArretiert(false);}}/>}
+      {showBankWizard&&<EnableBankingWizard onClose={()=>{setShowBankWizard(false);setPlusArretiert(false);}}
+        onBack={()=>{setShowBankWizard(false);setPlusArretiert(true);}}/>}
+      {showCloudSetup&&<CloudSetupWizard onClose={()=>{setShowCloudSetup(false);setPlusArretiert(false);}}
+        onBack={()=>{setShowCloudSetup(false);setPlusArretiert(true);}}/>}
       {showFuelAnalysis&&<FuelAnalysisScreen mobileMode={mobileMode}
         onClose={()=>{setShowFuelAnalysis(false);setPlusArretiert(false);}}
         onBack={()=>{setShowFuelAnalysis(false);setPlusArretiert(true);}}/>}

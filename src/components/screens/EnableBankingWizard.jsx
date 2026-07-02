@@ -122,7 +122,7 @@ function normalizeAccounts(r) {
     .filter((a) => a.uid);
 }
 
-function EnableBankingWizard({ onClose }) {
+function EnableBankingWizard({ onClose, onBack }) {
   const { txs, setTxs, accounts, setMasterOverride } = useContext(AppCtx);
 
   const [relayUrl, setRelayUrl] = useState(DEFAULT_RELAY);
@@ -149,6 +149,13 @@ function EnableBankingWizard({ onClose }) {
 
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
+  // onBack (falls von App.jsx gesetzt) verlässt den Assistenten auf Schritt 0
+  // "nur eine Ebene" ins Daten-Menü — anders als onClose (echtes Verlassen)
+  // hält das den vergrößerten +-Button-Zustand aufrecht. Fällt auf onClose
+  // zurück, falls kein onBack übergeben wurde.
+  const onBackRef = useRef(onBack);
+  onBackRef.current = onBack;
+  const exitOnStep0 = () => (onBackRef.current || onCloseRef.current)?.();
 
   const redirectUrl =
     typeof window !== "undefined" ? window.location.origin + window.location.pathname : "";
@@ -422,7 +429,7 @@ function EnableBankingWizard({ onClose }) {
   };
 
   // ── Master-„+"-Button übernimmt die Schritt-Steuerung ──────────────────
-  const back = () => (step === 0 ? onCloseRef.current?.() : setStep((s) => s - 1));
+  const back = () => (step === 0 ? exitOnStep0() : setStep((s) => s - 1));
   const stepKey = STEPS[step].key;
   const stepReady =
     stepKey === "zugang" ? credsComplete :
@@ -439,7 +446,7 @@ function EnableBankingWizard({ onClose }) {
         if (!stepReady) return;
         setStep((s) => Math.min(STEPS.length - 1, s + 1));
       },
-      onBack: () => { if (step === 0) onCloseRef.current?.(); else setStep((s) => Math.max(0, s - 1)); },
+      onBack: () => { if (step === 0) exitOnStep0(); else setStep((s) => Math.max(0, s - 1)); },
       onDismiss: () => onCloseRef.current?.(),
     });
     return () => setMasterOverride?.(null);

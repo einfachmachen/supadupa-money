@@ -77,7 +77,7 @@ function Fig({ name, alt }) {
 }
 const olStep = { margin: "10px 0 0", padding: "0 0 0 20px", color: T.txt, fontSize: 15.5, lineHeight: 1.6 };
 
-function CloudSetupWizard({ onClose }) {
+function CloudSetupWizard({ onClose, onBack }) {
   const {
     cfUrl, setCfUrl, cfSecret, setCfSecret, cfActive,
     syncPass, setSyncPass, syncEncActive, saveConfig, setMasterOverride,
@@ -94,6 +94,13 @@ function CloudSetupWizard({ onClose }) {
   // onClose stabil halten (Master-Override-Effekt soll nicht pro Render feuern)
   const onCloseRef = React.useRef(onClose);
   onCloseRef.current = onClose;
+  // onBack (falls von App.jsx gesetzt) verlässt den Assistenten auf Schritt 0
+  // "nur eine Ebene" ins Daten-Menü — anders als onClose (echtes Verlassen)
+  // hält das den vergrößerten +-Button-Zustand aufrecht. Fällt auf onClose
+  // zurück, falls kein onBack übergeben wurde.
+  const onBackRef = React.useRef(onBack);
+  onBackRef.current = onBack;
+  const exitOnStep0 = () => (onBackRef.current || onCloseRef.current)?.();
 
   // Passphrase mit Sichtbarkeits-Auge und Wiederholungsfeld. Ein Tippfehler in
   // der Passphrase = Datenverlust → deshalb erst übernehmen (und „Weiter"
@@ -141,7 +148,7 @@ function CloudSetupWizard({ onClose }) {
     }
   };
 
-  const back = () => (step === 0 ? onClose() : setStep((s) => s - 1));
+  const back = () => (step === 0 ? exitOnStep0() : setStep((s) => s - 1));
   const k = STEPS[step].key;
 
   // Master-„+"-Button übernimmt die Schritt-Steuerung: Tipp = Weiter/Fertig,
@@ -162,7 +169,7 @@ function CloudSetupWizard({ onClose }) {
         if (!stepReady) return;
         setStep((s) => Math.min(STEPS.length - 1, s + 1));
       },
-      onBack: () => { if (step === 0) onCloseRef.current?.(); else setStep((s) => Math.max(0, s - 1)); },
+      onBack: () => { if (step === 0) exitOnStep0(); else setStep((s) => Math.max(0, s - 1)); },
       onDismiss: () => onCloseRef.current?.(),
     });
     return () => setMasterOverride?.(null);
