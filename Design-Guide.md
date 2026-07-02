@@ -513,13 +513,27 @@ drei Reiter:
   werden, sonst gehen Änderungen beim Speichern verloren bzw. zeigt der
   Dialog beim erneuten Öffnen leere Felder, obwohl die Buchung Daten trägt.
 - **Auswertung**: `utils/fuel.js: buildFuelSeries()` sortiert die
-  Tankvorgänge eines Fahrzeugs nach km-Stand und berechnet den Verbrauch
-  (l/100 km) jeweils aus der Menge des **späteren** Tankvorgangs und der
-  Distanz zum vorherigen. `screens/FuelAnalysisScreen.jsx` zeigt Ø-Kennzahlen,
-  zwei Balken-Charts (Verbrauch, Preis/Liter — je Chart eine feste
-  Magnitude-Farbe statt einer kategorialen Palette) und eine Liste aller
-  Tankvorgänge — erreichbar über Bottom-Tab **Daten** → **Tankverbrauch**
-  (`App.jsx`-State `showFuelAnalysis`).
+  Tankvorgänge eines Fahrzeugs nach km-Stand und berechnet je Tankvorgang
+  (außer dem ersten — kein Vorgänger) zwei Kennzahlen aus derselben Distanz
+  (`calcDistance`, Differenz der km-Stände zum vorherigen Tankvorgang):
+  - **Verbrauch** (l/100 km, `calcConsumption`) = Menge des **späteren**
+    Tankvorgangs / Distanz × 100,
+  - **Kosten/km** (`calcCostPerKm`) = Menge × Preis/Liter des **späteren**
+    Tankvorgangs / Distanz — rechnerisch identisch zu
+    `Verbrauch/100 × Preis/Liter`, aber direkt aus den Rohwerten (robuster
+    gegen Rundung).
+  Beide nutzen die Menge/den Preis des SPÄTEREN Tankvorgangs, weil dieser
+  die seit dem vorherigen Tanken gefahrene Strecke „wieder auffüllt".
+  `screens/FuelAnalysisScreen.jsx` zeigt Ø-Kennzahlen, drei Balken-Charts
+  (Verbrauch, Preis/Liter, Kosten/km — je Chart eine feste Magnitude-Farbe
+  statt einer kategorialen Palette) und eine Liste aller Tankvorgänge —
+  erreichbar über Bottom-Tab **Daten** → **Tankverbrauch**
+  (`App.jsx`-State `showFuelAnalysis`). Auffällig unplausible Werte
+  (z. B. Verbrauch ≈ 0) deuten fast immer auf einen **Tippfehler beim
+  km-Stand** zwischen zwei Tankvorgängen hin (fehlende Stelle wie
+  „13400" statt „134000") — die App validiert km-Stände nicht gegenseitig
+  auf Plausibilität, das Rechenergebnis ist bei falscher Eingabe entsprechend
+  falsch, aber die Formel selbst korrekt.
 
 ---
 

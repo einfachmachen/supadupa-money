@@ -17,6 +17,7 @@ function FuelAnalysisScreen({onClose, onBack, mobileMode=false}) {
 
   const series = buildFuelSeries(txs, vehicleId);
   const withConsumption = series.filter(t=>t._consumption!=null);
+  const withCostPerKm = series.filter(t=>t._costPerKm!=null);
 
   const totalLiters = series.reduce((s,t)=>s+(t._fuelLiters||0), 0);
   const totalSpent  = series.reduce((s,t)=>s+Math.abs(t.totalAmount||0), 0);
@@ -25,12 +26,14 @@ function FuelAnalysisScreen({onClose, onBack, mobileMode=false}) {
   const pricedEntries = series.filter(t=>t._fuelPricePerL!=null);
   const avgPrice = pricedEntries.length
     ? pricedEntries.reduce((s,t)=>s+t._fuelPricePerL,0)/pricedEntries.length : null;
+  const avgCostPerKm = withCostPerKm.length
+    ? withCostPerKm.reduce((s,t)=>s+t._costPerKm,0)/withCostPerKm.length : null;
 
   const dLabel = iso => (iso||"").split("-").slice(1).reverse().join(".");
 
   // Einfacher SVG-Balken-Chart (Stil wie MoneyMoodScreen/ChartBlock): eine
   // Kennzahl über die Zeit, feste Farbe je Metrik (Magnitude → ein Hue).
-  const barChart = (rows, valueOf, color, unit, emptyHint) => {
+  const barChart = (rows, valueOf, color, emptyHint, fmtVal=(v)=>v.toFixed(1)) => {
     if(!rows.length) return (
       <div style={{color:T.txt2,fontSize:11,padding:"16px 0",textAlign:"center"}}>{emptyHint}</div>
     );
@@ -56,7 +59,7 @@ function FuelAnalysisScreen({onClose, onBack, mobileMode=false}) {
               {showLabels&&(
                 <text x={x+bw/2} y={padTop+chartH-bh-3} textAnchor="middle" fontSize="7"
                   fill={sel?T.txt:T.txt2} fontWeight={sel?700:400}>
-                  {v.toFixed(1)}
+                  {fmtVal(v)}
                 </text>
               )}
               <text x={x+bw/2} y={H-4} textAnchor="middle" fontSize="7" fill={sel?T.txt:T.txt2}>
@@ -118,6 +121,7 @@ function FuelAnalysisScreen({onClose, onBack, mobileMode=false}) {
               {[
                 ["Ø Verbrauch", avgConsumption!=null?avgConsumption.toFixed(1)+" l/100km":"—", T.gold, "activity"],
                 ["Ø Preis",     avgPrice!=null?avgPrice.toFixed(3).replace(".",",")+" €/l":"—", T.blue, "trending-up"],
+                ["Ø Kosten/km", avgCostPerKm!=null?avgCostPerKm.toFixed(3).replace(".",",")+" €/km":"—", T.mid, "route"],
                 ["Getankt",     totalLiters.toFixed(1)+" l", T.txt, "droplet"],
                 ["Ausgegeben",  fmt(totalSpent), T.txt, "wallet"],
               ].map(([label,val,col,icon])=>(
@@ -137,7 +141,7 @@ function FuelAnalysisScreen({onClose, onBack, mobileMode=false}) {
                 {Li("activity",12,T.gold)} Verbrauch (l/100km) je Tankvorgang
               </div>
               <div style={{background:"rgba(255,255,255,0.03)",border:`1px solid ${T.bd}`,borderRadius:11,padding:"8px"}}>
-                {barChart(withConsumption, t=>t._consumption, T.gold, "l/100km",
+                {barChart(withConsumption, t=>t._consumption, T.gold,
                   "Mindestens 2 Tankvorgänge mit km-Stand nötig, um Verbrauch zu berechnen.")}
               </div>
             </div>
@@ -148,8 +152,20 @@ function FuelAnalysisScreen({onClose, onBack, mobileMode=false}) {
                 {Li("trending-up",12,T.blue)} Preisentwicklung (€/Liter)
               </div>
               <div style={{background:"rgba(255,255,255,0.03)",border:`1px solid ${T.bd}`,borderRadius:11,padding:"8px"}}>
-                {barChart(pricedEntries, t=>t._fuelPricePerL, T.blue, "€/l",
+                {barChart(pricedEntries, t=>t._fuelPricePerL, T.blue,
                   "Noch keine Tankbuchung mit Preis pro Liter erfasst.")}
+              </div>
+            </div>
+
+            {/* Kosten/km-Chart */}
+            <div style={{marginBottom:16}}>
+              <div style={{color:T.txt2,fontSize:11,fontWeight:600,marginBottom:6,display:"flex",alignItems:"center",gap:5}}>
+                {Li("route",12,T.mid)} Kosten je gefahrenem km
+              </div>
+              <div style={{background:"rgba(255,255,255,0.03)",border:`1px solid ${T.bd}`,borderRadius:11,padding:"8px"}}>
+                {barChart(withCostPerKm, t=>t._costPerKm, T.mid,
+                  "Mindestens 2 Tankvorgänge mit km-Stand UND Preis/Liter nötig, um Kosten/km zu berechnen.",
+                  v=>v.toFixed(2))}
               </div>
             </div>
 
@@ -167,9 +183,18 @@ function FuelAnalysisScreen({onClose, onBack, mobileMode=false}) {
                     {t._odometer!=null?" · "+t._odometer+" km":""}
                   </div>
                 </div>
-                {t._consumption!=null&&(
-                  <div style={{color:T.gold,fontSize:12,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
-                    {t._consumption.toFixed(1)} l/100km
+                {(t._consumption!=null||t._costPerKm!=null)&&(
+                  <div style={{textAlign:"right",flexShrink:0}}>
+                    {t._consumption!=null&&(
+                      <div style={{color:T.gold,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>
+                        {t._consumption.toFixed(1)} l/100km
+                      </div>
+                    )}
+                    {t._costPerKm!=null&&(
+                      <div style={{color:T.mid,fontSize:10,fontWeight:700,fontFamily:NUM_FONT}}>
+                        {t._costPerKm.toFixed(3).replace(".",",")} €/km
+                      </div>
+                    )}
                   </div>
                 )}
                 <div style={{color:T.txt2,fontSize:12,fontFamily:NUM_FONT,flexShrink:0}}>{fmt(Math.abs(t.totalAmount||0))}</div>
