@@ -528,12 +528,21 @@ drei Reiter:
   (Verbrauch, Preis/Liter, Kosten/km — je Chart eine feste Magnitude-Farbe
   statt einer kategorialen Palette) und eine Liste aller Tankvorgänge —
   erreichbar über Bottom-Tab **Daten** → **Tankverbrauch**
-  (`App.jsx`-State `showFuelAnalysis`). Auffällig unplausible Werte
-  (z. B. Verbrauch ≈ 0) deuten fast immer auf einen **Tippfehler beim
-  km-Stand** zwischen zwei Tankvorgängen hin (fehlende Stelle wie
-  „13400" statt „134000") — die App validiert km-Stände nicht gegenseitig
-  auf Plausibilität, das Rechenergebnis ist bei falscher Eingabe entsprechend
-  falsch, aber die Formel selbst korrekt.
+  (`App.jsx`-State `showFuelAnalysis`).
+- **Plausibilitätsprüfung km-Stand** (`utils/fuel.js: checkOdometerPlausibility()`):
+  warnt beim Erfassen/Bearbeiten vor typischen Zahlendrehern/fehlenden
+  Ziffern (z. B. „13400" statt „134700"), **blockiert das Speichern aber
+  nicht** (reine Warnung, wie `SchieflageVorwarnung`). Vergleicht NUR gegen
+  Tankbuchungen desselben Fahrzeugs **vor/nach dem gewählten Datum** —
+  NICHT gegen den globalen Höchststand —, sonst würde das nachträgliche
+  Erfassen einer älteren Tankbuchung (legitim kleinerer km-Stand)
+  fälschlich als Fehler gemeldet. Drei Fälle: `"lower"` (km-Stand unter
+  einer früheren Buchung), `"higher"` (km-Stand über einer bereits
+  erfassten späteren Buchung — chronologisch unmöglich), `"jump"`
+  (Sprung > 3000 km seit der letzten Buchung — großzügige Schwelle, damit
+  normale Tankfüllungen nicht triggern). In allen vier Erfassungs-/
+  Bearbeiten-Dialogen verdrahtet, `excludeTxId` beim Bearbeiten nicht
+  vergessen (sonst vergleicht die Buchung mit sich selbst).
 
 ---
 

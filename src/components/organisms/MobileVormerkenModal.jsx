@@ -16,7 +16,7 @@ import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { nextBankWorkday, isoAddMonths } from "../../utils/date.js";
 import { Li } from "../../utils/icons.jsx";
 import { SchieflageVorwarnung } from "../atoms/SchieflageVorwarnung.jsx";
-import { isFuelSelection } from "../../utils/fuel.js";
+import { isFuelSelection, checkOdometerPlausibility } from "../../utils/fuel.js";
 
 function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialFinanz=false}) {
   const { cats, setCats, accounts, setAccounts, vehicles, setVehicles, txs, setTxs, year, month, getCat, getSub, setMasterOverride } = useContext(AppCtx);
@@ -81,6 +81,11 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
     const p = pn((fuelPricePerL||"").replace(",","."));
     return (l>0 && p>0) ? l*p : null;
   })();
+  // Plausibilitätsprüfung km-Stand: warnt vor typischen Zahlendrehern/fehlenden
+  // Ziffern (z.B. "13400" statt "134700"), blockiert das Speichern aber nicht.
+  const odometerWarning = (_showFuelFields && odometer)
+    ? checkOdometerPlausibility(txs, fuelVehicleId, pn(odometer), date)
+    : null;
   const addVehicle = () => {
     const name = newVehicleName.trim();
     if(!name) return;
@@ -776,7 +781,19 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
               {fieldLabel("km-Stand")}
               <input type="text" inputMode="numeric" value={odometer}
                 onChange={e=>setOdometer(e.target.value.replace(/[^0-9]/g,""))}
-                placeholder="km" style={{...recInp,marginBottom:fuelComputedTotal!=null?S.gap:0}}/>
+                placeholder="km" style={{...recInp,
+                  border:odometerWarning?`2px solid ${T.gold}`:undefined,
+                  marginBottom:(odometerWarning||fuelComputedTotal!=null)?S.gap:0}}/>
+
+              {/* Plausibilitätsprüfung: warnt, blockiert aber nicht */}
+              {odometerWarning && (
+                <div style={{display:"flex",alignItems:"flex-start",gap:8,
+                  background:`${T.gold}14`,border:`1.5px solid ${T.gold}55`,
+                  borderRadius:S.radius/2,padding:"8px 12px",marginBottom:S.gap}}>
+                  {Li("alert-triangle",S.fs-8,T.gold)}
+                  <span style={{color:T.gold,fontSize:S.fs-10,lineHeight:1.4}}>{odometerWarning.message}</span>
+                </div>
+              )}
 
               {/* Berechneter Betrag — wird beim Weiter-Tipp auf den Master-Button
                   automatisch übernommen (kein eigener Button, siehe masterOverride oben) */}

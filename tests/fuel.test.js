@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isFuelCat, isFuelSelection, hasFuelData, calcDistance, calcConsumption, calcCostPerKm, buildFuelSeries } from "../src/utils/fuel.js";
+import { isFuelCat, isFuelSelection, hasFuelData, calcDistance, calcConsumption, calcCostPerKm, checkOdometerPlausibility, buildFuelSeries } from "../src/utils/fuel.js";
 
 describe("isFuelCat", () => {
   it("erkennt 'Tanken' exakt, case-insensitive, getrimmt", () => {
@@ -88,6 +88,57 @@ describe("calcCostPerKm", () => {
     const cons = calcConsumption(10000, 10500, 35);
     const cost = calcCostPerKm(10000, 10500, 35, 1.8);
     expect(cost).toBeCloseTo((cons/100)*1.8, 5);
+  });
+});
+
+describe("checkOdometerPlausibility", () => {
+  const vId = "v1";
+  const base = [
+    {id:"a", date:"2026-05-01", _fuelVehicleId:vId, _odometer:134000},
+    {id:"b", date:"2026-06-01", _fuelVehicleId:vId, _odometer:134700},
+  ];
+
+  it("liefert keine Warnung ohne vorhandene Historie", () => {
+    expect(checkOdometerPlausibility([], vId, 13400, "2026-07-01")).toBeNull();
+  });
+
+  it("regression: fehlende Ziffer (13400 statt 134700) wird als 'lower' erkannt", () => {
+    const w = checkOdometerPlausibility(base, vId, 13400, "2026-07-01");
+    expect(w).not.toBeNull();
+    expect(w.type).toBe("lower");
+    expect(w.refOdometer).toBe(134700);
+  });
+
+  it("warnt NICHT beim nachträglichen Erfassen einer ÄLTEREN Tankbuchung mit kleinerem km-Stand", () => {
+    // Neue Buchung VOR den bestehenden beiden, mit plausibel kleinerem km-Stand.
+    const w = checkOdometerPlausibility(base, vId, 133500, "2026-04-01");
+    expect(w).toBeNull();
+  });
+
+  it("erkennt einen km-Stand über einer bereits erfassten SPÄTEREN Buchung ('higher')", () => {
+    // Buchung zwischen a und b, aber km-Stand höher als b (unmöglich).
+    const w = checkOdometerPlausibility(base, vId, 135000, "2026-05-15");
+    expect(w).not.toBeNull();
+    expect(w.type).toBe("higher");
+    expect(w.refOdometer).toBe(134700);
+  });
+
+  it("erkennt einen unplausibel großen Sprung seit der letzten Buchung ('jump')", () => {
+    const w = checkOdometerPlausibility(base, vId, 999999, "2026-07-01");
+    expect(w).not.toBeNull();
+    expect(w.type).toBe("jump");
+  });
+
+  it("schließt die eigene Buchung beim Bearbeiten aus (excludeTxId)", () => {
+    // "b" bearbeiten und ihren eigenen Wert erneut eingeben — keine Warnung
+    // gegen sich selbst.
+    const w = checkOdometerPlausibility(base, vId, 134700, "2026-06-01", "b");
+    expect(w).toBeNull();
+  });
+
+  it("vergleicht nicht über Fahrzeuge hinweg", () => {
+    const w = checkOdometerPlausibility(base, "andereVehicleId", 100, "2026-07-01");
+    expect(w).toBeNull();
   });
 });
 

@@ -10,7 +10,7 @@ import { INP } from "../../theme/palette.js";
 import { isoAddMonths } from "../../utils/date.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
-import { isFuelSelection } from "../../utils/fuel.js";
+import { isFuelSelection, checkOdometerPlausibility } from "../../utils/fuel.js";
 
 function EditPopup() {
   const { cats,setCats,groups,setGroups,txs,setTxs,accounts,setAccounts,
@@ -52,6 +52,12 @@ function EditPopup() {
     const _editSplit0 = (editTx.splits||[])[0];
     const _showFuelFields = !editTx._budgetSubId && txType(editTx)==="expense"
       && isFuelSelection(getCat(_editSplit0?.catId), getSub(_editSplit0?.catId, _editSplit0?.subId));
+    // Plausibilitätsprüfung km-Stand: warnt vor typischen Zahlendrehern/
+    // fehlenden Ziffern, blockiert das Speichern aber nicht. Eigene Buchung
+    // (editTx.id) beim Vergleich ausschließen.
+    const odometerWarning = (_showFuelFields && editTx._odometer!=null)
+      ? checkOdometerPlausibility(txs, editTx._fuelVehicleId, editTx._odometer, editTx.date, editTx.id)
+      : null;
     const addVehicle = () => {
       const name = newVehicleName.trim();
       if(!name) return;
@@ -601,12 +607,21 @@ function EditPopup() {
                 <div style={{color:T.txt2,fontSize:10,marginBottom:3}}>km-Stand</div>
                 <input value={editTx._odometer??""}
                   onChange={e=>setEditTx(p=>({...p,_odometer:e.target.value?pn(e.target.value.replace(/[^0-9]/g,"")):undefined}))}
-                  style={{width:"100%",background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bd}`,
+                  style={{width:"100%",background:"rgba(255,255,255,0.06)",
+                    border:`1px solid ${odometerWarning?T.gold:T.bd}`,
                     borderRadius:8,padding:"6px 8px",color:T.txt,fontSize:12,fontFamily:NUM_FONT,
                     textAlign:"right",outline:"none",boxSizing:"border-box"}}
                   inputMode="numeric" placeholder="km"/>
               </div>
             </div>
+            {odometerWarning && (
+              <div style={{display:"flex",alignItems:"flex-start",gap:6,marginTop:8,
+                background:`${T.gold}14`,border:`1px solid ${T.gold}55`,
+                borderRadius:8,padding:"6px 8px"}}>
+                {Li("alert-triangle",11,T.gold)}
+                <span style={{color:T.gold,fontSize:10,lineHeight:1.4}}>{odometerWarning.message}</span>
+              </div>
+            )}
           </div>)}
           {/* Budget-Platzhalter: Betrag editierbar + Toggle zum Lösen der Budget-Bindung */}
           {editTx._budgetSubId&&editTx.pending&&(()=>{

@@ -13,7 +13,7 @@ import { MONTHS_F } from "../../utils/constants.js";
 import { isoAddMonths, nextBankWorkday } from "../../utils/date.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
-import { isFuelSelection } from "../../utils/fuel.js";
+import { isFuelSelection, checkOdometerPlausibility } from "../../utils/fuel.js";
 
 function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}) {
   const { cats, groups, txs, setTxs, accounts, vehicles, setVehicles, year, month, getCat, getSub, setMasterOverride } = useContext(AppCtx);
@@ -368,6 +368,12 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
     const p = pn((fuelPricePerL||"").replace(",","."));
     return (l>0 && p>0) ? l*p : null;
   })();
+  // Plausibilitätsprüfung km-Stand: warnt vor typischen Zahlendrehern/
+  // fehlenden Ziffern, blockiert das Speichern aber nicht. Beim Bearbeiten
+  // die eigene Buchung (editVorm.id) beim Vergleich ausschließen.
+  const odometerWarning = (_showFuelFields && odometer)
+    ? checkOdometerPlausibility(txs, fuelVehicleId, pn(odometer), startDate, editVorm?.id)
+    : null;
   const addVehicle = () => {
     const name = newVehicleName.trim();
     if(!name) return;
@@ -1091,10 +1097,19 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
                       <div style={{color:T.txt2,fontSize:10,marginBottom:3}}>km-Stand</div>
                       <input value={odometer} onChange={e=>setOdometer(e.target.value.replace(/[^0-9]/g,""))}
                         style={{...INP,marginBottom:0,width:"100%",boxSizing:"border-box",
-                          fontFamily:NUM_FONT,textAlign:"right"}}
+                          fontFamily:NUM_FONT,textAlign:"right",
+                          border:odometerWarning?`1px solid ${T.gold}`:undefined}}
                         inputMode="numeric" placeholder="km"/>
                     </div>
                   </div>
+                  {odometerWarning && (
+                    <div style={{display:"flex",alignItems:"flex-start",gap:6,marginBottom:8,
+                      background:`${T.gold}14`,border:`1px solid ${T.gold}55`,
+                      borderRadius:8,padding:"6px 8px"}}>
+                      {Li("alert-triangle",11,T.gold)}
+                      <span style={{color:T.gold,fontSize:10,lineHeight:1.4}}>{odometerWarning.message}</span>
+                    </div>
+                  )}
                   {fuelComputedTotal!=null && (
                     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,
                       background:"rgba(0,0,0,0.2)",borderRadius:8,padding:"7px 10px"}}>

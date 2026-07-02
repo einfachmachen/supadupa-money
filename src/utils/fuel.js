@@ -48,6 +48,50 @@ function calcCostPerKm(prevOdo, nextOdo, nextLiters, nextPricePerL) {
   return (nextLiters * nextPricePerL) / dist;
 }
 
+// Grosszügige Schwelle für "ungewöhnlich großer Sprung" — normale
+// Tankfüllungen (auch bei großen Tanks/sparsamen Fahrzeugen) liegen weit
+// darunter; typische Zahlendreher/fehlende-Null-Fehler springen weit darüber.
+const FUEL_JUMP_WARN_KM = 3000;
+
+// Prüft einen neu eingegebenen km-Stand gegen andere Tankbuchungen desselben
+// Fahrzeugs auf offensichtliche Eingabefehler (typischerweise eine fehlende
+// oder zusätzliche Ziffer, z.B. "13400" statt "134000"). Vergleicht NUR
+// gegen Buchungen VOR/NACH dem gewählten Datum (nicht gegen den globalen
+// Höchststand) — sonst würde das nachträgliche Erfassen einer älteren
+// Tankbuchung fälschlich als Fehler gemeldet, obwohl ein kleinerer km-Stand
+// dort völlig normal ist. excludeTxId: die gerade bearbeitete Buchung selbst
+// nicht mit sich vergleichen. Gibt {type, refOdometer, message} oder null
+// zurück — eine Warnung, kein Speicher-Blocker (Editieren bleibt möglich).
+function checkOdometerPlausibility(txs, vehicleId, newOdometer, date, excludeTxId) {
+  if (newOdometer == null || !vehicleId) return null;
+  const others = (txs || []).filter(t =>
+    t._fuelVehicleId === vehicleId && t._odometer != null && t.id !== excludeTxId);
+  if (!others.length) return null;
+
+  const before = date ? others.filter(t => t.date <= date) : others;
+  const after  = date ? others.filter(t => t.date > date) : [];
+
+  const prevMax = before.length ? Math.max(...before.map(t => t._odometer)) : null;
+  const nextMin = after.length ? Math.min(...after.map(t => t._odometer)) : null;
+
+  if (prevMax != null && newOdometer < prevMax) {
+    return { type: "lower", refOdometer: prevMax,
+      message: `km-Stand liegt unter einer früheren Tankbuchung (${prevMax} km) — fehlt eine Ziffer?` };
+  }
+  if (nextMin != null && newOdometer > nextMin) {
+    return { type: "higher", refOdometer: nextMin,
+      message: `km-Stand liegt über einer späteren Tankbuchung (${nextMin} km) — zu viel eingegeben?` };
+  }
+  if (prevMax != null) {
+    const diff = newOdometer - prevMax;
+    if (diff > FUEL_JUMP_WARN_KM) {
+      return { type: "jump", refOdometer: prevMax, diff,
+        message: `Sehr großer Sprung seit der letzten Tankbuchung (+${diff} km) — zu viel eingegeben?` };
+    }
+  }
+  return null;
+}
+
 // Liefert je Fahrzeug die Tankvorgänge (chronologisch nach km-Stand sortiert)
 // mit berechnetem Verbrauch UND Kosten/km seit dem jeweils vorherigen
 // Tankvorgang (beide null bei der ersten Buchung — kein Vorgänger).
@@ -63,4 +107,4 @@ function buildFuelSeries(txs, vehicleId) {
   });
 }
 
-export { isFuelCat, isFuelSelection, hasFuelData, calcDistance, calcConsumption, calcCostPerKm, buildFuelSeries };
+export { isFuelCat, isFuelSelection, hasFuelData, calcDistance, calcConsumption, calcCostPerKm, checkOdometerPlausibility, buildFuelSeries };
