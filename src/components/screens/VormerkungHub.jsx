@@ -16,7 +16,7 @@ import { Li } from "../../utils/icons.jsx";
 import { isFuelSelection, checkOdometerPlausibility } from "../../utils/fuel.js";
 
 function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}) {
-  const { cats, groups, txs, setTxs, accounts, vehicles, setVehicles, year, month, getCat, getSub, setMasterOverride } = useContext(AppCtx);
+  const { cats, groups, txs, setTxs, accounts, vehicles, setVehicles, year, month, getCat, getSub, setMasterOverride, plusArretiert } = useContext(AppCtx);
   // „+"-Button übernimmt: Tipp = Fertig/Schließen, Wisch ↓ = schließen.
   useEffect(() => {
     setMasterOverride?.({ label:"Fertig",
@@ -695,7 +695,8 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
     <div onClick={mobileMode?null:onClose}
       className={mobileMode?"mobile-modal":""}
       style={mobileMode
-        ? {position:"fixed",inset:0,background:T.bg,zIndex:300,display:"flex",flexDirection:"column"}
+        ? {position:"fixed",inset:0,background:T.bg,zIndex:300,display:"flex",flexDirection:"column",
+            "--mm-bottom":plusArretiert?"190px":"57px"}
         : {position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",
             backdropFilter:"blur(8px)",zIndex:15,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
       <div onClick={e=>e.stopPropagation()} style={mobileMode

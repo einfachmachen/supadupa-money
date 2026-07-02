@@ -19,7 +19,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
     yearData, setYearData, col3Name, setCol3Name,
     quickBtns, setQuickBtns, quickColors, setQuickColors,
     budgets, setBudgets, customIcons, setCustomIcons,
-    setMainTab, setActiveStructurTab, setShowBankWizard, setMasterOverride } = useContext(AppCtx);
+    setMainTab, setActiveStructurTab, setShowBankWizard, setMasterOverride, plusArretiert } = useContext(AppCtx);
 
   // Navigation zu den jeweils zuständigen Stellen (statt direkt hier zu löschen).
   const openKonten = () => { onClose?.(); setMainTab?.("struktur"); setActiveStructurTab?.("konten"); };
@@ -532,7 +532,8 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   // Dialog würde neu gemountet (Scroll springt nach oben, Eingabe verliert Fokus).
   const wrap = (children) =>
     (<div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,
-        zIndex:300,display:"flex",flexDirection:"column"}}>{children}</div>);
+        zIndex:300,display:"flex",flexDirection:"column",
+        "--mm-bottom":plusArretiert?"190px":"57px"}}>{children}</div>);
   return wrap(
     <>
 

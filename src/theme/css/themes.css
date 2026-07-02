@@ -177,14 +177,13 @@
   /* iOS Safari Fix + nav-bottom-Überlappung:
      Die nav-bottom (Home/Monat/Jahr-Buttons) ist position:fixed bottom:0,
      height:57px, z-index:9999 — sitzt also bündig am UNTEREN Bildschirmrand
-     und deckt exakt die untersten 57 echten Pixel ab (schließt den iPhone-
-     Home-Indicator-Bereich bereits mit ein, wird selbst NICHT zusätzlich um
-     die Safe-Area vergrößert). Reserviert ein Dialog zusätzlich zu diesen
-     57px NOCH den Safe-Area-Betrag obendrauf, entsteht darüber ein leerer,
-     ungenutzter Streifen (Lücke zwischen Inhalt-Ende und Oberkante der
-     Leiste) — sichtbar nur auf Geräten mit Home-Indicator (iPhone X+), nicht
-     im Desktop-Browser (env(safe-area-inset-bottom) dort = 0). Reservierung
-     daher exakt auf die nav-bottom-Höhe begrenzt, ohne Safe-Area-Zuschlag.
+     und deckt im Ruhezustand exakt die untersten 57 echten Pixel ab. Der
+     "+"-Button kann darüber hinaus aber VERGRÖSSERT ("arretiert") sein
+     (scale 1.5, weit nach oben verschoben) — dann reicht sein Kreis deutlich
+     höher als 57px und würde Inhalte am unteren Rand überdecken/abschneiden.
+     Reservierung daher über die CSS-Variable --mm-bottom (von den einzelnen
+     Screens anhand von plusArretiert gesetzt, s. AppCtx) statt eines festen
+     Werts: 57px im Ruhezustand, mehr wenn der Button vergrößert ist.
      - 100svh = small viewport height: stabil (kein Nachrechnen beim Scrollen →
        kein Wackeln), beruecksichtigt aber die iOS-Safari-Bottom-Bar */
   .mobile-modal {
@@ -192,7 +191,7 @@
     top: 0 !important;
     height: 100vh !important;
     height: 100svh !important;
-    padding-bottom: 57px !important;
+    padding-bottom: var(--mm-bottom, 57px) !important;
     box-sizing: border-box;
   }
   .mobile-modal button { min-height: 48px; font-size: 18px !important; }

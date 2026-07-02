@@ -20,7 +20,7 @@ import { isoAddDays, nextBankWorkday } from "../../utils/date.js";
 import { liveLinkedGiroIds } from "../../utils/links.js";
 
 function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
-  const { cats, groups, txs, setTxs, accounts, csvRules, setCsvRules, startBalances, setStartBalances, setMasterOverride } = useContext(AppCtx);
+  const { cats, groups, txs, setTxs, accounts, csvRules, setCsvRules, startBalances, setStartBalances, setMasterOverride, plusArretiert } = useContext(AppCtx);
   const MFS = mobileMode ? 22 : 13; // mobile font size base
   const MFSl = mobileMode ? 18 : 11; // mobile font size small
   const MPad = mobileMode ? "14px 16px" : "8px 12px"; // mobile padding
@@ -962,10 +962,12 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
       : {position:"fixed",inset:0,background:T.bg,zIndex:15,display:"flex",flexDirection:"column",
          fontFamily:"'SF Pro Text',-apple-system,sans-serif",
          // Reserve unten: die nav-bottom (Home/Monat/Jahr) ist position:fixed, bottom:0,
-         // height:57px — deckt exakt die untersten 57px ab (Home-Indicator inklusive,
-         // wird selbst nicht zusätzlich um die Safe-Area vergrößert). KEIN zusätzlicher
-         // Safe-Area-Zuschlag hier, sonst entsteht ein leerer Streifen über der Leiste.
-         paddingBottom:"57px"}}>
+         // height:57px im Ruhezustand — ist der + Button aber vergrößert/"arretiert",
+         // reicht sein Kreis deutlich höher und würde sonst Inhalte am unteren Rand
+         // überdecken/abschneiden. --mm-bottom (CSS, per mobile-modal-Klasse) deckt den
+         // mobileMode-Fall ab; dieser Inline-Wert den (seltenen) Nicht-mobileMode-Fall.
+         "--mm-bottom":plusArretiert?"190px":"57px",
+         paddingBottom:plusArretiert?"190px":"57px"}}>
       {/* Header — einheitlich mit den anderen Daten-Tab-Dialogen (siehe MobileHeader),
           unabhängig von mobileMode. Zurück führt review/done → input, input → Mehr-Menü. */}
       {!embedded && (

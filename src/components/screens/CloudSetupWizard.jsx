@@ -80,7 +80,7 @@ const olStep = { margin: "10px 0 0", padding: "0 0 0 20px", color: T.txt, fontSi
 function CloudSetupWizard({ onClose, onBack }) {
   const {
     cfUrl, setCfUrl, cfSecret, setCfSecret, cfActive,
-    syncPass, setSyncPass, syncEncActive, saveConfig, setMasterOverride,
+    syncPass, setSyncPass, syncEncActive, saveConfig, setMasterOverride, plusArretiert,
   } = useContext(AppCtx);
   const [step, setStep] = useState(0);
   const [testState, setTestState] = useState("idle"); // idle|testing|ok|error
@@ -176,7 +176,8 @@ function CloudSetupWizard({ onClose, onBack }) {
   }, [step, urlReady, secretReady, passReady]);
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: T.bg, zIndex: 320, display: "flex", flexDirection: "column" }}>
+    <div style={{ position: "fixed", inset: 0, background: T.bg, zIndex: 320, display: "flex", flexDirection: "column",
+      paddingBottom: plusArretiert ? "190px" : "57px" }}>
       {/* Header — einheitlich mit den anderen Daten-Tab-Dialogen (siehe MobileHeader) */}
       <MobileHeader title="Cloud-Sync einrichten"
         subtitle={`Schritt ${step + 1}/${STEPS.length} · ${STEPS[step].title}`}

@@ -11,7 +11,7 @@ import { Li } from "../../utils/icons.jsx";
 import { buildFuelSeries } from "../../utils/fuel.js";
 
 function FuelAnalysisScreen({onClose, onBack, mobileMode=false}) {
-  const { txs, vehicles, setMasterOverride } = useContext(AppCtx);
+  const { txs, vehicles, setMasterOverride, plusArretiert } = useContext(AppCtx);
   const [vehicleId, setVehicleId] = useState((vehicles||[])[0]?.id || "");
   const [hoverIdx, setHoverIdx] = useState(null);
 
@@ -98,7 +98,7 @@ function FuelAnalysisScreen({onClose, onBack, mobileMode=false}) {
 
   return (
     <div className={mobileMode?"mobile-modal":undefined} style={{position:"fixed",inset:0,background:T.bg,
-      zIndex:300,display:"flex",flexDirection:"column"}}>
+      zIndex:300,display:"flex",flexDirection:"column","--mm-bottom":plusArretiert?"190px":"57px"}}>
       <MobileHeader title="Tankverbrauch" subtitle="Verbrauch & Preisentwicklung"
         icon="fuel" iconColor={T.gold}
         onBack={onBack||onClose} onClose={onClose}/>

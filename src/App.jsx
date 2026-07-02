@@ -2579,6 +2579,7 @@ Abbrechen = ${remoteName}-Stand laden`
     noBorders, setNoBorders,
     masterOverride, setMasterOverride,
     favIcons, setFavIcons,
+    plusArretiert,
   }), [
     cats, groups, txs, accounts, vehicles, yearData,
     frozenYear, frozenMonth, year, selAcc, isLand,
@@ -2597,7 +2598,7 @@ Abbrechen = ${remoteName}-Stand laden`
     syncPass, syncEncActive, showCloudSetup, showFuelAnalysis,
     syncStatus, syncError, isDirty, cfSaveOnClose,
     dashDrillOpen, amtMode, amtFont, noBorders, masterOverride,
-    favIcons,
+    favIcons, plusArretiert,
   ]);
 
   // ═══════════════════════════════════════════════════════════════════════════
