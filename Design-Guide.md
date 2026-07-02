@@ -63,6 +63,7 @@ den `AppCtx`-Provider). UI-Sprache Deutsch, Code/Token/Props Englisch.
 | Geplante/Mood-Prognose („Money Mood") | `moodForecast.js` |
 | Schieflage-/Dispo-Vorschau | `schieflagePreview.js` |
 | Konto-Warnungen (z. B. drohende Überziehung) | `kontoWarnungen.js` |
+| Tank-Erfassung (Kategorie-Erkennung, Verbrauchsberechnung) | `fuel.js` (`isFuelCat`, `buildFuelSeries`) |
 | Cloud-Buchungskompression | `cloudTx.js` (`compressTxByYear`) |
 | **Sync-Verschlüsselung (Zero-Knowledge)** | `syncCrypto.js` (AES-GCM/PBKDF2) |
 | **Enable-Banking-Client + lokale Ablage** | `enableBanking.js`, `enableBankingStore.js` |
@@ -90,7 +91,7 @@ Konten/Kategorien/Einstellungen) · `SettingsInline` · `CsvImportScreen` ·
 `CustomThemeEditor` · **`CloudSetupWizard`** (geführte Cloud-DB-Einrichtung) ·
 **`EnableBankingWizard`** (geführter Bank-Verbinden-Assistent, ersetzt die
 früheren getrennten Screens `EnableBankingConnectScreen` + `EnableBankingGuide`,
-§10/§12).
+§10/§12) · `FuelAnalysisScreen` (Tank-Verbrauch/Preisauswertung, §13).
 
 ### Organisms / Molecules / Atoms / Buttons
 - **organisms/**: `SaldoHeroV2` (Hero, von Dashboard **und** Monat genutzt —
@@ -463,7 +464,43 @@ drei Reiter:
 
 ---
 
-## 13. Performance (Konventionen + Hotspots)
+## 13. Tank-Erfassung (Verbrauch & Preisauswertung)
+
+- **Erkennung**: feste Kategorie **„Tanken"** (exakt, case-insensitive —
+  `utils/fuel.js: isFuelCat()`), kein Fuzzy-Match auf Empfänger/Notiz.
+- **Zusatzfelder an der Buchung** (nur gesetzt, wenn beim Erfassen ausgefüllt):
+  `_fuelVehicleId`, `_fuelLiters`, `_fuelPricePerL`, `_odometer`.
+- **Mehrere Fahrzeuge**: eigenes Top-Level-Array `vehicles` (`{id,name}`) —
+  genau wie `accounts`/`cats` lokal persistiert (`useLocalSaveDebounce`),
+  Cloud-synchronisiert (`saveConfig`/`applyData`) und über den Daten-Manager
+  exportier-/importier-/löschbar. Anlage **inline** beim Erfassen („+ neues
+  Fahrzeug"-Chip in `MobileVormerkenModal`/`EditPopup`) — keine eigene
+  Verwaltungsseite (Scope-Entscheidung: der Nutzer wollte Mehrfahrzeug-
+  **Unterstützung**, kein volles CRUD-Tooling).
+- **Erfassung**: Felder erscheinen **nur**, wenn Kategorie = „Tanken" **und**
+  es sich um eine einmalige Ausgabe handelt (nicht bei Serie/Umbuchung) —
+  `MobileVormerkenModal` Schritt 3 („Details") bzw. `EditPopup` direkt unter
+  dem „aus Unvorhergesehenes"-Baustein. Liter × €/Liter wird live berechnet
+  und kann per Button „Betrag übernehmen" in den Betrag (Schritt 1) sync­en.
+- **Falle beim Bearbeiten (`EditPopup`/`saveEdit` in `App.jsx`)**: `openEdit()`
+  baut `editTx` aus einer **expliziten Feld-Whitelist** und `saveEdit()`
+  schreibt beim Speichern nur explizit gelistete Felder in die aktualisierte
+  Buchung — ein einfaches `{...t, ...}`/`{...editTx}` reicht nicht. Jedes neue
+  Zusatzfeld (wie zuvor schon `_potSubId`) muss **an beiden Stellen** ergänzt
+  werden, sonst gehen Änderungen beim Speichern verloren bzw. zeigt der
+  Dialog beim erneuten Öffnen leere Felder, obwohl die Buchung Daten trägt.
+- **Auswertung**: `utils/fuel.js: buildFuelSeries()` sortiert die
+  Tankvorgänge eines Fahrzeugs nach km-Stand und berechnet den Verbrauch
+  (l/100 km) jeweils aus der Menge des **späteren** Tankvorgangs und der
+  Distanz zum vorherigen. `screens/FuelAnalysisScreen.jsx` zeigt Ø-Kennzahlen,
+  zwei Balken-Charts (Verbrauch, Preis/Liter — je Chart eine feste
+  Magnitude-Farbe statt einer kategorialen Palette) und eine Liste aller
+  Tankvorgänge — erreichbar über Bottom-Tab **Daten** → **Tankverbrauch**
+  (`App.jsx`-State `showFuelAnalysis`).
+
+---
+
+## 14. Performance (Konventionen + Hotspots)
 
 Die App hält bis zu 10.000+ Buchungen im Context. Verbindliche Regeln:
 
@@ -486,7 +523,7 @@ Die App hält bis zu 10.000+ Buchungen im Context. Verbindliche Regeln:
 
 ---
 
-## 14. Konventionen
+## 15. Konventionen
 
 - **UI-Sprache: Deutsch.** Code/Token/Props in Englisch.
 - Viele Dateien tragen den Kopf „Auto-generated module" — sie werden **direkt**

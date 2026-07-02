@@ -13,7 +13,7 @@
 //
 // Eingaben:
 //   lsKey         – IDB-Schlüssel des Hauptstands (z.B. "finanzapp_v9")
-//   state         – { cats, groups, txs, accounts, yearData, col3Name,
+//   state         – { cats, groups, txs, accounts, vehicles, yearData, col3Name,
 //                     quickBtns, quickColors, csvRules, budgets, customIcons,
 //                     startBalances }
 //   loading       – true solange initial geladen wird → Save aussetzen
@@ -23,7 +23,7 @@ import { kvStore } from "../utils/kvStore.js";
 
 export function useLocalSaveDebounce({ lsKey, state, loading, setSyncStatus, setSyncError, setIsDirty }) {
   const {
-    cats, groups, txs, accounts, yearData, col3Name,
+    cats, groups, txs, accounts, vehicles, yearData, col3Name,
     quickBtns, quickColors, csvRules, budgets, customIcons, startBalances,
   } = state;
 
@@ -77,7 +77,7 @@ export function useLocalSaveDebounce({ lsKey, state, loading, setSyncStatus, set
   // Debounce-Save: feuert 300 ms nach der letzten Datenänderung.
   useEffect(()=>{
     if(loadingRef.current) return;
-    const payload = {cats, groups, txs, accounts, yearData, col3Name, quickBtns, quickColors, csvRules, budgets, customIcons, startBalances};
+    const payload = {cats, groups, txs, accounts, vehicles, yearData, col3Name, quickBtns, quickColors, csvRules, budgets, customIcons, startBalances};
     pendingSaveRef.current = payload;
     if(saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(()=>{
@@ -85,7 +85,7 @@ export function useLocalSaveDebounce({ lsKey, state, loading, setSyncStatus, set
       pendingSaveRef.current = null;
     }, 300);
     return ()=>{ if(saveTimerRef.current) clearTimeout(saveTimerRef.current); };
-  }, [cats, groups, txs, accounts, yearData, col3Name, quickBtns, quickColors, csvRules, budgets, customIcons, startBalances]);
+  }, [cats, groups, txs, accounts, vehicles, yearData, col3Name, quickBtns, quickColors, csvRules, budgets, customIcons, startBalances]);
 
   // Flush bei App-Schließen/Tab-Wechsel: ausstehenden Debounce sofort schreiben.
   useEffect(()=>{

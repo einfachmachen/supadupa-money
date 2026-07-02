@@ -14,7 +14,7 @@ import { dropTxsAndUnlink } from "../../utils/links.js";
 import { useEffect } from "react";
 
 function DataManagerDialog({onClose, onBack, mobileMode=false}) {
-  const { cats, groups, accounts, txs, setTxs, csvRules, startBalances,
+  const { cats, groups, accounts, vehicles, setVehicles, txs, setTxs, csvRules, startBalances,
     setStartBalances, setCats, setGroups, setAccounts, setCsvRules,
     yearData, setYearData, col3Name, setCol3Name,
     quickBtns, setQuickBtns, quickColors, setQuickColors,
@@ -48,7 +48,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
 
   // Export-Auswahl — Standard: ALLES an (= 100 %-Sicherung).
   const [sel, setSel] = useState({
-    cats:true, groups:true, accounts:true,
+    cats:true, groups:true, accounts:true, vehicles:true,
     realTxs:true, pendTxs:true, rules:true, anchors:true,
     yearData:true, budgets:true, icons:true, quick:true, themes:true,
   });
@@ -95,7 +95,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   const ebMatch = ebPass === ebPass2;
   const ebReady = inclEbKey && !!ebPass && ebMatch;
   const ebOk = !hasEbKey || ebReady;
-  const isComplete = sel.cats&&sel.groups&&sel.accounts&&sel.realTxs&&sel.pendTxs&&
+  const isComplete = sel.cats&&sel.groups&&sel.accounts&&sel.vehicles&&sel.realTxs&&sel.pendTxs&&
     sel.rules&&sel.anchors&&sel.yearData&&sel.budgets&&sel.icons&&sel.quick&&sel.themes&&isFullRange&&ebOk;
 
   const buildExport = () => {
@@ -103,6 +103,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
       _type:"supadupa-backup", _complete:isComplete};
     if(sel.cats)   { out.cats = cats; out.groups = groups; }   // Kategorien & Gruppen gehören zusammen
     if(sel.accounts) out.accounts = accounts;
+    if(sel.vehicles) out.vehicles = vehicles;
     if(sel.realTxs) out.realTxs = filterTxs(txs.filter(t=>!t.pending));
     if(sel.pendTxs) out.pendTxs = filterTxs(txs.filter(t=>t.pending));
     if(sel.rules)   out.csvRules = csvRules;
@@ -164,6 +165,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
     if(d.cats)    { setCats(d.cats);    msg.push(`${d.cats.length} Kategorien`); }
     if(d.groups)  { setGroups(d.groups);msg.push(`${d.groups.length} Gruppen`); }
     if(d.accounts){ setAccounts(d.accounts); msg.push(`${d.accounts.length} Konten`); }
+    if(Array.isArray(d.vehicles)){ setVehicles(d.vehicles); msg.push(`${d.vehicles.length} Fahrzeuge`); }
     if(d.csvRules){ setCsvRules(d.csvRules); msg.push(`${Object.keys(d.csvRules).length} Zuordnungen`); }
     if(d.startBalances){ setStartBalances(d.startBalances); msg.push("Ankerpunkte"); }
     if(d.budgets){ setBudgets(d.budgets); msg.push(`${Object.keys(d.budgets).length} Budgets`); }
@@ -428,6 +430,8 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
     {key:"accounts", label:"Konten", icon:"landmark", nav:true, onNav: openKonten,
      count: accounts.length,
      note:"Konten werden im Konten-Manager verwaltet. Löschst du dort ein Konto, müssen seine Buchungen zwingend einem anderen Konto zugewiesen werden — sonst hätten sie kein Konto. Genau das stellt der Konten-Manager sicher."},
+    {key:"vehicles", label:"Fahrzeuge (Tanken)", icon:"car",
+     count: (vehicles||[]).length, action:()=>setVehicles([])},
     {key:"realTxs", label:"echte Buchungen", icon:"check-circle",
      count: filterTxs(txs.filter(t=>!t.pending)).length,
      action:()=>setTxs(p=>dropTxsAndUnlink(p, t=>!t.pending && inDelRange(t)))},
@@ -460,6 +464,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   const SEL_ITEMS = [
     {key:"cats",    label:"Kategorien & Gruppen",    icon:"tag",       count:cats.length+groups.length},
     {key:"accounts",label:"Konten",                  icon:"landmark",  count:accounts.length},
+    {key:"vehicles",label:"Fahrzeuge (Tanken)",      icon:"car",       count:(vehicles||[]).length},
     {key:"realTxs", label:"echte Buchungen",          icon:"check-circle",count:cntReal, hasRange:true},
     {key:"pendTxs", label:"Vormerkungen & Wiederkehrende",icon:"calendar",count:cntPend, hasRange:true},
     {key:"budgets", label:"Budgets",                 icon:"target",    count:cntBudg},

@@ -19,6 +19,7 @@ import { CloudSaveModal } from "./components/organisms/CloudSaveModal.jsx";
 import { CsvImportScreen } from "./components/screens/CsvImportScreen.jsx";
 import { EnableBankingWizard } from "./components/screens/EnableBankingWizard.jsx";
 import { CloudSetupWizard } from "./components/screens/CloudSetupWizard.jsx";
+import { FuelAnalysisScreen } from "./components/screens/FuelAnalysisScreen.jsx";
 import { DashboardScreenV2 } from "./components/screens/DashboardScreenV2.jsx";
 import { JahrScreen } from "./components/screens/JahrScreen.jsx";
 import { ManagementScreen } from "./components/screens/ManagementScreen.jsx";
@@ -106,6 +107,8 @@ export default function SupaDupaMoney() {
   const [groups,        setGroups]       = useState([]);
   const [txs,           setTxs]         = useState([]);
   const [accounts,      setAccounts]     = useState(INIT_ACCOUNTS);
+  // Fahrzeuge für die Tank-Erfassung (Verbrauch/Preis je Fahrzeug): {id,name,icon,color}
+  const [vehicles,      setVehicles]     = useState([]);
   const [yearData,      setYearData]     = useState(makeYearData);
   const [jEditing,      setJEditing]     = useState(null);
   const [jEditVal,      setJEditVal]     = useState("");
@@ -227,6 +230,7 @@ export default function SupaDupaMoney() {
   const [showCsv,       setShowCsv]       = useState(false);
   const [showBankWizard, setShowBankWizard] = useState(false);
   const [showCloudSetup, setShowCloudSetup] = useState(false);
+  const [showFuelAnalysis, setShowFuelAnalysis] = useState(false);
   const [importText,    setImportText]     = useState("");
   const [importStatus,  setImportStatus]   = useState(null);
   const [topMenu,       setTopMenu]        = useState(null); // "laden"|"speichern"|null
@@ -279,7 +283,7 @@ export default function SupaDupaMoney() {
   const _structOverlayOpen =
     showMobilePicker || showDataMgr || showMobileKategorien || showMobileVormerken ||
     showMobileWiederkehrend || showMobileBudget || showCsv || showBankWizard ||
-    showCloudSetup || showMatching || showVormHub || showVormMenu ||
+    showCloudSetup || showFuelAnalysis || showMatching || showVormHub || showVormMenu ||
     showRecurring || showKategorisieren || showMonthPickerModal || showCloudSave ||
     showSettings || showSupaQuick || showQuickPicker || !!modal || !!exportModal ||
     !!exportDialog || !!reviewQueue || dashDrillOpen || !!accIconPick || !!editTx;
@@ -859,6 +863,7 @@ export default function SupaDupaMoney() {
       });
       setAccounts(accs);
     }
+    if(Array.isArray(d.vehicles) && d.vehicles.length) setVehicles(d.vehicles);
     if(d.yearData && Object.keys(d.yearData).length) {
       // Bereinige alte jsub_*_M/E/D Einträge — diese werden jetzt live berechnet
       const cleaned = JSON.parse(JSON.stringify(d.yearData));
@@ -1207,7 +1212,7 @@ Abbrechen = ${remoteName}-Stand laden`
   // Fehler sichtbar). saveToCloud/saveConfig bleiben hier (CF-spezifisch).
   useLocalSaveDebounce({
     lsKey: LS_KEY,
-    state: {cats, groups, txs, accounts, yearData, col3Name, quickBtns, quickColors, csvRules, budgets, customIcons, startBalances},
+    state: {cats, groups, txs, accounts, vehicles, yearData, col3Name, quickBtns, quickColors, csvRules, budgets, customIcons, startBalances},
     loading: syncStatus==="loading",
     setSyncStatus, setSyncError, setIsDirty,
   });
@@ -2055,6 +2060,11 @@ Abbrechen = ${remoteName}-Stand laden`
       _transferToCatId: linkSplit?.catId || "",
       _transferToSubId: linkSplit?.subId || "",
       linkedIds: tx.linkedIds||[],
+      _potSubId: tx._potSubId||null,
+      _fuelVehicleId: tx._fuelVehicleId||null,
+      _fuelLiters: tx._fuelLiters??null,
+      _fuelPricePerL: tx._fuelPricePerL??null,
+      _odometer: tx._odometer??null,
     });
   };
 
@@ -2165,6 +2175,14 @@ Abbrechen = ${remoteName}-Stand laden`
           else delete upd2._seriesTotal;
           if(editTx._potSubId) upd2._potSubId = editTx._potSubId;
           else delete upd2._potSubId;
+          if(editTx._fuelVehicleId) upd2._fuelVehicleId = editTx._fuelVehicleId;
+          else delete upd2._fuelVehicleId;
+          if(editTx._fuelLiters!=null) upd2._fuelLiters = editTx._fuelLiters;
+          else delete upd2._fuelLiters;
+          if(editTx._fuelPricePerL!=null) upd2._fuelPricePerL = editTx._fuelPricePerL;
+          else delete upd2._fuelPricePerL;
+          if(editTx._odometer!=null) upd2._odometer = editTx._odometer;
+          else delete upd2._odometer;
           return upd2;
         });
       });
@@ -2194,6 +2212,15 @@ Abbrechen = ${remoteName}-Stand laden`
         // Flexibler Topf: "aus Unvorhergesehenes" übernehmen (kann gelöscht werden)
         if(editTx._potSubId) upd3._potSubId = editTx._potSubId;
         else delete upd3._potSubId;
+        // Tank-Erfassung: Fahrzeug/Liter/Preis/km-Stand übernehmen (kann gelöscht werden)
+        if(editTx._fuelVehicleId) upd3._fuelVehicleId = editTx._fuelVehicleId;
+        else delete upd3._fuelVehicleId;
+        if(editTx._fuelLiters!=null) upd3._fuelLiters = editTx._fuelLiters;
+        else delete upd3._fuelLiters;
+        if(editTx._fuelPricePerL!=null) upd3._fuelPricePerL = editTx._fuelPricePerL;
+        else delete upd3._fuelPricePerL;
+        if(editTx._odometer!=null) upd3._odometer = editTx._odometer;
+        else delete upd3._odometer;
         return upd3;
       }));
       changedTxIds.current.add(editTx.id);
@@ -2506,6 +2533,7 @@ Abbrechen = ${remoteName}-Stand laden`
   // liest: State mit in die Liste aufnehmen, sonst drohen stale Closures.
   const cx = useMemo(() => ({
     cats, setCats, groups, setGroups, txs, setTxs, accounts, setAccounts,
+    vehicles, setVehicles,
     yearData, setYearData,
     year: frozenYear, setYear, month: frozenMonth, setMonth,
     selAcc, setSelAcc, isLand,
@@ -2537,7 +2565,7 @@ Abbrechen = ${remoteName}-Stand laden`
     csvRules, setCsvRules,
     budgets, setBudgets,
     startBalances, setStartBalances,
-    saveConfig: ()=>{ if(cfActive) { savedYearHashRef.current={}; savedConfigHashRef.current=""; saveToCloud({cats, groups, txs, accounts, yearData, col3Name, quickBtns, quickColors, csvRules, budgets, customIcons, startBalances, saved_at:Date.now()}); setIsDirty(false); } },
+    saveConfig: ()=>{ if(cfActive) { savedYearHashRef.current={}; savedConfigHashRef.current=""; saveToCloud({cats, groups, txs, accounts, vehicles, yearData, col3Name, quickBtns, quickColors, csvRules, budgets, customIcons, startBalances, saved_at:Date.now()}); setIsDirty(false); } },
     loadFromCloud: async ()=>{ if(!cfActive) return; try { const d=await cfLoad(); if(d.cats?.length) { applyData(d); setIsDirty(false); setSyncStatus("saved"); setTimeout(()=>setSyncStatus("idle"),2000); } } catch(e){} },
     jsonbinActive, jsonbinSave, jsonbinLoad, jsonbinStatus, setJsonbinStatus, jsonbinKey, jsonbinId, setJsonbinKey, setJsonbinId,
     gistActive, gistSave, gistLoad, gistStatus, setGistStatus, gistToken, gistId, setGistToken, setGistId, applyData,
@@ -2554,6 +2582,7 @@ Abbrechen = ${remoteName}-Stand laden`
     cfActive, cfSave, cfLoad, cfStatus, setCfStatus, cfUrl, cfSecret, setCfUrl, setCfSecret,
     syncPass, setSyncPass, syncEncActive,
     showCloudSetup, setShowCloudSetup,
+    showFuelAnalysis, setShowFuelAnalysis,
     setActiveStructurTab, setShowBankWizard,
     setShowCsv, setShowDataMgr,
     syncStatus, setSyncStatus, syncError, isDirty,
@@ -2564,7 +2593,7 @@ Abbrechen = ${remoteName}-Stand laden`
     noBorders, setNoBorders,
     masterOverride, setMasterOverride,
   }), [
-    cats, groups, txs, accounts, yearData,
+    cats, groups, txs, accounts, vehicles, yearData,
     frozenYear, frozenMonth, year, selAcc, isLand,
     showAllMonths, mainTab, subTab, col3Name, modal, mgmtCat,
     editTx, newTx, newCat, newSubName, exportModal,
@@ -2578,7 +2607,7 @@ Abbrechen = ${remoteName}-Stand laden`
     reviewQueue, showSettings, showVormHub, editVormTx, showMatching,
     customIcons, themeName, hideEmptyRows, handedness, debugFlags,
     cfActive, cfStatus, cfUrl, cfSecret,
-    syncPass, syncEncActive, showCloudSetup,
+    syncPass, syncEncActive, showCloudSetup, showFuelAnalysis,
     syncStatus, syncError, isDirty, cfSaveOnClose,
     dashDrillOpen, amtMode, amtFont, noBorders, masterOverride,
   ]);
@@ -3320,6 +3349,9 @@ Abbrechen = ${remoteName}-Stand laden`
         csvRules={csvRules} setCsvRules={setCsvRules} mobileMode={mobileMode}/>}
       {showBankWizard&&<EnableBankingWizard onClose={()=>{setShowBankWizard(false);setPlusArretiert(false);}}/>}
       {showCloudSetup&&<CloudSetupWizard onClose={()=>{setShowCloudSetup(false);setPlusArretiert(false);}}/>}
+      {showFuelAnalysis&&<FuelAnalysisScreen mobileMode={mobileMode}
+        onClose={()=>{setShowFuelAnalysis(false);setPlusArretiert(false);}}
+        onBack={()=>{setShowFuelAnalysis(false);setPlusArretiert(false);}}/>}
       {showMatching&&<MatchingScreen onClose={()=>{setShowMatching(false);setPlusArretiert(false);}}
         onBack={()=>{setShowMatching(false);reopenMobilePicker("main");}}/>}
       {showVormHub&&<VormerkungHub onClose={()=>{setShowVormHub(false);setEditVormTx(null);setPlusArretiert(false);}} editVorm={editVormTx} mobileMode={mobileMode}/>}

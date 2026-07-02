@@ -31,21 +31,13 @@ Heute öffnet JEDER Bearbeiten-Tipp das Desktop-`EditPopup` (App.jsx:2609,
 
 ## Auswertungen / Features
 
-- [ ] **Tank-Erfassung & Verbrauchs-/Preisauswertung.** Bei Buchungen oder
-  Vormerkungen, die als „Tanken" erkannt werden (Kategorie/Empfänger), optionale
-  Zusatzfelder erfassen:
-  - **€/Liter** (Literpreis),
-  - **Tank-Menge** (Liter),
-  - **km-Stand** (Kilometerstand beim Tanken).
-  Daraus später ableiten:
-  - **Verbrauch** (l/100 km) aus Differenz der km-Stände zweier Tankvorgänge und
-    getankter Menge,
-  - **Preisentwicklung** (€/Liter über Zeit),
-  - Auswertung nach verschiedenen Kriterien (Zeitraum, Konto/Fahrzeug, Tankstelle
-    falls aus Empfänger ableitbar, Strecke).
-  Offene Designfragen: Wo werden die Zusatzfelder gespeichert (Tx-Felder wie
-  `_fuelLiters`/`_fuelPricePerL`/`_odometer`)? Erfassung im Vormerken-/Edit-Dialog
-  nur einblenden, wenn Kategorie = Tanken. Mehrere Fahrzeuge?
+- [x] **Tank-Erfassung & Verbrauchs-/Preisauswertung.** Erledigt (siehe
+  Design-Guide.md §13): Erkennung über feste Kategorie „Tanken", Zusatzfelder
+  `_fuelVehicleId`/`_fuelLiters`/`_fuelPricePerL`/`_odometer` an der Buchung,
+  Erfassung in `MobileVormerkenModal`/`EditPopup` nur bei einmaliger Ausgabe
+  mit dieser Kategorie, mehrere Fahrzeuge über eigenes `vehicles`-Array
+  (inline anlegbar), Auswertung (Verbrauch l/100km + Preisentwicklung) in
+  `FuelAnalysisScreen` (Bottom-Tab Daten → Tankverbrauch).
 
 ## Liquidität & Warnungen
 

@@ -10,9 +10,11 @@ import { INP } from "../../theme/palette.js";
 import { isoAddMonths } from "../../utils/date.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
+import { isFuelCat } from "../../utils/fuel.js";
 
 function EditPopup() {
   const { cats,setCats,groups,setGroups,txs,setTxs,accounts,setAccounts,
+    vehicles,setVehicles,
     yearData,setYearData,year,setYear,month,setMonth,isLand,
     col3Name,setCol3Name,modal,setModal,mgmtCat,setMgmtCat,
     editTx,setEditTx,newTx,setNewTx,newCat,setNewCat,
@@ -27,6 +29,11 @@ function EditPopup() {
     setShowVormHub, setEditVormTx,
   } = useContext(AppCtx);
 
+    // Tank-Erfassung: Fahrzeug-Schnellanlage braucht lokalen State — muss VOR
+    // dem editTx-Frühausstieg stehen (Hooks dürfen nicht bedingt aufgerufen werden).
+    const [showNewVehicle, setShowNewVehicle] = React.useState(false);
+    const [newVehicleName, setNewVehicleName] = React.useState("");
+
     if(!editTx) return null;
     const isMulti = (editTx.splits||[]).length > 1;
     const editSplitTotal = (editTx.splits||[]).reduce((s,sp)=>s+pn(sp.amount),0);
@@ -40,6 +47,18 @@ function EditPopup() {
     })();
     const _showPotToggle = !editTx._budgetSubId && _potSub && txType(editTx)==="expense"
       && (editTx.splits||[])[0]?.subId !== _potSub.id;
+    // Tank-Erfassung: nur bei Ausgaben mit Kategorie "Tanken" (siehe TODO.md)
+    const _showFuelFields = !editTx._budgetSubId && txType(editTx)==="expense"
+      && isFuelCat(getCat((editTx.splits||[])[0]?.catId));
+    const addVehicle = () => {
+      const name = newVehicleName.trim();
+      if(!name) return;
+      const v = {id:uid(), name};
+      setVehicles(p=>[...(p||[]), v]);
+      setEditTx(p=>({...p, _fuelVehicleId:v.id}));
+      setNewVehicleName("");
+      setShowNewVehicle(false);
+    };
     return (
       <div onClick={()=>setEditTx(null)}
         style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",backdropFilter:"blur(8px)",zIndex:80,display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -513,6 +532,78 @@ function EditPopup() {
             </div>
             <div style={{color:T.txt2,fontSize:10,marginTop:5,lineHeight:1.35}}>
               Betrag bleibt in dieser Kategorie, wird aber vom Unvorhergesehenes-Budget abgezogen.
+            </div>
+          </div>)}
+          {/* Tank-Erfassung (nur bei Kategorie "Tanken") */}
+          {_showFuelFields&&(<div style={{background:"rgba(255,255,255,0.04)",borderRadius:11,padding:"10px 12px",marginBottom:16,border:`1px solid ${T.bd}`}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8,color:T.txt,fontSize:12,fontWeight:700}}>
+              {Li("fuel",13,T.gold)} Tank-Erfassung
+            </div>
+            <div style={{color:T.txt2,fontSize:10,marginBottom:4}}>Fahrzeug</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:8}}>
+              {(vehicles||[]).map(v=>{
+                const on = editTx._fuelVehicleId===v.id;
+                return (
+                  <button key={v.id} onClick={()=>setEditTx(p=>({...p,_fuelVehicleId:v.id}))}
+                    style={{padding:"5px 10px",borderRadius:8,cursor:"pointer",fontFamily:"inherit",
+                      fontSize:11,fontWeight:600,display:"inline-flex",alignItems:"center",gap:5,
+                      border:`1.5px solid ${on?T.gold:T.bd}`,
+                      background:on?T.gold+"22":"rgba(255,255,255,0.04)",
+                      color:on?T.gold:T.txt2}}>
+                    {Li("car",11,on?T.gold:T.txt2)} {v.name}
+                  </button>
+                );
+              })}
+              {!showNewVehicle && (
+                <button onClick={()=>setShowNewVehicle(true)}
+                  style={{padding:"5px 10px",borderRadius:8,cursor:"pointer",fontFamily:"inherit",
+                    fontSize:11,fontWeight:600,display:"inline-flex",alignItems:"center",gap:5,
+                    border:`1.5px dashed ${T.bd}`,background:"transparent",color:T.txt2}}>
+                  {Li("plus",11,T.txt2)} neues Fahrzeug
+                </button>
+              )}
+            </div>
+            {showNewVehicle&&(
+              <div style={{display:"flex",gap:6,marginBottom:8}}>
+                <input type="text" value={newVehicleName} onChange={e=>setNewVehicleName(e.target.value)}
+                  placeholder="Name (z.B. Golf)" autoFocus
+                  style={{...INP,flex:1,marginBottom:0}}/>
+                <button onClick={addVehicle}
+                  style={{flexShrink:0,padding:"0 12px",borderRadius:9,border:"none",
+                    background:T.gold,color:"#000",fontFamily:"inherit",fontSize:11,
+                    fontWeight:700,cursor:"pointer"}}>
+                  {Li("check",11,"#000")}
+                </button>
+              </div>
+            )}
+            <div style={{display:"flex",gap:8}}>
+              <div style={{flex:1}}>
+                <div style={{color:T.txt2,fontSize:10,marginBottom:3}}>Liter</div>
+                <input value={editTx._fuelLiters??""}
+                  onChange={e=>setEditTx(p=>({...p,_fuelLiters:e.target.value?pn(e.target.value.replace(",",".")):undefined}))}
+                  style={{width:"100%",background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bd}`,
+                    borderRadius:8,padding:"6px 8px",color:T.txt,fontSize:12,fontFamily:NUM_FONT,
+                    textAlign:"right",outline:"none",boxSizing:"border-box"}}
+                  inputMode="decimal" placeholder="0,00"/>
+              </div>
+              <div style={{flex:1}}>
+                <div style={{color:T.txt2,fontSize:10,marginBottom:3}}>€/Liter</div>
+                <input value={editTx._fuelPricePerL??""}
+                  onChange={e=>setEditTx(p=>({...p,_fuelPricePerL:e.target.value?pn(e.target.value.replace(",",".")):undefined}))}
+                  style={{width:"100%",background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bd}`,
+                    borderRadius:8,padding:"6px 8px",color:T.txt,fontSize:12,fontFamily:NUM_FONT,
+                    textAlign:"right",outline:"none",boxSizing:"border-box"}}
+                  inputMode="decimal" placeholder="0,000"/>
+              </div>
+              <div style={{flex:1}}>
+                <div style={{color:T.txt2,fontSize:10,marginBottom:3}}>km-Stand</div>
+                <input value={editTx._odometer??""}
+                  onChange={e=>setEditTx(p=>({...p,_odometer:e.target.value?pn(e.target.value.replace(/[^0-9]/g,"")):undefined}))}
+                  style={{width:"100%",background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bd}`,
+                    borderRadius:8,padding:"6px 8px",color:T.txt,fontSize:12,fontFamily:NUM_FONT,
+                    textAlign:"right",outline:"none",boxSizing:"border-box"}}
+                  inputMode="numeric" placeholder="km"/>
+              </div>
             </div>
           </div>)}
           {/* Budget-Platzhalter: Betrag editierbar + Toggle zum Lösen der Budget-Bindung */}

@@ -32,7 +32,7 @@ function ManagementScreen({activeTab="kategorien"}) {
     quickBtns=[],setQuickBtns,
     budgets={}, setBudgets,
     onTS,onTE, globalDrag,
-    setShowCsv, setShowBankWizard, setShowDataMgr, setShowCloudSetup,
+    setShowCsv, setShowBankWizard, setShowDataMgr, setShowCloudSetup, setShowFuelAnalysis,
   } = useContext(AppCtx);
   const [mergeTarget, setMergeTarget] = useState(null);
   const [showNewGroup, setShowNewGroup] = useState(false);
@@ -221,6 +221,7 @@ function ManagementScreen({activeTab="kategorien"}) {
               {icon:"landmark",   color:T.gold,         label:"Bank verbinden",        sub:"Schritt für Schritt · Enable Banking", onClick:()=>setShowBankWizard?.(true)},
               {icon:"database",   color:T.pos,          label:"Daten-Manager",         sub:"Export / Import / Löschen",       onClick:()=>setShowDataMgr?.(true)},
               {icon:"cloud",      color:T.cf||T.blue,   label:"Cloud-Sync einrichten", sub:"Eigene Cloud-DB · geführt",       onClick:()=>setShowCloudSetup?.(true)},
+              {icon:"fuel",       color:T.gold,         label:"Tankverbrauch",         sub:"Verbrauch & Preisentwicklung",    onClick:()=>setShowFuelAnalysis?.(true)},
               {icon:"credit-card",color:T.blue,         label:"Konten",                sub:"Verwalten, Reihenfolge, Puffer",  onClick:()=>setMgrTab("konten")},
             ].map((it,i)=>(
               <button key={i} onClick={it.onClick}

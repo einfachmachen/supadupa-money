@@ -16,9 +16,10 @@ import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { nextBankWorkday, isoAddMonths } from "../../utils/date.js";
 import { Li } from "../../utils/icons.jsx";
 import { SchieflageVorwarnung } from "../atoms/SchieflageVorwarnung.jsx";
+import { isFuelCat } from "../../utils/fuel.js";
 
 function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialFinanz=false}) {
-  const { cats, setCats, accounts, setAccounts, txs, setTxs, year, month, getCat, getSub, setMasterOverride } = useContext(AppCtx);
+  const { cats, setCats, accounts, setAccounts, vehicles, setVehicles, txs, setTxs, year, month, getCat, getSub, setMasterOverride } = useContext(AppCtx);
   const goBack = onBack || onClose;
   const pad = n => String(n).padStart(2,"0");
   const today = new Date().toISOString().split("T")[0];
@@ -66,6 +67,33 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
     return null;
   })();
   const _showPotToggle = !isTransfer && !recurring && csvType==="expense" && _potSub && subId !== _potSub.id;
+
+  // Tank-Erfassung (siehe TODO.md): nur bei einmaliger Ausgabe mit Kategorie "Tanken".
+  const [fuelVehicleId, setFuelVehicleId] = useState("");
+  const [fuelLiters,    setFuelLiters]    = useState("");
+  const [fuelPricePerL, setFuelPricePerL] = useState("");
+  const [odometer,      setOdometer]      = useState("");
+  const [showNewVehicle, setShowNewVehicle] = useState(false);
+  const [newVehicleName, setNewVehicleName] = useState("");
+  const _showFuelFields = !isTransfer && !recurring && csvType==="expense" && isFuelCat(getCat(catId));
+  const fuelComputedTotal = (() => {
+    const l = pn((fuelLiters||"").replace(",","."));
+    const p = pn((fuelPricePerL||"").replace(",","."));
+    return (l>0 && p>0) ? l*p : null;
+  })();
+  const addVehicle = () => {
+    const name = newVehicleName.trim();
+    if(!name) return;
+    const v = {id:uid(), name};
+    setVehicles(p=>[...(p||[]), v]);
+    setFuelVehicleId(v.id);
+    setNewVehicleName("");
+    setShowNewVehicle(false);
+  };
+  React.useEffect(()=>{
+    if(_showFuelFields && !fuelVehicleId && (vehicles||[]).length===1) setFuelVehicleId(vehicles[0].id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [_showFuelFields, vehicles]);
 
   const S = {fs:26, fsL:64, pad:10, padL:14, radius:16, gap:14};
 
@@ -280,6 +308,10 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
       valueDate: valueDate||undefined,
       splits:[{id:uid(),catId,subId,amount:amt}],
       _potSubId: (_showPotToggle && potOn && _potSub) ? _potSub.id : undefined,
+      _fuelVehicleId: (_showFuelFields && fuelVehicleId) ? fuelVehicleId : undefined,
+      _fuelLiters: (_showFuelFields && fuelLiters) ? pn(fuelLiters.replace(",",".")) : undefined,
+      _fuelPricePerL: (_showFuelFields && fuelPricePerL) ? pn(fuelPricePerL.replace(",",".")) : undefined,
+      _odometer: (_showFuelFields && odometer) ? pn(odometer) : undefined,
     }]);
     setSaved(true); setTimeout(()=>onClose(), 1200);
   };
@@ -668,6 +700,96 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
             </div>
           )}
 
+          {/* Tank-Erfassung (nur bei Kategorie "Tanken") */}
+          {_showFuelFields && (
+            <div style={{background:"rgba(255,255,255,0.06)",borderRadius:S.radius,
+              padding:`${S.padL}px`,marginBottom:S.gap}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:S.gap,
+                color:T.txt,fontSize:S.fs-6,fontWeight:700}}>
+                {Li("fuel",S.fs-6,T.gold)} Tank-Erfassung
+              </div>
+
+              {/* Fahrzeug */}
+              {fieldLabel("Fahrzeug")}
+              <div style={{display:"flex",flexWrap:"wrap",gap:S.gap/2,marginBottom:S.gap}}>
+                {(vehicles||[]).map(v=>{
+                  const on = fuelVehicleId===v.id;
+                  return (
+                    <button key={v.id} onClick={()=>setFuelVehicleId(v.id)}
+                      style={{padding:`${S.pad}px ${S.padL}px`,borderRadius:S.radius/1.6,cursor:"pointer",
+                        fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,
+                        display:"inline-flex",alignItems:"center",gap:6,
+                        border:`2px solid ${on?T.gold:T.bd}`,
+                        background:on?T.gold+"22":"rgba(255,255,255,0.04)",
+                        color:on?T.gold:T.txt2}}>
+                      {Li("car",S.fs-8,on?T.gold:T.txt2)} {v.name}
+                    </button>
+                  );
+                })}
+                {!showNewVehicle && (
+                  <button onClick={()=>setShowNewVehicle(true)}
+                    style={{padding:`${S.pad}px ${S.padL}px`,borderRadius:S.radius/1.6,cursor:"pointer",
+                      fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,
+                      display:"inline-flex",alignItems:"center",gap:6,
+                      border:`2px dashed ${T.bd}`,background:"transparent",color:T.txt2}}>
+                    {Li("plus",S.fs-8,T.txt2)} neues Fahrzeug
+                  </button>
+                )}
+              </div>
+              {showNewVehicle && (
+                <div style={{display:"flex",gap:S.gap/2,marginBottom:S.gap}}>
+                  <input type="text" value={newVehicleName} onChange={e=>setNewVehicleName(e.target.value)}
+                    placeholder="Name (z.B. Golf)" autoFocus
+                    style={{...recInp,flex:1}}/>
+                  <button onClick={addVehicle}
+                    style={{flexShrink:0,padding:`0 ${S.padL}px`,borderRadius:S.radius,
+                      border:"none",background:T.gold,color:"#000",fontFamily:"inherit",
+                      fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
+                    {Li("check",S.fs-8,"#000")}
+                  </button>
+                </div>
+              )}
+
+              {/* Liter / Preis */}
+              <div style={{display:"flex",gap:S.gap,marginBottom:S.gap}}>
+                <div style={{flex:1}}>
+                  {fieldLabel("Liter")}
+                  <input type="text" inputMode="decimal" value={fuelLiters}
+                    onChange={e=>setFuelLiters(e.target.value.replace(/[^0-9,.]/g,""))}
+                    placeholder="0,00" style={{...recInp}}/>
+                </div>
+                <div style={{flex:1}}>
+                  {fieldLabel("€/Liter")}
+                  <input type="text" inputMode="decimal" value={fuelPricePerL}
+                    onChange={e=>setFuelPricePerL(e.target.value.replace(/[^0-9,.]/g,""))}
+                    placeholder="0,000" style={{...recInp}}/>
+                </div>
+              </div>
+
+              {/* km-Stand */}
+              {fieldLabel("km-Stand")}
+              <input type="text" inputMode="numeric" value={odometer}
+                onChange={e=>setOdometer(e.target.value.replace(/[^0-9]/g,""))}
+                placeholder="km" style={{...recInp,marginBottom:fuelComputedTotal!=null?S.gap:0}}/>
+
+              {/* Berechneter Betrag → optional übernehmen */}
+              {fuelComputedTotal!=null && (
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:S.gap,
+                  background:"rgba(0,0,0,0.2)",borderRadius:S.radius/2,padding:"10px 14px"}}>
+                  <span style={{color:T.txt2,fontSize:S.fs-8}}>
+                    berechnet: <b style={{color:T.txt}}>{fmt(fuelComputedTotal)}</b>
+                  </span>
+                  <button onClick={()=>setAmount(fuelComputedTotal.toFixed(2).replace(".",","))}
+                    style={{padding:"6px 12px",borderRadius:S.radius/1.6,border:"none",
+                      background:T.blue,color:"#fff",fontFamily:"inherit",fontSize:S.fs-10,
+                      fontWeight:700,cursor:"pointer"}}>
+                    Betrag übernehmen
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
       </>}
 
@@ -696,6 +818,12 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
               : [["Kategorie", catId?(getCat(catId)?.name||"?")+(subId?" / "+(getSub(catId,subId)?.name||""):""):"—"]]),
             ["Beschreibung",   desc],
             ["Notiz",          note||"—"],
+            ...(_showFuelFields && (fuelVehicleId||fuelLiters||fuelPricePerL||odometer) ? [
+              ["Fahrzeug", (vehicles||[]).find(v=>v.id===fuelVehicleId)?.name || "—"],
+              ["Liter",    fuelLiters ? fuelLiters+" l" : "—"],
+              ["€/Liter",  fuelPricePerL ? fuelPricePerL+" €" : "—"],
+              ["km-Stand", odometer ? odometer+" km" : "—"],
+            ] : []),
           ].map(([k,v])=>(
             <div key={k} style={{display:"flex",justifyContent:"space-between",
               padding:`${S.gap}px 0`,

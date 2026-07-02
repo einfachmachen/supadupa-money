@@ -2,7 +2,7 @@
 import { createContext } from "react";
 
 const _ctxDefault = {
-  cats:[], groups:[], txs:[], accounts:[], quickBtns:[], quickColors:[],
+  cats:[], groups:[], txs:[], accounts:[], vehicles:[], setVehicles:()=>{}, quickBtns:[], quickColors:[],
   year:2026, month:new Date().getMonth(), isLand:false,
   yearData:{}, col3Name:"aktuell",
   modal:null, mgmtCat:null, editTx:null, exportModal:null,
