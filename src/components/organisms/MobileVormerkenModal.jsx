@@ -367,13 +367,15 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
     } else if(step === 3) {
       cfg = {
         label: "Weiter → Bestätigen",
-        onConfirm: () => {
-          if(!descReady) return;
-          // Tank-Erfassung: berechneten Betrag (Liter × €/Liter) beim Weiterschalten
-          // automatisch übernehmen — kein eigener Button dafür (siehe unten).
-          if(_showFuelFields && fuelComputedTotal!=null) setAmount(fuelComputedTotal.toFixed(2).replace(".",","));
-          setStep(4);
-        },
+        // WICHTIG: NICHT den in Schritt 1 eingegebenen Betrag automatisch durch
+        // Liter × €/Liter ersetzen — in der Praxis stimmen beide oft NICHT exakt
+        // überein (Rundung an der Zapfsäule, Bar-/Gutschein-Anteil, mit-getankte
+        // Zusatzartikel …). Der in Schritt 1 eingegebene Betrag ist die
+        // verlässliche Quelle; die Tank-Felder sind zusätzliche Detaildaten.
+        // Eine Abweichung wird nur als Hinweis angezeigt (s. u.), nie still
+        // übernommen — sonst würde ein korrekt eingegebener Betrag lautlos
+        // durch eine falsche Berechnung ersetzt.
+        onConfirm: () => { if(descReady) setStep(4); },
         onBack: () => setStep(2),
         onDismiss: onClose,
         disabled: !descReady,
@@ -392,7 +394,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
     setMasterOverride(cfg);
     return () => setMasterOverride(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, step1Ready, descReady, isTransfer, catSide, showNewAcc, saved, recurring, isFinanz, _showFuelFields, fuelComputedTotal]);
+  }, [step, step1Ready, descReady, isTransfer, catSide, showNewAcc, saved, recurring, isFinanz]);
 
   if(showNewAcc) return (
     <MobileNewAccOverlay S={S} onClose={(newId)=>{
@@ -823,7 +825,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
                 onChange={e=>setOdometer(e.target.value.replace(/[^0-9]/g,""))}
                 placeholder="km" style={{...recInp,
                   border:odometerWarning?`2px solid ${T.gold}`:undefined,
-                  marginBottom:(odometerWarning||fuelComputedTotal!=null)?S.gap:0}}/>
+                  marginBottom:(odometerWarning||(fuelComputedTotal!=null&&Math.abs(fuelComputedTotal-_amt)>0.01))?S.gap:0}}/>
 
               {/* Plausibilitätsprüfung: warnt, blockiert aber nicht */}
               {odometerWarning && (
@@ -835,14 +837,20 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
                 </div>
               )}
 
-              {/* Berechneter Betrag — wird beim Weiter-Tipp auf den Master-Button
-                  automatisch übernommen (kein eigener Button, siehe masterOverride oben) */}
-              {fuelComputedTotal!=null && (
-                <div style={{display:"flex",alignItems:"center",gap:6,
-                  background:"rgba(0,0,0,0.2)",borderRadius:S.radius/2,padding:"10px 14px"}}>
-                  {Li("arrow-down-circle",S.fs-10,T.blue)}
-                  <span style={{color:T.txt2,fontSize:S.fs-8}}>
-                    berechnet: <b style={{color:T.txt}}>{fmt(fuelComputedTotal)}</b> — wird bei „Weiter" übernommen
+              {/* Berechneter Betrag — reiner Hinweis, wird NIE automatisch in den
+                  Betrag (Schritt 1) übernommen: in der Praxis stimmen Liter×Preis
+                  und der tatsächlich gezahlte Betrag oft nicht exakt überein
+                  (Rundung, Bar-/Gutschein-Anteil, Zusatzartikel …). Nur bei
+                  spürbarer Abweichung warnen; bei Übereinstimmung nichts anzeigen. */}
+              {fuelComputedTotal!=null && Math.abs(fuelComputedTotal-_amt)>0.01 && (
+                <div style={{display:"flex",alignItems:"flex-start",gap:6,
+                  background:`${T.gold}14`,border:`1.5px solid ${T.gold}55`,
+                  borderRadius:S.radius/2,padding:"10px 14px"}}>
+                  {Li("alert-triangle",S.fs-10,T.gold)}
+                  <span style={{color:T.gold,fontSize:S.fs-8,lineHeight:1.4}}>
+                    Liter × Preis ergibt <b style={{color:T.txt}}>{fmt(fuelComputedTotal)}</b> —
+                    weicht vom eingegebenen Betrag (<b style={{color:T.txt}}>{fmt(_amt)}</b>) ab.
+                    Der eingegebene Betrag bleibt bestehen; bei Bedarf in Schritt 1 korrigieren.
                   </span>
                 </div>
               )}

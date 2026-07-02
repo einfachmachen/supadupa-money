@@ -492,16 +492,25 @@ drei Reiter:
   es sich um eine einmalige Ausgabe handelt (nicht bei Serie/Umbuchung) —
   `MobileVormerkenModal` Schritt 3 („Details") bzw. `EditPopup` direkt unter
   dem „aus Unvorhergesehenes"-Baustein. Liter × €/Liter wird live berechnet.
-  In `MobileVormerkenModal` (steuert Weiterschalten über den Master-„+"-Knopf,
-  **kein** eigener „Weiter"-Button auf dem Screen) wird der berechnete Betrag
-  beim Tipp auf „Weiter → Bestätigen" **automatisch** in den Betrag
-  übernommen — bewusst **kein zweiter, eigenständiger** „Betrag
-  übernehmen"-Button neben dem Master-Knopf (führte zu Verwirrung:
-  „doppelter Button"). `VormerkungHub`/`AddTxModal` haben dagegen einen
-  normalen sichtbaren „Speichern"-Button statt Master-Knopf-Navigation —
-  dort bleibt ein expliziter „Betrag übernehmen"-Button passend, da kein
-  Master-Knopf-Konflikt besteht. `EditPopup` bearbeitet einen bereits
-  existierenden Betrag direkt (kein Sync-Button nötig).
+  **Der in Schritt 1 eingegebene Betrag wird NIE automatisch durch
+  Liter × €/Liter ersetzt** — in der Praxis stimmen beide oft nicht exakt
+  überein (Rundung an der Zapfsäule, Bar-/Gutschein-Anteil, mit-getankte
+  Zusatzartikel …); ein früherer Versuch, den berechneten Betrag beim Tipp
+  auf den Master-„+"-Knopf **still** zu übernehmen, hat genau das kaputt
+  gemacht: ein korrekt eingegebener Betrag (z. B. 100 €) wurde lautlos
+  durch das Rechenergebnis (z. B. 77,36 €) ersetzt. Stattdessen: bei
+  spürbarer Abweichung (> 1 Cent) nur ein **Hinweis** (`MobileVormerkenModal`
+  Schritt 3, gold, wie andere Warnungen), keine Datenänderung — der Nutzer
+  entscheidet, ob er Schritt 1 manuell korrigiert. `VormerkungHub`/
+  `AddTxModal` haben einen normalen sichtbaren „Speichern"-Button statt
+  Master-Knopf-Navigation — dort bleibt ein **expliziter** (per Klick
+  ausgelöster) „Betrag übernehmen"-Button unkritisch, weil der Nutzer die
+  Übernahme selbst auslöst, statt dass sie beim Weiterschalten automatisch
+  passiert. `EditPopup` bearbeitet einen bereits existierenden Betrag
+  direkt (kein Sync-Button nötig). **Lehre:** ein aus Nutzerkomfort
+  abgeleiteter Automatismus, der bestehende, korrekte Nutzerdaten ohne
+  Bestätigung überschreibt, ist auch dann riskant, wenn er „meistens"
+  passt — im Zweifel informieren statt automatisch verändern.
 - **Vier separate Erfassungs-/Bearbeiten-Formulare, EINE Regel**: Es gibt
   keinen einzigen zentralen Vormerkung-Dialog — `MobileVormerkenModal` (Mobile,
   Neu-Anlegen), `VormerkungHub` (Mobile, Bearbeiten bestehender Vormerkungen
