@@ -128,7 +128,7 @@ function DashboardScreenV2() {
       // NICHT direkt importieren — die abgerufenen Einträge werden zunächst nur
       // zur Prüfung "geparkt" (staged) und erst beim Tippen auf „Übernehmen"
       // tatsächlich in die Buchungen/den Saldo übernommen.
-      setBankFetch({ status: "done", staged: added, dupeItems, aspsp, banks });
+      setBankFetch({ status: "done", staged: added, dupeItems, aspsp, banks, unmapped: res.unmapped });
     }, [txs, accounts]);
     // Geparkte Einträge bearbeiten (Kategorie/Löschen) ohne sie schon zu importieren.
     const updateStaged = React.useCallback((updater) =>

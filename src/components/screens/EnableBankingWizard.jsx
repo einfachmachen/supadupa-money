@@ -221,8 +221,13 @@ function EnableBankingWizard({ onClose }) {
     setSessionAccounts(union);
     const soonest = valid.map((s) => s.validUntil).sort((a, b) => String(a).localeCompare(String(b)))[0];
     setValidUntil(soonest);
+    // WICHTIG: Enable Banking vergibt Konto-UIDs teils NUR pro Sitzung — nach
+    // einer erneuten Bank-Anmeldung kann sich die UID eines Kontos ändern.
+    // Ein bisher unbekanntes UID NICHT still auf das erste Konto (Giro)
+    // vorbelegen — sonst landen z. B. Tagesgeld-Umsätze unbemerkt auf Giro.
+    // Stattdessen leer lassen: der Schritt „Konten zuordnen" zeigt das dann
+    // deutlich als „— bitte wählen —" und verlangt eine bewusste Auswahl.
     const m = { ...(await loadEbAccountMap()) };
-    union.forEach((a) => { if (!m[a.uid]) m[a.uid] = accounts[0]?.id || "acc-giro"; });
     setAccMap(m);
     // Kein setMsg hier mehr — der Verbindungs-Status steht jetzt dauerhaft
     // oben im Banner (statt bei jedem Refresh erneut unten aufzupoppen und
@@ -315,8 +320,9 @@ function EnableBankingWizard({ onClose }) {
       }
       diagRec.outcome = "ok";
       saveEbDiag(diagRec); setDiag({ ts: new Date().toISOString(), ...diagRec });
+      // Nicht auf das erste Konto (Giro) vorbelegen — s. Kommentar in
+      // refreshConnected(). Neue/unbekannte Konto-UIDs bleiben bewusst leer.
       const m = { ...(await loadEbAccountMap()) };
-      accs.forEach((a) => { if (!m[a.uid]) m[a.uid] = accounts[0]?.id || "acc-giro"; });
       setAccMap(m);
       saveEbAccountMap(m);
       vu = vu || new Date(Date.now() + 90 * 86400000).toISOString();
@@ -804,24 +810,40 @@ function EnableBankingWizard({ onClose }) {
                 <div style={{ color: T.txt2, fontSize: 15, lineHeight: 1.55 }}>
                   Ordne jedes Bankkonto einem Konto in SupaDupa Money zu.
                 </div>
-                {sessionAccounts.map((a) => (
-                  <div key={a.uid} style={{ marginTop: 14 }}>
-                    <div style={{ color: T.txt2, fontSize: 12.5, marginBottom: 5 }}>{a.label}</div>
-                    <select style={inputStyle} value={accMap[a.uid] || ""}
-                      onChange={(e) => setAccMap((m) => {
-                        // Sofort persistieren (wie bei den Zugangsdaten) — nicht erst
-                        // beim späteren "Buchungen abrufen" speichern. Sonst geht eine
-                        // Zuordnung verloren, sobald der Assistent zwischendurch neu
-                        // gemountet wird (z. B. über die Bottom-Tabbar), und sie landet
-                        // nie im Cloud-Sync-Export (der liest den gespeicherten Stand).
-                        const next = { ...m, [a.uid]: e.target.value };
-                        saveEbAccountMap(next);
-                        return next;
-                      })}>
-                      {accounts.map((acc) => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
-                    </select>
-                  </div>
-                ))}
+                {sessionAccounts.some((a) => !accMap[a.uid]) && (
+                  <Box tone="warn">
+                    Enable Banking vergibt Konto-Kennungen teils nur je Sitzung — nach
+                    einer erneuten Bank-Anmeldung kann sich die Zuordnung ändern.
+                    Deshalb steht unten <b>bewusst nichts vorausgewählt</b>: bitte
+                    jedes Konto einmal explizit prüfen/wählen.
+                  </Box>
+                )}
+                {sessionAccounts.map((a) => {
+                  const unmapped = !accMap[a.uid];
+                  return (
+                    <div key={a.uid} style={{ marginTop: 14 }}>
+                      <div style={{ color: unmapped ? T.gold : T.txt2, fontSize: 12.5, marginBottom: 5,
+                        display: "flex", alignItems: "center", gap: 5 }}>
+                        {unmapped && Li("alert-triangle", 13, T.gold)} {a.label}
+                      </div>
+                      <select style={{ ...inputStyle, border: `1px solid ${unmapped ? T.gold : (T.bds || T.bd)}` }}
+                        value={accMap[a.uid] || ""}
+                        onChange={(e) => setAccMap((m) => {
+                          // Sofort persistieren (wie bei den Zugangsdaten) — nicht erst
+                          // beim späteren "Buchungen abrufen" speichern. Sonst geht eine
+                          // Zuordnung verloren, sobald der Assistent zwischendurch neu
+                          // gemountet wird (z. B. über die Bottom-Tabbar), und sie landet
+                          // nie im Cloud-Sync-Export (der liest den gespeicherten Stand).
+                          const next = { ...m, [a.uid]: e.target.value };
+                          saveEbAccountMap(next);
+                          return next;
+                        })}>
+                        <option value="">— bitte wählen —</option>
+                        {accounts.map((acc) => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
+                      </select>
+                    </div>
+                  );
+                })}
                 <label style={lblStyle}>Buchungen ab Datum</label>
                 <input type="date" style={inputStyle} value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)} />
@@ -829,7 +851,8 @@ function EnableBankingWizard({ onClose }) {
                   Tipp: Datum hochsetzen (z. B. auf nach deinem letzten Import),
                   damit alte, bereits vorhandene Buchungen gar nicht erst geladen werden.
                 </div>
-                <ActionBtn onClick={loadPreview} disabled={busy} icon="download">
+                <ActionBtn onClick={loadPreview}
+                  disabled={busy || sessionAccounts.some((a) => !accMap[a.uid])} icon="download">
                   Buchungen abrufen
                 </ActionBtn>
               </>

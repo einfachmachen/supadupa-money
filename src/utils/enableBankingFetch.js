@@ -132,7 +132,7 @@ function friendlyBankError(txt) {
 // Ergebnis:
 //   { ok:true, items:[{ accId, row, status:"new"|"exact"|"maybe" }], validUntil }
 //   { ok:false, reason:"no-creds"|"no-session"|"expired"|"error", message, detail? }
-async function fetchNewBankTx({ txs, accounts, dateFrom, aspsp } = {}) {
+async function fetchNewBankTx({ txs, dateFrom, aspsp } = {}) {
   const creds = await loadEbCreds();
   if (!creds.relayUrl || !creds.appId || !creds.privateKey) {
     return { ok: false, reason: "no-creds", message: "Kein Bank-Zugang eingerichtet." };
@@ -143,7 +143,6 @@ async function fetchNewBankTx({ txs, accounts, dateFrom, aspsp } = {}) {
   }
   const from = dateFrom || new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10);
   const accountMap = await loadEbAccountMap();
-  const fallbackAcc = accounts?.[0]?.id || "acc-giro";
 
   const known = buildKnownFps(txs);
   // Konto-gebunden, NICHT global: zwei verschiedene Konten können zufällig am
@@ -161,12 +160,21 @@ async function fetchNewBankTx({ txs, accounts, dateFrom, aspsp } = {}) {
   });
 
   const items = [];
+  const unmapped = []; // Konten ohne Zuordnung — NICHT raten, sondern überspringen
   let lastValidUntil = null;
   try {
     for (const sess of sessions) {
       lastValidUntil = sess.validUntil || lastValidUntil;
       for (const a of sess.accounts || []) {
-        const appAccId = accountMap[a.uid] || fallbackAcc;
+        const appAccId = accountMap[a.uid];
+        if (!appAccId) {
+          // WICHTIG: Enable Banking vergibt Konto-Kennungen teils nur je Sitzung
+          // — nach einer erneuten Bank-Anmeldung kann sich die UID eines Kontos
+          // ändern. Ein unbekanntes Konto NIE still auf das erste Konto (Giro)
+          // raten — sonst landen z. B. Tagesgeld-Umsätze unbemerkt auf Giro.
+          unmapped.push(a.label || a.uid);
+          continue;
+        }
         const rawTx = await fetchAllTransactions(cl, a.uid, from);
         const rows = mapEnableBankingTransactions(rawTx, appAccId);
         rows.forEach((row) => {
@@ -197,7 +205,7 @@ async function fetchNewBankTx({ txs, accounts, dateFrom, aspsp } = {}) {
   }
 
   items.sort((x, y) => y.row.isoDate.localeCompare(x.row.isoDate));
-  return { ok: true, items, validUntil: lastValidUntil };
+  return { ok: true, items, validUntil: lastValidUntil, unmapped };
 }
 
 export {
