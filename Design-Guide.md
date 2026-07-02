@@ -482,6 +482,16 @@ drei Reiter:
   `MobileVormerkenModal` Schritt 3 („Details") bzw. `EditPopup` direkt unter
   dem „aus Unvorhergesehenes"-Baustein. Liter × €/Liter wird live berechnet
   und kann per Button „Betrag übernehmen" in den Betrag (Schritt 1) sync­en.
+- **Vier separate Erfassungs-/Bearbeiten-Formulare, EINE Regel**: Es gibt
+  keinen einzigen zentralen Vormerkung-Dialog — `MobileVormerkenModal` (Mobile,
+  Neu-Anlegen), `VormerkungHub` (Mobile, Bearbeiten bestehender Vormerkungen
+  via `openEdit()` + Prefill aus `RecurringDetectionScreen`) und `AddTxModal`
+  (Desktop, Neu-Anlegen) bauen `tx`-Objekte jeweils in eigener Logik. Die
+  Tank-Erfassung muss **in allen dreien** verdrahtet sein (gleiche Gating-
+  Bedingung `typ==="einmalig" && csvType==="expense" && isFuelCat(cat)`,
+  gleiches `fuelTxFields`-Objekt-Muster in den finalen tx-Konstruktoren) —
+  sonst fehlt sie unbemerkt in einem der Wege. Bei künftigen neuen
+  Zusatzfeldern an Vormerkungen **immer alle drei Dateien prüfen**.
 - **Falle beim Bearbeiten (`EditPopup`/`saveEdit` in `App.jsx`)**: `openEdit()`
   baut `editTx` aus einer **expliziten Feld-Whitelist** und `saveEdit()`
   schreibt beim Speichern nur explizit gelistete Felder in die aktualisierte

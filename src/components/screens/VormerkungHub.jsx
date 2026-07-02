@@ -13,9 +13,10 @@ import { MONTHS_F } from "../../utils/constants.js";
 import { isoAddMonths, nextBankWorkday } from "../../utils/date.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
+import { isFuelCat } from "../../utils/fuel.js";
 
 function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}) {
-  const { cats, groups, txs, setTxs, accounts, year, month, getCat, getSub, setMasterOverride } = useContext(AppCtx);
+  const { cats, groups, txs, setTxs, accounts, vehicles, setVehicles, year, month, getCat, getSub, setMasterOverride } = useContext(AppCtx);
   // „+"-Button übernimmt: Tipp = Fertig/Schließen, Wisch ↓ = schließen.
   useEffect(() => {
     setMasterOverride?.({ label:"Fertig",
@@ -108,6 +109,14 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
   const [transferToCat, setTransferToCat] = useState(_existingLinkSplit?.catId || "");
   const [transferToSub, setTransferToSub] = useState(_existingLinkSplit?.subId || "");
   const [note,      setNote]      = useState(editVorm?.note||"");
+  // Tank-Erfassung (siehe TODO.md/Design-Guide §13): nur bei einmaliger Ausgabe
+  // mit Kategorie "Tanken" — Vorbelegung aus editVorm für den Bearbeiten-Modus.
+  const [fuelVehicleId, setFuelVehicleId] = useState(editVorm?._fuelVehicleId||"");
+  const [fuelLiters,    setFuelLiters]    = useState(editVorm?._fuelLiters!=null ? String(editVorm._fuelLiters).replace(".",",") : "");
+  const [fuelPricePerL, setFuelPricePerL] = useState(editVorm?._fuelPricePerL!=null ? String(editVorm._fuelPricePerL).replace(".",",") : "");
+  const [odometer,      setOdometer]      = useState(editVorm?._odometer!=null ? String(editVorm._odometer) : "");
+  const [showNewVehicle, setShowNewVehicle] = useState(false);
+  const [newVehicleName, setNewVehicleName] = useState("");
   const [startDate, setStartDate] = useState(()=>{
     if(editVorm?._seriesId) {
       // Für Serien: erste Buchung der Serie als Startdatum
@@ -352,6 +361,28 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
   });
   const selCat = cats.find(c=>c.id===catId);
   const subOpts = selCat?.subs||[];
+  const _showFuelFields = typ==="einmalig" && csvType==="expense"
+    && !(transferToAcc && transferToAcc!==accountId) && isFuelCat(selCat);
+  const fuelComputedTotal = (() => {
+    const l = pn((fuelLiters||"").replace(",","."));
+    const p = pn((fuelPricePerL||"").replace(",","."));
+    return (l>0 && p>0) ? l*p : null;
+  })();
+  const addVehicle = () => {
+    const name = newVehicleName.trim();
+    if(!name) return;
+    const v = {id:uid(), name};
+    setVehicles(p=>[...(p||[]), v]);
+    setFuelVehicleId(v.id);
+    setNewVehicleName("");
+    setShowNewVehicle(false);
+  };
+  const fuelTxFields = _showFuelFields ? {
+    _fuelVehicleId: fuelVehicleId || undefined,
+    _fuelLiters: fuelLiters ? pn(fuelLiters.replace(",",".")) : undefined,
+    _fuelPricePerL: fuelPricePerL ? pn(fuelPricePerL.replace(",",".")) : undefined,
+    _odometer: odometer ? pn(odometer) : undefined,
+  } : { _fuelVehicleId: undefined, _fuelLiters: undefined, _fuelPricePerL: undefined, _odometer: undefined };
 
   const interval_ = interval; // muss VOR calcCount stehen!
   const calcCount = () => {
@@ -399,6 +430,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
         repeatMonths:interval_,
         ...(lastOfMonth?{_lastOfMonth:true}:{_lastOfMonth:undefined}),
         ...(typ==="finanzierung"?{_seriesTyp:"finanzierung"}:{_seriesTyp:undefined}),
+        ...fuelTxFields,
       });
 
       // Hilfsfunktion: Linked-Counterpart aktualisieren oder erstellen/löschen
@@ -567,6 +599,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
         note: note||"",
         ...(lastOfMonth&&typ!=="einmalig" ? {_lastOfMonth:true} : {}),
         ...(typ==="einmalig"&&valueDate ? {valueDate} : {}),
+        ...fuelTxFields,
       };
       if(seriesId){
         tx._seriesId=seriesId; tx._seriesIdx=i+1; tx._seriesTotal=n;
@@ -995,6 +1028,89 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
                   {subOpts.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </>}
+
+              {/* 9a. Tank-Erfassung (nur bei Kategorie "Tanken") */}
+              {_showFuelFields&&(
+                <div style={{background:"rgba(255,255,255,0.04)",borderRadius:11,padding:"10px 12px",marginBottom:8,border:`1px solid ${T.bd}`}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8,color:T.txt,fontSize:12,fontWeight:700}}>
+                    {Li("fuel",13,T.gold)} Tank-Erfassung
+                  </div>
+                  <div style={{color:T.txt2,fontSize:10,marginBottom:4}}>Fahrzeug</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:8}}>
+                    {(vehicles||[]).map(v=>{
+                      const on = fuelVehicleId===v.id;
+                      return (
+                        <button key={v.id} onClick={()=>setFuelVehicleId(v.id)}
+                          style={{padding:"5px 10px",borderRadius:8,cursor:"pointer",fontFamily:"inherit",
+                            fontSize:11,fontWeight:600,display:"inline-flex",alignItems:"center",gap:5,
+                            border:`1.5px solid ${on?T.gold:T.bd}`,
+                            background:on?T.gold+"22":"rgba(255,255,255,0.04)",
+                            color:on?T.gold:T.txt2}}>
+                          {Li("car",11,on?T.gold:T.txt2)} {v.name}
+                        </button>
+                      );
+                    })}
+                    {!showNewVehicle && (
+                      <button onClick={()=>setShowNewVehicle(true)}
+                        style={{padding:"5px 10px",borderRadius:8,cursor:"pointer",fontFamily:"inherit",
+                          fontSize:11,fontWeight:600,display:"inline-flex",alignItems:"center",gap:5,
+                          border:`1.5px dashed ${T.bd}`,background:"transparent",color:T.txt2}}>
+                        {Li("plus",11,T.txt2)} neues Fahrzeug
+                      </button>
+                    )}
+                  </div>
+                  {showNewVehicle&&(
+                    <div style={{display:"flex",gap:6,marginBottom:8}}>
+                      <input type="text" value={newVehicleName} onChange={e=>setNewVehicleName(e.target.value)}
+                        placeholder="Name (z.B. Golf)" autoFocus
+                        style={{...INP,flex:1,marginBottom:0}}/>
+                      <button onClick={addVehicle}
+                        style={{flexShrink:0,padding:"0 12px",borderRadius:9,border:"none",
+                          background:T.gold,color:"#000",fontFamily:"inherit",fontSize:11,
+                          fontWeight:700,cursor:"pointer"}}>
+                        {Li("check",11,"#000")}
+                      </button>
+                    </div>
+                  )}
+                  <div style={{display:"flex",gap:8,marginBottom:fuelComputedTotal!=null?8:0}}>
+                    <div style={{flex:1}}>
+                      <div style={{color:T.txt2,fontSize:10,marginBottom:3}}>Liter</div>
+                      <input value={fuelLiters} onChange={e=>setFuelLiters(e.target.value.replace(/[^0-9,.]/g,""))}
+                        style={{...INP,marginBottom:0,width:"100%",boxSizing:"border-box",
+                          fontFamily:NUM_FONT,textAlign:"right"}}
+                        inputMode="decimal" placeholder="0,00"/>
+                    </div>
+                    <div style={{flex:1}}>
+                      <div style={{color:T.txt2,fontSize:10,marginBottom:3}}>€/Liter</div>
+                      <input value={fuelPricePerL} onChange={e=>setFuelPricePerL(e.target.value.replace(/[^0-9,.]/g,""))}
+                        style={{...INP,marginBottom:0,width:"100%",boxSizing:"border-box",
+                          fontFamily:NUM_FONT,textAlign:"right"}}
+                        inputMode="decimal" placeholder="0,000"/>
+                    </div>
+                    <div style={{flex:1}}>
+                      <div style={{color:T.txt2,fontSize:10,marginBottom:3}}>km-Stand</div>
+                      <input value={odometer} onChange={e=>setOdometer(e.target.value.replace(/[^0-9]/g,""))}
+                        style={{...INP,marginBottom:0,width:"100%",boxSizing:"border-box",
+                          fontFamily:NUM_FONT,textAlign:"right"}}
+                        inputMode="numeric" placeholder="km"/>
+                    </div>
+                  </div>
+                  {fuelComputedTotal!=null && (
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,
+                      background:"rgba(0,0,0,0.2)",borderRadius:8,padding:"7px 10px"}}>
+                      <span style={{color:T.txt2,fontSize:10.5}}>
+                        berechnet: <b style={{color:T.txt}}>{fmt(fuelComputedTotal)}</b>
+                      </span>
+                      <button onClick={()=>setAmount(fuelComputedTotal.toFixed(2).replace(".",","))}
+                        style={{padding:"4px 10px",borderRadius:7,border:"none",
+                          background:T.blue,color:"#fff",fontFamily:"inherit",fontSize:10.5,
+                          fontWeight:700,cursor:"pointer"}}>
+                        Betrag übernehmen
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* 10. Beschreibung + Notiz zusammen */}
               <div style={{color:T.txt2,fontSize:10,marginBottom:3}}>Beschreibung</div>
