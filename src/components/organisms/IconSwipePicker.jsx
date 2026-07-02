@@ -150,7 +150,7 @@ function IconSwipePicker({ onClose }) {
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp}
             style={{
-              width:"100%",maxWidth:300,aspectRatio:"3/4",
+              width:"100%",maxWidth:340,aspectRatio:"3/4",
               background:T.surf,borderRadius:24,border:`1.5px solid ${T.bds}`,
               display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,
               cursor:dragging?"grabbing":"grab",touchAction:"none",userSelect:"none",
@@ -169,9 +169,9 @@ function IconSwipePicker({ onClose }) {
               opacity:leftGlow,transform:`rotate(12deg) scale(${0.9+leftGlow*0.1})`,pointerEvents:"none"}}>
               WEITER
             </div>
-            <div style={{width:120,height:120,borderRadius:28,background:`${T.blue}18`,
-              display:"flex",alignItems:"center",justifyContent:"center"}}>
-              <SafeIcon name={icon} size={64} color={T.blue}/>
+            <div style={{width:240,height:240,borderRadius:44,background:`${T.blue}18`,
+              display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <SafeIcon name={icon} size={192} color={T.blue}/>
             </div>
             <div style={{color:T.txt,fontSize:15,fontWeight:600,fontFamily:"monospace"}}>{icon}</div>
           </div>
