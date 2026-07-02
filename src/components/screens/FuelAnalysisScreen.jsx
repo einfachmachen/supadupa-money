@@ -33,11 +33,15 @@ function FuelAnalysisScreen({onClose, onBack, mobileMode=false}) {
 
   // Einfacher SVG-Balken-Chart (Stil wie MoneyMoodScreen/ChartBlock): eine
   // Kennzahl über die Zeit, feste Farbe je Metrik (Magnitude → ein Hue).
+  // WICHTIG: viewBox-Einheiten entsprechen bei width:100% auf Mobile in etwa
+  // CSS-Pixeln (Container ~320-380px breit) — eine "fontSize" von 7 war damit
+  // ca. 7px auf dem Bildschirm und praktisch unlesbar. 11/10 entsprechen der
+  // sonst in der App für kleine Beschriftungen üblichen Größe.
   const barChart = (rows, valueOf, color, emptyHint, fmtVal=(v)=>v.toFixed(1)) => {
     if(!rows.length) return (
       <div style={{color:T.txt2,fontSize:11,padding:"16px 0",textAlign:"center"}}>{emptyHint}</div>
     );
-    const W = 320, H = 110, padL = 4, padB = 16, padTop = 14;
+    const W = 320, H = 138, padL = 4, padB = 22, padTop = 22;
     const chartH = H - padB - padTop;
     const vals = rows.map(valueOf);
     const maxV = Math.max(...vals, 0.0001);
@@ -57,12 +61,12 @@ function FuelAnalysisScreen({onClose, onBack, mobileMode=false}) {
                 rx={2} fill={color} opacity={sel?1:0.65}
                 stroke={sel?T.txt:"none"} strokeWidth={sel?1:0}/>
               {showLabels&&(
-                <text x={x+bw/2} y={padTop+chartH-bh-3} textAnchor="middle" fontSize="7"
-                  fill={sel?T.txt:T.txt2} fontWeight={sel?700:400}>
+                <text x={x+bw/2} y={padTop+chartH-bh-6} textAnchor="middle" fontSize="11"
+                  fill={sel?T.txt:T.txt2} fontWeight={sel?700:600}>
                   {fmtVal(v)}
                 </text>
               )}
-              <text x={x+bw/2} y={H-4} textAnchor="middle" fontSize="7" fill={sel?T.txt:T.txt2}>
+              <text x={x+bw/2} y={H-6} textAnchor="middle" fontSize="10" fill={sel?T.txt:T.txt2}>
                 {dLabel(r.date)}
               </text>
             </g>

@@ -109,9 +109,13 @@ function AddTxModal() {
   })();
   // Plausibilitätsprüfung km-Stand: warnt vor typischen Zahlendrehern/
   // fehlenden Ziffern, blockiert das Speichern aber nicht.
-  const odometerWarning = (_showFuelFields && odometer)
-    ? checkOdometerPlausibility(txs, fuelVehicleId, pn(odometer), startDate)
-    : null;
+  // useMemo: durchsucht ALLE Buchungen — ohne Memoisierung liefe das bei
+  // JEDEM Tastendruck neu (Betrag/Notiz/… stehen hier auf derselben Seite
+  // wie das km-Stand-Feld) und machte die Eingabe spürbar träge.
+  const odometerWarning = React.useMemo(() => {
+    if(!_showFuelFields || !odometer) return null;
+    return checkOdometerPlausibility(txs, fuelVehicleId, pn(odometer), startDate);
+  }, [_showFuelFields, odometer, fuelVehicleId, startDate, txs]);
   const saveVehicle = () => {
     const name = newVehicleName.trim();
     if(!name) return;

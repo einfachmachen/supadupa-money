@@ -373,9 +373,13 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
   // Plausibilitätsprüfung km-Stand: warnt vor typischen Zahlendrehern/
   // fehlenden Ziffern, blockiert das Speichern aber nicht. Beim Bearbeiten
   // die eigene Buchung (editVorm.id) beim Vergleich ausschließen.
-  const odometerWarning = (_showFuelFields && odometer)
-    ? checkOdometerPlausibility(txs, fuelVehicleId, pn(odometer), startDate, editVorm?.id)
-    : null;
+  // useMemo: durchsucht ALLE Buchungen — ohne Memoisierung liefe das bei
+  // JEDEM Tastendruck neu (Betrag/Notiz/… stehen hier auf derselben Seite
+  // wie das km-Stand-Feld) und machte die Eingabe spürbar träge.
+  const odometerWarning = useMemo(() => {
+    if(!_showFuelFields || !odometer) return null;
+    return checkOdometerPlausibility(txs, fuelVehicleId, pn(odometer), startDate, editVorm?.id);
+  }, [_showFuelFields, odometer, fuelVehicleId, startDate, editVorm?.id, txs]);
   const saveVehicle = () => {
     const name = newVehicleName.trim();
     if(!name) return;

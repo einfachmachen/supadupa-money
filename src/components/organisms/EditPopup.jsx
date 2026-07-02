@@ -35,6 +35,23 @@ function EditPopup() {
     const [newVehicleName, setNewVehicleName] = React.useState("");
     const [newVehiclePlate, setNewVehiclePlate] = React.useState("");
     const [editingVehicleId, setEditingVehicleId] = React.useState(null); // null=neu, sonst Fahrzeug-id
+    // Tank-Erfassung: nur bei Ausgaben mit Kategorie "Tanken" (siehe TODO.md).
+    // "Tanken" kann Haupt- ODER Unterkategorie sein (z.B. Auto/Tanken). Ebenfalls
+    // VOR dem Frühausstieg (editTx kann hier noch null sein — null-safe lesen).
+    const _editSplit0 = (editTx?.splits||[])[0];
+    const _showFuelFields = !!editTx && !editTx._budgetSubId && txType(editTx)==="expense"
+      && isFuelSelection(getCat(_editSplit0?.catId), getSub(_editSplit0?.catId, _editSplit0?.subId));
+    // Plausibilitätsprüfung km-Stand: warnt vor typischen Zahlendrehern/
+    // fehlenden Ziffern, blockiert das Speichern aber nicht. Eigene Buchung
+    // (editTx.id) beim Vergleich ausschließen. useMemo: durchsucht ALLE
+    // Buchungen — ohne Memoisierung liefe das bei JEDEM Tastendruck in JEDEM
+    // Feld neu (Betrag/Notiz/… stehen hier auf derselben Seite wie das
+    // km-Stand-Feld) und machte die Eingabe spürbar träge.
+    const odometerWarning = React.useMemo(() => {
+      if(!_showFuelFields || editTx?._odometer==null) return null;
+      return checkOdometerPlausibility(txs, editTx._fuelVehicleId, editTx._odometer, editTx.date, editTx.id);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [_showFuelFields, editTx?._odometer, editTx?._fuelVehicleId, editTx?.date, editTx?.id, txs]);
 
     if(!editTx) return null;
     const isMulti = (editTx.splits||[]).length > 1;
@@ -49,17 +66,6 @@ function EditPopup() {
     })();
     const _showPotToggle = !editTx._budgetSubId && _potSub && txType(editTx)==="expense"
       && (editTx.splits||[])[0]?.subId !== _potSub.id;
-    // Tank-Erfassung: nur bei Ausgaben mit Kategorie "Tanken" (siehe TODO.md).
-    // "Tanken" kann Haupt- ODER Unterkategorie sein (z.B. Auto/Tanken).
-    const _editSplit0 = (editTx.splits||[])[0];
-    const _showFuelFields = !editTx._budgetSubId && txType(editTx)==="expense"
-      && isFuelSelection(getCat(_editSplit0?.catId), getSub(_editSplit0?.catId, _editSplit0?.subId));
-    // Plausibilitätsprüfung km-Stand: warnt vor typischen Zahlendrehern/
-    // fehlenden Ziffern, blockiert das Speichern aber nicht. Eigene Buchung
-    // (editTx.id) beim Vergleich ausschließen.
-    const odometerWarning = (_showFuelFields && editTx._odometer!=null)
-      ? checkOdometerPlausibility(txs, editTx._fuelVehicleId, editTx._odometer, editTx.date, editTx.id)
-      : null;
     const saveVehicle = () => {
       const name = newVehicleName.trim();
       if(!name) return;

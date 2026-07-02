@@ -85,9 +85,13 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
   })();
   // Plausibilitätsprüfung km-Stand: warnt vor typischen Zahlendrehern/fehlenden
   // Ziffern (z.B. "13400" statt "134700"), blockiert das Speichern aber nicht.
-  const odometerWarning = (_showFuelFields && odometer)
-    ? checkOdometerPlausibility(txs, fuelVehicleId, pn(odometer), date)
-    : null;
+  // useMemo: durchsucht ALLE Buchungen (potenziell 10.000+) — ohne Memoisierung
+  // liefe das bei JEDEM Tastendruck in JEDEM Feld neu (z.B. beim Betrag tippen,
+  // sobald Fahrzeug+km-Stand schon gesetzt sind) und machte die Eingabe träge.
+  const odometerWarning = React.useMemo(() => {
+    if(!_showFuelFields || !odometer) return null;
+    return checkOdometerPlausibility(txs, fuelVehicleId, pn(odometer), date);
+  }, [_showFuelFields, odometer, fuelVehicleId, date, txs]);
   const saveVehicle = () => {
     const name = newVehicleName.trim();
     if(!name) return;

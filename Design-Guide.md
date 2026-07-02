@@ -535,7 +535,12 @@ drei Reiter:
   (Verbrauch, Preis/Liter, Kosten/km — je Chart eine feste Magnitude-Farbe
   statt einer kategorialen Palette) und eine Liste aller Tankvorgänge —
   erreichbar über Bottom-Tab **Daten** → **Tankverbrauch**
-  (`App.jsx`-State `showFuelAnalysis`).
+  (`App.jsx`-State `showFuelAnalysis`). **SVG-Chart-Beschriftungen**: die
+  `viewBox`-Einheiten entsprechen bei `width:100%` auf Mobile (Container
+  ~320-380px) ungefähr CSS-Pixeln — `fontSize="7"` war dadurch faktisch
+  ~7px und unlesbar; Wert-/Achsen-Labels in kleinen SVG-Charts brauchen
+  mindestens `fontSize` 10-11 (siehe `barChart()`-Helper), nicht die aus
+  Desktop-Charts gewohnten 7-8.
 - **Plausibilitätsprüfung km-Stand** (`utils/fuel.js: checkOdometerPlausibility()`):
   warnt beim Erfassen/Bearbeiten vor typischen Zahlendrehern/fehlenden
   Ziffern (z. B. „13400" statt „134700"), **blockiert das Speichern aber
@@ -550,6 +555,18 @@ drei Reiter:
   normale Tankfüllungen nicht triggern). In allen vier Erfassungs-/
   Bearbeiten-Dialogen verdrahtet, `excludeTxId` beim Bearbeiten nicht
   vergessen (sonst vergleicht die Buchung mit sich selbst).
+  **Performance-Falle (bereits einmal passiert):** Die Funktion durchsucht
+  ALLE Buchungen — **immer mit `useMemo` verdrahten** (Deps: die tatsächlich
+  relevanten Werte wie `_showFuelFields, odometer, fuelVehicleId, date/
+  startDate, txs`, NICHT `amount`/`desc`/etc.). In `VormerkungHub`/
+  `AddTxModal` liegen Betrag-Feld und km-Stand-Feld auf **derselben Seite**
+  (kein Schritt-Wechsel wie in `MobileVormerkenModal`) — ohne `useMemo`
+  lief die Prüfung bei JEDEM Tastendruck in JEDEM Feld neu (auch beim
+  Betrag tippen, sobald Fahrzeug+km-Stand schon gesetzt waren) und machte
+  die Eingabe spürbar träge. In `EditPopup` zusätzlich zu beachten: `useMemo`
+  ist ein Hook und muss — wie die Fahrzeug-Schnellanlage-States — **vor**
+  dem `if(!editTx) return null;`-Frühausstieg stehen (`editTx` dort mit `?.`
+  null-sicher lesen).
 
 ---
 
