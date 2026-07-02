@@ -771,7 +771,6 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
             </button>
           </div>
         ))}
-        <div style={{height:40}}/>
       </div>
       {/* Icon-Picker Dialog (mit Farb-Picker und Bereich „bereits verwendet") */}
       {iconPickFor && (() => {
