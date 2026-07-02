@@ -175,19 +175,24 @@
   .mobile-modal input[type="date"] { font-size: var(--mob-fs) !important; }
   /* Mobile mode — alle Texte und Buttons größer */
   /* iOS Safari Fix + nav-bottom-Überlappung:
-     Die nav-bottom (Home/Monat/Jahr-Buttons) ist position:fixed bottom:0
-     mit z-index:9999. Sie überdeckt im Mobile-Modus die unteren ~57px
-     jedes Modals. Wir reservieren diese Höhe + Safe-Area als padding-bottom,
-     damit sticky-Footer-Buttons sichtbar bleiben.
+     Die nav-bottom (Home/Monat/Jahr-Buttons) ist position:fixed bottom:0,
+     height:57px, z-index:9999 — sitzt also bündig am UNTEREN Bildschirmrand
+     und deckt exakt die untersten 57 echten Pixel ab (schließt den iPhone-
+     Home-Indicator-Bereich bereits mit ein, wird selbst NICHT zusätzlich um
+     die Safe-Area vergrößert). Reserviert ein Dialog zusätzlich zu diesen
+     57px NOCH den Safe-Area-Betrag obendrauf, entsteht darüber ein leerer,
+     ungenutzter Streifen (Lücke zwischen Inhalt-Ende und Oberkante der
+     Leiste) — sichtbar nur auf Geräten mit Home-Indicator (iPhone X+), nicht
+     im Desktop-Browser (env(safe-area-inset-bottom) dort = 0). Reservierung
+     daher exakt auf die nav-bottom-Höhe begrenzt, ohne Safe-Area-Zuschlag.
      - 100svh = small viewport height: stabil (kein Nachrechnen beim Scrollen →
-       kein Wackeln), beruecksichtigt aber die iOS-Safari-Bottom-Bar
-     - calc(57px + safe-area-inset-bottom) = nav-bottom + iPhone Home-Indicator */
+       kein Wackeln), beruecksichtigt aber die iOS-Safari-Bottom-Bar */
   .mobile-modal {
     font-size: 18px;
     top: 0 !important;
     height: 100vh !important;
     height: 100svh !important;
-    padding-bottom: calc(57px + env(safe-area-inset-bottom, 0px)) !important;
+    padding-bottom: 57px !important;
     box-sizing: border-box;
   }
   .mobile-modal button { min-height: 48px; font-size: 18px !important; }

@@ -961,9 +961,11 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
       ? {display:"flex",flexDirection:"column",fontFamily:"'SF Pro Text',-apple-system,sans-serif",minHeight:300}
       : {position:"fixed",inset:0,background:T.bg,zIndex:15,display:"flex",flexDirection:"column",
          fontFamily:"'SF Pro Text',-apple-system,sans-serif",
-         // Reserve unten: die nav-bottom (Home/Monat/Jahr) ist position:fixed z-index:9999
-         // und überdeckt sonst den Footer mit dem "Buchungen importieren"-Button.
-         paddingBottom:"calc(60px + env(safe-area-inset-bottom, 0px))"}}>
+         // Reserve unten: die nav-bottom (Home/Monat/Jahr) ist position:fixed, bottom:0,
+         // height:57px — deckt exakt die untersten 57px ab (Home-Indicator inklusive,
+         // wird selbst nicht zusätzlich um die Safe-Area vergrößert). KEIN zusätzlicher
+         // Safe-Area-Zuschlag hier, sonst entsteht ein leerer Streifen über der Leiste.
+         paddingBottom:"57px"}}>
       {/* Header — einheitlich mit den anderen Daten-Tab-Dialogen (siehe MobileHeader),
           unabhängig von mobileMode. Zurück führt review/done → input, input → Mehr-Menü. */}
       {!embedded && (

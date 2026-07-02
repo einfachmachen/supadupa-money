@@ -3228,7 +3228,7 @@ Abbrechen = ${remoteName}-Stand laden`
       {showMobileBudget&&<MobileBudgetModal onClose={()=>{setShowMobileBudget(false);setPlusArretiert(false);}}/>}
       {showMobileKategorien&&<MobileKategorienModal
         onClose={()=>{setShowMobileKategorien(false);setPlusArretiert(false);}}
-        onBack={()=>{setShowMobileKategorien(false);setPlusArretiert(false);}}
+        onBack={()=>{setShowMobileKategorien(false);setPlusArretiert(true);}}
         onKonten={()=>{setShowMobileKategorien(false);setMainTab("struktur");setActiveStructurTab("konten");}}
         onKategorienErweitert={()=>{setShowMobileKategorien(false);setMainTab("struktur");setActiveStructurTab("kategorien");}}/>}
       {showMobilePicker&&<MobileActionPicker
@@ -3268,13 +3268,13 @@ Abbrechen = ${remoteName}-Stand laden`
       {/* ── MODALS ── */}
       {modal==="addTx"&&<AddTxModal/>}
       {showCsv&&<CsvImportScreen onClose={()=>{setShowCsv(false);setPlusArretiert(false);}}
-        onBack={()=>{setShowCsv(false);setPlusArretiert(false);}}
+        onBack={()=>{setShowCsv(false);setPlusArretiert(true);}}
         csvRules={csvRules} setCsvRules={setCsvRules} mobileMode={mobileMode}/>}
       {showBankWizard&&<EnableBankingWizard onClose={()=>{setShowBankWizard(false);setPlusArretiert(false);}}/>}
       {showCloudSetup&&<CloudSetupWizard onClose={()=>{setShowCloudSetup(false);setPlusArretiert(false);}}/>}
       {showFuelAnalysis&&<FuelAnalysisScreen mobileMode={mobileMode}
         onClose={()=>{setShowFuelAnalysis(false);setPlusArretiert(false);}}
-        onBack={()=>{setShowFuelAnalysis(false);setPlusArretiert(false);}}/>}
+        onBack={()=>{setShowFuelAnalysis(false);setPlusArretiert(true);}}/>}
       {showMatching&&<MatchingScreen onClose={()=>{setShowMatching(false);setPlusArretiert(false);}}
         onBack={()=>{setShowMatching(false);reopenMobilePicker("main");}}/>}
       {showVormHub&&<VormerkungHub onClose={()=>{setShowVormHub(false);setEditVormTx(null);setPlusArretiert(false);}} editVorm={editVormTx} mobileMode={mobileMode}/>}
@@ -3297,7 +3297,7 @@ Abbrechen = ${remoteName}-Stand laden`
         </div>
       )}
       {showDataMgr&&<DataManagerDialog onClose={()=>{setShowDataMgr(false);setPlusArretiert(false);}} mobileMode={mobileMode}
-        onBack={()=>{setShowDataMgr(false);setPlusArretiert(false);}}/>}
+        onBack={()=>{setShowDataMgr(false);setPlusArretiert(true);}}/>}
       {exportDialog&&(
         <ExportDialog title={exportDialog.title} defaultName={exportDialog.defaultName}
           data={exportDialog.data} onClose={()=>setExportDialog(null)} onDone={()=>setExportDialog(null)}/>
