@@ -98,6 +98,8 @@ function AddTxModal() {
   const [odometer,      setOdometer]      = React.useState("");
   const [showNewVehicle,setShowNewVehicle]= React.useState(false);
   const [newVehicleName,setNewVehicleName]= React.useState("");
+  const [newVehiclePlate,setNewVehiclePlate]= React.useState("");
+  const [editingVehicleId,setEditingVehicleId]= React.useState(null); // null=neu, sonst Fahrzeug-id
   const _showFuelFields = typ==="einmalig" && csvType==="expense"
     && isFuelSelection(selCat, subOpts.find(s=>s.id===subId));
   const fuelComputedTotal = (() => {
@@ -110,14 +112,24 @@ function AddTxModal() {
   const odometerWarning = (_showFuelFields && odometer)
     ? checkOdometerPlausibility(txs, fuelVehicleId, pn(odometer), startDate)
     : null;
-  const addVehicle = () => {
+  const saveVehicle = () => {
     const name = newVehicleName.trim();
     if(!name) return;
-    const v = {id:uid(), name};
-    setVehicles(p=>[...(p||[]), v]);
-    setFuelVehicleId(v.id);
-    setNewVehicleName("");
-    setShowNewVehicle(false);
+    const plate = newVehiclePlate.trim() || undefined;
+    if(editingVehicleId) {
+      setVehicles(p=>(p||[]).map(v=>v.id===editingVehicleId?{...v,name,plate}:v));
+    } else {
+      const v = {id:uid(), name, plate};
+      setVehicles(p=>[...(p||[]), v]);
+      setFuelVehicleId(v.id);
+    }
+    setNewVehicleName(""); setNewVehiclePlate(""); setEditingVehicleId(null); setShowNewVehicle(false);
+  };
+  const startEditVehicle = (v) => {
+    setEditingVehicleId(v.id);
+    setNewVehicleName(v.name||"");
+    setNewVehiclePlate(v.plate||"");
+    setShowNewVehicle(true);
   };
   const fuelTxFields = _showFuelFields ? {
     _fuelVehicleId: fuelVehicleId || undefined,
@@ -621,18 +633,29 @@ function AddTxModal() {
             {(vehicles||[]).map(v=>{
               const on = fuelVehicleId===v.id;
               return (
-                <button key={v.id} onClick={()=>setFuelVehicleId(v.id)}
-                  style={{padding:"5px 10px",borderRadius:8,cursor:"pointer",fontFamily:"inherit",
-                    fontSize:11,fontWeight:600,display:"inline-flex",alignItems:"center",gap:5,
-                    border:`1.5px solid ${on?T.gold:T.bd}`,
-                    background:on?T.gold+"22":"rgba(255,255,255,0.04)",
-                    color:on?T.gold:T.txt2}}>
-                  {Li("car",11,on?T.gold:T.txt2)} {v.name}
-                </button>
+                <div key={v.id} style={{display:"inline-flex",alignItems:"center",gap:3}}>
+                  <button onClick={()=>setFuelVehicleId(v.id)}
+                    style={{padding:"5px 10px",borderRadius:8,cursor:"pointer",fontFamily:"inherit",
+                      fontSize:11,fontWeight:600,display:"inline-flex",alignItems:"center",gap:5,
+                      border:`1.5px solid ${on?T.gold:T.bd}`,
+                      background:on?T.gold+"22":"rgba(255,255,255,0.04)",
+                      color:on?T.gold:T.txt2}}>
+                    {Li("car",11,on?T.gold:T.txt2)} {v.name}
+                    {v.plate&&<span style={{fontWeight:400,opacity:0.75}}>· {v.plate}</span>}
+                  </button>
+                  {on&&(
+                    <button onClick={()=>startEditVehicle(v)} title="Fahrzeug bearbeiten"
+                      style={{padding:4,borderRadius:7,cursor:"pointer",
+                        border:`1.5px solid ${T.bd}`,background:"rgba(255,255,255,0.04)",
+                        display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
+                      {Li("pencil",10,T.txt2)}
+                    </button>
+                  )}
+                </div>
               );
             })}
             {!showNewVehicle && (
-              <button onClick={()=>setShowNewVehicle(true)}
+              <button onClick={()=>{setEditingVehicleId(null);setNewVehicleName("");setNewVehiclePlate("");setShowNewVehicle(true);}}
                 style={{padding:"5px 10px",borderRadius:8,cursor:"pointer",fontFamily:"inherit",
                   fontSize:11,fontWeight:600,display:"inline-flex",alignItems:"center",gap:5,
                   border:`1.5px dashed ${T.bd}`,background:"transparent",color:T.txt2}}>
@@ -641,16 +664,29 @@ function AddTxModal() {
             )}
           </div>
           {showNewVehicle&&(
-            <div style={{display:"flex",gap:6,marginBottom:8}}>
-              <input type="text" value={newVehicleName} onChange={e=>setNewVehicleName(e.target.value)}
-                placeholder="Name (z.B. Golf)" autoFocus
-                style={{...INP,flex:1,marginBottom:0}}/>
-              <button onClick={addVehicle}
-                style={{flexShrink:0,padding:"0 12px",borderRadius:9,border:"none",
-                  background:T.gold,color:"#000",fontFamily:"inherit",fontSize:11,
-                  fontWeight:700,cursor:"pointer"}}>
-                {Li("check",11,"#000")}
-              </button>
+            <div style={{marginBottom:8}}>
+              <div style={{display:"flex",gap:6,marginBottom:6}}>
+                <input type="text" value={newVehicleName} onChange={e=>setNewVehicleName(e.target.value)}
+                  placeholder="Name (z.B. Golf)" autoFocus
+                  style={{...INP,flex:1,marginBottom:0}}/>
+                <input type="text" value={newVehiclePlate} onChange={e=>setNewVehiclePlate(e.target.value)}
+                  placeholder="Kennzeichen (optional)"
+                  style={{...INP,flex:1,marginBottom:0}}/>
+              </div>
+              <div style={{display:"flex",gap:6}}>
+                <button onClick={()=>{setShowNewVehicle(false);setEditingVehicleId(null);setNewVehicleName("");setNewVehiclePlate("");}}
+                  style={{flex:1,padding:"6px 12px",borderRadius:9,border:`1.5px solid ${T.bd}`,
+                    background:"transparent",color:T.txt2,fontFamily:"inherit",fontSize:11,
+                    fontWeight:700,cursor:"pointer"}}>
+                  Abbrechen
+                </button>
+                <button onClick={saveVehicle}
+                  style={{flex:1,padding:"6px 12px",borderRadius:9,border:"none",
+                    background:T.gold,color:"#000",fontFamily:"inherit",fontSize:11,
+                    fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+                  {Li("check",11,"#000")} {editingVehicleId?"Speichern":"Anlegen"}
+                </button>
+              </div>
             </div>
           )}
           <div style={{display:"flex",gap:8,marginBottom:fuelComputedTotal!=null?8:0}}>

@@ -75,6 +75,8 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
   const [odometer,      setOdometer]      = useState("");
   const [showNewVehicle, setShowNewVehicle] = useState(false);
   const [newVehicleName, setNewVehicleName] = useState("");
+  const [newVehiclePlate, setNewVehiclePlate] = useState("");
+  const [editingVehicleId, setEditingVehicleId] = useState(null); // null=neu, sonst Fahrzeug-id
   const _showFuelFields = !isTransfer && !recurring && csvType==="expense" && isFuelSelection(getCat(catId), getSub(catId,subId));
   const fuelComputedTotal = (() => {
     const l = pn((fuelLiters||"").replace(",","."));
@@ -86,14 +88,24 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
   const odometerWarning = (_showFuelFields && odometer)
     ? checkOdometerPlausibility(txs, fuelVehicleId, pn(odometer), date)
     : null;
-  const addVehicle = () => {
+  const saveVehicle = () => {
     const name = newVehicleName.trim();
     if(!name) return;
-    const v = {id:uid(), name};
-    setVehicles(p=>[...(p||[]), v]);
-    setFuelVehicleId(v.id);
-    setNewVehicleName("");
-    setShowNewVehicle(false);
+    const plate = newVehiclePlate.trim() || undefined;
+    if(editingVehicleId) {
+      setVehicles(p=>(p||[]).map(v=>v.id===editingVehicleId?{...v,name,plate}:v));
+    } else {
+      const v = {id:uid(), name, plate};
+      setVehicles(p=>[...(p||[]), v]);
+      setFuelVehicleId(v.id);
+    }
+    setNewVehicleName(""); setNewVehiclePlate(""); setEditingVehicleId(null); setShowNewVehicle(false);
+  };
+  const startEditVehicle = (v) => {
+    setEditingVehicleId(v.id);
+    setNewVehicleName(v.name||"");
+    setNewVehiclePlate(v.plate||"");
+    setShowNewVehicle(true);
   };
   React.useEffect(()=>{
     if(_showFuelFields && !fuelVehicleId && (vehicles||[]).length===1) setFuelVehicleId(vehicles[0].id);
@@ -726,19 +738,30 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
                 {(vehicles||[]).map(v=>{
                   const on = fuelVehicleId===v.id;
                   return (
-                    <button key={v.id} onClick={()=>setFuelVehicleId(v.id)}
-                      style={{padding:`${S.pad}px ${S.padL}px`,borderRadius:S.radius/1.6,cursor:"pointer",
-                        fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,
-                        display:"inline-flex",alignItems:"center",gap:6,
-                        border:`2px solid ${on?T.gold:T.bd}`,
-                        background:on?T.gold+"22":"rgba(255,255,255,0.04)",
-                        color:on?T.gold:T.txt2}}>
-                      {Li("car",S.fs-8,on?T.gold:T.txt2)} {v.name}
-                    </button>
+                    <div key={v.id} style={{display:"inline-flex",alignItems:"center",gap:4}}>
+                      <button onClick={()=>setFuelVehicleId(v.id)}
+                        style={{padding:`${S.pad}px ${S.padL}px`,borderRadius:S.radius/1.6,cursor:"pointer",
+                          fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,
+                          display:"inline-flex",alignItems:"center",gap:6,
+                          border:`2px solid ${on?T.gold:T.bd}`,
+                          background:on?T.gold+"22":"rgba(255,255,255,0.04)",
+                          color:on?T.gold:T.txt2}}>
+                        {Li("car",S.fs-8,on?T.gold:T.txt2)} {v.name}
+                        {v.plate&&<span style={{fontWeight:400,opacity:0.75}}>· {v.plate}</span>}
+                      </button>
+                      {on&&(
+                        <button onClick={()=>startEditVehicle(v)} title="Fahrzeug bearbeiten"
+                          style={{padding:S.pad-4,borderRadius:S.radius/2,cursor:"pointer",
+                            border:`2px solid ${T.bd}`,background:"rgba(255,255,255,0.04)",
+                            display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
+                          {Li("pencil",S.fs-10,T.txt2)}
+                        </button>
+                      )}
+                    </div>
                   );
                 })}
                 {!showNewVehicle && (
-                  <button onClick={()=>setShowNewVehicle(true)}
+                  <button onClick={()=>{setEditingVehicleId(null);setNewVehicleName("");setNewVehiclePlate("");setShowNewVehicle(true);}}
                     style={{padding:`${S.pad}px ${S.padL}px`,borderRadius:S.radius/1.6,cursor:"pointer",
                       fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,
                       display:"inline-flex",alignItems:"center",gap:6,
@@ -748,16 +771,29 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
                 )}
               </div>
               {showNewVehicle && (
-                <div style={{display:"flex",gap:S.gap/2,marginBottom:S.gap}}>
-                  <input type="text" value={newVehicleName} onChange={e=>setNewVehicleName(e.target.value)}
-                    placeholder="Name (z.B. Golf)" autoFocus
-                    style={{...recInp,flex:1}}/>
-                  <button onClick={addVehicle}
-                    style={{flexShrink:0,padding:`0 ${S.padL}px`,borderRadius:S.radius,
-                      border:"none",background:T.gold,color:"#000",fontFamily:"inherit",
-                      fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
-                    {Li("check",S.fs-8,"#000")}
-                  </button>
+                <div style={{marginBottom:S.gap}}>
+                  <div style={{display:"flex",gap:S.gap/2,marginBottom:S.gap/2}}>
+                    <input type="text" value={newVehicleName} onChange={e=>setNewVehicleName(e.target.value)}
+                      placeholder="Name (z.B. Golf)" autoFocus
+                      style={{...recInp,flex:1}}/>
+                    <input type="text" value={newVehiclePlate} onChange={e=>setNewVehiclePlate(e.target.value)}
+                      placeholder="Kennzeichen (optional)"
+                      style={{...recInp,flex:1}}/>
+                  </div>
+                  <div style={{display:"flex",gap:S.gap/2}}>
+                    <button onClick={()=>{setShowNewVehicle(false);setEditingVehicleId(null);setNewVehicleName("");setNewVehiclePlate("");}}
+                      style={{flex:1,padding:`0 ${S.padL}px`,height:S.fs+S.pad*2,borderRadius:S.radius,
+                        border:`2px solid ${T.bd}`,background:"transparent",color:T.txt2,fontFamily:"inherit",
+                        fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
+                      Abbrechen
+                    </button>
+                    <button onClick={saveVehicle}
+                      style={{flex:1,padding:`0 ${S.padL}px`,height:S.fs+S.pad*2,borderRadius:S.radius,
+                        border:"none",background:T.gold,color:"#000",fontFamily:"inherit",
+                        fontSize:S.fs-6,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                      {Li("check",S.fs-8,"#000")} {editingVehicleId?"Speichern":"Anlegen"}
+                    </button>
+                  </div>
                 </div>
               )}
 

@@ -104,6 +104,7 @@ function FuelAnalysisScreen({onClose, onBack, mobileMode=false}) {
                       background:on?T.gold+"22":"rgba(255,255,255,0.04)",
                       color:on?T.gold:T.txt2}}>
                     {Li("car",12,on?T.gold:T.txt2)} {v.name}
+                    {v.plate&&<span style={{fontWeight:400,opacity:0.75}}>· {v.plate}</span>}
                   </button>
                 );
               })}

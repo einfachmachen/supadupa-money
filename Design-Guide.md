@@ -474,13 +474,20 @@ drei Reiter:
   Praxis häufigeren Fall (Kategorie als Unterpunkt einer Oberkategorie).
 - **Zusatzfelder an der Buchung** (nur gesetzt, wenn beim Erfassen ausgefüllt):
   `_fuelVehicleId`, `_fuelLiters`, `_fuelPricePerL`, `_odometer`.
-- **Mehrere Fahrzeuge**: eigenes Top-Level-Array `vehicles` (`{id,name}`) —
-  genau wie `accounts`/`cats` lokal persistiert (`useLocalSaveDebounce`),
+- **Mehrere Fahrzeuge**: eigenes Top-Level-Array `vehicles`
+  (`{id,name,plate?}` — `plate` = Kennzeichen, optional) — genau wie
+  `accounts`/`cats` lokal persistiert (`useLocalSaveDebounce`),
   Cloud-synchronisiert (`saveConfig`/`applyData`) und über den Daten-Manager
-  exportier-/importier-/löschbar. Anlage **inline** beim Erfassen („+ neues
-  Fahrzeug"-Chip in `MobileVormerkenModal`/`EditPopup`) — keine eigene
-  Verwaltungsseite (Scope-Entscheidung: der Nutzer wollte Mehrfahrzeug-
-  **Unterstützung**, kein volles CRUD-Tooling).
+  exportier-/importier-/löschbar. Anlage/Bearbeiten **inline** beim Erfassen
+  (in allen vier Dialogen identisch): „+ neues Fahrzeug"-Chip öffnet ein
+  Formular mit Name + Kennzeichen; ein Stift-Icon neben dem gerade
+  **ausgewählten** Fahrzeug-Chip öffnet dasselbe Formular vorbefüllt zum
+  Bearbeiten (`saveVehicle()`/`startEditVehicle()`, State `editingVehicleId`
+  unterscheidet Neu- vs. Bearbeiten-Modus). Bewusst **kein** eigenes
+  Löschen/keine dedizierte Verwaltungsseite (Scope-Entscheidung: der Nutzer
+  wollte Mehrfahrzeug-**Unterstützung** mit editierbaren Stammdaten, kein
+  volles CRUD-Tooling mit Liste/Löschen — Löschen bleibt über den
+  Daten-Manager möglich, s. §11).
 - **Erfassung**: Felder erscheinen **nur**, wenn Kategorie = „Tanken" **und**
   es sich um eine einmalige Ausgabe handelt (nicht bei Serie/Umbuchung) —
   `MobileVormerkenModal` Schritt 3 („Details") bzw. `EditPopup` direkt unter
