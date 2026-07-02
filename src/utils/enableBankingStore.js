@@ -125,6 +125,31 @@ function saveEbSessionList(arr) {
   kvStore.setItem(KEYS.sessions, raw);
 }
 
+// Rein lokaler Check ohne Bank-API-Aufruf (kein Rate-Limit-Verbrauch): welche
+// Konten aktiver Bank-Sessions haben (noch) KEINE Zuordnung zu einem
+// App-Konto? Damit das proaktiv auffällt — nicht erst beim nächsten Abruf
+// oder Öffnen des Bank-Assistenten (siehe fetchNewBankTx: unbekannte Konten
+// werden dort übersprungen statt geraten, aber das sieht man nur, wenn man
+// aktiv abruft).
+async function findUnmappedEbAccounts() {
+  try {
+    const list = await loadEbSessionList();
+    const valid = list.filter((s) => s && s.validUntil && new Date(s.validUntil) > new Date() && (s.accounts || []).length);
+    if (!valid.length) return [];
+    const m = await loadEbAccountMap();
+    const seen = new Set();
+    const out = [];
+    valid.forEach((s) => (s.accounts || []).forEach((a) => {
+      if (seen.has(a.uid) || m[a.uid]) return;
+      seen.add(a.uid);
+      out.push({ uid: a.uid, label: a.label || a.uid, aspsp: s.aspsp || "" });
+    }));
+    return out;
+  } catch {
+    return [];
+  }
+}
+
 // Identität einer Session: bevorzugt die Bank (aspsp), sonst die sessionId.
 // Ohne gemeinsame Kennung NIE zusammenfassen — sonst überschriebe eine zweite
 // Bank ohne aspsp/sessionId versehentlich die erste.
@@ -228,4 +253,5 @@ export {
   clearEbDiag,
   exportEbForSync,
   importEbFromSync,
+  findUnmappedEbAccounts,
 };

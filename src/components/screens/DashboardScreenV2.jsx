@@ -1,6 +1,6 @@
 // Auto-generated module (siehe app-src.jsx)
 
-import React, { Fragment, useContext, useMemo, useRef, useState } from "react";
+import React, { Fragment, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Overlay } from "../atoms/Overlay.jsx";
 import { CatPicker } from "../molecules/CatPicker.jsx";
 import { CategoryChart } from "../molecules/CategoryChart.jsx";
@@ -22,6 +22,7 @@ import { txFingerprint, isDuplCounterpart, buildTxIdMap } from "../../utils/tx.j
 import { saldoAt, budgetPlaceholderActive } from "../../utils/saldo.js";
 import { pendingDebitDate } from "../../utils/date.js";
 import { fetchNewBankTx, listConnectedBanks } from "../../utils/enableBankingFetch.js";
+import { findUnmappedEbAccounts } from "../../utils/enableBankingStore.js";
 
 function DashboardScreenV2() {
   const { cats,setCats,groups,setGroups,txs,setTxs,accounts,setAccounts,
@@ -40,6 +41,7 @@ function DashboardScreenV2() {
     budgets={},
     setShowMatching,
     setDashDrillOpen,
+    setShowBankWizard,
   } = useContext(AppCtx);
 
     const _isSelAcc = t => !selAcc || t.accountId===selAcc || (!t.accountId && selAcc==="acc-giro");
@@ -99,6 +101,11 @@ function DashboardScreenV2() {
     // ── Bank-Abruf direkt im Dashboard (Pull-to-Refresh) ──
     // bankFetch: null | {status:"loading"|"done"|"error", reason?, message?, staged?, dupeItems?}
     const [bankFetch, setBankFetch] = useState(null);
+    // Proaktiver Hinweis auf nicht zugeordnete Bank-Konten — rein lokaler
+    // Check (kein Bank-API-Aufruf), damit das SOFORT beim Öffnen des
+    // Dashboards auffällt und nicht erst beim nächsten aktiven Abruf.
+    const [unmappedEbAccounts, setUnmappedEbAccounts] = useState([]);
+    useEffect(() => { findUnmappedEbAccounts().then(setUnmappedEbAccounts); }, []);
     const dashScrollRef = useRef(null);
     const pullRef = useRef({ startY: 0, active: false });
     const [pullDist, setPullDist] = useState(0);
@@ -129,6 +136,9 @@ function DashboardScreenV2() {
       // zur Prüfung "geparkt" (staged) und erst beim Tippen auf „Übernehmen"
       // tatsächlich in die Buchungen/den Saldo übernommen.
       setBankFetch({ status: "done", staged: added, dupeItems, aspsp, banks, unmapped: res.unmapped });
+      // Persistentes Banner neu prüfen (aspsp-Filter oben deckt ggf. nur EINE
+      // Bank ab — hier zählt der volle, ungefilterte lokale Stand).
+      findUnmappedEbAccounts().then(setUnmappedEbAccounts);
     }, [txs, accounts]);
     // Geparkte Einträge bearbeiten (Kategorie/Löschen) ohne sie schon zu importieren.
     const updateStaged = React.useCallback((updater) =>
@@ -880,6 +890,27 @@ function DashboardScreenV2() {
           }
         })()}
         </div>
+
+        {/* Proaktiver Hinweis: nicht zugeordnete Bank-Konten — sofort sichtbar
+            beim Öffnen, unabhängig von Pull-to-Refresh oder Bank-Assistent. */}
+        {unmappedEbAccounts.length > 0 && !bankFetch && (
+          <div style={{ margin: "6px 10px 0", padding: "10px 12px", borderRadius: 12,
+            background: T.gold + "18", border: `1px solid ${T.gold}55`,
+            display: "flex", alignItems: "center", gap: 10 }}>
+            {Li("alert-triangle", 18, T.gold)}
+            <div style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 12.5, lineHeight: 1.4 }}>
+              {unmappedEbAccounts.length} Bank-Konto{unmappedEbAccounts.length !== 1 ? "en" : ""} noch{" "}
+              <b>nicht zugeordnet</b> ({unmappedEbAccounts.map((a) => a.label).join(", ")}) —
+              Umsätze werden beim Abruf übersprungen.
+            </div>
+            <button onClick={() => setShowBankWizard?.(true)}
+              style={{ flexShrink: 0, background: T.gold, border: "none", borderRadius: 9,
+                padding: "8px 11px", color: T.on_accent || "#1A1E00", fontSize: 12.5, fontWeight: 800,
+                cursor: "pointer", whiteSpace: "nowrap" }}>
+              Zuordnen →
+            </button>
+          </div>
+        )}
 
         {/* Pull-to-Refresh-Indikator: erscheint beim Herunterziehen zwischen dem
             fest positionierten Hero und der ersten Kategorie. */}
