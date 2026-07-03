@@ -85,7 +85,15 @@ function IconSwipePicker({ onClose }) {
   const rot = Math.max(-10, Math.min(10, offsetX/16));
 
   const content = (
-    <div style={{position:"fixed",inset:0,background:T.bg,zIndex:999999,
+    // onClick stoppen: React-Portals bubblen Events durch den REACT-Baum, nicht
+    // den DOM-Baum — dieser Screen hängt (als Kind von IconPickerDialog) über
+    // showSwipePicker im React-Baum UNTER dem Backdrop von IconPickerDialog
+    // (onClick={onClose} dort). Ohne stopPropagation würde jeder Klick hier
+    // drin (Pfeile, Stern, ✕, Karte) bis zu diesem Backdrop durchbubblen und
+    // den kompletten Icon-Picker mitschließen — je nachdem, woher der Icon-
+    // Picker ursprünglich geöffnet wurde, landet man dann z.B. wieder bei
+    // "Konten", statt nur den Swipe-Picker zu schließen.
+    <div onClick={e=>e.stopPropagation()} style={{position:"fixed",inset:0,background:T.bg,zIndex:999999,
       display:"flex",flexDirection:"column"}}>
       {/* Header */}
       <div style={{display:"flex",alignItems:"center",gap:10,padding:"14px 16px",
