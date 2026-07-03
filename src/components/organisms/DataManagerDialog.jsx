@@ -557,13 +557,15 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
           ))}
         </div>
 
-        {/* Gleiches paddingBottom wie in den übrigen (unauffälligen) Screens
-            (z. B. SettingsInline: "12px 14px 24px") — der vergrößerte
-            + Button darf die letzten Zeilen überdecken, das ist normal und
-            nur durch einen frei verschiebbaren Button (wie im Trend-
-            Drilldown) vollständig vermeidbar. Eine künstliche Zusatz-Reserve
-            hier hätte auf kürzeren Listen nur einen leeren Streifen erzeugt. */}
-        <div style={{flex:1,overflowY:"auto",padding:"12px 16px 24px"}}>
+        {/* paddingBottom 140px: Der vergrößerte + Button (SIZE 78 × scale 1.5,
+            translateY -94px in der 57px-Bottom-Bar) reicht bis zu ~124px
+            über die Dialog-Unterkante — ohne Scroll-Reserve blieben die
+            letzten Zeilen permanent darunter hängen, ohne sie je herausscrollen
+            zu können. 140px = Minimum + kleine Marge. (Der vorherige "leere
+            Streifen" kam NICHT von diesem Puffer, sondern davon, dass der
+            Dialog selbst durch 100svh auf iOS Safari zu kurz gerendert wurde
+            — siehe --app-vvh in App.jsx/themes.css.) */}
+        <div style={{flex:1,overflowY:"auto",padding:"12px 16px 140px"}}>
 
           {/* ── EXPORT ── */}
           {tab==="export"&&(<>

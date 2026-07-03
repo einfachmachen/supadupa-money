@@ -730,7 +730,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
           </button>}
         </div>
 
-        <div style={{flex:1,overflowY:"auto",background:mobileMode?T.surf2:"transparent",paddingBottom:mobileMode?24:0}}>
+        <div style={{flex:1,overflowY:"auto",background:mobileMode?T.surf2:"transparent",paddingBottom:mobileMode?140:0}}>
 
           {/* NEU ERSTELLEN */}
           <VormHubSecToggle label="neue Vormerkung erstellen" icon="plus-circle"
