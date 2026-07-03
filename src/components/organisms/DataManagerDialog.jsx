@@ -557,13 +557,13 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
           ))}
         </div>
 
-        {/* paddingBottom großzügig (240px statt 24px): lässt genug Platz zum
-            Durchscrollen, damit die letzten Zeilen/Buttons auch bei
-            vergrößertem/arretiertem + Button vollständig sichtbar werden
-            (der äußere Vollbild-Rahmen reserviert bewusst nur die schlanken
-            57px der Bottom-Bar, kein zusätzlicher Zuschlag dort — sonst
-            entsteht auf kurzen Screens ein leerer Streifen). */}
-        <div style={{flex:1,overflowY:"auto",padding:"12px 16px 240px"}}>
+        {/* paddingBottom knapp über dem tatsächlichen Minimum, das der
+            vergrößerte + Button braucht (SIZE 78 × scale 1.5, translateY
+            -94px in der 57px-Bottom-Bar ⇒ Button-Oberkante ~124px über der
+            Dialog-Unterkante) — 140px statt der früheren 240px, die auf
+            kürzeren Listen einen sichtbaren leeren Streifen am Ende erzeugt
+            haben, ohne die zusätzliche Reserve tatsächlich zu brauchen. */}
+        <div style={{flex:1,overflowY:"auto",padding:"12px 16px 140px"}}>
 
           {/* ── EXPORT ── */}
           {tab==="export"&&(<>
