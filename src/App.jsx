@@ -3418,13 +3418,17 @@ function plusBtnColors(T) {
 
 // „Mai 2026 / WISCHEN"-Knopf (SIZE/Transform/Wrapper identisch). Während
 // ein Mobile-Wizard aktiv ist, ersetzt diese Variante den Inhalt:
-//   Tipp     → override.onConfirm()
-//   Wisch ←  → override.onBack()    (no-op falls onBack === null)
-//   Wisch ↓  → override.onDismiss()
-//   Ziehen ↑ → Knopf frei nach oben verschieben (dragY, bis DRAG_UP_MAX),
-//              damit er nie dauerhaft Inhalt verdeckt — analog zum frei
-//              verschiebbaren drillBtnY im Trend-Drilldown. Bleibt stehen,
-//              bis erneut gezogen wird (kein Auto-Reset).
+//   Tipp             → override.onConfirm()
+//   Wisch ←          → override.onBack()    (no-op falls onBack === null)
+//   Wisch ↓          → override.onDismiss()
+//   Halten + Ziehen  → Knopf frei nach oben UND unten verschieben (dragY,
+//                      ±DRAG_RANGE_MAX) — erst nach HOLD_MS Ruhehalten, damit
+//                      ein normaler (schneller) Wisch weiterhin sofort
+//                      zurück/schließen auslöst, analog zum frei
+//                      verschiebbaren drillBtnY im Trend-Drilldown. Bleibt
+//                      stehen, bis erneut per Halten gezogen wird (kein
+//                      Auto-Reset), und löst beim Loslassen keine der drei
+//                      obigen Aktionen aus.
 // Der Wrapper bekommt zIndex 500, damit der Knopf über dem Modal
 // (zIndex 300) sichtbar UND klickbar bleibt.
 function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
@@ -3432,12 +3436,16 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
   const MOVE_TOLERANCE = 14;
   const VISUAL_LIMIT = 18;
   const DOUBLE_TAP_MS = 350;
-  // Wie weit sich der Knopf per Ziehen nach OBEN aus verdecktem Inhalt
-  // herausziehen lässt (analog zum frei verschiebbaren drillBtnY im Trend-
-  // Drilldown) — bewusst NUR nach oben: nach unten ziehen ist schon die
-  // bestehende "Wisch ↓ = schließen"-Geste (override.onDismiss) und darf
-  // dadurch nicht verändert werden.
-  const DRAG_UP_MAX = 400;
+  // Langes Halten (HOLD_MS) schaltet in einen freien Vertikal-Verschiebe-Modus
+  // um — dadurch bleibt die Zeit statt der Richtung das Unterscheidungsmerkmal:
+  // ein normaler (kurzer) Wisch löst weiterhin sofort Zurück/Schließen aus,
+  // erst wer den Finger länger ruhig hält und DANN bewegt, verschiebt den
+  // Knopf frei nach oben UND wieder zurück nach unten (analog zum frei
+  // verschiebbaren drillBtnY im Trend-Drilldown). Löst der Finger, greift
+  // wieder die normale Bedienung (Tipp/Wisch) — die Position bleibt aber
+  // stehen, bis erneut per Halten gezogen wird (kein Auto-Reset).
+  const HOLD_MS = 450;
+  const DRAG_RANGE_MAX = 400; // wie weit maximal von der Standardposition weg
   const [dragY, setDragY] = React.useState(0); // 0 = Standardposition, negativ = hochgezogen
   const tapRef = React.useRef({ t: 0 });
   // Ausstehenden Einzel-Tipp-Timer (confirmOnTapDismissOnDouble) beim Unmount stoppen
@@ -3461,7 +3469,17 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
     if(e.button !== undefined && e.button !== 0) return;
     try { e.currentTarget.setPointerCapture(e.pointerId); } catch(_) {}
     ref.current = {x:e.clientX,y:e.clientY,dx:0,dy:0,axisLocked:null,
-      dragging:true,pointerId:e.pointerId,moved:false};
+      dragging:true,pointerId:e.pointerId,moved:false,holdEngaged:false,holdTimer:null};
+    // Hold-Timer: feuert nur, wenn der Finger bis dahin (praktisch) ruhig
+    // aufliegt — eine schnelle Wisch-Geste bricht ihn in onMove sofort ab,
+    // bevor er auslösen kann (siehe dort).
+    ref.current.holdTimer = setTimeout(() => {
+      const rr = ref.current;
+      rr.holdTimer = null;
+      if(!rr.dragging || rr.pointerId !== e.pointerId) return;
+      rr.holdEngaged = true;
+      try { if(navigator.vibrate) navigator.vibrate(12); } catch(_) {}
+    }, HOLD_MS);
   };
   const onMove = (e) => {
     const r = ref.current;
@@ -3469,7 +3487,24 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
     const dx = e.clientX - r.x, dy = e.clientY - r.y;
     r.dx = dx; r.dy = dy;
     const adx = Math.abs(dx), ady = Math.abs(dy);
-    if(adx > MOVE_TOLERANCE || ady > MOVE_TOLERANCE) r.moved = true;
+    if(!r.moved && (adx > MOVE_TOLERANCE || ady > MOVE_TOLERANCE)) {
+      r.moved = true;
+      // Schon spürbar bewegt, bevor die Hold-Schwelle ablief → normale
+      // (schnelle) Wisch-Geste, kein Verschiebe-Modus.
+      if(r.holdTimer) { clearTimeout(r.holdTimer); r.holdTimer = null; }
+    }
+    // ── Hold-Verschiebe-Modus: frei nach oben UND unten, unabhängig von den
+    //    normalen Wisch-Gesten (die greifen erst wieder nach dem Loslassen,
+    //    falls dieser Modus NICHT aktiv war). ──
+    if(r.holdEngaged) {
+      const proposed = Math.max(-DRAG_RANGE_MAX, Math.min(0, dragY + dy));
+      const vy = proposed - dragY;
+      if(btnRef.current) {
+        btnRef.current.style.transition = "none";
+        btnRef.current.style.transform  = `translate(0px, ${vy + restY}px) scale(${dragScale})`;
+      }
+      return;
+    }
     if(!r.axisLocked && (adx > MOVE_TOLERANCE || ady > MOVE_TOLERANCE)) {
       r.axisLocked = adx >= ady ? "x" : "y";
     }
@@ -3481,13 +3516,7 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
       const allowBack = !!override.onBack;
       vx = dx < 0 ? clamp(dx, allowBack ? VISUAL_LIMIT : 6) : clamp(dx, 6);
     } else if(r.axisLocked === "y") {
-      if(dy > 0) {
-        vy = clamp(dy, VISUAL_LIMIT); // bestehende Wisch-runter-Vorschau (schließen)
-      } else {
-        // Frei nach oben ziehen (Knopf aus verdecktem Inhalt herausziehen),
-        // begrenzt durch die bereits aufsummierte Verschiebung (dragY).
-        vy = Math.max(dy, -DRAG_UP_MAX - dragY);
-      }
+      vy = dy > 0 ? clamp(dy, VISUAL_LIMIT) : clamp(dy, 6); // bestehende Wisch-runter-Vorschau (schließen)
     }
     if(btnRef.current) {
       btnRef.current.style.transition = "none";
@@ -3498,8 +3527,21 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
     const r = ref.current;
     if(!r.dragging || r.pointerId !== e.pointerId) return;
     r.dragging = false;
+    if(r.holdTimer) { clearTimeout(r.holdTimer); r.holdTimer = null; }
     try { e.currentTarget.releasePointerCapture(e.pointerId); } catch(_) {}
-    const {dx,dy,axisLocked,moved} = r;
+    const {dx,dy,axisLocked,moved,holdEngaged} = r;
+    if(holdEngaged) {
+      // Verschiebe-Geste — löst KEINE Tipp-/Wisch-Aktion aus. Position bleibt
+      // stehen, bis erneut per Halten+Ziehen verschoben wird.
+      const newDragY = Math.max(-DRAG_RANGE_MAX, Math.min(0, dragY + dy));
+      setDragY(newDragY);
+      if(btnRef.current) {
+        const newRestY = (plusArretiert ? -94 : -14) + newDragY;
+        btnRef.current.style.transition = "transform 0.2s cubic-bezier(.34,1.4,.64,1)";
+        btnRef.current.style.transform  = `translate(0px, ${newRestY}px) scale(${baseScale})`;
+      }
+      return;
+    }
     settle();
     if(axisLocked === "x" && Math.abs(dx) > DRAG_THRESHOLD) {
       if(tapRef.current.timer) { clearTimeout(tapRef.current.timer); tapRef.current = { t:0 }; }
@@ -3509,19 +3551,6 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
     if(axisLocked === "y" && dy > 0 && Math.abs(dy) > DRAG_THRESHOLD) {
       if(tapRef.current.timer) { clearTimeout(tapRef.current.timer); tapRef.current = { t:0 }; }
       override.onDismiss();
-      return;
-    }
-    if(axisLocked === "y" && dy < 0 && Math.abs(dy) > DRAG_THRESHOLD) {
-      // Ziehen nach oben wird übernommen — der Knopf bleibt dort, bis erneut
-      // gezogen wird (kein automatisches Zurückspringen, analog drillBtnY).
-      if(tapRef.current.timer) { clearTimeout(tapRef.current.timer); tapRef.current = { t:0 }; }
-      const newDragY = Math.max(-DRAG_UP_MAX, Math.min(0, dragY + dy));
-      setDragY(newDragY);
-      if(btnRef.current) {
-        const newRestY = (plusArretiert ? -94 : -14) + newDragY;
-        btnRef.current.style.transition = "transform 0.2s cubic-bezier(.34,1.4,.64,1)";
-        btnRef.current.style.transform  = `translate(0px, ${newRestY}px) scale(${baseScale})`;
-      }
       return;
     }
     if(!moved && !override.disabled) {
@@ -3566,7 +3595,11 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
       }
     }
   };
-  const onCancel = () => { ref.current.dragging = false; settle(); };
+  const onCancel = () => {
+    if(ref.current.holdTimer) { clearTimeout(ref.current.holdTimer); ref.current.holdTimer = null; }
+    ref.current.dragging = false;
+    settle();
+  };
 
   // Label-Aufteilung für mehrzeilige Darstellung im runden Knopf.
   // Jedes Wort kommt auf eine eigene Zeile (max 4). „→" wird an die
@@ -3629,8 +3662,8 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
             {Li("chevron-down",13,override.disabled?T.txt2:_pbc.fg)}
           </div>
         )}
-        {/* Hinweis: Knopf lässt sich nach oben ziehen, falls er verdeckten
-            Inhalt überlappt (s. DRAG_UP_MAX oben). */}
+        {/* Hinweis: Knopf lässt sich per Halten+Ziehen frei verschieben, falls
+            er verdeckten Inhalt überlappt (s. HOLD_MS/DRAG_RANGE_MAX oben). */}
         <div style={{position:"absolute",top:1,left:"50%",transform:"translateX(-50%)",
           opacity:0.6,pointerEvents:"none",display:"flex"}}>
           {Li("chevron-up",13,override.disabled?T.txt2:_pbc.fg)}
