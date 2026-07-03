@@ -3099,34 +3099,19 @@ Abbrechen = ${remoteName}-Stand laden`
           );
         };
 
-        // Ist gerade ein Vollbild-Dialog offen (masterOverride aktiv)? Dann darf
-        // die Bottom-Bar NICHT mehr als opake, sichtbare Leiste über dem
-        // Dialog-Inhalt liegen — sie behält per CSS "z-index:9999 !important"
-        // sonst IMMER die oberste Ebene und schneidet dadurch permanent die
-        // unteren ~57px JEDES Dialogs ab, unabhängig von dessen eigenem
-        // Scroll-Puffer, weil das eine komplett separate, undurchsichtige
-        // Fläche ist (das ist der eigentliche "Streifen"-Bug). Bar wird daher
-        // transparent, die 4 Tab-Slots werden zu unsichtbaren, nicht mehr
-        // antippbaren Platzhaltern (Größe/Position bleibt gleich, damit der
-        // + Button an exakt derselben Stelle bleibt) — nur der + Button
-        // (inkl. Override) bleibt sichtbar/bedienbar.
-        const dialogOpen = !!masterOverride;
-        const navSpacer = (key) => <div key={key} style={{flex:1,pointerEvents:"none"}}/>;
-
         // ── TERMINAL NAV ──────────────────────────────────────────────────
         if(T.themeName==="terminal") {
           const G = T.pos; const D = T.txt2;
           const items = [NAV_TABS[0], NAV_TABS[1], "plus", NAV_TABS[2], NAV_TABS[3]];
           return (
             <div className="nav-bottom" style={{
-              background:dialogOpen?"transparent":"#0D0D0D",
-              borderTop:dialogOpen?"none":`1px solid ${G}22`,
+              background:"#0D0D0D",
+              borderTop:`1px solid ${G}22`,
               display:"flex", alignItems:"stretch", flexShrink:0, zIndex:10,
               fontFamily:"monospace",
               paddingLeft:0, paddingRight:0}}>
               {items.map((item,idx) => {
                 if(item==="plus") return renderMasterButton("master");
-                if(dialogOpen) return navSpacer(item.id);
                 const isActive = activeNavTab===item.id;
                 const labels = {home:"HOME",monat:"MONAT",optionen:"OPT.",jahr:"JAHR",mehr:"MEHR"};
                 return (
@@ -3159,13 +3144,12 @@ Abbrechen = ${remoteName}-Stand laden`
           const items = [NAV_TABS[0], NAV_TABS[1], "plus", NAV_TABS[2], NAV_TABS[3]];
           return (
             <div className="nav-bottom" style={{
-              background:dialogOpen?"transparent":BY,
-              borderTop:dialogOpen?"none":`3px solid ${BK}`,
+              background:BY,
+              borderTop:`3px solid ${BK}`,
               display:"flex", alignItems:"stretch", flexShrink:0, zIndex:10,
               paddingLeft:0, paddingRight:0}}>
               {items.map((item,idx) => {
                 if(item==="plus") return renderMasterButton("master");
-                if(dialogOpen) return navSpacer(item.id);
                 const isActive = activeNavTab===item.id;
                 return (
                   <div key={item.id} onClick={()=>onTap(item)}
@@ -3226,10 +3210,10 @@ Abbrechen = ${remoteName}-Stand laden`
 
         return (
           <div className="nav-bottom" style={{
-            background:dialogOpen?"transparent":T.surf, borderTop:dialogOpen?"none":`1px solid ${T.bds}`,
+            background:T.surf, borderTop:`1px solid ${T.bds}`,
             display:"flex", alignItems:"center", flexShrink:0, zIndex:10,
             paddingLeft:8, paddingRight:8}}>
-            {items.map(item => item==="plus" ? renderMasterButton("master") : (dialogOpen ? navSpacer(item.id) : navTab(item)))}
+            {items.map(item => item==="plus" ? renderMasterButton("master") : navTab(item))}
           </div>
         );
       })()}
