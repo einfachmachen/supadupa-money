@@ -557,13 +557,13 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
           ))}
         </div>
 
-        {/* paddingBottom knapp über dem tatsächlichen Minimum, das der
-            vergrößerte + Button braucht (SIZE 78 × scale 1.5, translateY
-            -94px in der 57px-Bottom-Bar ⇒ Button-Oberkante ~124px über der
-            Dialog-Unterkante) — 140px statt der früheren 240px, die auf
-            kürzeren Listen einen sichtbaren leeren Streifen am Ende erzeugt
-            haben, ohne die zusätzliche Reserve tatsächlich zu brauchen. */}
-        <div style={{flex:1,overflowY:"auto",padding:"12px 16px 140px"}}>
+        {/* Gleiches paddingBottom wie in den übrigen (unauffälligen) Screens
+            (z. B. SettingsInline: "12px 14px 24px") — der vergrößerte
+            + Button darf die letzten Zeilen überdecken, das ist normal und
+            nur durch einen frei verschiebbaren Button (wie im Trend-
+            Drilldown) vollständig vermeidbar. Eine künstliche Zusatz-Reserve
+            hier hätte auf kürzeren Listen nur einen leeren Streifen erzeugt. */}
+        <div style={{flex:1,overflowY:"auto",padding:"12px 16px 24px"}}>
 
           {/* ── EXPORT ── */}
           {tab==="export"&&(<>

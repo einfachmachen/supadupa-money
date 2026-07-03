@@ -237,7 +237,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
     <div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,
       zIndex:300,display:"flex",flexDirection:"column","--mob-fs":"18px"}}>
       {header(`bearbeiten: ${selCat.name}`,()=>setView("list"))}
-      <div style={{flex:1,padding:S.padL,paddingBottom:140,overflowY:"auto"}}>
+      <div style={{flex:1,padding:S.padL,paddingBottom:24,overflowY:"auto"}}>
         <div style={{color:T.txt2,fontSize:S.fs-4,marginBottom:6,fontWeight:600}}>Name</div>
         <input value={editName} onChange={e=>setEditName(e.target.value)}
           autoFocus style={{...inp(),marginBottom:S.gap}}/>
@@ -307,7 +307,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
     <div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,
       zIndex:300,display:"flex",flexDirection:"column","--mob-fs":"18px"}}>
       {header("neue Kategorie",()=>setView("list"))}
-      <div style={{flex:1,padding:S.padL,paddingBottom:140,overflowY:"auto"}}>
+      <div style={{flex:1,padding:S.padL,paddingBottom:24,overflowY:"auto"}}>
         <div style={{color:T.txt2,fontSize:S.fs-4,marginBottom:6,fontWeight:600}}>Name</div>
         <input value={newName} onChange={e=>setNewName(e.target.value)}
           placeholder="z.B. Freizeit" autoFocus style={{...inp(),marginBottom:S.gap}}/>
@@ -346,7 +346,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
     <div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,
       zIndex:300,display:"flex",flexDirection:"column","--mob-fs":"18px"}}>
       {header(`neue Unterkategorie`,()=>setView("list"))}
-      <div style={{flex:1,padding:S.padL,paddingBottom:140,overflowY:"auto"}}>
+      <div style={{flex:1,padding:S.padL,paddingBottom:24,overflowY:"auto"}}>
         <div style={{color:T.txt2,fontSize:S.fs-6,marginBottom:S.gap,
           display:"flex",alignItems:"center",gap:8}}>
           {Li(selCat.icon||"tag",S.fs,selCat.color||T.blue)}
@@ -369,12 +369,13 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
     <div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,
       zIndex:300,display:"flex",flexDirection:"column","--mob-fs":"18px"}}>
       {header("Kategorien & Budget",goBack,"target")}
-      {/* paddingBottom knapp über dem tatsächlichen Minimum, das der
-          vergrößerte + Button braucht (~124px über der Dialog-Unterkante,
-          s. DataManagerDialog.jsx) — 140px statt 240px, das auf kürzeren
-          Kategorie-Listen einen sichtbaren leeren Streifen erzeugt hat. */}
+      {/* Gleiches paddingBottom wie in den übrigen (unauffälligen) Screens
+          (z. B. SettingsInline: "12px 14px 24px") — der vergrößerte
+          + Button darf die letzten Zeilen überdecken, das ist normal und
+          nur durch einen frei verschiebbaren Button (wie im Trend-
+          Drilldown) vollständig vermeidbar. */}
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",touchAction:"pan-y",WebkitOverflowScrolling:"touch",
-        padding:`${S.gap}px ${S.pad}px 140px`}}>
+        padding:`${S.gap}px ${S.pad}px 24px`}}>
 
         <button onClick={openNewCat}
           style={{...btnCenter,background:"rgba(74,159,212,0.1)",

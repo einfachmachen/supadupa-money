@@ -991,7 +991,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
 
       {/* STEP: INPUT */}
       {step==="input"&&(
-        <div style={{flex:1,overflowY:"auto",padding:mobileMode?20:16,paddingBottom:140,
+        <div style={{flex:1,overflowY:"auto",padding:mobileMode?20:16,paddingBottom:24,
           fontSize:mobileMode?"inherit":"inherit",
           "--csv-fs": mobileMode?"18px":"12px",
           "--csv-fs-s": mobileMode?"15px":"11px",
@@ -1670,7 +1670,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                       : "Kategorie zuweisen – die App merkt sich die Regel für gleiche Empfänger:")
                   : `${notImportedCount} Buchungen werden ohne Kategorie importiert – du kannst sie später unter Erfassen → Buchungen kategorisieren.`}
               </div>}
-              <div style={{flex:suggFull?"0 0 0px":1,overflowY:"auto",display:suggFull?"none":"block",paddingBottom:140}}>
+              <div style={{flex:suggFull?"0 0 0px":1,overflowY:"auto",display:suggFull?"none":"block",paddingBottom:24}}>
                 {parsed.newRows.filter(r=>{
                   if(r._imported) return false;          // gestuft: bereits importiert
                   if(!search) return true;
