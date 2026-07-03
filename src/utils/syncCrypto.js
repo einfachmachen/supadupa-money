@@ -126,3 +126,29 @@ export function freshSaltB64() {
 export function clearKeyCache() {
   _keyCache.clear();
 }
+
+// ── Zwei-Faktor-Verschlüsselung (z. B. Daten-Manager-Export) ──────────────
+// Kombiniert Passphrase + Recovery-Code zu EINEM KDF-Input: beide zusammen
+// ergeben den Schlüssel, keiner der beiden allein reicht. Trenner ist das
+// ASCII-Steuerzeichen "Unit Separator" (\x1F) statt z. B. einem Leerzeichen —
+// laesst sich ueber eine normale Tastatur/Textfeld nicht eintippen, taucht
+// also nie in Passphrase oder Code selbst auf und verhindert Kollisionen wie
+// "ab"+"c" vs. "a"+"bc".
+export function combineSecrets(a, b) {
+  return `${a || ""}\x1F${b || ""}`;
+}
+
+// Menschenlesbarer Recovery-Code: 20 Zeichen aus einem Alphabet ohne
+// verwechselbare Zeichen (0/O, 1/I/L ausgeschlossen), in 4er-Gruppen — 100 Bit
+// Entropie, von Hand abschreibbar. Wird NIRGENDS gespeichert; nur einmalig
+// angezeigt, der Nutzer muss ihn selbst sichern.
+const RECOVERY_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"; // 32 Zeichen
+export function randomRecoveryCode() {
+  const bytes = globalThis.crypto.getRandomValues(new Uint8Array(20));
+  let out = "";
+  for (let i = 0; i < bytes.length; i++) {
+    out += RECOVERY_ALPHABET[bytes[i] % RECOVERY_ALPHABET.length];
+    if (i % 4 === 3 && i < bytes.length - 1) out += "-";
+  }
+  return out;
+}

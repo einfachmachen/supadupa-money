@@ -9,7 +9,7 @@ import { THEMES } from "../../theme/themes.js";
 import { Li } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
 import { exportEbForSync, importEbFromSync } from "../../utils/enableBankingStore.js";
-import { encryptJSON, decryptJSON, isEncrypted } from "../../utils/syncCrypto.js";
+import { encryptJSON, decryptJSON, isEncrypted, combineSecrets, randomRecoveryCode } from "../../utils/syncCrypto.js";
 import { dropTxsAndUnlink } from "../../utils/links.js";
 import { useEffect } from "react";
 
@@ -91,6 +91,18 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   const [importEbPass, setImportEbPass] = useState("");
   useEffect(() => { exportEbForSync().then(b => setHasEbKey(!!b)).catch(()=>{}); }, []);
 
+  // Gesamt-Export-Verschlüsselung: standardmäßig AN, Zwei-Faktor (Passphrase +
+  // Recovery-Code, siehe utils/syncCrypto.js). Der Recovery-Code wird einmalig
+  // beim Öffnen erzeugt und NIRGENDS gespeichert — nur der Nutzer sichert ihn.
+  const [encryptExport, setEncryptExport] = useState(true);
+  const [exportPass, setExportPass] = useState("");
+  const [exportPass2, setExportPass2] = useState("");
+  const [showExportPass, setShowExportPass] = useState(false);
+  const [recoveryCode, setRecoveryCode] = useState(() => randomRecoveryCode());
+  const [recoveryCodeCopied, setRecoveryCodeCopied] = useState(false);
+  const [importExportPass, setImportExportPass] = useState("");
+  const [importRecoveryCode, setImportRecoveryCode] = useState("");
+
   // Delete confirm
   const [delConfirm, setDelConfirm] = useState(null); // null | key
   // Konto-Filter für Löschen/Export — leere Menge = ALLE Konten, sonst genau die
@@ -118,6 +130,11 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   const ebMatch = ebPass === ebPass2;
   const ebReady = inclEbKey && !!ebPass && ebMatch;
   const ebOk = !hasEbKey || ebReady;
+  // Gesamt-Export-Verschlüsselung: Passphrase gesetzt + wiederholt korrekt +
+  // Recovery-Code vorhanden (wird automatisch erzeugt, kann aber neu erzeugt
+  // werden — daher die reine Existenzprüfung).
+  const exportPassMatch = exportPass === exportPass2;
+  const exportEncReady = !encryptExport || (!!exportPass && exportPassMatch && !!recoveryCode);
   const isComplete = sel.cats&&sel.groups&&sel.accounts&&sel.vehicles&&sel.realTxs&&sel.pendTxs&&
     sel.rules&&sel.anchors&&sel.yearData&&sel.budgets&&sel.icons&&sel.quick&&sel.themes&&isFullRange&&ebOk;
 
@@ -143,7 +160,10 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
 
   // Hängt den passphrase-verschlüsselten Bank-Schlüssel an, falls gewählt. Der
   // Schlüssel landet NUR als AES-GCM-Chiffrat in der Datei — ohne die Passphrase
-  // nicht wieder importierbar.
+  // nicht wieder importierbar. Ist die Gesamt-Export-Verschlüsselung aktiv,
+  // wird das komplette Ergebnis danach NOCH EINMAL als Ganzes verschlüsselt
+  // (Zwei-Faktor: Passphrase + Recovery-Code) — der Bank-Schlüssel-Umschlag
+  // liegt dann einfach mit im Chiffrat, ganz normal verschachtelt.
   const buildExportFull = async () => {
     const out = buildExport();
     if(ebReady && hasEbKey) {
@@ -151,6 +171,9 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
         const block = await exportEbForSync();
         if(block) { out._ebSecure = await encryptJSON(block, ebPass); out._ebEnc = true; }
       } catch(e) { /* Schlüssel weglassen statt Export zu verhindern */ }
+    }
+    if(encryptExport && exportEncReady) {
+      return await encryptJSON(out, combineSecrets(exportPass, recoveryCode));
     }
     return out;
   };
@@ -236,14 +259,34 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
     return msg;
   };
 
+  // Entschlüsselt einen Gesamt-Export (Zwei-Faktor: Passphrase + Recovery-Code),
+  // falls das geparste JSON einen solchen Umschlag darstellt — sonst unverändert
+  // zurückgeben. Wirft mit "Verschlüsselter Export:"-Präfix (eigene Anzeige).
+  const decryptIfNeeded = async (parsed) => {
+    if(!isEncrypted(parsed)) return parsed;
+    if(!importExportPass || !importRecoveryCode) {
+      throw new Error("Verschlüsselter Export: Passphrase und Recovery-Code beide erforderlich");
+    }
+    try {
+      return await decryptJSON(parsed, combineSecrets(importExportPass, importRecoveryCode));
+    } catch(e) {
+      throw new Error("Verschlüsselter Export: Passphrase/Recovery-Code falsch oder Datei beschädigt");
+    }
+  };
+
+  const errPrefixes = ["Bank-Schlüssel", "Verschlüsselter Export"];
+  const formatImportErr = (e, fallbackPrefix) =>
+    errPrefixes.some(p=>e.message.startsWith(p)) ? e.message : fallbackPrefix+e.message;
+
   const doImport = async () => {
     setImportErr(""); setImportOk("");
     try {
-      const msg = await applyImport(JSON.parse(importJson));
+      const parsed = await decryptIfNeeded(JSON.parse(importJson));
+      const msg = await applyImport(parsed);
       setImportOk("✓ Importiert: "+msg.join(", "));
       setImportJson("");
     } catch(e) {
-      setImportErr(e.message.startsWith("Bank-Schlüssel") ? e.message : "Ungültiges JSON: "+e.message);
+      setImportErr(formatImportErr(e, "Ungültiges JSON: "));
     }
   };
 
@@ -255,12 +298,13 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
     try {
       for(const f of files) {
         const text = await f.text();
-        const msg = await applyImport(JSON.parse(text));
+        const parsed = await decryptIfNeeded(JSON.parse(text));
+        const msg = await applyImport(parsed);
         lines.push(`${f.name}: ${msg.join(", ")||"—"}`);
       }
       setImportOk(`✓ ${files.length} Datei(en) importiert:\n`+lines.join("\n"));
     } catch(e) {
-      setImportErr(e.message.startsWith("Bank-Schlüssel") ? e.message : "Fehler: "+e.message);
+      setImportErr(formatImportErr(e, "Fehler: "));
     }
   };
 
@@ -603,6 +647,89 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
               </div>
             ))}
 
+            {/* Gesamt-Export-Verschlüsselung: standardmäßig AN. Zwei-Faktor —
+                Passphrase (merkt sich der Nutzer) + Recovery-Code (wird einmalig
+                angezeigt, NIRGENDS gespeichert, muss selbst gesichert werden).
+                Beides zusammen wird zum Schlüssel kombiniert (combineSecrets) —
+                keiner der beiden allein reicht zum Entschlüsseln. */}
+            <div style={{marginTop:10,padding:"8px 10px",borderRadius:9,
+              border:`1px solid ${encryptExport?T.blue:T.bd}`,
+              background:encryptExport?`${T.blue}10`:"rgba(255,255,255,0.03)"}}>
+              <div onClick={()=>setEncryptExport(v=>!v)}
+                style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
+                <div style={{width:16,height:16,borderRadius:4,flexShrink:0,
+                  background:encryptExport?T.blue:"rgba(255,255,255,0.1)",
+                  border:`2px solid ${encryptExport?T.blue:T.bds}`,
+                  display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  {encryptExport&&Li("check",9,T.on_accent)}
+                </div>
+                {Li("lock",13,encryptExport?T.blue:T.txt2)}
+                <span style={{flex:1,color:T.txt,fontSize:12}}>Export verschlüsseln</span>
+                <span style={{color:T.txt2,fontSize:10}}>{encryptExport?"an":"aus"}</span>
+              </div>
+              {!encryptExport ? (
+                <div style={{color:T.gold,fontSize:10,lineHeight:1.5,marginTop:6,display:"flex",gap:5,alignItems:"flex-start"}}>
+                  {Li("alert-triangle",11,T.gold)}
+                  <span>Export wird als <b>Klartext</b> gespeichert — z. B. wenn du die Datei
+                    anderweitig lesen/auswerten möchtest.</span>
+                </div>
+              ) : (<>
+                <div style={{color:T.txt2,fontSize:10,lineHeight:1.5,marginTop:6,display:"flex",gap:5,alignItems:"flex-start"}}>
+                  {Li("shield",11,T.blue)}
+                  <span>Zwei-Faktor: <b>Passphrase</b> (merkst du dir) + <b>Recovery-Code</b>
+                    (unten, einmalig — separat sichern). <b style={{color:T.gold}}>Beide zusammen
+                    nötig</b> — ohne einen von beiden ist die Sicherung dauerhaft unlesbar, es gibt
+                    keine Wiederherstellung.</span>
+                </div>
+                <div style={{position:"relative",marginTop:8}}>
+                  <input type={showExportPass?"text":"password"} value={exportPass}
+                    onChange={e=>setExportPass(e.target.value)} placeholder="Passphrase für den Export"
+                    autoCapitalize="off" autoCorrect="off" autoComplete="new-password" spellCheck={false}
+                    style={{...INP,marginBottom:0,paddingRight:40,fontSize:13}}/>
+                  <button onClick={()=>setShowExportPass(v=>!v)}
+                    style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",
+                      background:"transparent",border:"none",cursor:"pointer",padding:6,display:"flex"}}>
+                    {Li(showExportPass?"eye-off":"eye",16,T.txt2)}
+                  </button>
+                </div>
+                <input type={showExportPass?"text":"password"} value={exportPass2}
+                  onChange={e=>setExportPass2(e.target.value)} placeholder="Passphrase wiederholen"
+                  autoCapitalize="off" autoCorrect="off" autoComplete="new-password" spellCheck={false}
+                  style={{...INP,marginBottom:0,marginTop:6,fontSize:13}}/>
+                {(exportPass||exportPass2) && (
+                  <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,
+                    color:exportPassMatch?T.pos:T.neg,fontSize:11,fontWeight:700}}>
+                    {Li(exportPassMatch?"check":"alert-triangle",12,exportPassMatch?T.pos:T.neg)}
+                    {exportPassMatch?"Passphrasen stimmen überein":"Passphrasen stimmen noch nicht überein"}
+                  </div>
+                )}
+                <div style={{marginTop:10,padding:"8px 10px",borderRadius:8,
+                  background:"rgba(0,0,0,0.25)",border:`1px dashed ${T.gold}66`}}>
+                  <div style={{color:T.gold,fontSize:10,fontWeight:700,marginBottom:5}}>
+                    {Li("key-round",11,T.gold)} Recovery-Code — jetzt sichern (Passwort-Manager, Ausdruck …):
+                  </div>
+                  <div style={{color:T.txt,fontSize:14,fontWeight:700,fontFamily:"monospace",
+                    letterSpacing:0.5,wordBreak:"break-all",marginBottom:6}}>
+                    {recoveryCode}
+                  </div>
+                  <div style={{display:"flex",gap:6}}>
+                    <button onClick={()=>{navigator.clipboard.writeText(recoveryCode);setRecoveryCodeCopied(true);}}
+                      style={{flex:1,padding:"6px",borderRadius:7,border:`1px solid ${T.gold}44`,
+                        background:`${T.gold}10`,color:T.gold,fontSize:11,fontWeight:700,cursor:"pointer",
+                        fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+                      {Li(recoveryCodeCopied?"check":"copy",12,T.gold)} {recoveryCodeCopied?"Kopiert":"Kopieren"}
+                    </button>
+                    <button onClick={()=>{setRecoveryCode(randomRecoveryCode());setRecoveryCodeCopied(false);}}
+                      style={{padding:"6px 10px",borderRadius:7,border:`1px solid ${T.bd}`,
+                        background:"transparent",color:T.txt2,fontSize:11,cursor:"pointer",
+                        fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>
+                      {Li("refresh-cw",12,T.txt2)} Neu
+                    </button>
+                  </div>
+                </div>
+              </>)}
+            </div>
+
             {/* Bank-Schlüssel (.pem): optional, NUR passphrase-verschlüsselt */}
             <div style={{marginTop:10,padding:"8px 10px",borderRadius:9,
               border:`1px solid ${inclEbKey?T.gold:T.bd}`,
@@ -654,7 +781,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
 
             {/* Export sperren, solange der Schlüssel angefordert ist, aber die
                 Passphrase fehlt/abweicht — sonst ginge der Schlüssel still verloren. */}
-            {(() => { const blocked = inclEbKey && !ebReady; return (
+            {(() => { const blocked = (inclEbKey && !ebReady) || !exportEncReady; return (
             <div style={{display:"flex",gap:8,marginTop:12,opacity:blocked?0.5:1}}>
               <button onClick={copyExport} disabled={blocked}
                 style={{flex:1,padding:"10px",borderRadius:11,border:`1px solid ${T.pos}44`,
@@ -676,9 +803,14 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
 
           {/* ── IMPORT ── */}
           {tab==="import"&&(()=>{
-            // Enthält das eingefügte JSON einen verschlüsselten Bank-Schlüssel?
-            let pastedHasKey = false;
-            try { const d = JSON.parse(importJson); pastedHasKey = !!d && isEncrypted(d._ebSecure); } catch {}
+            // Enthält das eingefügte JSON einen verschlüsselten Bank-Schlüssel,
+            // oder ist es selbst ein Gesamt-Export-Umschlag (Zwei-Faktor)?
+            let pastedHasKey = false, pastedIsEncrypted = false;
+            try {
+              const d = JSON.parse(importJson);
+              pastedIsEncrypted = isEncrypted(d);
+              pastedHasKey = !pastedIsEncrypted && !!d && isEncrypted(d._ebSecure);
+            } catch {}
             return (<>
             <div style={{color:T.txt2,fontSize:11,marginBottom:10,lineHeight:1.6}}>
               JSON einfügen oder Datei(en) wählen. Du kannst <b style={{color:T.txt}}>mehrere Dateien
@@ -687,6 +819,27 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
               <b style={{color:T.txt}}> Stammdaten</b> (Kategorien, Gruppen, Konten, Budgets, Monatsdaten,
               Zuordnungen, Ankerpunkte, Schnellwahl, Icons, Themes) werden <b>ersetzt</b>.
               Versteht das Daten-Manager-Format ebenso wie ein Voll-Backup.
+            </div>
+            {/* Passphrase + Recovery-Code für einen verschlüsselten Gesamt-Export
+                (Zwei-Faktor, siehe Export-Reiter). Hervorgehoben, wenn das
+                eingefügte JSON ein solcher Umschlag ist; sonst dezent (für
+                Dateien, deren Inhalt sich hier noch nicht vorab prüfen lässt). */}
+            <div style={{marginBottom:10,padding:"8px 10px",borderRadius:9,
+              border:`1px solid ${pastedIsEncrypted?T.blue:T.bd}`,
+              background:pastedIsEncrypted?`${T.blue}12`:"transparent"}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:5,
+                color:pastedIsEncrypted?T.blue:T.txt2,fontSize:11,fontWeight:700}}>
+                {Li("lock",12,pastedIsEncrypted?T.blue:T.txt2)}
+                Verschlüsselter Export {pastedIsEncrypted?"— diese Datei ist verschlüsselt!":"(nur falls verschlüsselt)"}
+              </div>
+              <input type="password" value={importExportPass} onChange={e=>setImportExportPass(e.target.value)}
+                placeholder="Passphrase für den Export"
+                autoCapitalize="off" autoCorrect="off" autoComplete="new-password" spellCheck={false}
+                style={{...INP,marginBottom:6,fontSize:13}}/>
+              <input type="text" value={importRecoveryCode} onChange={e=>setImportRecoveryCode(e.target.value)}
+                placeholder="Recovery-Code"
+                autoCapitalize="off" autoCorrect="off" autoComplete="off" spellCheck={false}
+                style={{...INP,marginBottom:0,fontSize:13,fontFamily:"monospace"}}/>
             </div>
             {/* Passphrase für den verschlüsselten Bank-Schlüssel. Hervorgehoben,
                 wenn das eingefügte JSON einen enthält; sonst dezent (für Dateien). */}
