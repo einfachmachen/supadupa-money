@@ -70,6 +70,35 @@ export default function SupaDupaMoney() {
       if(meta) meta.setAttribute("content", T.bg);
     } catch(e) {}
   }, [themeName, themeRev]);
+  // iOS Safari: Die dynamische Symbolleiste (Adressleiste/Toolbar) ändert die
+  // tatsächlich sichtbare Höhe, ohne dass die CSS-Einheit 100svh das
+  // zuverlässig nachführt — je nachdem, ob/wie vorher gescrollt wurde, kann
+  // 100svh beim Öffnen eines Vollbild-Dialogs kleiner ausfallen als der
+  // aktuell wirklich sichtbare Bereich. Das erzeugte den Eindruck, Listen
+  // würden "zu früh abgeschnitten" (Daten-Manager, Kategorien & Budget),
+  // obwohl der Fehler nicht im Inhalt lag, sondern in der Höhenberechnung
+  // des Vollbild-Rahmens selbst. Wir messen die reale Höhe per
+  // visualViewport und schreiben sie als CSS-Variable — .mobile-modal nutzt
+  // sie (mit 100svh als Fallback) statt sich allein auf die CSS-Einheit zu
+  // verlassen.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    const setH = () => {
+      try {
+        const h = vv ? vv.height : window.innerHeight;
+        document.documentElement.style.setProperty("--app-vvh", `${h}px`);
+      } catch(e) {}
+    };
+    setH();
+    if(vv) {
+      vv.addEventListener("resize", setH);
+      vv.addEventListener("scroll", setH);
+      return () => { vv.removeEventListener("resize", setH); vv.removeEventListener("scroll", setH); };
+    } else {
+      window.addEventListener("resize", setH);
+      return () => window.removeEventListener("resize", setH);
+    }
+  }, []);
   const [showHamburger, setShowHamburger] = useState(false);
   // ── DEBUG: Performance-Toggles ──
   const [debugFlags, setDebugFlags] = useState(()=>{
