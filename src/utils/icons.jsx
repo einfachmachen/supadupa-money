@@ -1,8 +1,25 @@
 // Lucide-Icons-Helper (Li) und Icon-Sets
 // Die fest verdrahteten UI-Icons kommen statisch aus lucideStatic.js (sofort
-// renderbar); das Gesamtpaket lädt main.jsx asynchron auf window.LucideIcons
-// nach (Event "lucide-ready") — gebraucht für Icon-Picker & Nutzer-Icons.
+// renderbar); das Gesamtpaket (~700kB, größter Einzel-Chunk der App) lädt
+// NICHT mehr automatisch beim Start, sondern erst per ensureLucideLoaded() —
+// gebraucht für Icon-Picker & Nutzer-Icons außerhalb des kuratierten Sets.
+// main.jsx ruft es opportunistisch im Leerlauf (requestIdleCallback) auf,
+// damit es meist schon bereitsteht; Icon-Picker rufen es zusätzlich selbst
+// beim Öffnen auf (idempotent), falls der Leerlauf-Trigger noch nicht lief.
 import { STATIC_LUCIDE } from "./lucideStatic.js";
+
+let _lucideLoadPromise = null;
+function ensureLucideLoaded() {
+  if(typeof window === "undefined") return Promise.resolve();
+  if(window.LucideIcons) return Promise.resolve(window.LucideIcons);
+  if(_lucideLoadPromise) return _lucideLoadPromise;
+  _lucideLoadPromise = import("lucide-react").then(m => {
+    window.LucideIcons = m;
+    window.dispatchEvent(new Event("lucide-ready"));
+    return m;
+  });
+  return _lucideLoadPromise;
+}
 
 const _toPascal = s => s.replace(/(^|-)([a-z0-9])/g, (_, __, c) => c.toUpperCase());
 let _ALL_LUCIDE_ICONS = null;
@@ -179,4 +196,5 @@ export {
   BANK_ICONS_LIST,
   SIMPLE_ICONS,
   matchIconCategory,
+  ensureLucideLoaded,
 };

@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { SafeIcon } from "../atoms/SafeIcon.jsx";
 import { IconPickerDialog } from "./IconPickerDialog.jsx";
 import { theme as T } from "../../theme/activeTheme.js";
-import { matchIconCategory, getAllLucideIcons } from "../../utils/icons.jsx";
+import { matchIconCategory, getAllLucideIcons, ensureLucideLoaded } from "../../utils/icons.jsx";
 
 function PagedIconGrid({search="", catFilter=null, selectedIcon, selectedColor, onSelect, onPagination}) {
   const ICON_SIZE = 46;
@@ -30,10 +30,12 @@ function PagedIconGrid({search="", catFilter=null, selectedIcon, selectedColor, 
     return () => ro.disconnect();
   }, []);
 
-  // Lucide-Gesamtset lädt asynchron (main.jsx) — neu filtern sobald es da ist
+  // Lucide-Gesamtset lädt erst bei Bedarf (utils/icons.jsx) — hier anfordern
+  // und neu filtern, sobald es da ist.
   const [lucideReady, setLucideReady] = React.useState(!!window.LucideIcons);
   React.useEffect(()=>{
     if(lucideReady) return;
+    ensureLucideLoaded();
     const on = () => setLucideReady(true);
     window.addEventListener("lucide-ready", on);
     return () => window.removeEventListener("lucide-ready", on);

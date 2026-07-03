@@ -1,33 +1,53 @@
 // Auto-generated module (siehe app-src.jsx)
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
 import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
 import { MobileHeader } from "./components/atoms/MobileHeader.jsx";
 import { Overlay } from "./components/atoms/Overlay.jsx";
 import { PBtn } from "./components/atoms/PBtn.jsx";
 import { MonthPicker } from "./components/molecules/MonthPicker.jsx";
 import { ThemeDropdown } from "./components/molecules/ThemeDropdown.jsx";
-import { AddTxModal } from "./components/organisms/AddTxModal.jsx";
-import { DataManagerDialog } from "./components/organisms/DataManagerDialog.jsx";
 import { EditPopup } from "./components/organisms/EditPopup.jsx";
-import { ExportDialog } from "./components/organisms/ExportDialog.jsx";
-import { MobileActionPicker } from "./components/organisms/MobileActionPicker.jsx";
-import { MobileKategorienModal } from "./components/organisms/MobileKategorienModal.jsx";
-import { MobileVormerkenModal } from "./components/organisms/MobileVormerkenModal.jsx";
-import { MonthPickerModal } from "./components/organisms/MonthPickerModal.jsx";
-import { CloudSaveModal } from "./components/organisms/CloudSaveModal.jsx";
-import { CsvImportScreen } from "./components/screens/CsvImportScreen.jsx";
-import { EnableBankingWizard } from "./components/screens/EnableBankingWizard.jsx";
-import { CloudSetupWizard } from "./components/screens/CloudSetupWizard.jsx";
-import { FuelAnalysisScreen } from "./components/screens/FuelAnalysisScreen.jsx";
 import { DashboardScreenV2 } from "./components/screens/DashboardScreenV2.jsx";
 import { JahrScreen } from "./components/screens/JahrScreen.jsx";
 import { ManagementScreen } from "./components/screens/ManagementScreen.jsx";
-import { MatchingScreen } from "./components/screens/MatchingScreen.jsx";
 import { MonatScreen } from "./components/screens/MonatScreen.jsx";
 import { MoneyMoodScreen } from "./components/screens/MoneyMoodScreen.jsx";
-import { RecurringDetectionScreen } from "./components/screens/RecurringDetectionScreen.jsx";
-import { VormerkungHub } from "./components/screens/VormerkungHub.jsx";
+
+// Selten geöffnete Vollbild-Dialoge/Screens NICHT im Hauptbundle: sie laden
+// erst als eigener Chunk, wenn sie per "show*"-Flag tatsächlich aufgerufen
+// werden (React.lazy + Suspense an den jeweiligen Render-Stellen weiter
+// unten). Named Export → lazy() braucht ein Modul mit "default", daher der
+// kleine .then()-Adapter statt einem direkten import().
+const lazyNamed = (loader, name) => lazy(() => loader().then(m => ({ default: m[name] })));
+const AddTxModal            = lazyNamed(() => import("./components/organisms/AddTxModal.jsx"), "AddTxModal");
+const DataManagerDialog     = lazyNamed(() => import("./components/organisms/DataManagerDialog.jsx"), "DataManagerDialog");
+const ExportDialog          = lazyNamed(() => import("./components/organisms/ExportDialog.jsx"), "ExportDialog");
+const MobileActionPicker    = lazyNamed(() => import("./components/organisms/MobileActionPicker.jsx"), "MobileActionPicker");
+const MobileKategorienModal = lazyNamed(() => import("./components/organisms/MobileKategorienModal.jsx"), "MobileKategorienModal");
+const MobileVormerkenModal  = lazyNamed(() => import("./components/organisms/MobileVormerkenModal.jsx"), "MobileVormerkenModal");
+const MonthPickerModal      = lazyNamed(() => import("./components/organisms/MonthPickerModal.jsx"), "MonthPickerModal");
+const CloudSaveModal        = lazyNamed(() => import("./components/organisms/CloudSaveModal.jsx"), "CloudSaveModal");
+const CsvImportScreen       = lazyNamed(() => import("./components/screens/CsvImportScreen.jsx"), "CsvImportScreen");
+const EnableBankingWizard   = lazyNamed(() => import("./components/screens/EnableBankingWizard.jsx"), "EnableBankingWizard");
+const CloudSetupWizard      = lazyNamed(() => import("./components/screens/CloudSetupWizard.jsx"), "CloudSetupWizard");
+const FuelAnalysisScreen    = lazyNamed(() => import("./components/screens/FuelAnalysisScreen.jsx"), "FuelAnalysisScreen");
+const MatchingScreen        = lazyNamed(() => import("./components/screens/MatchingScreen.jsx"), "MatchingScreen");
+const RecurringDetectionScreen = lazyNamed(() => import("./components/screens/RecurringDetectionScreen.jsx"), "RecurringDetectionScreen");
+const VormerkungHub         = lazyNamed(() => import("./components/screens/VormerkungHub.jsx"), "VormerkungHub");
+
+// Fallback während ein Lazy-Chunk lädt — dezenter Spinner statt hartem
+// Leerstand, falls die Verbindung mal langsamer ist.
+function LazyFallback() {
+  return (
+    <div style={{position:"fixed",inset:0,zIndex:300,display:"flex",
+      alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.25)"}}>
+      <div style={{width:36,height:36,borderRadius:"50%",
+        border:"3px solid rgba(255,255,255,0.25)",borderTopColor:"#AACC00",
+        animation:"spin 0.8s linear infinite"}}/>
+    </div>
+  );
+}
 import { AppCtx } from "./state/AppContext.js";
 import { theme as T, setActiveTheme, isLightTheme } from "./theme/activeTheme.js";
 import { readableOn } from "./theme/amtPill.js";
@@ -3248,6 +3268,7 @@ Abbrechen = ${remoteName}-Stand laden`
       })()}
 
       {/* ── MOBILE UI TEST ── */}
+      <Suspense fallback={<LazyFallback/>}>
       {showMobileVormerken&&<MobileVormerkenModal onClose={()=>{setShowMobileVormerken(false);setPlusArretiert(false);}}
         onBack={()=>{setShowMobileVormerken(false);setPlusArretiert(true);}}/>}
       {showMobileWiederkehrend&&<MobileVormerkenModal
@@ -3311,6 +3332,7 @@ Abbrechen = ${remoteName}-Stand laden`
       {showVormHub&&<VormerkungHub onClose={()=>{setShowVormHub(false);setEditVormTx(null);setPlusArretiert(false);}} editVorm={editVormTx} mobileMode={mobileMode}/>}
       {showRecurring&&<RecurringDetectionScreen onClose={()=>{setShowRecurring(false);setPlusArretiert(false);}}/>}
       {showKategorisieren&&<RecurringDetectionScreen initialTab="kategorisieren" onClose={()=>{setShowKategorisieren(false);setPlusArretiert(false);}}/>}
+      </Suspense>
       {showSettings&&(
         <div onClick={()=>setShowSettings(false)}
           style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",backdropFilter:"blur(8px)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
@@ -3327,12 +3349,14 @@ Abbrechen = ${remoteName}-Stand laden`
           </div>
         </div>
       )}
+      <Suspense fallback={<LazyFallback/>}>
       {showDataMgr&&<DataManagerDialog onClose={()=>{setShowDataMgr(false);setPlusArretiert(false);}} mobileMode={mobileMode}
         onBack={()=>{setShowDataMgr(false);setPlusArretiert(true);}}/>}
       {exportDialog&&(
         <ExportDialog title={exportDialog.title} defaultName={exportDialog.defaultName}
           data={exportDialog.data} onClose={()=>setExportDialog(null)} onDone={()=>setExportDialog(null)}/>
       )}
+      </Suspense>
       {exportModal&&(
         <div onClick={()=>setExportModal(null)}
           style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",backdropFilter:"blur(10px)",zIndex:90,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>

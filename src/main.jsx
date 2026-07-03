@@ -8,6 +8,7 @@ import {
 } from "./state/persistence.js";
 import { kvStore } from "./utils/kvStore.js";
 import { startAutoUpdate } from "./utils/autoUpdate.js";
+import { ensureLucideLoaded } from "./utils/icons.jsx";
 
 import "./theme/css/base.css";
 import "./theme/css/themes.css";
@@ -34,15 +35,16 @@ try {
 window.React = React;
 window.ReactDOM = ReactDOM;
 
-// Lucide-Gesamtpaket (~1500 Icons, der größte Brocken im Bundle) asynchron
-// als eigenen Chunk laden. Die im Code fest verdrahteten UI-Icons sind über
-// utils/lucideStatic.js bereits im Hauptbundle und rendern sofort; das
-// Gesamtset braucht nur der Icon-Picker und nutzergewählte Icons.
-// Nach dem Laden re-rendert die App einmal ("lucide-ready").
-import("lucide-react").then(m => {
-  window.LucideIcons = m;
-  window.dispatchEvent(new Event("lucide-ready"));
-});
+// Lucide-Gesamtpaket (~1500 Icons, größter Einzel-Chunk der App) NICHT sofort
+// beim Start laden, sondern erst im Leerlauf des Browsers — konkurriert sonst
+// unnötig mit dem eigentlichen App-Bundle um Bandbreite beim ersten Besuch.
+// Die im Code fest verdrahteten UI-Icons sind über utils/lucideStatic.js
+// bereits im Hauptbundle und rendern sofort; das Gesamtset braucht nur der
+// Icon-Picker und nutzergewählte Icons außerhalb des kuratierten Sets (die
+// rufen ensureLucideLoaded() zusätzlich selbst auf, falls sie vor Ablauf
+// des Leerlauf-Timeouts geöffnet werden).
+const _idle = window.requestIdleCallback || (cb => setTimeout(cb, 2000));
+_idle(() => ensureLucideLoaded(), { timeout: 4000 });
 
 // kvStore initialisieren (lädt alle Settings/Themes/etc. aus IDB in den
 // In-Memory-Cache und migriert ggf. vorhandene LS-Werte). Erst danach

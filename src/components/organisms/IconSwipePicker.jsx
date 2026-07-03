@@ -12,7 +12,7 @@ import { createPortal } from "react-dom";
 import { SafeIcon } from "../atoms/SafeIcon.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
-import { Li, getAllLucideIcons } from "../../utils/icons.jsx";
+import { Li, getAllLucideIcons, ensureLucideLoaded } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
 
 const IDX_KEY = "mbt_fav_icons_idx";
@@ -26,6 +26,7 @@ function IconSwipePicker({ onClose }) {
   const [lucideReady, setLucideReady] = React.useState(!!window.LucideIcons);
   React.useEffect(()=>{
     if(lucideReady) return;
+    ensureLucideLoaded(); // Chunk erst hier anfordern, falls Leerlauf-Trigger noch nicht lief
     const on = () => setLucideReady(true);
     window.addEventListener("lucide-ready", on);
     return () => window.removeEventListener("lucide-ready", on);
