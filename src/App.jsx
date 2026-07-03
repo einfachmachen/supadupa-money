@@ -3397,6 +3397,10 @@ function plusBtnColors(T) {
 //   Tipp     → override.onConfirm()
 //   Wisch ←  → override.onBack()    (no-op falls onBack === null)
 //   Wisch ↓  → override.onDismiss()
+//   Ziehen ↑ → Knopf frei nach oben verschieben (dragY, bis DRAG_UP_MAX),
+//              damit er nie dauerhaft Inhalt verdeckt — analog zum frei
+//              verschiebbaren drillBtnY im Trend-Drilldown. Bleibt stehen,
+//              bis erneut gezogen wird (kein Auto-Reset).
 // Der Wrapper bekommt zIndex 500, damit der Knopf über dem Modal
 // (zIndex 300) sichtbar UND klickbar bleibt.
 function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
@@ -3404,14 +3408,19 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
   const MOVE_TOLERANCE = 14;
   const VISUAL_LIMIT = 18;
   const DOUBLE_TAP_MS = 350;
+  // Wie weit sich der Knopf per Ziehen nach OBEN aus verdecktem Inhalt
+  // herausziehen lässt (analog zum frei verschiebbaren drillBtnY im Trend-
+  // Drilldown) — bewusst NUR nach oben: nach unten ziehen ist schon die
+  // bestehende "Wisch ↓ = schließen"-Geste (override.onDismiss) und darf
+  // dadurch nicht verändert werden.
+  const DRAG_UP_MAX = 400;
+  const [dragY, setDragY] = React.useState(0); // 0 = Standardposition, negativ = hochgezogen
   const tapRef = React.useRef({ t: 0 });
   // Ausstehenden Einzel-Tipp-Timer (confirmOnTapDismissOnDouble) beim Unmount stoppen
   React.useEffect(() => () => { if(tapRef.current.timer) clearTimeout(tapRef.current.timer); }, []);
-  const restingTransform = plusArretiert
-    ? "translate(0px, -94px) scale(1.5)"
-    : "translate(0px, -14px) scale(1)";
-  const restY = plusArretiert ? -94 : -14;
+  const restY = (plusArretiert ? -94 : -14) + dragY;
   const baseScale = plusArretiert ? 1.5 : 1;
+  const restingTransform = `translate(0px, ${restY}px) scale(${baseScale})`;
   const dragScale = baseScale * 1.06;
 
   const ref = React.useRef({x:0,y:0,dx:0,dy:0,axisLocked:null,dragging:false,
@@ -3448,7 +3457,13 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
       const allowBack = !!override.onBack;
       vx = dx < 0 ? clamp(dx, allowBack ? VISUAL_LIMIT : 6) : clamp(dx, 6);
     } else if(r.axisLocked === "y") {
-      vy = dy > 0 ? clamp(dy, VISUAL_LIMIT) : clamp(dy, 6);
+      if(dy > 0) {
+        vy = clamp(dy, VISUAL_LIMIT); // bestehende Wisch-runter-Vorschau (schließen)
+      } else {
+        // Frei nach oben ziehen (Knopf aus verdecktem Inhalt herausziehen),
+        // begrenzt durch die bereits aufsummierte Verschiebung (dragY).
+        vy = Math.max(dy, -DRAG_UP_MAX - dragY);
+      }
     }
     if(btnRef.current) {
       btnRef.current.style.transition = "none";
@@ -3467,9 +3482,22 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
       if(dx < 0 && override.onBack) override.onBack();
       return;
     }
-    if(axisLocked === "y" && Math.abs(dy) > DRAG_THRESHOLD) {
+    if(axisLocked === "y" && dy > 0 && Math.abs(dy) > DRAG_THRESHOLD) {
       if(tapRef.current.timer) { clearTimeout(tapRef.current.timer); tapRef.current = { t:0 }; }
-      if(dy > 0) override.onDismiss();
+      override.onDismiss();
+      return;
+    }
+    if(axisLocked === "y" && dy < 0 && Math.abs(dy) > DRAG_THRESHOLD) {
+      // Ziehen nach oben wird übernommen — der Knopf bleibt dort, bis erneut
+      // gezogen wird (kein automatisches Zurückspringen, analog drillBtnY).
+      if(tapRef.current.timer) { clearTimeout(tapRef.current.timer); tapRef.current = { t:0 }; }
+      const newDragY = Math.max(-DRAG_UP_MAX, Math.min(0, dragY + dy));
+      setDragY(newDragY);
+      if(btnRef.current) {
+        const newRestY = (plusArretiert ? -94 : -14) + newDragY;
+        btnRef.current.style.transition = "transform 0.2s cubic-bezier(.34,1.4,.64,1)";
+        btnRef.current.style.transform  = `translate(0px, ${newRestY}px) scale(${baseScale})`;
+      }
       return;
     }
     if(!moved && !override.disabled) {
@@ -3577,6 +3605,12 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
             {Li("chevron-down",13,override.disabled?T.txt2:_pbc.fg)}
           </div>
         )}
+        {/* Hinweis: Knopf lässt sich nach oben ziehen, falls er verdeckten
+            Inhalt überlappt (s. DRAG_UP_MAX oben). */}
+        <div style={{position:"absolute",top:1,left:"50%",transform:"translateX(-50%)",
+          opacity:0.6,pointerEvents:"none",display:"flex"}}>
+          {Li("chevron-up",13,override.disabled?T.txt2:_pbc.fg)}
+        </div>
         {lines.map((ln,i)=>(
           <div key={i} style={{fontSize,fontWeight:800,letterSpacing:-0.3,
             whiteSpace:"nowrap",pointerEvents:"none",textAlign:"center",
