@@ -198,6 +198,11 @@ function DashboardScreenV2() {
     };
     // activePanel: null | "warnings" | "sparen" | "vormerkungen"
     const [activePanel, setActivePanel] = useState(null);
+    // Klappt der Hero-Chevron (detailsOpen) zu, verschwindet auch die
+    // 3-Symbol-Zeile, die das aktive Panel überhaupt erst geöffnet hat —
+    // ein offenes Panel ohne sichtbaren Auslöser wirkt sonst wie hängen
+    // geblieben. Also gleich mitschließen.
+    useEffect(() => { if(!detailsOpen) setActivePanel(null); }, [detailsOpen]);
     const [warnCount, setWarnCount] = useState(0);
     const isPastMonth = useMemo(()=>{
       const t = new Date();
