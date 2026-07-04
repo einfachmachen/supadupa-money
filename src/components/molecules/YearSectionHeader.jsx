@@ -10,7 +10,7 @@ import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
 import { useSaldoHeroData } from "../../state/useSaldoHeroData.js";
 
 const noop = () => {};
-const OPTS = [["mood", "Money Mood", "activity"], ["jahr", "Trend", "calendar-range"]];
+const OPTS = [["trend", "Übersicht", "bar-chart-2"], ["mood", "Money Mood", "activity"], ["jahr", "Trend", "calendar-range"]];
 
 function YearSectionHeader({ active, detailsOpen, setDetailsOpen, children }) {   // active: "mood" | "jahr"
   const { year, month, setSubTab } = useContext(AppCtx);

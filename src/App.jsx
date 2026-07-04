@@ -13,6 +13,7 @@ import { JahrScreen } from "./components/screens/JahrScreen.jsx";
 import { ManagementScreen } from "./components/screens/ManagementScreen.jsx";
 import { MonatScreen } from "./components/screens/MonatScreen.jsx";
 import { MoneyMoodScreen } from "./components/screens/MoneyMoodScreen.jsx";
+import { TrendOverviewScreen } from "./components/screens/TrendOverviewScreen.jsx";
 
 // Selten geöffnete Vollbild-Dialoge/Screens NICHT im Hauptbundle: sie laden
 // erst als eigener Chunk, wenn sie per "show*"-Flag tatsächlich aufgerufen
@@ -1299,6 +1300,8 @@ Abbrechen = ${remoteName}-Stand laden`
       if(mainTab==="erfassen" && subTab==="mood") {
         // Money Mood: horizontal wischt das Jahr.
         setYear(y => dx<0 ? y+1 : y-1);
+      } else if(mainTab==="erfassen" && subTab==="trend") {
+        // Trend-Übersicht zeigt ohnehin alle Jahre gleichzeitig — kein Wisch-Ziel.
       } else if(dx<0) { setMonth(m=>{ if(m<11)return m+1; setYear(y=>y+1); return 0; }); }
       else     { setMonth(m=>{ if(m>0) return m-1; setYear(y=>y-1); return 11; }); }
     }
@@ -2665,8 +2668,8 @@ Abbrechen = ${remoteName}-Stand laden`
   const activeNavTab =
     mainTab==="struktur" ? "daten" :
     mainTab==="erfassen"&&subTab==="monat" ? "monat" :
-    // „Money Mood" wird aus der Jahresansicht geöffnet → Jahr bleibt aktiv.
-    mainTab==="erfassen"&&(subTab==="jahr"||subTab==="mood") ? "jahr" :
+    // „Money Mood"/Jahr werden aus der Trend-Übersicht geöffnet → Jahr bleibt aktiv.
+    mainTab==="erfassen"&&(subTab==="jahr"||subTab==="mood"||subTab==="trend") ? "jahr" :
     "home";
   const anyMobileModalOpen = showMobileVormerken||showMobileWiederkehrend||
     showMobilePicker||showMobileKategorien||showMobileBudget||
@@ -2730,6 +2733,7 @@ Abbrechen = ${remoteName}-Stand laden`
           <ErrorBoundary name="DashboardScreenV2"><DashboardScreenV2/></ErrorBoundary>
         )}
         {mainTab==="erfassen"&&subTab==="monat"    &&<ErrorBoundary name="MonatScreen"><MonatScreen/></ErrorBoundary>}
+        {mainTab==="erfassen"&&subTab==="trend"     &&<ErrorBoundary name="TrendOverviewScreen"><TrendOverviewScreen/></ErrorBoundary>}
         {mainTab==="erfassen"&&subTab==="jahr"      &&<ErrorBoundary name="JahrScreen"><JahrScreen forceSingle={false}/></ErrorBoundary>}
         {mainTab==="erfassen"&&subTab==="mood"      &&<ErrorBoundary name="MoneyMoodScreen"><MoneyMoodScreen/></ErrorBoundary>}
         {mainTab==="struktur"                       &&<ManagementScreen activeTab={activeStructurTab}/>}
@@ -2753,7 +2757,7 @@ Abbrechen = ${remoteName}-Stand laden`
           if(t.id==="home")      { setMainTab("erfassen"); setSubTab("dashboard"); }
           else if(t.id==="monat")     { setMainTab("erfassen"); setSubTab("monat"); }
           else if(t.id==="daten")     { setMainTab("struktur"); setActiveStructurTab("daten"); }
-          else if(t.id==="jahr")      { setMainTab("erfassen"); setSubTab("mood"); }
+          else if(t.id==="jahr")      { setMainTab("erfassen"); setSubTab("trend"); }
         };
 
         // ── Master-Button: Inline-Renderfunktion (keine Komponente, um Hook-Identität zu wahren) ──
