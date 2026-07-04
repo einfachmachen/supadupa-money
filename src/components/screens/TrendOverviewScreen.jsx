@@ -260,22 +260,25 @@ function TrendOverviewScreen() {
     [yearRange, txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth, getCat, selAcc]
   );
 
-  // Live-Kontostand JETZT (Ende des laufenden Monats, wie die "ENDE"-Zahl im
-  // Hero oben) — NICHT der Dezember-Jahresendstand, der oft eine weit in der
-  // Zukunft liegende Prognose ist und daher nicht zum sichtbaren Hero passt.
-  const liveSaldo = useMemo(() => {
-    const now = new Date();
-    const saldoCtx = { txs: txs || [], cats, accounts, getKumulierterSaldo, getBudgetForMonth };
-    return saldoEnde(now.getFullYear(), now.getMonth(), selAcc, saldoCtx);
-  }, [txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth, selAcc]);
+  // Kopfzahlen der Übersichtskarten: bewusst über ALLE angezeigten Jahre,
+  // nicht "aktuell" (steht schon im Hero) und nicht "laufendes Jahr" (per
+  // Antippen über die Detailansicht erreichbar). Einnahmen/Ausgaben werden
+  // über alle Jahre summiert; beim Endekontostand ergibt eine Summe keinen
+  // Sinn (kein Fluss, sondern ein Stand) — dort zeigt die Zahl den Stand am
+  // Ende des letzten angezeigten Jahres, also das Ergebnis über den ganzen
+  // Zeitraum hinweg.
+  const totalsAllYears = useMemo(() => {
+    const lastRow = perYear[perYear.length - 1];
+    const round = v => Math.round(v * 100) / 100;
+    return {
+      saldo: lastRow ? lastRow.saldo : 0,
+      income: round(perYear.reduce((s, r) => s + r.income, 0)),
+      expense: round(perYear.reduce((s, r) => s + r.expense, 0)),
+    };
+  }, [perYear]);
 
   const openYear = (year) => { setYear(year); setSubTab("mood"); };
   const activeMetric = METRICS.find(m => m.key === metric);
-  // "Aktuell" für Einnahmen/Ausgaben = laufendes Jahr, NICHT das letzte Jahr
-  // im Bereich — der reicht wegen vorgemerkter (pending) Buchungen mit weit
-  // in der Zukunft liegendem Datum oft Jahre voraus.
-  const currentYear = new Date().getFullYear();
-  const currentRow = perYear.find(r => r.year === currentYear) || perYear[perYear.length - 1];
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, background: T.bg }}>
@@ -294,7 +297,7 @@ function TrendOverviewScreen() {
             // ── Übersicht: 3 Sparkline-Karten ──
             METRICS.map(m => {
               const values = perYear.map(r => r[m.key]);
-              const latest = m.key === "saldo" ? liveSaldo : (currentRow ? currentRow[m.key] : values[values.length - 1]);
+              const latest = totalsAllYears[m.key];
               const col = m.color(latest, T);
               return (
                 <button key={m.key} onClick={() => setMetric(m.key)}
