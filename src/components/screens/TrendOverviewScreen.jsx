@@ -28,6 +28,55 @@ const METRICS = [
 // Jahren entstehen mehr Zeilen statt immer schmalerer Balken in einer Zeile.
 const PER_ROW = 8;
 
+// Kompakte Kurzform für die Balken-Beschriftung ("15.7K" statt "15.737,42 €") —
+// bei PER_ROW=8 Balken pro Zeile ist für den vollen Betrag kein Platz.
+function fmtK(v) {
+  const sign = v < 0 ? "-" : "";
+  const abs = Math.abs(v);
+  if (abs >= 1000) return `${sign}${Math.round(abs / 1000)}K`;
+  return `${sign}${Math.round(abs)}`;
+}
+
+// Modul-weiter Cache für die teure Jahres-Aggregation (siehe computePerYear):
+// bleibt über Un-/Wiedermontieren des Screens hinweg erhalten (anders als ein
+// useMemo, dessen Zustand beim Unmount verworfen wird) und verhindert so die
+// spürbare Verzögerung beim Zurück-/Hinschalten zwischen den Jahres-Ansichten.
+// Cache-Key sind txs/cats/accounts per Referenzvergleich — echte Änderungen
+// (neue Buchung, umbenannte Kategorie, …) invalidieren ihn zuverlässig, ohne
+// dass instabile Funktions-Referenzen (getKumulierterSaldo etc., die bei
+// jedem App-Render neu erzeugt werden) unnötig neu rechnen.
+let _perYearCache = { txs: null, cats: null, accounts: null, result: null };
+
+function computePerYear(yearRange, txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth, getCat) {
+  const c = _perYearCache;
+  if (c.txs === txs && c.cats === cats && c.accounts === accounts && c.result) return c.result;
+
+  const txsById = buildTxIdMap(txs || []);
+  const saldoCtx = { txs: txs || [], cats, accounts, getKumulierterSaldo, getBudgetForMonth, _txsById: txsById };
+  const result = yearRange.map(year => {
+    let income = 0, expense = 0;
+    (txs || []).forEach(t => {
+      if (t.pending || t._budgetSubId) return;
+      if (isDuplCounterpart(t, txsById)) return;
+      if (!t.date || Number(t.date.slice(0, 4)) !== year) return;
+      // Typ wie in App.jsx/actualSums: Kategorie-Typ zuerst, dann _csvType,
+      // erst zuletzt das Vorzeichen (viele Buchungen speichern totalAmount
+      // unabhängig vom Typ, z. B. bei CSV-Importen).
+      const catType0 = getCat((t.splits || [])[0]?.catId)?.type;
+      const type = catType0 === "income" ? "income"
+                 : catType0 === "expense" ? "expense"
+                 : t._csvType || (t.totalAmount >= 0 ? "income" : "expense");
+      const amt = Math.abs(t.totalAmount || 0);
+      if (type === "income") income += amt; else expense += amt;
+    });
+    const saldo = saldoEnde(year, 11, null, saldoCtx);
+    return { year, saldo, income: Math.round(income * 100) / 100, expense: Math.round(expense * 100) / 100 };
+  });
+
+  _perYearCache = { txs, cats, accounts, result };
+  return result;
+}
+
 // Mini-Sparkline (Balkenreihe) für die Übersichts-Karten — ein Balken pro Jahr.
 function MiniSpark({ values, color, h = 26 }) {
   const maxAbs = Math.max(1, ...values.map(v => Math.abs(v)));
@@ -47,9 +96,9 @@ function MiniSpark({ values, color, h = 26 }) {
 // Vertikaler Balken-Chart in Zeilen zu je PER_ROW Jahren ("Stapel"), damit
 // auch bei vielen Jahren jeder Balken breit genug für lesbare, um 90°
 // gedrehte Jahres-Labels bleibt. Skala (min/max) gilt über ALLE Zeilen
-// hinweg, damit Balkenhöhen zwischen den Zeilen vergleichbar bleiben. Keine
-// Werte-Beschriftung an den Balken (bewusst weggelassen — sonst überlagern
-// sich Zahl+Jahr bei vielen Balken).
+// hinweg, damit Balkenhöhen zwischen den Zeilen vergleichbar bleiben. Werte
+// über den Balken bewusst als kurze "xxK"-Form (fmtK) statt vollem Betrag —
+// sonst überlagern sich Zahl+Jahr bei vielen schmalen Balken.
 function YearBarRows({ perYear, get, color, onSelectYear }) {
   const vals = perYear.map(get);
   const maxV = Math.max(0, ...vals), minV = Math.min(0, ...vals);
@@ -58,7 +107,7 @@ function YearBarRows({ perYear, get, color, onSelectYear }) {
   const rows = [];
   for (let i = 0; i < perYear.length; i += PER_ROW) rows.push(perYear.slice(i, i + PER_ROW));
 
-  const bw = 38, rowH = 136, padTop = 10, padB = 48;
+  const bw = 38, rowH = 136, padTop = 18, padB = 48;
   const chartH = rowH - padTop - padB;
   const W = PER_ROW * bw;
   const yOf = (v) => padTop + chartH * (maxV - v) / range;
@@ -81,6 +130,9 @@ function YearBarRows({ perYear, get, color, onSelectYear }) {
               <g key={r.year} onClick={() => onSelectYear(r.year)} style={{ cursor: "pointer" }}>
                 <rect x={x} y={padTop} width={bw} height={chartH} fill="transparent" />
                 <rect x={x + bw * 0.22} y={yTop} width={bw * 0.56} height={h} rx={2} fill={color} opacity={0.85} />
+                <text x={cx} y={v >= 0 ? yTop - 4 : yBot + 12} textAnchor="middle" fontSize="8" fill={T.txt2} fontWeight={600}>
+                  {fmtK(v)}
+                </text>
                 <text x={cx} y={labelY} textAnchor="end" fontSize="9" fill={T.txt2} fontWeight={600}
                   transform={`rotate(-90 ${cx} ${labelY})`}>
                   {r.year}
@@ -135,7 +187,7 @@ function YearBarListHorizontal({ perYear, get, color, onSelectYear }) {
 }
 
 function TrendOverviewScreen() {
-  const { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth, setYear, setSubTab } = useContext(AppCtx);
+  const { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth, getCat, setYear, setSubTab } = useContext(AppCtx);
   const [metric, setMetric] = useState(null); // null = Sparkline-Übersicht, sonst METRICS[i].key
   const [heroOpen, setHeroOpen] = useState(false);
   const [layout, setLayout] = useState("vertical"); // "vertical" | "horizontal"
@@ -156,23 +208,12 @@ function TrendOverviewScreen() {
 
   // Endekontostand/Einnahmen/Ausgaben je Jahr — bewusst GESAMT über alle
   // Konten (accId=null), unabhängig vom sonst in der App aktiven Konto-Filter,
-  // damit die Übersicht immer das große Bild zeigt.
-  const perYear = useMemo(() => {
-    const txsById = buildTxIdMap(txs || []);
-    const saldoCtx = { txs: txs || [], cats, accounts, getKumulierterSaldo, getBudgetForMonth, _txsById: txsById };
-    return yearRange.map(year => {
-      let income = 0, expense = 0;
-      (txs || []).forEach(t => {
-        if (t.pending || t._budgetSubId) return;
-        if (isDuplCounterpart(t, txsById)) return;
-        if (!t.date || Number(t.date.slice(0, 4)) !== year) return;
-        const amt = t.totalAmount || 0;
-        if (amt >= 0) income += amt; else expense += Math.abs(amt);
-      });
-      const saldo = saldoEnde(year, 11, null, saldoCtx);
-      return { year, saldo, income: Math.round(income * 100) / 100, expense: Math.round(expense * 100) / 100 };
-    });
-  }, [yearRange, txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth]);
+  // damit die Übersicht immer das große Bild zeigt. Die eigentliche (teure)
+  // Berechnung sitzt in computePerYear() mit modul-weitem Cache, siehe dort.
+  const perYear = useMemo(
+    () => computePerYear(yearRange, txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth, getCat),
+    [yearRange, txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth, getCat]
+  );
 
   const openYear = (year) => { setYear(year); setSubTab("mood"); };
   const activeMetric = METRICS.find(m => m.key === metric);
