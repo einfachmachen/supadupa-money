@@ -7,7 +7,8 @@
 //
 // Zurück zu dieser Übersicht: über den "Übersicht"-Umschalter im gemeinsamen
 // YearSectionHeader (Money Mood/Jahr), siehe molecules/YearSectionHeader.jsx.
-// Der Hero (Kontostand) kommt ebenfalls von dort, wie bei Home/Monat.
+// Der Hero (Kontostand) kommt ebenfalls von dort, wie bei Home/Monat — und
+// respektiert dort wie hier den global gewählten Konto-Filter (selAcc).
 
 import React, { useContext, useMemo, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
@@ -19,9 +20,9 @@ import { buildTxIdMap, isDuplCounterpart } from "../../utils/tx.js";
 import { YearSectionHeader } from "../molecules/YearSectionHeader.jsx";
 
 const METRICS = [
-  { key: "saldo",   label: "Endekontostand", icon: "wallet",             color: (v,T)=>T.blue },
-  { key: "income",  label: "Einnahmen",      icon: "arrow-down-circle",  color: (v,T)=>T.pos },
-  { key: "expense", label: "Ausgaben",       icon: "arrow-up-circle",    color: (v,T)=>T.neg },
+  { key: "saldo",   label: "Endekontostand", icon: "wallet",             color: (v,T)=>T.blue, split: false },
+  { key: "income",  label: "Einnahmen",      icon: "arrow-down-circle",  color: (v,T)=>T.pos,  split: true },
+  { key: "expense", label: "Ausgaben",       icon: "arrow-up-circle",    color: (v,T)=>T.neg,  split: true },
 ];
 
 // Balken pro Zeile im vertikalen Mehrzeilen-Layout ("Stapel") — bei mehr
@@ -41,23 +42,32 @@ function fmtK(v) {
 // bleibt über Un-/Wiedermontieren des Screens hinweg erhalten (anders als ein
 // useMemo, dessen Zustand beim Unmount verworfen wird) und verhindert so die
 // spürbare Verzögerung beim Zurück-/Hinschalten zwischen den Jahres-Ansichten.
-// Cache-Key sind txs/cats/accounts per Referenzvergleich — echte Änderungen
-// (neue Buchung, umbenannte Kategorie, …) invalidieren ihn zuverlässig, ohne
-// dass instabile Funktions-Referenzen (getKumulierterSaldo etc., die bei
-// jedem App-Render neu erzeugt werden) unnötig neu rechnen.
-let _perYearCache = { txs: null, cats: null, accounts: null, result: null };
+// Cache-Key sind txs/cats/accounts/selAcc per Referenzvergleich — echte
+// Änderungen (neue Buchung, umbenannte Kategorie, Konto-Wechsel, …)
+// invalidieren ihn zuverlässig, ohne dass instabile Funktions-Referenzen
+// (getKumulierterSaldo etc., die bei jedem App-Render neu erzeugt werden)
+// unnötig neu rechnen.
+let _perYearCache = { txs: null, cats: null, accounts: null, selAcc: undefined, result: null };
 
-function computePerYear(yearRange, txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth, getCat) {
+function computePerYear(yearRange, txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth, getCat, selAcc) {
   const c = _perYearCache;
-  if (c.txs === txs && c.cats === cats && c.accounts === accounts && c.result) return c.result;
+  if (c.txs === txs && c.cats === cats && c.accounts === accounts && c.selAcc === selAcc && c.result) return c.result;
 
   const txsById = buildTxIdMap(txs || []);
   const saldoCtx = { txs: txs || [], cats, accounts, getKumulierterSaldo, getBudgetForMonth, _txsById: txsById };
+  // Konto-Filter wie in App.jsx/actualSums: kein Filter bei selAcc=null (GESAMT).
+  const accFilter = selAcc ? (t => (t.accountId || "acc-giro") === selAcc) : null;
+  const r2 = v => Math.round(v * 100) / 100;
+
   const result = yearRange.map(year => {
-    let income = 0, expense = 0;
+    let incomeActual = 0, incomePending = 0, expenseActual = 0, expensePending = 0;
     (txs || []).forEach(t => {
-      if (t.pending || t._budgetSubId) return;
+      // Wie saldo.js/ist(): nur Budget-Platzhalter und CSV-Duplikate raus —
+      // vorgemerkte (pending) Buchungen ZÄHLEN, denn der Endekontostand
+      // berücksichtigt sie ja auch (Vormerkungen fließen in die Prognose ein).
+      if (t._budgetSubId) return;
       if (isDuplCounterpart(t, txsById)) return;
+      if (accFilter && !accFilter(t)) return;
       if (!t.date || Number(t.date.slice(0, 4)) !== year) return;
       // Typ wie in App.jsx/actualSums: Kategorie-Typ zuerst, dann _csvType,
       // erst zuletzt das Vorzeichen (viele Buchungen speichern totalAmount
@@ -67,13 +77,18 @@ function computePerYear(yearRange, txs, cats, accounts, getKumulierterSaldo, get
                  : catType0 === "expense" ? "expense"
                  : t._csvType || (t.totalAmount >= 0 ? "income" : "expense");
       const amt = Math.abs(t.totalAmount || 0);
-      if (type === "income") income += amt; else expense += amt;
+      if (type === "income") { if (t.pending) incomePending += amt; else incomeActual += amt; }
+      else                   { if (t.pending) expensePending += amt; else expenseActual += amt; }
     });
-    const saldo = saldoEnde(year, 11, null, saldoCtx);
-    return { year, saldo, income: Math.round(income * 100) / 100, expense: Math.round(expense * 100) / 100 };
+    const saldo = saldoEnde(year, 11, selAcc, saldoCtx);
+    return {
+      year, saldo,
+      incomeActual: r2(incomeActual), incomePending: r2(incomePending), income: r2(incomeActual + incomePending),
+      expenseActual: r2(expenseActual), expensePending: r2(expensePending), expense: r2(expenseActual + expensePending),
+    };
   });
 
-  _perYearCache = { txs, cats, accounts, result };
+  _perYearCache = { txs, cats, accounts, selAcc, result };
   return result;
 }
 
@@ -97,9 +112,10 @@ function MiniSpark({ values, color, h = 26 }) {
 // auch bei vielen Jahren jeder Balken breit genug für lesbare, um 90°
 // gedrehte Jahres-Labels bleibt. Skala (min/max) gilt über ALLE Zeilen
 // hinweg, damit Balkenhöhen zwischen den Zeilen vergleichbar bleiben. Werte
-// über den Balken bewusst als kurze "xxK"-Form (fmtK) statt vollem Betrag —
-// sonst überlagern sich Zahl+Jahr bei vielen schmalen Balken.
-function YearBarRows({ perYear, get, color, onSelectYear }) {
+// über den Balken als kurze "xxK"-Form (fmtK). Bei Einnahmen/Ausgaben wird
+// der vorgemerkte (noch nicht gebuchte) Anteil oben im Balken heller
+// dargestellt — der Gesamtbetrag (inkl. Vormerkungen) bleibt aber gleich.
+function YearBarRows({ perYear, get, getPending, color, onSelectYear }) {
   const vals = perYear.map(get);
   const maxV = Math.max(0, ...vals), minV = Math.min(0, ...vals);
   const range = (maxV - minV) || 1;
@@ -112,7 +128,11 @@ function YearBarRows({ perYear, get, color, onSelectYear }) {
   const W = PER_ROW * bw;
   const yOf = (v) => padTop + chartH * (maxV - v) / range;
   const zeroY = yOf(0);
-  const labelY = rowH - padB + 8;
+  // Anker der gedrehten Jahres-Labels: bewusst nahe am unteren SVG-Rand (statt
+  // knapp unter der Nulllinie) — die Rotation lässt den Text vom Anker aus
+  // nach OBEN wachsen, bei zu knappem Abstand überlagert er sonst Balken/
+  // Werte-Labels nahe der Nulllinie (z. B. bei sehr kleinen Beträgen).
+  const labelY = rowH - 6;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -121,15 +141,25 @@ function YearBarRows({ perYear, get, color, onSelectYear }) {
           <line x1={0} y1={zeroY} x2={row.length * bw} y2={zeroY} stroke={T.bd} strokeWidth={1} />
           {row.map((r, i) => {
             const v = get(r);
+            const vPending = getPending ? getPending(r) : 0;
+            const vActual = v - vPending;
             const x = i * bw;
             const cx = x + bw / 2;
             const yTop = yOf(Math.max(v, 0));
             const yBot = yOf(Math.min(v, 0));
-            const h = Math.max(1, yBot - yTop);
+            const ySplit = yOf(Math.max(vActual, 0));
+            const showSplit = vPending > 0.005 && ySplit > yTop + 0.5;
             return (
               <g key={r.year} onClick={() => onSelectYear(r.year)} style={{ cursor: "pointer" }}>
                 <rect x={x} y={padTop} width={bw} height={chartH} fill="transparent" />
-                <rect x={x + bw * 0.22} y={yTop} width={bw * 0.56} height={h} rx={2} fill={color} opacity={0.85} />
+                {showSplit ? (
+                  <>
+                    <rect x={x + bw * 0.22} y={ySplit} width={bw * 0.56} height={Math.max(1, yBot - ySplit)} rx={2} fill={color} opacity={0.85} />
+                    <rect x={x + bw * 0.22} y={yTop} width={bw * 0.56} height={Math.max(1, ySplit - yTop)} rx={2} fill={color} opacity={0.35} />
+                  </>
+                ) : (
+                  <rect x={x + bw * 0.22} y={yTop} width={bw * 0.56} height={Math.max(1, yBot - yTop)} rx={2} fill={color} opacity={0.85} />
+                )}
                 <text x={cx} y={v >= 0 ? yTop - 4 : yBot + 12} textAnchor="middle" fontSize="8" fill={T.txt2} fontWeight={600}>
                   {fmtK(v)}
                 </text>
@@ -149,8 +179,9 @@ function YearBarRows({ perYear, get, color, onSelectYear }) {
 // Alternative Ausrichtung: ein Jahr = eine Zeile (Label + horizontaler
 // Balken). Passt deutlich mehr Jahre pro Bildschirmhöhe als die vertikale
 // Stapel-Ansicht, da nur eine schmale Zeile statt eines ganzen Balkens
-// gebraucht wird — dafür scrollbar statt auf einen Blick.
-function YearBarListHorizontal({ perYear, get, color, onSelectYear }) {
+// gebraucht wird — dafür scrollbar statt auf einen Blick. Vorgemerkter
+// Anteil auch hier heller, an den gebuchten Anteil angehängt.
+function YearBarListHorizontal({ perYear, get, getPending, color, onSelectYear }) {
   const vals = perYear.map(get);
   const maxPos = Math.max(0, ...vals);
   const maxNeg = Math.max(0, ...vals.map(v => Math.max(0, -v)));
@@ -161,7 +192,11 @@ function YearBarListHorizontal({ perYear, get, color, onSelectYear }) {
     <div style={{ display: "flex", flexDirection: "column" }}>
       {perYear.map(row => {
         const v = get(row);
+        const vPending = getPending ? getPending(row) : 0;
+        const vActual = v - vPending;
         const pct = (Math.abs(v) / totalSpan) * 100;
+        const pctActual = (Math.abs(vActual) / totalSpan) * 100;
+        const showSplit = vPending > 0.005;
         return (
           <button key={row.year} onClick={() => onSelectYear(row.year)}
             style={{ display: "flex", alignItems: "center", gap: 8, background: "transparent",
@@ -172,9 +207,20 @@ function YearBarListHorizontal({ perYear, get, color, onSelectYear }) {
             </div>
             <div style={{ position: "relative", flex: 1, height: 14, background: T.bd + "50", borderRadius: 3 }}>
               {maxNeg > 0 && <div style={{ position: "absolute", left: `${zeroPct}%`, top: 0, bottom: 0, width: 1, background: T.bd }} />}
-              <div style={{ position: "absolute", top: 0, bottom: 0, borderRadius: 2, background: color, opacity: 0.85,
-                left: v >= 0 ? `${zeroPct}%` : `${Math.max(0, zeroPct - pct)}%`,
-                width: `${pct}%` }} />
+              {showSplit ? (
+                <>
+                  <div style={{ position: "absolute", top: 0, bottom: 0, borderRadius: 2, background: color, opacity: 0.85,
+                    left: v >= 0 ? `${zeroPct}%` : `${Math.max(0, zeroPct - pctActual)}%`,
+                    width: `${pctActual}%` }} />
+                  <div style={{ position: "absolute", top: 0, bottom: 0, borderRadius: 2, background: color, opacity: 0.35,
+                    left: v >= 0 ? `${zeroPct + pctActual}%` : `${Math.max(0, zeroPct - pct)}%`,
+                    width: `${Math.max(0, pct - pctActual)}%` }} />
+                </>
+              ) : (
+                <div style={{ position: "absolute", top: 0, bottom: 0, borderRadius: 2, background: color, opacity: 0.85,
+                  left: v >= 0 ? `${zeroPct}%` : `${Math.max(0, zeroPct - pct)}%`,
+                  width: `${pct}%` }} />
+              )}
             </div>
             <div style={{ width: 78, flexShrink: 0, textAlign: "right", color: T.txt, fontSize: 11, fontWeight: 700, fontFamily: NUM_FONT }}>
               {fmt(v)}
@@ -187,7 +233,7 @@ function YearBarListHorizontal({ perYear, get, color, onSelectYear }) {
 }
 
 function TrendOverviewScreen() {
-  const { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth, getCat, setYear, setSubTab } = useContext(AppCtx);
+  const { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth, getCat, selAcc, setYear, setSubTab } = useContext(AppCtx);
   const [metric, setMetric] = useState(null); // null = Sparkline-Übersicht, sonst METRICS[i].key
   const [heroOpen, setHeroOpen] = useState(false);
   const [layout, setLayout] = useState("vertical"); // "vertical" | "horizontal"
@@ -206,21 +252,28 @@ function TrendOverviewScreen() {
     return years;
   }, [txs]);
 
-  // Endekontostand/Einnahmen/Ausgaben je Jahr — bewusst GESAMT über alle
-  // Konten (accId=null), unabhängig vom sonst in der App aktiven Konto-Filter,
-  // damit die Übersicht immer das große Bild zeigt. Die eigentliche (teure)
-  // Berechnung sitzt in computePerYear() mit modul-weitem Cache, siehe dort.
+  // Endekontostand/Einnahmen/Ausgaben je Jahr — respektiert den global
+  // gewählten Konto-Filter (selAcc), genau wie der Hero oben. Die eigentliche
+  // (teure) Berechnung sitzt in computePerYear() mit modul-weitem Cache.
   const perYear = useMemo(
-    () => computePerYear(yearRange, txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth, getCat),
-    [yearRange, txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth, getCat]
+    () => computePerYear(yearRange, txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth, getCat, selAcc),
+    [yearRange, txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth, getCat, selAcc]
   );
+
+  // Live-Kontostand JETZT (Ende des laufenden Monats, wie die "ENDE"-Zahl im
+  // Hero oben) — NICHT der Dezember-Jahresendstand, der oft eine weit in der
+  // Zukunft liegende Prognose ist und daher nicht zum sichtbaren Hero passt.
+  const liveSaldo = useMemo(() => {
+    const now = new Date();
+    const saldoCtx = { txs: txs || [], cats, accounts, getKumulierterSaldo, getBudgetForMonth };
+    return saldoEnde(now.getFullYear(), now.getMonth(), selAcc, saldoCtx);
+  }, [txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth, selAcc]);
 
   const openYear = (year) => { setYear(year); setSubTab("mood"); };
   const activeMetric = METRICS.find(m => m.key === metric);
-  // "Aktuell" für die Übersichtskarten = laufendes Jahr, NICHT das letzte Jahr
+  // "Aktuell" für Einnahmen/Ausgaben = laufendes Jahr, NICHT das letzte Jahr
   // im Bereich — der reicht wegen vorgemerkter (pending) Buchungen mit weit
-  // in der Zukunft liegendem Datum oft Jahre voraus, hat aber (da pending
-  // Buchungen hier ausgeschlossen sind) noch keine echten Einnahmen/Ausgaben.
+  // in der Zukunft liegendem Datum oft Jahre voraus.
   const currentYear = new Date().getFullYear();
   const currentRow = perYear.find(r => r.year === currentYear) || perYear[perYear.length - 1];
 
@@ -241,7 +294,7 @@ function TrendOverviewScreen() {
             // ── Übersicht: 3 Sparkline-Karten ──
             METRICS.map(m => {
               const values = perYear.map(r => r[m.key]);
-              const latest = currentRow ? currentRow[m.key] : values[values.length - 1];
+              const latest = m.key === "saldo" ? liveSaldo : (currentRow ? currentRow[m.key] : values[values.length - 1]);
               const col = m.color(latest, T);
               return (
                 <button key={m.key} onClick={() => setMetric(m.key)}
@@ -287,12 +340,15 @@ function TrendOverviewScreen() {
                 padding: layout === "vertical" ? "12px 8px" : "4px 12px" }}>
                 {layout === "vertical"
                   ? <YearBarRows perYear={perYear} get={r => r[activeMetric.key]}
+                      getPending={activeMetric.split ? (r => r[`${activeMetric.key}Pending`]) : null}
                       color={activeMetric.color(null, T)} onSelectYear={openYear} />
                   : <YearBarListHorizontal perYear={perYear} get={r => r[activeMetric.key]}
+                      getPending={activeMetric.split ? (r => r[`${activeMetric.key}Pending`]) : null}
                       color={activeMetric.color(null, T)} onSelectYear={openYear} />}
               </div>
               <div style={{ color: T.txt2, fontSize: 11, marginTop: 10, textAlign: "center" }}>
                 {layout === "vertical" ? "Balken" : "Zeile"} antippen → Money Mood für dieses Jahr
+                {activeMetric.split ? " · hell = vorgemerkt" : ""}
               </div>
             </>
           )}
