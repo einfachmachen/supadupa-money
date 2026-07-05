@@ -13,17 +13,9 @@ import { txFingerprint, txFingerprintNorm } from "./tx.js";
 import { createEnableBankingClient, mapEnableBankingTransactions } from "./enableBanking.js";
 import { loadEbCreds, loadEbAccountMap, loadEbSessionList } from "./enableBankingStore.js";
 
-// Alle bekannten Fingerprints aus vorhandenen Buchungen (identisch zum Import).
-// WICHTIG: Vormerkungen (pending) NICHT mit aufnehmen — sonst erkennt der
-// Bankabruf eine noch offene Vormerkung (gleiches Datum/Betrag/Text) fälschlich
-// als „bereits vorhanden" und importiert die passende echte Bank-Buchung nie
-// (sie taucht dann nur noch als eingeklappte „Dublette" auf, ohne je real zu
-// werden). Der Betrags-Index (amtIndex, s. u.) schließt Vormerkungen aus
-// demselben Grund schon länger aus — hier fehlte das Gegenstück.
-function buildKnownFps(txs) {
+function fpsForTxs(txs) {
   const s = new Set();
   (txs || []).forEach((t) => {
-    if (t.pending) return;
     if (t._fp) s.add(t._fp);
     const abs = Math.abs(t.totalAmount);
     s.add(txFingerprint(t.date, t.totalAmount, t.desc));
@@ -38,6 +30,29 @@ function buildKnownFps(txs) {
     }
   });
   return s;
+}
+
+// Alle bekannten Fingerprints aus vorhandenen, ECHTEN (nicht pending) Buchungen.
+// WICHTIG: Vormerkungen (pending) NICHT mit aufnehmen — sonst erkennt der
+// Bankabruf eine noch offene Vormerkung (gleiches Datum/Betrag/Text) fälschlich
+// als „bereits vorhanden" und importiert die passende echte Bank-Buchung nie
+// (sie taucht dann nur noch als eingeklappte „Dublette" auf, ohne je real zu
+// werden). Der Betrags-Index (amtIndex, s. u.) schließt Vormerkungen aus
+// demselben Grund schon länger aus — hier fehlte das Gegenstück.
+function buildKnownFps(txs) {
+  return fpsForTxs((txs || []).filter((t) => !t.pending));
+}
+
+// Fingerprints NUR aus vorhandenen Vormerkungen (pending). Gegenstück zu
+// buildKnownFps: Eine eingehende, bei der Bank selbst noch vorgemerkte (PDNG)
+// Buchung muss gegen bereits importierte Vormerkungen geprüft werden — sonst
+// meldet die Bank denselben offenen Umsatz bei jedem Abruf erneut als „neu",
+// obwohl er längst als Vormerkung existiert (die Vormerkung wird ja bewusst
+// aus buildKnownFps ausgeschlossen). Bei ECHTEN eingehenden Buchungen darf
+// dieser Index NICHT greifen — das würde den ursprünglichen Fix oben wieder
+// aufheben.
+function buildKnownPendingFps(txs) {
+  return fpsForTxs((txs || []).filter((t) => t.pending));
 }
 
 // Ruft ALLE Umsätze eines Kontos ab, inkl. Pagination über continuation_key.
@@ -152,6 +167,7 @@ async function fetchNewBankTx({ txs, dateFrom, aspsp } = {}) {
   const accountMap = await loadEbAccountMap();
 
   const known = buildKnownFps(txs);
+  const knownPending = buildKnownPendingFps(txs);
   // Konto-gebunden, NICHT global: zwei verschiedene Konten können zufällig am
   // selben Tag denselben Betrag haben (z. B. eine Tagesgeld-Zinsgutschrift und
   // eine unabhängige Giro-Ratenzahlung) — das darf die echte, neue Buchung
@@ -192,6 +208,9 @@ async function fetchNewBankTx({ txs, dateFrom, aspsp } = {}) {
           const amtKey = `${appAccId}|${row.isoDate}|${Math.round(Math.abs(row.amount) * 100)}`;
           let status = "new";
           if (known.has(row.fp) || known.has(fpNorm)) status = "exact";
+          // Noch bei der Bank vorgemerkte (PDNG) Zeile, die bereits als
+          // Vormerkung importiert wurde → nicht erneut als „neu" anbieten.
+          else if (row.pending && (knownPending.has(row.fp) || knownPending.has(fpNorm))) status = "exact";
           else if (amtIndex.has(amtKey)) status = "maybe";
           items.push({ accId: appAccId, row, status });
         });
@@ -219,6 +238,7 @@ export {
   fetchNewBankTx,
   listConnectedBanks,
   buildKnownFps,
+  buildKnownPendingFps,
   fetchAllTransactions,
   loadEbSessions,
   sessionValid,
