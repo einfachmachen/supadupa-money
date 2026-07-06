@@ -598,6 +598,26 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
     // ── NEU ERSTELLEN ─────────────────────────────────────────────────
     const n = calcCount();
     const seriesId = typ!=="einmalig" ? uid() : null;
+
+    // Dopplungs-Check bei wiederkehrenden Serien: dieser Zweig wird nicht nur
+    // beim manuellen Neuanlegen erreicht, sondern auch über Vorbefüllungen
+    // ("Im Vormerkungsdialog öffnen →" aus der Wiederkehrend-Erkennung, oder
+    // "Als Vormerkung anlegen" aus einer Buchung heraus) — ohne diesen Check
+    // entsteht dabei leicht eine zweite, unabhängige Serie für denselben
+    // Händler/Betrag, obwohl schon eine läuft. Exakt derselbe Check wie in
+    // RecurringDetectionScreen.createVormerkungen().
+    if(seriesId){
+      const vendorOf = d => (d||"").replace(/\{[^}]{0,300}\}/g,"").trim()
+        .split("·")[0].split("–")[0].split("/")[0].trim().toLowerCase().slice(0,40);
+      const vendor = vendorOf(desc);
+      const dupAmt = pn(amount.replace(",","."));
+      const existingSeries = txs.some(t=>t.pending&&!t._linkedTo&&
+        vendorOf(t.desc)===vendor&&Math.round(t.totalAmount*100)/100===Math.round(dupAmt*100)/100);
+      if(existingSeries){
+        alert(`Für "${desc.trim()}" (${fmt(dupAmt)}) existiert bereits eine Vormerkungs-Serie — nicht erneut angelegt.`);
+        return;
+      }
+    }
     // Erst-/Letztbetrag
     const firstAmt = customFirstLast&&firstAmount ? pn(firstAmount.replace(",",".")) : null;
     const lastAmt  = customFirstLast&&lastAmount  ? pn(lastAmount.replace(",","."))  : null;
