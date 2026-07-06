@@ -15,15 +15,22 @@ self.addEventListener("activate", e => {
     const keys = await caches.keys();
     await Promise.all(keys.map(k => caches.delete(k)));
     await self.clients.claim();
-    // Erzwungene Aktualisierung: jeden offenen Tab einmal neu laden. Der Reload
-    // läuft über den frischen SW (network-first, cache:"reload") und holt
-    // garantiert die aktuelle Version. Verhindert, dass Geräte auf einer alten
-    // Shell „festkleben". Greift nur beim Wechsel auf eine neue SW-Version,
-    // daher keine Endlosschleife.
-    try {
-      const wins = await self.clients.matchAll({ type: "window" });
-      for (const c of wins) { try { await c.navigate(c.url); } catch (_) {} }
-    } catch (_) {}
+    // WICHTIG: hier bewusst KEIN erzwungenes clients.matchAll()+c.navigate()
+    // mehr (früher hier, um offene Tabs sofort auf die neue Version zu holen).
+    // Das führte auf einer brandneuen Installation zu einem Deadlock: activate()
+    // ruft clients.claim() auf und übernimmt damit sofort die Kontrolle über den
+    // Tab, der die Registrierung gerade erst ausgelöst hat — der anschließende
+    // c.navigate(c.url) muss als "navigate"-Request über GENAU DIESEN Service
+    // Worker laufen (network-first, siehe fetch-Handler unten), der aber erst
+    // als aktiviert gilt, wenn dieses waitUntil()-Promise selbst fertig ist —
+    // und das wartet ja gerade auf die Navigation. Zirkuläres Warten → die
+    // Seite hängt dauerhaft in einem nie abschließenden Ladevorgang (nur bei
+    // der allerersten Registrierung reproduzierbar, da bei jedem späteren
+    // Besuch schon ein aktiver, kontrollierender SW vorhanden ist und activate
+    // nie erneut feuert). Der erzwungene Sofort-Reload war ohnehin redundant:
+    // die nächste normale Navigation läuft schon über den frischen SW, und
+    // autoUpdate.js löst bei neuem Build selbst schon einen echten
+    // Seiten-Reload aus (von der Seite selbst, nicht vom SW aus).
   })());
 });
 
