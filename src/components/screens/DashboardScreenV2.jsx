@@ -1953,11 +1953,16 @@ function DashboardScreenV2() {
                             setTxs(p=>p.map(t=>t.id!==tx.id?t:{...t,
                               splits:[{id:uid(),catId,subId,amount:t.totalAmount}]
                             }));
-                            setDashDrill(d=>d?({...d,
+                            // Nur bei "kind"-losen (legacy) Drilldowns hat dashDrill
+                            // überhaupt ein eigenes txList — bei "kind"-basierten
+                            // Drilldowns (in/out/uncat…/pend…) wird die Liste live
+                            // per resolveDrillList() aus txs neu aufgebaut (siehe
+                            // oben), das obige setTxs() reicht dort bereits aus.
+                            setDashDrill(d=>(d&&d.txList)?({...d,
                               txList:d.txList.map(t=>t.id!==tx.id?t:{...t,
                                 splits:[{id:uid(),catId,subId,amount:t.totalAmount}]
                               })
-                            }):null);
+                            }):d);
                           }}
                           placeholder="Kategorie zuweisen…"
                           filterType={tx._csvType||null}
