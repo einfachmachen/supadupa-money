@@ -4,7 +4,7 @@ const THEMES = {
     bg:"#2C3035", surf:"#363B42", surf2:"#3D4349",
     bd:"rgba(200,210,220,0.15)", bds:"rgba(200,210,220,0.28)",
     txt:"#F0F2F4", txt2:"rgba(200,210,220,0.60)",
-    blue:"#AACC00", pos:"#AACC00", neg:"#EA4025", gold:"#F5A623",
+    blue:"#AACC00", pos:"#AACC00", neg:"#FF6B52", gold:"#F5A623",
     lbl:"rgba(200,210,220,0.45)",  // Sekundärtext auf Hintergrund (bg)
     vorm_bg:"#5A3A00", vorm_bd:"rgba(255,200,0,0.8)",  // Offene Vormerkungen Bar
     cf:"#F6821F",      // Cloudflare-Akzent
@@ -181,20 +181,20 @@ const THEMES = {
     bg:"#F2F2F7", surf:"#FFFFFF", surf2:"#E5E5EA",
     bd:"rgba(60,60,67,0.12)", bds:"rgba(60,60,67,0.25)",
     txt:"#000000", txt2:"rgba(60,60,67,0.55)",
-    blue:"#007AFF", pos:"#34C759", neg:"#FF3B30", gold:"#FF9500",
+    blue:"#007AFF", pos:"#1D7A36", neg:"#FF3B30", gold:"#FF9500",
     lbl:"rgba(60,60,67,0.45)",
     vorm_bg:"#FFF3E0", vorm_bd:"rgba(255,149,0,0.55)",
     cf:"#FF6B00", mid:"#007AFF",
     on_accent:"#FFFFFF", disabled:"#C7C7CC",
     warn:"#FF9500", override:"#CC7A00",
-    cell_inc:"#34C759", cell_inc_bg:"#E8F9ED", cell_inc_bd:"#A8E8B8",
+    cell_inc:"#1D7A36", cell_inc_bg:"#E8F9ED", cell_inc_bd:"#A8E8B8",
     tab_exp:"#FFE8E8", tab_inc:"#E8F9ED", tab_pend:"#FFF3E0",
     surf3:"#EFEFF4", err:"#FF3B30",
     pal_inc_bg:"#E8F9ED", pal_inc_bd:"#A8E8B8", pal_inc_hdr:"#1A8C34", pal_inc_fld:"#D8F5E0", pal_inc_val:"#0A6020",
     pal_exp_bg:"#FFE8E8", pal_exp_bd:"#F0A8A8", pal_exp_fld:"#FFD8D8",
     pal_tg_bg:"#E8F4FF", pal_tg_bd:"#A8D0F8", pal_tg_hdr:"#007AFF", pal_tg_fld:"#D8ECFF", pal_tg_val:"#0055CC",
-    hero_bg:"linear-gradient(135deg,#E8F9ED,#C8F0D8)",   logo_c1:"#007AFF", logo_c2:"#34C759", err_bg:"#FFE0E0",
-    cond_neg:"#FF3B30", cond_warn:"#FF9500", cond_gold:"#FFCC00", cond_pos:"#34C759",
+    hero_bg:"linear-gradient(135deg,#E8F9ED,#C8F0D8)",   logo_c1:"#007AFF", logo_c2:"#1D7A36", err_bg:"#FFE0E0",
+    cond_neg:"#FF3B30", cond_warn:"#FF9500", cond_gold:"#FFCC00", cond_pos:"#1D7A36",
     name:"iOS Light",
   },
   // ── Material Light (Google) ───────────────────────────────────────────────
@@ -202,12 +202,12 @@ const THEMES = {
     bg:"#FAFAFA", surf:"#FFFFFF", surf2:"#F5F5F5",
     bd:"rgba(0,0,0,0.10)", bds:"rgba(0,0,0,0.22)",
     txt:"#212121", txt2:"rgba(0,0,0,0.50)",
-    blue:"#1976D2", pos:"#388E3C", neg:"#D32F2F", gold:"#F57C00",
+    blue:"#1976D2", pos:"#388E3C", neg:"#D32F2F", gold:"#B85C00",
     lbl:"rgba(0,0,0,0.42)",
     vorm_bg:"#FFF8E1", vorm_bd:"rgba(245,124,0,0.50)",
     cf:"#E64A19", mid:"#0288D1",
     on_accent:"#FFFFFF", disabled:"#BDBDBD",
-    warn:"#F57C00", override:"#BF360C",
+    warn:"#B85C00", override:"#BF360C",
     cell_inc:"#388E3C", cell_inc_bg:"#E8F5E9", cell_inc_bd:"#A5D6A7",
     tab_exp:"#FFEBEE", tab_inc:"#E8F5E9", tab_pend:"#FFF8E1",
     surf3:"#EEEEEE", err:"#D32F2F",
@@ -479,7 +479,9 @@ const THEMES = {
   //   - Petrol:                      #2D5A78  (Selektions-Highlight)
   keyboard: {
     name:"Keyboard",
-    bg:"#2D2D33",                // App-BG = Installer-Hintergrund (dunkel)
+    bg:"#6A6A64",                // App-BG = Installer-Hintergrund (aufgehellt — war zu dunkel
+                                 // für den fast-schwarzen Text, der auf Bildschirm-Titeln direkt
+                                 // auf dem Hintergrund liegt, siehe Kontrast-Audit)
     surf:"#B8B8B0",              // Karten = Tastenflächen (HELL, schwarzer Text drauf)
     surf2:"#A8A8A0",             // leicht dunkler (Modals etc.)
     surf3:"#9A9A95",             // dunklere Variante (Trennungen)
@@ -489,10 +491,11 @@ const THEMES = {
     txt:"#1A1A18",               // schwarzer Text auf den hellen Tasten
     txt2:"rgba(30,30,28,0.65)",  // gedämpfter Text
     lbl:"rgba(30,30,28,0.50)",   // Labels
-    blue:"#5A6B14",              // sattes Olivgrün als Hauptakzent (auf hell lesbar)
-    pos:"#5A6B14",               // Einnahmen-Grün
-    neg:"#A82820",               // sattes Rot (auf hell gut sichtbar)
-    gold:"#8B5A00",              // dunkler Bernstein
+    blue:"#2C3406",              // sattes Olivgrün als Hauptakzent — abgedunkelt, damit es
+                                 // auch auf dem (hellgrauen) App-BG noch lesbar bleibt
+    pos:"#2C3406",               // Einnahmen-Grün
+    neg:"#5C1611",               // sattes Rot (auf hell gut sichtbar) — abgedunkelt s.o.
+    gold:"#553800",              // dunkler Bernstein — abgedunkelt s.o.
     warn:"#A0541A",
     override:"#7A3A00",
     on_accent:"#FFFFFF",         // weißer Text auf Accent-Buttons
@@ -522,8 +525,8 @@ THEMES.darkhell = {
   bd:"rgba(215,225,235,0.20)", bds:"rgba(215,225,235,0.34)",
   txt:"#F5F7F9", txt2:"rgba(218,228,238,0.72)",
   lbl:"rgba(218,228,238,0.58)",
-  neg:"#FF5C42",                       // helleres Rot — liest sich besser auf Grau
-  err:"#FF5C42", cond_neg:"#E74C3C",
+  neg:"#FFA090",                       // helleres Rot — liest sich besser auf Grau
+  err:"#FFA090", cond_neg:"#E74C3C",
   disabled:"#3A4046",
   hero_bg:"linear-gradient(135deg,#262B32,#363E48)",
   name:"Dark Hell (helleres Grau)",
@@ -542,8 +545,9 @@ THEMES.hellgrau = {
   txt:"#1E232B",         // neutrales Fast-Schwarz
   txt2:"rgba(45,55,70,0.60)",
   lbl:"rgba(45,55,70,0.46)",
+  pos:"#4D6E00",         // dunkleres Grün — auf dem satteren Grau-BG sonst zu blass
   neg:"#CC2B1D",         // sattes, dunkles Rot — ruhig lesbar auf Hell
-  err:"#CC2B1D", cond_neg:"#C0392B",
+  err:"#CC2B1D", cond_neg:"#C0392B", cond_pos:"#4D6E00",
   hero_bg:"linear-gradient(135deg,#CBD0D6,#DDE1E6)",
   name:"Hellgrau",
 };
@@ -571,7 +575,7 @@ THEMES.kontrastdunkel = {
   pal_tg_bg:"#06121F", pal_tg_bd:"#1A3A55", pal_tg_hdr:"#5AB7FF", pal_tg_fld:"#0A1A2A", pal_tg_val:"#8FD0FF",
   hero_bg:"linear-gradient(135deg,#0A0A0A,#1C1C1C)", logo_c1:"#3FD06A", logo_c2:"#5AB7FF",
   cond_neg:"#FF6B5E", cond_warn:"#FFA53D", cond_gold:"#FFD23D", cond_pos:"#3FD06A",
-  name:"Kontrast Dunkel",
+  name:"★ Kontrast Dunkel (Empfohlen)",
 };
 
 // ── Kontrast Hell — reines Weiß, fast schwarze Schrift, kräftige, dunkle
@@ -593,7 +597,7 @@ THEMES.kontrasthell = {
   pal_tg_bg:"#E7F0FA", pal_tg_bd:"#A6C4E6", pal_tg_hdr:"#1565C0", pal_tg_fld:"#DCEAF8", pal_tg_val:"#0D4C95",
   hero_bg:"linear-gradient(135deg,#E6EAEF,#FFFFFF)", logo_c1:"#1B7A33", logo_c2:"#1565C0",
   cond_neg:"#C62012", cond_warn:"#B45309", cond_gold:"#B8860B", cond_pos:"#1B7A33",
-  name:"Kontrast Hell",
+  name:"★ Kontrast Hell (Empfohlen)",
 };
 
 // ── Mitternacht Blau — tiefes Marineblau, ruhige helle Schrift. Augenschonend
@@ -686,7 +690,7 @@ THEMES.deepocean = {
   bg:"#3E444C", surf:"#4B525B", surf2:"#545C66", surf3:"#3A414A",
   bd:"rgba(150,180,220,0.18)", bds:"rgba(150,180,220,0.34)",
   txt:"#F4F6F9", txt2:"rgba(200,215,240,0.72)", lbl:"rgba(200,215,240,0.54)",
-  blue:"#48CAE4", pos:"#BFFF00", neg:"#FF5252", gold:"#FFC861",
+  blue:"#48CAE4", pos:"#BFFF00", neg:"#FF9494", gold:"#FFC861",
   on_accent:"#06121A", disabled:"#3A414A", warn:"#FFB54A", override:"#C2820F",
   mid:"#67E8F9",
   cell_inc:"#BFFF00", cell_inc_bg:"#141F00", cell_inc_bd:"#4A6600",
