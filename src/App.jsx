@@ -20,7 +20,18 @@ import { TrendOverviewScreen } from "./components/screens/TrendOverviewScreen.js
 // werden (React.lazy + Suspense an den jeweiligen Render-Stellen weiter
 // unten). Named Export → lazy() braucht ein Modul mit "default", daher der
 // kleine .then()-Adapter statt einem direkten import().
-const lazyNamed = (loader, name) => lazy(() => loader().then(m => ({ default: m[name] })));
+//
+// retryImport: bei instabiler Verbindung (Flugzeug-/Schiffs-WLAN) kann der
+// Chunk-Download kurz fehlschlagen — ohne Retry stürzt der Screen sofort mit
+// "Failed to fetch dynamically imported module" ab. Zwei Versuche mit kurzer
+// Pause fangen die meisten kurzen Netzwerk-Aussetzer ab, bevor aufgegeben wird.
+function retryImport(loader, retries = 2, delayMs = 1000) {
+  return loader().catch(err => {
+    if (retries <= 0) throw err;
+    return new Promise(res => setTimeout(res, delayMs)).then(() => retryImport(loader, retries - 1, delayMs * 2));
+  });
+}
+const lazyNamed = (loader, name) => lazy(() => retryImport(loader).then(m => ({ default: m[name] })));
 const AddTxModal            = lazyNamed(() => import("./components/organisms/AddTxModal.jsx"), "AddTxModal");
 const DataManagerDialog     = lazyNamed(() => import("./components/organisms/DataManagerDialog.jsx"), "DataManagerDialog");
 const ExportDialog          = lazyNamed(() => import("./components/organisms/ExportDialog.jsx"), "ExportDialog");

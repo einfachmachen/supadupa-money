@@ -44,7 +44,7 @@ window.ReactDOM = ReactDOM;
 // rufen ensureLucideLoaded() zusätzlich selbst auf, falls sie vor Ablauf
 // des Leerlauf-Timeouts geöffnet werden).
 const _idle = window.requestIdleCallback || (cb => setTimeout(cb, 2000));
-_idle(() => ensureLucideLoaded(), { timeout: 4000 });
+_idle(() => ensureLucideLoaded().catch(() => {}), { timeout: 4000 });
 
 // kvStore initialisieren (lädt alle Settings/Themes/etc. aus IDB in den
 // In-Memory-Cache und migriert ggf. vorhandene LS-Werte). Erst danach

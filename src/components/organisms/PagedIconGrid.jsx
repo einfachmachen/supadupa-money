@@ -35,7 +35,7 @@ function PagedIconGrid({search="", catFilter=null, selectedIcon, selectedColor, 
   const [lucideReady, setLucideReady] = React.useState(!!window.LucideIcons);
   React.useEffect(()=>{
     if(lucideReady) return;
-    ensureLucideLoaded();
+    ensureLucideLoaded().catch(() => {});
     const on = () => setLucideReady(true);
     window.addEventListener("lucide-ready", on);
     return () => window.removeEventListener("lucide-ready", on);

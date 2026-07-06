@@ -17,6 +17,15 @@ function ensureLucideLoaded() {
     window.LucideIcons = m;
     window.dispatchEvent(new Event("lucide-ready"));
     return m;
+  }).catch(err => {
+    // Bei instabiler Verbindung (Flugzeug-/Schiffs-WLAN) NICHT dauerhaft im
+    // fehlgeschlagenen Zustand hängen bleiben — sonst bleibt das komplette
+    // Icon-Set nach einem einzigen Netzwerk-Aussetzer für den Rest der
+    // Session unerreichbar. Nächster Aufruf (Idle-Callback/Icon-Picker) darf
+    // erneut versuchen; die fest verdrahteten UI-Icons (lucideStatic.js)
+    // bleiben davon unberührt und funktionieren immer sofort.
+    _lucideLoadPromise = null;
+    throw err;
   });
   return _lucideLoadPromise;
 }
