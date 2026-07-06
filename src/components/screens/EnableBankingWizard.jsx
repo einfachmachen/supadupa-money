@@ -465,9 +465,9 @@ function EnableBankingWizard({ onClose, onBack }) {
         right={
           <button onClick={() => onCloseRef.current?.()} title="Schließen" aria-label="Schließen"
             style={{ background: "rgba(255,255,255,0.08)", border: "none", color: T.txt2,
-              width: 36, height: 36, borderRadius: 12, cursor: "pointer",
+              width: 44, height: 44, borderRadius: 14, cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            {Li("x", 18, T.txt2)}
+            {Li("x", 20, T.txt2)}
           </button>
         }/>
 
