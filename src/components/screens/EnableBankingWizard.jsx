@@ -31,7 +31,7 @@ import {
   loadEbDiag,
   clearEbDiag,
 } from "../../utils/enableBankingStore.js";
-import { friendlyBankError, fetchAllTransactions, buildKnownFps } from "../../utils/enableBankingFetch.js";
+import { friendlyBankError, fetchAllTransactions, buildKnownFps, buildKnownPendingFps } from "../../utils/enableBankingFetch.js";
 
 // Vom Betreiber bereitgestellter Standard-Relay (datenlos, geteilt).
 const DEFAULT_RELAY = "https://enable-banking-proxy.relay-url-supadupa-money.workers.dev";
@@ -361,6 +361,7 @@ function EnableBankingWizard({ onClose, onBack }) {
     try {
       saveEbAccountMap(accMap);
       const known = buildKnownFps(txs);
+      const knownPending = buildKnownPendingFps(txs);
       // Konto-gebunden, NICHT global — sonst versteckt eine zufällig
       // betragsgleiche Buchung auf einem ANDEREN Konto (z. B. eine
       // Tagesgeld-Zinsgutschrift vs. eine unabhängige Giro-Rate am selben Tag)
@@ -381,6 +382,9 @@ function EnableBankingWizard({ onClose, onBack }) {
           const amtKey = `${appAccId}|${row.isoDate}|${Math.round(Math.abs(row.amount) * 100)}`;
           let status = "new";
           if (known.has(row.fp) || known.has(fpNorm)) status = "exact";
+          // Noch bei der Bank vorgemerkte (PDNG) Zeile, die bereits als
+          // Vormerkung importiert wurde → nicht erneut als „neu" anbieten.
+          else if (row.pending && (knownPending.has(row.fp) || knownPending.has(fpNorm))) status = "exact";
           else if (amtIndex.has(amtKey)) status = "maybe";
           items.push({
             key: appAccId + "|" + items.length + "|" + (row._ebRef || row.fp),
