@@ -1295,8 +1295,16 @@ function DashboardScreenV2() {
                 const accLabel = !selAcc ? _accLabelByCat.get(cat.id) : null;
                 // Konten dieser Kategorie (für kleines Konto-Symbol neben dem Namen,
                 // wie in den Vormerken-Dialogen). Nur wenn kein Konto-Filter aktiv.
+                // Ohne Buchungen im aktuellen Zeitraum ist accIdsByCat leer (rein aus
+                // Ist-Buchungen abgeleitet) — dann stattdessen das strukturelle
+                // Heimat-Konto der Kategorie über ihre Gruppe zeigen, statt gar kein
+                // Symbol (sonst fehlt z.B. bei frisch angelegten/unbebuchten Cats das
+                // Konto-Symbol, obwohl die Kategorie fest einem Konto zugeordnet ist).
+                const accIds = _catTxMaps.accIdsByCat.get(cat.id);
                 const accList = !selAcc
-                  ? [...(_catTxMaps.accIdsByCat.get(cat.id)||[])].map(getAcc).filter(Boolean)
+                  ? (accIds && accIds.size
+                      ? [...accIds].map(getAcc).filter(Boolean)
+                      : [getAcc(_groupMap.get(cat.type)?.accountId || cat.accountId || "acc-giro")].filter(Boolean))
                   : [];
 
                 // Budget je Halbmonat aus den Subs aggregieren (nur für Ausgaben-Cats relevant)
