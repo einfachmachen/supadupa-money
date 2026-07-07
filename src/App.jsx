@@ -968,7 +968,9 @@ export default function SupaDupaMoney() {
     if(!cfCredsReady) return;
     setSyncStatus("loading");
     const doLoad = async () => {
-      // Hilfsfunktion: lokalen Stand laden
+      // Hilfsfunktion: lokalen Stand laden. Gibt die geparsten Daten zurück
+      // (oder null) — NICHT über React-State (cats/txs) prüfen, das zeigt im
+      // selben Tick noch den alten Wert von vor dem setState.
       const loadLocal = async () => {
         try {
           // Erst IndexedDB versuchen, dann localStorage als Fallback
@@ -977,6 +979,7 @@ export default function SupaDupaMoney() {
           if(raw) {
             try {
               const d=JSON.parse(raw); delete d.isLand; applyData(d);
+              return d;
             } catch(parseErr) {
               // Korrupte Daten NICHT verlieren: der Auto-Save würde sie sonst
               // kurz darauf mit leerem Zustand überschreiben. Rohstring sichern.
@@ -987,51 +990,34 @@ export default function SupaDupaMoney() {
             }
           }
         } catch(e) { console.error("Lokaler Load fehlgeschlagen:", e); }
-      };
-      // Timestamp-Vergleich
-      const localTs = await (async()=>{
-        try {
-          let raw = await window.IDB.get("mbt_local_backup").catch(()=>null);
-          if(!raw) raw = localStorage.getItem("mbt_local_backup");
-          return JSON.parse(raw||"{}").saved_at||0;
-        } catch(e){ return 0; }
-      })();
-      const checkLocalNewer = (remoteTs, remoteName) => {
-        if(localTs > remoteTs + 5000) {
-          const diff = Math.round((localTs-remoteTs)/1000);
-          return window.confirm(
-            `⚠️ Lokaler Stand ist ${diff}s neuer als ${remoteName}!
-
-OK = Lokalen Stand verwenden
-Abbrechen = ${remoteName}-Stand laden`
-          );
-        }
-        return false;
+        return null;
       };
 
       try {
-        // ── 1. Lokaler Stand ist immer die Wahrheit ───────────────────
-        if(localTs > 0) {
-          await loadLocal();
-          // Prüfen ob wirklich Daten geladen wurden
-          const hasData = txs.length > 0 || (cats && cats.length > 2);
-          if(!hasData && cfActive) {
-            setSyncError("⚠️ Lokale Daten leer — lade automatisch von Cloudflare...");
-            try {
-              const cdata = await cfLoad();
-              if(cdata.cats?.length) {
-                applyData(cdata);
-                const ts2 = Date.now();
-                const toStore = JSON.stringify({...cdata, saved_at:ts2});
-                window.IDB.set(LS_KEY, toStore).catch(()=>{});
-                setSyncError("✓ Von Cloudflare geladen");
-              }
-              setCfStatus("ok");
-            } catch(e) { setCfStatus("error"); }
-            setIsLand(false); setSyncStatus("idle");
-            return;
+        // ── 1. Lokalen Stand IMMER zuerst laden — sofort verfügbar, kein
+        //    Netz nötig (Offline-Boot!). Vorher hing dieser Zweig an einem
+        //    separaten "mbt_local_backup"-Zeitstempel, der nirgends mehr
+        //    geschrieben wurde → lokale Daten wurden beim Start IMMER
+        //    übersprungen zugunsten von Cloudflare; schlug das offline fehl,
+        //    blieb die App leer, obwohl der echte lokale Stand längst da war.
+        const local = await loadLocal();
+        const localTs = local?.saved_at || 0;
+        const hasData = !!(local && ((local.txs?.length||0) > 0 || (local.cats?.length||0) > 2));
+        const checkLocalNewer = (remoteTs, remoteName) => {
+          if(localTs > remoteTs + 5000) {
+            const diff = Math.round((localTs-remoteTs)/1000);
+            return window.confirm(
+              `⚠️ Lokaler Stand ist ${diff}s neuer als ${remoteName}!
+
+OK = Lokalen Stand verwenden
+Abbrechen = ${remoteName}-Stand laden`
+            );
           }
-          setSyncError(`✓ Lokale Daten geladen (${new Date(localTs).toLocaleTimeString()})`);
+          return false;
+        };
+
+        if(hasData) {
+          setSyncError(`✓ Lokale Daten geladen (${new Date(localTs || Date.now()).toLocaleTimeString()})`);
           if(cfActive) {
             cfLoad().then(cdata=>{
               setCfStatus("ok");
@@ -1078,27 +1064,21 @@ Abbrechen = ${remoteName}-Stand laden`
             const jdata = await jsonbinLoad();
             const jTs = jdata.saved_at||0;
             if(checkLocalNewer(jTs,"JSONBin")) {
-              await loadLocal();
+              // lokal (bereits geprüft) den Vorzug geben — nichts zu tun
             } else if(jdata.cats?.length) {
               applyData(jdata);
-            } else {
-              await loadLocal();
             }
             setJsonbinStatus("ok"); setIsLand(false); setSyncStatus("idle");
             return;
           } catch(e) {
             console.error("JSONBin load error:", e);
             setJsonbinStatus("error");
-            // JSONBin Fehler → lokal laden
-            await loadLocal(); setIsLand(false); setSyncStatus("idle");
+            setIsLand(false); setSyncStatus("idle");
             return;
           }
         }
 
         // Supabase/JSONBin/Gist deaktiviert — nur Cloudflare aktiv
-
-        // ── 3. Fallback: localStorage ───────────────────────────────────
-        await loadLocal();
         setIsLand(false); setSyncStatus("idle");
       } catch(e) {
         console.error("Load error:", e);
