@@ -2754,6 +2754,9 @@ Abbrechen = ${remoteName}-Stand laden`
         );
       })()}
 
+      {/* ── Offline-/Sync-Hinweis (dauerhaft sichtbar, alle Screens) ── */}
+      <SyncStatusBadge/>
+
       {/* ── CONTENT ── */}
       <div style={{flex:1,minHeight:0,overflow:"hidden",display:"flex",flexDirection:"column",
         touchAction:"pan-y",paddingBottom:57}}
@@ -3346,9 +3349,6 @@ Abbrechen = ${remoteName}-Stand laden`
           onClose={()=>{ setShowMonthPickerModal(false); setPlusArretiert(false); }}
           onSwitchToMore={()=>{ setShowMonthPickerModal(false); setPlusArretiert(true); }}/>
       )}
-
-      {/* ── Offline-/Sync-Hinweis (dauerhaft sichtbar, unabhängig vom Master-Button) ── */}
-      <SyncStatusBadge/>
 
       {/* ── Cloud-Speichern-Modal (Master-Button Wisch ↓) ── */}
       {showCloudSave && <CloudSaveModal onClose={()=>{ setShowCloudSave(false); setPlusArretiert(false); }}/>}
