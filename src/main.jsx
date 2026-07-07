@@ -46,6 +46,17 @@ window.ReactDOM = ReactDOM;
 const _idle = window.requestIdleCallback || (cb => setTimeout(cb, 2000));
 _idle(() => ensureLucideLoaded().catch(() => {}), { timeout: 4000 });
 
+// Vormerken-Dialog + Cloud-Sync-Modal sind lazy-geladene Chunks (siehe
+// App.jsx). Ohne Vorwärmen wären sie offline nicht verfügbar, falls der
+// Nutzer sie noch nie zuvor online geöffnet hat — genau die Funktionen, die
+// bei fehlendem Netz am wichtigsten sind (offline Buchungen vormerken,
+// später den Sync-Status prüfen). Der Service Worker (public/sw.js) cached
+// den Chunk-Download dabei automatisch dauerhaft (gehashte Dateinamen).
+_idle(() => {
+  import("./components/organisms/MobileVormerkenModal.jsx").catch(() => {});
+  import("./components/organisms/CloudSaveModal.jsx").catch(() => {});
+}, { timeout: 4000 });
+
 // kvStore initialisieren (lädt alle Settings/Themes/etc. aus IDB in den
 // In-Memory-Cache und migriert ggf. vorhandene LS-Werte). Erst danach
 // rendern, damit useState-Initialisierer synchron auf den Cache zugreifen.

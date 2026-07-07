@@ -25,7 +25,6 @@ function NachkategorisierenButton() {
     let autoCount = 0;
 
     const newTxsState = txs.map(tx => {
-      if(tx.pending) return tx;
       const isUncat = !(tx.splits||[]).some(sp=>sp.catId);
       if(onlyUncat && !isUncat) return tx;
 
@@ -63,12 +62,12 @@ function NachkategorisierenButton() {
     if(toReview.length > 0) {
       setReviewQueue({items: toReview, idx: 0, autoCount});
     } else {
-      setResult({matched: autoCount, skipped: newTxsState.filter(t=>!t.pending&&!(t.splits||[]).some(s=>s.catId)).length});
+      setResult({matched: autoCount, skipped: newTxsState.filter(t=>!(t.splits||[]).some(s=>s.catId)).length});
       setTimeout(()=>setResult(null), 4000);
     }
   };
 
-  const uncatCount = (txs||[]).filter(tx=>!tx.pending && !(tx.splits||[]).some(sp=>sp.catId)).length;
+  const uncatCount = (txs||[]).filter(tx=>!(tx.splits||[]).some(sp=>sp.catId)).length;
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:6}}>

@@ -14,6 +14,8 @@ import { ManagementScreen } from "./components/screens/ManagementScreen.jsx";
 import { MonatScreen } from "./components/screens/MonatScreen.jsx";
 import { MoneyMoodScreen } from "./components/screens/MoneyMoodScreen.jsx";
 import { TrendOverviewScreen } from "./components/screens/TrendOverviewScreen.jsx";
+import { SyncStatusBadge } from "./components/organisms/SyncStatusBadge.jsx";
+import { useOnlineStatus } from "./hooks/useOnlineStatus.js";
 
 // Selten geöffnete Vollbild-Dialoge/Screens NICHT im Hauptbundle: sie laden
 // erst als eigener Chunk, wenn sie per "show*"-Flag tatsächlich aufgerufen
@@ -1246,6 +1248,23 @@ Abbrechen = ${remoteName}-Stand laden`
       setSyncError(e.message); setSyncStatus("error"); setCfStatus("error");
     }
   };
+
+  // Offline-Unterstützung: Verbindungsstatus + automatisches Nachsynchronisieren
+  // bei Wiederverbindung. cfSave() macht ohnehin schon Delta-Sync über
+  // savedConfigHashRef/savedYearHashRef — ein einfacher saveToCloud()-Aufruf
+  // reicht also, um genau die Änderungen hochzuladen, die während der
+  // Offline-Phase lokal entstanden sind (isDirty wurde währenddessen von
+  // useLocalSaveDebounce gesetzt).
+  const isOnline = useOnlineStatus();
+  const wasOnlineRef = useRef(isOnline);
+  useEffect(() => {
+    const wasOnline = wasOnlineRef.current;
+    wasOnlineRef.current = isOnline;
+    if(!wasOnline && isOnline && cfActive && isDirty) {
+      saveToCloud({cats, groups, txs, accounts, vehicles, yearData, col3Name, quickBtns, quickColors, csvRules, budgets, customIcons, startBalances, saved_at:Date.now()});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOnline, cfActive, isDirty]);
 
   // Diff txs to track changes + deletions — DEAKTIVIERT
   // Die `changedTxIds`/`deletedTxIds`-Sets wurden befüllt aber nie gelesen
@@ -2635,6 +2654,7 @@ Abbrechen = ${remoteName}-Stand laden`
     setActiveStructurTab, setShowBankWizard,
     setShowCsv, setShowDataMgr,
     syncStatus, setSyncStatus, syncError, isDirty,
+    isOnline, openCloudSave: ()=>setShowCloudSave(true),
     cfSaveOnClose, setCfSaveOnClose,
     dashDrillOpen, setDashDrillOpen,
     amtMode, setAmtMode,
@@ -2658,7 +2678,7 @@ Abbrechen = ${remoteName}-Stand laden`
     customIcons, themeName, hideEmptyRows, handedness, debugFlags,
     cfActive, cfStatus, cfUrl, cfSecret,
     syncPass, syncEncActive, showCloudSetup, showFuelAnalysis,
-    syncStatus, syncError, isDirty, cfSaveOnClose,
+    syncStatus, syncError, isDirty, isOnline, cfSaveOnClose,
     dashDrillOpen, amtMode, amtFont, noBorders, masterOverride,
     favIcons,
   ]);
@@ -3326,6 +3346,9 @@ Abbrechen = ${remoteName}-Stand laden`
           onClose={()=>{ setShowMonthPickerModal(false); setPlusArretiert(false); }}
           onSwitchToMore={()=>{ setShowMonthPickerModal(false); setPlusArretiert(true); }}/>
       )}
+
+      {/* ── Offline-/Sync-Hinweis (dauerhaft sichtbar, unabhängig vom Master-Button) ── */}
+      <SyncStatusBadge/>
 
       {/* ── Cloud-Speichern-Modal (Master-Button Wisch ↓) ── */}
       {showCloudSave && <CloudSaveModal onClose={()=>{ setShowCloudSave(false); setPlusArretiert(false); }}/>}
