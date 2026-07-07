@@ -3282,7 +3282,13 @@ Abbrechen = ${remoteName}-Stand laden`
         );
       })()}
 
-      {/* ── MOBILE UI TEST ── */}
+      {/* ── MOBILE UI TEST ──
+          ErrorBoundary UM Suspense (nicht nur Suspense allein): schlägt einer
+          dieser Lazy-Chunks fehl (z. B. Netzwerk-Aussetzer), fängt sie den
+          Fehler gezielt HIER ab — ohne sie würde React ohne Boundary den
+          KOMPLETTEN Baum unmounten (leerer Bildschirm), obwohl der Rest der
+          App (Hero, Screens, Nav) völlig intakt wäre. */}
+      <ErrorBoundary name="Mobile-Dialoge">
       <Suspense fallback={<LazyFallback/>}>
       {showMobileVormerken&&<MobileVormerkenModal onClose={()=>{setShowMobileVormerken(false);setPlusArretiert(false);}}
         onBack={()=>{setShowMobileVormerken(false);setPlusArretiert(true);}}/>}
@@ -3348,6 +3354,7 @@ Abbrechen = ${remoteName}-Stand laden`
       {showRecurring&&<RecurringDetectionScreen onClose={()=>{setShowRecurring(false);setPlusArretiert(false);}}/>}
       {showKategorisieren&&<RecurringDetectionScreen initialTab="kategorisieren" onClose={()=>{setShowKategorisieren(false);setPlusArretiert(false);}}/>}
       </Suspense>
+      </ErrorBoundary>
       {showSettings&&(
         <div onClick={()=>setShowSettings(false)}
           style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",backdropFilter:"blur(8px)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
@@ -3364,6 +3371,7 @@ Abbrechen = ${remoteName}-Stand laden`
           </div>
         </div>
       )}
+      <ErrorBoundary name="Daten-Manager">
       <Suspense fallback={<LazyFallback/>}>
       {showDataMgr&&<DataManagerDialog onClose={()=>{setShowDataMgr(false);setPlusArretiert(false);}} mobileMode={mobileMode}
         onBack={()=>{setShowDataMgr(false);setPlusArretiert(true);}}/>}
@@ -3372,6 +3380,7 @@ Abbrechen = ${remoteName}-Stand laden`
           data={exportDialog.data} onClose={()=>setExportDialog(null)} onDone={()=>setExportDialog(null)}/>
       )}
       </Suspense>
+      </ErrorBoundary>
       {exportModal&&(
         <div onClick={()=>setExportModal(null)}
           style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",backdropFilter:"blur(10px)",zIndex:90,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
