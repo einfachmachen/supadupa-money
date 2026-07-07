@@ -302,7 +302,16 @@ export default function SupaDupaMoney() {
   const [quickColors, setQuickColors] = useState([]);
   const globalDrag = React.useRef(null);
   const [showQuickPicker, setShowQuickPicker] = useState(false);
-  const [syncStatus, setSyncStatus] = useState("idle");
+  // WICHTIG: startet mit "loading", NICHT "idle". Der Boot-Ladevorgang setzt
+  // "loading" erst INNERHALB des cfCredsReady-Effekts (siehe unten) — bis
+  // cfCredsReady selbst true wird, ist das ein async IndexedDB-Read. Startete
+  // syncStatus mit "idle", hätte useLocalSaveDebounce in genau diesem Fenster
+  // (vor dem ersten echten Laden) "loading:false" gesehen und die noch LEEREN
+  // Anfangswerte (cats=INIT_CATS, txs=[]) nach 300ms ins lokale IndexedDB
+  // gespeichert — und damit echte, bereits vorhandene lokale Daten
+  // überschrieben, sofern der eigentliche Ladevorgang (z. B. bei einem
+  // Absturz/Reload mittendrin) nicht rechtzeitig vorher fertig wurde.
+  const [syncStatus, setSyncStatus] = useState("loading");
   // Einmaliger Re-Render, sobald der asynchron geladene Lucide-Chunk bereit
   // ist — danach rendern auch nutzergewählte Icons (Kategorien/Konten)
   const [, setLucideReady] = useState(typeof window!=="undefined" && !!window.LucideIcons);
