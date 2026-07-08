@@ -727,6 +727,85 @@ THEMES.softecotech = {
   name:"Soft Eco-Tech",
 };
 
+// ════════════════════════════════════════════════════════════════════════
+//  Kinder-Themes — verspielter für jüngere Nutzer, Zahlen bleiben klar
+//  lesbar (Verspieltheit nur in Farben/Verläufen, nicht in der Typografie).
+// ════════════════════════════════════════════════════════════════════════
+
+// ── Abenteuer-Grün — warme Sand-/Olivtöne, wie ein Ausflug in den Wald ──
+THEMES.abenteuergruen = {
+  ...THEMES.light,
+  bg:"#EFE8D2", surf:"#FBF6E8", surf2:"#E9DFC0", surf3:"#E1D5AD",
+  bd:"rgba(70,60,20,0.16)", bds:"rgba(70,60,20,0.30)",
+  txt:"#2E3620", txt2:"rgba(60,70,30,0.62)", lbl:"rgba(60,70,30,0.46)",
+  blue:"#4F7A2E", pos:"#4F7A2E", neg:"#C0521F", gold:"#B8860A",
+  on_accent:"#FFFFFF", disabled:"#CFC7AA", warn:"#B8860A", override:"#8A5A10",
+  mid:"#2E7A8A",
+  cell_inc:"#3E6B1F", cell_inc_bg:"#E4EFCF", cell_inc_bd:"#9FC26A",
+  tab_exp:"#F5D9C2", tab_inc:"#DCEBC4", tab_pend:"#F5E9BE",
+  err:"#C0521F", err_bg:"#F7DED0",
+  vorm_bg:"#F5E9BE", vorm_bd:"rgba(184,134,10,0.6)",
+  pal_inc_bg:"#EAF3D8", pal_inc_bd:"#A0C670", pal_inc_hdr:"#3E6B1F", pal_inc_fld:"#E0EEC8", pal_inc_val:"#2C4F14",
+  pal_exp_bg:"#F9E4D6", pal_exp_bd:"#E3A47C", pal_exp_fld:"#F5D8C6",
+  pal_tg_bg:"#DEEEF0", pal_tg_bd:"#7FBCC4", pal_tg_hdr:"#2E7A8A", pal_tg_fld:"#D2E8EA", pal_tg_val:"#1F5560",
+  hero_bg:"linear-gradient(135deg,#7C9A55,#5E7C3E)",
+  logo_c1:"#3E6B1F", logo_c2:"#8FB84A",
+  cond_neg:"#C0521F", cond_warn:"#B8860A", cond_gold:"#A87400", cond_pos:"#3E6B1F",
+  name:"Abenteuer-Grün",
+};
+
+// ── Weltraum-Taschengeld — Mitternachtsblau mit Neon-Türkis/Pink, kleine
+//    Sternpunkte im Hero-Verlauf ──────────────────────────────────────────
+THEMES.weltraumtaschengeld = {
+  ...THEMES.dark,
+  bg:"#0B0F2A", surf:"#141A3D", surf2:"#1B2350", surf3:"#080B1E",
+  bd:"rgba(140,170,255,0.20)", bds:"rgba(140,170,255,0.36)",
+  txt:"#EAF2FF", txt2:"rgba(200,220,255,0.70)", lbl:"rgba(200,220,255,0.54)",
+  blue:"#2EE6D6", pos:"#2EE6D6", neg:"#FF4FA3", gold:"#FFD166",
+  on_accent:"#04201C", disabled:"#232B55", warn:"#FFB84A", override:"#C77A2E",
+  mid:"#8A7CFF",
+  cell_inc:"#2EE6D6", cell_inc_bg:"#062420", cell_inc_bd:"#1A6E63",
+  tab_exp:"rgba(255,79,163,0.20)", tab_inc:"rgba(46,230,214,0.20)", tab_pend:"rgba(255,209,102,0.20)",
+  err:"#FF4FA3", err_bg:"#33102A",
+  vorm_bg:"#332A0A", vorm_bd:"rgba(255,209,102,0.85)",
+  pal_inc_bg:"#062420", pal_inc_bd:"#1A6E63", pal_inc_hdr:"#2EE6D6", pal_inc_fld:"#082E28", pal_inc_val:"#7CF5E8",
+  pal_exp_bg:"#2E0A20", pal_exp_bd:"#7A1F58", pal_exp_fld:"#380D28",
+  pal_tg_bg:"#160F38", pal_tg_bd:"#4A3AA0", pal_tg_hdr:"#8A7CFF", pal_tg_fld:"#1C1348", pal_tg_val:"#C0B6FF",
+  hero_bg:"radial-gradient(circle at 15% 22%, rgba(255,255,255,0.9) 0 1px, transparent 2px), "+
+          "radial-gradient(circle at 68% 12%, rgba(255,255,255,0.7) 0 1px, transparent 2px), "+
+          "radial-gradient(circle at 42% 68%, rgba(255,255,255,0.55) 0 1px, transparent 2px), "+
+          "radial-gradient(circle at 86% 55%, rgba(255,255,255,0.8) 0 1px, transparent 2px), "+
+          "radial-gradient(circle at 24% 85%, rgba(255,255,255,0.5) 0 1px, transparent 2px), "+
+          "radial-gradient(circle at 55% 40%, rgba(255,255,255,0.4) 0 1px, transparent 2px), "+
+          "linear-gradient(135deg,#0B0F2A,#1B2350)",
+  logo_c1:"#2EE6D6", logo_c2:"#8A7CFF",
+  cond_neg:"#FF4FA3", cond_warn:"#FFB84A", cond_gold:"#FFD166", cond_pos:"#2EE6D6",
+  name:"Weltraum-Taschengeld",
+};
+
+// ── Zirkus-Taschenrechner — cremeweiß mit Rummelplatz-Farben (Rot/Gelb/
+//    Türkis), dezent gestreifter Hero-Hintergrund ───────────────────────
+THEMES.zirkustaschenrechner = {
+  ...THEMES.light,
+  bg:"#FFF6E6", surf:"#FFFFFF", surf2:"#FFEFD2", surf3:"#FFE6BE",
+  bd:"rgba(90,55,20,0.16)", bds:"rgba(90,55,20,0.30)",
+  txt:"#3A2418", txt2:"rgba(80,55,35,0.62)", lbl:"rgba(80,55,35,0.46)",
+  blue:"#1FA8A0", pos:"#1E8A66", neg:"#E0392B", gold:"#E0A100",
+  on_accent:"#FFFFFF", disabled:"#E8D9B8", warn:"#C77700", override:"#9A5A00",
+  mid:"#1FA8A0",
+  cell_inc:"#1E8A66", cell_inc_bg:"#DFF0D8", cell_inc_bd:"#8FCBA0",
+  tab_exp:"#FBDAD4", tab_inc:"#DFF0D8", tab_pend:"#FCEBB8",
+  err:"#E0392B", err_bg:"#FCE0DC",
+  vorm_bg:"#FCEBB8", vorm_bd:"rgba(224,161,0,0.6)",
+  pal_inc_bg:"#E4F3DC", pal_inc_bd:"#8FCBA0", pal_inc_hdr:"#1E8A66", pal_inc_fld:"#D8EED0", pal_inc_val:"#155C40",
+  pal_exp_bg:"#FCE2DD", pal_exp_bd:"#EFA098", pal_exp_fld:"#FAD6CE",
+  pal_tg_bg:"#DCF2F0", pal_tg_bd:"#7FCFC8", pal_tg_hdr:"#12766F", pal_tg_fld:"#CDECE8", pal_tg_val:"#0C534E",
+  hero_bg:"repeating-linear-gradient(120deg, #FFF6E6 0 34px, #FFEAC2 34px 68px)",
+  logo_c1:"#1E8A66", logo_c2:"#1FA8A0",
+  cond_neg:"#E0392B", cond_warn:"#C77700", cond_gold:"#B8860B", cond_pos:"#1E8A66",
+  name:"Zirkus-Taschenrechner",
+};
+
 // Globales T — wird von getAppTheme() überschrieben, initialisiert mit dark — wird von getAppTheme() überschrieben, initialisiert mit dark
 function getTheme(name) {
   const t = THEMES[name] || THEMES.dark;
