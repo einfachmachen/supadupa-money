@@ -101,12 +101,12 @@ function SaldoHeroV2({
 
   return (
     <div style={{
-      // Kinder-Themes: deutlich mehr seitlicher Abstand zum Deko-Rahmen.
-      // 28px reichte nicht: der (bei ausgeblendeten Beträgen) geweichzeichnete
-      // Kontostand nutzt filter:blur(0.32em) — bei 44px Schriftgröße ein
-      // Blur-Radius von ~14px, der optisch noch gut 30-40px über die
-      // eigentliche Textkante hinaus "glüht". Andere Themes unverändert.
-      padding: T.frame_border ? "5px 40px 6px" : "5px 20px 6px",
+      // Kinder-Themes: mehr seitlicher Abstand zum Deko-Rahmen (Menü-/Augen-
+      // Symbol + Blur-Weichzeichner des ausgeblendeten Kontostands, siehe
+      // unten). NICHT zu groß wählen: schrumpft die Zeile, in der Betrag +
+      // Auge nebeneinander Platz brauchen (siehe maxWidth am Betrag unten) —
+      // 40px führte bei einem 5-stelligen Betrag bereits zur Überlappung.
+      padding: T.frame_border ? "5px 28px 6px" : "5px 20px 6px",
       position:"relative"}}>
       {/* Freier Bereich links oben: minimaler Theme-Umschalter. */}
       {/* position:absolute richtet sich nach der Padding-Kante des Wrappers,
@@ -136,6 +136,15 @@ function SaldoHeroV2({
             letterSpacing:-1,lineHeight:1.15,whiteSpace:"nowrap",
             WebkitTextStroke:"0.8px currentColor",
             cursor:allAccIds.length>1?"pointer":"default",
+            // Kinder-Themes: der Betrag ist zentriert, das Augensymbol daneben
+            // absolut positioniert (right:14, Breite 30 → 44px reservierter
+            // Bereich). Ohne Deckelung kann ein langer Betrag bei schmalerer
+            // Zeile (s. Padding oben) das Auge überlappen. -88px statt -44px,
+            // weil die Zentrierung Kürzungen symmetrisch von beiden Seiten
+            // vornimmt — links ist zwar kein Icon, aber so bleibt links wie
+            // rechts sicher Luft. Greift nur im Extremfall (sehr langer
+            // Betrag + schmaler Bildschirm), sonst unsichtbar.
+            ...(T.frame_border ? {maxWidth:"calc(100% - 88px)", overflow:"hidden", textOverflow:"ellipsis"} : {}),
           }}>
           {saldo>=0?"":"−"}{fmtMoney(Math.abs(saldo||0))}&nbsp;€
         </span>
