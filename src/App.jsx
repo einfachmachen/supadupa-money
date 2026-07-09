@@ -83,6 +83,7 @@ import { compressTxByYear } from "./utils/cloudTx.js";
 import { encryptJSON, decryptJSON, isEncrypted, freshSaltB64 } from "./utils/syncCrypto.js";
 import { exportEbForSync, importEbFromSync } from "./utils/enableBankingStore.js";
 import { saldoAt, saldoEnde, saldoMitte } from "./utils/saldo.js";
+import { getSyncBadgeState } from "./utils/syncBadge.js";
 
 export default function SupaDupaMoney() {
   const [mainTab,       setMainTab]      = useState("erfassen"); // erfassen|struktur|mehr
@@ -2701,6 +2702,13 @@ Abbrechen = ${remoteName}-Stand laden`
   const showMonthPicker = anyMobileModalOpen ||
     activeNavTab==="home"||activeNavTab==="monat"||activeNavTab==="jahr";
 
+  // Höhe, die der SyncStatusBadge oben beansprucht (0, wenn er gerade nicht
+  // angezeigt wird) — als CSS-Variable verfügbar, damit position:fixed-
+  // Vollbild-Dialoge (die den Badge sonst nicht kennen und ihn überdecken
+  // würden, siehe Kategorie-Drilldown) ihren eigenen Notch-Abstand darum
+  // ergänzen können: calc(12px + env(safe-area-inset-top) + var(--sync-badge-space)).
+  const syncBadgeSpace = getSyncBadgeState({isOnline, cfActive, isDirty, syncStatus}) ? "38px" : "0px";
+
   return (
   <AppCtx.Provider value={cx}>
     <>
@@ -2710,16 +2718,25 @@ Abbrechen = ${remoteName}-Stand laden`
       style={{background:T.bg,height:"100vh",maxHeight:"100vh",
       colorScheme:(isLightTheme())?"light":"dark",
       "--amt-neutral":T.txt,  // Neutral-Schriftfarbe für Beträge (= Kategorie-Text)
+      "--sync-badge-space":syncBadgeSpace,
       display:"flex",flexDirection:"column",
       paddingTop:"env(safe-area-inset-top)",  // Inhalt unter die Notch/Statusleiste; bg füllt bis ganz oben
       fontFamily:"'SF Pro Text',-apple-system,BlinkMacSystemFont,sans-serif",
       userSelect:"none",overflow:"hidden",
-      // Deko-Rahmen: nur Kinder-Themes setzen T.frame_border — alle anderen
-      // Themes bleiben dadurch unverändert (Wert ist sonst undefined).
+      // Deko-Rahmen der Kinder-Themes: Border direkt am Haupt-Container (durch
+      // box-sizing:border-box schrumpft die Inhaltsfläche automatisch mit —
+      // "dynamische Anpassung" ohne jeden Screen einzeln anzupassen).
+      // transform etabliert diesen Container zugleich als Containing Block für
+      // ALLE position:fixed-Nachfahren (Vollbild-Dialoge/Drilldowns nutzen
+      // durchgängig inset:0) — die docken sich dadurch automatisch INNERHALB
+      // des Rahmens an, statt ihn wie zuvor zu überdecken. Ohne frame_border
+      // bleibt das Verhalten alter Themes unverändert (kein transform, kein
+      // Border).
       ...(T.frame_border ? {
         border:T.frame_border,
         boxShadow:`inset 0 0 0 4px ${T.frame_ring||T.bg}`,
         borderRadius:18,
+        transform:"translateZ(0)",
       } : {})}}>
 
       {/* ── Performance-Debug + Theme-Umschalter wurden nach Einstellungen verschoben ── */}
