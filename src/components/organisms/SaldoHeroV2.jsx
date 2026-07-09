@@ -128,6 +128,17 @@ function SaldoHeroV2({
         // Theme-Umschalter sitzt in einer eigenen Geschwister-Box), daher
         // unbedenklich zu clippen.
         ...(T.frame_border ? {overflow:"hidden"} : {})}}>
+        {/* Linker Platzhalter — exakt so breit wie das Augen-Symbol rechts
+            (inkl. dessen Randabstand). Hält den Betrag optisch zentriert,
+            OHNE ihn per fester maxWidth zu deckeln: eine feste Deckelung
+            schnitt echte (lange) Kontostände unnötig mit "…" ab, obwohl
+            rechts sichtbar noch Platz war — das Problem war die falsche
+            (symmetrische) Berechnung, nicht fehlender Platz. Jetzt ist das
+            Auge ein normales Flex-Geschwister statt absolut positioniert,
+            kann also strukturell nie überlappt werden; der Betrag behält
+            seine natürliche Breite und weicht nur im echten Extremfall
+            (überhaupt kein Platz mehr) auf Ellipsis aus. */}
+        <div style={{width:30+(T.frame_border?14:6), flexShrink:0}}/>
         <span onClick={allAccIds.length>1?cycleAcc:undefined} className="heroAmt heroBalance"
           style={{
             color: heroColor(saldo),
@@ -136,21 +147,14 @@ function SaldoHeroV2({
             letterSpacing:-1,lineHeight:1.15,whiteSpace:"nowrap",
             WebkitTextStroke:"0.8px currentColor",
             cursor:allAccIds.length>1?"pointer":"default",
-            // Kinder-Themes: der Betrag ist zentriert, das Augensymbol daneben
-            // absolut positioniert (right:14, Breite 30 → 44px reservierter
-            // Bereich). Ohne Deckelung kann ein langer Betrag bei schmalerer
-            // Zeile (s. Padding oben) das Auge überlappen. -88px statt -44px,
-            // weil die Zentrierung Kürzungen symmetrisch von beiden Seiten
-            // vornimmt — links ist zwar kein Icon, aber so bleibt links wie
-            // rechts sicher Luft. Greift nur im Extremfall (sehr langer
-            // Betrag + schmaler Bildschirm), sonst unsichtbar.
-            ...(T.frame_border ? {maxWidth:"calc(100% - 88px)", overflow:"hidden", textOverflow:"ellipsis"} : {}),
+            minWidth:0, overflow:"hidden", textOverflow:"ellipsis",
           }}>
           {saldo>=0?"":"−"}{fmtMoney(Math.abs(saldo||0))}&nbsp;€
         </span>
-        {/* Auge ganz rechts am Rand, etwas größer. */}
+        {/* Auge — normales Flex-Element (nicht mehr position:absolute), damit
+            es den Betrag strukturell nie überlappen kann. */}
         <span onClick={toggleEye} title="Beträge ein-/ausblenden"
-          style={{position:"absolute",right:T.frame_border?14:6,top:"50%",transform:"translateY(-50%)",
+          style={{flexShrink:0,marginRight:T.frame_border?14:6,
             cursor:"pointer",userSelect:"none",width:30,height:30,
             display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
           {Li(eyeIcon,23,eyeCol)}
