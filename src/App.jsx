@@ -3144,12 +3144,7 @@ Abbrechen = ${remoteName}-Stand laden`
           const { isFlat, bg, fg } = plusBtnColors(T);
 
           return (
-            <div key={key} style={{flex:"0 0 auto",display:"flex",alignItems:"center",
-              justifyContent:"center",overflow:"visible",
-              WebkitTapHighlightColor:"transparent",position:"relative",
-              transition:"width 0.25s",
-              // Vergrößert (schwebt nach oben): Slot auf 0 → die 4 Tabs füllen die Bar.
-              width: plusArretiert ? 0 : 90}}>
+            <div key={key} style={plusWrapperShell(plusArretiert)}>
               <button
                 className="plus-master-btn"
                 onPointerDown={onPointerDown}
@@ -3157,30 +3152,19 @@ Abbrechen = ${remoteName}-Stand laden`
                 onPointerUp={onPointerUp}
                 onPointerCancel={onPointerCancel}
                 style={{
-                  width:SIZE, height:SIZE, borderRadius:"50%", flexShrink:0,
-                  // flexShrink:0 → im vergrößerten Zustand (Wrapper-Breite 0)
-                  // darf der Button NICHT horizontal zusammengedrückt werden;
-                  // er behält seine runde/quadratische Form und schwebt zentriert.
-                  // min/max zusätzlich hart auf SIZE verriegelt (siehe
-                  // MasterOverrideSlot) — Absicherung gegen die automatische
-                  // Flex-Item-Mindestgröße, die der Label-Inhalt in manchen
-                  // Browsern erzwingen kann.
-                  minWidth:SIZE, minHeight:SIZE, maxWidth:SIZE, maxHeight:SIZE, overflow:"hidden",
+                  ...plusBtnShell(SIZE),
                   // Flache Themes: Kontrastrahmen (in Textfarbe) definiert die
                   // Form, da der Schatten per CSS entfernt wird. Sonst dezenter
                   // Rahmen in Nav-Farbe + Schatten wie gehabt.
                   border: isFlat ? `2px solid ${fg}` : `3px solid ${T.surf}`,
                   background: bg,
                   boxShadow: "none",
-                  display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
-                  position:"relative",
+                  cursor:"pointer",
                   // Ruheposition. Im Drilldown vergrößert & frei ziehbar (s. Gesten);
                   // dort ohne Transition, damit das Ziehen direkt folgt.
                   transform: restingTransform,
                   transition: moodDrillOpen ? "none" : "transform 0.25s cubic-bezier(.34,1.4,.64,1)",
-                  touchAction:"none",userSelect:"none",cursor:"pointer",
-                  WebkitTapHighlightColor:"transparent",padding:0,
-                  fontFamily:"inherit",lineHeight:1}}>
+                }}>
                 {showMobilePicker ? (
                   <div style={{pointerEvents:"none",textAlign:"center",width:"86%"}}>
                     <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
@@ -3484,6 +3468,38 @@ function plusBtnColors(T) {
   return { isFlat, bg, fg, accent };
 }
 
+// Gemeinsame Form-/Größen-Eigenschaften des + Buttons — von renderMasterButton
+// UND MasterOverrideSlot geteilt, analog zu plusBtnColors oben. Grund: genau
+// diese beiden Stellen sind schon einmal bei den Farben auseinandergedriftet
+// (siehe Kommentar zu plusBtnColors) und zuletzt erneut bei Box-Maßen/
+// Transition/Padding (Override-Variante wurde zum Ei verzerrt). Damit das
+// architektonisch nicht mehr passieren kann, kommen Wrapper- und Button-Shell
+// jetzt aus genau einer Quelle statt an zwei Stellen von Hand synchron
+// gehalten zu werden.
+function plusWrapperShell(plusArretiert) {
+  return {
+    flex:"0 0 auto", display:"flex", alignItems:"center", justifyContent:"center",
+    overflow:"visible", WebkitTapHighlightColor:"transparent", position:"relative",
+    transition:"width 0.25s",
+    // Vergrößert (schwebt nach oben): Slot auf 0 → die 4 Tabs füllen die Bar.
+    width: plusArretiert ? 0 : 90,
+  };
+}
+function plusBtnShell(SIZE) {
+  return {
+    width:SIZE, height:SIZE, borderRadius:"50%", flexShrink:0,
+    // min/max zusätzlich hart auf SIZE verriegelt + overflow:hidden:
+    // Absicherung gegen die automatische Flex-Item-Mindestgröße, die
+    // mehrzeiliger Label-Inhalt in manchen Browsern erzwingen kann.
+    minWidth:SIZE, minHeight:SIZE, maxWidth:SIZE, maxHeight:SIZE, overflow:"hidden",
+    display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+    position:"relative",
+    touchAction:"none", userSelect:"none",
+    WebkitTapHighlightColor:"transparent",
+    padding:0, fontFamily:"inherit", lineHeight:1,
+  };
+}
+
 // „Mai 2026 / WISCHEN"-Knopf (SIZE/Transform/Wrapper identisch). Während
 // ein Mobile-Wizard aktiv ist, ersetzt diese Variante den Inhalt:
 //   Tipp             → override.onConfirm()
@@ -3687,14 +3703,7 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
   const fontSize = longest > 13 ? 8 : longest > 10 ? 9 : longest > 8 ? 10 : longest > 6 ? 12 : 13;
 
   return (
-    <div style={{flex:"0 0 auto",display:"flex",alignItems:"center",
-      justifyContent:"center",overflow:"visible",
-      WebkitTapHighlightColor:"transparent",position:"relative",
-      // Wie im regulären Button-Pfad (renderMasterButton): Slot auf 0, wenn
-      // vergrößert, damit die 4 Tabs die Bar gleichmäßig ausfüllen — vorher
-      // hier hart auf 90 gesetzt, wodurch z.B. auf dem Daten-Tab (der immer
-      // diesen Override zeigt) eine Lücke zwischen Tab 2 und 3 blieb.
-      width: plusArretiert ? 0 : 90,zIndex:500}}>
+    <div style={{...plusWrapperShell(plusArretiert), zIndex:500}}>
       <button
         ref={btnRef}
         className="plus-master-btn"
@@ -3704,28 +3713,15 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
         onPointerCancel={onCancel}
         disabled={override.disabled}
         style={{
-          width:SIZE, height:SIZE, borderRadius:"50%", flexShrink:0,
-          // Box-Maße zusätzlich über min/max hart verriegelt: flexShrink:0
-          // allein reicht in manchen Browsern (Safari) nicht zuverlässig aus,
-          // wenn der zweizeilige Label-Inhalt eine größere automatische
-          // Mindesthöhe/-breite des Flex-Items erzwingt — der Button wurde
-          // dann zum Ei verzerrt statt rund zu bleiben. min/max = SIZE
-          // erzwingt exakt quadratisch, overflow:hidden kappt Inhalt, der
-          // trotzdem nicht passt, statt die Box zu sprengen.
-          minWidth:SIZE, minHeight:SIZE, maxWidth:SIZE, maxHeight:SIZE, overflow:"hidden",
+          ...plusBtnShell(SIZE),
           // identische Farb-/Form-Logik wie der reguläre + Button
           border: _pbc.isFlat ? `2px solid ${override.disabled ? T.txt2 : _pbc.fg}` : `3px solid ${T.surf}`,
           background: override.disabled ? (T.disabled || "rgba(128,128,128,0.30)") : _pbc.bg,
           color: override.disabled ? T.txt2 : _pbc.fg,
           boxShadow: "none",
-          display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
-          position:"relative",
-          transform: restingTransform,
-          transition:"transform 0.2s cubic-bezier(.34,1.4,.64,1)",
-          touchAction:"none",userSelect:"none",
           cursor:override.disabled?"default":"pointer",
-          WebkitTapHighlightColor:"transparent",padding:4,
-          fontFamily:"inherit",lineHeight:1.15,
+          transform: restingTransform,
+          transition:"transform 0.25s cubic-bezier(.34,1.4,.64,1)",
           opacity: override.disabled ? 0.55 : 1,
         }}>
         {/* Richtungs-Hinweise: ‹ = Wisch links (zurück), ⌄ = Wisch runter
