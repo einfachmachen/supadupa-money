@@ -69,21 +69,18 @@ function SaldoHeroV2({
   const plusAccent = T.themeName==="terminal" ? T.pos : T.blue;
   const heroColor = v => v==null?T.txt : v<0?T.cond_neg : plusAccent;
   // Kinder-Themes: seitliches Hero-Padding sorgt für sichtbaren Abstand zur
-  // Deko-Umrandung. Der Kontostand ist hier bewusst deutlich kleiner (26px
-  // statt 44px) — das schafft genug Breiten-Spielraum auf einem schmalen
-  // Gerät (iPhone 13 mini, 375pt), um Randabstand UND Auge-Lücke spürbar
-  // größer zu machen, statt nur knapp auf Kante zu rechnen.
-  const framePad = T.frame_border ? 42 : 20;
-  const amtFontSize = T.frame_border ? 26 : 44;
-  const iconEdgeExtra = T.frame_border ? 4 : 0;
-  // Sichtbare Lücke zwischen Betrag und Augen-Symbol — verhindert Vertipper
-  // (Konto wechseln statt Betrag aus-/einblenden). Bei den alten Themes war
-  // das nie ein gemeldetes Problem, daher dort unverändert 0.
-  const iconGap = T.frame_border ? 26 : 0;
-  // Platzbedarf von Augen-Symbol (30px) + Lücke + Randabstand — auf beiden
-  // Seiten der Betragszeile reserviert (links als unsichtbarer Platzhalter,
-  // rechts vom Auge selbst belegt: Lücke davor, Rand-Abstand danach).
-  const sideReserve = 30 + iconGap + 6 + iconEdgeExtra;
+  // Deko-Umrandung. Kontostand bleibt bei 34px (fester Wert, nicht weiter
+  // schrumpfen). Statt das Auge einfach direkt neben den Betrag zu setzen,
+  // bekommt es eine eigene, breitere "Zone" rechts (eyeZone) und wird DARIN
+  // zentriert — sitzt also mittig zwischen Betrag-Ende und Rahmen-Innenkante,
+  // nicht an einem der beiden Enden. Der linke Platzhalter (sideReserve)
+  // spiegelt exakt diese Zonenbreite, damit der Betrag optisch zentriert
+  // bleibt.
+  const framePad = T.frame_border ? 24 : 20;
+  const amtFontSize = T.frame_border ? 34 : 44;
+  const eyeBoxSize = 30;
+  const eyeZoneWidth = T.frame_border ? 60 : (eyeBoxSize + 6);
+  const sideReserve = eyeZoneWidth;
   // Mitte/Ende-Prognose behalten die Schwellwert-Ampel (<0 neg · ≤500 warn · ≤1000 gold · sonst pos).
   const saldoCol  = v => v==null?T.txt2:v<0?T.cond_neg:v<=500?T.cond_warn:v<=1000?T.cond_gold:T.cond_pos;
 
@@ -124,7 +121,7 @@ function SaldoHeroV2({
           NICHT nach dessen padding-Wert — der oben erhöhte Innenabstand für
           Kinder-Themes wirkt hier also nicht automatisch; left/right müssen
           separat mit angepasst werden. */}
-      <div style={{position:"absolute",top:8,left:14+iconEdgeExtra,zIndex:2}}>
+      <div style={{position:"absolute",top:8,left:14,zIndex:2}}>
         <ThemeSwitcherMini/>
       </div>
       {/* Zeile 1: aktueller Kontostand groß & zentriert. Tippen auf den Betrag
@@ -166,14 +163,30 @@ function SaldoHeroV2({
           }}>
           {saldo>=0?"":"−"}{fmtMoney(Math.abs(saldo||0))}&nbsp;€
         </span>
-        {/* Auge — normales Flex-Element (nicht mehr position:absolute), damit
-            es den Betrag strukturell nie überlappen kann. */}
-        <span onClick={toggleEye} title="Beträge ein-/ausblenden"
-          style={{flexShrink:0,flexGrow:0,marginLeft:iconGap,marginRight:6+iconEdgeExtra,
-            cursor:"pointer",userSelect:"none",width:30,height:30,
-            display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
-          {Li(eyeIcon,23,eyeCol)}
-        </span>
+        {/* Auge, Kinder-Themes: sitzt in einer eigenen Zone (eyeZoneWidth),
+            DARIN zentriert — mittig zwischen Betrag-Ende und Rahmen-
+            Innenkante, nicht an einem der beiden Enden. Alte Themes: exakt
+            der bisherige, unveränderte Aufbau (Auge direkt nach dem Betrag,
+            nur mit rechtem Randabstand) — bewusst NICHT auf dieselbe
+            Zonen-Box umgestellt, damit sich am alten Pixel-Layout nichts
+            verschiebt. */}
+        {T.frame_border ? (
+          <div style={{width:eyeZoneWidth, flexShrink:0, flexGrow:0,
+            display:"flex", alignItems:"center", justifyContent:"center"}}>
+            <span onClick={toggleEye} title="Beträge ein-/ausblenden"
+              style={{cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,
+                display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
+              {Li(eyeIcon,23,eyeCol)}
+            </span>
+          </div>
+        ) : (
+          <span onClick={toggleEye} title="Beträge ein-/ausblenden"
+            style={{flexShrink:0,flexGrow:0,marginRight:6,
+              cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,
+              display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
+            {Li(eyeIcon,23,eyeCol)}
+          </span>
+        )}
       </div>
 
       {/* Zeile 2: MITTE | ENDE — zwei flex:1-Hälften (6px-Gap), Kontoname + Caret
