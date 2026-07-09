@@ -100,7 +100,12 @@ function SaldoHeroV2({
   );
 
   return (
-    <div style={{padding:"5px 20px 6px",position:"relative"}}>
+    <div style={{
+      // Kinder-Themes: etwas mehr seitlicher Abstand zum Deko-Rahmen, damit
+      // Menü-/Augen-Symbol nicht bündig daran stoßen. Andere Themes
+      // unverändert (T.frame_border ist dort undefined).
+      padding: T.frame_border ? "5px 28px 6px" : "5px 20px 6px",
+      position:"relative"}}>
       {/* Freier Bereich links oben: minimaler Theme-Umschalter. */}
       <div style={{position:"absolute",top:8,left:14,zIndex:2}}>
         <ThemeSwitcherMini/>

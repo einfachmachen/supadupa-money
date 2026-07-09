@@ -3302,9 +3302,16 @@ Abbrechen = ${remoteName}-Stand laden`
 
         return (
           <div className="nav-bottom" style={{
-            background:T.surf, borderTop:`1px solid ${T.bds}`,
+            background:T.surf,
             display:"flex", alignItems:"center", flexShrink:0, zIndex:10,
-            paddingLeft:8, paddingRight:8}}>
+            paddingLeft:8, paddingRight:8,
+            // Kinder-Themes: Leiste bekommt seitlichen Abstand zum Deko-Rahmen
+            // (wie die Kategorie-Karten im Content, die schon immer eingerückt
+            // waren) statt bündig an den Rand zu stoßen. Andere Themes bleiben
+            // unverändert (borderTop wie zuvor, kein Margin/Radius).
+            ...(T.frame_border
+              ? {margin:"0 10px", borderRadius:16, border:`1px solid ${T.bds}`}
+              : {borderTop:`1px solid ${T.bds}`})}}>
             {items.map(item => item==="plus" ? renderMasterButton("master") : navTab(item))}
           </div>
         );
