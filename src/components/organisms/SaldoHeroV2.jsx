@@ -69,20 +69,17 @@ function SaldoHeroV2({
   const plusAccent = T.themeName==="terminal" ? T.pos : T.blue;
   const heroColor = v => v==null?T.txt : v<0?T.cond_neg : plusAccent;
   // Kinder-Themes: seitliches Hero-Padding sorgt für sichtbaren Abstand zur
-  // Deko-Umrandung. Der Kontostand ist hier bewusst kleiner (34px statt
-  // 44px) — das schafft zusätzlichen Breiten-Spielraum auf einem schmalen
-  // Gerät (iPhone 13 mini, 375pt), den framePad/iconGap/iconEdgeExtra unten
-  // in Randabstand statt in Kürzungs-Risiko investieren. Bewusst mit extra
-  // Sicherheitsmarge über das rechnerisch nötige Minimum hinaus, weil reale
-  // Browser (Safari/WebKit) Text u.U. etwas breiter rendern als der
-  // Chromium-Messwert, mit dem hier geplant wird.
-  const framePad = T.frame_border ? 36 : 20;
-  const amtFontSize = T.frame_border ? 34 : 44;
-  const iconEdgeExtra = T.frame_border ? 3 : 0;
+  // Deko-Umrandung. Der Kontostand ist hier bewusst deutlich kleiner (26px
+  // statt 44px) — das schafft genug Breiten-Spielraum auf einem schmalen
+  // Gerät (iPhone 13 mini, 375pt), um Randabstand UND Auge-Lücke spürbar
+  // größer zu machen, statt nur knapp auf Kante zu rechnen.
+  const framePad = T.frame_border ? 42 : 20;
+  const amtFontSize = T.frame_border ? 26 : 44;
+  const iconEdgeExtra = T.frame_border ? 4 : 0;
   // Sichtbare Lücke zwischen Betrag und Augen-Symbol — verhindert Vertipper
   // (Konto wechseln statt Betrag aus-/einblenden). Bei den alten Themes war
   // das nie ein gemeldetes Problem, daher dort unverändert 0.
-  const iconGap = T.frame_border ? 16 : 0;
+  const iconGap = T.frame_border ? 26 : 0;
   // Platzbedarf von Augen-Symbol (30px) + Lücke + Randabstand — auf beiden
   // Seiten der Betragszeile reserviert (links als unsichtbarer Platzhalter,
   // rechts vom Auge selbst belegt: Lücke davor, Rand-Abstand danach).
