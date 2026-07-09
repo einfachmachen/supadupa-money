@@ -107,7 +107,11 @@ function SaldoHeroV2({
       padding: T.frame_border ? "5px 28px 6px" : "5px 20px 6px",
       position:"relative"}}>
       {/* Freier Bereich links oben: minimaler Theme-Umschalter. */}
-      <div style={{position:"absolute",top:8,left:14,zIndex:2}}>
+      {/* position:absolute richtet sich nach der Padding-Kante des Wrappers,
+          NICHT nach dessen padding-Wert — der oben erhöhte Innenabstand für
+          Kinder-Themes wirkt hier also nicht automatisch; left/right müssen
+          separat mit angepasst werden. */}
+      <div style={{position:"absolute",top:8,left:T.frame_border?22:14,zIndex:2}}>
         <ThemeSwitcherMini/>
       </div>
       {/* Zeile 1: aktueller Kontostand groß & zentriert. Tippen auf den Betrag
@@ -129,7 +133,7 @@ function SaldoHeroV2({
         </span>
         {/* Auge ganz rechts am Rand, etwas größer. */}
         <span onClick={toggleEye} title="Beträge ein-/ausblenden"
-          style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",
+          style={{position:"absolute",right:T.frame_border?14:6,top:"50%",transform:"translateY(-50%)",
             cursor:"pointer",userSelect:"none",width:30,height:30,
             display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
           {Li(eyeIcon,23,eyeCol)}
