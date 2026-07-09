@@ -3699,7 +3699,9 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
         onPointerCancel={onCancel}
         disabled={override.disabled}
         style={{
-          width:SIZE, height:SIZE, borderRadius:"50%",
+          width:SIZE, height:SIZE, borderRadius:"50%", flexShrink:0,
+          // flexShrink:0 wie im regulären Button-Pfad — sonst quetscht der
+          // jetzt auf 0 kollabierende Wrapper den Button zum Ei zusammen.
           // identische Farb-/Form-Logik wie der reguläre + Button
           border: _pbc.isFlat ? `2px solid ${override.disabled ? T.txt2 : _pbc.fg}` : `3px solid ${T.surf}`,
           background: override.disabled ? (T.disabled || "rgba(128,128,128,0.30)") : _pbc.bg,
