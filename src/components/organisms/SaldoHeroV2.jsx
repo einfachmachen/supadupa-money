@@ -68,6 +68,20 @@ function SaldoHeroV2({
   // sonst blue/lime) — wirkt harmonischer. Negativ bleibt rot.
   const plusAccent = T.themeName==="terminal" ? T.pos : T.blue;
   const heroColor = v => v==null?T.txt : v<0?T.cond_neg : plusAccent;
+  // Kinder-Themes: seitliches Hero-Padding + zusätzlicher Puffer für Menü-/
+  // Augen-Symbol. Bewusst KLEIN gehalten (24px/4px statt der zuvor
+  // verwendeten 28px/14px) — auf einem schmalen Gerät (iPhone 13 mini,
+  // 375pt) reichte der schmalere Rest-Platz für einen 5-stelligen
+  // Kontostand nicht mehr aus (nachgestellt: Betrag traf exakt auf die
+  // verfügbare Breite, 0px Reserve → durch Subpixel-/Font-Rendering kippte
+  // das in echten Browsern in Kürzung). Jetzt bewusst Luft gelassen statt
+  // exakt auf Kante zu rechnen.
+  const framePad = T.frame_border ? 24 : 20;
+  const iconEdgeExtra = T.frame_border ? 4 : 0;
+  // Platzbedarf von Augen-Symbol (30px) + Randabstand — auf beiden Seiten der
+  // Betragszeile reserviert (links als unsichtbarer Platzhalter, rechts vom
+  // Auge selbst belegt).
+  const sideReserve = 30 + 6 + iconEdgeExtra;
   // Mitte/Ende-Prognose behalten die Schwellwert-Ampel (<0 neg · ≤500 warn · ≤1000 gold · sonst pos).
   const saldoCol  = v => v==null?T.txt2:v<0?T.cond_neg:v<=500?T.cond_warn:v<=1000?T.cond_gold:T.cond_pos;
 
@@ -101,19 +115,14 @@ function SaldoHeroV2({
 
   return (
     <div style={{
-      // Kinder-Themes: mehr seitlicher Abstand zum Deko-Rahmen (Menü-/Augen-
-      // Symbol + Blur-Weichzeichner des ausgeblendeten Kontostands, siehe
-      // unten). NICHT zu groß wählen: schrumpft die Zeile, in der Betrag +
-      // Auge nebeneinander Platz brauchen (siehe maxWidth am Betrag unten) —
-      // 40px führte bei einem 5-stelligen Betrag bereits zur Überlappung.
-      padding: T.frame_border ? "5px 28px 6px" : "5px 20px 6px",
+      padding: `5px ${framePad}px 6px`,
       position:"relative"}}>
       {/* Freier Bereich links oben: minimaler Theme-Umschalter. */}
       {/* position:absolute richtet sich nach der Padding-Kante des Wrappers,
           NICHT nach dessen padding-Wert — der oben erhöhte Innenabstand für
           Kinder-Themes wirkt hier also nicht automatisch; left/right müssen
           separat mit angepasst werden. */}
-      <div style={{position:"absolute",top:8,left:T.frame_border?22:14,zIndex:2}}>
+      <div style={{position:"absolute",top:8,left:14+iconEdgeExtra,zIndex:2}}>
         <ThemeSwitcherMini/>
       </div>
       {/* Zeile 1: aktueller Kontostand groß & zentriert. Tippen auf den Betrag
@@ -129,16 +138,10 @@ function SaldoHeroV2({
         // unbedenklich zu clippen.
         ...(T.frame_border ? {overflow:"hidden"} : {})}}>
         {/* Linker Platzhalter — exakt so breit wie das Augen-Symbol rechts
-            (inkl. dessen Randabstand). Hält den Betrag optisch zentriert,
-            OHNE ihn per fester maxWidth zu deckeln: eine feste Deckelung
-            schnitt echte (lange) Kontostände unnötig mit "…" ab, obwohl
-            rechts sichtbar noch Platz war — das Problem war die falsche
-            (symmetrische) Berechnung, nicht fehlender Platz. Jetzt ist das
-            Auge ein normales Flex-Geschwister statt absolut positioniert,
-            kann also strukturell nie überlappt werden; der Betrag behält
-            seine natürliche Breite und weicht nur im echten Extremfall
-            (überhaupt kein Platz mehr) auf Ellipsis aus. */}
-        <div style={{width:30+(T.frame_border?14:6), flexShrink:0}}/>
+            (inkl. dessen Randabstand). Hält den Betrag optisch zentriert.
+            Das Auge ist ein normales Flex-Geschwister statt absolut
+            positioniert, kann den Betrag also strukturell nie überlappen. */}
+        <div style={{width:sideReserve, flexShrink:0, flexGrow:0}}/>
         <span onClick={allAccIds.length>1?cycleAcc:undefined} className="heroAmt heroBalance"
           style={{
             color: heroColor(saldo),
@@ -147,14 +150,24 @@ function SaldoHeroV2({
             letterSpacing:-1,lineHeight:1.15,whiteSpace:"nowrap",
             WebkitTextStroke:"0.8px currentColor",
             cursor:allAccIds.length>1?"pointer":"default",
-            minWidth:0, overflow:"hidden", textOverflow:"ellipsis",
+            minWidth:0, flexGrow:0, flexShrink:1, flexBasis:"auto",
+            // overflow/textOverflow bleiben ein echter Notnagel für den Fall,
+            // dass wirklich kein Platz mehr da ist (z.B. extrem kleines
+            // Gerät) — ausgelöst rein durch die Flex-Verteilung, OHNE
+            // zusätzliche feste maxWidth. Eine exakte calc()-Deckelung (voriger
+            // Versuch) traf bei einem 5-stelligen Betrag auf einem 375pt-
+            // Gerät (iPhone 13 mini) exakt die verfügbare Breite (0px Reserve)
+            // — jedes Sub-Pixel-Rendering kippte das dann in Kürzung. Deshalb
+            // jetzt lieber echte Breiten-Reserve (s. framePad/iconEdgeExtra
+            // oben) als eine bis aufs Pixel exakte Formel.
+            overflow:"hidden", textOverflow:"ellipsis",
           }}>
           {saldo>=0?"":"−"}{fmtMoney(Math.abs(saldo||0))}&nbsp;€
         </span>
         {/* Auge — normales Flex-Element (nicht mehr position:absolute), damit
             es den Betrag strukturell nie überlappen kann. */}
         <span onClick={toggleEye} title="Beträge ein-/ausblenden"
-          style={{flexShrink:0,marginRight:T.frame_border?14:6,
+          style={{flexShrink:0,flexGrow:0,marginRight:6+iconEdgeExtra,
             cursor:"pointer",userSelect:"none",width:30,height:30,
             display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
           {Li(eyeIcon,23,eyeCol)}
