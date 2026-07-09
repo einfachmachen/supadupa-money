@@ -3685,7 +3685,11 @@ function MasterOverrideSlot({ override, SIZE, T, plusArretiert }) {
     <div style={{flex:"0 0 auto",display:"flex",alignItems:"center",
       justifyContent:"center",overflow:"visible",
       WebkitTapHighlightColor:"transparent",position:"relative",
-      width:90,zIndex:500}}>
+      // Wie im regulären Button-Pfad (renderMasterButton): Slot auf 0, wenn
+      // vergrößert, damit die 4 Tabs die Bar gleichmäßig ausfüllen — vorher
+      // hier hart auf 90 gesetzt, wodurch z.B. auf dem Daten-Tab (der immer
+      // diesen Override zeigt) eine Lücke zwischen Tab 2 und 3 blieb.
+      width: plusArretiert ? 0 : 90,zIndex:500}}>
       <button
         ref={btnRef}
         className="plus-master-btn"
