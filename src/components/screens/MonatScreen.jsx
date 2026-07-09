@@ -736,7 +736,11 @@ function MonatScreen() {
             zeigen den Stand. */}
 
         {/* Suche */}
-        <div style={{padding:"6px 10px 4px",display:"flex",gap:6,alignItems:"center"}}>
+        {/* Kinder-Themes: gleicher seitlicher Randabstand wie im Hero darüber
+            (siehe SaldoHeroV2), damit der Deko-Innenring umlaufend gleich
+            weit von jedem Inhalt entfernt bleibt statt unterhalb des Hero
+            plötzlich enger zu werden. Alte Themes: unverändert 10px. */}
+        <div style={{padding:`6px ${T.frame_border?24:10}px 4px`,display:"flex",gap:6,alignItems:"center"}}>
           {/* minWidth:0 auf Box+Input: Inputs haben in Flex-Layouts eine
               intrinsische Mindestbreite und schoben sonst den Kategorien-
               Schalter rechts aus dem Bild. */}
@@ -755,7 +759,7 @@ function MonatScreen() {
         </div>
 
         {/* Filter-Tabs — alle in einer Zeile, dynamisch gleich breit (flex:1) */}
-        <div style={{display:"flex",gap:6,padding:"0 10px 6px"}}>
+        <div style={{display:"flex",gap:6,padding:`0 ${T.frame_border?24:10}px 6px`}}>
           {(()=>{
             const chips = [
               ["expense","Ausgaben",  T.neg,    T.tab_exp],
