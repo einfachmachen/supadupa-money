@@ -69,17 +69,18 @@ function SaldoHeroV2({
   const plusAccent = T.themeName==="terminal" ? T.pos : T.blue;
   const heroColor = v => v==null?T.txt : v<0?T.cond_neg : plusAccent;
   // Kinder-Themes: seitliches Hero-Padding sorgt für sichtbaren Abstand zur
-  // Deko-Umrandung. Kontostand bleibt bei 34px (fester Wert, nicht weiter
-  // schrumpfen). Statt das Auge einfach direkt neben den Betrag zu setzen,
-  // bekommt es eine eigene, breitere "Zone" rechts (eyeZone) und wird DARIN
-  // zentriert — sitzt also mittig zwischen Betrag-Ende und Rahmen-Innenkante,
-  // nicht an einem der beiden Enden. Der linke Platzhalter (sideReserve)
-  // spiegelt exakt diese Zonenbreite, damit der Betrag optisch zentriert
-  // bleibt.
-  const framePad = T.frame_border ? 24 : 20;
+  // Deko-Umrandung — auf ALLEN Elementen, die nah an die Kante reichen
+  // (Betragszeile UND Theme-Umschalter-Icon oben links), damit der Innenring
+  // umlaufend sichtbar bleibt statt an einer Ecke enger zu sein als anderswo.
+  // Kontostand bleibt bei 34px (fester Wert). Das Auge sitzt in einer eigenen
+  // Zone rechts (eyeZone), aber DARIN an den äußeren (rechten) Rand gerückt
+  // (nicht mittig) — dadurch näher am Rahmen als am Betrag, mit noch mehr
+  // Abstand zum Betrag als zuvor.
+  const framePad = T.frame_border ? 28 : 20;
   const amtFontSize = T.frame_border ? 34 : 44;
   const eyeBoxSize = 30;
   const eyeZoneWidth = T.frame_border ? 60 : (eyeBoxSize + 6);
+  const eyeZoneEdgePad = 6; // Abstand vom Auge zum äußeren Zonenrand (Kinder-Themes)
   const sideReserve = eyeZoneWidth;
   // Mitte/Ende-Prognose behalten die Schwellwert-Ampel (<0 neg · ≤500 warn · ≤1000 gold · sonst pos).
   const saldoCol  = v => v==null?T.txt2:v<0?T.cond_neg:v<=500?T.cond_warn:v<=1000?T.cond_gold:T.cond_pos;
@@ -121,7 +122,7 @@ function SaldoHeroV2({
           NICHT nach dessen padding-Wert — der oben erhöhte Innenabstand für
           Kinder-Themes wirkt hier also nicht automatisch; left/right müssen
           separat mit angepasst werden. */}
-      <div style={{position:"absolute",top:8,left:14,zIndex:2}}>
+      <div style={{position:"absolute",top:8,left:T.frame_border?framePad:14,zIndex:2}}>
         <ThemeSwitcherMini/>
       </div>
       {/* Zeile 1: aktueller Kontostand groß & zentriert. Tippen auf den Betrag
@@ -164,15 +165,15 @@ function SaldoHeroV2({
           {saldo>=0?"":"−"}{fmtMoney(Math.abs(saldo||0))}&nbsp;€
         </span>
         {/* Auge, Kinder-Themes: sitzt in einer eigenen Zone (eyeZoneWidth),
-            DARIN zentriert — mittig zwischen Betrag-Ende und Rahmen-
-            Innenkante, nicht an einem der beiden Enden. Alte Themes: exakt
+            DARIN an den äußeren (rechten) Rand gerückt — näher am Rahmen als
+            am Betrag, mit spürbarem Abstand zu beiden. Alte Themes: exakt
             der bisherige, unveränderte Aufbau (Auge direkt nach dem Betrag,
             nur mit rechtem Randabstand) — bewusst NICHT auf dieselbe
             Zonen-Box umgestellt, damit sich am alten Pixel-Layout nichts
             verschiebt. */}
         {T.frame_border ? (
           <div style={{width:eyeZoneWidth, flexShrink:0, flexGrow:0,
-            display:"flex", alignItems:"center", justifyContent:"center"}}>
+            display:"flex", alignItems:"center", justifyContent:"flex-end", paddingRight:eyeZoneEdgePad}}>
             <span onClick={toggleEye} title="Beträge ein-/ausblenden"
               style={{cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,
                 display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
