@@ -101,10 +101,12 @@ function SaldoHeroV2({
 
   return (
     <div style={{
-      // Kinder-Themes: etwas mehr seitlicher Abstand zum Deko-Rahmen, damit
-      // Menü-/Augen-Symbol nicht bündig daran stoßen. Andere Themes
-      // unverändert (T.frame_border ist dort undefined).
-      padding: T.frame_border ? "5px 28px 6px" : "5px 20px 6px",
+      // Kinder-Themes: deutlich mehr seitlicher Abstand zum Deko-Rahmen.
+      // 28px reichte nicht: der (bei ausgeblendeten Beträgen) geweichzeichnete
+      // Kontostand nutzt filter:blur(0.32em) — bei 44px Schriftgröße ein
+      // Blur-Radius von ~14px, der optisch noch gut 30-40px über die
+      // eigentliche Textkante hinaus "glüht". Andere Themes unverändert.
+      padding: T.frame_border ? "5px 40px 6px" : "5px 20px 6px",
       position:"relative"}}>
       {/* Freier Bereich links oben: minimaler Theme-Umschalter. */}
       {/* position:absolute richtet sich nach der Padding-Kante des Wrappers,
@@ -119,7 +121,13 @@ function SaldoHeroV2({
           das Augensymbol (unscharf ↔ sichtbar). Der Kontoname sitzt klein/
           zentriert in der MITTE/ENDE-Zeile. */}
       <div style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center",
-        userSelect:"none"}}>
+        userSelect:"none",
+        // Kinder-Themes: kappt den Weichzeichner-"Glow" des ausgeblendeten
+        // Kontostands (filter:blur) exakt an dieser Zeile, statt ihn frei bis
+        // zum Deko-Rahmen bluten zu lassen. Enthält kein Popup/Dropdown (der
+        // Theme-Umschalter sitzt in einer eigenen Geschwister-Box), daher
+        // unbedenklich zu clippen.
+        ...(T.frame_border ? {overflow:"hidden"} : {})}}>
         <span onClick={allAccIds.length>1?cycleAcc:undefined} className="heroAmt heroBalance"
           style={{
             color: heroColor(saldo),
