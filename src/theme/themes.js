@@ -751,6 +751,10 @@ THEMES.abenteuergruen = {
   hero_bg:"linear-gradient(135deg,#7C9A55,#5E7C3E)",
   logo_c1:"#3E6B1F", logo_c2:"#8FB84A",
   cond_neg:"#C0521F", cond_warn:"#B8860A", cond_gold:"#A87400", cond_pos:"#3E6B1F",
+  // Deko-Rahmen um den App-Inhalt (nur Kinder-Themes setzen das) + Icon-Set
+  // für die Navigation, damit sich das Theme nicht nur über Farben zeigt.
+  frame_border:"10px solid #6B8A45", frame_ring:"#FBF6E8",
+  nav_icons:{ home:"trees", jahr:"compass", daten:"backpack" },
   name:"Abenteuer-Grün",
 };
 
@@ -780,6 +784,8 @@ THEMES.weltraumtaschengeld = {
           "linear-gradient(135deg,#0B0F2A,#1B2350)",
   logo_c1:"#2EE6D6", logo_c2:"#8A7CFF",
   cond_neg:"#FF4FA3", cond_warn:"#FFB84A", cond_gold:"#FFD166", cond_pos:"#2EE6D6",
+  frame_border:"9px solid #2EE6D6", frame_ring:"#8A7CFF",
+  nav_icons:{ home:"rocket", jahr:"telescope", daten:"gem" },
   name:"Weltraum-Taschengeld",
 };
 
@@ -803,6 +809,8 @@ THEMES.zirkustaschenrechner = {
   hero_bg:"repeating-linear-gradient(120deg, #FFF6E6 0 34px, #FFEAC2 34px 68px)",
   logo_c1:"#1E8A66", logo_c2:"#1FA8A0",
   cond_neg:"#E0392B", cond_warn:"#C77700", cond_gold:"#B8860B", cond_pos:"#1E8A66",
+  frame_border:"10px solid #E0392B", frame_ring:"#FFEFD2",
+  nav_icons:{ home:"tent", jahr:"ticket", daten:"gift" },
   name:"Zirkus-Taschenrechner",
 };
 

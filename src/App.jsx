@@ -2679,11 +2679,14 @@ Abbrechen = ${remoteName}-Stand laden`
   const nextMonth = () => { if(month<11){setMonth(m=>m+1);}else{setMonth(0);setYear(y=>y+1);} };
 
   // ── Neue 5-Tab Navigation ─────────────────────────────────────────
+  // Kinder-Themes können eigene, verspieltere Icons für Home/Trend/Daten
+  // hinterlegen (T.nav_icons) — Monat bleibt überall der Kalender, da es
+  // dafür keine klarere Alternative gibt.
   const NAV_TABS = [
-    {id:"home",      label:"Home",     icon:"home"},
-    {id:"jahr",      label:"Trend",    icon:"activity"},
+    {id:"home",      label:"Home",     icon:T.nav_icons?.home || "home"},
+    {id:"jahr",      label:"Trend",    icon:T.nav_icons?.jahr || "activity"},
     {id:"monat",     label:"Monat",    icon:"calendar"},
-    {id:"daten",     label:"Daten",    icon:"database"},
+    {id:"daten",     label:"Daten",    icon:T.nav_icons?.daten || "database"},
   ];
   const activeNavTab =
     mainTab==="struktur" ? "daten" :
@@ -2710,7 +2713,14 @@ Abbrechen = ${remoteName}-Stand laden`
       display:"flex",flexDirection:"column",
       paddingTop:"env(safe-area-inset-top)",  // Inhalt unter die Notch/Statusleiste; bg füllt bis ganz oben
       fontFamily:"'SF Pro Text',-apple-system,BlinkMacSystemFont,sans-serif",
-      userSelect:"none",overflow:"hidden"}}>
+      userSelect:"none",overflow:"hidden",
+      // Deko-Rahmen: nur Kinder-Themes setzen T.frame_border — alle anderen
+      // Themes bleiben dadurch unverändert (Wert ist sonst undefined).
+      ...(T.frame_border ? {
+        border:T.frame_border,
+        boxShadow:`inset 0 0 0 4px ${T.frame_ring||T.bg}`,
+        borderRadius:18,
+      } : {})}}>
 
       {/* ── Performance-Debug + Theme-Umschalter wurden nach Einstellungen verschoben ── */}
 
