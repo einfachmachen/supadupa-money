@@ -68,20 +68,22 @@ function SaldoHeroV2({
   // sonst blue/lime) — wirkt harmonischer. Negativ bleibt rot.
   const plusAccent = T.themeName==="terminal" ? T.pos : T.blue;
   const heroColor = v => v==null?T.txt : v<0?T.cond_neg : plusAccent;
-  // Kinder-Themes: seitliches Hero-Padding + zusätzlicher Puffer für Menü-/
-  // Augen-Symbol. Bewusst KLEIN gehalten (24px/4px statt der zuvor
-  // verwendeten 28px/14px) — auf einem schmalen Gerät (iPhone 13 mini,
-  // 375pt) reichte der schmalere Rest-Platz für einen 5-stelligen
-  // Kontostand nicht mehr aus (nachgestellt: Betrag traf exakt auf die
-  // verfügbare Breite, 0px Reserve → durch Subpixel-/Font-Rendering kippte
-  // das in echten Browsern in Kürzung). Jetzt bewusst Luft gelassen statt
-  // exakt auf Kante zu rechnen.
-  const framePad = T.frame_border ? 24 : 20;
-  const iconEdgeExtra = T.frame_border ? 4 : 0;
-  // Platzbedarf von Augen-Symbol (30px) + Randabstand — auf beiden Seiten der
-  // Betragszeile reserviert (links als unsichtbarer Platzhalter, rechts vom
-  // Auge selbst belegt).
-  const sideReserve = 30 + 6 + iconEdgeExtra;
+  // Kinder-Themes: seitliches Hero-Padding sorgt für sichtbaren Abstand zur
+  // Deko-Umrandung. Der Kontostand ist hier bewusst etwas kleiner (38px statt
+  // 44px) — das schafft zusätzlichen Breiten-Spielraum auf einem schmalen
+  // Gerät (iPhone 13 mini, 375pt), den framePad/iconGap/iconEdgeExtra unten
+  // in Randabstand statt in Kürzungs-Risiko investieren.
+  const framePad = T.frame_border ? 30 : 20;
+  const amtFontSize = T.frame_border ? 38 : 44;
+  const iconEdgeExtra = T.frame_border ? 2 : 0;
+  // Sichtbare Lücke zwischen Betrag und Augen-Symbol — verhindert Vertipper
+  // (Konto wechseln statt Betrag aus-/einblenden). Bei den alten Themes war
+  // das nie ein gemeldetes Problem, daher dort unverändert 0.
+  const iconGap = T.frame_border ? 10 : 0;
+  // Platzbedarf von Augen-Symbol (30px) + Lücke + Randabstand — auf beiden
+  // Seiten der Betragszeile reserviert (links als unsichtbarer Platzhalter,
+  // rechts vom Auge selbst belegt: Lücke davor, Rand-Abstand danach).
+  const sideReserve = 30 + iconGap + 6 + iconEdgeExtra;
   // Mitte/Ende-Prognose behalten die Schwellwert-Ampel (<0 neg · ≤500 warn · ≤1000 gold · sonst pos).
   const saldoCol  = v => v==null?T.txt2:v<0?T.cond_neg:v<=500?T.cond_warn:v<=1000?T.cond_gold:T.cond_pos;
 
@@ -146,7 +148,7 @@ function SaldoHeroV2({
           style={{
             color: heroColor(saldo),
             "--bal-col": heroColor(saldo),
-            fontSize:44,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
+            fontSize:amtFontSize,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
             letterSpacing:-1,lineHeight:1.15,whiteSpace:"nowrap",
             WebkitTextStroke:"0.8px currentColor",
             cursor:allAccIds.length>1?"pointer":"default",
@@ -167,7 +169,7 @@ function SaldoHeroV2({
         {/* Auge — normales Flex-Element (nicht mehr position:absolute), damit
             es den Betrag strukturell nie überlappen kann. */}
         <span onClick={toggleEye} title="Beträge ein-/ausblenden"
-          style={{flexShrink:0,flexGrow:0,marginRight:6+iconEdgeExtra,
+          style={{flexShrink:0,flexGrow:0,marginLeft:iconGap,marginRight:6+iconEdgeExtra,
             cursor:"pointer",userSelect:"none",width:30,height:30,
             display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
           {Li(eyeIcon,23,eyeCol)}
