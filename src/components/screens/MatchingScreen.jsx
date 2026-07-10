@@ -12,6 +12,7 @@ import { isoAddMonths } from "../../utils/date.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
+import { linkPendingToReal } from "../../utils/vormMatch.js";
 
 function MatchingScreen({onClose, onBack}) {
   const { cats, groups, txs, setTxs, accounts, year, month, getCat, getSub, txType, selAcc, setMasterOverride } = useContext(AppCtx);
@@ -87,42 +88,11 @@ function MatchingScreen({onClose, onBack}) {
 
   const doMatch = () => {
     if(!selPend||!selTx) return;
-    const pend = txs.find(t=>t.id===selPend);
-    const real = txs.find(t=>t.id===selTx);
-    if(!pend||!real) return;
-    // Beschreibung: Vormerkung-Beschreibung als Notiz anhängen wenn vorhanden
-    // Bereits vorhandene Vormerkungsnotizen aus real.note entfernen um Dopplungen zu vermeiden
-    const cleanRealNote = (real.note||"").split(" · ")
-      .filter(part => !part.startsWith("Vormerkung:"))
-      .join(" · ");
-    const vormNote = pend.desc && pend.desc!==real.desc ? `Vormerkung: ${pend.desc}` : "";
-    const combinedNote = [vormNote, pend.note||"", cleanRealNote]
-      .filter(Boolean).join(" · ") || cleanRealNote || "";
-    // Splits der Vormerkung 1:1 übernehmen — keine Skalierung
-    const pendSplits = (pend.splits||[]).filter(s=>s.catId);
-    const pendTotal  = pendSplits.reduce((s,sp)=>s+pn(sp.amount),0);
-    const newSplits  = pendSplits.length>0
-      ? pendSplits.map(sp=>({...sp, id:uid()}))
-      : real.splits;
-    // Warnung wenn Beträge abweichen — wird im UI gezeigt, aber Zuordnung trotzdem durchführen
-    const amtMismatch = pendTotal>0 && Math.abs(pendTotal - real.totalAmount) > 0.005;
-    setTxs(p=>p.map(tx=>{
-      if(tx.id===selTx) return {
-        ...tx,
-        splits: newSplits,
-        linkedIds: (tx.linkedIds||[]).includes(selPend) ? (tx.linkedIds||[]) : [...(tx.linkedIds||[]), selPend],
-        note: combinedNote,
-        _amtMismatch: amtMismatch ? {pendId:selPend, pendAmt:pendTotal, realAmt:real.totalAmount} : undefined,
-      };
-      if(tx.id===selPend) return {
-        // Konto der echten Buchung übernehmen: eine Zuordnung realisiert die
-        // Vormerkung auf demselben Konto. Sonst hält die Dedup-Logik (tx.js)
-        // die Verknüpfung faelschlich fuer eine Konten-Umbuchung (Sparen) statt
-        // fuer ein Duplikat — der Betrag wuerde dann nicht absorbiert.
-        ...tx, pending:false, _linkedTo: selTx, accountId: real.accountId,
-      };
-      return tx;
-    }));
+    // Feld-Logik (Notiz-Merge, Splits-Übernahme, pending/linkedIds/accountId)
+    // lebt zentral in vormMatch.js — dieselbe Funktion nutzt auch das
+    // automatische Matching (CSV-Import/Bank-Abruf), damit manuelles und
+    // automatisches Verknüpfen nie auseinanderlaufen.
+    setTxs(p=>linkPendingToReal(p, selPend, selTx));
     setMatched(p=>[...p,{pendId:selPend,txId:selTx}]);
     setSelPend(null); setSelTx(null);
   };

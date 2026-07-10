@@ -18,6 +18,7 @@ import { matchAmount, matchSearch } from "../../utils/search.js";
 import { txFingerprint, txFingerprintNorm } from "../../utils/tx.js";
 import { isoAddDays, nextBankWorkday } from "../../utils/date.js";
 import { liveLinkedGiroIds } from "../../utils/links.js";
+import { autoMatchVormerkungen } from "../../utils/vormMatch.js";
 
 function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const { cats, groups, txs, setTxs, accounts, csvRules, setCsvRules, startBalances, setStartBalances, setMasterOverride } = useContext(AppCtx);
@@ -77,12 +78,19 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   }, [selAccId, step]);
   const [anchorWarning, setAnchorWarning] = useState(null); // {firstMonth, firstYear} wenn Vormonat-Ankerpunkt fehlt
 
-  // Alle bekannten Fingerprints aus vorhandenen Buchungen
+  // Alle bekannten Fingerprints aus vorhandenen ECHTEN (nicht-pending)
+  // Buchungen. Offene Vormerkungen bewusst ausgeschlossen — sonst würde eine
+  // gerade importierte echte Buchung, deren Fingerprint zufällig mit einer
+  // noch offenen Vormerkung übereinstimmt (gleiches Datum/Betrag/Text), als
+  // "schon vorhanden" übersprungen statt als neue Buchung importiert zu
+  // werden (Auflösung Vormerkung↔echte Buchung erfolgt separat, siehe
+  // vormMatch.js). Spiegelt denselben Fix in enableBankingFetch.js
+  // (buildKnownFps).
   // Doppelt: exakter Fingerprint UND normalisierter Fingerprint (Umlaute, DATUM-Suffix
   // weggestrippt). Letzteres erkennt Dup zwischen Finanzblick- und DKB-Original-CSVs.
   const knownFps = useMemo(()=>{
     const s = new Set();
-    txs.forEach(t => {
+    txs.filter(t=>!t.pending).forEach(t => {
       // Gespeicherter Fingerprint (alt oder neu)
       if(t._fp) s.add(t._fp);
       // Immer beide Varianten — schützt vor Reimport alter und neuer CSVs
@@ -788,14 +796,18 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     setTxs(p => {
       const withNew = [...newTxs, ...p];
       const sorted = [...withNew].sort((a,b)=>b.date.localeCompare(a.date));
-      if(!linkToGiro || Object.keys(giroUpdates).length === 0) return sorted;
-      // Giro-Buchungen mit linkedIds aktualisieren
-      return sorted.map(t => {
-        if(giroUpdates[t.id]) {
-          return {...t, linkedIds: [...(t.linkedIds||[]), ...giroUpdates[t.id]]};
-        }
-        return t;
-      });
+      const withGiroLinks = (!linkToGiro || Object.keys(giroUpdates).length === 0) ? sorted
+        // Giro-Buchungen mit linkedIds aktualisieren
+        : sorted.map(t => {
+            if(giroUpdates[t.id]) {
+              return {...t, linkedIds: [...(t.linkedIds||[]), ...giroUpdates[t.id]]};
+            }
+            return t;
+          });
+      // Offene Vormerkungen automatisch mit den neu importierten echten
+      // Buchungen verknüpfen, wenn eindeutig (gleiches Konto, exakter Betrag,
+      // enges Datumsfenster) — erspart das manuelle Zuordnen im Normalfall.
+      return autoMatchVormerkungen(withGiroLinks).txs;
     });
     setDoneCount(newTxs.length);
 

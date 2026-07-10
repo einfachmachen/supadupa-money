@@ -23,6 +23,7 @@ import { saldoAt, budgetPlaceholderActive } from "../../utils/saldo.js";
 import { pendingDebitDate } from "../../utils/date.js";
 import { fetchNewBankTx, listConnectedBanks } from "../../utils/enableBankingFetch.js";
 import { findUnmappedEbAccounts } from "../../utils/enableBankingStore.js";
+import { autoMatchVormerkungen } from "../../utils/vormMatch.js";
 
 function DashboardScreenV2() {
   const { cats,setCats,groups,setGroups,txs,setTxs,accounts,setAccounts,
@@ -148,7 +149,12 @@ function DashboardScreenV2() {
     // Items werden vom Panel übergeben (kein setState im setState-Updater).
     const commitStaged = React.useCallback((items) => {
       const staged = items || [];
-      if (staged.length) setTxs((p) => [...staged, ...p].sort((x, y) => y.date.localeCompare(x.date)));
+      if (staged.length) setTxs((p) => {
+        const sorted = [...staged, ...p].sort((x, y) => y.date.localeCompare(x.date));
+        // Offene Vormerkungen automatisch mit neu übernommenen echten
+        // Buchungen verknüpfen, wenn eindeutig (siehe CsvImportScreen).
+        return autoMatchVormerkungen(sorted).txs;
+      });
       setBankFetch(null);
     }, [setTxs]);
     // Pull-to-Refresh: nur greifen, wenn ganz oben gescrollt — sonst normaler Scroll.
