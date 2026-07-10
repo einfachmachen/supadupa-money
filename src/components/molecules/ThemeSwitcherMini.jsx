@@ -38,9 +38,9 @@ function Swatch({ th, size = 22, dot = 5, gap = 2 }) {
 }
 
 function ThemeSwitcherMini() {
-  const { themeName, setThemeName, setThemeRev, amtFont, setAmtFont } = useContext(AppCtx);
+  const { themeName, setThemeName, setThemeRev, amtFont, setAmtFont,
+    themeSlideshow, setThemeSlideshow } = useContext(AppCtx);
   const [open, setOpen] = React.useState(false);
-  const [slideshow, setSlideshow] = React.useState(false);
   const luma = c => { const h = toH(c); const r = parseInt(h.slice(1,3),16)||0, g = parseInt(h.slice(3,5),16)||0, b = parseInt(h.slice(5,7),16)||0; return (0.299*r+0.587*g+0.114*b)/255; };
   const groups = React.useMemo(() => {
     const saved = (() => { try { return JSON.parse(kvStore.getItem("mbt_custom_themes") || "{}"); } catch { return {}; } })();
@@ -55,31 +55,12 @@ function ThemeSwitcherMini() {
   }, [themeName]);
   const cur = THEMES[themeName] || THEMES.dark;
   const pick = (key) => {
-    setSlideshow(false); // manuelle Auswahl beendet die laufende Diashow
+    setThemeSlideshow?.(false); // manuelle Auswahl beendet die laufende Diashow
     setThemeName?.(key);
     kvStore.setItem("mbt_theme", key);
     setThemeRev?.(r => r + 1);
     setOpen(false);
   };
-  // Diashow: schaltet jede Sekunde zum nächsten Theme weiter (Reihenfolge:
-  // Dunkel-Gruppe dann Hell-Gruppe, wie in der Liste). Läuft unabhängig
-  // davon, ob das Dropdown gerade offen ist; endet bei manueller Auswahl
-  // (pick) oder beim erneuten Antippen des Schalters.
-  React.useEffect(() => {
-    if (!slideshow) return;
-    const id = setInterval(() => {
-      const keys = [...groups.dark, ...groups.light].map(t => t.key);
-      setThemeName?.(cur => {
-        const idx = keys.indexOf(cur);
-        const next = keys[(idx + 1) % keys.length] || keys[0];
-        kvStore.setItem("mbt_theme", next);
-        return next;
-      });
-      setThemeRev?.(r => r + 1);
-    }, 1000);
-    return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slideshow]);
   const renderItem = ({ key, name, th }) => {
     const active = key === themeName;
     return (
@@ -106,6 +87,20 @@ function ThemeSwitcherMini() {
     <div style={{ padding: "6px 12px 3px", fontSize: 10, fontWeight: 800, letterSpacing: "0.08em",
       textTransform: "uppercase", color: T.txt2 }}>{label}{count!=null && <span style={{ opacity: 0.6, fontWeight: 600 }}> ({count})</span>}</div>
   );
+
+  // Während der Diashow: Umschalter komplett ausblenden, damit der Bildschirm
+  // frei zu sehen ist ("um alles sehen zu können") — statt des Swatch-Buttons
+  // sitzt an derselben Stelle nur eine unsichtbare, aber weiter antippbare
+  // Fläche, über die sich die Diashow wieder stoppen lässt (öffnet zugleich
+  // das Dropdown, damit man direkt ein neues Theme wählen kann).
+  if (themeSlideshow) {
+    return (
+      <button onClick={() => { setThemeSlideshow(false); setOpen(true); }} title="Diashow stoppen"
+        style={{ padding: 2, border: "none", background: "transparent", cursor: "pointer",
+          display: "inline-flex", borderRadius: 8, width: 26, height: 26, opacity: 0 }}/>
+    );
+  }
+
   return (
     <div style={{ position: "relative" }}>
       <button onClick={() => setOpen(o => !o)} title="Theme wechseln"
@@ -125,26 +120,29 @@ function ThemeSwitcherMini() {
             boxShadow: "0 8px 32px rgba(0,0,0,0.45)", backdropFilter: "blur(12px)",
             maxHeight: 320, overflowY: "auto", padding: "5px 0", minWidth: 180,
           }}>
-            {/* Diashow: schaltet jede Sekunde automatisch zum nächsten Theme.
-                Eigener Zeilen-Stil analog zu den Theme-Einträgen darunter,
-                damit er nicht wie eine zusätzliche Kategorie wirkt. */}
-            <div onClick={() => setSlideshow(v => !v)}
+            {/* Diashow: schaltet jede Sekunde automatisch zum nächsten Theme
+                (Intervall + Zustand leben in App.jsx/AppCtx, siehe dort —
+                nicht hier lokal, weil manche Themes den Umschalter an einer
+                anderen JSX-Stelle rendern und ein lokaler State beim
+                Remount verloren ginge). Schließt das Dropdown sofort, damit
+                der Bildschirm frei ist. */}
+            <div onClick={() => { setThemeSlideshow?.(true); setOpen(false); }}
               style={{ display: "flex", alignItems: "center", gap: 9, padding: "6px 12px",
                 cursor: "pointer" }}>
               <span style={{ display: "inline-flex", width: 20, height: 20, alignItems: "center",
                 justifyContent: "center", flexShrink: 0 }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-                  stroke={slideshow ? T.blue : T.txt2} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  stroke={T.txt2} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polygon points="5 3 19 12 5 21 5 3" />
                 </svg>
               </span>
-              <span style={{ fontSize: 12, color: slideshow ? T.blue : T.txt, fontWeight: slideshow ? 700 : 400, flex: 1 }}>
+              <span style={{ fontSize: 12, color: T.txt, fontWeight: 400, flex: 1 }}>
                 Diashow (1×/Sek.)
               </span>
               <div style={{ width: 34, height: 20, borderRadius: 10, flexShrink: 0,
-                background: slideshow ? T.blue : "rgba(128,128,128,0.3)",
+                background: "rgba(128,128,128,0.3)",
                 position: "relative", transition: "background 0.2s" }}>
-                <div style={{ position: "absolute", top: 2, left: slideshow ? 16 : 2,
+                <div style={{ position: "absolute", top: 2, left: 2,
                   width: 16, height: 16, borderRadius: "50%", background: "#fff",
                   transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }} />
               </div>

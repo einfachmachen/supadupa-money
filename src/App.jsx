@@ -94,6 +94,28 @@ export default function SupaDupaMoney() {
   const [noBorders, setNoBorders] = useState(()=>kvStore.getItem("mbt_noborders")==="0" ? false : true);
   const [themeRev, setThemeRev] = useState(0); // incremented to force re-render on same theme
   const [handedness, setHandedness] = useState(()=>kvStore.getItem("mbt_handedness")||"right");
+  // Theme-Diashow: lebt hier (statt in ThemeSwitcherMini selbst), weil manche
+  // Themes ("Magazin"/hero_layout:"editorial") den Theme-Umschalter an einer
+  // ANDEREN Stelle im JSX-Baum rendern (SaldoHeroV2-Zweig) — beim Wechsel
+  // dorthin/zurück baut React die Komponente neu auf, ein lokaler State
+  // (und sein setInterval) wäre dabei verloren gegangen. Genau das war der
+  // gemeldete Bug: die Diashow stoppte stumm exakt beim Erreichen von
+  // "Magazin", weil ThemeSwitcherMini dort neu gemountet wurde.
+  const [themeSlideshow, setThemeSlideshow] = useState(false);
+  useEffect(() => {
+    if (!themeSlideshow) return;
+    const keys = Object.keys(THEMES).filter(k => k !== "custom_preview");
+    const id = setInterval(() => {
+      setThemeName(cur => {
+        const idx = keys.indexOf(cur);
+        const next = keys[(idx+1) % keys.length] || keys[0];
+        kvStore.setItem("mbt_theme", next);
+        return next;
+      });
+      setThemeRev(r => r+1);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [themeSlideshow]);
   // T als reaktive Variable — alle Komponenten die T nutzen re-rendern durch Context
   setActiveTheme(themeName, { _rev: themeRev });
   // Haupt-Hintergrundfarbe auch hinter/neben der Notch (Safe-Area, Statusleiste)
@@ -2632,7 +2654,7 @@ Abbrechen = ${remoteName}-Stand laden`
     showVormHub, setShowVormHub, editVormTx, setEditVormTx,
     showMatching, setShowMatching,
     customIcons, setCustomIcons,
-    themeName, setThemeName, setThemeRev,
+    themeName, setThemeName, setThemeRev, themeSlideshow, setThemeSlideshow,
     hideEmptyRows, setHideEmptyRows,
     handedness, setHandedness,
     debugFlags, setDebugFlag, setDebugFlags,
@@ -2665,7 +2687,7 @@ Abbrechen = ${remoteName}-Stand laden`
     jsonbinActive, jsonbinStatus, jsonbinKey, jsonbinId,
     gistActive, gistStatus, gistToken, gistId,
     reviewQueue, showSettings, showVormHub, editVormTx, showMatching,
-    customIcons, themeName, hideEmptyRows, handedness, debugFlags,
+    customIcons, themeName, themeSlideshow, hideEmptyRows, handedness, debugFlags,
     cfActive, cfStatus, cfUrl, cfSecret,
     syncPass, syncEncActive, showCloudSetup, showFuelAnalysis,
     syncStatus, syncError, isDirty, isOnline, cfSaveOnClose,
