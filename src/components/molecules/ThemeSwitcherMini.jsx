@@ -17,6 +17,40 @@ const toH = c => {
   return m ? "#" + [m[1], m[2], m[3]].map(n => parseInt(n).toString(16).padStart(2, "0")).join("") : "#888";
 };
 
+// #rrggbb → {h,s,l} (h in Grad 0-360, s/l 0-1) — zur Einordnung der Akzentfarbe
+// in eine Farbfamilie (Rot/Orange/…) für die Theme-Gruppierung.
+const toHsl = hex => {
+  const h = toH(hex);
+  const r = (parseInt(h.slice(1,3),16)||0)/255, g = (parseInt(h.slice(3,5),16)||0)/255, b = (parseInt(h.slice(5,7),16)||0)/255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b), l = (max+min)/2;
+  let hue = 0, sat = 0;
+  if (max !== min) {
+    const d = max - min;
+    sat = l > 0.5 ? d/(2-max-min) : d/(max+min);
+    if (max===r) hue = (g-b)/d + (g<b?6:0);
+    else if (max===g) hue = (b-r)/d + 2;
+    else hue = (r-g)/d + 4;
+    hue *= 60;
+  }
+  return { h: hue, s: sat, l };
+};
+
+// Ordnet einen Farbton einer von 8 Farbfamilien zu — sehr blasse/entsättigte
+// Akzente (Grautöne) landen unabhängig vom Farbton in "Neutral".
+const colorFamily = (hue, sat) => {
+  if (sat < 0.12) return "Neutral";
+  const h = ((hue % 360) + 360) % 360;
+  if (h < 15 || h >= 345) return "Rot";
+  if (h < 45)  return "Orange";
+  if (h < 70)  return "Gelb";
+  if (h < 160) return "Grün";
+  if (h < 195) return "Türkis";
+  if (h < 255) return "Blau";
+  if (h < 290) return "Violett";
+  return "Pink";
+};
+const FAMILY_ORDER = ["Rot","Orange","Gelb","Grün","Türkis","Blau","Violett","Pink","Neutral"];
+
 // Ein Swatch: Hintergrund = Theme-bg, darin die 4 Akzent-Punkte.
 function Swatch({ th, size = 22, dot = 5, gap = 2 }) {
   const dots = [th.pos, th.cell_inc, th.gold, th.neg];
@@ -42,16 +76,28 @@ function ThemeSwitcherMini() {
     themeSlideshow, setThemeSlideshow } = useContext(AppCtx);
   const [open, setOpen] = React.useState(false);
   const luma = c => { const h = toH(c); const r = parseInt(h.slice(1,3),16)||0, g = parseInt(h.slice(3,5),16)||0, b = parseInt(h.slice(5,7),16)||0; return (0.299*r+0.587*g+0.114*b)/255; };
-  const groups = React.useMemo(() => {
+  // Gruppierung: primär nach Farbfamilie der Akzentfarbe (T.blue — die
+  // Hauptakzentfarbe jedes Themes, z.B. Buttons/Highlights), erst DARIN nach
+  // Dunkel/Hell (wie zuvor die einzige Gruppierung war).
+  const families = React.useMemo(() => {
     const saved = (() => { try { return JSON.parse(kvStore.getItem("mbt_custom_themes") || "{}"); } catch { return {}; } })();
     Object.entries(saved).forEach(([k, v]) => { if (!THEMES[k]) THEMES[k] = v; });
     const list = Object.entries(THEMES)
       .filter(([k]) => k !== "custom_preview")
-      .map(([k, v]) => ({ key: k, name: v.name || k, th: v, lum: luma(v.bg) }));
-    return {
-      dark:  list.filter(t => t.lum < 0.5).sort((a,b)=>a.lum-b.lum),
-      light: list.filter(t => t.lum >= 0.5).sort((a,b)=>b.lum-a.lum),
-    };
+      .map(([k, v]) => {
+        const hsl = toHsl(v.blue || v.pos || v.bg);
+        return { key: k, name: v.name || k, th: v, lum: luma(v.bg), family: colorFamily(hsl.h, hsl.s), accentHex: toH(v.blue || v.pos || v.bg) };
+      });
+    const byFamily = {};
+    list.forEach(t => { (byFamily[t.family] ||= []).push(t); });
+    return FAMILY_ORDER
+      .filter(f => byFamily[f]?.length)
+      .map(f => ({
+        name: f,
+        accentHex: byFamily[f][0].accentHex,
+        dark:  byFamily[f].filter(t => t.lum < 0.5).sort((a,b)=>a.lum-b.lum),
+        light: byFamily[f].filter(t => t.lum >= 0.5).sort((a,b)=>b.lum-a.lum),
+      }));
   }, [themeName]);
   const cur = THEMES[themeName] || THEMES.dark;
   const pick = (key) => {
@@ -83,6 +129,22 @@ function ThemeSwitcherMini() {
       </div>
     );
   };
+  // Haupt-Header: Farbfamilie (mit kleinem Farbpunkt in der Akzentfarbe).
+  const famHdr = (label, count, accentHex) => (
+    <div style={{ padding: "8px 12px 3px", fontSize: 10, fontWeight: 800, letterSpacing: "0.08em",
+      textTransform: "uppercase", color: T.txt2, display: "flex", alignItems: "center", gap: 6 }}>
+      <span style={{ width: 8, height: 8, borderRadius: "50%", background: accentHex, flexShrink: 0 }}/>
+      {label}{count!=null && <span style={{ opacity: 0.6, fontWeight: 600 }}> ({count})</span>}
+    </div>
+  );
+  // Unter-Header: Dunkel/Hell INNERHALB einer Farbfamilie — bewusst leichter
+  // gewichtet als famHdr, damit die Farbfamilie die klar dominante Gruppe bleibt.
+  const subHdr = (label) => (
+    <div style={{ padding: "3px 12px 2px 22px", fontSize: 9, fontWeight: 600, letterSpacing: "0.05em",
+      textTransform: "uppercase", color: T.txt2, opacity: 0.6 }}>{label}</div>
+  );
+  // Schlichter Header ohne Farbpunkt — für Abschnitte außerhalb der
+  // Farbfamilien-Gruppierung (z.B. "Beträge (Test)").
   const hdr = (label, count) => (
     <div style={{ padding: "6px 12px 3px", fontSize: 10, fontWeight: 800, letterSpacing: "0.08em",
       textTransform: "uppercase", color: T.txt2 }}>{label}{count!=null && <span style={{ opacity: 0.6, fontWeight: 600 }}> ({count})</span>}</div>
@@ -148,10 +210,15 @@ function ThemeSwitcherMini() {
               </div>
             </div>
             <div style={{ borderTop: `1px solid ${T.bd}`, margin: "2px 0 4px" }} />
-            {hdr("Dunkel", groups.dark.length)}
-            {groups.dark.map(renderItem)}
-            {hdr("Hell", groups.light.length)}
-            {groups.light.map(renderItem)}
+            {families.map(fam => (
+              <React.Fragment key={fam.name}>
+                {famHdr(fam.name, fam.dark.length + fam.light.length, fam.accentHex)}
+                {fam.dark.length>0 && subHdr("Dunkel")}
+                {fam.dark.map(renderItem)}
+                {fam.light.length>0 && subHdr("Hell")}
+                {fam.light.map(renderItem)}
+              </React.Fragment>
+            ))}
             <div style={{ borderTop: `1px solid ${T.bd}`, margin: "5px 0 0" }} />
             {hdr("Beträge (Test)")}
             <div style={{ display: "flex", gap: 6, padding: "2px 12px 8px" }}>
