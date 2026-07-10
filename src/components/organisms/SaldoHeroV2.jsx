@@ -68,19 +68,23 @@ function SaldoHeroV2({
   // sonst blue/lime) — wirkt harmonischer. Negativ bleibt rot.
   const plusAccent = T.themeName==="terminal" ? T.pos : T.blue;
   const heroColor = v => v==null?T.txt : v<0?T.cond_neg : plusAccent;
-  // Der Deko-Rahmen der Kinder-Themes wird jetzt als eigene Overlay-Schicht
-  // ÜBER dem gesamten Inhalt gemalt (siehe App.jsx) — der Hero muss also
-  // nicht mehr extra Innenabstand reservieren, um den Rahmen freizuhalten.
-  // Padding und Schriftgröße sind daher wieder identisch zu den alten
-  // Themes. Einzige Kinder-Themes-Besonderheit bleibt die Auge-Position:
-  // das Auge sitzt in einer eigenen Zone rechts (eyeZone) und wird DARIN
-  // zentriert — mittig zwischen Betrag-Ende und Seitenrand, statt direkt
-  // am Betrag zu kleben (verhindert Vertipper: Konto wechseln statt Betrag
-  // aus-/einblenden).
-  const framePad = 20;
+  // Der Deko-Rahmen der Kinder-Themes wird als eigene Overlay-Schicht ÜBER
+  // dem gesamten Inhalt gemalt (siehe App.jsx) — der Hero muss also nicht
+  // mehr extra Innenabstand reservieren, um den Rahmen freizuhalten.
+  // Schriftgröße ist daher wieder identisch zu den alten Themes (44px).
+  // framePad ist bei Kinder-Themes um die Border-Breite REDUZIERT: die
+  // Border selbst ist (für den Vollbild-Dialog-Containing-Block-Trick) nach
+  // wie vor Teil der Haupt-Box und frisst dort echten Platz von der
+  // Inhaltsbreite weg — das hier gleicht das wieder aus, damit der Hero bei
+  // alten und Kinder-Themes exakt dieselbe nutzbare Breite hat.
+  // Die Auge-Zone (mittig zwischen Betrag-Ende und Seitenrand statt direkt
+  // am Betrag) gilt jetzt für ALLE Themes — gefiel so gut, dass sie auf
+  // Wunsch vereinheitlicht wurde.
+  const frameBorderWidth = T.frame_border ? (parseInt(T.frame_border)||0) : 0;
+  const framePad = 20 - frameBorderWidth;
   const amtFontSize = 44;
   const eyeBoxSize = 30;
-  const eyeZoneWidth = T.frame_border ? 56 : (eyeBoxSize + 6);
+  const eyeZoneWidth = 56;
   const sideReserve = eyeZoneWidth;
   // Mitte/Ende-Prognose behalten die Schwellwert-Ampel (<0 neg · ≤500 warn · ≤1000 gold · sonst pos).
   const saldoCol  = v => v==null?T.txt2:v<0?T.cond_neg:v<=500?T.cond_warn:v<=1000?T.cond_gold:T.cond_pos;
@@ -154,30 +158,18 @@ function SaldoHeroV2({
           }}>
           {saldo>=0?"":"−"}{fmtMoney(Math.abs(saldo||0))}&nbsp;€
         </span>
-        {/* Auge, Kinder-Themes: sitzt in einer eigenen Zone (eyeZoneWidth)
-            und wird DARIN zentriert — mittig zwischen Betrag-Ende und
-            Seitenrand, mit spürbarem Abstand zu beiden. Alte Themes: exakt
-            der bisherige, unveränderte Aufbau (Auge direkt nach dem Betrag,
-            nur mit rechtem Randabstand) — bewusst NICHT auf dieselbe
-            Zonen-Box umgestellt, damit sich am alten Pixel-Layout nichts
-            verschiebt. */}
-        {T.frame_border ? (
-          <div style={{width:eyeZoneWidth, flexShrink:0, flexGrow:0,
-            display:"flex", alignItems:"center", justifyContent:"center"}}>
-            <span onClick={toggleEye} title="Beträge ein-/ausblenden"
-              style={{cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,
-                display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
-              {Li(eyeIcon,23,eyeCol)}
-            </span>
-          </div>
-        ) : (
+        {/* Auge: sitzt in einer eigenen Zone (eyeZoneWidth) und wird DARIN
+            zentriert — mittig zwischen Betrag-Ende und Seitenrand, statt
+            direkt am Betrag zu kleben (verhindert Vertipper: Konto
+            wechseln statt Betrag aus-/einblenden). Gilt für alle Themes. */}
+        <div style={{width:eyeZoneWidth, flexShrink:0, flexGrow:0,
+          display:"flex", alignItems:"center", justifyContent:"center"}}>
           <span onClick={toggleEye} title="Beträge ein-/ausblenden"
-            style={{flexShrink:0,flexGrow:0,marginRight:6,
-              cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,
+            style={{cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,
               display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
             {Li(eyeIcon,23,eyeCol)}
           </span>
-        )}
+        </div>
       </div>
 
       {/* Zeile 2: MITTE | ENDE — zwei flex:1-Hälften (6px-Gap), Kontoname + Caret
