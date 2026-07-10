@@ -5,22 +5,39 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
-function VormVerknuepfenPanel({editVorm, txs, setTxs, onClose}) {
-  const [showLink, setShowLink] = React.useState(false);
+// Beträge als Beträge (Math.abs auf BEIDEN Seiten) vergleichen, nicht die
+// rohe Differenz: eine vom Bank-Live-Abruf übernommene Vormerkung trägt
+// ihren Betrag VORZEICHENBEHAFTET (z.B. -2,98), die spätere echte Buchung
+// aber als reinen Betrag (2,98) — ein reiner Differenz-Vergleich ergäbe dann
+// ~5,96 statt ~0 und die eigentlich passende Buchung würde nie als Treffer
+// erkannt (und bei vielen Buchungen im Monat u.U. aus den angezeigten Top 8
+// herausfallen).
+export function isVormAmountMatch(tx, editVorm) {
+  return Math.abs(Math.abs(tx.totalAmount) - Math.abs(editVorm.totalAmount)) < 0.01;
+}
+
+// Kandidaten für "Buchung zuordnen": echte, noch unverknüpfte Buchungen
+// desselben Kontos + Monats wie die Vormerkung, Betragstreffer zuerst.
+export function getVormLinkCandidates(txs, editVorm) {
   const txMonth = new Date(editVorm.date).getMonth();
   const txYear  = new Date(editVorm.date).getFullYear();
   // Nur Buchungen desselben Kontos wie die Vormerkung anbieten (Giro-Fallback).
   const editAcc = editVorm.accountId || "acc-giro";
-  const candidates = txs.filter(t=>{
+  return txs.filter(t=>{
     if(t.pending||t._linkedTo) return false;
     if((t.accountId||"acc-giro")!==editAcc) return false;
     const d=new Date(t.date);
     return d.getFullYear()===txYear&&d.getMonth()===txMonth;
   }).sort((a,b)=>{
-    const aAmt=Math.abs(a.totalAmount-editVorm.totalAmount)<0.01?0:1;
-    const bAmt=Math.abs(b.totalAmount-editVorm.totalAmount)<0.01?0:1;
+    const aAmt=isVormAmountMatch(a,editVorm)?0:1;
+    const bAmt=isVormAmountMatch(b,editVorm)?0:1;
     return aAmt-bAmt;
   }).slice(0,8);
+}
+
+function VormVerknuepfenPanel({editVorm, txs, setTxs, onClose}) {
+  const [showLink, setShowLink] = React.useState(false);
+  const candidates = getVormLinkCandidates(txs, editVorm);
   if(!candidates.length) return null;
   return (
     <div style={{marginBottom:8}}>
@@ -32,7 +49,7 @@ function VormVerknuepfenPanel({editVorm, txs, setTxs, onClose}) {
         {Li(showLink?"chevron-up":"chevron-down",11,T.blue)}
       </button>
       {showLink&&candidates.map(tx=>{
-        const isMatch=Math.abs(tx.totalAmount-editVorm.totalAmount)<0.01;
+        const isMatch=isVormAmountMatch(tx,editVorm);
         return (
           <div key={tx.id} onClick={()=>{
             setTxs(p=>p.map(t=>{

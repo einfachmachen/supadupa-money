@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { autoMatchVormerkungen, linkPendingToReal } from "../src/utils/vormMatch.js";
+import { getVormLinkCandidates, isVormAmountMatch } from "../src/components/organisms/VormVerknuepfenPanel.jsx";
 
 const pend = (over={}) => ({
   id:"pend-1", pending:true, date:"2026-07-01", totalAmount:-2.98,
@@ -57,5 +58,30 @@ describe("autoMatchVormerkungen", () => {
     const r = txs.find(t=>t.id==="real-1");
     expect(r._amtMismatch).toBeTruthy();
     expect(r._amtMismatch.realAmt).toBe(3.10);
+  });
+});
+
+// Regression: Eine vom Bank-Live-Abruf übernommene Vormerkung trägt ihren
+// Betrag vorzeichenbehaftet (z.B. -2,98 €), die später eintreffende echte
+// Buchung aber als reinen Betrag (2,98 €). Die "Buchung zuordnen"-Vorschlags-
+// liste verglich bisher die ROHE Differenz (-2,98 - 2,98 = -5,96) statt
+// Beträge — die eigentlich passende Buchung wurde nie als Treffer erkannt
+// und konnte bei vielen Buchungen im Monat aus den angezeigten Top 8
+// herausfallen (genau das vom Nutzer gemeldete Symptom: "die tatsächliche
+// Buchung wird gar nicht angeboten").
+describe("VormVerknuepfenPanel — Betrags-Matching bei Vorzeichen-Asymmetrie", () => {
+  const signedPend = { id:"pend-1", date:"2026-07-01", accountId:"acc-giro", totalAmount:-2.98 };
+  const absoluteReal = (over={}) => ({ id:"real-1", date:"2026-07-01", accountId:"acc-giro",
+    pending:false, totalAmount:2.98, ...over });
+
+  it("erkennt den Betrag als Treffer trotz unterschiedlicher Vorzeichen", () => {
+    expect(isVormAmountMatch(absoluteReal(), signedPend)).toBe(true);
+  });
+
+  it("sortiert die passende echte Buchung ganz nach vorne, auch unter vielen anderen Buchungen", () => {
+    const others = Array.from({length:10}, (_,i)=>absoluteReal({ id:"other-"+i, totalAmount:12.34+i }));
+    const txs = [...others, absoluteReal()];
+    const candidates = getVormLinkCandidates(txs, signedPend);
+    expect(candidates[0].id).toBe("real-1");
   });
 });
