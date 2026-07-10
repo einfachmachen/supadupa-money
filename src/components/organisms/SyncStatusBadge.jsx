@@ -19,7 +19,7 @@ function SyncStatusBadge() {
   const col = T[state.tone];
 
   return (
-    <div style={{display:"flex",justifyContent:"center",padding:"7px 12px 0",flexShrink:0}}>
+    <div style={{display:"flex",justifyContent:"center",padding:"3px 12px 0",flexShrink:0}}>
       <div onClick={openCloudSave}
         style={{display:"flex",alignItems:"center",gap:6,
           padding:"5px 12px",borderRadius:999,

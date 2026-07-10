@@ -2708,6 +2708,11 @@ Abbrechen = ${remoteName}-Stand laden`
   // würden, siehe Kategorie-Drilldown) ihren eigenen Notch-Abstand darum
   // ergänzen können: calc(12px + env(safe-area-inset-top) + var(--sync-badge-space)).
   const syncBadgeSpace = getSyncBadgeState({isOnline, cfActive, isDirty, syncStatus}) ? "38px" : "0px";
+  // Eckenradius des Deko-Rahmens (Kinder-Themes): an die tatsächliche
+  // Bildschirm-Eckenrundung moderner iPhones angenähert (nicht exakt pro
+  // Modell messbar, es gibt keine CSS-Eigenschaft dafür) — 18px wirkte im
+  // Vergleich zur echten Gehäuserundung eckig/unpassend.
+  const FRAME_RADIUS = 44;
 
   return (
   <AppCtx.Provider value={cx}>
@@ -2720,7 +2725,12 @@ Abbrechen = ${remoteName}-Stand laden`
       "--amt-neutral":T.txt,  // Neutral-Schriftfarbe für Beträge (= Kategorie-Text)
       "--sync-badge-space":syncBadgeSpace,
       display:"flex",flexDirection:"column",
-      paddingTop:"env(safe-area-inset-top)",  // Inhalt unter die Notch/Statusleiste; bg füllt bis ganz oben
+      // Inhalt unter die Notch/Statusleiste; bg füllt bis ganz oben. Der volle
+      // safe-area-inset-top-Wert liegt spürbar über der reinen Statusleisten-
+      // höhe (zusätzlicher iOS-eigener Puffer) — hier um ein kleines, festes
+      // Maß gekappt, damit der Inhalt (Sync-Banner) näher an die Statusleiste
+      // rückt, aber auf keinem Gerät in die Notch/Dynamic Island hineinragt.
+      paddingTop:"max(0px, calc(env(safe-area-inset-top) - 10px))",
       fontFamily:"'SF Pro Text',-apple-system,BlinkMacSystemFont,sans-serif",
       userSelect:"none",overflow:"hidden",
       // Deko-Rahmen der Kinder-Themes: Border BLEIBT Teil dieser Box (durch
@@ -2735,7 +2745,7 @@ Abbrechen = ${remoteName}-Stand laden`
       ...(T.frame_border ? {
         border:T.frame_border,
         boxShadow:`inset 0 0 0 4px ${T.frame_ring||T.bg}`,
-        borderRadius:18,
+        borderRadius:FRAME_RADIUS,
         transform:"translateZ(0)",
       } : {})}}>
 
@@ -2764,7 +2774,7 @@ Abbrechen = ${remoteName}-Stand laden`
             pointerEvents:"none",zIndex:5,
             border:T.frame_border,
             boxShadow:`inset 0 0 0 4px ${T.frame_ring||T.bg}`,
-            borderRadius:18}}/>
+            borderRadius:FRAME_RADIUS}}/>
         );
       })()}
 
