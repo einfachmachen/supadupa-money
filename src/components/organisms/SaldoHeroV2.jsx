@@ -72,14 +72,17 @@ function SaldoHeroV2({
   // Deko-Umrandung — auf ALLEN Elementen, die nah an die Kante reichen
   // (Betragszeile UND Theme-Umschalter-Icon oben links), damit der Innenring
   // umlaufend sichtbar bleibt statt an einer Ecke enger zu sein als anderswo.
-  // Kontostand bleibt bei 34px (fester Wert). Das Auge sitzt in einer eigenen
-  // Zone rechts (eyeZone), aber DARIN an den äußeren (rechten) Rand gerückt
-  // (nicht mittig) — dadurch näher am Rahmen als am Betrag, mit noch mehr
-  // Abstand zum Betrag als zuvor.
-  const framePad = T.frame_border ? 28 : 20;
+  // Deutlich großzügiger als in früheren Versuchen (44px statt 28px) — auf
+  // echten Geräten rendert der Kontostand-Text u.U. spürbar breiter als im
+  // hier verwendeten Test-Chromium, was den gefühlten Randabstand auffrisst,
+  // OHNE dass es zu echter Kürzung kommt (die Betragsbox ist per flex-shrink
+  // + overflow:hidden hart auf den verfügbaren Platz gedeckelt). Kontostand
+  // bleibt bei 34px (fester Wert). Das Auge sitzt in einer eigenen, jetzt
+  // schmaleren Zone rechts (eyeZone), DARIN an den äußeren Rand gerückt.
+  const framePad = T.frame_border ? 44 : 20;
   const amtFontSize = T.frame_border ? 34 : 44;
   const eyeBoxSize = 30;
-  const eyeZoneWidth = T.frame_border ? 60 : (eyeBoxSize + 6);
+  const eyeZoneWidth = T.frame_border ? 50 : (eyeBoxSize + 6);
   const eyeZoneEdgePad = 6; // Abstand vom Auge zum äußeren Zonenrand (Kinder-Themes)
   const sideReserve = eyeZoneWidth;
   // Mitte/Ende-Prognose behalten die Schwellwert-Ampel (<0 neg · ≤500 warn · ≤1000 gold · sonst pos).
@@ -192,33 +195,40 @@ function SaldoHeroV2({
 
       {/* Zeile 2: MITTE | ENDE — zwei flex:1-Hälften (6px-Gap), Kontoname + Caret
           als mittiges Overlay (beansprucht keine Spaltenbreite, damit die
-          Beträge über den Kategorie-Pillen fluchten). */}
-      <div style={{display:"flex",gap:6,marginTop:2,padding:"0 1px",
+          Beträge über den Kategorie-Pillen fluchten). Kinder-Themes: eigener
+          seitlicher Randabstand (statt nur 1px) PLUS eine harte Breiten-
+          Deckelung auf den Werten selbst (maxWidth/overflow/ellipsis) — anders
+          als die Betragszeile hatten MITTE/ENDE bisher KEINE solche Deckelung,
+          konnten also (v.a. bei abweichender Schriftbreite in echten Browsern)
+          über ihre Hälfte hinaus näher an den Rahmen wachsen. */}
+      <div style={{display:"flex",gap:6,marginTop:2,padding:T.frame_border?"0 20px":"0 1px",
         alignItems:"stretch",position:"relative"}}>
         {/* Mitte-Spalte — Klickfläche nur um den Text (inline-block), damit sie
             nicht bis zum mittigen Ausklapp-Chevron reicht. Spaltenbreite, Text-
             position und der Highlight bleiben unverändert. */}
-        <div style={{flex:1,textAlign:"center",padding:"2px 0 4px"}}>
+        <div style={{flex:1,...(T.frame_border?{minWidth:0}:{}),textAlign:"center",padding:"2px 0 4px"}}>
           <div onClick={()=>setProgDrill(v=>v==="Mitte"?null:"Mitte")}
-            style={{display:"inline-block",cursor:"pointer",borderRadius:8,padding:"0 10px",
+            style={{display:"inline-block",...(T.frame_border?{maxWidth:"100%",overflow:"hidden"}:{}),cursor:"pointer",borderRadius:8,padding:"0 10px",
               background: progDrill==="Mitte" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
             <div style={{color:T.mid||T.txt2,fontSize:9,fontWeight:700,
               letterSpacing:2,opacity:0.7,marginBottom:2}}>MITTE</div>
             <div className="heroAmt" style={{color: saldoCol(prognoseMitte),
-              fontSize:20,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
+              fontSize:20,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
+              ...(T.frame_border?{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}:{})}}>
               {prognoseMitte>=0?"":"−"}{fmtMoney(Math.abs(prognoseMitte||0))}
             </div>
           </div>
         </div>
         {/* Ende-Spalte — Klickfläche analog nur um den Text. */}
-        <div style={{flex:1,textAlign:"center",padding:"2px 0 4px"}}>
+        <div style={{flex:1,...(T.frame_border?{minWidth:0}:{}),textAlign:"center",padding:"2px 0 4px"}}>
           <div onClick={()=>setProgDrill(v=>v==="Ende"?null:"Ende")}
-            style={{display:"inline-block",cursor:"pointer",borderRadius:8,padding:"0 10px",
+            style={{display:"inline-block",...(T.frame_border?{maxWidth:"100%",overflow:"hidden"}:{}),cursor:"pointer",borderRadius:8,padding:"0 10px",
               background: progDrill==="Ende" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
             <div style={{color:T.gold||T.txt2,fontSize:9,fontWeight:700,
               letterSpacing:2,opacity:0.7,marginBottom:2}}>ENDE</div>
             <div className="heroAmt" style={{color: saldoCol(prognoseEnde),
-              fontSize:20,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
+              fontSize:20,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
+              ...(T.frame_border?{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}:{})}}>
               {prognoseEnde>=0?"":"−"}{fmtMoney(Math.abs(prognoseEnde||0))}
             </div>
           </div>
