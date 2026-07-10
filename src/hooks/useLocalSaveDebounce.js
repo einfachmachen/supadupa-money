@@ -21,6 +21,15 @@
 import { useEffect, useRef } from "react";
 import { kvStore } from "../utils/kvStore.js";
 
+// Zeitfenster nach Ende des initialen Ladens, in dem ein Save NICHT als
+// "nicht synchronisiert" zählt — der erste Save-Lauf nach loading→false ist
+// meist nur das Zurückschreiben der gerade geladenen (unveränderten) Daten,
+// z.B. weil applyData() die Felder befüllt und im selben Zug syncStatus auf
+// "idle" wechselt, was dieser Effekt nicht von einer echten Nutzeränderung
+// unterscheiden kann. Deckt Debounce (300ms) + eventuelle Folge-Effekte
+// (z.B. Budget-Platzhalter-Auto-Erweiterung direkt nach dem Laden) ab.
+const GRACE_MS = 1500;
+
 export function useLocalSaveDebounce({ lsKey, state, loading, setSyncStatus, setSyncError, setIsDirty }) {
   const {
     cats, groups, txs, accounts, vehicles, yearData, col3Name,
@@ -35,6 +44,15 @@ export function useLocalSaveDebounce({ lsKey, state, loading, setSyncStatus, set
   // loading-Wechsel einen zusätzlichen Save-Lauf auslösen.
   const loadingRef = useRef(loading);
   loadingRef.current = loading;
+
+  // Zeitpunkt, an dem "loading" zuletzt von true auf false gewechselt ist —
+  // Saves innerhalb von GRACE_MS danach markieren die Daten nicht als "dirty".
+  const loadFinishedAtRef = useRef(0);
+  const prevLoadingRef = useRef(loading);
+  useEffect(() => {
+    if (prevLoadingRef.current && !loading) loadFinishedAtRef.current = Date.now();
+    prevLoadingRef.current = loading;
+  }, [loading]);
 
   // doSaveLocal in Ref halten, damit der Flush-Effekt (deps: []) immer die
   // aktuelle Variante nutzt, ohne neu zu registrieren.
@@ -66,7 +84,10 @@ export function useLocalSaveDebounce({ lsKey, state, loading, setSyncStatus, set
       if(payload.csvRules && Object.keys(payload.csvRules).length>0) {
         try { kvStore.setItem("mbt_csvRules_backup", JSON.stringify(payload.csvRules)); } catch(e){}
       }
-      setIsDirty(true);
+      // Innerhalb der Gnadenfrist nach dem Laden NICHT als "nicht synchronisiert"
+      // markieren (siehe GRACE_MS oben) — das lokale Schreiben passiert trotzdem
+      // immer, es geht also nichts verloren, nur das Dirty-Flag wird unterdrückt.
+      if(Date.now() - loadFinishedAtRef.current > GRACE_MS) setIsDirty(true);
     } catch(e) {
       console.error("Serialisierung beim Speichern fehlgeschlagen:", e);
       setSyncError(`⚠️ Lokales Speichern fehlgeschlagen: ${e?.message||e}`);
