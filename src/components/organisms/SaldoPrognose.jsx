@@ -65,7 +65,7 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
           const splitAmt = subId ? (t.splits||[]).find(sp=>sp.subId===subId)?.amount : null;
           const displayAmt = splitAmt!=null && splitAmt!==0 ? Math.abs(splitAmt) : Math.abs(t.totalAmount);
           return (
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:5,paddingLeft:indent?16:0,opacity:dimmed?0.65:1}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:5,paddingLeft:indent?10:0,opacity:dimmed?0.65:1}}>
               <span style={{color:T.txt2,fontSize:12,flexShrink:0,fontFamily:NUM_FONT,width:36}}>{fmtD(t.date)}</span>
               {icon&&Li(icon,12,iconCol||T.txt2)}
               <span style={{color:dimmed?T.txt2:T.txt,flex:1,fontSize:13.5,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.desc||cat?.name||"—"}</span>
@@ -156,7 +156,7 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
                       const actual = b.realAmt+b.concAmt;
                       const openAmt = b.budget - actual;
                       return (
-                        <div key={idx} style={{marginBottom:8,background:"rgba(255,255,255,0.04)",borderRadius:8,padding:"7px 9px",border:`1px solid rgba(255,255,255,0.07)`}}>
+                        <div key={idx} style={{marginBottom:8,background:"rgba(255,255,255,0.04)",borderRadius:8,padding:"7px 0"}}>
                           {/* Zeile 1: Datum + Icon + Name | offen rechts */}
                           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
                             <span style={{color:T.txt2,fontSize:12,flexShrink:0,fontFamily:NUM_FONT,width:36}}>{fmtD(b.date)}</span>
