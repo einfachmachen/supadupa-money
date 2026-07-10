@@ -86,6 +86,11 @@ function SaldoHeroV2({
   const eyeBoxSize = 30;
   const eyeZoneWidth = 56;
   const sideReserve = eyeZoneWidth;
+  // Editorial-Layout (Theme-Token hero_layout): linksbündige Schlagzeilen-
+  // Anordnung statt zentriert — Kicker-Zeile (Theme-Umschalter, Label,
+  // Kontowahl, Auge) oben, großer Betrag links, Prognosen als Ticker-Leiste.
+  // Alle anderen Themes rendern unverändert den bisherigen Aufbau.
+  const isEditorial = T.hero_layout === "editorial";
   // Mitte/Ende-Prognose behalten die Schwellwert-Ampel (<0 neg · ≤500 warn · ≤1000 gold · sonst pos).
   const saldoCol  = v => v==null?T.txt2:v<0?T.cond_neg:v<=500?T.cond_warn:v<=1000?T.cond_gold:T.cond_pos;
 
@@ -117,14 +122,132 @@ function SaldoHeroV2({
     </div>
   );
 
+  // Konto-Pille + Dropdown-Menü — gemeinsame Render-Funktion für beide
+  // Hero-Layouts (Standard: mittig in der MITTE/ENDE-Zeile, angehoben auf
+  // die Label-Linie · Editorial: links in der Kicker-Zeile, Menü linksbündig
+  // statt zentriert verankert, damit es nicht über den Rand hinausragt).
+  const renderAccPill = ({lift=false, menuAlign="center"}={}) => (
+    <span style={{position:"relative",display:"inline-flex",alignItems:"center",
+      ...(lift?{marginBottom:2}:{}),pointerEvents:"auto"}}>
+      {/* Konto-Pille: Tippen öffnet die Schnellwahl. Durchklicken bleibt
+          zusätzlich auf dem großen Kontostand-Betrag erhalten. */}
+      <span onClick={allAccIds.length>1?(e)=>{e.stopPropagation();setAccMenuOpen(o=>!o);}:undefined}
+        title={allAccIds.length>1?"Konto wählen":undefined}
+        style={{display:"inline-flex",alignItems:"center",gap:3,userSelect:"none",lineHeight:1,
+          ...(lift?{position:"relative",top:"-2px"}:{}),   // auf die MITTE/ENDE-Label-Linie heben
+          cursor:allAccIds.length>1?"pointer":"default",
+          background:allAccIds.length>1?"rgba(255,255,255,0.07)":"transparent",
+          border:allAccIds.length>1?`1px solid ${T.bd}`:"none",
+          borderRadius:999,padding:allAccIds.length>1?"1px 5px 1px 8px":"0",
+          color:selAcc===null ? T.txt2 : T.blue,fontSize:10,fontWeight:700,letterSpacing:0.5}}>
+        <span style={{maxWidth:118,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{accLabel}</span>
+        {allAccIds.length>1 && Li(accMenuOpen?"chevron-up":"chevron-down",13, selAcc===null ? T.txt2 : T.blue)}
+      </span>
+      {accMenuOpen && (<>
+        {/* Klick-außerhalb schließt das Menü */}
+        <div onClick={()=>setAccMenuOpen(false)}
+          style={{position:"fixed",inset:0,zIndex:49,pointerEvents:"auto"}}/>
+        <div style={{position:"absolute",top:"100%",
+          ...(menuAlign==="center"?{left:"50%",transform:"translateX(-50%)"}:{left:0}),
+          marginTop:5,zIndex:50,background:T.surf2||T.surf,border:`1px solid ${T.bds}`,
+          borderRadius:10,padding:4,minWidth:150,maxHeight:260,overflowY:"auto",
+          boxShadow:"0 10px 28px rgba(0,0,0,0.45)"}}>
+          {allAccIds.map(id=>{
+            const a = id===null ? null : accounts.find(x=>x.id===id);
+            const label = id===null ? "Gesamt" : (a?.name||"");
+            const active = selAcc===id;
+            return (
+              <div key={id||"__all__"} onClick={(e)=>{e.stopPropagation();setSelAcc(id);setAccMenuOpen(false);}}
+                style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",borderRadius:8,
+                  cursor:"pointer",background:active?(T.blue+"22"):"transparent",
+                  color:active?T.blue:T.txt,fontSize:13,fontWeight:active?700:500,whiteSpace:"nowrap"}}>
+                {id===null ? Li("layers",14,active?T.blue:T.txt2) : Li(a?.icon||"wallet",14,a?.color||T.txt2)}
+                <span style={{flex:1}}>{label}</span>
+                {active && Li("check",14,T.blue)}
+              </div>
+            );
+          })}
+        </div>
+      </>)}
+    </span>
+  );
+
   return (
     <div style={{
       padding: `5px ${framePad}px 6px`,
       position:"relative"}}>
-      {/* Freier Bereich links oben: minimaler Theme-Umschalter. */}
-      <div style={{position:"absolute",top:8,left:14,zIndex:2}}>
-        <ThemeSwitcherMini/>
-      </div>
+      {/* Freier Bereich links oben: minimaler Theme-Umschalter (im Editorial-
+          Layout sitzt er stattdessen inline in der Kicker-Zeile). */}
+      {!isEditorial && (
+        <div style={{position:"absolute",top:8,left:14,zIndex:2}}>
+          <ThemeSwitcherMini/>
+        </div>
+      )}
+
+      {isEditorial ? (<>
+        {/* ── EDITORIAL-LAYOUT (hero_layout:"editorial") ─────────────────
+            Schlagzeilen-Anordnung: Kicker-Zeile (Umschalter · Label ·
+            Kontowahl · Auge), darunter der Betrag groß und LINKSbündig,
+            darunter die Prognosen als Ticker-Leiste mit Haarlinie. Gleiche
+            Handler/Zustände wie das Standard-Layout — nur anders angeordnet. */}
+        <div style={{display:"flex",alignItems:"center",gap:8,padding:"2px 0 0",userSelect:"none"}}>
+          <ThemeSwitcherMini/>
+          <span style={{color:T.lbl,fontSize:9,fontWeight:800,letterSpacing:2.5}}>KONTOSTAND</span>
+          {renderAccPill({menuAlign:"left"})}
+          <div style={{flex:1}}/>
+          <span onClick={toggleEye} title="Beträge ein-/ausblenden"
+            style={{cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,
+              display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
+            {Li(eyeIcon,23,eyeCol)}
+          </span>
+        </div>
+        <div style={{padding:"2px 0 0"}}>
+          <span onClick={allAccIds.length>1?cycleAcc:undefined} className="heroAmt heroBalance"
+            style={{
+              color: heroColor(saldo),
+              "--bal-col": heroColor(saldo),
+              display:"block",textAlign:"left",
+              fontSize:amtFontSize,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
+              letterSpacing:-1,lineHeight:1.1,whiteSpace:"nowrap",
+              WebkitTextStroke:"0.8px currentColor",
+              cursor:allAccIds.length>1?"pointer":"default",
+              overflow:"hidden",textOverflow:"ellipsis",
+            }}>
+            {saldo>=0?"":"−"}{fmtMoney(Math.abs(saldo||0))}&nbsp;€
+          </span>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginTop:5,paddingTop:6,
+          borderTop:`1px solid ${T.bd}`,userSelect:"none"}}>
+          <div onClick={()=>setProgDrill(v=>v==="Mitte"?null:"Mitte")}
+            style={{display:"flex",alignItems:"baseline",gap:6,cursor:"pointer",
+              borderRadius:8,padding:"2px 8px 3px",marginLeft:-8,
+              background: progDrill==="Mitte" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
+            <span style={{color:T.mid||T.txt2,fontSize:9,fontWeight:700,letterSpacing:2,opacity:0.7}}>MITTE</span>
+            <span className="heroAmt" style={{color: saldoCol(prognoseMitte),
+              fontSize:19,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
+              {prognoseMitte>=0?"":"−"}{fmtMoney(Math.abs(prognoseMitte||0))}
+            </span>
+          </div>
+          <span style={{color:T.bd,fontSize:14}}>·</span>
+          <div onClick={()=>setProgDrill(v=>v==="Ende"?null:"Ende")}
+            style={{display:"flex",alignItems:"baseline",gap:6,cursor:"pointer",
+              borderRadius:8,padding:"2px 8px 3px",
+              background: progDrill==="Ende" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
+            <span style={{color:T.gold||T.txt2,fontSize:9,fontWeight:700,letterSpacing:2,opacity:0.7}}>ENDE</span>
+            <span className="heroAmt" style={{color: saldoCol(prognoseEnde),
+              fontSize:19,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
+              {prognoseEnde>=0?"":"−"}{fmtMoney(Math.abs(prognoseEnde||0))}
+            </span>
+          </div>
+          <div style={{flex:1}}/>
+          <span onClick={toggleDetails}
+            title={detailsOpen?"Details ausblenden":"Details anzeigen"}
+            style={{cursor:"pointer",userSelect:"none",opacity:0.75,
+              display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
+            {Li(detailsOpen?"chevron-up":"chevron-down",24,T.txt2)}
+          </span>
+        </div>
+      </>) : (<>
       {/* Zeile 1: aktueller Kontostand groß & zentriert. Tippen auf den Betrag
           wechselt durch die Konten. Direkt rechts daneben — vertikal zentriert —
           das Augensymbol (unscharf ↔ sichtbar). Der Kontoname sitzt klein/
@@ -215,48 +338,7 @@ function SaldoHeroV2({
         <div style={{position:"absolute",left:0,right:0,top:0,bottom:0,
           display:"flex",flexDirection:"column",alignItems:"center",
           padding:"2px 0 4px",pointerEvents:"none"}}>
-          <span style={{position:"relative",display:"inline-flex",alignItems:"center",
-            marginBottom:2,pointerEvents:"auto"}}>
-            {/* Konto-Pille: Tippen öffnet die Schnellwahl. Durchklicken bleibt
-                zusätzlich auf dem großen Kontostand-Betrag erhalten. */}
-            <span onClick={allAccIds.length>1?(e)=>{e.stopPropagation();setAccMenuOpen(o=>!o);}:undefined}
-              title={allAccIds.length>1?"Konto wählen":undefined}
-              style={{display:"inline-flex",alignItems:"center",gap:3,userSelect:"none",lineHeight:1,
-                position:"relative",top:"-2px",   // auf die MITTE/ENDE-Label-Linie heben
-                cursor:allAccIds.length>1?"pointer":"default",
-                background:allAccIds.length>1?"rgba(255,255,255,0.07)":"transparent",
-                border:allAccIds.length>1?`1px solid ${T.bd}`:"none",
-                borderRadius:999,padding:allAccIds.length>1?"1px 5px 1px 8px":"0",
-                color:selAcc===null ? T.txt2 : T.blue,fontSize:10,fontWeight:700,letterSpacing:0.5}}>
-              <span style={{maxWidth:118,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{accLabel}</span>
-              {allAccIds.length>1 && Li(accMenuOpen?"chevron-up":"chevron-down",13, selAcc===null ? T.txt2 : T.blue)}
-            </span>
-            {accMenuOpen && (<>
-              {/* Klick-außerhalb schließt das Menü */}
-              <div onClick={()=>setAccMenuOpen(false)}
-                style={{position:"fixed",inset:0,zIndex:49,pointerEvents:"auto"}}/>
-              <div style={{position:"absolute",top:"100%",left:"50%",transform:"translateX(-50%)",
-                marginTop:5,zIndex:50,background:T.surf2||T.surf,border:`1px solid ${T.bds}`,
-                borderRadius:10,padding:4,minWidth:150,maxHeight:260,overflowY:"auto",
-                boxShadow:"0 10px 28px rgba(0,0,0,0.45)"}}>
-                {allAccIds.map(id=>{
-                  const a = id===null ? null : accounts.find(x=>x.id===id);
-                  const label = id===null ? "Gesamt" : (a?.name||"");
-                  const active = selAcc===id;
-                  return (
-                    <div key={id||"__all__"} onClick={(e)=>{e.stopPropagation();setSelAcc(id);setAccMenuOpen(false);}}
-                      style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",borderRadius:8,
-                        cursor:"pointer",background:active?(T.blue+"22"):"transparent",
-                        color:active?T.blue:T.txt,fontSize:13,fontWeight:active?700:500,whiteSpace:"nowrap"}}>
-                      {id===null ? Li("layers",14,active?T.blue:T.txt2) : Li(a?.icon||"wallet",14,a?.color||T.txt2)}
-                      <span style={{flex:1}}>{label}</span>
-                      {active && Li("check",14,T.blue)}
-                    </div>
-                  );
-                })}
-              </div>
-            </>)}
-          </span>
+          {renderAccPill({lift:true})}
           <span onClick={toggleDetails}
             title={detailsOpen?"Details ausblenden":"Details anzeigen"}
             style={{pointerEvents:"auto",cursor:"pointer",userSelect:"none",opacity:0.75,
@@ -265,6 +347,7 @@ function SaldoHeroV2({
           </span>
         </div>
       </div>
+      </>)}
 
       {/* Detail-Block: Buch / VM / unkat — drei Zeilen mit Drill-Pfaden.
           Im Trend/Jahr (hideDetailRows) ausgeblendet, da dort jährlich gedacht

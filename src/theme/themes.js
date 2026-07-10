@@ -814,6 +814,38 @@ THEMES.zirkustaschenrechner = {
   name:"Zirkus-Taschenrechner",
 };
 
+// ════════════════════════════════════════════════════════════════════════
+//  Magazin (Editorial) — erstes Theme mit EIGENEM Hero-Layout statt nur
+//  eigener Farben: hero_layout:"editorial" schaltet in SaldoHeroV2 auf eine
+//  linksbündige Schlagzeilen-Anordnung um (Kicker-Zeile mit Kontowahl oben,
+//  großer Betrag links, Prognosen als Ticker-Leiste darunter). Farbwelt:
+//  dunkle Tinte + Kupfer/Messing, wie ein edles Finanzmagazin.
+// ════════════════════════════════════════════════════════════════════════
+THEMES.magazin = {
+  ...THEMES.dark,
+  bg:"#12141A", surf:"#1A1D24", surf2:"#232730", surf3:"#0D0F13",
+  bd:"rgba(235,220,195,0.13)", bds:"rgba(235,220,195,0.26)",
+  txt:"#F4EFE5", txt2:"rgba(226,212,188,0.60)", lbl:"rgba(226,212,188,0.46)",
+  blue:"#E0975C",   // Kupfer-Akzent (Akzentfarbe der App)
+  pos:"#A3C585", neg:"#E2604C", gold:"#D9B45B",
+  on_accent:"#241304", disabled:"#2A2D34",
+  warn:"#D9964A", override:"#A96A2A",
+  mid:"#8FB6C9",
+  cell_inc:"#A3C585", cell_inc_bg:"#141B10", cell_inc_bd:"#3E5A2C",
+  tab_exp:"rgba(226,96,76,0.18)", tab_inc:"rgba(163,197,133,0.16)", tab_pend:"rgba(217,180,91,0.16)",
+  err:"#E2604C", err_bg:"#3A140E",
+  vorm_bg:"#2A2110", vorm_bd:"rgba(217,180,91,0.8)",
+  pal_inc_bg:"#141B10", pal_inc_bd:"#3E5A2C", pal_inc_hdr:"#A3C585", pal_inc_fld:"#182114", pal_inc_val:"#C2DCA8",
+  pal_exp_bg:"#241009", pal_exp_bd:"#5C2418", pal_exp_fld:"#2C140C",
+  pal_tg_bg:"#101820", pal_tg_bd:"#2A4250", pal_tg_hdr:"#8FB6C9", pal_tg_fld:"#141E28", pal_tg_val:"#B8D5E2",
+  hero_bg:"linear-gradient(150deg,#1A1D24 0%,#12141A 55%,#181314 100%)",
+  logo_c1:"#E0975C", logo_c2:"#D9B45B",
+  cond_neg:"#E2604C", cond_warn:"#D9964A", cond_gold:"#D9B45B", cond_pos:"#A3C585",
+  hero_layout:"editorial",
+  nav_icons:{ home:"newspaper", jahr:"trending-up", daten:"archive" },
+  name:"Magazin (Editorial)",
+};
+
 // Globales T — wird von getAppTheme() überschrieben, initialisiert mit dark — wird von getAppTheme() überschrieben, initialisiert mit dark
 function getTheme(name) {
   const t = THEMES[name] || THEMES.dark;
