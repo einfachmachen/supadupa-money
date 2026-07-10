@@ -2727,10 +2727,11 @@ Abbrechen = ${remoteName}-Stand laden`
       display:"flex",flexDirection:"column",
       // Inhalt unter die Notch/Statusleiste; bg füllt bis ganz oben. Der volle
       // safe-area-inset-top-Wert liegt spürbar über der reinen Statusleisten-
-      // höhe (zusätzlicher iOS-eigener Puffer) — hier um ein kleines, festes
-      // Maß gekappt, damit der Inhalt (Sync-Banner) näher an die Statusleiste
-      // rückt, aber auf keinem Gerät in die Notch/Dynamic Island hineinragt.
-      paddingTop:"max(0px, calc(env(safe-area-inset-top) - 10px))",
+      // höhe (zusätzlicher iOS-eigener Puffer) — hier gekappt, damit der
+      // Inhalt (Sync-Banner) näher an die Statusleiste rückt. max(0px, ...)
+      // verhindert auf jedem Gerät negative Werte (Inhalt würde sonst hinter
+      // die Notch/Dynamic Island rutschen).
+      paddingTop:"max(0px, calc(env(safe-area-inset-top) - 24px))",
       fontFamily:"'SF Pro Text',-apple-system,BlinkMacSystemFont,sans-serif",
       userSelect:"none",overflow:"hidden",
       // Deko-Rahmen der Kinder-Themes: Border BLEIBT Teil dieser Box (durch
