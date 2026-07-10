@@ -2731,7 +2731,11 @@ Abbrechen = ${remoteName}-Stand laden`
       // Inhalt (Sync-Banner) näher an die Statusleiste rückt. max(0px, ...)
       // verhindert auf jedem Gerät negative Werte (Inhalt würde sonst hinter
       // die Notch/Dynamic Island rutschen).
-      paddingTop:"max(0px, calc(env(safe-area-inset-top) - 24px))",
+      // Kinder-Themes bekommen zusätzlich die Border-Breite (9-10px) oben
+      // "geschenkt" (border-top ist Teil derselben Box, VOR dem Padding) —
+      // bei alten Themes fehlt diese Border, also weniger stark kappen,
+      // sonst rutscht der Inhalt dort zu nah an/unter die Notch.
+      paddingTop:`max(0px, calc(env(safe-area-inset-top) - ${T.frame_border?24:14}px))`,
       fontFamily:"'SF Pro Text',-apple-system,BlinkMacSystemFont,sans-serif",
       userSelect:"none",overflow:"hidden",
       // Deko-Rahmen der Kinder-Themes: Border BLEIBT Teil dieser Box (durch
