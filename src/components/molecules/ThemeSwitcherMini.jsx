@@ -150,16 +150,18 @@ function ThemeSwitcherMini() {
       textTransform: "uppercase", color: T.txt2 }}>{label}{count!=null && <span style={{ opacity: 0.6, fontWeight: 600 }}> ({count})</span>}</div>
   );
 
-  // Während der Diashow: Umschalter komplett ausblenden, damit der Bildschirm
-  // frei zu sehen ist ("um alles sehen zu können") — statt des Swatch-Buttons
-  // sitzt an derselben Stelle nur eine unsichtbare, aber weiter antippbare
-  // Fläche, über die sich die Diashow wieder stoppen lässt (öffnet zugleich
-  // das Dropdown, damit man direkt ein neues Theme wählen kann).
+  // Während der Diashow: Umschalter stark abgeblendet statt komplett
+  // unsichtbar — der Bildschirm bleibt frei genug zum Betrachten, aber die
+  // Stelle zum Stoppen bleibt erkennbar (vorher komplett unsichtbar, musste
+  // "auf Verdacht" an dieselbe Stelle geklickt werden). Öffnet beim Tippen
+  // zugleich das Dropdown, damit man direkt ein neues Theme wählen kann.
   if (themeSlideshow) {
     return (
       <button onClick={() => { setThemeSlideshow(false); setOpen(true); }} title="Diashow stoppen"
         style={{ padding: 2, border: "none", background: "transparent", cursor: "pointer",
-          display: "inline-flex", borderRadius: 8, width: 26, height: 26, opacity: 0 }}/>
+          display: "inline-flex", borderRadius: 8, opacity: 0.35 }}>
+        <Swatch th={cur} />
+      </button>
     );
   }
 
