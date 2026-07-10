@@ -974,7 +974,7 @@ function DashboardScreenV2() {
         {/* "Ausgaben nach Kategorie" — aus der Monatsansicht hierher (Dashboard)
             verschoben; eigene Klapp-Logik im Chart. */}
         {chartCatSums.length>0 && !window.MBT_DEBUG?.disable_categorychart && (
-          <div style={{padding:`0 ${T.frame_border?24:10}px`}}>
+          <div style={{padding:"0 10px"}}>
             <CategoryChart catSums={chartCatSums} maxSum={chartMaxSum} budgets={budgets}
               getBudgetForMonth={getBudgetForMonth} year={year} month={month}/>
           </div>
@@ -1287,7 +1287,7 @@ function DashboardScreenV2() {
           };
 
           return (
-            <div style={{padding:`0 ${T.frame_border?24:10}px 4px`,display:"flex",flexDirection:"column",gap:2}}>
+            <div style={{padding:"0 10px 4px",display:"flex",flexDirection:"column",gap:2}}>
               {allCatsToShow.map(cat => {
                 const isIncome = _isCatIncomeOrTagesgeld(cat);
                 // Ist (real + konkrete VM) — auch Basis für die Ampelfarbe

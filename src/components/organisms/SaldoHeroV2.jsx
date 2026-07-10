@@ -68,22 +68,19 @@ function SaldoHeroV2({
   // sonst blue/lime) — wirkt harmonischer. Negativ bleibt rot.
   const plusAccent = T.themeName==="terminal" ? T.pos : T.blue;
   const heroColor = v => v==null?T.txt : v<0?T.cond_neg : plusAccent;
-  // Kinder-Themes: seitliches Hero-Padding sorgt für sichtbaren Abstand zur
-  // Deko-Umrandung — auf ALLEN Elementen, die nah an die Kante reichen
-  // (Betragszeile UND Theme-Umschalter-Icon oben links), damit der Innenring
-  // umlaufend sichtbar bleibt statt an einer Ecke enger zu sein als anderswo.
-  // Deutlich großzügiger als in früheren Versuchen (44px statt 28px) — auf
-  // echten Geräten rendert der Kontostand-Text u.U. spürbar breiter als im
-  // hier verwendeten Test-Chromium, was den gefühlten Randabstand auffrisst,
-  // OHNE dass es zu echter Kürzung kommt (die Betragsbox ist per flex-shrink
-  // + overflow:hidden hart auf den verfügbaren Platz gedeckelt). Kontostand
-  // bleibt bei 34px (fester Wert). Das Auge sitzt in einer eigenen, jetzt
-  // schmaleren Zone rechts (eyeZone), DARIN an den äußeren Rand gerückt.
-  const framePad = T.frame_border ? 44 : 20;
-  const amtFontSize = T.frame_border ? 34 : 44;
+  // Der Deko-Rahmen der Kinder-Themes wird jetzt als eigene Overlay-Schicht
+  // ÜBER dem gesamten Inhalt gemalt (siehe App.jsx) — der Hero muss also
+  // nicht mehr extra Innenabstand reservieren, um den Rahmen freizuhalten.
+  // Padding und Schriftgröße sind daher wieder identisch zu den alten
+  // Themes. Einzige Kinder-Themes-Besonderheit bleibt die Auge-Position:
+  // das Auge sitzt in einer eigenen Zone rechts (eyeZone) und wird DARIN
+  // zentriert — mittig zwischen Betrag-Ende und Seitenrand, statt direkt
+  // am Betrag zu kleben (verhindert Vertipper: Konto wechseln statt Betrag
+  // aus-/einblenden).
+  const framePad = 20;
+  const amtFontSize = 44;
   const eyeBoxSize = 30;
-  const eyeZoneWidth = T.frame_border ? 50 : (eyeBoxSize + 6);
-  const eyeZoneEdgePad = 6; // Abstand vom Auge zum äußeren Zonenrand (Kinder-Themes)
+  const eyeZoneWidth = T.frame_border ? 56 : (eyeBoxSize + 6);
   const sideReserve = eyeZoneWidth;
   // Mitte/Ende-Prognose behalten die Schwellwert-Ampel (<0 neg · ≤500 warn · ≤1000 gold · sonst pos).
   const saldoCol  = v => v==null?T.txt2:v<0?T.cond_neg:v<=500?T.cond_warn:v<=1000?T.cond_gold:T.cond_pos;
@@ -121,11 +118,7 @@ function SaldoHeroV2({
       padding: `5px ${framePad}px 6px`,
       position:"relative"}}>
       {/* Freier Bereich links oben: minimaler Theme-Umschalter. */}
-      {/* position:absolute richtet sich nach der Padding-Kante des Wrappers,
-          NICHT nach dessen padding-Wert — der oben erhöhte Innenabstand für
-          Kinder-Themes wirkt hier also nicht automatisch; left/right müssen
-          separat mit angepasst werden. */}
-      <div style={{position:"absolute",top:8,left:T.frame_border?framePad:14,zIndex:2}}>
+      <div style={{position:"absolute",top:8,left:14,zIndex:2}}>
         <ThemeSwitcherMini/>
       </div>
       {/* Zeile 1: aktueller Kontostand groß & zentriert. Tippen auf den Betrag
@@ -154,29 +147,23 @@ function SaldoHeroV2({
             WebkitTextStroke:"0.8px currentColor",
             cursor:allAccIds.length>1?"pointer":"default",
             minWidth:0, flexGrow:0, flexShrink:1, flexBasis:"auto",
-            // overflow/textOverflow bleiben ein echter Notnagel für den Fall,
-            // dass wirklich kein Platz mehr da ist (z.B. extrem kleines
-            // Gerät) — ausgelöst rein durch die Flex-Verteilung, OHNE
-            // zusätzliche feste maxWidth. Eine exakte calc()-Deckelung (voriger
-            // Versuch) traf bei einem 5-stelligen Betrag auf einem 375pt-
-            // Gerät (iPhone 13 mini) exakt die verfügbare Breite (0px Reserve)
-            // — jedes Sub-Pixel-Rendering kippte das dann in Kürzung. Deshalb
-            // jetzt lieber echte Breiten-Reserve (s. framePad/iconEdgeExtra
-            // oben) als eine bis aufs Pixel exakte Formel.
+            // overflow/textOverflow bleiben ein Notnagel für den Fall, dass
+            // wirklich kein Platz mehr da ist (z.B. extrem kleines Gerät) —
+            // ausgelöst rein durch die Flex-Verteilung, ohne feste maxWidth.
             overflow:"hidden", textOverflow:"ellipsis",
           }}>
           {saldo>=0?"":"−"}{fmtMoney(Math.abs(saldo||0))}&nbsp;€
         </span>
-        {/* Auge, Kinder-Themes: sitzt in einer eigenen Zone (eyeZoneWidth),
-            DARIN an den äußeren (rechten) Rand gerückt — näher am Rahmen als
-            am Betrag, mit spürbarem Abstand zu beiden. Alte Themes: exakt
+        {/* Auge, Kinder-Themes: sitzt in einer eigenen Zone (eyeZoneWidth)
+            und wird DARIN zentriert — mittig zwischen Betrag-Ende und
+            Seitenrand, mit spürbarem Abstand zu beiden. Alte Themes: exakt
             der bisherige, unveränderte Aufbau (Auge direkt nach dem Betrag,
             nur mit rechtem Randabstand) — bewusst NICHT auf dieselbe
             Zonen-Box umgestellt, damit sich am alten Pixel-Layout nichts
             verschiebt. */}
         {T.frame_border ? (
           <div style={{width:eyeZoneWidth, flexShrink:0, flexGrow:0,
-            display:"flex", alignItems:"center", justifyContent:"flex-end", paddingRight:eyeZoneEdgePad}}>
+            display:"flex", alignItems:"center", justifyContent:"center"}}>
             <span onClick={toggleEye} title="Beträge ein-/ausblenden"
               style={{cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,
                 display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
@@ -195,13 +182,11 @@ function SaldoHeroV2({
 
       {/* Zeile 2: MITTE | ENDE — zwei flex:1-Hälften (6px-Gap), Kontoname + Caret
           als mittiges Overlay (beansprucht keine Spaltenbreite, damit die
-          Beträge über den Kategorie-Pillen fluchten). Kinder-Themes: eigener
-          seitlicher Randabstand (statt nur 1px) PLUS eine harte Breiten-
-          Deckelung auf den Werten selbst (maxWidth/overflow/ellipsis) — anders
-          als die Betragszeile hatten MITTE/ENDE bisher KEINE solche Deckelung,
-          konnten also (v.a. bei abweichender Schriftbreite in echten Browsern)
-          über ihre Hälfte hinaus näher an den Rahmen wachsen. */}
-      <div style={{display:"flex",gap:6,marginTop:2,padding:T.frame_border?"0 20px":"0 1px",
+          Beträge über den Kategorie-Pillen fluchten). Kinder-Themes: die
+          Werte bekommen eine harte Breiten-Deckelung (maxWidth/overflow/
+          ellipsis) — rein defensiv, unabhängig vom Deko-Rahmen (der läuft
+          jetzt als Overlay über allem, siehe App.jsx). */}
+      <div style={{display:"flex",gap:6,marginTop:2,padding:"0 1px",
         alignItems:"stretch",position:"relative"}}>
         {/* Mitte-Spalte — Klickfläche nur um den Text (inline-block), damit sie
             nicht bis zum mittigen Ausklapp-Chevron reicht. Spaltenbreite, Text-

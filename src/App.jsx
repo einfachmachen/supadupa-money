@@ -2723,21 +2723,50 @@ Abbrechen = ${remoteName}-Stand laden`
       paddingTop:"env(safe-area-inset-top)",  // Inhalt unter die Notch/Statusleiste; bg füllt bis ganz oben
       fontFamily:"'SF Pro Text',-apple-system,BlinkMacSystemFont,sans-serif",
       userSelect:"none",overflow:"hidden",
-      // Deko-Rahmen der Kinder-Themes: Border direkt am Haupt-Container (durch
-      // box-sizing:border-box schrumpft die Inhaltsfläche automatisch mit —
-      // "dynamische Anpassung" ohne jeden Screen einzeln anzupassen).
-      // transform etabliert diesen Container zugleich als Containing Block für
-      // ALLE position:fixed-Nachfahren (Vollbild-Dialoge/Drilldowns nutzen
-      // durchgängig inset:0) — die docken sich dadurch automatisch INNERHALB
-      // des Rahmens an, statt ihn wie zuvor zu überdecken. Ohne frame_border
-      // bleibt das Verhalten alter Themes unverändert (kein transform, kein
-      // Border).
+      // Deko-Rahmen der Kinder-Themes: Border BLEIBT Teil dieser Box (durch
+      // box-sizing:border-box schrumpft die Inhaltsfläche automatisch mit) —
+      // das ist zugleich, worauf sich Vollbild-Dialoge (position:fixed,
+      // inset:0) stützen: transform etabliert diesen Container als deren
+      // Containing Block, und "inset:0" richtet sich dabei nach der
+      // PADDING-Kante dieser Box, die durch die Border bereits automatisch
+      // eingerückt ist — Dialoge docken sich also INNERHALB des Rahmens an.
+      // Ohne frame_border bleibt das Verhalten alter Themes unverändert
+      // (kein transform, keine Border).
       ...(T.frame_border ? {
         border:T.frame_border,
         boxShadow:`inset 0 0 0 4px ${T.frame_ring||T.bg}`,
         borderRadius:18,
         transform:"translateZ(0)",
       } : {})}}>
+
+      {/* Zusätzliche Deko-Rahmen-Overlay-Schicht, GENAU auf derselben Border
+          gemalt — aber ÜBER dem gesamten Inhalt (z-index), nicht darunter.
+          Grund: normale Nachfahren (Hero-Text, Suchleiste, Kategorie-Karten
+          etc.) malen laut CSS-Reihenfolge immer ÜBER der eigenen Border des
+          Elternelements, egal wie viel Innenabstand man ihnen gibt — jeder
+          Versuch, exakt genug Abstand zu berechnen, war ein Wettlauf gegen
+          echte Browser-Schriftbreiten. Diese Overlay-Kopie (pointer-events:
+          none, damit sie nie Klicks abfängt) sitzt einfach ÜBER dem Inhalt
+          und bleibt so immer sichtbar. z-index bewusst niedrig genug, dass
+          echte Dialoge/Dropdowns (alle ≥ 15, siehe z.B. ThemeSwitcherMini/
+          MatchingScreen) weiterhin darüber erscheinen.
+          Negative Offsets (-frameBorderWidth statt inset:0): der Container
+          hat durch transform bereits einen eigenen Containing Block für
+          position:absolute/fixed-Nachfahren — dessen Bezugsrahmen ist die
+          PADDING-Kante (schon um die Border-Breite eingerückt). inset:0
+          würde die Kopie also um die Border-Breite zu weit innen zeichnen;
+          die negativen Offsets schieben sie exakt zurück auf die echte
+          Außenkante, auf der auch die reale Border liegt. */}
+      {T.frame_border && (() => {
+        const w = parseInt(T.frame_border) || 0;
+        return (
+          <div style={{position:"absolute",top:-w,left:-w,right:-w,bottom:-w,
+            pointerEvents:"none",zIndex:5,
+            border:T.frame_border,
+            boxShadow:`inset 0 0 0 4px ${T.frame_ring||T.bg}`,
+            borderRadius:18}}/>
+        );
+      })()}
 
       {/* ── Performance-Debug + Theme-Umschalter wurden nach Einstellungen verschoben ── */}
 
