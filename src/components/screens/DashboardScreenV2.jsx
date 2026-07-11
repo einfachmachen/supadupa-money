@@ -43,7 +43,15 @@ function DashboardScreenV2() {
     setShowMatching,
     setDashDrillOpen,
     setShowBankWizard,
+    setMainTab, setActiveStructurTab, setShowMobileKategorien,
   } = useContext(AppCtx);
+
+    // Erststart-Fortschritt (rein aus vorhandenen Daten abgeleitet, kein
+    // eigener Flag nötig — kann daher nie veralten): Konto, Kategorie mit
+    // Unterkategorie und mindestens eine Buchung/Vormerkung vorhanden.
+    const schnellstartDone = (accounts?.length||0)>0
+      && cats.some(c=>(c.subs||[]).length>0)
+      && (txs?.length||0)>0;
 
     const _isSelAcc = t => !selAcc || t.accountId===selAcc || (!t.accountId && selAcc==="acc-giro");
     // Index für schnelle _linkedTo-Partner-Lookup (für Sparen-Transfer-Erkennung)
@@ -97,7 +105,19 @@ function DashboardScreenV2() {
         );
       });
     };
-    const [detailsOpen, setDetailsOpen] = useState(false);
+    // Solange der Erststart läuft, startet der Detail-Block aufgeklappt —
+    // sonst finden neue Nutzer die Konten-/Budget-Kurzwege in der Zeile
+    // darunter nicht von allein. Einmal eingerichtet, wieder wie gewohnt
+    // eingeklappt. WICHTIG: accounts/cats/txs laden asynchron aus IndexedDB
+    // nach (erst leer, dann befüllt) — ein einmaliger useState-Initializer
+    // würde beim allerersten Render also immer "nicht fertig" sehen, selbst
+    // bei längst eingerichteten Bestandsdaten. Deshalb "nachziehend": solange
+    // der Nutzer den Chevron nicht selbst angefasst hat, folgt der Zustand
+    // reaktiv schnellstartDone; erst ein manuelles Antippen fixiert ihn für
+    // den Rest dieses Mounts.
+    const [detailsOpenManual, setDetailsOpenManual] = useState(null);
+    const detailsOpen = detailsOpenManual===null ? !schnellstartDone : detailsOpenManual;
+    const setDetailsOpen = (v) => setDetailsOpenManual(typeof v==="function" ? v(detailsOpen) : v);
 
     // ── Bank-Abruf direkt im Dashboard (Pull-to-Refresh) ──
     // bankFetch: null | {status:"loading"|"done"|"error", reason?, message?, staged?, dupeItems?}
@@ -995,13 +1015,16 @@ function DashboardScreenV2() {
             return base.filter(t=>budgetPlaceholderActive(t));
           })();
           // Standardmäßig zugeklappt — erst sichtbar, wenn die Details (Hero-Pfeil) offen sind.
-          const showRow = detailsOpen && (!isPastMonth || visiblePTxs.length>0);
+          // Solange der Erststart läuft, zählt auch ein leerer/vergangener Monat
+          // nicht gegen die Sichtbarkeit — die Kurzwege zu Konten/Budget sollen
+          // trotzdem zugänglich bleiben.
+          const showRow = detailsOpen && (!isPastMonth || visiblePTxs.length>0 || !schnellstartDone);
           if(!showRow) return null;
           const togglePanel = (key) => setActivePanel(p => p===key ? null : key);
-          const Card = ({panel, icon, badge, color, tourId}) => {
+          const Card = ({panel, icon, badge, color, tourId, onClick}) => {
             const isActive = activePanel === panel;
             return (
-              <div onClick={()=>togglePanel(panel)} data-tour={tourId}
+              <div onClick={onClick || (()=>togglePanel(panel))} data-tour={tourId}
                 style={{flex:1,display:"flex",alignItems:"center",
                   justifyContent:"center",padding:"4px 6px",cursor:"pointer",
                   userSelect:"none",position:"relative",
@@ -1020,6 +1043,15 @@ function DashboardScreenV2() {
           };
           return (
             <div style={{margin:"2px 10px 0",display:"flex",gap:6}}>
+              {/* Solange der Erststart nicht abgeschlossen ist, zusätzlich
+                  direkte Kurzwege zu Konten und Kategorien & Budget — sobald
+                  eingerichtet, verschwinden sie wieder aus dieser Zeile
+                  (dann über den Daten-Tab erreichbar, wo sie ebenfalls nach
+                  hinten rücken). */}
+              {!schnellstartDone && <Card icon="credit-card" color={T.blue} tourId="row-konten-dash"
+                onClick={()=>{setMainTab?.("struktur"); setActiveStructurTab?.("konten");}}/>}
+              {!schnellstartDone && <Card icon="target" color={T.mid} tourId="row-budget-dash"
+                onClick={()=>setShowMobileKategorien?.(true)}/>}
               {!isPastMonth && <Card panel="warnings"     icon="shield-check" badge={warnCount}   color={warnCount>0 ? T.neg : T.pos} tourId="panel-warnings"/>}
               {!isPastMonth && <Card panel="sparen"       icon="piggy-bank"   badge={null}        color={T.blue} tourId="panel-sparen"/>}
               <Card panel="vormerkungen" icon="clock"        badge={visiblePTxs.length} color={T.gold}/>

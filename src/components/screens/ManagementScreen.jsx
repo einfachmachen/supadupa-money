@@ -219,18 +219,30 @@ function ManagementScreen({activeTab="kategorien"}) {
             <div style={{color:T.lbl||T.txt2,fontSize:11,fontWeight:600,display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
               {Li("database",13,T.blue)} Daten &amp; Verbindungen
             </div>
-            {[
-              {icon:"download",   color:T.pos,          label:"csv importieren",       sub:"Buchungen aus Banking-App",       onClick:()=>setShowCsv?.(true), tourId:"row-csv"},
-              {icon:"landmark",   color:T.gold,         label:"Bank verbinden",        sub:"Schritt für Schritt · Enable Banking", onClick:()=>setShowBankWizard?.(true), tourId:"row-bank"},
-              {icon:"database",   color:T.pos,          label:"Daten-Manager",         sub:"Export / Import / Löschen",       onClick:()=>setShowDataMgr?.(true)},
-              {icon:"cloud",      color:T.cf||T.blue,   label:"Cloud-Sync einrichten", sub:"Eigene Cloud-DB · geführt",       onClick:()=>setShowCloudSetup?.(true), tourId:"row-cloudsync"},
-              {icon:"fuel",       color:T.gold,         label:"Tankverbrauch",         sub:"Verbrauch & Preisentwicklung",    onClick:()=>setShowFuelAnalysis?.(true)},
-              {icon:"credit-card",color:T.blue,         label:"Konten",                sub:"Verwalten, Reihenfolge, Puffer",  onClick:()=>setMgrTab("konten"), tourId:"row-konten"},
-              {icon:"target",     color:T.mid,          label:"Kategorien & Budget",   sub:"Budgets je Kategorie festlegen",  onClick:()=>setShowMobileKategorien?.(true), tourId:"row-budget"},
-              {icon:"git-merge",  color:T.blue,         label:"Vormerkungen zuordnen", sub:"Eigene mit Bank-Buchungen verknüpfen", onClick:()=>setShowMatching?.(true), tourId:"row-matching"},
-              {icon:"compass",    color:T.blue,         label:"Feature-Tour anzeigen", sub:"Kurzer Rundgang durch die App",   onClick:()=>setShowFeatureTour?.(true)},
-              {icon:"settings",   color:T.txt2,         label:"Einstellungen",         sub:"Theme, Beträge, Sicherheit …",    onClick:()=>setMgrTab("einstellungen")},
-            ].map((it,i)=>(
+            {(()=>{
+              const kontenRow   = {icon:"credit-card",color:T.blue,         label:"Konten",                sub:"Verwalten, Reihenfolge, Puffer",  onClick:()=>setMgrTab("konten"), tourId:"row-konten"};
+              const budgetRow   = {icon:"target",     color:T.mid,          label:"Kategorien & Budget",   sub:"Budgets je Kategorie festlegen",  onClick:()=>setShowMobileKategorien?.(true), tourId:"row-budget"};
+              const csvRow      = {icon:"download",   color:T.pos,          label:"csv importieren",       sub:"Buchungen aus Banking-App",       onClick:()=>setShowCsv?.(true), tourId:"row-csv"};
+              const bankRow     = {icon:"landmark",   color:T.gold,         label:"Bank verbinden",        sub:"Schritt für Schritt · Enable Banking", onClick:()=>setShowBankWizard?.(true), tourId:"row-bank"};
+              const dataMgrRow  = {icon:"database",   color:T.pos,          label:"Daten-Manager",         sub:"Export / Import / Löschen",       onClick:()=>setShowDataMgr?.(true)};
+              const cloudRow    = {icon:"cloud",      color:T.cf||T.blue,   label:"Cloud-Sync einrichten", sub:"Eigene Cloud-DB · geführt",       onClick:()=>setShowCloudSetup?.(true), tourId:"row-cloudsync"};
+              const fuelRow     = {icon:"fuel",       color:T.gold,         label:"Tankverbrauch",         sub:"Verbrauch & Preisentwicklung",    onClick:()=>setShowFuelAnalysis?.(true)};
+              const matchingRow = {icon:"git-merge",  color:T.blue,         label:"Vormerkungen zuordnen", sub:"Eigene mit Bank-Buchungen verknüpfen", onClick:()=>setShowMatching?.(true), tourId:"row-matching"};
+              const tourRow     = {icon:"compass",    color:T.blue,         label:"Feature-Tour anzeigen", sub:"Kurzer Rundgang durch die App",   onClick:()=>setShowFeatureTour?.(true)};
+              const settingsRow = {icon:"settings",   color:T.txt2,         label:"Einstellungen",         sub:"Theme, Beträge, Sicherheit …",    onClick:()=>setMgrTab("einstellungen")};
+              // Erststart-Fortschritt (gleiche Herleitung wie im Dashboard,
+              // rein aus vorhandenen Daten — kein eigener Flag nötig).
+              const schnellstartDone = (_accounts?.length||0)>0
+                && _cats.some(c=>(c.subs||[]).length>0)
+                && (txs?.length||0)>0;
+              // Solange der Erststart läuft, stehen Konten/Kategorien & Budget/
+              // csv importieren ganz oben; danach rücken sie als Gruppe hinter
+              // Tankverbrauch (direkt vor Vormerkungen zuordnen) — sie bleiben
+              // also erreichbar, drängen sich aber nicht mehr in den Vordergrund.
+              return schnellstartDone
+                ? [bankRow, dataMgrRow, cloudRow, fuelRow, kontenRow, budgetRow, csvRow, matchingRow, tourRow, settingsRow]
+                : [kontenRow, budgetRow, csvRow, bankRow, dataMgrRow, cloudRow, fuelRow, matchingRow, tourRow, settingsRow];
+            })().map((it,i)=>(
               <button key={i} onClick={it.onClick} data-tour={it.tourId}
                 style={{display:"flex",alignItems:"center",gap:12,width:"100%",textAlign:"left",
                   background:"rgba(255,255,255,0.04)",border:`1px solid ${T.bd}`,borderRadius:14,
