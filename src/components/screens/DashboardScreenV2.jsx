@@ -1043,7 +1043,7 @@ function DashboardScreenV2() {
           })();
           if(visiblePTxs.length===0) return null;
           return (
-            <PendingList pTxs={visiblePTxs} getCat={getCat} getSub={getSub} txType={txType} openEdit={openEdit} dayOf={dayOf} pendOpenAmt={pendOpenAmt} budgetOpenRest={budgetOpenRest} initialCollapsed={false} noCollapse={true}/>
+            <PendingList pTxs={visiblePTxs} getCat={getCat} getSub={getSub} txType={txType} openEdit={openEdit} dayOf={dayOf} pendOpenAmt={pendOpenAmt} budgetOpenRest={budgetOpenRest} initialCollapsed={false} noCollapse={true} onOpenMatching={()=>setShowMatching(true)}/>
           );
         })()}
 

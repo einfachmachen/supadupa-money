@@ -7,7 +7,7 @@ import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { budgetPlaceholderActive } from "../../utils/saldo.js";
 
-function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub, budgetOpenRest, initialCollapsed=true, noCollapse=false}) {
+function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub, budgetOpenRest, initialCollapsed=true, noCollapse=false, onOpenMatching}) {
   const _pendOpenAmt = pendOpenAmt || (t=>t.totalAmount);
   const [expandedId, setExpandedId] = React.useState(null);
   const [search, setSearch] = React.useState("");
@@ -43,6 +43,15 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
           Offene Vormerkungen ({pTxs.filter(t=>budgetPlaceholderActive(t)).length})
         </span>
         {!noCollapse && Li(collapsed?"chevron-down":"chevron-up",12,T.gold)}
+        {onOpenMatching&&!collapsed&&(
+          <button onClick={e=>{e.stopPropagation();onOpenMatching();}}
+            title="Vormerkungen mit Buchungen verknüpfen"
+            style={{display:"flex",alignItems:"center",gap:4,background:"rgba(74,159,212,0.14)",
+              border:`1px solid ${T.blue}55`,borderRadius:7,padding:"3px 8px",cursor:"pointer",
+              color:T.blue,fontSize:10.5,fontWeight:700,fontFamily:"inherit",flexShrink:0}}>
+            {Li("git-merge",11,T.blue)} zuordnen
+          </button>
+        )}
         <div style={{display:"flex",alignItems:"center",gap:4,background:"rgba(0,0,0,0.2)",borderRadius:7,padding:"3px 7px"}}>
           {Li("search",11,T.txt2)}
           <input value={search} onChange={e=>setSearch(e.target.value)}
@@ -113,8 +122,11 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
                 <div style={{color:T.txt,fontSize:14,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tx.desc||cat?.name}</div>
                 <div style={{color:T.txt2,fontSize:11,display:"flex",alignItems:"center",gap:5}}>
                   <span>{tx.date}{tx._seriesId&&tx._seriesTotal>1&&tx._seriesIdx&&tx._seriesTyp==="finanzierung"?` · ${tx._seriesIdx}/${tx._seriesTotal}`:""}</span>
-                  {/* Bank-Vormerkung (PDNG aus Enable Banking) — von Plan-VM unterscheidbar */}
-                  {tx._csvSource==="Enable Banking"&&(
+                  {/* Bank-Vormerkung (PDNG, egal ob per Enable Banking oder CSV
+                      erkannt) — von einer selbst angelegten Vormerkung
+                      unterscheidbar, damit auffällt: die lässt sich ggf. mit
+                      einer eigenen Vormerkung verknüpfen (s. "zuordnen" oben). */}
+                  {tx._bankPending&&(
                     <span style={{background:"rgba(74,159,212,0.15)",color:T.blue,
                       borderRadius:4,padding:"0 4px",fontSize:9,fontWeight:700,flexShrink:0,
                       display:"inline-flex",alignItems:"center",gap:3}}>

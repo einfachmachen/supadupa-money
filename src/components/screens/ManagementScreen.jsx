@@ -34,7 +34,7 @@ function ManagementScreen({activeTab="kategorien"}) {
     budgets={}, setBudgets,
     onTS,onTE, globalDrag,
     setShowCsv, setShowBankWizard, setShowDataMgr, setShowCloudSetup, setShowFuelAnalysis,
-    setShowFeatureTour,
+    setShowFeatureTour, setShowMatching,
     setShowMobileKategorien,
   } = useContext(AppCtx);
   const [mergeTarget, setMergeTarget] = useState(null);
@@ -227,6 +227,7 @@ function ManagementScreen({activeTab="kategorien"}) {
               {icon:"fuel",       color:T.gold,         label:"Tankverbrauch",         sub:"Verbrauch & Preisentwicklung",    onClick:()=>setShowFuelAnalysis?.(true)},
               {icon:"credit-card",color:T.blue,         label:"Konten",                sub:"Verwalten, Reihenfolge, Puffer",  onClick:()=>setMgrTab("konten")},
               {icon:"target",     color:T.mid,          label:"Budget",                sub:"Budgets je Kategorie festlegen",  onClick:()=>setShowMobileKategorien?.(true)},
+              {icon:"git-merge",  color:T.blue,         label:"Vormerkungen zuordnen", sub:"Eigene mit Bank-Buchungen verknüpfen", onClick:()=>setShowMatching?.(true)},
               {icon:"compass",    color:T.blue,         label:"Feature-Tour anzeigen", sub:"Kurzer Rundgang durch die App",   onClick:()=>setShowFeatureTour?.(true)},
               {icon:"settings",   color:T.txt2,         label:"Einstellungen",         sub:"Theme, Beträge, Sicherheit …",    onClick:()=>setMgrTab("einstellungen")},
             ].map((it,i)=>(

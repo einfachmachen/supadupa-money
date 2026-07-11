@@ -51,7 +51,7 @@ function VormVerknuepfenPanel({editVorm, txs, setTxs, onClose}) {
         style={{width:"100%",padding:"8px 10px",borderRadius:10,border:`1px solid ${T.blue}44`,
           background:`${T.blue}08`,color:T.blue,fontSize:12,fontWeight:700,cursor:"pointer",
           fontFamily:"inherit",display:"flex",alignItems:"center",gap:6,marginBottom:showLink?6:0}}>
-        {Li("link",13,T.blue)} Buchung zuordnen ({candidates.length})
+        {Li("link",13,T.blue)} Buchung/Vormerkung zuordnen ({candidates.length})
         {Li(showLink?"chevron-up":"chevron-down",11,T.blue)}
       </button>
       {showLink&&candidates.map(tx=>{
