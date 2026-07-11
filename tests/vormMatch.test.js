@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
+import React from "react";
+import { createRoot } from "react-dom/client";
 import { autoMatchVormerkungen, linkPendingToReal, linkPendingToPending, isBankPending } from "../src/utils/vormMatch.js";
-import { getVormLinkCandidates, isVormAmountMatch } from "../src/components/organisms/VormVerknuepfenPanel.jsx";
+import { getVormLinkCandidates, isVormAmountMatch, VormVerknuepfenPanel } from "../src/components/organisms/VormVerknuepfenPanel.jsx";
+
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+const { act } = React;
 
 const pend = (over={}) => ({
   id:"pend-1", pending:true, date:"2026-07-01", totalAmount:-2.98,
@@ -135,6 +140,54 @@ describe("linkPendingToPending — manuelle Vormerkung mit Bank-vorgemerkter Zei
 
   it("isBankPending ist false für eine ganz normale manuelle Vormerkung", () => {
     expect(isBankPending(manual())).toBe(false);
+  });
+
+  // Regression (echter Nutzer-Bericht): von der manuellen Vormerkung aus ließ
+  // sich die Bank-Zeile verknüpfen — umgekehrt, von der Bank-vorgemerkten
+  // Zeile aus bearbeitet, wurde die manuelle Vormerkung aber NICHT als
+  // Kandidat angeboten (die Kandidaten-Filterung war einseitig).
+  it("bietet von der Bank-vorgemerkten Zeile aus die manuelle Vormerkung als Kandidat an (symmetrisch)", () => {
+    const candidates = getVormLinkCandidates([manual()], bankPending());
+    expect(candidates.map(c=>c.id)).toEqual(["pend-manual"]);
+  });
+
+  it("bietet zwei Bank-vorgemerkte Zeilen NICHT gegenseitig als Kandidat an", () => {
+    const otherBank = bankPending({ id:"pend-bank-2" });
+    const candidates = getVormLinkCandidates([otherBank], bankPending());
+    expect(candidates).toEqual([]);
+  });
+
+  // Regression: beim Verknüpfen ausgehend von der Bank-Zeile (editVorm =
+  // Bank-vorgemerkt, Kandidat = manuell) darf NICHT die Bank-Zeile retiriert
+  // werden — sie muss immer der lebende Platzhalter bleiben, unabhängig von
+  // der Klick-Reihenfolge/-Richtung.
+  it("verknüpft über die UI korrekt orientiert, auch wenn von der Bank-Zeile aus gestartet wird", () => {
+    const manualVorm = manual();
+    const bankVorm = bankPending();
+    const txs = [manualVorm, bankVorm];
+    let latestTxs = txs;
+    const setTxs = (updater) => { latestTxs = typeof updater === "function" ? updater(latestTxs) : updater; };
+
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    act(() => {
+      root.render(React.createElement(VormVerknuepfenPanel,
+        { editVorm: bankVorm, txs, setTxs, onClose: () => {} }));
+    });
+    const toggleBtn = container.querySelector("button");
+    act(() => { toggleBtn.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    const candidateRow = [...container.querySelectorAll("div")]
+      .find(d => d.style.cursor === "pointer" && d.textContent.includes("Miete"));
+    expect(candidateRow).toBeTruthy();
+    act(() => { candidateRow.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+
+    const manualAfter = latestTxs.find(t=>t.id==="pend-manual");
+    const bankAfter = latestTxs.find(t=>t.id==="pend-bank");
+    expect(manualAfter.pending).toBe(false);
+    expect(manualAfter._linkedTo).toBe("pend-bank");
+    expect(bankAfter.pending).toBe(true); // Bank-Zeile bleibt der lebende Platzhalter
+    expect(bankAfter.linkedIds).toContain("pend-manual");
+    root.unmount();
   });
 });
 

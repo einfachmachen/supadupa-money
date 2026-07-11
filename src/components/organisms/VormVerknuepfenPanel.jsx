@@ -17,21 +17,24 @@ export function isVormAmountMatch(tx, editVorm) {
   return Math.abs(Math.abs(tx.totalAmount) - Math.abs(editVorm.totalAmount)) < 0.01;
 }
 
-// Kandidaten für "Buchung zuordnen": echte Buchungen UND bei der Bank selbst
-// noch vorgemerkte (PDNG, _bankPending) Zeilen desselben Kontos + Monats wie
-// die Vormerkung, noch unverknüpft, Betragstreffer zuerst. Bank-vorgemerkte
-// Zeilen zählen mit dazu, damit sich eine manuell angelegte Vormerkung auch
-// mit einer bereits vom Bank-Abruf übernommenen Vormerkung verknüpfen lässt
-// (z.B. wenn beide während einer Offline-Phase unabhängig entstanden sind).
+// Kandidaten für "Buchung/Vormerkung zuordnen": echte Buchungen UND das
+// jeweilige "Gegenstück" unter den offenen Vormerkungen — von einer manuellen
+// Vormerkung aus werden Bank-vorgemerkte (PDNG) Zeilen angeboten, von einer
+// Bank-vorgemerkten Zeile aus umgekehrt manuelle Vormerkungen (z.B. wenn
+// beide während einer Offline-Phase unabhängig voneinander entstanden sind).
+// Zwei Vormerkungen DERSELBEN Art (zwei manuelle, oder zwei Bank-Zeilen)
+// werden nie als Kandidat füreinander angeboten — das ergäbe kein sinnvolles
+// Verknüpfungsziel.
 export function getVormLinkCandidates(txs, editVorm) {
   const txMonth = new Date(editVorm.date).getMonth();
   const txYear  = new Date(editVorm.date).getFullYear();
   // Nur Buchungen desselben Kontos wie die Vormerkung anbieten (Giro-Fallback).
   const editAcc = editVorm.accountId || "acc-giro";
+  const editIsBankPending = isBankPending(editVorm);
   return txs.filter(t=>{
     if(t.id===editVorm.id) return false; // nie sich selbst als Ziel anbieten
     if(t._linkedTo) return false;
-    if(t.pending && !isBankPending(t)) return false;
+    if(t.pending && isBankPending(t)===editIsBankPending) return false;
     if((t.accountId||"acc-giro")!==editAcc) return false;
     const d=new Date(t.date);
     return d.getFullYear()===txYear&&d.getMonth()===txMonth;
@@ -58,14 +61,21 @@ function VormVerknuepfenPanel({editVorm, txs, setTxs, onClose}) {
       {showLink&&candidates.map(tx=>{
         const isMatch=isVormAmountMatch(tx,editVorm);
         const bankPend=isBankPending(tx);
+        const editIsBankPend=isBankPending(editVorm);
         return (
           <div key={tx.id} onClick={()=>{
-            // Ziel selbst noch bei der Bank vorgemerkt (PDNG) statt schon
-            // gebucht → beide Vormerkungen verschmelzen (linkPendingToPending),
-            // sonst normal mit der echten Buchung verknüpfen.
-            setTxs(p=>bankPend
-              ? linkPendingToPending(p, editVorm.id, tx.id)
-              : linkPendingToReal(p, editVorm.id, tx.id));
+            setTxs(p=>{
+              if(!tx.pending) return linkPendingToReal(p, editVorm.id, tx.id); // tx bereits echt gebucht
+              // Beide Seiten noch offen (eine davon Bank-vorgemerkt, die
+              // andere manuell) → verschmelzen. Die Bank-Zeile bleibt dabei
+              // IMMER der lebende Platzhalter — unabhängig davon, ob sie
+              // gerade editVorm oder die angetippte Zeile ist (sonst würde
+              // ausgerechnet die Bank-Meldung fälschlich retiriert und die
+              // manuelle Vormerkung bliebe stehen).
+              return editIsBankPend
+                ? linkPendingToPending(p, tx.id, editVorm.id)
+                : linkPendingToPending(p, editVorm.id, tx.id);
+            });
             onClose();
           }}
             style={{display:"flex",alignItems:"center",gap:8,padding:"6px 8px",borderRadius:8,marginBottom:3,cursor:"pointer",
