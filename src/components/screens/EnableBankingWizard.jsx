@@ -388,7 +388,7 @@ function EnableBankingWizard({ onClose, onBack }) {
           else if (amtIndex.has(amtKey)) status = "maybe";
           items.push({
             key: appAccId + "|" + items.length + "|" + (row._ebRef || row.fp),
-            accId: appAccId, row, status, checked: status === "new",
+            accId: appAccId, row, status, checked: status === "new", note: "",
           });
         });
       }
@@ -414,15 +414,18 @@ function EnableBankingWizard({ onClose, onBack }) {
   const togglePreview = (key) =>
     setPreview((p) => p.map((it) => (it.key === key ? { ...it, checked: !it.checked } : it)));
   const setAllPreview = (val) => setPreview((p) => p.map((it) => ({ ...it, checked: val })));
+  const setPreviewNote = (key, note) =>
+    setPreview((p) => p.map((it) => (it.key === key ? { ...it, note } : it)));
 
   const commitImport = () => {
     const chosen = (preview || []).filter((i) => i.checked);
     if (!chosen.length) { setMsg({ tone: "warn", text: "Keine Buchung ausgewählt." }); return; }
-    const newTxs = chosen.map(({ row, accId }) => ({
+    const newTxs = chosen.map(({ row, accId, note }) => ({
       id: "eb-" + uid(), date: row.isoDate,
       totalAmount: row.pending ? row.amount : Math.abs(row.amount),
-      desc: row.desc, note: "", pending: !!row.pending, accountId: accId, splits: [],
+      desc: row.desc, note: note || "", pending: !!row.pending, accountId: accId, splits: [],
       _csvType: row.amount > 0 ? "income" : "expense", _fp: row.fp, _csvSource: "Enable Banking",
+      ...(row.pending ? { _bankPending: true } : {}),
       ...(row._ebRef ? { _ebRef: row._ebRef } : {}),
     }));
     setTxs((p) => [...newTxs, ...p].sort((x, y) => y.date.localeCompare(x.date)));
@@ -893,6 +896,19 @@ function EnableBankingWizard({ onClose, onBack }) {
                             {it.status === "exact" ? "schon vorhanden" : "mögliche Dublette (Datum + Betrag)"}
                           </span>
                         )}
+                        {/* Eigene Notiz VOR der Übernahme — besonders für „vorgemerkt"
+                            (bei der Bank selbst noch nicht endgültig gebuchte) Zeilen
+                            hilfreich, z. B. um sich den Anlass zu merken, bevor die
+                            spätere echte Buchung eintrifft und verknüpft wird. Klick
+                            im Eingabefeld darf die Checkbox NICHT mit umschalten
+                            (das <label> würde das sonst per Browser-Default tun). */}
+                        <div onClick={(e) => e.stopPropagation()} style={{ marginTop: 5 }}>
+                          <input value={it.note} onChange={(e) => setPreviewNote(it.key, e.target.value)}
+                            placeholder="eigene Notiz (optional)"
+                            style={{ width: "100%", boxSizing: "border-box", background: "rgba(255,255,255,0.05)",
+                              border: `1px solid ${T.bd}`, borderRadius: 7, padding: "5px 8px",
+                              color: T.txt, fontSize: 12, outline: "none", fontFamily: "inherit" }} />
+                        </div>
                       </div>
                     </label>
                   ))}

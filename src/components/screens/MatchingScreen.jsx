@@ -12,7 +12,7 @@ import { isoAddMonths } from "../../utils/date.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
-import { linkPendingToReal } from "../../utils/vormMatch.js";
+import { linkPendingToReal, linkPendingToPending } from "../../utils/vormMatch.js";
 
 function MatchingScreen({onClose, onBack}) {
   const { cats, groups, txs, setTxs, accounts, year, month, getCat, getSub, txType, selAcc, setMasterOverride } = useContext(AppCtx);
@@ -39,18 +39,25 @@ function MatchingScreen({onClose, onBack}) {
     repeatMonths:1, csvType:"expense",
   });
 
-  // Vormerkungen des gewählten Monats (im aktiven Konto)
+  // Manuell angelegte Vormerkungen des gewählten Monats (im aktiven Konto).
+  // Vom Bank-Abruf/CSV-Import als „vorgemerkt" (PDNG) übernommene Zeilen
+  // (_bankPending) zählen NICHT hierzu — die stehen rechts bei den Buchungen,
+  // damit man eine eigene Vormerkung mit der Bank-Meldung verknüpfen kann
+  // (z. B. nach Offline-Anlage während des Bank-Abrufs, s. linkPendingToPending).
   const pendingTxs = txs.filter(tx=>{
-    if(!tx.pending) return false;
+    if(!tx.pending || tx._bankPending) return false;
     if(!isSelAcc(tx)) return false;
     const d=new Date(tx.date);
     return d.getFullYear()===selYear && d.getMonth()===selMonth;
   });
 
-  // Echte (nicht-pending) Buchungen des Monats (im aktiven Konto)
-  // Buchungen die bereits vollständig einer Vormerkung zugeordnet sind ausblenden
+  // Echte (gebuchte) Buchungen UND noch bei der Bank vorgemerkte (PDNG)
+  // Zeilen des Monats (im aktiven Konto) — beide lassen sich mit einer
+  // manuellen Vormerkung verknüpfen (doMatch wählt automatisch die passende
+  // Verknüpfungslogik). Buchungen, die bereits vollständig zugeordnet sind,
+  // werden ausgeblendet.
   const realTxs = txs.filter(tx=>{
-    if(tx.pending) return false;
+    if(tx.pending && !tx._bankPending) return false;
     if(tx._linkedTo) return false; // vollständig verknüpft
     if(!isSelAcc(tx)) return false;
     const d=new Date(tx.date);
@@ -91,8 +98,14 @@ function MatchingScreen({onClose, onBack}) {
     // Feld-Logik (Notiz-Merge, Splits-Übernahme, pending/linkedIds/accountId)
     // lebt zentral in vormMatch.js — dieselbe Funktion nutzt auch das
     // automatische Matching (CSV-Import/Bank-Abruf), damit manuelles und
-    // automatisches Verknüpfen nie auseinanderlaufen.
-    setTxs(p=>linkPendingToReal(p, selPend, selTx));
+    // automatisches Verknüpfen nie auseinanderlaufen. Ist die rechts gewählte
+    // Zeile selbst noch eine bei der Bank vorgemerkte (PDNG) Buchung statt
+    // einer bereits gebuchten, verschmilzt linkPendingToPending beide, statt
+    // die Bank-Zeile fälschlich als „real" zu behandeln.
+    const target = txs.find(t=>t.id===selTx);
+    setTxs(p => target?.pending
+      ? linkPendingToPending(p, selPend, selTx)
+      : linkPendingToReal(p, selPend, selTx));
     setMatched(p=>[...p,{pendId:selPend,txId:selTx}]);
     setSelPend(null); setSelTx(null);
   };
@@ -380,14 +393,16 @@ function MatchingScreen({onClose, onBack}) {
                   {type==="income"?"+":"−"}{fmt(tx.totalAmount)}
                 </div>
                 <div style={{width:28,height:28,borderRadius:8,
-                  background:(cat?.color||"#888")+"33",
+                  background:tx._bankPending?T.gold+"33":(cat?.color||"#888")+"33",
                   display:"flex",alignItems:"center",justifyContent:"center",
                   fontSize:14,flexShrink:0}}>
-                  {tx.pending?(tx._seriesTyp==="finanzierung"?Li("credit-card",14,T.gold):tx._seriesId?Li("repeat",14,T.pos):Li("calendar",14,T.blue)):isUncat?Li("help-circle",14,T.txt2):Li(cat?.icon||"tag",14,cat?.color||T.txt2)}
+                  {tx._bankPending?Li("landmark",14,T.gold):tx.pending?(tx._seriesTyp==="finanzierung"?Li("credit-card",14,T.gold):tx._seriesId?Li("repeat",14,T.pos):Li("calendar",14,T.blue)):isUncat?Li("help-circle",14,T.txt2):Li(cat?.icon||"tag",14,cat?.color||T.txt2)}
                 </div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{color:T.txt,fontSize:11,fontWeight:600,
                     overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                    {tx._bankPending&&<span style={{fontSize:8,background:"rgba(245,166,35,0.18)",color:T.gold,
+                      borderRadius:4,padding:"1px 4px",fontWeight:800,marginRight:4,letterSpacing:0.2}}>VORGEMERKT</span>}
                     {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex"}}>{Li("sticky-note",9,T.gold)}</span>}
                   </div>
                   <div style={{color:T.txt2,fontSize:9}}>

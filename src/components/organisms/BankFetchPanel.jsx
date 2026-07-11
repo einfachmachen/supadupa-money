@@ -43,11 +43,16 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }
     );
   };
 
-  // Kategorie/Löschen wirken auf die noch NICHT importierten (geparkten) Einträge.
+  // Kategorie/Notiz/Löschen wirken auf die noch NICHT importierten (geparkten) Einträge.
   const setRowCat = (id, catId, subId) =>
     onUpdateStaged((list) => list.map((t) => t.id === id
       ? { ...t, splits: catId ? [{ id: uid(), catId, subId, amount: t.totalAmount }] : [] }
       : t));
+  // Eigene Notiz VOR der Übernahme — besonders bei „vorgemerkten" (bei der
+  // Bank selbst noch nicht endgültig gebuchten) Zeilen hilfreich, um sich den
+  // Anlass zu merken, bevor die spätere echte Buchung eintrifft und verknüpft wird.
+  const setRowNote = (id, note) =>
+    onUpdateStaged((list) => list.map((t) => (t.id === id ? { ...t, note } : t)));
 
   // Falsch abgerufenen Eintrag direkt entfernen — ohne ihn vorher kategorisieren
   // zu müssen. (Beim nächsten Abruf würde er ggf. wieder als neu erkannt.)
@@ -207,6 +212,11 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }
             {Li("trash-2", 16, T.neg)}
           </button>
         </div>
+        <input value={t.note || ""} onChange={(e) => setRowNote(t.id, e.target.value)}
+          placeholder="eigene Notiz (optional)"
+          style={{ width: "100%", boxSizing: "border-box", marginTop: 6, background: "rgba(255,255,255,0.05)",
+            border: `1px solid ${T.bd}`, borderRadius: 7, padding: "5px 8px",
+            color: T.txt, fontSize: 12, outline: "none", fontFamily: "inherit" }} />
       </div>
     );
   };

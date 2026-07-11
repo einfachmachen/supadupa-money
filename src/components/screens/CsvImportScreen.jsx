@@ -744,6 +744,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
           r._detailNote || "",
         ].filter(Boolean).join(" · "),
         pending: !!r.pending,   // aus der CSV erkannte Vormerkung (z.B. DKB-Status „Vorgemerkt") übernehmen
+        ...(r.pending ? {_bankPending: true} : {}), // von der Bank/CSV gemeldet, nicht manuell angelegt (s. MatchingScreen)
         accountId: resolvedAccId,
         splits,
         _csvType: r.amount > 0 ? "income" : "expense",

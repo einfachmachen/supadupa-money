@@ -131,6 +131,11 @@ function DashboardScreenV2() {
         totalAmount: row.pending ? row.amount : Math.abs(row.amount),
         desc: row.desc, note: "", pending: !!row.pending, accountId: accId, splits: [],
         _csvType: row.amount > 0 ? "income" : "expense", _fp: row.fp, _csvSource: "Enable Banking",
+        // Markiert: diese Vormerkung stammt von der Bank selbst (PDNG-Status),
+        // nicht vom Nutzer manuell angelegt — unterscheidet in MatchingScreen,
+        // ob mit einer echten Buchung ODER mit einer weiteren, manuell
+        // angelegten Vormerkung verknüpft werden kann (linkPendingToPending).
+        ...(row.pending ? { _bankPending: true } : {}),
         ...(row._ebRef ? { _ebRef: row._ebRef } : {}),
       }));
       // NICHT direkt importieren — die abgerufenen Einträge werden zunächst nur

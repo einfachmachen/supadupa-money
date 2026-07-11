@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
+import { linkPendingToReal, linkPendingToPending } from "../../utils/vormMatch.js";
 
 // Beträge als Beträge (Math.abs auf BEIDEN Seiten) vergleichen, nicht die
 // rohe Differenz: eine vom Bank-Live-Abruf übernommene Vormerkung trägt
@@ -16,15 +17,20 @@ export function isVormAmountMatch(tx, editVorm) {
   return Math.abs(Math.abs(tx.totalAmount) - Math.abs(editVorm.totalAmount)) < 0.01;
 }
 
-// Kandidaten für "Buchung zuordnen": echte, noch unverknüpfte Buchungen
-// desselben Kontos + Monats wie die Vormerkung, Betragstreffer zuerst.
+// Kandidaten für "Buchung zuordnen": echte Buchungen UND bei der Bank selbst
+// noch vorgemerkte (PDNG, _bankPending) Zeilen desselben Kontos + Monats wie
+// die Vormerkung, noch unverknüpft, Betragstreffer zuerst. Bank-vorgemerkte
+// Zeilen zählen mit dazu, damit sich eine manuell angelegte Vormerkung auch
+// mit einer bereits vom Bank-Abruf übernommenen Vormerkung verknüpfen lässt
+// (z.B. wenn beide während einer Offline-Phase unabhängig entstanden sind).
 export function getVormLinkCandidates(txs, editVorm) {
   const txMonth = new Date(editVorm.date).getMonth();
   const txYear  = new Date(editVorm.date).getFullYear();
   // Nur Buchungen desselben Kontos wie die Vormerkung anbieten (Giro-Fallback).
   const editAcc = editVorm.accountId || "acc-giro";
   return txs.filter(t=>{
-    if(t.pending||t._linkedTo) return false;
+    if(t._linkedTo) return false;
+    if(t.pending && !t._bankPending) return false;
     if((t.accountId||"acc-giro")!==editAcc) return false;
     const d=new Date(t.date);
     return d.getFullYear()===txYear&&d.getMonth()===txMonth;
@@ -52,17 +58,22 @@ function VormVerknuepfenPanel({editVorm, txs, setTxs, onClose}) {
         const isMatch=isVormAmountMatch(tx,editVorm);
         return (
           <div key={tx.id} onClick={()=>{
-            setTxs(p=>p.map(t=>{
-              if(t.id===tx.id) return {...t,linkedIds:[...(t.linkedIds||[]),editVorm.id],splits:(editVorm.splits||[]).length>0&&(editVorm.splits||[])[0]?.catId?[...editVorm.splits]:t.splits};
-              if(t.id===editVorm.id) return {...t,pending:false,_linkedTo:tx.id,accountId:tx.accountId};
-              return t;
-            }));
+            // Ziel selbst noch bei der Bank vorgemerkt (PDNG) statt schon
+            // gebucht → beide Vormerkungen verschmelzen (linkPendingToPending),
+            // sonst normal mit der echten Buchung verknüpfen.
+            setTxs(p=>tx.pending
+              ? linkPendingToPending(p, editVorm.id, tx.id)
+              : linkPendingToReal(p, editVorm.id, tx.id));
             onClose();
           }}
             style={{display:"flex",alignItems:"center",gap:8,padding:"6px 8px",borderRadius:8,marginBottom:3,cursor:"pointer",
               background:isMatch?"rgba(74,159,212,0.1)":"rgba(255,255,255,0.04)",border:`1px solid ${isMatch?T.blue:T.bd}`}}>
             <div style={{flex:1,minWidth:0}}>
-              <div style={{color:T.txt,fontSize:11,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tx.desc||"—"}</div>
+              <div style={{color:T.txt,fontSize:11,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                {tx._bankPending&&<span style={{fontSize:8,background:"rgba(245,166,35,0.18)",color:T.gold,
+                  borderRadius:4,padding:"1px 4px",fontWeight:800,marginRight:4,letterSpacing:0.2}}>VORGEMERKT</span>}
+                {tx.desc||"—"}
+              </div>
               <div style={{color:T.txt2,fontSize:9}}>{tx.date}</div>
             </div>
             <span style={{color:isMatch?T.pos:T.txt,fontFamily:NUM_FONT,fontSize:11,fontWeight:700,flexShrink:0}}>{fmt(tx.totalAmount)}</span>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { autoMatchVormerkungen, linkPendingToReal } from "../src/utils/vormMatch.js";
+import { autoMatchVormerkungen, linkPendingToReal, linkPendingToPending } from "../src/utils/vormMatch.js";
 import { getVormLinkCandidates, isVormAmountMatch } from "../src/components/organisms/VormVerknuepfenPanel.jsx";
 
 const pend = (over={}) => ({
@@ -58,6 +58,50 @@ describe("autoMatchVormerkungen", () => {
     const r = txs.find(t=>t.id==="real-1");
     expect(r._amtMismatch).toBeTruthy();
     expect(r._amtMismatch.realAmt).toBe(3.10);
+  });
+});
+
+// Regression: während einer Offline-Phase (Flugmodus) legt der Nutzer manuell
+// eine Vormerkung an; sobald wieder online, meldet der Bank-Abruf dieselbe
+// Zahlung bereits als eigene, noch bei der Bank vorgemerkte (PDNG) Zeile
+// (_bankPending). Beide dürfen NICHT als zwei getrennte offene Vormerkungen
+// stehen bleiben (sonst zählt die Prognose den Betrag doppelt) — der Nutzer
+// muss sie manuell verknüpfen können, auch wenn die Bank-Zeile selbst noch
+// nicht "real" gebucht ist.
+describe("linkPendingToPending — manuelle Vormerkung mit Bank-vorgemerkter Zeile verschmelzen", () => {
+  const manual = (over={}) => pend({ id:"pend-manual", desc:"Miete", note:"", ...over });
+  const bankPending = (over={}) => ({
+    id:"pend-bank", pending:true, _bankPending:true, date:"2026-07-01", totalAmount:-2.98,
+    desc:"REWE Koblenz", note:"", accountId:"acc-giro", splits:[], _csvType:"expense", ...over,
+  });
+
+  it("verschmilzt beide: Bank-Zeile bleibt pending, manuelle Vormerkung wird verlinkt/retiriert", () => {
+    const txs = linkPendingToPending([manual(), bankPending()], "pend-manual", "pend-bank");
+    const m = txs.find(t=>t.id==="pend-manual");
+    const b = txs.find(t=>t.id==="pend-bank");
+    expect(m.pending).toBe(false);
+    expect(m._linkedTo).toBe("pend-bank");
+    expect(b.pending).toBe(true); // noch nicht real gebucht — bleibt Platzhalter
+    expect(b._bankPending).toBe(true);
+    expect(b.linkedIds).toContain("pend-manual");
+  });
+
+  it("übernimmt die Kategorie der manuellen Vormerkung auf die Bank-Zeile", () => {
+    const txs = linkPendingToPending([manual(), bankPending()], "pend-manual", "pend-bank");
+    const b = txs.find(t=>t.id==="pend-bank");
+    expect(b.splits[0].catId).toBe("cat-essen");
+  });
+
+  it("markiert eine Betragsabweichung zwischen manueller Schätzung und Bank-Betrag", () => {
+    const txs = linkPendingToPending([manual(), bankPending({ totalAmount:-5.00 })], "pend-manual", "pend-bank");
+    const b = txs.find(t=>t.id==="pend-bank");
+    expect(b._amtMismatch).toBeTruthy();
+  });
+
+  it("getVormLinkCandidates bietet Bank-vorgemerkte Zeilen als Kandidaten an, normale Vormerkungen aber nicht", () => {
+    const otherManual = { id:"pend-other", pending:true, date:"2026-07-01", accountId:"acc-giro", totalAmount:-2.98 };
+    const candidates = getVormLinkCandidates([bankPending(), otherManual], manual());
+    expect(candidates.map(c=>c.id)).toEqual(["pend-bank"]);
   });
 });
 

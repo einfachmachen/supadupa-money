@@ -48,6 +48,46 @@ export function linkPendingToReal(txs, pendId, realId) {
   });
 }
 
+// Verknüpft eine MANUELL angelegte Vormerkung mit einer noch bei der Bank
+// vorgemerkten (PDNG) Buchung — z. B. wenn beide während einer Offline-Phase
+// unabhängig voneinander entstanden sind (Nutzer legt die Vormerkung von Hand
+// an, während gleichzeitig/später der Bank-Abruf dieselbe Zahlung schon als
+// „vorgemerkt" meldet). Anders als linkPendingToReal bleibt die Bank-Zeile
+// selbst weiterhin pending (sie ist ja noch nicht real gebucht) — sie
+// „gewinnt" nur die Notiz/Kategorie der manuellen Vormerkung und absorbiert
+// sie, damit die Prognose den Betrag nicht doppelt zählt. Sobald die Bank die
+// Buchung später endgültig bucht, greift dafür ganz normal linkPendingToReal
+// (automatisch oder manuell) — die Bank-Zeile bleibt bis dahin der „lebende"
+// Platzhalter.
+export function linkPendingToPending(txs, manualId, bankId) {
+  const manual = txs.find(t => t.id === manualId);
+  const bank = txs.find(t => t.id === bankId);
+  if (!manual || !bank) return txs;
+  const cleanBankNote = (bank.note || "").split(" · ")
+    .filter(part => !part.startsWith("Vormerkung:"))
+    .join(" · ");
+  const vormNote = manual.desc && manual.desc !== bank.desc ? `Vormerkung: ${manual.desc}` : "";
+  const combinedNote = [vormNote, manual.note || "", cleanBankNote]
+    .filter(Boolean).join(" · ") || cleanBankNote || "";
+  const manualSplits = (manual.splits || []).filter(s => s.catId);
+  const manualTotal = manualSplits.reduce((s, sp) => s + (parseFloat(sp.amount) || 0), 0);
+  const newSplits = manualSplits.length > 0
+    ? manualSplits.map(sp => ({ ...sp, id: uid() }))
+    : bank.splits;
+  const amtMismatch = manualTotal > 0 && Math.abs(manualTotal - bank.totalAmount) > 0.005;
+  return txs.map(tx => {
+    if (tx.id === bankId) return {
+      ...tx,
+      splits: newSplits,
+      linkedIds: (tx.linkedIds || []).includes(manualId) ? (tx.linkedIds || []) : [...(tx.linkedIds || []), manualId],
+      note: combinedNote,
+      _amtMismatch: amtMismatch ? { pendId: manualId, pendAmt: manualTotal, realAmt: bank.totalAmount } : undefined,
+    };
+    if (tx.id === manualId) return { ...tx, pending: false, _linkedTo: bankId, accountId: bank.accountId };
+    return tx;
+  });
+}
+
 // Sucht eindeutige Vormerkung↔echte-Buchung-Paare und verknüpft sie.
 // Budget-Platzhalter (_budgetSubId) bleiben außen vor — die folgen einer
 // anderen Logik (Soll/Ist-Vergleich statt 1:1-Verknüpfung).
