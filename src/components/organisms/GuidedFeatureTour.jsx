@@ -40,13 +40,29 @@ function GuidedFeatureTour({ onClose }) {
   // warten (kurzes Polling — der Tab-Wechsel selbst braucht einen Render-
   // Zyklus) und seine Position messen. Kein Ziel-Selector → sofort "bereit"
   // (zentrierte Karte ohne Hervorhebung).
+  //
+  // WICHTIG (Regression, per Screenshot gemeldet): die vorherige Version gab
+  // im Erfolgsfall `return true;` aus dem Effect zurück — das ist KEINE
+  // gültige Cleanup-Funktion (React akzeptiert nur Funktionen oder
+  // undefined), wurde also stillschweigend ignoriert. Der zuvor per
+  // requestAnimationFrame geplante Callback lief dadurch auch dann noch,
+  // wenn der Nutzer inzwischen (z. B. bei schnellem Weiter-Klicken) schon
+  // beim NÄCHSTEN Schritt war — und überschrieb dessen frisch gesetztes
+  // rect:null mit dem VERALTETEN Rechteck des vorherigen Ziel-Elements
+  // (sichtbar als "Geister-Spotlight" an falscher Stelle, z. B. blieb der
+  // gesamte Hero-Bereich unverdunkelt, obwohl der aktuelle Schritt gar kein
+  // Ziel-Element hatte). `cancelled` schützt jetzt jeden asynchronen
+  // Callback davor, nach einem Schritt-Wechsel noch zu greifen.
   useEffect(() => {
     setReady(false);
     setRect(null);
     if (target.tab === "home") { setMainTab("erfassen"); setSubTab("dashboard"); }
     else if (target.tab === "daten") { setMainTab("struktur"); setActiveStructurTab("daten"); }
 
-    if (!target.selector) { setReady(true); return; }
+    let cancelled = false;
+    let rafId = null;
+
+    if (!target.selector) { setReady(true); return () => { cancelled = true; }; }
 
     const start = Date.now();
     const tryFind = () => {
@@ -54,7 +70,8 @@ function GuidedFeatureTour({ onClose }) {
       if (el) {
         el.scrollIntoView({ block: "center", behavior: "instant" });
         // Nach scrollIntoView einen Frame abwarten, damit die Position stimmt.
-        requestAnimationFrame(() => {
+        rafId = requestAnimationFrame(() => {
+          if (cancelled) return;
           const r = el.getBoundingClientRect();
           setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
           setReady(true);
@@ -63,14 +80,20 @@ function GuidedFeatureTour({ onClose }) {
       }
       return false;
     };
-    if (tryFind()) return;
-    pollRef.current = setInterval(() => {
-      if (tryFind() || Date.now() - start > POLL_TIMEOUT_MS) {
-        clearInterval(pollRef.current);
-        setReady(true); // Timeout: zentrierte Karte ohne Hervorhebung als Fallback
-      }
-    }, POLL_MS);
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    if (!tryFind()) {
+      pollRef.current = setInterval(() => {
+        if (cancelled) { clearInterval(pollRef.current); return; }
+        if (tryFind() || Date.now() - start > POLL_TIMEOUT_MS) {
+          clearInterval(pollRef.current);
+          if (!cancelled) setReady(true); // Timeout: zentrierte Karte ohne Hervorhebung als Fallback
+        }
+      }, POLL_MS);
+    }
+    return () => {
+      cancelled = true;
+      if (pollRef.current) clearInterval(pollRef.current);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stepIndex]);
 
