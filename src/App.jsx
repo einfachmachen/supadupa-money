@@ -47,6 +47,7 @@ const EnableBankingWizard   = lazyNamed(() => import("./components/screens/Enabl
 const CloudSetupWizard      = lazyNamed(() => import("./components/screens/CloudSetupWizard.jsx"), "CloudSetupWizard");
 const FuelAnalysisScreen    = lazyNamed(() => import("./components/screens/FuelAnalysisScreen.jsx"), "FuelAnalysisScreen");
 const MatchingScreen        = lazyNamed(() => import("./components/screens/MatchingScreen.jsx"), "MatchingScreen");
+const FeatureTourScreen      = lazyNamed(() => import("./components/screens/FeatureTourScreen.jsx"), "FeatureTourScreen");
 const RecurringDetectionScreen = lazyNamed(() => import("./components/screens/RecurringDetectionScreen.jsx"), "RecurringDetectionScreen");
 const VormerkungHub         = lazyNamed(() => import("./components/screens/VormerkungHub.jsx"), "VormerkungHub");
 
@@ -302,6 +303,7 @@ export default function SupaDupaMoney() {
   const [showBankWizard, setShowBankWizard] = useState(false);
   const [showCloudSetup, setShowCloudSetup] = useState(false);
   const [showFuelAnalysis, setShowFuelAnalysis] = useState(false);
+  const [showFeatureTour, setShowFeatureTour] = useState(false);
   const [importText,    setImportText]     = useState("");
   const [importStatus,  setImportStatus]   = useState(null);
   const [topMenu,       setTopMenu]        = useState(null); // "laden"|"speichern"|null
@@ -363,7 +365,7 @@ export default function SupaDupaMoney() {
   const _structOverlayOpen =
     showMobilePicker || showDataMgr || showMobileKategorien || showMobileVormerken ||
     showMobileWiederkehrend || showMobileBudget || showCsv || showBankWizard ||
-    showCloudSetup || showFuelAnalysis || showMatching || showVormHub || showVormMenu ||
+    showCloudSetup || showFuelAnalysis || showFeatureTour || showMatching || showVormHub || showVormMenu ||
     showRecurring || showKategorisieren || showMonthPickerModal || showCloudSave ||
     showSettings || showSupaQuick || showQuickPicker || !!modal || !!exportModal ||
     !!exportDialog || !!reviewQueue || dashDrillOpen || !!accIconPick || !!editTx;
@@ -2662,6 +2664,7 @@ Abbrechen = ${remoteName}-Stand laden`
     syncPass, setSyncPass, syncEncActive,
     showCloudSetup, setShowCloudSetup,
     showFuelAnalysis, setShowFuelAnalysis,
+    showFeatureTour, setShowFeatureTour,
     setShowMobileKategorien,
     setActiveStructurTab, setShowBankWizard,
     setShowCsv, setShowDataMgr,
@@ -2689,7 +2692,7 @@ Abbrechen = ${remoteName}-Stand laden`
     reviewQueue, showSettings, showVormHub, editVormTx, showMatching,
     customIcons, themeName, themeSlideshow, hideEmptyRows, handedness, debugFlags,
     cfActive, cfStatus, cfUrl, cfSecret,
-    syncPass, syncEncActive, showCloudSetup, showFuelAnalysis,
+    syncPass, syncEncActive, showCloudSetup, showFuelAnalysis, showFeatureTour,
     syncStatus, syncError, isDirty, isOnline, cfSaveOnClose,
     dashDrillOpen, amtMode, amtFont, noBorders, masterOverride,
     favIcons,
@@ -3452,6 +3455,9 @@ Abbrechen = ${remoteName}-Stand laden`
         onBack={()=>{setShowFuelAnalysis(false);setPlusArretiert(true);}}/>}
       {showMatching&&<MatchingScreen onClose={()=>{setShowMatching(false);setPlusArretiert(false);}}
         onBack={()=>{setShowMatching(false);reopenMobilePicker("main");}}/>}
+      {showFeatureTour&&<FeatureTourScreen mobileMode={mobileMode}
+        onClose={()=>{setShowFeatureTour(false);setPlusArretiert(false);}}
+        onBack={()=>{setShowFeatureTour(false);setPlusArretiert(true);}}/>}
       {showVormHub&&<VormerkungHub onClose={()=>{setShowVormHub(false);setEditVormTx(null);setPlusArretiert(false);}} editVorm={editVormTx} mobileMode={mobileMode}/>}
       {showRecurring&&<RecurringDetectionScreen onClose={()=>{setShowRecurring(false);setPlusArretiert(false);}}/>}
       {showKategorisieren&&<RecurringDetectionScreen initialTab="kategorisieren" onClose={()=>{setShowKategorisieren(false);setPlusArretiert(false);}}/>}
