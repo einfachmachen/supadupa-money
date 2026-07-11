@@ -33,8 +33,8 @@ function SettingsInline() {
     supaStatus, supaUrl, setSupaUrl, supaKey, setSupaKey, supaLockKey,
     testSupaConnection, saveSupaSettings, supaActive, setSupaStatus, setSupaError, supaError, supaFetch,
     jsonbinActive, jsonbinSave, jsonbinLoad, jsonbinStatus, setJsonbinStatus, jsonbinKey, jsonbinId, setJsonbinKey, setJsonbinId,
-    gistActive, gistSave, gistLoad, gistStatus, setGistStatus, gistToken, gistId, setGistToken, setGistId, applyData,
-    cfActive, cfSave, cfLoad, cfStatus, setCfStatus, cfUrl, cfSecret, setCfUrl, setCfSecret,
+    gistActive, gistSave, gistLoad, gistStatus, setGistStatus, gistToken, gistId, setGistToken, setGistId,
+    cfActive, cfSave, loadFromCloud, cfStatus, setCfStatus, cfUrl, cfSecret, setCfUrl, setCfSecret,
     syncPass, setSyncPass, syncEncActive,
     syncStatus, setSyncStatus, syncError,
     themeName, setThemeName, setThemeRev,
@@ -190,13 +190,18 @@ function SettingsInline() {
         )}
         {cfActive&&(
           <button onClick={async()=>{
+            // loadFromCloud() (App.jsx) übernimmt Laden + Anwenden UND setzt
+            // dabei kurz syncStatus "loading" — dadurch greift dieselbe
+            // Gnadenfrist wie beim Boot-Laden (useLocalSaveDebounce). Vorher
+            // rief dieser Button cfLoad()/applyData() direkt auf und markierte
+            // den frisch geladenen Cloud-Stand 300ms später fälschlich als
+            // "nicht synchronisiert", obwohl gerade erst synchronisiert wurde.
+            if(!window.confirm("Cloudflare → Lokal laden?\n\nAchtung: Lokale Änderungen werden überschrieben!")) return;
             try{
               setCfStatus("loading");
-              const data=await cfLoad();
-              if(!data?.cats?.length){alert("Keine Daten gefunden.");setCfStatus("error");return;}
-              if(window.confirm("Cloudflare → Lokal laden?\n\nAchtung: Lokale Änderungen werden überschrieben!")){
-                applyData(data);setCfStatus("ok");alert("Daten erfolgreich geladen!");
-              }else setCfStatus("ok");
+              await loadFromCloud();
+              setCfStatus("ok");
+              alert("Daten erfolgreich geladen!");
             }catch(e){setCfStatus("error");alert("Fehler: "+e.message);}
           }} className="btn-solid" style={{width:"100%",padding:"10px 8px",borderRadius:9,marginBottom:6,
             border:`2px solid ${T.blue}`,background:`${T.blue}11`,color:T.blue,
