@@ -6,6 +6,7 @@ import { dayOf, fmt, pn, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { budgetPlaceholderActive } from "../../utils/saldo.js";
+import { isBankPending } from "../../utils/vormMatch.js";
 
 function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub, budgetOpenRest, initialCollapsed=true, noCollapse=false, onOpenMatching}) {
   const _pendOpenAmt = pendOpenAmt || (t=>t.totalAmount);
@@ -123,10 +124,11 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
                 <div style={{color:T.txt2,fontSize:11,display:"flex",alignItems:"center",gap:5}}>
                   <span>{tx.date}{tx._seriesId&&tx._seriesTotal>1&&tx._seriesIdx&&tx._seriesTyp==="finanzierung"?` · ${tx._seriesIdx}/${tx._seriesTotal}`:""}</span>
                   {/* Bank-Vormerkung (PDNG, egal ob per Enable Banking oder CSV
-                      erkannt) — von einer selbst angelegten Vormerkung
+                      erkannt, auch bei älteren Importen ohne explizites Flag —
+                      s. isBankPending) — von einer selbst angelegten Vormerkung
                       unterscheidbar, damit auffällt: die lässt sich ggf. mit
                       einer eigenen Vormerkung verknüpfen (s. "zuordnen" oben). */}
-                  {tx._bankPending&&(
+                  {isBankPending(tx)&&(
                     <span style={{background:"rgba(74,159,212,0.15)",color:T.blue,
                       borderRadius:4,padding:"0 4px",fontSize:9,fontWeight:700,flexShrink:0,
                       display:"inline-flex",alignItems:"center",gap:3}}>

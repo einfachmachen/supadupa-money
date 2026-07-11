@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { autoMatchVormerkungen, linkPendingToReal, linkPendingToPending } from "../src/utils/vormMatch.js";
+import { autoMatchVormerkungen, linkPendingToReal, linkPendingToPending, isBankPending } from "../src/utils/vormMatch.js";
 import { getVormLinkCandidates, isVormAmountMatch } from "../src/components/organisms/VormVerknuepfenPanel.jsx";
 
 const pend = (over={}) => ({
@@ -102,6 +102,39 @@ describe("linkPendingToPending — manuelle Vormerkung mit Bank-vorgemerkter Zei
     const otherManual = { id:"pend-other", pending:true, date:"2026-07-01", accountId:"acc-giro", totalAmount:-2.98 };
     const candidates = getVormLinkCandidates([bankPending(), otherManual], manual());
     expect(candidates.map(c=>c.id)).toEqual(["pend-bank"]);
+  });
+
+  // Regression (echter Nutzer-Bericht): Zwei bereits vor Einführung des
+  // _bankPending-Flags importierte/angelegte Vormerkungen für denselben
+  // Flug (eine manuell, eine von der Bank/CSV übernommen — OHNE das neue
+  // Flag, da die Daten älter sind) ließen sich über "Buchung/Vormerkung
+  // zuordnen" nicht verknüpfen, weil die Bank-Zeile mangels Flag als
+  // "normale Vormerkung" durchging und komplett aus den Kandidaten fiel.
+  // isBankPending() muss solche Alt-Datensätze anhand von _fp/_csvSource/
+  // _ebRef zuverlässig erkennen, auch ganz ohne explizites Flag.
+  it("erkennt Bank-vorgemerkte Zeilen auch OHNE explizites _bankPending-Flag (Altdaten) anhand von _fp/_csvSource", () => {
+    const legacyBankRow = {
+      id:"pend-legacy-bank", pending:true, date:"2026-07-13", totalAmount:-39.90,
+      desc:"Eurowings Frankfurt am DE", note:"", accountId:"acc-giro",
+      splits:[], _csvType:"expense", _fp:"fp-eurowings", _csvSource:"Enable Banking",
+      // KEIN _bankPending — genau das Altdaten-Szenario.
+    };
+    expect(isBankPending(legacyBankRow)).toBe(true);
+
+    const manualEurowings = manual({ id:"pend-manual-eurowings", desc:"Boss Man Eurowings",
+      date:"2026-07-13", totalAmount:-39.90 });
+    const candidates = getVormLinkCandidates([legacyBankRow], manualEurowings);
+    expect(candidates.map(c=>c.id)).toEqual(["pend-legacy-bank"]);
+  });
+
+  it("bietet die bearbeitete Vormerkung nie als Kandidat für sich selbst an", () => {
+    const selfBankRow = bankPending({ id:"pend-self" });
+    const candidates = getVormLinkCandidates([selfBankRow], selfBankRow);
+    expect(candidates).toEqual([]);
+  });
+
+  it("isBankPending ist false für eine ganz normale manuelle Vormerkung", () => {
+    expect(isBankPending(manual())).toBe(false);
   });
 });
 

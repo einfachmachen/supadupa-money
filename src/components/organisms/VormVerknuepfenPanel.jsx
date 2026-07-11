@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
-import { linkPendingToReal, linkPendingToPending } from "../../utils/vormMatch.js";
+import { linkPendingToReal, linkPendingToPending, isBankPending } from "../../utils/vormMatch.js";
 
 // Beträge als Beträge (Math.abs auf BEIDEN Seiten) vergleichen, nicht die
 // rohe Differenz: eine vom Bank-Live-Abruf übernommene Vormerkung trägt
@@ -29,8 +29,9 @@ export function getVormLinkCandidates(txs, editVorm) {
   // Nur Buchungen desselben Kontos wie die Vormerkung anbieten (Giro-Fallback).
   const editAcc = editVorm.accountId || "acc-giro";
   return txs.filter(t=>{
+    if(t.id===editVorm.id) return false; // nie sich selbst als Ziel anbieten
     if(t._linkedTo) return false;
-    if(t.pending && !t._bankPending) return false;
+    if(t.pending && !isBankPending(t)) return false;
     if((t.accountId||"acc-giro")!==editAcc) return false;
     const d=new Date(t.date);
     return d.getFullYear()===txYear&&d.getMonth()===txMonth;
@@ -56,12 +57,13 @@ function VormVerknuepfenPanel({editVorm, txs, setTxs, onClose}) {
       </button>
       {showLink&&candidates.map(tx=>{
         const isMatch=isVormAmountMatch(tx,editVorm);
+        const bankPend=isBankPending(tx);
         return (
           <div key={tx.id} onClick={()=>{
             // Ziel selbst noch bei der Bank vorgemerkt (PDNG) statt schon
             // gebucht → beide Vormerkungen verschmelzen (linkPendingToPending),
             // sonst normal mit der echten Buchung verknüpfen.
-            setTxs(p=>tx.pending
+            setTxs(p=>bankPend
               ? linkPendingToPending(p, editVorm.id, tx.id)
               : linkPendingToReal(p, editVorm.id, tx.id));
             onClose();
@@ -70,7 +72,7 @@ function VormVerknuepfenPanel({editVorm, txs, setTxs, onClose}) {
               background:isMatch?"rgba(74,159,212,0.1)":"rgba(255,255,255,0.04)",border:`1px solid ${isMatch?T.blue:T.bd}`}}>
             <div style={{flex:1,minWidth:0}}>
               <div style={{color:T.txt,fontSize:11,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                {tx._bankPending&&<span style={{fontSize:8,background:"rgba(245,166,35,0.18)",color:T.gold,
+                {bankPend&&<span style={{fontSize:8,background:"rgba(245,166,35,0.18)",color:T.gold,
                   borderRadius:4,padding:"1px 4px",fontWeight:800,marginRight:4,letterSpacing:0.2}}>VORGEMERKT</span>}
                 {tx.desc||"—"}
               </div>

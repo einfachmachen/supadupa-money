@@ -16,6 +16,16 @@ import { uid } from "./format.js";
 const DAY = 86400000;
 const MAX_DAYS = 10;
 
+// Erkennt eine bei der Bank selbst noch vorgemerkte (PDNG) Zeile — auch bei
+// ALTEN, schon vor Einführung des expliziten _bankPending-Flags importierten
+// Datensätzen: _fp/_csvSource/_ebRef werden AUSSCHLIESSLICH von den Import-
+// Pipelines (CSV-Import, Enable-Banking-Abruf/-Wizard) gesetzt, NIE von einer
+// manuell angelegten Vormerkung — ihr Vorhandensein ist daher ein zuverlässiger
+// Rückfall, ohne dass alte, bereits gespeicherte Buchungen migriert werden müssten.
+export function isBankPending(tx) {
+  return !!(tx && tx.pending && (tx._bankPending || tx._ebRef || tx._fp || tx._csvSource));
+}
+
 // Führt die eigentliche Verknüpfung durch — identische Feld-Logik wie
 // MatchingScreen.doMatch (manuelles Matching), damit beide Wege nie
 // auseinanderlaufen.

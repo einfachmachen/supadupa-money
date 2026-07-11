@@ -12,7 +12,7 @@ import { isoAddMonths } from "../../utils/date.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
-import { linkPendingToReal, linkPendingToPending } from "../../utils/vormMatch.js";
+import { linkPendingToReal, linkPendingToPending, isBankPending } from "../../utils/vormMatch.js";
 
 function MatchingScreen({onClose, onBack}) {
   const { cats, groups, txs, setTxs, accounts, year, month, getCat, getSub, txType, selAcc, setMasterOverride } = useContext(AppCtx);
@@ -45,7 +45,7 @@ function MatchingScreen({onClose, onBack}) {
   // damit man eine eigene Vormerkung mit der Bank-Meldung verknüpfen kann
   // (z. B. nach Offline-Anlage während des Bank-Abrufs, s. linkPendingToPending).
   const pendingTxs = txs.filter(tx=>{
-    if(!tx.pending || tx._bankPending) return false;
+    if(!tx.pending || isBankPending(tx)) return false;
     if(!isSelAcc(tx)) return false;
     const d=new Date(tx.date);
     return d.getFullYear()===selYear && d.getMonth()===selMonth;
@@ -57,7 +57,7 @@ function MatchingScreen({onClose, onBack}) {
   // Verknüpfungslogik). Buchungen, die bereits vollständig zugeordnet sind,
   // werden ausgeblendet.
   const realTxs = txs.filter(tx=>{
-    if(tx.pending && !tx._bankPending) return false;
+    if(tx.pending && !isBankPending(tx)) return false;
     if(tx._linkedTo) return false; // vollständig verknüpft
     if(!isSelAcc(tx)) return false;
     const d=new Date(tx.date);
@@ -380,6 +380,7 @@ function MatchingScreen({onClose, onBack}) {
             const isActive=selTx===tx.id;
             const isUncat=(tx.splits||[]).length===0||(tx.splits||[]).every(s=>!s.catId);
             const col=type==="income"?T.pos:T.neg;
+            const bankPend=isBankPending(tx);
             return (
               <div key={tx.id} onClick={()=>setSelTx(isActive?null:tx.id)}
                 style={rowS(isActive,col)}>
@@ -393,15 +394,15 @@ function MatchingScreen({onClose, onBack}) {
                   {type==="income"?"+":"−"}{fmt(tx.totalAmount)}
                 </div>
                 <div style={{width:28,height:28,borderRadius:8,
-                  background:tx._bankPending?T.gold+"33":(cat?.color||"#888")+"33",
+                  background:bankPend?T.gold+"33":(cat?.color||"#888")+"33",
                   display:"flex",alignItems:"center",justifyContent:"center",
                   fontSize:14,flexShrink:0}}>
-                  {tx._bankPending?Li("landmark",14,T.gold):tx.pending?(tx._seriesTyp==="finanzierung"?Li("credit-card",14,T.gold):tx._seriesId?Li("repeat",14,T.pos):Li("calendar",14,T.blue)):isUncat?Li("help-circle",14,T.txt2):Li(cat?.icon||"tag",14,cat?.color||T.txt2)}
+                  {bankPend?Li("landmark",14,T.gold):tx.pending?(tx._seriesTyp==="finanzierung"?Li("credit-card",14,T.gold):tx._seriesId?Li("repeat",14,T.pos):Li("calendar",14,T.blue)):isUncat?Li("help-circle",14,T.txt2):Li(cat?.icon||"tag",14,cat?.color||T.txt2)}
                 </div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{color:T.txt,fontSize:11,fontWeight:600,
                     overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                    {tx._bankPending&&<span style={{fontSize:8,background:"rgba(245,166,35,0.18)",color:T.gold,
+                    {bankPend&&<span style={{fontSize:8,background:"rgba(245,166,35,0.18)",color:T.gold,
                       borderRadius:4,padding:"1px 4px",fontWeight:800,marginRight:4,letterSpacing:0.2}}>VORGEMERKT</span>}
                     {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex"}}>{Li("sticky-note",9,T.gold)}</span>}
                   </div>
