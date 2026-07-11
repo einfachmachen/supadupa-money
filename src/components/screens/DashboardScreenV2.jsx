@@ -1292,7 +1292,7 @@ function DashboardScreenV2() {
           };
 
           return (
-            <div style={{padding:"0 10px 4px",display:"flex",flexDirection:"column",gap:2}}>
+            <div data-tour="cat-list" style={{padding:"0 10px 4px",display:"flex",flexDirection:"column",gap:2}}>
               {allCatsToShow.map(cat => {
                 const isIncome = _isCatIncomeOrTagesgeld(cat);
                 // Ist (real + konkrete VM) — auch Basis für die Ampelfarbe

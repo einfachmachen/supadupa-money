@@ -15,6 +15,7 @@ import { MonatScreen } from "./components/screens/MonatScreen.jsx";
 import { MoneyMoodScreen } from "./components/screens/MoneyMoodScreen.jsx";
 import { TrendOverviewScreen } from "./components/screens/TrendOverviewScreen.jsx";
 import { SyncStatusBadge } from "./components/organisms/SyncStatusBadge.jsx";
+import { GuidedFeatureTour } from "./components/organisms/GuidedFeatureTour.jsx";
 import { useOnlineStatus } from "./hooks/useOnlineStatus.js";
 
 // Selten geöffnete Vollbild-Dialoge/Screens NICHT im Hauptbundle: sie laden
@@ -304,6 +305,12 @@ export default function SupaDupaMoney() {
   const [showCloudSetup, setShowCloudSetup] = useState(false);
   const [showFuelAnalysis, setShowFuelAnalysis] = useState(false);
   const [showFeatureTour, setShowFeatureTour] = useState(false);
+  // Interaktive, hervorhebende Tour (Hero-"?"-Symbol) — anders als die
+  // übrigen showXxx-Vollbild-Screens ERSETZT sie den Inhalt NICHT, sondern
+  // liegt als Overlay ÜBER dem jeweils aktiven Tab (springt beim Weiter-
+  // Klicken selbst zwischen Tabs). Der Schritt-Index lebt lokal in
+  // GuidedFeatureTour (setzt sich bei jedem Öffnen automatisch zurück).
+  const [showGuidedTour, setShowGuidedTour] = useState(false);
   const [importText,    setImportText]     = useState("");
   const [importStatus,  setImportStatus]   = useState(null);
   const [topMenu,       setTopMenu]        = useState(null); // "laden"|"speichern"|null
@@ -2686,6 +2693,7 @@ Abbrechen = ${remoteName}-Stand laden`
     showCloudSetup, setShowCloudSetup,
     showFuelAnalysis, setShowFuelAnalysis,
     showFeatureTour, setShowFeatureTour,
+    showGuidedTour, setShowGuidedTour,
     setShowMobileKategorien,
     setActiveStructurTab, setShowBankWizard,
     setShowCsv, setShowDataMgr,
@@ -2713,7 +2721,7 @@ Abbrechen = ${remoteName}-Stand laden`
     reviewQueue, showSettings, showVormHub, editVormTx, showMatching,
     customIcons, themeName, themeSlideshow, hideEmptyRows, handedness, debugFlags,
     cfActive, cfStatus, cfUrl, cfSecret,
-    syncPass, syncEncActive, showCloudSetup, showFuelAnalysis, showFeatureTour,
+    syncPass, syncEncActive, showCloudSetup, showFuelAnalysis, showFeatureTour, showGuidedTour,
     syncStatus, syncError, isDirty, isOnline, cfSaveOnClose,
     dashDrillOpen, amtMode, amtFont, noBorders, masterOverride,
     favIcons,
@@ -2862,6 +2870,11 @@ Abbrechen = ${remoteName}-Stand laden`
 
       {/* ── Offline-/Sync-Hinweis (dauerhaft sichtbar, alle Screens) ── */}
       <SyncStatusBadge/>
+
+      {/* ── Interaktive Feature-Tour (Hero-"?"-Symbol): Overlay ÜBER dem
+          aktiven Tab, wechselt selbst zwischen Tabs — kein showXxx-Vollbild-
+          Screen, daher außerhalb des CONTENT-Bereichs gerendert. ── */}
+      {showGuidedTour && <GuidedFeatureTour onClose={()=>setShowGuidedTour(false)}/>}
 
       {/* ── CONTENT ── */}
       <div style={{flex:1,minHeight:0,overflow:"hidden",display:"flex",flexDirection:"column",

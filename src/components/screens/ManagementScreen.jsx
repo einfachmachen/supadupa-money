@@ -221,17 +221,17 @@ function ManagementScreen({activeTab="kategorien"}) {
             </div>
             {[
               {icon:"download",   color:T.pos,          label:"CSV importieren",       sub:"Buchungen aus Banking-App",       onClick:()=>setShowCsv?.(true)},
-              {icon:"landmark",   color:T.gold,         label:"Bank verbinden",        sub:"Schritt für Schritt · Enable Banking", onClick:()=>setShowBankWizard?.(true)},
+              {icon:"landmark",   color:T.gold,         label:"Bank verbinden",        sub:"Schritt für Schritt · Enable Banking", onClick:()=>setShowBankWizard?.(true), tourId:"row-bank"},
               {icon:"database",   color:T.pos,          label:"Daten-Manager",         sub:"Export / Import / Löschen",       onClick:()=>setShowDataMgr?.(true)},
-              {icon:"cloud",      color:T.cf||T.blue,   label:"Cloud-Sync einrichten", sub:"Eigene Cloud-DB · geführt",       onClick:()=>setShowCloudSetup?.(true)},
+              {icon:"cloud",      color:T.cf||T.blue,   label:"Cloud-Sync einrichten", sub:"Eigene Cloud-DB · geführt",       onClick:()=>setShowCloudSetup?.(true), tourId:"row-cloudsync"},
               {icon:"fuel",       color:T.gold,         label:"Tankverbrauch",         sub:"Verbrauch & Preisentwicklung",    onClick:()=>setShowFuelAnalysis?.(true)},
-              {icon:"credit-card",color:T.blue,         label:"Konten",                sub:"Verwalten, Reihenfolge, Puffer",  onClick:()=>setMgrTab("konten")},
-              {icon:"target",     color:T.mid,          label:"Budget",                sub:"Budgets je Kategorie festlegen",  onClick:()=>setShowMobileKategorien?.(true)},
-              {icon:"git-merge",  color:T.blue,         label:"Vormerkungen zuordnen", sub:"Eigene mit Bank-Buchungen verknüpfen", onClick:()=>setShowMatching?.(true)},
+              {icon:"credit-card",color:T.blue,         label:"Konten",                sub:"Verwalten, Reihenfolge, Puffer",  onClick:()=>setMgrTab("konten"), tourId:"row-konten"},
+              {icon:"target",     color:T.mid,          label:"Budget",                sub:"Budgets je Kategorie festlegen",  onClick:()=>setShowMobileKategorien?.(true), tourId:"row-budget"},
+              {icon:"git-merge",  color:T.blue,         label:"Vormerkungen zuordnen", sub:"Eigene mit Bank-Buchungen verknüpfen", onClick:()=>setShowMatching?.(true), tourId:"row-matching"},
               {icon:"compass",    color:T.blue,         label:"Feature-Tour anzeigen", sub:"Kurzer Rundgang durch die App",   onClick:()=>setShowFeatureTour?.(true)},
               {icon:"settings",   color:T.txt2,         label:"Einstellungen",         sub:"Theme, Beträge, Sicherheit …",    onClick:()=>setMgrTab("einstellungen")},
             ].map((it,i)=>(
-              <button key={i} onClick={it.onClick}
+              <button key={i} onClick={it.onClick} data-tour={it.tourId}
                 style={{display:"flex",alignItems:"center",gap:12,width:"100%",textAlign:"left",
                   background:"rgba(255,255,255,0.04)",border:`1px solid ${T.bd}`,borderRadius:14,
                   padding:"14px 14px",marginBottom:10,cursor:"pointer",fontFamily:"inherit"}}>

@@ -24,7 +24,7 @@ function SaldoHeroV2({
   onDrillBuchIn, onDrillBuchOut, onDrillPendIn, onDrillPendOut, onDrillUncatIn, onDrillUncatOut,
   detailsOpen, setDetailsOpen, hideDetailRows,
 }) {
-  const { selAcc, setSelAcc, accounts, getKumulierterSaldo, txs, getCat, getSub, amtMode, setAmtMode } = useContext(AppCtx);
+  const { selAcc, setSelAcc, accounts, getKumulierterSaldo, txs, getCat, getSub, amtMode, setAmtMode, setShowGuidedTour } = useContext(AppCtx);
   const [progDrill, setProgDrill] = useState(null);
   const [accMenuOpen, setAccMenuOpen] = useState(false);
   // Augensymbol: nur 2 Stufen — unscharf (0) ↔ sichtbar. Sichtbar ist neutral-
@@ -84,7 +84,10 @@ function SaldoHeroV2({
   const framePad = 20 - frameBorderWidth;
   const amtFontSize = 44;
   const eyeBoxSize = 30;
-  const eyeZoneWidth = 56;
+  // eyeZoneWidth beherbergt jetzt Auge UND das neue "?"-Symbol (Feature-Tour)
+  // nebeneinander — auf 88px verbreitert (statt 56px), sideReserve (linker
+  // Platzhalter, hält den Betrag zentriert) folgt automatisch mit.
+  const eyeZoneWidth = 88;
   const sideReserve = eyeZoneWidth;
   // Editorial-Layout (Theme-Token hero_layout): linksbündige Schlagzeilen-
   // Anordnung statt zentriert — Kicker-Zeile (Theme-Umschalter, Label,
@@ -179,7 +182,7 @@ function SaldoHeroV2({
       {/* Freier Bereich links oben: minimaler Theme-Umschalter (im Editorial-
           Layout sitzt er stattdessen inline in der Kicker-Zeile). */}
       {!isEditorial && (
-        <div style={{position:"absolute",top:8,left:14,zIndex:2}}>
+        <div data-tour="theme-switcher" style={{position:"absolute",top:8,left:14,zIndex:2}}>
           <ThemeSwitcherMini/>
         </div>
       )}
@@ -191,16 +194,22 @@ function SaldoHeroV2({
             darunter die Prognosen als Ticker-Leiste mit Haarlinie. Gleiche
             Handler/Zustände wie das Standard-Layout — nur anders angeordnet. */}
         <div style={{display:"flex",alignItems:"center",gap:8,padding:"2px 0 0",userSelect:"none"}}>
-          <ThemeSwitcherMini/>
+          <span data-tour="theme-switcher"><ThemeSwitcherMini/></span>
           <span style={{color:T.lbl,fontSize:9,fontWeight:800,letterSpacing:2.5}}>KONTOSTAND</span>
           {renderAccPill({menuAlign:"left"})}
           <div style={{flex:1}}/>
+          <span onClick={(e)=>{e.stopPropagation();setShowGuidedTour?.(true);}} title="Feature-Tour"
+            style={{cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,
+              display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
+            {Li("help-circle",19,T.txt2)}
+          </span>
           <span onClick={toggleEye} title="Beträge ein-/ausblenden"
             style={{cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,
               display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
             {Li(eyeIcon,23,eyeCol)}
           </span>
         </div>
+        <div data-tour="hero-balance">
         <div style={{padding:"2px 0 0"}}>
           <span onClick={allAccIds.length>1?cycleAcc:undefined} className="heroAmt heroBalance"
             style={{
@@ -247,7 +256,8 @@ function SaldoHeroV2({
             {Li(detailsOpen?"chevron-up":"chevron-down",24,T.txt2)}
           </span>
         </div>
-      </>) : (<>
+        </div>
+      </>) : (<div data-tour="hero-balance">
       {/* Zeile 1: aktueller Kontostand groß & zentriert. Tippen auf den Betrag
           wechselt durch die Konten. Direkt rechts daneben — vertikal zentriert —
           das Augensymbol (unscharf ↔ sichtbar). Der Kontoname sitzt klein/
@@ -286,11 +296,16 @@ function SaldoHeroV2({
             direkt am Betrag zu kleben (verhindert Vertipper: Konto
             wechseln statt Betrag aus-/einblenden). Gilt für alle Themes. */}
         <div style={{width:eyeZoneWidth, flexShrink:0, flexGrow:0,
-          display:"flex", alignItems:"center", justifyContent:"center"}}>
+          display:"flex", alignItems:"center", justifyContent:"center", gap:2}}>
           <span onClick={toggleEye} title="Beträge ein-/ausblenden"
             style={{cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,
               display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
             {Li(eyeIcon,23,eyeCol)}
+          </span>
+          <span onClick={(e)=>{e.stopPropagation();setShowGuidedTour?.(true);}} title="Feature-Tour"
+            style={{cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,
+              display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
+            {Li("help-circle",21,T.txt2)}
           </span>
         </div>
       </div>
@@ -347,7 +362,7 @@ function SaldoHeroV2({
           </span>
         </div>
       </div>
-      </>)}
+      </div>)}
 
       {/* Detail-Block: Buch / VM / unkat — drei Zeilen mit Drill-Pfaden.
           Im Trend/Jahr (hideDetailRows) ausgeblendet, da dort jährlich gedacht
