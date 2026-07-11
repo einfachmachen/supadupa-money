@@ -998,10 +998,10 @@ function DashboardScreenV2() {
           const showRow = detailsOpen && (!isPastMonth || visiblePTxs.length>0);
           if(!showRow) return null;
           const togglePanel = (key) => setActivePanel(p => p===key ? null : key);
-          const Card = ({panel, icon, badge, color}) => {
+          const Card = ({panel, icon, badge, color, tourId}) => {
             const isActive = activePanel === panel;
             return (
-              <div onClick={()=>togglePanel(panel)}
+              <div onClick={()=>togglePanel(panel)} data-tour={tourId}
                 style={{flex:1,display:"flex",alignItems:"center",
                   justifyContent:"center",padding:"4px 6px",cursor:"pointer",
                   userSelect:"none",position:"relative",
@@ -1020,8 +1020,8 @@ function DashboardScreenV2() {
           };
           return (
             <div style={{margin:"2px 10px 0",display:"flex",gap:6}}>
-              {!isPastMonth && <Card panel="warnings"     icon="shield-check" badge={warnCount}   color={warnCount>0 ? T.neg : T.pos}/>}
-              {!isPastMonth && <Card panel="sparen"       icon="piggy-bank"   badge={null}        color={T.blue}/>}
+              {!isPastMonth && <Card panel="warnings"     icon="shield-check" badge={warnCount}   color={warnCount>0 ? T.neg : T.pos} tourId="panel-warnings"/>}
+              {!isPastMonth && <Card panel="sparen"       icon="piggy-bank"   badge={null}        color={T.blue} tourId="panel-sparen"/>}
               <Card panel="vormerkungen" icon="clock"        badge={visiblePTxs.length} color={T.gold}/>
             </div>
           );
@@ -1387,6 +1387,17 @@ function DashboardScreenV2() {
                           </span>
                         ))}
                       </div>
+                      {/* Budget-Kurzzugriff: direkt an der Kategorie-Karte statt nur
+                          versteckt im Daten-Tab — öffnet dieselbe Unterkategorie-
+                          Ansicht wie ein Tap auf die Karte (dort sitzt je Unterkategorie
+                          schon ein eigener Budget-Button), macht das aber sichtbar
+                          entdeckbar statt implizit über "Karte antippen". */}
+                      <button data-tour="cat-budget-icon" onClick={e=>{e.stopPropagation(); toggleCatExpand(cat.id);}}
+                        title="Budget festlegen"
+                        style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",
+                          padding:4,flexShrink:0,display:"flex",alignItems:"center",fontFamily:"inherit"}}>
+                        {Li("target",16,T.txt2)}
+                      </button>
                       {/* Rechts immer das aktuelle Gesamt (gebucht, IST). Klick öffnet
                           die Buchungen inkl. Vormerkungen. */}
                       <div onClick={e=>{e.stopPropagation(); if(iAkt>0||iEnde>0) openCatDrill(lastDay,"aktuell + Vormerkungen",iAkt,false);}}

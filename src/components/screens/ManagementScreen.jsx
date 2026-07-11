@@ -220,7 +220,7 @@ function ManagementScreen({activeTab="kategorien"}) {
               {Li("database",13,T.blue)} Daten &amp; Verbindungen
             </div>
             {[
-              {icon:"download",   color:T.pos,          label:"CSV importieren",       sub:"Buchungen aus Banking-App",       onClick:()=>setShowCsv?.(true)},
+              {icon:"download",   color:T.pos,          label:"CSV importieren",       sub:"Buchungen aus Banking-App",       onClick:()=>setShowCsv?.(true), tourId:"row-csv"},
               {icon:"landmark",   color:T.gold,         label:"Bank verbinden",        sub:"Schritt für Schritt · Enable Banking", onClick:()=>setShowBankWizard?.(true), tourId:"row-bank"},
               {icon:"database",   color:T.pos,          label:"Daten-Manager",         sub:"Export / Import / Löschen",       onClick:()=>setShowDataMgr?.(true)},
               {icon:"cloud",      color:T.cf||T.blue,   label:"Cloud-Sync einrichten", sub:"Eigene Cloud-DB · geführt",       onClick:()=>setShowCloudSetup?.(true), tourId:"row-cloudsync"},

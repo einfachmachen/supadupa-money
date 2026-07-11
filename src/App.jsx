@@ -1135,6 +1135,21 @@ Abbrechen = ${remoteName}-Stand laden`
     doLoad();
   }, [cfCredsReady]);
 
+  // ── Feature-Tour beim allerersten Start automatisch anbieten ────────────
+  // "syncStatus wird idle" passiert bei JEDEM abgeschlossenen Speicher-
+  // /Ladevorgang (auch später beim normalen Nutzen) — die mbt_tourAutoShown-
+  // Markierung sorgt dafür, dass die Prüfung (und ein eventuelles Öffnen)
+  // nur beim ALLERERSTEN Mal wirklich etwas tut. Komplett leer = kein Konto
+  // und keine Buchung, also ein frischer Start ohne vorhandene Daten.
+  useEffect(() => {
+    if(syncStatus !== "idle") return;
+    if(kvStore.getItem("mbt_tourAutoShown")) return;
+    kvStore.setItem("mbt_tourAutoShown", "1");
+    const isFreshStart = (accounts?.length||0) === 0 && (txs?.length||0) === 0;
+    if(isFreshStart) setShowGuidedTour(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [syncStatus]);
+
   // ── Auto-Migration: altes startBalances-Format → neues Monats-Format ────
   // Altes Format: startBalances[Jahr]["acc-giro"] = Endstand 31.12.(Jahr-1)
   //   d.h. der Wert für Jahr=2024 ist der Kontostand am Ende von Dez 2023
@@ -3247,7 +3262,7 @@ Abbrechen = ${remoteName}-Stand laden`
           const { isFlat, bg, fg } = plusBtnColors(T);
 
           return (
-            <div key={key} style={plusWrapperShell(plusArretiert)}>
+            <div key={key} data-tour="master-plus" style={plusWrapperShell(plusArretiert)}>
               <button
                 className="plus-master-btn"
                 onPointerDown={onPointerDown}
