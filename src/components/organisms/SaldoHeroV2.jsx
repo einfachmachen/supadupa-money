@@ -84,10 +84,12 @@ function SaldoHeroV2({
   const framePad = 20 - frameBorderWidth;
   const amtFontSize = 44;
   const eyeBoxSize = 30;
-  // eyeZoneWidth beherbergt jetzt Auge UND das neue "?"-Symbol (Feature-Tour)
-  // nebeneinander — auf 88px verbreitert (statt 56px), sideReserve (linker
-  // Platzhalter, hält den Betrag zentriert) folgt automatisch mit.
-  const eyeZoneWidth = 88;
+  // eyeZoneWidth zurück auf 56 (nur das Auge) — das "?"-Symbol NICHT mehr in
+  // diese Zone gequetscht (das hatte sideReserve mitverbreitert und dem
+  // Betrag echte Breite weggenommen → Abschneiden bei größeren Beträgen).
+  // Sitzt stattdessen wie der Theme-Umschalter absolut positioniert
+  // (top-rechts statt top-links) und kostet dadurch GAR KEINE Breite.
+  const eyeZoneWidth = 56;
   const sideReserve = eyeZoneWidth;
   // Editorial-Layout (Theme-Token hero_layout): linksbündige Schlagzeilen-
   // Anordnung statt zentriert — Kicker-Zeile (Theme-Umschalter, Label,
@@ -184,6 +186,20 @@ function SaldoHeroV2({
       {!isEditorial && (
         <div data-tour="theme-switcher" style={{position:"absolute",top:8,left:14,zIndex:2}}>
           <ThemeSwitcherMini/>
+        </div>
+      )}
+      {/* Feature-Tour-Symbol: spiegelbildlich zum Theme-Umschalter (oben
+          rechts statt oben links) — rein absolut positioniert, kostet also
+          KEINE Breite von der zentrierten Betrags-Zeile (anders als der
+          frühere Versuch, es in die Auge-Zone zu quetschen, der den Betrag
+          bei größeren Summen abgeschnitten hat). */}
+      {!isEditorial && (
+        <div style={{position:"absolute",top:8,right:14,zIndex:2}}>
+          <span onClick={(e)=>{e.stopPropagation();setShowGuidedTour?.(true);}} title="Feature-Tour"
+            style={{cursor:"pointer",userSelect:"none",width:24,height:24,
+              display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
+            {Li("help-circle",19,T.txt2)}
+          </span>
         </div>
       )}
 
@@ -296,16 +312,11 @@ function SaldoHeroV2({
             direkt am Betrag zu kleben (verhindert Vertipper: Konto
             wechseln statt Betrag aus-/einblenden). Gilt für alle Themes. */}
         <div style={{width:eyeZoneWidth, flexShrink:0, flexGrow:0,
-          display:"flex", alignItems:"center", justifyContent:"center", gap:2}}>
+          display:"flex", alignItems:"center", justifyContent:"center"}}>
           <span onClick={toggleEye} title="Beträge ein-/ausblenden"
             style={{cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,
               display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
             {Li(eyeIcon,23,eyeCol)}
-          </span>
-          <span onClick={(e)=>{e.stopPropagation();setShowGuidedTour?.(true);}} title="Feature-Tour"
-            style={{cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,
-              display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
-            {Li("help-circle",21,T.txt2)}
           </span>
         </div>
       </div>
