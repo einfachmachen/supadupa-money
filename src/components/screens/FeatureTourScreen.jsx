@@ -10,6 +10,11 @@ import { Li } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
 import { FEATURE_TOUR, FEATURE_TOUR_LEVELS } from "../../content/featureTour.js";
 
+// Bunte Comic-Palette für die "Für Kids"-Ebene — bewusst feste, kräftige
+// Farben statt Theme-Tokens: die Kids-Ansicht soll wie ein Comicheft wirken,
+// unabhängig vom gerade aktiven (ggf. gedeckten) Farbschema.
+const COMIC_COLORS = ["#FF6B6B", "#FFA94D", "#FFD43B", "#69DB7C", "#3BC9DB", "#4DABF7", "#B197FC", "#F783AC"];
+
 function FeatureTourScreen({ onClose, onBack, mobileMode=false }) {
   const { setMasterOverride } = useContext(AppCtx);
   const [level, setLevel] = useState(() => kvStore.getItem("mbt_tourLevel") || "eli20");
@@ -60,8 +65,34 @@ function FeatureTourScreen({ onClose, onBack, mobileMode=false }) {
       </div>
 
       <div style={{flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch",
-        padding:"12px 16px 24px", display:"flex", flexDirection:"column", gap:10}}>
-        {FEATURE_TOUR.map((f, i) => (
+        padding:"12px 16px 24px", display:"flex", flexDirection:"column",
+        gap: level==="eli10" ? 22 : 10}}>
+        {level==="eli10" ? FEATURE_TOUR.map((f, i) => {
+          const c = COMIC_COLORS[i % COMIC_COLORS.length];
+          const tilt = i % 2 === 0 ? -1.5 : 1.5;
+          return (
+            <div key={i} style={{position:"relative", marginTop:8}}>
+              {/* Sprechblasen-Schwänzchen — kleines rotiertes Quadrat, das aus
+                  der oberen Kante der Blase herausragt, zeigt zum Icon-Kreis. */}
+              <div style={{position:"absolute", top:-9, left:34, width:18, height:18,
+                background:T.surf, border:`3px solid ${c}`, borderRight:"none", borderBottom:"none",
+                transform:"rotate(45deg)", borderRadius:"3px 0 0 0", zIndex:0}}/>
+              <div style={{position:"relative", background:T.surf, border:`3px solid ${c}`,
+                borderRadius:22, padding:"16px 16px 16px 16px",
+                transform:`rotate(${tilt}deg)`, boxShadow:`4px 4px 0 ${c}55`}}>
+                <div style={{display:"flex", alignItems:"center", gap:12, marginBottom:10}}>
+                  <div style={{width:52, height:52, borderRadius:"50%", flexShrink:0,
+                    background:c, display:"flex", alignItems:"center", justifyContent:"center",
+                    fontSize:28, boxShadow:`0 3px 0 ${c}99`}}>
+                    {f.emoji || "✨"}
+                  </div>
+                  <div style={{color:T.txt, fontSize:19, fontWeight:800, lineHeight:1.15}}>{f.title}</div>
+                </div>
+                <div style={{color:T.txt, fontSize:16, lineHeight:1.55, fontWeight:500}}>{f.eli10}</div>
+              </div>
+            </div>
+          );
+        }) : FEATURE_TOUR.map((f, i) => (
           <div key={i} style={{background:T.surf, border:`1px solid ${T.bd}`, borderRadius:14,
             padding:"14px 14px"}}>
             <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:8}}>

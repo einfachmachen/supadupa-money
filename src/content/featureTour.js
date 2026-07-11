@@ -13,6 +13,7 @@ const FEATURE_TOUR_LEVELS = [
 const FEATURE_TOUR = [
   {
     icon: "wallet",
+    emoji: "🐷",
     title: "Kontostand & Prognose",
     eli10: "Oben siehst du dein Sparschwein-Guthaben — und die App verrät dir schon heute, wie voll es Mitte und Ende des Monats sein wird. Kein Rechnen nötig!",
     eli20: "Der große Betrag oben ist dein aktueller Kontostand. MITTE und ENDE zeigen dir, wo du am 14. und am Monatsende ungefähr stehst — inklusive geplanter Zahlungen, die noch kommen.",
@@ -21,6 +22,7 @@ const FEATURE_TOUR = [
   },
   {
     icon: "layers",
+    emoji: "🎨",
     title: "Kategorien & Ausgabenübersicht",
     eli10: "Jede Ausgabe bekommt eine eigene Farbe und ein Symbol — so siehst du auf einen Blick, wofür dein Geld drauf geht: Süßigkeiten, Sparen, Taschengeld für Freunde.",
     eli20: "Unter dem Kontostand siehst du, wie sich deine Ausgaben auf Kategorien verteilen — Miete, Essen, Freizeit usw. Praktisch, um zu erkennen, wo im Monat am meisten wegging.",
@@ -29,6 +31,7 @@ const FEATURE_TOUR = [
   },
   {
     icon: "target",
+    emoji: "🎯",
     title: "Budgets & Vormerkungen",
     eli10: "Du kannst dir ein Limit setzen, z.B. „höchstens 20€ für Süßigkeiten diesen Monat“ — die App sagt dir Bescheid, wenn du kurz davor bist, es zu überschreiten.",
     eli20: "Budgets setzen ein Limit pro Kategorie (z.B. Essen gehen). Vormerkungen sind Buchungen, die Du schon kennst, bevor sie passieren — z.B. die Miete am 1. — und die die Prognose direkt berücksichtigt.",
@@ -37,6 +40,7 @@ const FEATURE_TOUR = [
   },
   {
     icon: "landmark",
+    emoji: "🏦",
     title: "Bank-Anbindung & Import",
     eli10: "Die App kann sich (mit Erlaubnis) direkt bei der Bank die neuesten Buchungen holen — wie ein Bote, der jeden Tag nachschaut, ob Post da ist.",
     eli20: "Per Wisch-Geste ruft die App neue Buchungen direkt von deiner Bank ab (Enable Banking) oder du importierst eine CSV-Datei vom Online-Banking — beides landet automatisch in den richtigen Kategorien, wenn Regeln existieren.",
@@ -45,6 +49,7 @@ const FEATURE_TOUR = [
   },
   {
     icon: "link",
+    emoji: "🧩",
     title: "Vormerkungen automatisch zuordnen",
     eli10: "Wenn eine geplante Ausgabe wirklich passiert, verknüpft die App das automatisch — wie zwei Puzzleteile, die zusammenpassen.",
     eli20: "Sobald die echte Buchung eintrifft, verknüpft die App sie automatisch mit der passenden Vormerkung (gleicher Betrag, gleiches Konto, enges Zeitfenster) — Du musst nichts mehr manuell zusammenklicken.",
@@ -53,6 +58,7 @@ const FEATURE_TOUR = [
   },
   {
     icon: "piggy-bank",
+    emoji: "💰",
     title: "Sparen & Tagesgeld",
     eli10: "Für Sparziele gibt's ein eigenes Sparschwein-Konto — Geld, das du beiseitelegst, zählt nicht zu deinem „zum Ausgeben“-Betrag.",
     eli20: "Tagesgeld/Sparkonten lassen sich getrennt führen — Geld, das Du zurücklegst, verschwindet aus dem „verfügbar“-Betrag, bleibt aber sichtbar und nachvollziehbar.",
@@ -61,6 +67,7 @@ const FEATURE_TOUR = [
   },
   {
     icon: "cloud",
+    emoji: "☁️",
     title: "Cloud-Synchronisierung",
     eli10: "Wenn du magst, kann die App eine Kopie deiner Daten sicher im Internet ablegen — dann siehst du dasselbe auf Handy und Tablet, wie zwei Fotos vom selben Bild.",
     eli20: "Optionaler Cloud-Sync (über einen eigenen Cloudflare Worker) hält die Daten geräteübergreifend aktuell. Komplett Deine Entscheidung — ohne Einrichtung läuft alles rein lokal auf dem Gerät.",
@@ -69,6 +76,7 @@ const FEATURE_TOUR = [
   },
   {
     icon: "shield",
+    emoji: "🛡️",
     title: "Offline & Datenschutz",
     eli10: "Die App funktioniert auch ohne Internet — sogar tief im Wald oder auf dem Schiff ohne Empfang. Deine Daten liegen erstmal nur auf deinem eigenen Gerät, nicht bei einer fremden Firma.",
     eli20: "Alle Berechnungen laufen direkt auf Deinem Handy, komplett offline nutzbar. Standardmäßig gehört niemand sonst zu Deinen Finanzdaten dazu — keine Werbe-Firma liest mit.",
@@ -77,6 +85,7 @@ const FEATURE_TOUR = [
   },
   {
     icon: "palette",
+    emoji: "🎪",
     title: "Themes & Personalisierung",
     eli10: "Du kannst der App ein komplett neues Aussehen geben — Weltraum, Zirkus, Abenteuer im Wald, und noch viele mehr. Es gibt sogar eine Diashow, die automatisch durchschaltet!",
     eli20: "Über das kleine Punkte-Symbol oben links wechselst Du das Farbschema — von dezent bis richtig verspielt (extra Themes für jüngere Nutzer mit eigenem Rahmen und Symbolen). Eine Diashow schaltet automatisch jede Sekunde weiter.",
