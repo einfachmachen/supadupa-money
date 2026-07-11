@@ -1058,8 +1058,13 @@ Abbrechen = ${remoteName}-Stand laden`
               const cTs = cdata.saved_at||0;
               if(cTs > localTs + 60000) {
                 const diff = Math.round((cTs-localTs)/1000);
-                setSyncError(`☁ Cloudflare hat neuere Daten (${diff}s). "von Cloudflare laden" verwenden um zu synchronisieren.`);
-                setSyncStatus("error_shown");
+                setSyncError(`☁ Cloudflare hat neuere Daten (${diff}s). Auf den Hinweis oben tippen, um sie zu laden.`);
+                // "error_shown" wurde von KEINER Anzeige konsumiert (getSyncBadgeState
+                // kennt nur saving/saved/error/isDirty) — der Hinweis verschwand
+                // dadurch spurlos, ohne dass der Nutzer je erfuhr, dass ein anderes
+                // Gerät neuere Daten gespeichert hat. "cloud_newer" wird jetzt im
+                // persistenten Sync-Badge angezeigt und ist dort auch antippbar.
+                setSyncStatus("cloud_newer");
               }
             }).catch(e=>{ setCfStatus("error"); });
           }
@@ -2647,7 +2652,23 @@ Abbrechen = ${remoteName}-Stand laden`
     budgets, setBudgets,
     startBalances, setStartBalances,
     saveConfig: ()=>{ if(cfActive) { savedYearHashRef.current={}; savedConfigHashRef.current=""; saveToCloud({cats, groups, txs, accounts, vehicles, yearData, col3Name, quickBtns, quickColors, csvRules, budgets, customIcons, startBalances, saved_at:Date.now()}); setIsDirty(false); } },
-    loadFromCloud: async ()=>{ if(!cfActive) return; try { const d=await cfLoad(); if(d.cats?.length) { applyData(d); setIsDirty(false); setSyncStatus("saved"); setTimeout(()=>setSyncStatus("idle"),2000); } } catch(e){} },
+    loadFromCloud: async ()=>{
+      if(!cfActive) return;
+      try {
+        // syncStatus("loading") VOR dem Anwenden setzen: useLocalSaveDebounce
+        // erkennt darüber (wie beim Boot-Laden) den true→false-Übergang und
+        // startet die Gnadenfrist neu — sonst würde der Auto-Save-Effekt die
+        // gerade erst aus der Cloud geladenen (und damit garantiert
+        // synchronen) Daten 300ms später fälschlich als "nicht synchronisiert"
+        // markieren, obwohl nichts lokal geändert wurde.
+        setSyncStatus("loading");
+        const d = await cfLoad();
+        if(d.cats?.length) applyData(d);
+        setIsDirty(false);
+        setSyncStatus("saved");
+        setTimeout(()=>setSyncStatus("idle"),2000);
+      } catch(e){ setSyncStatus("error"); }
+    },
     jsonbinActive, jsonbinSave, jsonbinLoad, jsonbinStatus, setJsonbinStatus, jsonbinKey, jsonbinId, setJsonbinKey, setJsonbinId,
     gistActive, gistSave, gistLoad, gistStatus, setGistStatus, gistToken, gistId, setGistToken, setGistId, applyData,
     // saveToCloudDirect removed — use manual upload button only

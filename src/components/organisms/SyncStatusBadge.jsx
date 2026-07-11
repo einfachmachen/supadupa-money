@@ -12,15 +12,24 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { getSyncBadgeState } from "../../utils/syncBadge.js";
 
 function SyncStatusBadge() {
-  const { isOnline, cfActive, isDirty, syncStatus, openCloudSave } = useContext(AppCtx);
+  const { isOnline, cfActive, isDirty, syncStatus, openCloudSave, loadFromCloud } = useContext(AppCtx);
   const state = getSyncBadgeState({ isOnline, cfActive, isDirty, syncStatus });
   if (!state) return null;
 
   const col = T[state.tone];
 
+  // "cloud_newer": ein anderes Gerät hat neuere Daten gespeichert (z.B. eine
+  // dort vorgenommene Vormerkungs-Verknüpfung) — Antippen lädt sie direkt,
+  // statt (wie sonst) den reinen Hochladen-Dialog zu öffnen. Vorher NUR über
+  // Einstellungen → "Cloudflare → Lokal" erreichbar; das machte den Hinweis
+  // faktisch unsichtbar, weil er nirgends im normalen Nutzungsfluss auftauchte.
+  const onTap = state.key === "cloud_newer"
+    ? () => { if (window.confirm("Neuere Daten aus der Cloud laden?\n\nLokale Änderungen seit dem letzten Sync werden dabei überschrieben.")) loadFromCloud?.(); }
+    : openCloudSave;
+
   return (
     <div style={{display:"flex",justifyContent:"center",padding:"3px 12px 0",flexShrink:0}}>
-      <div onClick={openCloudSave}
+      <div onClick={onTap}
         style={{display:"flex",alignItems:"center",gap:6,
           padding:"5px 12px",borderRadius:999,
           background:`${col}1F`,border:`1px solid ${col}66`,

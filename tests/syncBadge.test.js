@@ -28,4 +28,14 @@ describe("getSyncBadgeState — Offline-/Sync-Hinweis-Badge", () => {
     expect(getSyncBadgeState({ isOnline: true, cfActive: true, isDirty: true, syncStatus: "saved" }).key).toBe("saved");
     expect(getSyncBadgeState({ isOnline: true, cfActive: true, isDirty: true, syncStatus: "error" }).key).toBe("error");
   });
+
+  // Regression (echter Nutzer-Bericht): eine Verknüpfung wurde auf einem
+  // anderen Gerät vorgenommen und in die Cloud gespeichert — der Boot-Check
+  // erkennt das zwar (saved_at-Vergleich), setzte bisher aber "error_shown",
+  // einen Status, den getSyncBadgeState gar nicht kannte. Der Hinweis
+  // verschwand dadurch spurlos, ohne je angezeigt zu werden.
+  it("zeigt 'cloud_newer', wenn ein anderes Gerät neuere Daten gespeichert hat", () => {
+    const state = getSyncBadgeState({ isOnline: true, cfActive: true, isDirty: false, syncStatus: "cloud_newer" });
+    expect(state.key).toBe("cloud_newer");
+  });
 });
