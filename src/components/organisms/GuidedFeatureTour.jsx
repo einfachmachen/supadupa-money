@@ -124,20 +124,19 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
   // Callout-Position: unterhalb des Ziels, wenn genug Platz ist, sonst
   // darüber; ohne Ziel (oder solange nicht "ready") zentriert. Der obere
   // Rand respektiert dabei IMMER die Notch/Statusleiste (safe-area-inset-top)
-  // — max() lässt den Browser selbst entscheiden, je nach Gerät.
+  // — max() lässt den Browser selbst entscheiden, je nach Gerät. Die Stufen-
+  // Reiter sitzen INNERHALB der Karte (nicht mehr als eigene fixe Leiste
+  // oben) — so überlappen sie nie den hervorgehobenen Bereich (z.B. den
+  // Hero-Kontostand) und wandern automatisch mit an die jeweils freie Stelle.
   const vh = typeof window !== "undefined" ? window.innerHeight : 800;
   const CARD_PAD = 14;
-  const SAFE_TOP = "max(env(safe-area-inset-top, 0px) + 8px, 8px)";
-  // Mindestabstand für die Karte, wenn sie NAHE OBEN positioniert wird — muss
-  // zusätzlich die Stufen-Reiter-Zeile (eigene Zeile knapp unter SAFE_TOP)
-  // freihalten, sonst überlappen sich beide.
-  const CARD_MIN_TOP = "max(env(safe-area-inset-top, 0px) + 56px, 56px)";
+  const SAFE_TOP = "max(env(safe-area-inset-top, 0px) + 10px, 10px)";
   let cardStyle;
   if (rect) {
     const spaceBelow = vh - rect.top - rect.height;
     const placeBelow = spaceBelow > 220 || spaceBelow > rect.top;
     cardStyle = placeBelow
-      ? { top: `max(${CARD_MIN_TOP}, min(${rect.top + rect.height + 14}px, ${vh - 60}px))`, left: CARD_PAD, right: CARD_PAD }
+      ? { top: `max(${SAFE_TOP}, min(${rect.top + rect.height + 14}px, ${vh - 60}px))`, left: CARD_PAD, right: CARD_PAD }
       : { bottom: Math.max(vh - rect.top + 14, 60), left: CARD_PAD, right: CARD_PAD };
   } else {
     cardStyle = { top: "50%", left: CARD_PAD, right: CARD_PAD, transform: "translateY(-50%)" };
@@ -167,30 +166,29 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
         }} />
       )}
 
-      {/* Stufen-Reiter — jederzeit frei anwählbar, unabhängig vom Fortschritt.
-          Sitzt oben, respektiert ebenfalls die Notch. */}
-      <div style={{ position: "fixed", top: SAFE_TOP, left: CARD_PAD, right: CARD_PAD,
-        display: "flex", gap: 6, zIndex: 601 }}>
-        {GUIDED_TOUR_STAGES.map((s, i) => {
-          const active = i === stageIndex;
-          return (
-            <button key={s.key} onClick={() => gotoStage(i)}
-              style={{ flex: 1, padding: "8px 6px", borderRadius: 12, cursor: "pointer",
-                fontFamily: "inherit", fontSize: 12, fontWeight: 700,
-                border: `1.5px solid ${active ? T.blue : T.bd}`,
-                background: active ? `${T.blue}22` : T.surf,
-                color: active ? T.blue : T.txt2, whiteSpace: "nowrap",
-                overflow: "hidden", textOverflow: "ellipsis" }}>
-              {s.label}
-            </button>
-          );
-        })}
-      </div>
-
       {/* Callout-Karte */}
       <div style={{ position: "fixed", ...cardStyle, background: T.surf, border: `1px solid ${T.bd}`,
         borderRadius: 16, padding: "14px 16px", boxShadow: "0 12px 32px rgba(0,0,0,0.5)",
         opacity: ready ? 1 : 0, transition: "opacity 0.15s ease", maxWidth: 480, margin: "0 auto" }}>
+        {/* Stufen-Reiter — jederzeit frei anwählbar, unabhängig vom Fortschritt.
+            Sitzt jetzt oben IN der Karte statt als eigene fixe Leiste, damit
+            nie etwas anderes (z.B. der Hero-Kontostand) überdeckt wird. */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+          {GUIDED_TOUR_STAGES.map((s, i) => {
+            const active = i === stageIndex;
+            return (
+              <button key={s.key} onClick={() => gotoStage(i)}
+                style={{ flex: 1, padding: "6px 4px", borderRadius: 10, cursor: "pointer",
+                  fontFamily: "inherit", fontSize: 11, fontWeight: 700,
+                  border: `1.5px solid ${active ? T.blue : T.bd}`,
+                  background: active ? `${T.blue}22` : "transparent",
+                  color: active ? T.blue : T.txt2, whiteSpace: "nowrap",
+                  overflow: "hidden", textOverflow: "ellipsis" }}>
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
           <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0,
             background: `${T.blue}1f`, display: "flex", alignItems: "center", justifyContent: "center" }}>

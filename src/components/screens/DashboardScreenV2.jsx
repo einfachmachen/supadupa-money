@@ -1387,17 +1387,6 @@ function DashboardScreenV2() {
                           </span>
                         ))}
                       </div>
-                      {/* Budget-Kurzzugriff: direkt an der Kategorie-Karte statt nur
-                          versteckt im Daten-Tab — öffnet dieselbe Unterkategorie-
-                          Ansicht wie ein Tap auf die Karte (dort sitzt je Unterkategorie
-                          schon ein eigener Budget-Button), macht das aber sichtbar
-                          entdeckbar statt implizit über "Karte antippen". */}
-                      <button data-tour="cat-budget-icon" onClick={e=>{e.stopPropagation(); toggleCatExpand(cat.id);}}
-                        title="Budget festlegen"
-                        style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",
-                          padding:4,flexShrink:0,display:"flex",alignItems:"center",fontFamily:"inherit"}}>
-                        {Li("target",16,T.txt2)}
-                      </button>
                       {/* Rechts immer das aktuelle Gesamt (gebucht, IST). Klick öffnet
                           die Buchungen inkl. Vormerkungen. */}
                       <div onClick={e=>{e.stopPropagation(); if(iAkt>0||iEnde>0) openCatDrill(lastDay,"aktuell + Vormerkungen",iAkt,false);}}

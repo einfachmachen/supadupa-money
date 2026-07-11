@@ -194,9 +194,9 @@ function SaldoHeroV2({
           frühere Versuch, es in die Auge-Zone zu quetschen, der den Betrag
           bei größeren Summen abgeschnitten hat). */}
       {!isEditorial && (
-        <div style={{position:"absolute",top:8,right:14,zIndex:2}}>
+        <div style={{position:"absolute",top:4,right:10,zIndex:2}}>
           <span onClick={(e)=>{e.stopPropagation();setShowGuidedTour?.(true);}} title="Feature-Tour"
-            style={{cursor:"pointer",userSelect:"none",width:24,height:24,
+            style={{cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,
               display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
             {Li("help-circle",19,T.txt2)}
           </span>

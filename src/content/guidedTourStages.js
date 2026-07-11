@@ -43,15 +43,6 @@ const GUIDED_TOUR_STAGES = [
         target: { tab: "daten", selector: '[data-tour="row-budget"]' },
       },
       {
-        icon: "target",
-        title: "Budget direkt an der Kategorie",
-        eli10: "Noch schneller geht's direkt hier auf der Startseite: das Zielscheiben-Symbol neben jeder Kategorie öffnet sofort die Budget-Einstellung dafür.",
-        eli20: "Du musst dafür gar nicht extra in die Einstellungen — das Zielscheiben-Symbol an jeder Kategorie-Karte öffnet direkt die passende Budget-Einstellung.",
-        eli30: "Der Budget-Zugriff ist absichtlich doppelt vorhanden: zentral im Daten-Tab für die Übersicht, und direkt an der Kategorie-Karte für den schnellen Einzelfall genau dort, wo man die Ausgabe sowieso gerade sieht.",
-        eli60: "Ein Budget müssen Sie nicht immer über die Einstellungen anlegen — das kleine Zielscheiben-Symbol direkt an jeder Kategorie auf der Startseite führt genauso dorthin, nur schneller.",
-        target: { tab: "home", selector: '[data-tour="cat-budget-icon"]' },
-      },
-      {
         icon: "download",
         title: "Buchungen importieren",
         eli10: "Statt jede Buchung einzeln einzutippen, kannst du eine Datei aus deiner Banking-App importieren — die App sortiert vieles automatisch in die richtigen Kategorien ein.",
