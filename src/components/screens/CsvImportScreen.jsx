@@ -19,6 +19,7 @@ import { txFingerprint, txFingerprintNorm } from "../../utils/tx.js";
 import { isoAddDays, nextBankWorkday } from "../../utils/date.js";
 import { liveLinkedGiroIds } from "../../utils/links.js";
 import { autoMatchVormerkungen } from "../../utils/vormMatch.js";
+import { TagInput } from "../atoms/TagInput.jsx";
 
 function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const { cats, groups, txs, setTxs, accounts, csvRules, setCsvRules, startBalances, setStartBalances, setMasterOverride } = useContext(AppCtx);
@@ -40,6 +41,10 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const [doneCount, setDoneCount]   = useState(0);
   const [showCatAssign, setShowCatAssign] = useState(false);
   const [selAccId, setSelAccId]     = useState(""); // Zielkonto für Import
+  // Tag(s) für den GESAMTEN Import-Batch — z.B. "#aida" für eine komplette
+  // Reise-Abrechnung, damit sich alle Positionen später kategorieübergreifend
+  // wiederfinden lassen, auch wenn sie über mehrere Kategorien verteilt sind.
+  const [importTags, setImportTags] = useState([]);
   // Sobald Konten aus IndexedDB geladen sind, erstes Konto vorauswählen (falls noch nichts gewählt)
   useEffect(()=>{
     if(!selAccId && accounts.length>0) setSelAccId(accounts[0].id);
@@ -714,6 +719,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
           accountId: plus30Acc,
           splits: catId ? [{id:uid(), catId, subId, amount:absAmt}] : [],
           _csvType: "expense",
+          ...(importTags.length ? {tags: importTags} : {}),
           _plus30: true,
         });
         // Kategorie-Regel trotzdem merken (gleicher Empfänger künftig auto-zugeordnet)
@@ -756,6 +762,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
         ...(r._isRefund ? {_isRefund: true} : {}),
         ...(r._partialRefund ? {_partialRefund: true} : {}),
         ...(r._refundOf ? {_refundOf: r._refundOf} : {}),
+        ...(importTags.length ? {tags: importTags} : {}),
       });
       // Regel merken — lokal + global
       if(catId) {
@@ -1744,6 +1751,13 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                   <AccountChips accounts={accounts} value={plus30Acc} onChange={setPlus30AccId}/>
                 </div>
               )}
+              <div style={{padding:"8px 16px 0",flexShrink:0}}>
+                <div style={{color:T.txt2,fontSize:MFSl,fontWeight:600,marginBottom:4,display:"flex",alignItems:"center",gap:5}}>
+                  {Li("hash",12,T.blue)} Tag für diesen Import (optional, z.B. #aida)
+                </div>
+                <TagInput value={importTags} onChange={setImportTags}
+                  placeholder="Tag für alle importierten Buchungen…"/>
+              </div>
               {stagedInfo&&(
                 <div style={{padding:"8px 16px",flexShrink:0,display:"flex",alignItems:"center",gap:8,
                   background:"rgba(34,197,94,0.10)",borderTop:`1px solid ${T.pos}44`,color:T.pos,fontSize:MFSl,fontWeight:600}}>

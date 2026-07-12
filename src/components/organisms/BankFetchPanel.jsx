@@ -11,6 +11,7 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { CatPicker } from "../molecules/CatPicker.jsx";
+import { TagInput } from "../atoms/TagInput.jsx";
 
 function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }) {
   const { accounts } = useContext(AppCtx);
@@ -53,6 +54,12 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }
   // Anlass zu merken, bevor die spätere echte Buchung eintrifft und verknüpft wird.
   const setRowNote = (id, note) =>
     onUpdateStaged((list) => list.map((t) => (t.id === id ? { ...t, note } : t)));
+  const setRowTags = (id, tags) =>
+    onUpdateStaged((list) => list.map((t) => (t.id === id ? { ...t, tags } : t)));
+  // Ein Tag auf ALLE neuen (noch nicht importierten) Zeilen anwenden — z.B.
+  // einen ganzen Abruf mit einem Tippen als "#aida" markieren.
+  const applyTagToAll = (tag) =>
+    onUpdateStaged((list) => list.map((t) => (!(t.tags||[]).includes(tag) ? { ...t, tags:[...(t.tags||[]),tag] } : t)));
 
   // Falsch abgerufenen Eintrag direkt entfernen — ohne ihn vorher kategorisieren
   // zu müssen. (Beim nächsten Abruf würde er ggf. wieder als neu erkannt.)
@@ -217,6 +224,9 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }
           style={{ width: "100%", boxSizing: "border-box", marginTop: 6, background: "rgba(255,255,255,0.05)",
             border: `1px solid ${T.bd}`, borderRadius: 7, padding: "5px 8px",
             color: T.txt, fontSize: 12, outline: "none", fontFamily: "inherit" }} />
+        <div style={{ marginTop: 6 }}>
+          <TagInput value={t.tags||[]} onChange={(tags) => setRowTags(t.id, tags)} placeholder="Tag (optional)…"/>
+        </div>
       </div>
     );
   };
@@ -238,6 +248,15 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }
           fontSize: 11.5, lineHeight: 1.4, display: "flex", alignItems: "center", gap: 6 }}>
           {Li("info", 13, T.blue)}
           <span>Noch nicht importiert — prüfen, ggf. kategorisieren oder löschen, dann <b style={{ color: T.txt }}>Übernehmen</b>.</span>
+        </div>
+      )}
+      {newTxs.length > 1 && (
+        <div style={{ padding: "0 12px 8px", borderTop: `1px solid ${T.bd}`, paddingTop: 8 }}>
+          <div style={{ color: T.txt2, fontSize: 11.5, fontWeight: 600, marginBottom: 4, display: "flex", alignItems: "center", gap: 5 }}>
+            {Li("hash", 12, T.blue)} Tag auf alle anwenden
+          </div>
+          <TagInput value={[]} onChange={(tags) => tags.forEach(applyTagToAll)}
+            placeholder="Tag hinzufügen, z.B. aida…"/>
         </div>
       )}
       {newTxs.map((t) => <Row key={t.id} t={t} />)}

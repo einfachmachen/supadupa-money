@@ -17,6 +17,7 @@ import { nextBankWorkday, isoAddMonths } from "../../utils/date.js";
 import { Li } from "../../utils/icons.jsx";
 import { SchieflageVorwarnung } from "../atoms/SchieflageVorwarnung.jsx";
 import { isFuelSelection, checkOdometerPlausibility } from "../../utils/fuel.js";
+import { TagInput } from "../atoms/TagInput.jsx";
 
 function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialFinanz=false}) {
   const { cats, setCats, accounts, setAccounts, vehicles, setVehicles, txs, setTxs, year, month, getCat, getSub, setMasterOverride } = useContext(AppCtx);
@@ -35,6 +36,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
   const [desc, setDesc] = useState("");
   const [valueDate, setValueDate] = useState(today); // Verursacherdatum
   const [note, setNote] = useState("");
+  const [tags, setTags] = useState([]);
   const [catId, setCatId] = useState("");
   const [subId, setSubId] = useState("");
   const [tgtCatId, setTgtCatId] = useState("");
@@ -275,7 +277,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
           id:"pend-"+uid(), date:d, desc:desc||"Umbuchung",
           totalAmount:-amt, pending:true, _csvType:"expense",
           accountId:accId, repeatMonths:recurring?interval_:1,
-          note: note||undefined, valueDate: vd,
+          note: note||undefined, valueDate: vd, tags,
           splits: catId ? [{id:uid(),catId,subId,amount:-amt}] : [],
           ...seriesMeta,
         };
@@ -283,7 +285,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
           id:"pend-"+uid(), date:d, desc:desc||"Umbuchung",
           totalAmount:amt, pending:true, _csvType:"income",
           accountId:tgtAccId, _linkedTo:abgang.id, repeatMonths:recurring?interval_:1,
-          note: note||undefined, valueDate: vd,
+          note: note||undefined, valueDate: vd, tags,
           splits: tgtCatId ? [{id:uid(),catId:tgtCatId,subId:tgtSubId,amount:amt}] : [],
           ...seriesMeta,
         };
@@ -307,7 +309,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
         return {
           id:uid(), date:d, desc:desc||"neue Buchung", totalAmount:txAmt, pending:true,
           _csvType:csvType, accountId:accId, repeatMonths:interval_,
-          note:note||undefined,
+          note:note||undefined, tags,
           valueDate: i===0&&valueDate ? valueDate : undefined,
           splits:catId?[{id:uid(),catId,subId:subId||"",amount:txAmt}]:[],
           _seriesId:seriesId, _seriesIdx:i+1, _seriesTotal:n,
@@ -325,7 +327,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
       id:uid(), date, desc:desc||"neue Buchung",
       totalAmount:amt, pending:true, _csvType:csvType,
       accountId:accId, repeatMonths:1,
-      note: note||undefined,
+      note: note||undefined, tags,
       valueDate: valueDate||undefined,
       splits:[{id:uid(),catId,subId,amount:amt}],
       _potSubId: (_showPotToggle && potOn && _potSub) ? _potSub.id : undefined,
@@ -708,6 +710,11 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
             onInput={e=>{e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
           />
 
+          {/* Tags — quer über Kategorien hinweg durchsuchbar (z.B. "#aida") */}
+          <div style={{marginBottom:S.gap}}>
+            <TagInput value={tags} onChange={setTags}/>
+          </div>
+
           {/* Flexibler Topf (nur einmalige Ausgabe) */}
           {_showPotToggle&&(
             <div style={{background:"rgba(255,255,255,0.06)",borderRadius:S.radius,
@@ -885,6 +892,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
               : [["Kategorie", catId?(getCat(catId)?.name||"?")+(subId?" / "+(getSub(catId,subId)?.name||""):""):"—"]]),
             ["Beschreibung",   desc],
             ["Notiz",          note||"—"],
+            ["Tags",           tags.length?tags.map(t=>"#"+t).join(" "):"—"],
             ...(_showFuelFields && (fuelVehicleId||fuelLiters||fuelPricePerL||odometer) ? [
               ["Fahrzeug", (vehicles||[]).find(v=>v.id===fuelVehicleId)?.name || "—"],
               ["Liter",    fuelLiters ? fuelLiters+" l" : "—"],

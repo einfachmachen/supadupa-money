@@ -22,7 +22,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
       if(!search) return true;
       const isAmtSearch = /^[+\-=<>]?[\d.,]+$/.test(search.trim());
       if(isAmtSearch) return matchAmount(Math.abs(t.totalAmount), search.replace(/^[+\-]/,""));
-      return matchSearch(t.desc, search);
+      return matchSearch(t.desc, search, t.tags);
     });
     // Ende-Budget (Restbudget bis Monatsende) nach oben (Sektion 0); alles andere —
     // inkl. Mitte-Budget (am 14.) und normale Vormerkungen — chronologisch absteigend.
@@ -143,6 +143,12 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
                       {Li("corner-up-right",8,T.gold)} aus Unvorh.
                     </span>
                   )}
+                  {(tx.tags||[]).map(t=>(
+                    <span key={t} style={{background:`${T.blue}1a`,color:T.blue,
+                      borderRadius:4,padding:"0 4px",fontSize:9,fontWeight:700,flexShrink:0}}>
+                      #{t}
+                    </span>
+                  ))}
                 </div>
               </div>
               <span style={{color:day<=14?T.mid:T.gold,fontSize:11,flexShrink:0}}>{day<=14?"Mitte":"Ende"}</span>

@@ -12,6 +12,7 @@ import { BudgetEditorModal } from "./BudgetEditorModal.jsx";
 import { KategorieAnlegen } from "./KategorieAnlegen.jsx";
 import { CsvImportScreen } from "../screens/CsvImportScreen.jsx";
 import { RecurringDetectionScreen } from "../screens/RecurringDetectionScreen.jsx";
+import { TagInput } from "../atoms/TagInput.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
@@ -48,6 +49,7 @@ function AddTxModal() {
   const [srcAccountId,   setSrcAccountId]   = React.useState(accounts[0]?.id||"acc-giro");
   const [tgtAccountId,   setTgtAccountId]   = React.useState(accounts[1]?.id||"");
   const [note,           setNote]           = React.useState("");
+  const [tags,           setTags]           = React.useState([]);
   const [startDate,      setStartDate]      = React.useState(today);
   const [endDate,        setEndDate]        = React.useState("");
   const [valueDate,      setValueDate]      = React.useState("");
@@ -208,13 +210,13 @@ function AddTxModal() {
       const abgang = {
         id:"pend-"+uid(), date:startDate, desc:desc.trim(),
         totalAmount:-absAmt, pending:true, _csvType:"expense",
-        accountId:srcAccountId, note:note||"",
+        accountId:srcAccountId, note:note||"", tags,
         splits:catId ? [{id:uid(),catId,subId:subId||"",amount:-absAmt}] : [],
       };
       const zugang = {
         id:"pend-"+uid(), date:startDate, desc:desc.trim(),
         totalAmount:absAmt, pending:true, _csvType:"income",
-        accountId:tgtAccountId, note:note||"",
+        accountId:tgtAccountId, note:note||"", tags,
         _linkedTo:abgang.id,
         splits:tgtCatId ? [{id:uid(),catId:tgtCatId,subId:tgtSubId||"",amount:absAmt}] : [],
       };
@@ -237,7 +239,7 @@ function AddTxModal() {
       return {
         id:uid(), date, desc:desc.trim(), totalAmount:txAmt,
         pending:true, accountId, _csvType:csvType,
-        repeatMonths:interval_, note:note||"",
+        repeatMonths:interval_, note:note||"", tags,
         splits:txSplits,
         ...(lastOfMonth&&typ!=="einmalig"?{_lastOfMonth:true}:{}),
         ...(typ==="einmalig"&&valueDate?{valueDate}:{}),
@@ -744,6 +746,10 @@ function AddTxModal() {
       <textarea placeholder="Notiz…" value={note} onChange={e=>setNote(e.target.value)}
         rows={2} style={{...INP,resize:"none",fontFamily:"inherit",lineHeight:1.4,
           marginBottom:4,width:"100%",boxSizing:"border-box"}}/>
+
+      {/* Tags — quer über Kategorien hinweg durchsuchbar (z.B. "#aida") */}
+      <Lbl>Tags (optional)</Lbl>
+      <TagInput value={tags} onChange={setTags}/>
 
       {error&&<div style={{color:T.neg,fontSize:11,marginBottom:8}}>{error}</div>}
 

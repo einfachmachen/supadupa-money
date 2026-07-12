@@ -2,10 +2,21 @@
 
 const normSearch = s => (s||"").toLowerCase().replace(/[‒–—―−]/g,"-");
 
-const matchSearch = (text, search) => {
+// tags: optionales Array von Tag-Strings (ohne führendes "#", s. TagInput.jsx).
+// Ein Suchwort, das mit "#" beginnt, muss gegen die Tags matchen statt gegen
+// den Freitext — so filtert "#aida" gezielt auf getaggte Buchungen, auch wenn
+// "aida" zufällig auch im Beschreibungstext vorkäme.
+const matchSearch = (text, search, tags) => {
   if(!search.trim()) return true;
   const h = normSearch(text);
-  return normSearch(search).split(" ").filter(Boolean).every(t => h.includes(t));
+  const tagSet = (tags||[]).map(t=>normSearch(t));
+  return normSearch(search).split(" ").filter(Boolean).every(t => {
+    if(t[0]==="#") {
+      const q = t.slice(1);
+      return q ? tagSet.some(tag=>tag.includes(q)) : tagSet.length>0;
+    }
+    return h.includes(t);
+  });
 };
 
 // Betrag aus Suchbegriff extrahieren: "41,85" "=41.85" ">50" "<100"

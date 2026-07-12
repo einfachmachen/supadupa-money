@@ -12,6 +12,7 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
+import { TagInput } from "../atoms/TagInput.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { uid } from "../../utils/format.js";
 import { txFingerprintNorm } from "../../utils/tx.js";
@@ -388,7 +389,7 @@ function EnableBankingWizard({ onClose, onBack }) {
           else if (amtIndex.has(amtKey)) status = "maybe";
           items.push({
             key: appAccId + "|" + items.length + "|" + (row._ebRef || row.fp),
-            accId: appAccId, row, status, checked: status === "new", note: "",
+            accId: appAccId, row, status, checked: status === "new", note: "", tags: [],
           });
         });
       }
@@ -416,14 +417,21 @@ function EnableBankingWizard({ onClose, onBack }) {
   const setAllPreview = (val) => setPreview((p) => p.map((it) => ({ ...it, checked: val })));
   const setPreviewNote = (key, note) =>
     setPreview((p) => p.map((it) => (it.key === key ? { ...it, note } : it)));
+  const setPreviewTags = (key, tags) =>
+    setPreview((p) => p.map((it) => (it.key === key ? { ...it, tags } : it)));
+  // Ein Tag auf alle aktuell ausgewählten Zeilen anwenden (z.B. eine ganze
+  // Reise-Abrechnung mit einem Tippen als "#aida" markieren, statt jede
+  // Zeile einzeln zu taggen) — bereits vorhandene Tags bleiben erhalten.
+  const applyTagToChecked = (tag) =>
+    setPreview((p) => p.map((it) => (it.checked && !(it.tags||[]).includes(tag) ? { ...it, tags:[...(it.tags||[]),tag] } : it)));
 
   const commitImport = () => {
     const chosen = (preview || []).filter((i) => i.checked);
     if (!chosen.length) { setMsg({ tone: "warn", text: "Keine Buchung ausgewählt." }); return; }
-    const newTxs = chosen.map(({ row, accId, note }) => ({
+    const newTxs = chosen.map(({ row, accId, note, tags }) => ({
       id: "eb-" + uid(), date: row.isoDate,
       totalAmount: row.pending ? row.amount : Math.abs(row.amount),
-      desc: row.desc, note: note || "", pending: !!row.pending, accountId: accId, splits: [],
+      desc: row.desc, note: note || "", tags: tags||[], pending: !!row.pending, accountId: accId, splits: [],
       _csvType: row.amount > 0 ? "income" : "expense", _fp: row.fp, _csvSource: "Enable Banking",
       ...(row.pending ? { _bankPending: true } : {}),
       ...(row._ebRef ? { _ebRef: row._ebRef } : {}),
@@ -864,6 +872,17 @@ function EnableBankingWizard({ onClose, onBack }) {
                     Keine
                   </button>
                 </div>
+                {/* Ein Tag auf alle ausgewählten Zeilen anwenden — z.B. eine ganze
+                    Reise-Abrechnung mit einem Tippen als "#aida" markieren, statt
+                    jede Zeile einzeln zu taggen. Einzelne Zeilen bleiben trotzdem
+                    unten separat änderbar. */}
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ color: T.txt2, fontSize: 12, fontWeight: 600, marginBottom: 4, display: "flex", alignItems: "center", gap: 5 }}>
+                    {Li("hash", 12, T.blue)} Tag auf alle ausgewählten anwenden
+                  </div>
+                  <TagInput value={[]} onChange={(t) => t.forEach(applyTagToChecked)}
+                    placeholder="Tag hinzufügen, z.B. aida…"/>
+                </div>
                 <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
                   {preview.map((it) => (
                     <label key={it.key}
@@ -907,7 +926,9 @@ function EnableBankingWizard({ onClose, onBack }) {
                             placeholder="eigene Notiz (optional)"
                             style={{ width: "100%", boxSizing: "border-box", background: "rgba(255,255,255,0.05)",
                               border: `1px solid ${T.bd}`, borderRadius: 7, padding: "5px 8px",
-                              color: T.txt, fontSize: 12, outline: "none", fontFamily: "inherit" }} />
+                              color: T.txt, fontSize: 12, outline: "none", fontFamily: "inherit", marginBottom: 5 }} />
+                          <TagInput value={it.tags||[]} onChange={(t) => setPreviewTags(it.key, t)}
+                            placeholder="Tag (optional)…"/>
                         </div>
                       </div>
                     </label>

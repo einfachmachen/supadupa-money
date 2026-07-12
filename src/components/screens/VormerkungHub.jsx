@@ -6,6 +6,7 @@ import { VormHubSegBtn } from "../molecules/VormHubSegBtn.jsx";
 import { AccountChips } from "../molecules/AccountChips.jsx";
 import { VormVerknuepfenPanel } from "../organisms/VormVerknuepfenPanel.jsx";
 import { RecurringDetectionScreen } from "./RecurringDetectionScreen.jsx";
+import { TagInput } from "../atoms/TagInput.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
@@ -109,6 +110,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
   const [transferToCat, setTransferToCat] = useState(_existingLinkSplit?.catId || "");
   const [transferToSub, setTransferToSub] = useState(_existingLinkSplit?.subId || "");
   const [note,      setNote]      = useState(editVorm?.note||"");
+  const [tags,      setTags]      = useState(editVorm?.tags||[]);
   // Tank-Erfassung (siehe TODO.md/Design-Guide §13): nur bei einmaliger Ausgabe
   // mit Kategorie "Tanken" — Vorbelegung aus editVorm für den Bearbeiten-Modus.
   const [fuelVehicleId, setFuelVehicleId] = useState(editVorm?._fuelVehicleId||"");
@@ -448,7 +450,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
       // Hilfsfunktion: eine einzelne tx updaten
       const updateTx = (t) => ({
         ...t, desc:desc.trim(), totalAmount:amt,
-        accountId, _csvType:csvType, splits:newSplits, note:note||"",
+        accountId, _csvType:csvType, splits:newSplits, note:note||"", tags,
         repeatMonths:interval_,
         ...(lastOfMonth?{_lastOfMonth:true}:{_lastOfMonth:undefined}),
         ...(typ==="finanzierung"?{_seriesTyp:"finanzierung"}:{_seriesTyp:undefined}),
@@ -478,7 +480,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
           _csvType: "income",
           repeatMonths: interval_,
           splits: linkedSplits,
-          note: note||"",
+          note: note||"", tags,
           _linkedTo: parentTx.id,
           ...(parentTx._seriesId ? {_seriesId: parentTx._seriesId+"_in", _seriesIdx: parentTx._seriesIdx, _seriesTotal: parentTx._seriesTotal} : {}),
           ...(lastOfMonth ? {_lastOfMonth:true} : {}),
@@ -562,7 +564,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
           const txSplits = catId?[{id:uid(),catId,subId:subId||"",amount:txAmt}]:newSplits;
           const tx = {
             id:uid(), date, desc:desc.trim(), totalAmount:txAmt, pending:true,
-            accountId, _csvType:csvType, splits:txSplits, note:note||"",
+            accountId, _csvType:csvType, splits:txSplits, note:note||"", tags,
             repeatMonths:interval_, _seriesId:seriesId,
             _seriesIdx:i+1, _seriesTotal:n,
             ...(lastOfMonth?{_lastOfMonth:true}:{_lastOfMonth:undefined}),
@@ -577,7 +579,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
             newGenTxs.push({
               id:uid(), date, desc:desc.trim(), totalAmount:txAmt, pending:true,
               accountId: transferToAcc, _csvType:"income",
-              repeatMonths:interval_, splits:linkedSplits, note:note||"",
+              repeatMonths:interval_, splits:linkedSplits, note:note||"", tags,
               _linkedTo: tx.id,
               _seriesId: seriesId+"_in", _seriesIdx:i+1, _seriesTotal:n,
               ...(lastOfMonth?{_lastOfMonth:true}:{}),
@@ -638,7 +640,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
         accountId:accountId||accounts[0]?.id||"",
         _csvType:csvType, repeatMonths:interval_,
         splits: txSplits,
-        note: note||"",
+        note: note||"", tags,
         ...(lastOfMonth&&typ!=="einmalig" ? {_lastOfMonth:true} : {}),
         ...(typ==="einmalig"&&valueDate ? {valueDate} : {}),
         ...fuelTxFields,
@@ -661,7 +663,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
           _csvType:"income",  // Gegenstück = Einnahme
           repeatMonths:interval_,
           splits: linkedSplits,
-          note: note||"",
+          note: note||"", tags,
           _linkedTo: tx.id,   // verknüpft mit Ausgabe
           ...(lastOfMonth&&typ!=="einmalig" ? {_lastOfMonth:true} : {}),
         };
@@ -674,7 +676,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
     }
     setTxs(p=>[...p,...newTxs]);
     setSaved(true); setTimeout(()=>setSaved(false),2000);
-    setDesc(""); setAmount(""); setCatId(""); setSubId(""); setCount(""); setEndDate(""); setNote("");
+    setDesc(""); setAmount(""); setCatId(""); setSubId(""); setCount(""); setEndDate(""); setNote(""); setTags([]);
     // Datums-Defaults zurücksetzen: Buchung bei Umbuchung → heute, sonst →
     // nächster Banktag. "verursacht" immer heute.
     setStartDate(transferToAcc ? today : nextBankWorkday(today));
@@ -1563,6 +1565,12 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
                 placeholder="Notiz…" rows={2}
                 style={{...INP,resize:"none",fontFamily:"inherit",lineHeight:1.4,
                   marginBottom:8,width:"100%",boxSizing:"border-box"}}/>
+
+              {/* Tags — quer über Kategorien hinweg durchsuchbar (z.B. "#aida") */}
+              <div style={{color:T.txt2,fontSize:10,marginBottom:3,display:"flex",alignItems:"center",gap:4}}>
+                {Li("hash",10,T.blue)} Tags (optional)
+              </div>
+              <TagInput value={tags} onChange={setTags}/>
 
               <div style={{display:"flex",gap:6}}>
                 <button onClick={handleSave}

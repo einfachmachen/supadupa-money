@@ -2221,7 +2221,7 @@ Abbrechen = ${remoteName}-Stand laden`
           }
           const upd = {
             ...t, date: newDate,
-            desc: editTx.desc, note: editTx.note||"",
+            desc: editTx.desc, note: editTx.note||"", tags: editTx.tags||[],
             totalAmount: newTotal||amt,
             accountId: editTx.accountId,
             splits: newSplits.map(sp=>({...sp, id:uid()})),
@@ -2277,7 +2277,7 @@ Abbrechen = ${remoteName}-Stand laden`
           const upd2 = {
             ...t,
             date: newDate,
-            desc: editTx.desc, note: editTx.note||"",
+            desc: editTx.desc, note: editTx.note||"", tags: editTx.tags||[],
             totalAmount: newTotal||amt,
             accountId: editTx.accountId,
             splits: newSplits.map(sp=>({...sp, id:uid()})),
@@ -2312,7 +2312,7 @@ Abbrechen = ${remoteName}-Stand laden`
           // Hauptbuchung: linkedIds aktualisieren falls diese Buchung eine der entknüpften ist
           return t;
         }
-        const upd3 = {...t, desc:editTx.desc, note:editTx.note||"", totalAmount:newTotal||amt, date:editTx.date,
+        const upd3 = {...t, desc:editTx.desc, note:editTx.note||"", tags:editTx.tags||[], totalAmount:newTotal||amt, date:editTx.date,
           pending:isPending, accountId:editTx.accountId, pendingDate,
           splits:newSplits, _csvType:editTx._csvType||t._csvType,
           linkedIds: editTx.linkedIds||[]};

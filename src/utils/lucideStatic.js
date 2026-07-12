@@ -2,7 +2,7 @@
 // Diese rendern sofort (im Hauptbundle, tree-shaked). Das komplette Icon-Set
 // für den Icon-Picker und nutzergewählte Icons lädt main.jsx asynchron nach.
 import {
-  AlertCircle, AlertTriangle, ArrowDown, ArrowLeft, ArrowLeftRight, ArrowRight, ArrowRightLeft, Ban, BarChart2, Bookmark, Briefcase, Building, Calendar, CalendarPlus, CalendarRange, Check, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Cloud, Copy, CornerDownRight, CornerUpLeft, CreditCard, Database, Download, DownloadCloud, Edit, Edit2, Edit3, Euro, Eye, EyeOff, FileText, Filter, FolderOpen, GitBranch, GitCompare, GitMerge, HelpCircle, Home, Inbox, Info, Landmark, Layers, Link, List, Loader, Lock, Monitor, Palette, Pencil, PiggyBank, Plus, PlusCircle, RefreshCw, Repeat, RotateCcw, Search, Settings, Shield, ShoppingCart, Sliders, Square, Star, StickyNote, Tag, Target, Trash2, Unlink, Unlock, Upload, UploadCloud, Wallet, Wifi, X, XCircle, Zap
+  AlertCircle, AlertTriangle, ArrowDown, ArrowLeft, ArrowLeftRight, ArrowRight, ArrowRightLeft, Ban, BarChart2, Bookmark, Briefcase, Building, Calendar, CalendarPlus, CalendarRange, Check, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Cloud, Copy, CornerDownRight, CornerUpLeft, CreditCard, Database, Download, DownloadCloud, Edit, Edit2, Edit3, Euro, Eye, EyeOff, FileText, Filter, FolderOpen, GitBranch, GitCompare, GitMerge, Hash, HelpCircle, Home, Inbox, Info, Landmark, Layers, Link, List, Loader, Lock, Monitor, Palette, Pencil, PiggyBank, Plus, PlusCircle, RefreshCw, Repeat, RotateCcw, Search, Settings, Shield, ShoppingCart, Sliders, Square, Star, StickyNote, Tag, Target, Trash2, Unlink, Unlock, Upload, UploadCloud, Wallet, Wifi, X, XCircle, Zap
 } from "lucide-react";
 
 export const STATIC_LUCIDE = {
@@ -48,6 +48,7 @@ export const STATIC_LUCIDE = {
   "git-branch": GitBranch,
   "git-compare": GitCompare,
   "git-merge": GitMerge,
+  "hash": Hash,
   "help-circle": HelpCircle,
   "home": Home,
   "inbox": Inbox,

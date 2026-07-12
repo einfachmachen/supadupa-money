@@ -24,6 +24,30 @@ describe("matchSearch", () => {
   });
 });
 
+describe("matchSearch mit Tags (#-Suche)", () => {
+  it("ein #-Suchwort matcht gegen die Tags, nicht gegen den Freitext", () => {
+    expect(matchSearch("Maquinas Vending", "#aida", ["aida"])).toBe(true);
+    expect(matchSearch("Maquinas Vending", "#aida", ["amazon"])).toBe(false);
+    // "aida" steht zufällig NICHT im Text — Ausschluss beweist, dass wirklich
+    // gegen tags geprüft wird, nicht gegen den (gar nicht enthaltenen) Text.
+    expect(matchSearch("Maquinas Vending", "#aida", [])).toBe(false);
+  });
+  it("Teilstring-Match auf Tags (wie beim Freitext)", () => {
+    expect(matchSearch("x", "#ama", ["amazon"])).toBe(true);
+  });
+  it("bloßes '#' verlangt irgendein Tag", () => {
+    expect(matchSearch("x", "#", ["amazon"])).toBe(true);
+    expect(matchSearch("x", "#", [])).toBe(false);
+  });
+  it("kombiniert Freitext- und Tag-Suchwörter (UND-Verknüpfung)", () => {
+    expect(matchSearch("Kreuzfahrt Bordkonto", "bordkonto #aida", ["aida"])).toBe(true);
+    expect(matchSearch("Kreuzfahrt Bordkonto", "bordkonto #aida", ["amazon"])).toBe(false);
+  });
+  it("ohne tags-Argument verhält sich #-Suche wie vorher (kein Crash, matcht nie)", () => {
+    expect(matchSearch("irgendwas", "#aida")).toBe(false);
+  });
+});
+
 describe("matchAmount", () => {
   it("matcht Betrag-Präfix (Original-Verhalten)", () => {
     expect(matchAmount(12.34, "12,34")).toBe(true);

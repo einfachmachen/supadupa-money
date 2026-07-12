@@ -77,7 +77,7 @@ function MatchingScreen({onClose, onBack}) {
   const filteredPends = unmatchedPends.filter(t=>{
     if(!searchPend) return true;
     const isAmt = /^[+\-=<>]?[\d.,]+$/.test(searchPend.trim());
-    return isAmt ? matchAmount(Math.abs(t.totalAmount), searchPend.replace(/^[+\-]/,"")) : matchSearch(t.desc, searchPend);
+    return isAmt ? matchAmount(Math.abs(t.totalAmount), searchPend.replace(/^[+\-]/,"")) : matchSearch(t.desc, searchPend, t.tags);
   });
   const selectedPendAmt = matchAmt && selPend
     ? Math.abs(txs.find(t=>t.id===selPend)?.totalAmount||0) : null;
@@ -90,7 +90,7 @@ function MatchingScreen({onClose, onBack}) {
     }
     if(!searchTx) return true;
     const isAmt = /^[+\-=<>]?[\d.,]+$/.test(searchTx.trim());
-    return isAmt ? matchAmount(Math.abs(t.totalAmount), searchTx.replace(/^[+\-]/,"")) : matchSearch(t.desc, searchTx);
+    return isAmt ? matchAmount(Math.abs(t.totalAmount), searchTx.replace(/^[+\-]/,"")) : matchSearch(t.desc, searchTx, t.tags);
   });
 
   const doMatch = () => {

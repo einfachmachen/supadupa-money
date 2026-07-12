@@ -1840,7 +1840,7 @@ function DashboardScreenV2() {
                     if(!dashSearch) return true;
                     const isAmtSearch = /^[=<>]?[\d.,]+$/.test(dashSearch.trim());
                     if(isAmtSearch) return matchAmount(Math.abs(t.totalAmount), dashSearch);
-                    return matchSearch(t.desc, dashSearch);
+                    return matchSearch(t.desc, dashSearch, t.tags);
                   }));
                   // Trennlinie zwischen Mitte (1-14) und Ende (15-31) einfügen
                   const sectionOf = t => {

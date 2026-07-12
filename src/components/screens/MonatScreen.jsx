@@ -121,7 +121,7 @@ function MonatScreen() {
     const _searchPred = (t) => {
       const isAmt = /^[=<>]?[\d.,]+$/.test(search.trim());
       if(isAmt) return matchAmount(Math.abs(t.totalAmount), search);
-      return matchSearch(t.desc,search)||(t.splits||[]).some(sp=>matchSearch(getCat(sp.catId)?.name,search)||matchSearch(getSub(sp.catId,sp.subId)?.name,search));
+      return matchSearch(t.desc,search,t.tags)||(t.splits||[]).some(sp=>matchSearch(getCat(sp.catId)?.name,search)||matchSearch(getSub(sp.catId,sp.subId)?.name,search));
     };
     const allVisibleTxs = useMemo(()=> txs.filter(_txVisible).sort((a,b)=>new Date(b.date)-new Date(a.date)), [txs,selAcc]);
     const mTxs = search.trim() ? _applyFilt(allVisibleTxs).filter(_searchPred) : filtByType;

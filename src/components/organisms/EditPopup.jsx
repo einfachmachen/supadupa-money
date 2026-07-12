@@ -4,6 +4,7 @@ import React, { useContext } from "react";
 import { CatPicker } from "../molecules/CatPicker.jsx";
 import { AccountChips } from "../molecules/AccountChips.jsx";
 import { VerknuepfenPanel } from "./VerknuepfenPanel.jsx";
+import { TagInput } from "../atoms/TagInput.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
@@ -346,6 +347,11 @@ function EditPopup() {
               borderRadius:11,padding:"6px 10px",color:T.txt,fontSize:13,outline:"none",
               boxSizing:"border-box",marginBottom:12,resize:"vertical",fontFamily:"inherit",
               lineHeight:1.5}}/>
+          {/* Tags — quer über Kategorien hinweg durchsuchbar (z.B. "#aida"), s. utils/search.js */}
+          <div style={{color:T.txt2,fontSize:11,marginBottom:2,display:"flex",alignItems:"center",gap:4}}>
+            {Li("hash",11,T.blue)} Tags
+          </div>
+          <TagInput value={editTx.tags||[]} onChange={t=>setEditTx(p=>({...p,tags:t}))}/>
           {/* Datum + Betrag */}
           {editTx.pending&&!editTx._seriesId&&!editTx._budgetSubId&&(
             <div style={{marginBottom:10}}>
