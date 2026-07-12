@@ -88,8 +88,7 @@ function DashboardScreenV2() {
     // Drilldown-Zeilen, damit eine zugeordnete Vormerkung ueberall erkennbar ist
     // (auch bei Tagesgeld-Kategorien ohne Unterkategorien).
     const LinkBadges = ({tx}) => {
-      if(!(tx.linkedIds||[]).length) return null;
-      return (tx.linkedIds||[]).map(lid=>{
+      const linkBadges = (tx.linkedIds||[]).map(lid=>{
         const lt=txs.find(t=>t.id===lid);
         if(!lt||lt.pending) return null;
         const sTotal = lt._seriesTotal;
@@ -104,6 +103,13 @@ function DashboardScreenV2() {
           </span>
         );
       });
+      const tagBadges = (tx.tags||[]).map(t=>(
+        <span key={"tag-"+t} style={{background:`${T.blue}1a`,color:T.blue,
+          borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>
+          #{t}
+        </span>
+      ));
+      return [...linkBadges, ...tagBadges];
     };
     // Solange der Erststart läuft, startet der Detail-Block aufgeklappt —
     // sonst finden neue Nutzer die Konten-/Budget-Kurzwege in der Zeile

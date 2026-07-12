@@ -69,6 +69,12 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
               <span style={{color:T.txt2,fontSize:12,flexShrink:0,fontFamily:NUM_FONT,width:36}}>{fmtD(t.date)}</span>
               {icon&&Li(icon,12,iconCol||T.txt2)}
               <span style={{color:dimmed?T.txt2:T.txt,flex:1,fontSize:13.5,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.desc||cat?.name||"—"}</span>
+              {(t.tags||[]).map(tg=>(
+                <span key={tg} style={{background:`${T.blue}1a`,color:T.blue,
+                  borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>
+                  #{tg}
+                </span>
+              ))}
               <span style={{color:isInc?T.pos:T.neg,fontFamily:NUM_FONT,fontSize:13.5,fontWeight:700,flexShrink:0}}>{isInc?"+":"−"}{fmt(displayAmt)}</span>
             </div>
           );

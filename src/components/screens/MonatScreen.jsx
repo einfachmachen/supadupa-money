@@ -1186,6 +1186,12 @@ function MonatScreen() {
                                 {Li("corner-up-right",8,T.gold)} aus Unvorh.
                               </span>
                             )}
+                            {(tx.tags||[]).map(t=>(
+                              <span key={t} style={{background:`${T.blue}1a`,color:T.blue,
+                                borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>
+                                #{t}
+                              </span>
+                            ))}
                             </div>
                           </div>
                           {/* Amount */}

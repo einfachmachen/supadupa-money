@@ -2162,6 +2162,7 @@ Abbrechen = ${remoteName}-Stand laden`
       accountId: tx.accountId||"acc-giro",
       pendingDate: tx.pendingDate||"",
       note: tx.note||"",
+      tags: tx.tags||[],
       splits,
       _readOnlyAmount: readOnlyAmount,
       repeatMonths: tx.repeatMonths||1,
