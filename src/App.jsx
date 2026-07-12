@@ -1751,17 +1751,23 @@ Abbrechen = ${remoteName}-Stand laden`
     const realIn  = realTxs.filter(t=>!_isDupl(t) && getTxType(t)==="income").reduce((s,t)=>s+Math.abs(t.totalAmount),0);
     const realOut = realTxs.filter(t=>!_isDupl(t) && getTxType(t)!=="income").reduce((s,t)=>s+Math.abs(t.totalAmount),0);
 
-    const seenPend = new Set();
     // Alle Vormerkungen im Zeitraum (ohne Duplikate)
     // _linkedTo-Counterparts werden einbezogen damit sie in konto-spezifischen Drilldowns
     // sichtbar sind. Globale Summen pendIn/pendOut nehmen sie aber aus.
+    //
+    // WICHTIG: Duplikat-Erkennung hier NUR über die id (echtes Objekt-Duplikat,
+    // z.B. durch einen Bug beim Zusammenführen von Arrays) — NICHT über einen
+    // Inhalts-Fingerprint (Datum+Betrag+Text+Konto). Ein Fingerprint hätte zwei
+    // tatsächlich getrennte Vormerkungen mit zufällig gleichem Betrag/Datum/Text
+    // (z.B. zweimal derselbe Snack-Automat am selben Tag) fälschlich als
+    // "Duplikat" erkannt und eine davon stillschweigend verschluckt.
+    const seenPendIds = new Set();
     const allPendTxs = txs.filter(t=>{
       if(!t.pending) return false;
       const d=new Date(t.date);
       if(d.getFullYear()!==toYear||d.getMonth()!==toMonth||d.getDate()>cutDay) return false;
-      const dupKey=`${t.date}|${t.totalAmount}|${(t.desc||"").slice(0,30)}|${t.accountId||""}`;
-      if(seenPend.has(dupKey)) return false;
-      seenPend.add(dupKey);
+      if(seenPendIds.has(t.id)) return false;
+      seenPendIds.add(t.id);
       return true;
     });
 
