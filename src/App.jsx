@@ -143,9 +143,21 @@ export default function SupaDupaMoney() {
   // verlassen.
   useEffect(() => {
     const vv = window.visualViewport;
+    let lastH = vv ? vv.height : window.innerHeight;
     const setH = () => {
       try {
         const h = vv ? vv.height : window.innerHeight;
+        // Ein plötzlicher, großer Höhenverlust (>150px) kommt praktisch nur
+        // von der aufklappenden Bildschirmtastatur (Adressleiste ein-/
+        // ausblenden macht nur wenige zehn Pixel aus). Ein Vollbild-Dialog
+        // darf dabei NICHT schrumpfen — sonst wird am unteren Rand (dort, wo
+        // die Tastatur den Bildschirm verdeckt) kurz der darunterliegende
+        // Screen sichtbar (z.B. Kategorieübersicht beim Betrag-Eingeben im
+        // Vormerken-Dialog). Deshalb bei Tastatur-Größenordnungen die zuletzt
+        // bekannte "echte" Höhe beibehalten; bei Vergrößerung (Tastatur zu,
+        // Adressleiste ein-/ausgeblendet) ganz normal übernehmen.
+        if(h < lastH - 150) return;
+        lastH = h;
         document.documentElement.style.setProperty("--app-vvh", `${h}px`);
       } catch(e) {}
     };

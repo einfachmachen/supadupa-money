@@ -7,6 +7,7 @@ import { AccountChips } from "../molecules/AccountChips.jsx";
 import { VormVerknuepfenPanel } from "../organisms/VormVerknuepfenPanel.jsx";
 import { RecurringDetectionScreen } from "./RecurringDetectionScreen.jsx";
 import { TagInput } from "../atoms/TagInput.jsx";
+import { getAllTags } from "../../utils/search.js";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
@@ -382,6 +383,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
     if(!_showFuelFields || !odometer) return null;
     return checkOdometerPlausibility(txs, fuelVehicleId, pn(odometer), startDate, editVorm?.id);
   }, [_showFuelFields, odometer, fuelVehicleId, startDate, editVorm?.id, txs]);
+  const allTags = useMemo(()=>getAllTags(txs), [txs]);
   const saveVehicle = () => {
     const name = newVehicleName.trim();
     if(!name) return;
@@ -1570,7 +1572,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
               <div style={{color:T.txt2,fontSize:10,marginBottom:3,display:"flex",alignItems:"center",gap:4}}>
                 {Li("hash",10,T.blue)} Tags (optional)
               </div>
-              <TagInput value={tags} onChange={setTags}/>
+              <TagInput value={tags} onChange={setTags} suggestions={allTags}/>
 
               <div style={{display:"flex",gap:6}}>
                 <button onClick={handleSave}

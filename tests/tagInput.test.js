@@ -79,3 +79,65 @@ describe("TagInput (Render + Interaktion)", () => {
     root.unmount();
   });
 });
+
+describe("TagInput Autovervollständigung (suggestions)", () => {
+  it("zeigt beim Fokussieren passende, noch nicht vergebene Vorschläge gefiltert nach Draft", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    act(() => { root.render(React.createElement(TagInput, {
+      value: ["amazon"], onChange: () => {}, suggestions: ["aida", "amazon", "aldi"],
+    })); });
+    const input = container.querySelector("input");
+    act(() => { input.focus(); });
+    act(() => { setNativeValue(input, "a"); });
+    // "amazon" ist bereits vergeben -> ausgeblendet; "aida"/"aldi" bleiben
+    const dropdown = container.querySelector("div[style*='position: absolute']");
+    expect(dropdown).toBeTruthy();
+    expect(dropdown.textContent).toContain("#aida");
+    expect(dropdown.textContent).toContain("#aldi");
+    expect(dropdown.textContent).not.toContain("#amazon");
+    act(() => { root.unmount(); });
+    container.remove();
+  });
+
+  it("übernimmt einen Vorschlag per Klick", () => {
+    let value = [];
+    const onChange = (v) => { value = v; };
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    act(() => { root.render(React.createElement(TagInput, {
+      value, onChange, suggestions: ["aida", "amazon"],
+    })); });
+    const input = container.querySelector("input");
+    act(() => { input.focus(); });
+    act(() => { setNativeValue(input, "aid"); });
+    const suggestion = [...container.querySelectorAll("div[style*='cursor: pointer']")]
+      .find(d => d.textContent === "#aida");
+    expect(suggestion).toBeTruthy();
+    act(() => { suggestion.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    expect(value).toEqual(["aida"]);
+    act(() => { root.unmount(); });
+    container.remove();
+  });
+
+  it("übernimmt den per Pfeiltasten markierten Vorschlag mit Enter", () => {
+    let value = [];
+    const onChange = (v) => { value = v; };
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    act(() => { root.render(React.createElement(TagInput, {
+      value, onChange, suggestions: ["aida", "amazon"],
+    })); });
+    const input = container.querySelector("input");
+    act(() => { input.focus(); });
+    act(() => { setNativeValue(input, "a"); });
+    act(() => { input.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true, cancelable: true })); });
+    act(() => { input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true })); });
+    expect(value).toEqual(["aida"]);
+    act(() => { root.unmount(); });
+    container.remove();
+  });
+});

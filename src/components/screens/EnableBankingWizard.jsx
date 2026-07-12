@@ -13,6 +13,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { TagInput } from "../atoms/TagInput.jsx";
+import { getAllTags } from "../../utils/search.js";
 import { Li } from "../../utils/icons.jsx";
 import { uid } from "../../utils/format.js";
 import { txFingerprintNorm } from "../../utils/tx.js";
@@ -125,6 +126,7 @@ function normalizeAccounts(r) {
 
 function EnableBankingWizard({ onClose, onBack }) {
   const { txs, setTxs, accounts, setMasterOverride } = useContext(AppCtx);
+  const allTags = React.useMemo(()=>getAllTags(txs), [txs]);
 
   const [relayUrl, setRelayUrl] = useState(DEFAULT_RELAY);
   const [appId, setAppId] = useState("");
@@ -881,6 +883,7 @@ function EnableBankingWizard({ onClose, onBack }) {
                     {Li("hash", 12, T.blue)} Tag auf alle ausgewählten anwenden
                   </div>
                   <TagInput value={[]} onChange={(t) => t.forEach(applyTagToChecked)}
+                    suggestions={allTags}
                     placeholder="Tag hinzufügen, z.B. aida…"/>
                 </div>
                 <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}>
@@ -928,6 +931,7 @@ function EnableBankingWizard({ onClose, onBack }) {
                               border: `1px solid ${T.bd}`, borderRadius: 7, padding: "5px 8px",
                               color: T.txt, fontSize: 12, outline: "none", fontFamily: "inherit", marginBottom: 5 }} />
                           <TagInput value={it.tags||[]} onChange={(t) => setPreviewTags(it.key, t)}
+                            suggestions={allTags}
                             placeholder="Tag (optional)…"/>
                         </div>
                       </div>

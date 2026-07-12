@@ -43,6 +43,15 @@ const matchAmount = (amount, search) => {
   return false;
 };
 
+// Alle bereits vergebenen Tags (dedupliziert, alphabetisch) — Grundlage für
+// die Autovervollständigung im TagInput, damit man einen einmal benutzten
+// Tag (z.B. "aida") beim nächsten Mal nur noch antippen statt neu tippen muss.
+const getAllTags = (txs) => {
+  const s = new Set();
+  (txs||[]).forEach(t => (t.tags||[]).forEach(tag => { if(tag) s.add(tag); }));
+  return [...s].sort();
+};
+
 // ─── Theme ───────────────────────────────────────────────────────────────────
 
-export { normSearch, matchSearch, matchAmount };
+export { normSearch, matchSearch, matchAmount, getAllTags };

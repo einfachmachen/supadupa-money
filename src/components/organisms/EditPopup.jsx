@@ -12,6 +12,7 @@ import { isoAddMonths } from "../../utils/date.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { isFuelSelection, checkOdometerPlausibility } from "../../utils/fuel.js";
+import { getAllTags } from "../../utils/search.js";
 
 function EditPopup() {
   const { cats,setCats,groups,setGroups,txs,setTxs,accounts,setAccounts,
@@ -53,6 +54,8 @@ function EditPopup() {
       return checkOdometerPlausibility(txs, editTx._fuelVehicleId, editTx._odometer, editTx.date, editTx.id);
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [_showFuelFields, editTx?._odometer, editTx?._fuelVehicleId, editTx?.date, editTx?.id, txs]);
+    // Für die Tag-Autovervollständigung: alle bereits App-weit vergebenen Tags.
+    const allTags = React.useMemo(()=>getAllTags(txs), [txs]);
 
     if(!editTx) return null;
     const isMulti = (editTx.splits||[]).length > 1;
@@ -351,7 +354,7 @@ function EditPopup() {
           <div style={{color:T.txt2,fontSize:11,marginBottom:2,display:"flex",alignItems:"center",gap:4}}>
             {Li("hash",11,T.blue)} Tags
           </div>
-          <TagInput value={editTx.tags||[]} onChange={t=>setEditTx(p=>({...p,tags:t}))}/>
+          <TagInput value={editTx.tags||[]} onChange={t=>setEditTx(p=>({...p,tags:t}))} suggestions={allTags}/>
           {/* Datum + Betrag */}
           {editTx.pending&&!editTx._seriesId&&!editTx._budgetSubId&&(
             <div style={{marginBottom:10}}>

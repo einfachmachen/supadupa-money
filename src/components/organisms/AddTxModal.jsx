@@ -20,6 +20,7 @@ import { isoAddMonths } from "../../utils/date.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { isFuelSelection, checkOdometerPlausibility } from "../../utils/fuel.js";
+import { getAllTags } from "../../utils/search.js";
 
 function AddTxModal() {
   const { cats,groups,txs,setTxs,accounts,vehicles,setVehicles,
@@ -118,6 +119,7 @@ function AddTxModal() {
     if(!_showFuelFields || !odometer) return null;
     return checkOdometerPlausibility(txs, fuelVehicleId, pn(odometer), startDate);
   }, [_showFuelFields, odometer, fuelVehicleId, startDate, txs]);
+  const allTags = React.useMemo(()=>getAllTags(txs), [txs]);
   const saveVehicle = () => {
     const name = newVehicleName.trim();
     if(!name) return;
@@ -749,7 +751,7 @@ function AddTxModal() {
 
       {/* Tags — quer über Kategorien hinweg durchsuchbar (z.B. "#aida") */}
       <Lbl>Tags (optional)</Lbl>
-      <TagInput value={tags} onChange={setTags}/>
+      <TagInput value={tags} onChange={setTags} suggestions={allTags}/>
 
       {error&&<div style={{color:T.neg,fontSize:11,marginBottom:8}}>{error}</div>}
 

@@ -18,6 +18,7 @@ import { Li } from "../../utils/icons.jsx";
 import { SchieflageVorwarnung } from "../atoms/SchieflageVorwarnung.jsx";
 import { isFuelSelection, checkOdometerPlausibility } from "../../utils/fuel.js";
 import { TagInput } from "../atoms/TagInput.jsx";
+import { getAllTags } from "../../utils/search.js";
 
 function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialFinanz=false}) {
   const { cats, setCats, accounts, setAccounts, vehicles, setVehicles, txs, setTxs, year, month, getCat, getSub, setMasterOverride } = useContext(AppCtx);
@@ -94,6 +95,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
     if(!_showFuelFields || !odometer) return null;
     return checkOdometerPlausibility(txs, fuelVehicleId, pn(odometer), date);
   }, [_showFuelFields, odometer, fuelVehicleId, date, txs]);
+  const allTags = React.useMemo(()=>getAllTags(txs), [txs]);
   const saveVehicle = () => {
     const name = newVehicleName.trim();
     if(!name) return;
@@ -712,7 +714,10 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
 
           {/* Tags — quer über Kategorien hinweg durchsuchbar (z.B. "#aida") */}
           <div style={{marginBottom:S.gap}}>
-            <TagInput value={tags} onChange={setTags}/>
+            <TagInput value={tags} onChange={setTags} suggestions={allTags}
+              style={{padding:`${S.padL}px`,borderRadius:S.radius,minHeight:S.fs*1.5+S.padL*2,
+                border:`2px solid ${T.bd}`,background:"rgba(255,255,255,0.06)",marginBottom:0}}
+              inputStyle={{fontSize:S.fs}}/>
           </div>
 
           {/* Flexibler Topf (nur einmalige Ausgabe) */}

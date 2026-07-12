@@ -12,9 +12,11 @@ import { fmt, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { CatPicker } from "../molecules/CatPicker.jsx";
 import { TagInput } from "../atoms/TagInput.jsx";
+import { getAllTags } from "../../utils/search.js";
 
 function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }) {
-  const { accounts } = useContext(AppCtx);
+  const { accounts, txs } = useContext(AppCtx);
+  const allTags = React.useMemo(()=>getAllTags(txs), [txs]);
   const [showExisting, setShowExisting] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const accName = (accId) => (accounts || []).find((a) => a.id === accId)?.name || accId;
@@ -225,7 +227,7 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }
             border: `1px solid ${T.bd}`, borderRadius: 7, padding: "5px 8px",
             color: T.txt, fontSize: 12, outline: "none", fontFamily: "inherit" }} />
         <div style={{ marginTop: 6 }}>
-          <TagInput value={t.tags||[]} onChange={(tags) => setRowTags(t.id, tags)} placeholder="Tag (optional)…"/>
+          <TagInput value={t.tags||[]} onChange={(tags) => setRowTags(t.id, tags)} suggestions={allTags} placeholder="Tag (optional)…"/>
         </div>
       </div>
     );
@@ -256,6 +258,7 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }
             {Li("hash", 12, T.blue)} Tag auf alle anwenden
           </div>
           <TagInput value={[]} onChange={(tags) => tags.forEach(applyTagToAll)}
+            suggestions={allTags}
             placeholder="Tag hinzufügen, z.B. aida…"/>
         </div>
       )}

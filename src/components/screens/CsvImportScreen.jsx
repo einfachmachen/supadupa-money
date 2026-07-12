@@ -14,7 +14,7 @@ import { parsePdfStatement } from "../../utils/pdfStatement.js";
 import { anchorFromDetectedBalance, makeAnchorEntry } from "../../utils/anchors.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
-import { matchAmount, matchSearch } from "../../utils/search.js";
+import { matchAmount, matchSearch, getAllTags } from "../../utils/search.js";
 import { txFingerprint, txFingerprintNorm } from "../../utils/tx.js";
 import { isoAddDays, nextBankWorkday } from "../../utils/date.js";
 import { liveLinkedGiroIds } from "../../utils/links.js";
@@ -45,6 +45,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   // Reise-Abrechnung, damit sich alle Positionen später kategorieübergreifend
   // wiederfinden lassen, auch wenn sie über mehrere Kategorien verteilt sind.
   const [importTags, setImportTags] = useState([]);
+  const allTags = useMemo(()=>getAllTags(txs), [txs]);
   // Sobald Konten aus IndexedDB geladen sind, erstes Konto vorauswählen (falls noch nichts gewählt)
   useEffect(()=>{
     if(!selAccId && accounts.length>0) setSelAccId(accounts[0].id);
@@ -1755,7 +1756,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                 <div style={{color:T.txt2,fontSize:MFSl,fontWeight:600,marginBottom:4,display:"flex",alignItems:"center",gap:5}}>
                   {Li("hash",12,T.blue)} Tag für diesen Import (optional, z.B. #aida)
                 </div>
-                <TagInput value={importTags} onChange={setImportTags}
+                <TagInput value={importTags} onChange={setImportTags} suggestions={allTags}
                   placeholder="Tag für alle importierten Buchungen…"/>
               </div>
               {stagedInfo&&(

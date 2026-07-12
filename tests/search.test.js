@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normSearch, matchSearch, matchAmount } from "../src/utils/search.js";
+import { normSearch, matchSearch, matchAmount, getAllTags } from "../src/utils/search.js";
 
 describe("normSearch", () => {
   it("normalisiert Bindestriche und lowercase", () => {
@@ -45,6 +45,22 @@ describe("matchSearch mit Tags (#-Suche)", () => {
   });
   it("ohne tags-Argument verhält sich #-Suche wie vorher (kein Crash, matcht nie)", () => {
     expect(matchSearch("irgendwas", "#aida")).toBe(false);
+  });
+});
+
+describe("getAllTags", () => {
+  it("sammelt alle Tags dedupliziert und alphabetisch sortiert", () => {
+    const txs = [
+      { id: "t1", tags: ["aida", "amazon"] },
+      { id: "t2", tags: ["amazon"] },
+      { id: "t3", tags: [] },
+      { id: "t4" },
+    ];
+    expect(getAllTags(txs)).toEqual(["aida", "amazon"]);
+  });
+  it("toleriert null/undefined", () => {
+    expect(getAllTags(null)).toEqual([]);
+    expect(getAllTags(undefined)).toEqual([]);
   });
 });
 
