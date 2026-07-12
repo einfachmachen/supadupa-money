@@ -25,6 +25,7 @@ const cases = [
   ["ManagementScreen",  () => import("../src/components/screens/ManagementScreen.jsx"), { activeTab:"einstellungen" }],
   ["SettingsInline",    () => import("../src/components/screens/SettingsInline.jsx"), {}],
   ["EnableBankingWizard", () => import("../src/components/screens/EnableBankingWizard.jsx"), {}],
+  ["SearchSummaryScreen", () => import("../src/components/screens/SearchSummaryScreen.jsx"), {}],
 ];
 
 describe("Screen-Render (TDZ-Regression)", () => {

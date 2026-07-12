@@ -831,6 +831,15 @@ function MonatScreen() {
                 color:T.blue,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>
               {Li(allSel?"check-square":"square",12,T.blue)} Alle ({mTxs.length})
             </button>
+            {inSearchMode&&(()=>{
+              const sum = mTxs.reduce((s,t)=>s+(t.totalAmount||0),0);
+              return (
+                <span style={{marginLeft:"auto",color:sum>=0?T.pos:T.neg,fontSize:12,
+                  fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
+                  Σ {sum>=0?"+":"−"}{fmt(Math.abs(sum))}
+                </span>
+              );
+            })()}
             {selected.size>0&&(()=>{
               const selTxs=[...selected].map(id=>txs.find(t=>t.id===id)).filter(Boolean);
               const hasNeg=selTxs.some(_txIsExpense);
