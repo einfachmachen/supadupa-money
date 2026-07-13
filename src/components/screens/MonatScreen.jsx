@@ -838,18 +838,20 @@ function MonatScreen() {
             Safari bei LEEREM <input type="date"> die eigene native Optik
             statt unserer Border/Hintergrund zeichnet — dadurch verschmolzen
             von/bis optisch zu einem einzigen Kasten, sobald beide Felder
-            leer waren (mit Wert gesetzt fiel das nicht auf). */}
+            leer waren (mit Wert gesetzt fiel das nicht auf). WebkitAppearance
+            entfernt dabei aber auch das native Innenpolster von iOS — ohne
+            explizite minHeight/Padding wirken die Felder dadurch zu flach.*/}
         {inSearchMode && (
           <div style={{padding:"0 10px 6px",display:"flex",gap:6,alignItems:"flex-end"}}>
             <div style={{flex:1}}>
               <div style={{color:T.txt2,fontSize:10,marginBottom:2}}>von</div>
               <div style={{position:"relative"}}>
                 <input type="date" value={von} onChange={e=>setVon(e.target.value)}
-                  style={{width:"100%",minWidth:0,display:"block",boxSizing:"border-box",
+                  style={{width:"100%",minWidth:0,minHeight:38,display:"block",boxSizing:"border-box",
                     WebkitAppearance:"none",appearance:"none",
                     background:"rgba(255,255,255,0.06)",
-                    border:`1px solid ${T.bds}`,borderRadius:9,padding:von?"6px 24px 6px 8px":"6px 8px",
-                    color:T.txt,fontSize:12,outline:"none",fontFamily:"inherit"}}/>
+                    border:`1px solid ${T.bds}`,borderRadius:9,padding:von?"10px 24px 10px 8px":"10px 8px",
+                    color:T.txt,fontSize:12,lineHeight:"18px",outline:"none",fontFamily:"inherit"}}/>
                 {von&&(
                   <button onClick={()=>setVon("")} title="Von zurücksetzen"
                     style={{position:"absolute",right:4,top:"50%",transform:"translateY(-50%)",
@@ -864,11 +866,11 @@ function MonatScreen() {
               <div style={{color:T.txt2,fontSize:10,marginBottom:2}}>bis</div>
               <div style={{position:"relative"}}>
                 <input type="date" value={bis} onChange={e=>setBis(e.target.value)}
-                  style={{width:"100%",minWidth:0,display:"block",boxSizing:"border-box",
+                  style={{width:"100%",minWidth:0,minHeight:38,display:"block",boxSizing:"border-box",
                     WebkitAppearance:"none",appearance:"none",
                     background:"rgba(255,255,255,0.06)",
-                    border:`1px solid ${T.bds}`,borderRadius:9,padding:bis?"6px 24px 6px 8px":"6px 8px",
-                    color:T.txt,fontSize:12,outline:"none",fontFamily:"inherit"}}/>
+                    border:`1px solid ${T.bds}`,borderRadius:9,padding:bis?"10px 24px 10px 8px":"10px 8px",
+                    color:T.txt,fontSize:12,lineHeight:"18px",outline:"none",fontFamily:"inherit"}}/>
                 {bis&&(
                   <button onClick={()=>setBis("")} title="Bis zurücksetzen"
                     style={{position:"absolute",right:4,top:"50%",transform:"translateY(-50%)",
