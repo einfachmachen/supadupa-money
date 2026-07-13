@@ -2,6 +2,7 @@
 
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { CatPicker } from "../molecules/CatPicker.jsx";
+import { TagInput } from "../atoms/TagInput.jsx";
 import { MitteEndeFields } from "../molecules/MitteEndeFields.jsx";
 import { BudgetEditorModal } from "../organisms/BudgetEditorModal.jsx";
 import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
@@ -14,7 +15,7 @@ import { amtStyle, readableOn } from "../../theme/amtPill.js";
 import { MONTHS_F } from "../../utils/constants.js";
 import { dayOf, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
-import { matchAmount, matchSearch } from "../../utils/search.js";
+import { matchAmount, matchSearch, getAllTags } from "../../utils/search.js";
 import { isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
 import { budgetOpenRestFor } from "../../utils/budgets.js";
 import { saldoAt, saldoIst, saldoMitte, saldoEnde, phaseStillReachable, budgetPlaceholderActive } from "../../utils/saldo.js";
@@ -87,6 +88,24 @@ function MonatScreen() {
     const onSearchClear  = React.useCallback(()=>{ setSearch(""); setSelected(new Set()); }, []);
     const [selected, setSelected] = useState(new Set());
     const [bulkCat,  setBulkCat]  = useState({catId:"",subId:""});
+    // Bulk-Zuordnung: statt einer Kategorie können ausgewählten Buchungen auch
+    // Tags zugewiesen werden (typunabhängig, im Gegensatz zur Kategorie).
+    const [bulkMode, setBulkMode] = useState("cat"); // "cat" | "tag"
+    const [bulkTags, setBulkTags] = useState([]);
+    const allTags = useMemo(()=>getAllTags(txs), [txs]);
+    const applyBulkTags = () => {
+      if(!bulkTags.length || selected.size===0) return;
+      setTxs(p=>p.map(tx=>selected.has(tx.id)
+        ? {...tx, tags:[...new Set([...(tx.tags||[]), ...bulkTags])]}
+        : tx));
+      setSelected(new Set());
+      setBulkTags([]);
+    };
+    // Infozeile (Kategorie/Badges/Tags) je Buchung einzeln aufklappbar — sonst
+    // schneidet die einzeilige Kürzung (whiteSpace:nowrap) bei vielen Badges
+    // z.B. Tags am Ende unsichtbar ab.
+    const [expandedInfo, setExpandedInfo] = useState(new Set());
+    const toggleInfoExpand = (id) => setExpandedInfo(p=>{const n=new Set(p);n.has(id)?n.delete(id):n.add(id);return n;});
     const [budgetEditSub, setBudgetEditSub] = useState(null);
     const [budgetEditKey, setBudgetEditKey] = useState(0);
     const openBudgetEdit = (sub) => { setBudgetEditSub(sub); setBudgetEditKey(k=>k+1); };
@@ -790,22 +809,6 @@ function MonatScreen() {
           </div>
         )}
 
-        {/* Such-Summe — Ausgaben/Einnahmen über alle Treffer (Kategorien &
-            Monate hinweg), direkt bei der Suche statt in einer separaten Ansicht. */}
-        {inSearchMode && mTxs.length>0 && (()=>{
-          const totalExpense = mTxs.filter(t=>t.totalAmount<0||t._csvType==="expense").reduce((s,t)=>s+Math.abs(t.totalAmount||0),0);
-          const totalIncome  = mTxs.reduce((s,t)=>s+Math.abs(t.totalAmount||0),0) - totalExpense;
-          return (
-            <div style={{margin:"0 10px 6px",padding:"7px 10px",borderRadius:10,
-              background:"rgba(255,255,255,0.04)",border:`1px solid ${T.bd}`,
-              display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
-              <span style={{color:T.txt2,fontSize:11}}>{mTxs.length} Treffer</span>
-              {totalExpense>0&&<span style={{color:T.neg,fontSize:12.5,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(totalExpense)}</span>}
-              {totalIncome>0&&<span style={{color:T.pos,fontSize:12.5,fontWeight:700,fontFamily:NUM_FONT}}>+{fmt(totalIncome)}</span>}
-            </div>
-          );
-        })()}
-
         {/* Filter-Tabs — alle in einer Zeile, dynamisch gleich breit (flex:1) */}
         <div style={{display:"flex",gap:6,padding:"0 10px 6px"}}>
           {(()=>{
@@ -883,12 +886,15 @@ function MonatScreen() {
                 color:T.blue,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>
               {Li(allSel?"check-square":"square",12,T.blue)} Alle ({mTxs.length})
             </button>
+            {/* Ausgaben/Einnahmen-Summe der Treffer — einzige Summenanzeige
+                (vorher zusätzlich als eigene Zeile darüber, das war doppelt). */}
             {inSearchMode&&(()=>{
-              const sum = mTxs.reduce((s,t)=>s+(t.totalAmount||0),0);
+              const totalExpense = mTxs.filter(t=>t.totalAmount<0||t._csvType==="expense").reduce((s,t)=>s+Math.abs(t.totalAmount||0),0);
+              const totalIncome  = mTxs.reduce((s,t)=>s+Math.abs(t.totalAmount||0),0) - totalExpense;
               return (
-                <span style={{marginLeft:"auto",color:sum>=0?T.pos:T.neg,fontSize:12,
-                  fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
-                  Σ {sum>=0?"+":"−"}{fmt(Math.abs(sum))}
+                <span style={{marginLeft:"auto",display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
+                  {totalExpense>0&&<span style={{color:T.neg,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(totalExpense)}</span>}
+                  {totalIncome>0&&<span style={{color:T.pos,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>+{fmt(totalIncome)}</span>}
                 </span>
               );
             })()}
@@ -899,20 +905,39 @@ function MonatScreen() {
               const fType=selTxs.length===0?null:(hasNeg&&!hasPos?"expense":(!hasNeg&&hasPos?"income":null));
               const mixed=hasNeg&&hasPos;
               return (<>
-                <div style={{flex:1,minWidth:120}}>
-                  <CatPicker value={bulkCat.catId+"|"+bulkCat.subId}
-                    onChange={(c,s)=>setBulkCat({catId:c,subId:s})}
-                    filterType={fType} noMargin
-                    placeholder={mixed?"— Kategorie (typgenau) —":fType==="expense"?"— Ausgaben-Kategorie —":fType==="income"?"— Einnahmen-Kategorie —":"— Kategorie —"}/>
+                <div style={{flexBasis:"100%",display:"flex",gap:5,marginTop:4}}>
+                  {[["cat","Kategorie"],["tag","Tag"]].map(([m,lbl])=>(
+                    <button key={m} onClick={()=>setBulkMode(m)}
+                      style={{padding:"3px 9px",borderRadius:20,cursor:"pointer",fontFamily:"inherit",
+                        fontSize:10.5,fontWeight:700,border:`1px solid ${bulkMode===m?T.blue:T.bd}`,
+                        background:bulkMode===m?`${T.blue}22`:"transparent",
+                        color:bulkMode===m?T.blue:T.txt2}}>
+                      {lbl}
+                    </button>
+                  ))}
                 </div>
-                <button onClick={applyBulk} disabled={!bulkCat.catId}
-                  style={{background:bulkCat.catId?T.blue:T.disabled,
+                {bulkMode==="cat" ? (
+                  <div style={{flex:1,minWidth:120}}>
+                    <CatPicker value={bulkCat.catId+"|"+bulkCat.subId}
+                      onChange={(c,s)=>setBulkCat({catId:c,subId:s})}
+                      filterType={fType} noMargin
+                      placeholder={mixed?"— Kategorie (typgenau) —":fType==="expense"?"— Ausgaben-Kategorie —":fType==="income"?"— Einnahmen-Kategorie —":"— Kategorie —"}/>
+                  </div>
+                ) : (
+                  <div style={{flex:1,minWidth:120}}>
+                    <TagInput value={bulkTags} onChange={setBulkTags} suggestions={allTags}
+                      placeholder="Tag hinzufügen…" style={{marginBottom:0,padding:"3px 6px"}}/>
+                  </div>
+                )}
+                <button onClick={bulkMode==="cat"?applyBulk:applyBulkTags}
+                  disabled={bulkMode==="cat"?!bulkCat.catId:!bulkTags.length}
+                  style={{background:(bulkMode==="cat"?bulkCat.catId:bulkTags.length)?T.blue:T.disabled,
                     border:"none",borderRadius:8,padding:"5px 10px",color:"#fff",
-                    fontSize:11,fontWeight:700,cursor:bulkCat.catId?"pointer":"default",
-                    opacity:bulkCat.catId?1:0.4,flexShrink:0}}>✓</button>
-                <button onClick={()=>setSelected(new Set())}
+                    fontSize:11,fontWeight:700,cursor:(bulkMode==="cat"?bulkCat.catId:bulkTags.length)?"pointer":"default",
+                    opacity:(bulkMode==="cat"?bulkCat.catId:bulkTags.length)?1:0.4,flexShrink:0}}>✓</button>
+                <button onClick={()=>{setSelected(new Set());setBulkTags([]);}}
                   style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",fontSize:11}}>{Li("x",13)}</button>
-                {mixed&&(
+                {bulkMode==="cat"&&mixed&&(
                   <div style={{flexBasis:"100%",color:T.gold,fontSize:10,lineHeight:1.4,
                     display:"flex",alignItems:"flex-start",gap:5,paddingTop:2}}>
                     <span style={{flexShrink:0,marginTop:1}}>{Li("alert-triangle",12,T.gold)}</span>
@@ -1093,9 +1118,21 @@ function MonatScreen() {
                             <div style={{color:T.txt,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                               {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex"}}>{Li("sticky-note",9,T.gold)}</span>}
                             </div>
-                            <div style={{color:cat?.color||T.txt2,fontSize:10,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontWeight:600,display:"flex",alignItems:"center",gap:4}}>
+                            <div onClick={e=>{e.stopPropagation();toggleInfoExpand(tx.id);}}
+                              style={{color:cat?.color||T.txt2,fontSize:10,marginTop:1,fontWeight:600,
+                                display:"flex",alignItems:"center",gap:4,cursor:"pointer",
+                                ...(expandedInfo.has(tx.id)
+                                  ? {flexWrap:"wrap",whiteSpace:"normal"}
+                                  : {overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"})}}>
                               {tx.pending?"Vorgemerkt · ":""}{isS?involvedCats.map(c=>c.name).join(" · "):(()=>{const ss=getSub((tx.splits||[])[0]?.catId,(tx.splits||[])[0]?.subId);return ss?.name||cat?.name||"";})()}
                               {tx.accountId&&tx.accountId!=="acc-giro"&&(()=>{const a=getAcc(tx.accountId);return(<span style={{background:a.color+"22",color:a.color,borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>{Li(a.icon,9,a.color)} {a.name}</span>)})()}
+                              {(tx.tags||[]).map(t=>(
+                                <span key={t} style={{background:`${T.blue}1a`,color:T.blue,
+                                  borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>
+                                  #{t}
+                                </span>
+                              ))}
+                              {Li(expandedInfo.has(tx.id)?"chevron-up":"chevron-down",9,T.txt2)}
                             </div>
                           </div>
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
@@ -1228,7 +1265,12 @@ function MonatScreen() {
                             <div style={{color:T.txt,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                               {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex"}}>{Li("sticky-note",9,T.gold)}</span>}
                             </div>
-                            <div style={{color:cat?.color||T.txt2,fontSize:10,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontWeight:600,display:"flex",alignItems:"center",gap:4}}>
+                            <div onClick={e=>{e.stopPropagation();toggleInfoExpand(tx.id);}}
+                              style={{color:cat?.color||T.txt2,fontSize:10,marginTop:1,fontWeight:600,
+                                display:"flex",alignItems:"center",gap:4,cursor:"pointer",
+                                ...(expandedInfo.has(tx.id)
+                                  ? {flexWrap:"wrap",whiteSpace:"normal"}
+                                  : {overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"})}}>
                               {tx.pending?"Vorgemerkt · ":""}{isS?involvedCats.map(c=>c.name).join(" · "):(()=>{const ss=getSub((tx.splits||[])[0]?.catId,(tx.splits||[])[0]?.subId);return ss?.name || cat?.name || "";})()}
                               {tx.valueDate&&(
                               <span style={{background:"rgba(200,210,220,0.1)",color:T.txt2,
@@ -1253,6 +1295,7 @@ function MonatScreen() {
                                 #{t}
                               </span>
                             ))}
+                            {Li(expandedInfo.has(tx.id)?"chevron-up":"chevron-down",9,T.txt2)}
                             </div>
                           </div>
                           {/* Amount */}

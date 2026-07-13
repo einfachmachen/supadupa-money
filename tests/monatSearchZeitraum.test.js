@@ -1,7 +1,7 @@
 // Die "Suche & Summe"-Funktion wurde aus einer eigenen, zu versteckten Ansicht
 // in die (bereits vorhandene) globale Suche der Monatsansicht verschoben:
 // von/bis-Zeitraum + eine Summen-Anzeige direkt bei der Suche.
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, vi } from "vitest";
 import "fake-indexeddb/auto";
 import React from "react";
 import { createRoot } from "react-dom/client";
@@ -68,7 +68,7 @@ describe("MonatScreen — Suche mit Zeitraum & Summe (statt eigener Suche&Summe-
   it("findet Treffer über alle Monate hinweg und zeigt die Summe", () => {
     const { container, root } = renderMonat({ txs: TXS });
     submitSearch(container, "Amazon");
-    expect(container.textContent).toContain("3 Treffer");
+    expect(container.textContent).toContain("Alle (3)");
     expect(container.textContent).toContain("35,00");   // Ausgaben: 20+15
     expect(container.textContent).toContain("5,00");    // Einnahmen
     act(() => { root.unmount(); });
@@ -89,10 +89,61 @@ describe("MonatScreen — Suche mit Zeitraum & Summe (statt eigener Suche&Summe-
     submitSearch(container, "Amazon");
     setDateField(container, 0, "2026-02-01"); // von
     setDateField(container, 1, "2026-02-28"); // bis
-    expect(container.textContent).toContain("1 Treffer");
+    expect(container.textContent).toContain("Alle (1)");
     expect(container.textContent).toContain("15,00");
     expect(container.textContent).not.toContain("Amazon Kauf");
     expect(container.textContent).not.toContain("Amazon Erstattung");
+    act(() => { root.unmount(); });
+    container.remove();
+  });
+
+  it("zeigt die Ausgaben-Summe nur EINMAL (keine Dopplung mehr)", () => {
+    const { container, root } = renderMonat({ txs: TXS });
+    submitSearch(container, "Amazon");
+    const occurrences = container.textContent.split("35,00").length - 1;
+    expect(occurrences).toBe(1);
+    act(() => { root.unmount(); });
+    container.remove();
+  });
+
+  it("zeigt Tags auch bei Einnahmen (vorher nur bei Ausgaben gerendert)", () => {
+    const txsWithTag = TXS.map(t => t.id==="t3" ? { ...t, tags:["reise"] } : t);
+    const { container, root } = renderMonat({ txs: txsWithTag });
+    submitSearch(container, "Amazon");
+    expect(container.textContent).toContain("#reise");
+    act(() => { root.unmount(); });
+    container.remove();
+  });
+
+  it("weist per Bulk-Aktion einer Auswahl einen Tag zu (statt nur Kategorie)", () => {
+    let lastTxs = null;
+    const setTxs = vi.fn(fn => { lastTxs = typeof fn === "function" ? fn(TXS) : fn; });
+    const { container, root } = renderMonat({ txs: TXS, setTxs });
+    submitSearch(container, "Amazon");
+
+    const selectAllBtn = [...container.querySelectorAll("button")].find(b => b.textContent.includes("Alle (3)"));
+    act(() => { selectAllBtn.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+
+    const tagModeBtn = [...container.querySelectorAll("button")].find(b => b.textContent.trim() === "Tag");
+    expect(tagModeBtn).toBeTruthy();
+    act(() => { tagModeBtn.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+
+    const tagInput = container.querySelector('input[placeholder="Tag hinzufügen…"]');
+    expect(tagInput).toBeTruthy();
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+    act(() => {
+      setter.call(tagInput, "reise");
+      tagInput.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    act(() => {
+      tagInput.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    });
+
+    const applyBtn = [...container.querySelectorAll("button")].find(b => b.textContent.trim() === "✓");
+    act(() => { applyBtn.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+
+    expect(setTxs).toHaveBeenCalled();
+    expect(lastTxs.every(t => (t.tags||[]).includes("reise"))).toBe(true);
     act(() => { root.unmount(); });
     container.remove();
   });
