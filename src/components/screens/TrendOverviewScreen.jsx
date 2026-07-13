@@ -205,7 +205,7 @@ function YearBarRows({ perYear, get, getPending, color, onSelectYear }) {
                   <text x={cx} y={v >= 0 ? yTop - 4 : yBot + 12} textAnchor="middle" fontSize={amtFs} fill={T.txt} fontWeight={700}>
                     {fmtK(v)}
                   </text>
-                  <text x={cx} y={labelY} textAnchor="end" fontSize={yearFs} fill={T.txt} fontWeight={700}
+                  <text x={cx} y={labelY} textAnchor="start" fontSize={yearFs} fill={T.txt} fontWeight={700}
                     transform={`rotate(-90 ${cx} ${labelY})`}>
                     {r.year}
                   </text>
