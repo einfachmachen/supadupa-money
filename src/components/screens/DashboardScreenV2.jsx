@@ -87,6 +87,13 @@ function DashboardScreenV2() {
     // Verknüpfte-Vormerkung-Badge(s) für eine echte Buchung — identisch in allen
     // Drilldown-Zeilen, damit eine zugeordnete Vormerkung ueberall erkennbar ist
     // (auch bei Tagesgeld-Kategorien ohne Unterkategorien).
+    // Badges tragen die Farbe nur noch über Icon/Rahmen/Hintergrund — der
+    // eigentliche (oft längere, tatsächlich zu lesende) Text steht in T.txt.
+    // Farbiger Text bei kleiner Schrift war gegen manche Themes/Hintergründe
+    // (z.B. Deep Ocean) trotz Theme-Kontrast-Fix immer noch schwer lesbar;
+    // Text in der hellsten, garantiert kontrastreichen Farbe ist die robustere
+    // Lösung, statt für jede Kombination aus Akzentfarbe und Fläche erneut
+    // nachjustieren zu müssen.
     const LinkBadges = ({tx}) => {
       const linkBadges = (tx.linkedIds||[]).map(lid=>{
         const lt=txs.find(t=>t.id===lid);
@@ -94,18 +101,18 @@ function DashboardScreenV2() {
         const sTotal = lt._seriesTotal;
         const sIdx = lt._seriesIdx;
         return (
-          <span key={lid} style={{display:"inline-flex",alignItems:"center",gap:3,
-            background:"rgba(74,159,212,0.12)",border:`1px solid ${T.blue}33`,
-            borderRadius:5,padding:"1px 5px",fontSize:9,color:T.blue}}>
-            {Li("link",9,T.blue)}
+          <span key={lid} style={{display:"inline-flex",alignItems:"center",gap:4,
+            background:`${T.blue}26`,border:`1px solid ${T.blue}66`,
+            borderRadius:5,padding:"2px 6px",fontSize:11,fontWeight:600,color:T.txt}}>
+            {Li("link",11,T.blue)}
             {lt.desc||"Vormerkung"}
             {sTotal>1&&` · ${sIdx}/${sTotal}`}
           </span>
         );
       });
       const tagBadges = (tx.tags||[]).map(t=>(
-        <span key={"tag-"+t} style={{background:`${T.blue}1a`,color:T.blue,
-          borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>
+        <span key={"tag-"+t} style={{background:`${T.blue}26`,border:`1px solid ${T.blue}66`,color:T.txt,
+          borderRadius:5,padding:"2px 6px",fontSize:11,fontWeight:700,flexShrink:0}}>
           #{t}
         </span>
       ));
@@ -1642,7 +1649,9 @@ function DashboardScreenV2() {
                           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
                             <div style={{color:T.txt2,fontSize:12,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",minWidth:0}}>
                               <span>{tx.date}</span>
-                              {tx.pending&&<span style={{color:T.gold,fontSize:11,fontWeight:700}}>{tx._seriesId?"wiederkehrend":"vorgemerkt"}</span>}
+                              {tx.pending&&<span style={{background:tx._seriesId?"rgba(170,204,0,0.24)":"rgba(245,166,35,0.24)",
+                                border:`1px solid ${(tx._seriesId?T.pos:T.gold)}66`,color:T.txt,
+                                borderRadius:4,padding:"1px 6px",fontSize:11,fontWeight:700}}>{tx._seriesId?"wiederkehrend":"vorgemerkt"}</span>}
                               <LinkBadges tx={tx}/>
                             </div>
                             <span style={{...amtStyle(tx.pending?"gold":cat.type==="income"?"pos":"neg"),fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>{fmt(amt)}</span>
@@ -1664,7 +1673,7 @@ function DashboardScreenV2() {
                               overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                               {sub.name}
                             </div>
-                            {pend>0&&<div style={{color:T.gold,fontSize:11,marginTop:1}}>
+                            {pend>0&&<div style={{color:T.txt,fontSize:11,marginTop:1,fontWeight:600}}>
                               {Li("clock",10,T.gold)} {fmt(pend)} vorgemerkt
                             </div>}
                           </div>
@@ -1810,7 +1819,9 @@ function DashboardScreenV2() {
                               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
                                 <div style={{color:T.txt2,fontSize:12,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",minWidth:0}}>
                                   <span>{tx.date}</span>
-                                  {tx.pending&&<span style={{color:T.gold,fontSize:11,fontWeight:700}}>
+                                  {tx.pending&&<span style={{background:tx._seriesId?"rgba(170,204,0,0.24)":"rgba(245,166,35,0.24)",
+                                    border:`1px solid ${(tx._seriesId?T.pos:T.gold)}66`,color:T.txt,
+                                    borderRadius:4,padding:"1px 6px",fontSize:11,fontWeight:700}}>
                                     {tx._seriesId?"wiederkehrend":"vorgemerkt"}
                                   </span>}
                                   <LinkBadges tx={tx}/>
@@ -1937,28 +1948,30 @@ function DashboardScreenV2() {
                           <div style={{color:T.txt2,fontSize:12,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",minWidth:0}}>
                             <span>{tx.date}</span>
                             {tx.pending&&<span style={{
-                              background:tx._seriesTyp==="finanzierung"?"rgba(245,166,35,0.2)":tx._seriesId?"rgba(170,204,0,0.15)":"rgba(74,159,212,0.15)",
-                              color:tx._seriesTyp==="finanzierung"?T.gold:tx._seriesId?T.pos:T.blue,
-                              borderRadius:4,padding:"1px 5px",fontSize:10,fontWeight:700,
-                              display:"inline-flex",alignItems:"center",gap:3}}>
-                              {tx._seriesTyp==="finanzierung"?Li("credit-card",9,T.gold):tx._seriesId?Li("repeat",9,T.pos):Li("calendar",9,T.blue)}
+                              background:tx._seriesTyp==="finanzierung"?"rgba(245,166,35,0.28)":tx._seriesId?"rgba(170,204,0,0.24)":"rgba(74,159,212,0.24)",
+                              border:`1px solid ${(tx._seriesTyp==="finanzierung"?T.gold:tx._seriesId?T.pos:T.blue)}66`,
+                              color:T.txt,
+                              borderRadius:4,padding:"2px 6px",fontSize:11,fontWeight:700,
+                              display:"inline-flex",alignItems:"center",gap:4}}>
+                              {tx._seriesTyp==="finanzierung"?Li("credit-card",10,T.gold):tx._seriesId?Li("repeat",10,T.pos):Li("calendar",10,T.blue)}
                               {tx._seriesTyp==="finanzierung"?"Finanzierung":tx._seriesId?"wiederkehrend":"vorgemerkt"}
                             </span>}
-                            {tx._seriesId&&tx._seriesTotal>1&&tx._seriesIdx&&tx._seriesTyp==="finanzierung"&&<span style={{color:T.gold,fontSize:10,fontWeight:700,
-                              background:(isLightTheme())?"rgba(192,120,0,0.15)":"rgba(245,166,35,0.12)",borderRadius:4,padding:"0 4px"}}>
+                            {tx._seriesId&&tx._seriesTotal>1&&tx._seriesIdx&&tx._seriesTyp==="finanzierung"&&<span style={{color:T.txt,fontSize:11,fontWeight:700,
+                              background:"rgba(245,166,35,0.24)",border:`1px solid ${T.gold}66`,borderRadius:4,padding:"1px 6px"}}>
                               {tx._seriesIdx} / {tx._seriesTotal}
                             </span>}
                             <LinkBadges tx={tx}/>
                             {/* Flexibler Topf: Buchung belastet nicht die eigene Kategorie */}
-                            {tx._potSubId&&<span style={{background:"rgba(245,166,35,0.15)",color:T.gold,
-                              borderRadius:4,padding:"1px 5px",fontSize:10,fontWeight:700,
-                              display:"inline-flex",alignItems:"center",gap:3}}>
-                              {Li("corner-up-right",9,T.gold)} aus Unvorh.
+                            {tx._potSubId&&<span style={{background:"rgba(245,166,35,0.24)",border:`1px solid ${T.gold}66`,color:T.txt,
+                              borderRadius:4,padding:"2px 6px",fontSize:11,fontWeight:700,
+                              display:"inline-flex",alignItems:"center",gap:4}}>
+                              {Li("corner-up-right",10,T.gold)} aus Unvorh.
                             </span>}
-                            {isS&&<span style={{background:"rgba(137,196,244,0.15)",color:T.blue,
-                              borderRadius:4,padding:"0 4px",fontSize:10,fontWeight:700}}>Split</span>}
-                            {sub&&!isUncat&&!isS&&<span style={{color:cat?.color||dashDrill.cat?.color||T.txt2,fontSize:12}}>{sub.name}</span>}
-                            {isUncat&&<span style={{color:T.neg,fontSize:10,fontWeight:700}}>unkategorisiert</span>}
+                            {isS&&<span style={{background:"rgba(137,196,244,0.24)",border:`1px solid ${T.blue}66`,color:T.txt,
+                              borderRadius:4,padding:"1px 6px",fontSize:11,fontWeight:700}}>Split</span>}
+                            {sub&&!isUncat&&!isS&&<span style={{color:T.txt,fontSize:12,fontWeight:600}}>{sub.name}</span>}
+                            {isUncat&&<span style={{color:T.txt,background:"rgba(255,80,80,0.24)",border:`1px solid ${T.neg}66`,
+                              borderRadius:4,padding:"1px 6px",fontSize:11,fontWeight:700}}>unkategorisiert</span>}
                           </div>
                           <div style={{...amtStyle(dashDrill.isIncome?"pos":"neg"),...(dashDrill.isPending?{color:dashDrill.isIncome?T.cell_inc:T.gold}:{}),fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
                             {fmt(amt)}
