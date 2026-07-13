@@ -143,7 +143,13 @@ function YearBarRows({ perYear, get, getPending, color, onSelectYear }) {
   for (let i = 0; i < perYear.length; i += perRow) rows.push(perYear.slice(i, i + perRow));
 
   const bw = BAR_W;
-  const yearFs = 13, amtFs = 12;
+  // Jahreszahl so groß wie MITTE/ENDE im Prognose-Hero (SaldoHeroV2, dort
+  // fontSize 19-20/fontWeight 800) — und da hier ohnehin niemand mit der App
+  // ins Jahr 19xx/21xx unterwegs ist, reicht die zweistellige Kurzform
+  // ("26" statt "2026"). Nicht gedreht: bei nur 2 Ziffern passt die
+  // horizontale Breite (~0.55×Schriftgröße je Ziffer) bequem unter jeden
+  // Balken, ganz ohne die Schrift verzerren zu müssen.
+  const yearFs = 20, amtFs = 12;
   // Feste Referenz: DER global größte Ausschlag (range) bekäme MAX_BAR_H px.
   // Alle Zeilen teilen sich dieses eine px/€-Verhältnis — Balkenhöhen bleiben
   // dadurch zeilenübergreifend vergleichbar. Die BILDHÖHE einer Zeile ist
@@ -154,16 +160,9 @@ function YearBarRows({ perYear, get, getPending, color, onSelectYear }) {
   const MAX_BAR_H = 70;
   const pxPerUnit = MAX_BAR_H / range;
   const barVisW = bw * 0.56; // sichtbare Balkenbreite (s. rect-Breiten unten)
-  // Die Jahreszahl (gedreht) soll optisch genauso "dick" wirken wie der
-  // Balken breit ist — dafür wird NUR die Dicke der Schrift (senkrecht zur
-  // Schreibrichtung, wird nach der Drehung zur Breite) hochskaliert, nicht
-  // ihre Länge (bliebe sonst unnötig hoch). Das verzerrt die Ziffern optisch
-  // etwas in die Breite, macht die Jahreszahl dafür deutlich prominenter.
-  const yearThicknessScale = barVisW / yearFs;
   const padTopLabel = amtFs + 10; // Luft für das Betrags-Label über dem höchsten Balken DIESER Zeile
-  // Sichtbare Höhe der um 90° gedrehten 4-stelligen Jahreszahl (Breite je
-  // Zeichen ≈ Schriftgröße * 0.62) plus etwas Sicherheitsabstand.
-  const yearLabelH = yearFs * 0.62 * 4 + 4;
+  // Höhe einer normalen (nicht gedrehten) einzeiligen Jahreszahl.
+  const yearLabelH = yearFs * 1.15;
   const bottomMargin = 4;
   // Sichtbarer Fußabdruck des Betrags-Labels UNTER der Nulllinie (negativer
   // Balken): Text-Baseline sitzt 12px unter der Balkenunterkante (spiegelt
@@ -189,7 +188,9 @@ function YearBarRows({ perYear, get, getPending, color, onSelectYear }) {
         const rowH = topSpace + botSpace;
         const zeroY = topSpace;
         const yOf = (v) => zeroY - pxPerUnit * v;
-        const labelY = rowH - bottomMargin;
+        // Baseline so setzen, dass die Unterlänge der Ziffern genau bei
+        // bottomMargin vor dem unteren Zeilenrand endet.
+        const labelY = rowH - bottomMargin - yearFs * 0.2;
         return (
           <svg key={ri} viewBox={`0 0 ${W} ${rowH}`} width={W} height={rowH} style={{ display: "block", overflow: "visible" }}>
             <line x1={0} y1={zeroY} x2={W} y2={zeroY} stroke={T.bd} strokeWidth={1} />
@@ -217,9 +218,8 @@ function YearBarRows({ perYear, get, getPending, color, onSelectYear }) {
                   <text x={cx} y={v >= 0 ? yTop - 4 : yBot + 12} textAnchor="middle" fontSize={amtFs} fill={T.txt} fontWeight={700}>
                     {fmtK(v)}
                   </text>
-                  <text x={0} y={0} textAnchor="start" dominantBaseline="central" fontSize={yearFs} fill={T.txt} fontWeight={700}
-                    transform={`translate(${cx} ${labelY}) rotate(-90) scale(1 ${yearThicknessScale})`}>
-                    {r.year}
+                  <text x={cx} y={labelY} textAnchor="middle" fontSize={yearFs} fill={T.txt} fontWeight={800} fontFamily={NUM_FONT}>
+                    {String(r.year).slice(-2)}
                   </text>
                 </g>
               );
