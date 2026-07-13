@@ -74,7 +74,7 @@ import { BASE_ROWS, CUR_YEAR, INIT_ACCOUNTS, INIT_CATS } from "./utils/constants
 import { kvStore } from "./utils/kvStore.js";
 import { useLocalSaveDebounce } from "./hooks/useLocalSaveDebounce.js";
 import { useCloudCredentials } from "./hooks/useCloudCredentials.js";
-import { isoAddMonths } from "./utils/date.js";
+import { isoAddMonths, calcRecurringCount } from "./utils/date.js";
 import { anchorValue, anchorDay } from "./utils/anchors.js";
 import { pn, uid, sumAmounts, fmt } from "./utils/format.js";
 import { MONTHS_S } from "./utils/constants.js";
@@ -784,7 +784,7 @@ export default function SupaDupaMoney() {
       }
     }
     if(allTxs.length > 0) {
-      const migrated = migrateBudgetDates(stripBudgetSeries(migrateSeries(allTxs.map(t=>({...t, splits:Array.isArray(t.splits)?t.splits:[]})))));
+      const migrated = migrateBudgetDates(migrateRecurringOvershoot(stripBudgetSeries(migrateSeries(allTxs.map(t=>({...t, splits:Array.isArray(t.splits)?t.splits:[]}))))));
       // Migration: alle Buchungen ohne accountId → acc-giro
       const migratedWithAcc = migrated.map(t => t.accountId ? t : {...t, accountId:"acc-giro"});
       setTxs(migratedWithAcc);
@@ -925,6 +925,44 @@ export default function SupaDupaMoney() {
     return changed ? out : txList;
   };
 
+  // Migration: entfernt den durch einen früheren Rechenfehler (Off-by-one
+  // bei "unbegrenzt"-Serien im Vormerken-Dialog, s. calcRecurringCount in
+  // utils/date.js) erzeugten ÜBERZÄHLIGEN letzten Termin einer wiederkehrenden
+  // Vormerkungs-Serie ohne explizites Enddatum — z.B. eine Buchung im Januar
+  // des 7. statt Dezember des 6. Jahres nach Start. Betrifft NUR noch nicht
+  // gebuchte (pending) Einträge, nie echte/gebuchte Transaktionen — und nur,
+  // wenn die neu berechnete korrekte Anzahl exakt eins weniger ergibt als
+  // tatsächlich vorhanden UND der letzte Termin über den 6-Jahres-Horizont
+  // hinausreicht (enges, konservatives Kriterium gegen Fehlalarme bei
+  // absichtlich langen, vom Nutzer selbst befristeten Serien).
+  const migrateRecurringOvershoot = (txList) => {
+    const bySeries = {};
+    txList.forEach(t => {
+      if(!t.pending || !t._seriesId || t._budgetSubId) return;
+      (bySeries[t._seriesId] ||= []).push(t);
+    });
+    const removeIds = new Set();
+    const seriesTotalFix = {};
+    Object.entries(bySeries).forEach(([seriesId, grp]) => {
+      if(grp.length < 2) return;
+      const sorted = [...grp].sort((a,b)=>a.date.localeCompare(b.date));
+      const interval = sorted[0].repeatMonths || 1;
+      const startDate = sorted[0].date;
+      const startYear = Number(startDate.slice(0,4));
+      const correctCount = calcRecurringCount(startDate, null, interval);
+      const last = sorted[sorted.length-1];
+      const lastYear = Number(last.date.slice(0,4));
+      if(sorted.length === correctCount + 1 && lastYear > startYear + 6) {
+        removeIds.add(last.id);
+        seriesTotalFix[seriesId] = correctCount;
+      }
+    });
+    if(removeIds.size === 0) return txList;
+    return txList.filter(t => !removeIds.has(t.id))
+      .map(t => (t._seriesId && seriesTotalFix[t._seriesId] !== undefined)
+        ? {...t, _seriesTotal: seriesTotalFix[t._seriesId]} : t);
+  };
+
   // Migration: Budget-Platzhalter-Daten korrigieren
   // Betrifft NUR Buchungen mit _budgetSubId (=Budget-Platzhalter), niemals echte Buchungen.
   // Alter Code setzte Mitte auf 01. und Ende auf 15. — korrekt wäre 14. bzw. Monatsletzter.
@@ -954,7 +992,7 @@ export default function SupaDupaMoney() {
     if(!d) return;
     if(Array.isArray(d.cats)     && d.cats.length)     setCats(d.cats.map(c=>({...c,subs:Array.isArray(c.subs)?c.subs:[],icon:c.icon||"tag",color:c.color||T.blue})));
     if(Array.isArray(d.groups)   && d.groups.length)   setGroups(d.groups);
-    if(Array.isArray(d.txs)      && d.txs.length)      setTxs(migrateBudgetDates(stripBudgetSeries(migrateSeries(d.txs.map(t=>({...t,splits:Array.isArray(t.splits)?t.splits:[]}))))));
+    if(Array.isArray(d.txs)      && d.txs.length)      setTxs(migrateBudgetDates(migrateRecurringOvershoot(stripBudgetSeries(migrateSeries(d.txs.map(t=>({...t,splits:Array.isArray(t.splits)?t.splits:[]})))))));
     if(Array.isArray(d.accounts) && d.accounts.length) {
       // Migration: alten Puffer ins Giro-Konto übernehmen
       const oldPuffer = parseInt(kvStore.getItem("mbt_tagesgeld_puffer")||"0");
