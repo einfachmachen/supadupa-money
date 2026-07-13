@@ -76,6 +76,11 @@ function MonatScreen() {
     const pendingCatsRef = useRef({});
     const [txIconPickM, setTxIconPickM] = useState(null);
     const [search,   setSearch]   = useState("");      // abgeschickte Suche (filtert)
+    // von/bis grenzen die (globale) Suche zusätzlich auf einen Zeitraum ein —
+    // nur relevant/sichtbar während einer aktiven Suche (sonst zeigt die
+    // Monatsansicht ohnehin nur den Anker-Monat).
+    const [von, setVon] = useState("");
+    const [bis, setBis] = useState("");
     // Stabile Handler — Eingabe läuft lokal in <MonthSearchBox>, hier kommt nur
     // die abgeschickte Suche an (kein Re-Render der Monatsansicht pro Tastendruck).
     const onSearchSubmit = React.useCallback((v)=>{ setSearch(v); setSelected(new Set()); }, []);
@@ -124,7 +129,9 @@ function MonatScreen() {
       return matchSearch(t.desc,search,t.tags)||(t.splits||[]).some(sp=>matchSearch(getCat(sp.catId)?.name,search)||matchSearch(getSub(sp.catId,sp.subId)?.name,search));
     };
     const allVisibleTxs = useMemo(()=> txs.filter(_txVisible).sort((a,b)=>new Date(b.date)-new Date(a.date)), [txs,selAcc]);
-    const mTxs = search.trim() ? _applyFilt(allVisibleTxs).filter(_searchPred) : filtByType;
+    const mTxs = search.trim()
+      ? _applyFilt(allVisibleTxs).filter(_searchPred).filter(t=>(!von||t.date>=von)&&(!bis||t.date<=bis))
+      : filtByType;
 
     const allSel = mTxs.length>0 && mTxs.every(t=>selected.has(t.id));
     const toggleAll = () => setSelected(allSel ? new Set() : new Set(mTxs.map(t=>t.id)));
@@ -753,6 +760,51 @@ function MonatScreen() {
             </div>
           </div>
         </div>
+
+        {/* Zeitraum — nur während einer aktiven Suche sichtbar, engt die
+            (global über alle Monate laufende) Suche zusätzlich ein. */}
+        {inSearchMode && (
+          <div style={{padding:"0 10px 6px",display:"flex",gap:6,alignItems:"flex-end"}}>
+            <div style={{flex:1}}>
+              <div style={{color:T.txt2,fontSize:10,marginBottom:2}}>von</div>
+              <input type="date" value={von} onChange={e=>setVon(e.target.value)}
+                style={{width:"100%",boxSizing:"border-box",background:"rgba(255,255,255,0.06)",
+                  border:`1px solid ${T.bds}`,borderRadius:9,padding:"6px 8px",color:T.txt,
+                  fontSize:12,outline:"none",fontFamily:"inherit"}}/>
+            </div>
+            <div style={{flex:1}}>
+              <div style={{color:T.txt2,fontSize:10,marginBottom:2}}>bis</div>
+              <input type="date" value={bis} onChange={e=>setBis(e.target.value)}
+                style={{width:"100%",boxSizing:"border-box",background:"rgba(255,255,255,0.06)",
+                  border:`1px solid ${T.bds}`,borderRadius:9,padding:"6px 8px",color:T.txt,
+                  fontSize:12,outline:"none",fontFamily:"inherit"}}/>
+            </div>
+            {(von||bis)&&(
+              <button onClick={()=>{setVon("");setBis("");}} title="Zeitraum zurücksetzen"
+                style={{flexShrink:0,padding:"7px 8px",borderRadius:9,border:`1px solid ${T.bd}`,
+                  background:"transparent",color:T.txt2,cursor:"pointer",fontFamily:"inherit",
+                  display:"flex",alignItems:"center"}}>
+                {Li("x",13,T.txt2)}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Such-Summe — Ausgaben/Einnahmen über alle Treffer (Kategorien &
+            Monate hinweg), direkt bei der Suche statt in einer separaten Ansicht. */}
+        {inSearchMode && mTxs.length>0 && (()=>{
+          const totalExpense = mTxs.filter(t=>t.totalAmount<0||t._csvType==="expense").reduce((s,t)=>s+Math.abs(t.totalAmount||0),0);
+          const totalIncome  = mTxs.reduce((s,t)=>s+Math.abs(t.totalAmount||0),0) - totalExpense;
+          return (
+            <div style={{margin:"0 10px 6px",padding:"7px 10px",borderRadius:10,
+              background:"rgba(255,255,255,0.04)",border:`1px solid ${T.bd}`,
+              display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+              <span style={{color:T.txt2,fontSize:11}}>{mTxs.length} Treffer</span>
+              {totalExpense>0&&<span style={{color:T.neg,fontSize:12.5,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(totalExpense)}</span>}
+              {totalIncome>0&&<span style={{color:T.pos,fontSize:12.5,fontWeight:700,fontFamily:NUM_FONT}}>+{fmt(totalIncome)}</span>}
+            </div>
+          );
+        })()}
 
         {/* Filter-Tabs — alle in einer Zeile, dynamisch gleich breit (flex:1) */}
         <div style={{display:"flex",gap:6,padding:"0 10px 6px"}}>

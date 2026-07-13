@@ -48,7 +48,6 @@ const EnableBankingWizard   = lazyNamed(() => import("./components/screens/Enabl
 const CloudSetupWizard      = lazyNamed(() => import("./components/screens/CloudSetupWizard.jsx"), "CloudSetupWizard");
 const FuelAnalysisScreen    = lazyNamed(() => import("./components/screens/FuelAnalysisScreen.jsx"), "FuelAnalysisScreen");
 const MatchingScreen        = lazyNamed(() => import("./components/screens/MatchingScreen.jsx"), "MatchingScreen");
-const SearchSummaryScreen   = lazyNamed(() => import("./components/screens/SearchSummaryScreen.jsx"), "SearchSummaryScreen");
 const FeatureTourScreen      = lazyNamed(() => import("./components/screens/FeatureTourScreen.jsx"), "FeatureTourScreen");
 const RecurringDetectionScreen = lazyNamed(() => import("./components/screens/RecurringDetectionScreen.jsx"), "RecurringDetectionScreen");
 const VormerkungHub         = lazyNamed(() => import("./components/screens/VormerkungHub.jsx"), "VormerkungHub");
@@ -330,7 +329,6 @@ export default function SupaDupaMoney() {
   const [showBankWizard, setShowBankWizard] = useState(false);
   const [showCloudSetup, setShowCloudSetup] = useState(false);
   const [showFuelAnalysis, setShowFuelAnalysis] = useState(false);
-  const [showSearchSummary, setShowSearchSummary] = useState(false);
   const [showFeatureTour, setShowFeatureTour] = useState(false);
   // Interaktive, hervorhebende Tour (Hero-"?"-Symbol) — anders als die
   // übrigen showXxx-Vollbild-Screens ERSETZT sie den Inhalt NICHT, sondern
@@ -399,7 +397,7 @@ export default function SupaDupaMoney() {
   const _structOverlayOpen =
     showMobilePicker || showDataMgr || showMobileKategorien || showMobileVormerken ||
     showMobileWiederkehrend || showMobileBudget || showCsv || showBankWizard ||
-    showCloudSetup || showFuelAnalysis || showSearchSummary || showFeatureTour || showMatching || showVormHub || showVormMenu ||
+    showCloudSetup || showFuelAnalysis || showFeatureTour || showMatching || showVormHub || showVormMenu ||
     showRecurring || showKategorisieren || showMonthPickerModal || showCloudSave ||
     showSettings || showSupaQuick || showQuickPicker || !!modal || !!exportModal ||
     !!exportDialog || !!reviewQueue || dashDrillOpen || !!accIconPick || !!editTx;
@@ -2820,7 +2818,6 @@ Abbrechen = ${remoteName}-Stand laden`
     syncPass, setSyncPass, syncEncActive,
     showCloudSetup, setShowCloudSetup,
     showFuelAnalysis, setShowFuelAnalysis,
-    showSearchSummary, setShowSearchSummary,
     showFeatureTour, setShowFeatureTour,
     showGuidedTour, setShowGuidedTour,
     setShowMobileKategorien,
@@ -2850,7 +2847,7 @@ Abbrechen = ${remoteName}-Stand laden`
     reviewQueue, showSettings, showVormHub, editVormTx, showMatching,
     customIcons, themeName, themeSlideshow, hideEmptyRows, handedness, debugFlags,
     cfActive, cfStatus, cfUrl, cfSecret,
-    syncPass, syncEncActive, showCloudSetup, showFuelAnalysis, showSearchSummary, showFeatureTour, showGuidedTour,
+    syncPass, syncEncActive, showCloudSetup, showFuelAnalysis, showFeatureTour, showGuidedTour,
     syncStatus, syncError, isDirty, isOnline, cfSaveOnClose,
     dashDrillOpen, amtMode, amtFont, noBorders, masterOverride,
     favIcons,
@@ -2880,7 +2877,7 @@ Abbrechen = ${remoteName}-Stand laden`
     "home";
   const anyMobileModalOpen = showMobileVormerken||showMobileWiederkehrend||
     showMobilePicker||showMobileKategorien||showMobileBudget||
-    showCsv||showVormHub||showRecurring||showMatching||showSearchSummary||!!modal||dashDrillOpen;
+    showCsv||showVormHub||showRecurring||showMatching||!!modal||dashDrillOpen;
 
   const showMonthPicker = anyMobileModalOpen ||
     activeNavTab==="home"||activeNavTab==="monat"||activeNavTab==="jahr";
@@ -3616,9 +3613,6 @@ Abbrechen = ${remoteName}-Stand laden`
       {showFuelAnalysis&&<FuelAnalysisScreen mobileMode={mobileMode}
         onClose={()=>{setShowFuelAnalysis(false);setPlusArretiert(false);}}
         onBack={()=>{setShowFuelAnalysis(false);setPlusArretiert(true);}}/>}
-      {showSearchSummary&&<SearchSummaryScreen mobileMode={mobileMode}
-        onClose={()=>{setShowSearchSummary(false);setPlusArretiert(false);}}
-        onBack={()=>{setShowSearchSummary(false);setPlusArretiert(true);}}/>}
       {showMatching&&<MatchingScreen onClose={()=>{setShowMatching(false);setPlusArretiert(false);}}
         onBack={()=>{setShowMatching(false);reopenMobilePicker("main");}}/>}
       {showFeatureTour&&<FeatureTourScreen mobileMode={mobileMode}

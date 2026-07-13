@@ -34,7 +34,7 @@ function ManagementScreen({activeTab="kategorien"}) {
     budgets={}, setBudgets,
     onTS,onTE, globalDrag,
     setShowCsv, setShowBankWizard, setShowDataMgr, setShowCloudSetup, setShowFuelAnalysis,
-    setShowFeatureTour, setShowMatching, setShowSearchSummary,
+    setShowFeatureTour, setShowMatching,
     setShowMobileKategorien,
   } = useContext(AppCtx);
   const [mergeTarget, setMergeTarget] = useState(null);
@@ -228,7 +228,9 @@ function ManagementScreen({activeTab="kategorien"}) {
               const cloudRow    = {icon:"cloud",      color:T.cf||T.blue,   label:"Cloud-Sync einrichten", sub:"Eigene Cloud-DB · geführt",       onClick:()=>setShowCloudSetup?.(true), tourId:"row-cloudsync"};
               const fuelRow     = {icon:"fuel",       color:T.gold,         label:"Tankverbrauch",         sub:"Verbrauch & Preisentwicklung",    onClick:()=>setShowFuelAnalysis?.(true)};
               const matchingRow = {icon:"git-merge",  color:T.blue,         label:"Vormerkungen zuordnen", sub:"Eigene mit Bank-Buchungen verknüpfen", onClick:()=>setShowMatching?.(true), tourId:"row-matching"};
-              const searchSumRow= {icon:"bar-chart-2",color:T.blue,         label:"Suche & Summe",         sub:"Positionen über Kategorien & Monate finden — inkl. Summe", onClick:()=>setShowSearchSummary?.(true), tourId:"row-searchsummary"};
+              // "Suche & Summe" wurde als eigene, zu versteckte Ansicht entfernt —
+              // dieselbe (globale) Suche samt Zeitraum und Summen-Anzeige lebt jetzt
+              // direkt in der Monatsansicht (dort gab es schon eine Suche).
               const tourRow     = {icon:"compass",    color:T.blue,         label:"Feature-Tour anzeigen", sub:"Kurzer Rundgang durch die App",   onClick:()=>setShowFeatureTour?.(true)};
               const settingsRow = {icon:"settings",   color:T.txt2,         label:"Einstellungen",         sub:"Theme, Beträge, Sicherheit …",    onClick:()=>setMgrTab("einstellungen")};
               // Erststart-Fortschritt (gleiche Herleitung wie im Dashboard,
@@ -241,8 +243,8 @@ function ManagementScreen({activeTab="kategorien"}) {
               // Tankverbrauch (direkt vor Vormerkungen zuordnen) — sie bleiben
               // also erreichbar, drängen sich aber nicht mehr in den Vordergrund.
               return schnellstartDone
-                ? [bankRow, dataMgrRow, cloudRow, fuelRow, kontenRow, budgetRow, csvRow, matchingRow, searchSumRow, tourRow, settingsRow]
-                : [kontenRow, budgetRow, csvRow, bankRow, dataMgrRow, cloudRow, fuelRow, matchingRow, searchSumRow, tourRow, settingsRow];
+                ? [bankRow, dataMgrRow, cloudRow, fuelRow, kontenRow, budgetRow, csvRow, matchingRow, tourRow, settingsRow]
+                : [kontenRow, budgetRow, csvRow, bankRow, dataMgrRow, cloudRow, fuelRow, matchingRow, tourRow, settingsRow];
             })().map((it,i)=>(
               <button key={i} onClick={it.onClick} data-tour={it.tourId}
                 style={{display:"flex",alignItems:"center",gap:12,width:"100%",textAlign:"left",
