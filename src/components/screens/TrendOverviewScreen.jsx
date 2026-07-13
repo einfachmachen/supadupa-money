@@ -157,8 +157,13 @@ function YearBarRows({ perYear, get, getPending, color, onSelectYear }) {
   // Sichtbare Höhe der um 90° gedrehten 4-stelligen Jahreszahl (Breite je
   // Zeichen ≈ Schriftgröße * 0.62) plus etwas Sicherheitsabstand.
   const yearLabelH = yearFs * 0.62 * 4 + 4;
-  const gapBarToLabel = 4; // genau DER Abstand, um den es beim Feedback ging
   const bottomMargin = 4;
+  // Sichtbarer Fußabdruck des Betrags-Labels UNTER der Nulllinie (negativer
+  // Balken): Text-Baseline sitzt 12px unter der Balkenunterkante (spiegelt
+  // die "-4" beim positiven Fall, s.u.), plus ca. 1/4 Schriftgröße für die
+  // Unterlänge der Ziffern — NICHT nochmal die volle Schrifthöhe obendrauf
+  // (das erzeugte den auffällig größeren Abstand beim negativen Wert).
+  const negLabelFootprint = 12 + amtFs * 0.25;
 
   return (
     <div ref={containerRef} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -173,7 +178,7 @@ function YearBarRows({ perYear, get, getPending, color, onSelectYear }) {
         // aber nur so viel wie der tiefste Wert DIESER Zeile tatsächlich
         // braucht (nicht der tiefste Wert der gesamten Skala).
         const topSpace = padTopLabel + topH;
-        const botSpace = (rowMinV < -0.005 ? (botH + 12 + amtFs + gapBarToLabel) : 0) + yearLabelH + bottomMargin;
+        const botSpace = (rowMinV < -0.005 ? (botH + negLabelFootprint) : 0) + yearLabelH + bottomMargin;
         const rowH = topSpace + botSpace;
         const zeroY = topSpace;
         const yOf = (v) => zeroY - pxPerUnit * v;
