@@ -988,15 +988,27 @@ export default function SupaDupaMoney() {
     return fixed;
   };
 
-  const applyData = (d) => {
+  // force=true: bedingungslos ALLE Felder übernehmen (auch wenn im Payload
+  // leer/fehlend) — für explizite, vom Nutzer bestätigte "Cloud → Lokal"-
+  // Aktionen (loadFromCloud). Ohne force bleiben leere/fehlende Felder beim
+  // aktuellen lokalen Stand (Schutz beim automatischen Boot-Laden vor
+  // unvollständigen/korrupten Payloads). Ohne diese Unterscheidung blieb
+  // nach einem bestätigten "Cloudflare → Lokal"-Laden bei Feldern, die im
+  // Cloud-Stand zufällig leer waren, stillschweigend der alte lokale Wert
+  // stehen — die Zahlen stimmten dann trotz erfolgreichem Laden nicht exakt
+  // mit Cloudflare überein.
+  const applyData = (d, force=false) => {
     if(!d) return;
-    if(Array.isArray(d.cats)     && d.cats.length)     setCats(d.cats.map(c=>({...c,subs:Array.isArray(c.subs)?c.subs:[],icon:c.icon||"tag",color:c.color||T.blue})));
-    if(Array.isArray(d.groups)   && d.groups.length)   setGroups(d.groups);
-    if(Array.isArray(d.txs)      && d.txs.length)      setTxs(migrateBudgetDates(migrateRecurringOvershoot(stripBudgetSeries(migrateSeries(d.txs.map(t=>({...t,splits:Array.isArray(t.splits)?t.splits:[]})))))));
-    if(Array.isArray(d.accounts) && d.accounts.length) {
+    if(force || (Array.isArray(d.cats) && d.cats.length))
+      setCats((d.cats||[]).map(c=>({...c,subs:Array.isArray(c.subs)?c.subs:[],icon:c.icon||"tag",color:c.color||T.blue})));
+    if(force || (Array.isArray(d.groups) && d.groups.length))
+      setGroups(d.groups||[]);
+    if(force || (Array.isArray(d.txs) && d.txs.length))
+      setTxs(migrateBudgetDates(migrateRecurringOvershoot(stripBudgetSeries(migrateSeries((d.txs||[]).map(t=>({...t,splits:Array.isArray(t.splits)?t.splits:[]})))))));
+    if(force || (Array.isArray(d.accounts) && d.accounts.length)) {
       // Migration: alten Puffer ins Giro-Konto übernehmen
       const oldPuffer = parseInt(kvStore.getItem("mbt_tagesgeld_puffer")||"0");
-      const accs = d.accounts.map(a => {
+      const accs = (d.accounts||[]).map(a => {
         if(a.id==="acc-giro" && (a.minPuffer===undefined||a.minPuffer===null) && oldPuffer>0) {
           return {...a, minPuffer: oldPuffer};
         }
@@ -1004,10 +1016,11 @@ export default function SupaDupaMoney() {
       });
       setAccounts(accs);
     }
-    if(Array.isArray(d.vehicles) && d.vehicles.length) setVehicles(d.vehicles);
-    if(d.yearData && Object.keys(d.yearData).length) {
+    if(force || (Array.isArray(d.vehicles) && d.vehicles.length))
+      setVehicles(d.vehicles||[]);
+    if(force || (d.yearData && Object.keys(d.yearData).length)) {
       // Bereinige alte jsub_*_M/E/D Einträge — diese werden jetzt live berechnet
-      const cleaned = JSON.parse(JSON.stringify(d.yearData));
+      const cleaned = JSON.parse(JSON.stringify(d.yearData||{}));
       Object.keys(cleaned).forEach(y=>Object.keys(cleaned[y]||{}).forEach(m=>{
         Object.keys(cleaned[y][m]||{}).forEach(k=>{
           if(k.startsWith("jsub_")) delete cleaned[y][m][k];
@@ -1015,15 +1028,15 @@ export default function SupaDupaMoney() {
       }));
       setYearData(cleaned);
     }
-    if(d.col3Name)  setCol3Name(d.col3Name);
-    if(Array.isArray(d.quickBtns))   setQuickBtns(d.quickBtns);
-    if(Array.isArray(d.quickColors)) setQuickColors(d.quickColors);
-    if(d.budgets && Object.keys(d.budgets).length) {
+    if(force || d.col3Name)  setCol3Name(d.col3Name||"Aktuell");
+    if(force || Array.isArray(d.quickBtns))   setQuickBtns(d.quickBtns||[]);
+    if(force || Array.isArray(d.quickColors)) setQuickColors(d.quickColors||[]);
+    if(force || (d.budgets && Object.keys(d.budgets).length)) {
       // endDate bereinigen: leer setzen wenn es in der nahen Vergangenheit/Zukunft liegt
       // (wurde versehentlich als Default gesetzt)
       const minValid = new Date(Date.now() + 60*24*60*60*1000); // mind. 60 Tage in Zukunft
       const cleanedBudgets = {};
-      Object.entries(d.budgets).forEach(([k,v])=>{
+      Object.entries(d.budgets||{}).forEach(([k,v])=>{
         if(v.endDate && new Date(v.endDate) < minValid) {
           cleanedBudgets[k] = {...v, endDate:""};
         } else {
@@ -1036,8 +1049,10 @@ export default function SupaDupaMoney() {
       });
       setBudgets(cleanedBudgets);
     }
-    if(d.csvRules && Object.keys(d.csvRules).length) setCsvRules(d.csvRules);
-    if(Array.isArray(d.customIcons) && d.customIcons.length) setCustomIcons(d.customIcons);
+    if(force || (d.csvRules && Object.keys(d.csvRules).length))
+      setCsvRules(d.csvRules||{});
+    if(force || (Array.isArray(d.customIcons) && d.customIcons.length))
+      setCustomIcons(d.customIcons||[]);
     // Eigene Farbthemes übernehmen (aus Worker-Sync oder Backup): in kvStore
     // mergen und live in THEMES injizieren, damit sie sofort wählbar sind.
     if(d.customThemes && typeof d.customThemes === "object" && Object.keys(d.customThemes).length) {
@@ -1048,10 +1063,10 @@ export default function SupaDupaMoney() {
         Object.entries(d.customThemes).forEach(([k,v]) => { THEMES[k] = v; });
       } catch(e) {}
     }
-    if(d.startBalances && Object.keys(d.startBalances).length) {
+    if(force || (d.startBalances && Object.keys(d.startBalances).length)) {
       // Keys als Zahlen normalisieren
       const normalized = {};
-      Object.entries(d.startBalances).forEach(([k,v])=>{ normalized[Number(k)]=v; });
+      Object.entries(d.startBalances||{}).forEach(([k,v])=>{ normalized[Number(k)]=v; });
       setStartBalances(normalized);
     }
   };
@@ -2744,7 +2759,11 @@ Abbrechen = ${remoteName}-Stand laden`
         // markieren, obwohl nichts lokal geändert wurde.
         setSyncStatus("loading");
         const d = await cfLoad();
-        if(d.cats?.length) applyData(d);
+        // force=true: ALLE Felder 1:1 vom Cloud-Stand übernehmen, auch wenn
+        // einzelne davon dort leer sind — der Nutzer hat den Überschreib-
+        // Hinweis bereits bestätigt und erwartet danach garantiert exakt
+        // die Cloudflare-Werte, nicht eine Mischung aus alt/neu.
+        if(d) applyData(d, true);
         setIsDirty(false);
         setSyncStatus("saved");
         setTimeout(()=>setSyncStatus("idle"),2000);
