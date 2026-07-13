@@ -10,7 +10,7 @@
 // Der Hero (Kontostand) kommt ebenfalls von dort, wie bei Home/Monat — und
 // respektiert dort wie hier den global gewählten Konto-Filter (selAcc).
 
-import React, { useContext, useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { Li } from "../../utils/icons.jsx";
@@ -24,10 +24,6 @@ const METRICS = [
   { key: "income",  label: "Einnahmen",      icon: "arrow-down-circle",  color: (v,T)=>T.pos,  split: true },
   { key: "expense", label: "Ausgaben",       icon: "arrow-up-circle",    color: (v,T)=>T.neg,  split: true },
 ];
-
-// Balken pro Zeile im vertikalen Mehrzeilen-Layout ("Stapel") — bei mehr
-// Jahren entstehen mehr Zeilen statt immer schmalerer Balken in einer Zeile.
-const PER_ROW = 8;
 
 // Kompakte Kurzform für die Balken-Beschriftung ("15.7K" statt "15.737,42 €") —
 // bei PER_ROW=8 Balken pro Zeile ist für den vollen Betrag kein Platz.
@@ -108,70 +104,106 @@ function MiniSpark({ values, color, h = 26 }) {
   );
 }
 
-// Vertikaler Balken-Chart in Zeilen zu je PER_ROW Jahren ("Stapel"), damit
-// auch bei vielen Jahren jeder Balken breit genug für lesbare, um 90°
-// gedrehte Jahres-Labels bleibt. Skala (min/max) gilt über ALLE Zeilen
-// hinweg, damit Balkenhöhen zwischen den Zeilen vergleichbar bleiben. Werte
-// über den Balken als kurze "xxK"-Form (fmtK). Bei Einnahmen/Ausgaben wird
-// der vorgemerkte (noch nicht gebuchte) Anteil oben im Balken heller
-// dargestellt — der Gesamtbetrag (inkl. Vormerkungen) bleibt aber gleich.
+// Ziel-Balkenbreite in Pixeln — bewusst KONSTANT (skaliert nicht mit der
+// Bildschirmbreite). Wie viele Balken nebeneinander in eine Zeile passen
+// (perRow) ergibt sich stattdessen aus der tatsächlich verfügbaren Breite
+// (per ResizeObserver gemessen): ein iPhone mini zeigt so automatisch
+// weniger, aber genauso große/lesbare Balken pro Zeile als ein breiteres
+// Gerät — nicht gleich viele, nur kleiner gequetschte.
+const BAR_W = 52;
+const MIN_PER_ROW = 3;
+
+// Vertikaler Balken-Chart in Zeilen ("Stapel"), damit auch bei vielen Jahren
+// jeder Balken breit genug für lesbare, um 90° gedrehte Jahres-Labels bleibt.
+// Skala (min/max) gilt über ALLE Zeilen hinweg, damit Balkenhöhen zwischen
+// den Zeilen vergleichbar bleiben. Werte über dem Balken als kurze "xxK"-Form
+// (fmtK). Bei Einnahmen/Ausgaben wird der vorgemerkte (noch nicht gebuchte)
+// Anteil oben im Balken heller dargestellt — der Gesamtbetrag (inkl.
+// Vormerkungen) bleibt aber gleich.
 function YearBarRows({ perYear, get, getPending, color, onSelectYear }) {
+  const containerRef = useRef(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => setContainerWidth(el.clientWidth);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const vals = perYear.map(get);
   const maxV = Math.max(0, ...vals), minV = Math.min(0, ...vals);
   const range = (maxV - minV) || 1;
+  const hasNegative = minV < -0.005;
 
+  const perRow = containerWidth ? Math.max(MIN_PER_ROW, Math.floor(containerWidth / BAR_W)) : MIN_PER_ROW;
   const rows = [];
-  for (let i = 0; i < perYear.length; i += PER_ROW) rows.push(perYear.slice(i, i + PER_ROW));
+  for (let i = 0; i < perYear.length; i += perRow) rows.push(perYear.slice(i, i + perRow));
 
-  const bw = 38, rowH = 136, padTop = 18, padB = 48;
-  const chartH = rowH - padTop - padB;
-  const W = PER_ROW * bw;
+  const bw = BAR_W;
+  const yearFs = 13, amtFs = 12;
+  const chartH = 70;
+  const padTop = amtFs + 10; // Luft für das Betrags-Label über dem höchsten Balken
+  // Sichtbare Höhe der um 90° gedrehten 4-stelligen Jahreszahl (Breite je
+  // Zeichen ≈ Schriftgröße * 0.62) plus etwas Sicherheitsabstand.
+  const yearLabelH = yearFs * 0.62 * 4 + 4;
+  const gapBarToLabel = 4; // genau DER Abstand, um den es beim Feedback ging
+  const bottomMargin = 4;
+  // Bei negativen Werten steht das Betrags-Label UNTER statt ÜBER dem
+  // Balken — dafür zusätzlichen Platz vor der Jahreszahl reservieren (worst
+  // case: der negativste Wert der gesamten Skala sitzt am unteren
+  // Diagrammrand), damit sich Betrag und Jahreszahl nie überlagern.
+  const negAmountH = hasNegative ? amtFs + 12 + 4 : 0;
+  const padB = gapBarToLabel + negAmountH + yearLabelH + bottomMargin;
+  const rowH = padTop + chartH + padB;
   const yOf = (v) => padTop + chartH * (maxV - v) / range;
   const zeroY = yOf(0);
-  // Anker der gedrehten Jahres-Labels: bewusst nahe am unteren SVG-Rand (statt
-  // knapp unter der Nulllinie) — die Rotation lässt den Text vom Anker aus
-  // nach OBEN wachsen, bei zu knappem Abstand überlagert er sonst Balken/
-  // Werte-Labels nahe der Nulllinie (z. B. bei sehr kleinen Beträgen).
-  const labelY = rowH - 6;
+  const labelY = rowH - bottomMargin;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-      {rows.map((row, ri) => (
-        <svg key={ri} viewBox={`0 0 ${W} ${rowH}`} width="100%" style={{ display: "block", overflow: "visible" }}>
-          <line x1={0} y1={zeroY} x2={row.length * bw} y2={zeroY} stroke={T.bd} strokeWidth={1} />
-          {row.map((r, i) => {
-            const v = get(r);
-            const vPending = getPending ? getPending(r) : 0;
-            const vActual = v - vPending;
-            const x = i * bw;
-            const cx = x + bw / 2;
-            const yTop = yOf(Math.max(v, 0));
-            const yBot = yOf(Math.min(v, 0));
-            const ySplit = yOf(Math.max(vActual, 0));
-            const showSplit = vPending > 0.005 && ySplit > yTop + 0.5;
-            return (
-              <g key={r.year} onClick={() => onSelectYear(r.year)} style={{ cursor: "pointer" }}>
-                <rect x={x} y={padTop} width={bw} height={chartH} fill="transparent" />
-                {showSplit ? (
-                  <>
-                    <rect x={x + bw * 0.22} y={ySplit} width={bw * 0.56} height={Math.max(1, yBot - ySplit)} rx={2} fill={color} opacity={0.85} />
-                    <rect x={x + bw * 0.22} y={yTop} width={bw * 0.56} height={Math.max(1, ySplit - yTop)} rx={2} fill={color} opacity={0.35} />
-                  </>
-                ) : (
-                  <rect x={x + bw * 0.22} y={yTop} width={bw * 0.56} height={Math.max(1, yBot - yTop)} rx={2} fill={color} opacity={0.85} />
-                )}
-                <text x={cx} y={v >= 0 ? yTop - 4 : yBot + 12} textAnchor="middle" fontSize="8" fill={T.txt2} fontWeight={600}>
-                  {fmtK(v)}
-                </text>
-                <text x={cx} y={labelY} textAnchor="end" fontSize="9" fill={T.txt2} fontWeight={600}
-                  transform={`rotate(-90 ${cx} ${labelY})`}>
-                  {r.year}
-                </text>
-              </g>
-            );
-          })}
-        </svg>
-      ))}
+    <div ref={containerRef} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      {rows.map((row, ri) => {
+        const W = row.length * bw;
+        return (
+          <svg key={ri} viewBox={`0 0 ${W} ${rowH}`} width={W} height={rowH} style={{ display: "block", overflow: "visible" }}>
+            <line x1={0} y1={zeroY} x2={W} y2={zeroY} stroke={T.bd} strokeWidth={1} />
+            {row.map((r, i) => {
+              const v = get(r);
+              const vPending = getPending ? getPending(r) : 0;
+              const vActual = v - vPending;
+              const x = i * bw;
+              const cx = x + bw / 2;
+              const yTop = yOf(Math.max(v, 0));
+              const yBot = yOf(Math.min(v, 0));
+              const ySplit = yOf(Math.max(vActual, 0));
+              const showSplit = vPending > 0.005 && ySplit > yTop + 0.5;
+              return (
+                <g key={r.year} onClick={() => onSelectYear(r.year)} style={{ cursor: "pointer" }}>
+                  <rect x={x} y={padTop} width={bw} height={chartH} fill="transparent" />
+                  {showSplit ? (
+                    <>
+                      <rect x={x + bw * 0.22} y={ySplit} width={bw * 0.56} height={Math.max(1, yBot - ySplit)} rx={2} fill={color} opacity={0.85} />
+                      <rect x={x + bw * 0.22} y={yTop} width={bw * 0.56} height={Math.max(1, ySplit - yTop)} rx={2} fill={color} opacity={0.35} />
+                    </>
+                  ) : (
+                    <rect x={x + bw * 0.22} y={yTop} width={bw * 0.56} height={Math.max(1, yBot - yTop)} rx={2} fill={color} opacity={0.85} />
+                  )}
+                  <text x={cx} y={v >= 0 ? yTop - 4 : yBot + 12} textAnchor="middle" fontSize={amtFs} fill={T.txt} fontWeight={700}>
+                    {fmtK(v)}
+                  </text>
+                  <text x={cx} y={labelY} textAnchor="end" fontSize={yearFs} fill={T.txt} fontWeight={700}
+                    transform={`rotate(-90 ${cx} ${labelY})`}>
+                    {r.year}
+                  </text>
+                </g>
+              );
+            })}
+          </svg>
+        );
+      })}
     </div>
   );
 }
