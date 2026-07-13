@@ -201,6 +201,19 @@ export default function SupaDupaMoney() {
   const [subTab,        setSubTab]       = useState("dashboard");
   const navigateToSparen = () => { setMainTab("erfassen"); setSubTab("dashboard"); setSparOpenRequest(v=>v+1); };
   const LS_KEY = "finanzapp_v9";
+  // Merkt sich (in kvStore, unabhängig vom großen Daten-Blob) den saved_at-
+  // Zeitstempel des Cloud-Stands, mit dem dieses Gerät zuletzt NACHWEISLICH
+  // synchron war (nach einem erfolgreichen Push ODER Pull). Der reine
+  // Vergleich "ist mein lokaler saved_at älter als der von Cloudflare?" ist
+  // dafür ungeeignet: jede lokale Änderung — auch ein (ggf. unvollständiger)
+  // Cloud-Import — stempelt saved_at beim nächsten Auto-Save neu auf "jetzt",
+  // wodurch lokal fälschlich "aktueller" aussieht als Cloudflare, obwohl der
+  // Inhalt noch abweicht. Der Sync-Anker vergleicht stattdessen den
+  // tatsächlichen Cloud-Zeitstempel gegen den zuletzt bestätigt synchronisierten
+  // — ändert sich der, hat garantiert ein anderes Gerät seither gespeichert.
+  const CF_SYNC_MARK_KEY = "mbt_cf_synced_at";
+  const getCfSyncedAt = () => parseInt(kvStore.getItem(CF_SYNC_MARK_KEY) || "0", 10) || 0;
+  const setCfSyncedAt = (ts) => { try { kvStore.setItem(CF_SYNC_MARK_KEY, String(ts||0)); } catch(e) {} };
 
   const [isLand,        setIsLand]       = useState(false);
   const [showAllMonths, setShowAllMonths] = useState(true); // Jahresansicht immer alle Monate
@@ -1130,8 +1143,17 @@ Abbrechen = ${remoteName}-Stand laden`
             cfLoad().then(cdata=>{
               setCfStatus("ok");
               const cTs = cdata.saved_at||0;
-              if(cTs > localTs + 60000) {
-                const diff = Math.round((cTs-localTs)/1000);
+              const lastSynced = getCfSyncedAt();
+              // Sync-Anker vorhanden (Normalfall): jede Abweichung vom zuletzt
+              // bestätigten Cloud-Stand bedeutet, ein anderes Gerät hat seither
+              // gespeichert — unabhängig davon, wie "frisch" der lokale
+              // saved_at-Zeitstempel gerade aussieht (siehe Kommentar bei
+              // CF_SYNC_MARK_KEY). Ohne Anker (z.B. Erststart nach diesem
+              // Update) auf die alte 60s-Heuristik zurückfallen, damit
+              // Bestandsnutzer nicht plötzlich falsche Hinweise sehen.
+              const cloudChanged = lastSynced ? (cTs !== lastSynced && cTs > lastSynced) : (cTs > localTs + 60000);
+              if(cloudChanged) {
+                const diff = Math.round((cTs-(lastSynced||localTs))/1000);
                 setSyncError(`☁ Cloudflare hat neuere Daten (${diff}s). Auf den Hinweis oben tippen, um sie zu laden.`);
                 // "error_shown" wurde von KEINER Anzeige konsumiert (getSyncBadgeState
                 // kennt nur saving/saved/error/isDirty) — der Hinweis verschwand
@@ -1139,6 +1161,10 @@ Abbrechen = ${remoteName}-Stand laden`
                 // Gerät neuere Daten gespeichert hat. "cloud_newer" wird jetzt im
                 // persistenten Sync-Badge angezeigt und ist dort auch antippbar.
                 setSyncStatus("cloud_newer");
+              } else if(!lastSynced) {
+                // Kein Anker gesetzt und auch kein Unterschied erkannt — als
+                // synchron übernehmen, damit ab jetzt der robuste Vergleich greift.
+                setCfSyncedAt(cTs);
               }
             }).catch(e=>{ setCfStatus("error"); });
           }
@@ -1157,6 +1183,7 @@ Abbrechen = ${remoteName}-Stand laden`
               const ts = Date.now();
               const toStore = JSON.stringify({...cdata, saved_at:ts});
               window.IDB.set(LS_KEY, toStore).catch(()=>{});
+              setCfSyncedAt(cdata.saved_at||ts);
               setSyncError("✓ Von Cloudflare geladen und lokal gespeichert");
             }
             setCfStatus("ok"); setIsLand(false); setSyncStatus("idle");
@@ -1348,7 +1375,9 @@ Abbrechen = ${remoteName}-Stand laden`
     payload = {...payload, yearData: cleanYearData};
     setSyncStatus("saving"); setCfStatus("saving");
     try {
-      await cfSave({...payload, saved_at:Date.now()});
+      const pushedAt = Date.now();
+      await cfSave({...payload, saved_at:pushedAt});
+      setCfSyncedAt(pushedAt);
       setCfStatus("ok"); setSyncStatus("saved"); setIsDirty(false);
       setTimeout(()=>setSyncStatus("idle"), 2000);
     } catch(e) {
@@ -2764,6 +2793,12 @@ Abbrechen = ${remoteName}-Stand laden`
         // Hinweis bereits bestätigt und erwartet danach garantiert exakt
         // die Cloudflare-Werte, nicht eine Mischung aus alt/neu.
         if(d) applyData(d, true);
+        // Sync-Anker auf den Cloud-Zeitstempel setzen: der gleich folgende
+        // Auto-Save (useLocalSaveDebounce) stempelt den lokalen Blob zwar mit
+        // "jetzt", aber der Anker merkt sich den ECHTEN Cloud-Stand, mit dem
+        // wir gerade nachweislich synchron sind — nur so bleibt die spätere
+        // "Cloud hat neuere Daten"-Erkennung zuverlässig.
+        setCfSyncedAt(d?.saved_at || Date.now());
         setIsDirty(false);
         setSyncStatus("saved");
         setTimeout(()=>setSyncStatus("idle"),2000);
