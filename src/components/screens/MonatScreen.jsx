@@ -55,7 +55,14 @@ const MonthSearchBox = React.memo(function MonthSearchBox({ committed, onSubmit,
 // Eigener State pro Zeile: bleibt beim Aufklappen "wissend", dass sie zuvor
 // übergelaufen ist (sonst würde der Pfeil beim Aufklappen verschwinden, weil
 // im aufgeklappten/umgebrochenen Zustand naturgemäß nichts mehr überläuft).
-const TxInfoLine = React.memo(function TxInfoLine({ color, children }) {
+// Einzeilig gekürzter Text (Buchungstitel oder Kategorie-/Tag-Zeile), der nur
+// dann ein Ausklapp-Symbol zeigt, wenn er tatsächlich überläuft (per DOM-
+// Messung scrollWidth vs. clientWidth, nicht per Heuristik). NUR das Symbol
+// selbst ist antippbar (stopPropagation) — der Rest der Zeile bleibt Teil des
+// umschließenden "antippen öffnet Bearbeiten"-Bereichs. Würde stattdessen die
+// GANZE Zeile bei Überlauf das Antippen abfangen, käme man bei jeder
+// übergelaufenen Buchung nicht mehr an den Bearbeiten-Dialog heran.
+const ExpandableLine = React.memo(function ExpandableLine({ style, children }) {
   const innerRef = React.useRef(null);
   const [expanded, setExpanded] = React.useState(false);
   const [overflowing, setOverflowing] = React.useState(false);
@@ -76,9 +83,7 @@ const TxInfoLine = React.memo(function TxInfoLine({ color, children }) {
     return () => window.removeEventListener("resize", measure);
   }, [expanded, measure]);
   return (
-    <div data-txinfo-line onClick={overflowing ? (e=>{e.stopPropagation();setExpanded(v=>!v);}) : undefined}
-      style={{color,fontSize:10,marginTop:1,fontWeight:600,
-        display:"flex",alignItems:"center",gap:4,cursor:overflowing?"pointer":"default"}}>
+    <div data-expandable-line style={{display:"flex",alignItems:"center",gap:4,...style}}>
       <div ref={innerRef} style={{display:"flex",alignItems:"center",gap:4,minWidth:0,flex:1,
         ...(expanded
           ? {flexWrap:"wrap",whiteSpace:"normal"}
@@ -86,7 +91,8 @@ const TxInfoLine = React.memo(function TxInfoLine({ color, children }) {
         {children}
       </div>
       {overflowing&&(
-        <span style={{flexShrink:0,display:"inline-flex"}}>
+        <span onClick={e=>{e.stopPropagation();setExpanded(v=>!v);}}
+          style={{flexShrink:0,display:"inline-flex",cursor:"pointer",padding:"0 1px"}}>
           {Li(expanded?"chevron-up":"chevron-down",9,T.txt2)}
         </span>
       )}
@@ -147,8 +153,9 @@ function MonatScreen() {
       setSelected(new Set());
       setBulkTags([]);
     };
-    // Infozeile (Kategorie/Badges/Tags) je Buchung: aufklappbar, aber nur wenn
-    // sie tatsächlich überläuft — Logik + State dafür lebt in <TxInfoLine>.
+    // Titel- und Infozeile (Kategorie/Badges/Tags) je Buchung: aufklappbar,
+    // aber nur wenn tatsächlich Inhalt überläuft — Logik + State dafür lebt
+    // in <ExpandableLine>.
     const [budgetEditSub, setBudgetEditSub] = useState(null);
     const [budgetEditKey, setBudgetEditKey] = useState(0);
     const openBudgetEdit = (sub) => { setBudgetEditSub(sub); setBudgetEditKey(k=>k+1); };
@@ -1158,10 +1165,10 @@ function MonatScreen() {
                           </div>
                           {txIconPickM===tx.id&&(<IconPickerDialog selectedIcon={involvedCats[0]?.icon||"help-circle"} selectedColor={involvedCats[0]?.color||T.txt2} onSelect={ic=>{if(involvedCats[0])setCats(p=>p.map(c=>c.id===involvedCats[0].id?{...c,icon:ic}:c));setTxIconPickM(null);}} onClose={()=>setTxIconPickM(null)}/>)}
                           <div onClick={()=>openEdit(tx)} style={{flex:1,minWidth:0,marginRight:6,cursor:"pointer"}}>
-                            <div style={{color:T.txt,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                              {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex"}}>{Li("sticky-note",9,T.gold)}</span>}
-                            </div>
-                            <TxInfoLine color={cat?.color||T.txt2}>
+                            <ExpandableLine style={{color:T.txt,fontSize:13,fontWeight:700}}>
+                              {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.gold)}</span>}
+                            </ExpandableLine>
+                            <ExpandableLine style={{color:cat?.color||T.txt2,fontSize:10,marginTop:1,fontWeight:600}}>
                               {tx.pending?"Vorgemerkt · ":""}{isS?involvedCats.map(c=>c.name).join(" · "):(()=>{const ss=getSub((tx.splits||[])[0]?.catId,(tx.splits||[])[0]?.subId);return ss?.name||cat?.name||"";})()}
                               {tx.accountId&&tx.accountId!=="acc-giro"&&(()=>{const a=getAcc(tx.accountId);return(<span style={{background:a.color+"22",color:a.color,borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>{Li(a.icon,9,a.color)} {a.name}</span>)})()}
                               {(tx.tags||[]).map(t=>(
@@ -1170,7 +1177,7 @@ function MonatScreen() {
                                   #{t}
                                 </span>
                               ))}
-                            </TxInfoLine>
+                            </ExpandableLine>
                           </div>
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
                             <div style={{...amtStyle("pos",pal.val),...(tx.pending?{color:T.cell_inc}:{}),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmt(tx.totalAmount)}</div>
@@ -1299,10 +1306,10 @@ function MonatScreen() {
                           )}
                           {/* Text — Klick öffnet Edit */}
                           <div onClick={()=>openEdit(tx)} style={{flex:1,minWidth:0,marginRight:6,cursor:"pointer"}}>
-                            <div style={{color:T.txt,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                              {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex"}}>{Li("sticky-note",9,T.gold)}</span>}
-                            </div>
-                            <TxInfoLine color={cat?.color||T.txt2}>
+                            <ExpandableLine style={{color:T.txt,fontSize:13,fontWeight:700}}>
+                              {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.gold)}</span>}
+                            </ExpandableLine>
+                            <ExpandableLine style={{color:cat?.color||T.txt2,fontSize:10,marginTop:1,fontWeight:600}}>
                               {tx.pending?"Vorgemerkt · ":""}{isS?involvedCats.map(c=>c.name).join(" · "):(()=>{const ss=getSub((tx.splits||[])[0]?.catId,(tx.splits||[])[0]?.subId);return ss?.name || cat?.name || "";})()}
                               {tx.valueDate&&(
                               <span style={{background:"rgba(200,210,220,0.1)",color:T.txt2,
@@ -1327,7 +1334,7 @@ function MonatScreen() {
                                 #{t}
                               </span>
                             ))}
-                            </TxInfoLine>
+                            </ExpandableLine>
                           </div>
                           {/* Amount */}
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
