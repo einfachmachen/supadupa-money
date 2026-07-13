@@ -137,7 +137,6 @@ function YearBarRows({ perYear, get, getPending, color, onSelectYear }) {
   const vals = perYear.map(get);
   const maxV = Math.max(0, ...vals), minV = Math.min(0, ...vals);
   const range = (maxV - minV) || 1;
-  const hasNegative = minV < -0.005;
 
   const perRow = containerWidth ? Math.max(MIN_PER_ROW, Math.floor(containerWidth / BAR_W)) : MIN_PER_ROW;
   const rows = [];
@@ -145,28 +144,40 @@ function YearBarRows({ perYear, get, getPending, color, onSelectYear }) {
 
   const bw = BAR_W;
   const yearFs = 13, amtFs = 12;
-  const chartH = 70;
-  const padTop = amtFs + 10; // Luft für das Betrags-Label über dem höchsten Balken
+  // Feste Referenz: DER global größte Ausschlag (range) bekäme MAX_BAR_H px.
+  // Alle Zeilen teilen sich dieses eine px/€-Verhältnis — Balkenhöhen bleiben
+  // dadurch zeilenübergreifend vergleichbar. Die BILDHÖHE einer Zeile ist
+  // aber NICHT mehr fix: sie richtet sich nach dem höchsten/tiefsten Wert
+  // GENAU DIESER Zeile, statt für jede Zeile denselben Leerraum bis zum
+  // globalen Maximum zu reservieren (das verschwendete bei Zeilen mit
+  // durchweg kleinen Werten sehr viel Platz).
+  const MAX_BAR_H = 70;
+  const pxPerUnit = MAX_BAR_H / range;
+  const padTopLabel = amtFs + 10; // Luft für das Betrags-Label über dem höchsten Balken DIESER Zeile
   // Sichtbare Höhe der um 90° gedrehten 4-stelligen Jahreszahl (Breite je
   // Zeichen ≈ Schriftgröße * 0.62) plus etwas Sicherheitsabstand.
   const yearLabelH = yearFs * 0.62 * 4 + 4;
   const gapBarToLabel = 4; // genau DER Abstand, um den es beim Feedback ging
   const bottomMargin = 4;
-  // Bei negativen Werten steht das Betrags-Label UNTER statt ÜBER dem
-  // Balken — dafür zusätzlichen Platz vor der Jahreszahl reservieren (worst
-  // case: der negativste Wert der gesamten Skala sitzt am unteren
-  // Diagrammrand), damit sich Betrag und Jahreszahl nie überlagern.
-  const negAmountH = hasNegative ? amtFs + 12 + 4 : 0;
-  const padB = gapBarToLabel + negAmountH + yearLabelH + bottomMargin;
-  const rowH = padTop + chartH + padB;
-  const yOf = (v) => padTop + chartH * (maxV - v) / range;
-  const zeroY = yOf(0);
-  const labelY = rowH - bottomMargin;
 
   return (
-    <div ref={containerRef} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div ref={containerRef} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       {rows.map((row, ri) => {
         const W = row.length * bw;
+        const rowMaxV = Math.max(0, ...row.map(get));
+        const rowMinV = Math.min(0, ...row.map(get));
+        const topH = pxPerUnit * rowMaxV;
+        const botH = pxPerUnit * Math.abs(rowMinV);
+        // Bei negativen Werten steht das Betrags-Label UNTER statt ÜBER dem
+        // Balken — dafür zusätzlichen Platz vor der Jahreszahl reservieren,
+        // aber nur so viel wie der tiefste Wert DIESER Zeile tatsächlich
+        // braucht (nicht der tiefste Wert der gesamten Skala).
+        const topSpace = padTopLabel + topH;
+        const botSpace = (rowMinV < -0.005 ? (botH + 12 + amtFs + gapBarToLabel) : 0) + yearLabelH + bottomMargin;
+        const rowH = topSpace + botSpace;
+        const zeroY = topSpace;
+        const yOf = (v) => zeroY - pxPerUnit * v;
+        const labelY = rowH - bottomMargin;
         return (
           <svg key={ri} viewBox={`0 0 ${W} ${rowH}`} width={W} height={rowH} style={{ display: "block", overflow: "visible" }}>
             <line x1={0} y1={zeroY} x2={W} y2={zeroY} stroke={T.bd} strokeWidth={1} />
@@ -182,7 +193,7 @@ function YearBarRows({ perYear, get, getPending, color, onSelectYear }) {
               const showSplit = vPending > 0.005 && ySplit > yTop + 0.5;
               return (
                 <g key={r.year} onClick={() => onSelectYear(r.year)} style={{ cursor: "pointer" }}>
-                  <rect x={x} y={padTop} width={bw} height={chartH} fill="transparent" />
+                  <rect x={x} y={0} width={bw} height={rowH} fill="transparent" />
                   {showSplit ? (
                     <>
                       <rect x={x + bw * 0.22} y={ySplit} width={bw * 0.56} height={Math.max(1, yBot - ySplit)} rx={2} fill={color} opacity={0.85} />
