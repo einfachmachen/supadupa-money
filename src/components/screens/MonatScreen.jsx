@@ -834,15 +834,20 @@ function MonatScreen() {
             (global über alle Monate laufende) Suche zusätzlich ein. Jedes
             Feld hat sein eigenes X rechts INNEN (statt eines gemeinsamen X
             außerhalb) — sonst wirkt es auf schmalen Bildschirmen (iPhone
-            mini) unsymmetrisch und drängt die Felder so eng zusammen, dass
-            sie sich optisch überschneiden. */}
+            mini) unsymmetrisch. WebkitAppearance:"none" ist nötig, weil iOS
+            Safari bei LEEREM <input type="date"> die eigene native Optik
+            statt unserer Border/Hintergrund zeichnet — dadurch verschmolzen
+            von/bis optisch zu einem einzigen Kasten, sobald beide Felder
+            leer waren (mit Wert gesetzt fiel das nicht auf). */}
         {inSearchMode && (
           <div style={{padding:"0 10px 6px",display:"flex",gap:6,alignItems:"flex-end"}}>
             <div style={{flex:1}}>
               <div style={{color:T.txt2,fontSize:10,marginBottom:2}}>von</div>
               <div style={{position:"relative"}}>
                 <input type="date" value={von} onChange={e=>setVon(e.target.value)}
-                  style={{width:"100%",boxSizing:"border-box",background:"rgba(255,255,255,0.06)",
+                  style={{width:"100%",minWidth:0,display:"block",boxSizing:"border-box",
+                    WebkitAppearance:"none",appearance:"none",
+                    background:"rgba(255,255,255,0.06)",
                     border:`1px solid ${T.bds}`,borderRadius:9,padding:von?"6px 24px 6px 8px":"6px 8px",
                     color:T.txt,fontSize:12,outline:"none",fontFamily:"inherit"}}/>
                 {von&&(
@@ -859,7 +864,9 @@ function MonatScreen() {
               <div style={{color:T.txt2,fontSize:10,marginBottom:2}}>bis</div>
               <div style={{position:"relative"}}>
                 <input type="date" value={bis} onChange={e=>setBis(e.target.value)}
-                  style={{width:"100%",boxSizing:"border-box",background:"rgba(255,255,255,0.06)",
+                  style={{width:"100%",minWidth:0,display:"block",boxSizing:"border-box",
+                    WebkitAppearance:"none",appearance:"none",
+                    background:"rgba(255,255,255,0.06)",
                     border:`1px solid ${T.bds}`,borderRadius:9,padding:bis?"6px 24px 6px 8px":"6px 8px",
                     color:T.txt,fontSize:12,outline:"none",fontFamily:"inherit"}}/>
                 {bis&&(
