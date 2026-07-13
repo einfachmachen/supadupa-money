@@ -1531,7 +1531,7 @@ function DashboardScreenV2() {
             style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",
               zIndex:65,display:"flex",alignItems:"flex-start",justifyContent:"center",padding:0}}>
             <div onClick={e=>e.stopPropagation()}
-              style={{background:T.surf2,borderRadius:0,width:"100%",maxWidth:560,
+              style={{background:T.bg,borderRadius:0,width:"100%",maxWidth:560,
                 height:"100dvh",maxHeight:"100dvh",display:"flex",flexDirection:"column",
                 border:"none",boxShadow:"0 8px 40px rgba(0,0,0,0.7)"}}>
               {/* Header */}
