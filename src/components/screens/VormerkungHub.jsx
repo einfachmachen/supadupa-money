@@ -12,7 +12,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
 import { MONTHS_F } from "../../utils/constants.js";
-import { isoAddMonths, nextBankWorkday } from "../../utils/date.js";
+import { isoAddMonths, nextBankWorkday, calcRecurringCount } from "../../utils/date.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { isFuelSelection, checkOdometerPlausibility } from "../../utils/fuel.js";
@@ -414,22 +414,14 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
   const calcCount = () => {
     if(typ==="einmalig") return 1;
     if(count) return Math.max(1, parseInt(count)||1);
-    if(endDate && startDate) {
-      const s=new Date(startDate), e=new Date(endDate);
-      const months=(e.getFullYear()-s.getFullYear())*12+(e.getMonth()-s.getMonth())+1;
-      return Math.max(1, Math.ceil(months/interval_));
-    }
+    if(endDate && startDate) return calcRecurringCount(startDate, endDate, interval_);
     // Finanzierung: bestehende Serienanzahl als Fallback (nicht 1!)
     if(typ==="finanzierung") {
       if(isEdit && seriesCount) return seriesCount;
       return 1;
     }
     // "unbegrenzt" = vom Startdatum bis Dezember (Startjahr + 6)
-    const start = new Date(startDate||today);
-    const endYear = start.getFullYear() + 6;
-    const endDec = new Date(endYear, 11, 31); // 31. Dez
-    const totalMonths = (endDec.getFullYear()-start.getFullYear())*12+(endDec.getMonth()-start.getMonth())+1;
-    return Math.max(1, Math.ceil(totalMonths/interval_));
+    return calcRecurringCount(startDate||today, null, interval_);
   };
   const totalCount = calcCount();
   const preview = [];

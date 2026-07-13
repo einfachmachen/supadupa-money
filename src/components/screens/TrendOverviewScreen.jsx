@@ -153,6 +153,13 @@ function YearBarRows({ perYear, get, getPending, color, onSelectYear }) {
   // durchweg kleinen Werten sehr viel Platz).
   const MAX_BAR_H = 70;
   const pxPerUnit = MAX_BAR_H / range;
+  const barVisW = bw * 0.56; // sichtbare Balkenbreite (s. rect-Breiten unten)
+  // Die Jahreszahl (gedreht) soll optisch genauso "dick" wirken wie der
+  // Balken breit ist — dafür wird NUR die Dicke der Schrift (senkrecht zur
+  // Schreibrichtung, wird nach der Drehung zur Breite) hochskaliert, nicht
+  // ihre Länge (bliebe sonst unnötig hoch). Das verzerrt die Ziffern optisch
+  // etwas in die Breite, macht die Jahreszahl dafür deutlich prominenter.
+  const yearThicknessScale = barVisW / yearFs;
   const padTopLabel = amtFs + 10; // Luft für das Betrags-Label über dem höchsten Balken DIESER Zeile
   // Sichtbare Höhe der um 90° gedrehten 4-stelligen Jahreszahl (Breite je
   // Zeichen ≈ Schriftgröße * 0.62) plus etwas Sicherheitsabstand.
@@ -201,17 +208,17 @@ function YearBarRows({ perYear, get, getPending, color, onSelectYear }) {
                   <rect x={x} y={0} width={bw} height={rowH} fill="transparent" />
                   {showSplit ? (
                     <>
-                      <rect x={x + bw * 0.22} y={ySplit} width={bw * 0.56} height={Math.max(1, yBot - ySplit)} rx={2} fill={color} opacity={0.85} />
-                      <rect x={x + bw * 0.22} y={yTop} width={bw * 0.56} height={Math.max(1, ySplit - yTop)} rx={2} fill={color} opacity={0.35} />
+                      <rect x={x + bw * 0.22} y={ySplit} width={barVisW} height={Math.max(1, yBot - ySplit)} rx={2} fill={color} opacity={0.85} />
+                      <rect x={x + bw * 0.22} y={yTop} width={barVisW} height={Math.max(1, ySplit - yTop)} rx={2} fill={color} opacity={0.35} />
                     </>
                   ) : (
-                    <rect x={x + bw * 0.22} y={yTop} width={bw * 0.56} height={Math.max(1, yBot - yTop)} rx={2} fill={color} opacity={0.85} />
+                    <rect x={x + bw * 0.22} y={yTop} width={barVisW} height={Math.max(1, yBot - yTop)} rx={2} fill={color} opacity={0.85} />
                   )}
                   <text x={cx} y={v >= 0 ? yTop - 4 : yBot + 12} textAnchor="middle" fontSize={amtFs} fill={T.txt} fontWeight={700}>
                     {fmtK(v)}
                   </text>
-                  <text x={cx} y={labelY} textAnchor="start" fontSize={yearFs} fill={T.txt} fontWeight={700}
-                    transform={`rotate(-90 ${cx} ${labelY})`}>
+                  <text x={0} y={0} textAnchor="start" dominantBaseline="central" fontSize={yearFs} fill={T.txt} fontWeight={700}
+                    transform={`translate(${cx} ${labelY}) rotate(-90) scale(1 ${yearThicknessScale})`}>
                     {r.year}
                   </text>
                 </g>

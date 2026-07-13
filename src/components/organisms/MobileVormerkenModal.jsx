@@ -13,7 +13,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
-import { nextBankWorkday, isoAddMonths } from "../../utils/date.js";
+import { nextBankWorkday, isoAddMonths, calcRecurringCount } from "../../utils/date.js";
 import { Li } from "../../utils/icons.jsx";
 import { SchieflageVorwarnung } from "../atoms/SchieflageVorwarnung.jsx";
 import { isFuelSelection, checkOdometerPlausibility } from "../../utils/fuel.js";
@@ -205,13 +205,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
   const amtVal = () => pn((amount||"").replace(",","."));
   const calcCount = () => {
     if(count) return parseInt(count)||1;
-    if(endDate&&date){
-      const s=new Date(date), e=new Date(endDate);
-      return Math.max(1,Math.round(((e.getFullYear()-s.getFullYear())*12+(e.getMonth()-s.getMonth()))/interval_)+1);
-    }
-    const s=new Date(date||today);
-    const endY=s.getFullYear()+6;
-    return Math.max(1,Math.round(((endY-s.getFullYear())*12+(11-s.getMonth()))/interval_)+1);
+    return calcRecurringCount(date||today, endDate||null, interval_);
   };
   const totalCount = recurring ? calcCount() : 1;
   const intervalLabel = {1:"monatlich",3:"quartalsweise",6:"halbjährlich",12:"jährlich"}[interval_]||`alle ${interval_} Monate`;

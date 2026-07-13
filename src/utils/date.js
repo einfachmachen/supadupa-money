@@ -11,6 +11,22 @@ function isoAddMonths(isoDate, months, lastOfMonth=false) {
   return `${newY}-${String(newMonth).padStart(2,"0")}-${String(newDay).padStart(2,"0")}`;
 }
 
+// Anzahl der Vorkommen einer wiederkehrenden Serie: von startDate bis endDate
+// (inklusive) — oder, falls kein endDate gesetzt ist ("unbegrenzt"), bis zum
+// 31.12. sechs Jahre nach dem Startjahr. Inklusive Monatszählung + Math.ceil,
+// damit der letzte generierte Termin (startDate + (n-1)*interval Monate)
+// niemals über das Enddatum hinausschießt. Frühere, unabhängig voneinander
+// geschriebene Kopien dieser Formel (MobileVormerkenModal/VormerkungHub)
+// rundeten stattdessen VOR der +1-Verschiebung (Math.round(x)+1 statt
+// Math.ceil(x+1)) — bei nicht glatt durch das Intervall teilbaren
+// Zeiträumen (z. B. quartalsweise) erzeugte das einen Termin zu viel.
+function calcRecurringCount(startDate, endDate, interval) {
+  const s = new Date(startDate);
+  const e = endDate ? new Date(endDate) : new Date(s.getFullYear() + 6, 11, 31);
+  const totalMonths = (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth()) + 1;
+  return Math.max(1, Math.ceil(totalMonths / interval));
+}
+
 // Kalendertage addieren (UTC, damit kein Zeitzonen-Versatz). z.B. „+30 Tage".
 function isoAddDays(isoDate, days) {
   const [y, m, d] = isoDate.split("-").map(Number);
@@ -92,4 +108,4 @@ function pendingDebitDate(isoDate, todayIso) {
   return isoDate <= todayIso ? nextBankWorkday(isoDate) : isoDate;
 }
 
-export { isoAddMonths, isoAddDays, parseGermanDate, isBankWorkday, nextBankWorkday, pendingDebitDate };
+export { isoAddMonths, isoAddDays, parseGermanDate, isBankWorkday, nextBankWorkday, pendingDebitDate, calcRecurringCount };

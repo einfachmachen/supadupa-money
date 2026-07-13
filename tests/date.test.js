@@ -1,5 +1,32 @@
 import { describe, it, expect } from "vitest";
-import { nextBankWorkday, isBankWorkday, parseGermanDate, isoAddDays, pendingDebitDate } from "../src/utils/date.js";
+import { nextBankWorkday, isBankWorkday, parseGermanDate, isoAddDays, pendingDebitDate, isoAddMonths, calcRecurringCount } from "../src/utils/date.js";
+
+// Regression: MobileVormerkenModal.calcCount() rundete früher VOR der
+// +1-Verschiebung (Math.round(x)+1 statt Math.ceil(x+1)) — bei Intervallen,
+// die nicht glatt in den Zeitraum passen (z.B. quartalsweise = 3 Monate),
+// erzeugte das einen Termin zu viel, der über das Enddatum bzw. den
+// "unbegrenzt"-6-Jahres-Horizont hinausschoss (führte zu einer Buchung im
+// Januar des 7. statt letzten des 6. Jahres).
+describe("calcRecurringCount", () => {
+  it("der letzte generierte Termin schießt beim 'unbegrenzt'-Fallback (6 Jahre) nie über Dezember hinaus", () => {
+    for (const interval of [1, 3, 6, 12]) {
+      for (const startMonth of [0, 1, 5, 6, 11]) { // Jan, Feb, Jun, Jul, Dez
+        const startDate = `2026-${String(startMonth + 1).padStart(2, "0")}-15`;
+        const n = calcRecurringCount(startDate, null, interval);
+        const lastDate = isoAddMonths(startDate, (n - 1) * interval);
+        const lastYear = Number(lastDate.slice(0, 4));
+        expect(lastYear).toBeLessThanOrEqual(2032); // Startjahr(2026) + 6
+      }
+    }
+  });
+
+  it("respektiert ein explizites Enddatum, ohne darüber hinauszuschießen", () => {
+    const n = calcRecurringCount("2026-07-15", "2026-12-31", 3); // quartalsweise
+    const lastDate = isoAddMonths("2026-07-15", (n - 1) * 3);
+    expect(lastDate <= "2026-12-31").toBe(true);
+    expect(n).toBe(2); // Jul, Okt — Jan des Folgejahres wäre schon zu viel
+  });
+});
 
 describe("isoAddDays", () => {
   it("addiert Kalendertage", () => {

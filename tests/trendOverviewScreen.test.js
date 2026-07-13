@@ -75,14 +75,17 @@ describe("TrendOverviewScreen — Balken-Detailansicht", () => {
     const texts = [...container.querySelectorAll("svg text")];
     // Ein Betrags-Label (kein rotate-Transform) und ein Jahres-Label (mit
     // rotate-Transform) dürfen sich nicht überlappen — grobe Prüfung: beide
-    // Text-Arten sind vorhanden und die y-Koordinate der Jahreszahl liegt
-    // unterhalb (größer) als die des zugehörigen Betrags-Labels.
+    // Text-Arten sind vorhanden und die y-Koordinate der Jahreszahl (jetzt im
+    // "translate(cx labelY) rotate(...) scale(...)"-Transform kodiert, nicht
+    // mehr im y-Attribut selbst) liegt unterhalb (größer) als die des
+    // zugehörigen Betrags-Labels.
     const yearTexts = texts.filter(t => (t.getAttribute("transform") || "").includes("rotate"));
     const amountTexts = texts.filter(t => !(t.getAttribute("transform") || "").includes("rotate"));
     expect(yearTexts.length).toBeGreaterThan(0);
     expect(amountTexts.length).toBeGreaterThan(0);
     yearTexts.forEach(yt => {
-      const y = Number(yt.getAttribute("y"));
+      const translateMatch = yt.getAttribute("transform").match(/translate\(([-\d.]+) ([-\d.]+)\)/);
+      const y = Number(translateMatch[2]);
       amountTexts.forEach(at => {
         const ay = Number(at.getAttribute("y"));
         expect(y).toBeGreaterThan(ay);
