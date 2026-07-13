@@ -831,31 +831,47 @@ function MonatScreen() {
         </div>
 
         {/* Zeitraum — nur während einer aktiven Suche sichtbar, engt die
-            (global über alle Monate laufende) Suche zusätzlich ein. */}
+            (global über alle Monate laufende) Suche zusätzlich ein. Jedes
+            Feld hat sein eigenes X rechts INNEN (statt eines gemeinsamen X
+            außerhalb) — sonst wirkt es auf schmalen Bildschirmen (iPhone
+            mini) unsymmetrisch und drängt die Felder so eng zusammen, dass
+            sie sich optisch überschneiden. */}
         {inSearchMode && (
           <div style={{padding:"0 10px 6px",display:"flex",gap:6,alignItems:"flex-end"}}>
             <div style={{flex:1}}>
               <div style={{color:T.txt2,fontSize:10,marginBottom:2}}>von</div>
-              <input type="date" value={von} onChange={e=>setVon(e.target.value)}
-                style={{width:"100%",boxSizing:"border-box",background:"rgba(255,255,255,0.06)",
-                  border:`1px solid ${T.bds}`,borderRadius:9,padding:"6px 8px",color:T.txt,
-                  fontSize:12,outline:"none",fontFamily:"inherit"}}/>
+              <div style={{position:"relative"}}>
+                <input type="date" value={von} onChange={e=>setVon(e.target.value)}
+                  style={{width:"100%",boxSizing:"border-box",background:"rgba(255,255,255,0.06)",
+                    border:`1px solid ${T.bds}`,borderRadius:9,padding:von?"6px 24px 6px 8px":"6px 8px",
+                    color:T.txt,fontSize:12,outline:"none",fontFamily:"inherit"}}/>
+                {von&&(
+                  <button onClick={()=>setVon("")} title="Von zurücksetzen"
+                    style={{position:"absolute",right:4,top:"50%",transform:"translateY(-50%)",
+                      background:"none",border:"none",color:T.txt2,cursor:"pointer",padding:2,
+                      display:"flex",alignItems:"center"}}>
+                    {Li("x",12,T.txt2)}
+                  </button>
+                )}
+              </div>
             </div>
             <div style={{flex:1}}>
               <div style={{color:T.txt2,fontSize:10,marginBottom:2}}>bis</div>
-              <input type="date" value={bis} onChange={e=>setBis(e.target.value)}
-                style={{width:"100%",boxSizing:"border-box",background:"rgba(255,255,255,0.06)",
-                  border:`1px solid ${T.bds}`,borderRadius:9,padding:"6px 8px",color:T.txt,
-                  fontSize:12,outline:"none",fontFamily:"inherit"}}/>
+              <div style={{position:"relative"}}>
+                <input type="date" value={bis} onChange={e=>setBis(e.target.value)}
+                  style={{width:"100%",boxSizing:"border-box",background:"rgba(255,255,255,0.06)",
+                    border:`1px solid ${T.bds}`,borderRadius:9,padding:bis?"6px 24px 6px 8px":"6px 8px",
+                    color:T.txt,fontSize:12,outline:"none",fontFamily:"inherit"}}/>
+                {bis&&(
+                  <button onClick={()=>setBis("")} title="Bis zurücksetzen"
+                    style={{position:"absolute",right:4,top:"50%",transform:"translateY(-50%)",
+                      background:"none",border:"none",color:T.txt2,cursor:"pointer",padding:2,
+                      display:"flex",alignItems:"center"}}>
+                    {Li("x",12,T.txt2)}
+                  </button>
+                )}
+              </div>
             </div>
-            {(von||bis)&&(
-              <button onClick={()=>{setVon("");setBis("");}} title="Zeitraum zurücksetzen"
-                style={{flexShrink:0,padding:"7px 8px",borderRadius:9,border:`1px solid ${T.bd}`,
-                  background:"transparent",color:T.txt2,cursor:"pointer",fontFamily:"inherit",
-                  display:"flex",alignItems:"center"}}>
-                {Li("x",13,T.txt2)}
-              </button>
-            )}
           </div>
         )}
 
