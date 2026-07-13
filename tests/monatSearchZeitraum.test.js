@@ -43,7 +43,7 @@ function renderMonat(overrides) {
 }
 
 function submitSearch(container, term) {
-  const input = container.querySelector('input[placeholder="suchen… (Enter)"]');
+  const input = container.querySelector('input[placeholder^="suchen"]');
   const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
   act(() => {
     setter.call(input, term);

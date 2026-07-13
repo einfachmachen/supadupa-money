@@ -23,27 +23,60 @@ import { saldoAt, saldoIst, saldoMitte, saldoEnde, phaseStillReachable, budgetPl
 // Eigenständige Such-Box mit LOKALEM Eingabe-State. Dadurch löst Tippen NICHT
 // ein Re-Render der (schweren) Monatsansicht aus — erst beim Abschicken (Enter/
 // Lupe) wird die Suche an den Screen übergeben.
-const MonthSearchBox = React.memo(function MonthSearchBox({ committed, onSubmit, onClear }) {
+const MonthSearchBox = React.memo(function MonthSearchBox({ committed, onSubmit, onClear, suggestions }) {
   const [v, setV] = React.useState(committed || "");
+  const [focused, setFocused] = React.useState(false);
   React.useEffect(()=>{ if(!committed) setV(""); }, [committed]);
-  const submit = () => onSubmit(v.trim());
+  const submit = (val=v) => onSubmit(val.trim());
+  // "#" öffnet einen Vorschlag mit bereits vergebenen Tags — sonst muss man
+  // den exakten Tag-Namen blind auswendig eintippen (Tippfehler-Gefahr).
+  const hashIdx = v.lastIndexOf("#");
+  const tagQuery = hashIdx>=0 ? v.slice(hashIdx+1).toLowerCase() : null;
+  const filteredTags = tagQuery===null ? [] : (suggestions||[])
+    .filter(t=>t.toLowerCase().includes(tagQuery))
+    .slice(0,6);
+  const showDropdown = focused && tagQuery!==null && filteredTags.length>0;
+  const pickTag = (t) => {
+    const nv = v.slice(0,hashIdx) + "#" + t;
+    setV(nv);
+    setFocused(false);
+    submit(nv);
+  };
   return (
-    <div style={{flex:1,minWidth:0,display:"flex",alignItems:"center",background:"rgba(255,255,255,0.06)",
-      border:`1px solid ${(v||committed)?T.blue:T.bds}`,borderRadius:11,padding:"8px 10px",gap:6}}>
-      <button onClick={submit} title="Suchen (Enter)"
-        style={{background:"none",border:"none",padding:0,cursor:"pointer",display:"inline-flex",flexShrink:0}}>
-        {Li("search",14,T.txt2)}
-      </button>
-      <input value={v}
-        onChange={e=>{ const nv=e.target.value; setV(nv); if(nv==="") onClear(); }}
-        onKeyDown={e=>{ if(e.key==="Enter") submit(); }}
-        placeholder="suchen… (Enter)"
-        style={{flex:1,minWidth:0,background:"transparent",border:"none",color:T.txt,fontSize:12,outline:"none"}}/>
-      {v.trim() && v.trim()!==committed && (
-        <span onClick={submit} style={{color:T.blue,fontSize:10,fontWeight:700,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>Enter ↵</span>
+    <div style={{flex:1,minWidth:0,position:"relative"}}>
+      <div style={{display:"flex",alignItems:"center",background:"rgba(255,255,255,0.06)",
+        border:`1px solid ${(v||committed)?T.blue:T.bds}`,borderRadius:11,padding:"8px 10px",gap:6}}>
+        <button onClick={()=>submit()} title="Suchen (Enter)"
+          style={{background:"none",border:"none",padding:0,cursor:"pointer",display:"inline-flex",flexShrink:0}}>
+          {Li("search",14,T.txt2)}
+        </button>
+        <input value={v}
+          onChange={e=>{ const nv=e.target.value; setV(nv); if(nv==="") onClear(); }}
+          onKeyDown={e=>{ if(e.key==="Enter") { setFocused(false); submit(); } }}
+          onFocus={()=>setFocused(true)}
+          onBlur={()=>setTimeout(()=>setFocused(false),150)}
+          placeholder="suchen… (Enter) oder #tag"
+          style={{flex:1,minWidth:0,background:"transparent",border:"none",color:T.txt,fontSize:12,outline:"none"}}/>
+        {v.trim() && v.trim()!==committed && (
+          <span onClick={()=>submit()} style={{color:T.blue,fontSize:10,fontWeight:700,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>Enter ↵</span>
+        )}
+        {(v||committed)&&<button onClick={()=>{ setV(""); onClear(); }}
+          style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",fontSize:13,flexShrink:0}}>{Li("x",13)}</button>}
+      </div>
+      {showDropdown&&(
+        <div style={{position:"absolute",top:"100%",left:0,right:0,marginTop:4,zIndex:5,
+          background:T.surf||"#222",border:`1px solid ${T.bd}`,borderRadius:11,
+          boxShadow:"0 8px 20px rgba(0,0,0,0.4)",overflow:"hidden"}}>
+          {filteredTags.map(t=>(
+            <div key={t}
+              onMouseDown={e=>e.preventDefault()}
+              onClick={()=>pickTag(t)}
+              style={{padding:"7px 12px",cursor:"pointer",fontSize:13,fontWeight:600,color:T.txt}}>
+              #{t}
+            </div>
+          ))}
+        </div>
       )}
-      {(v||committed)&&<button onClick={()=>{ setV(""); onClear(); }}
-        style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",fontSize:13,flexShrink:0}}>{Li("x",13)}</button>}
     </div>
   );
 });
@@ -816,7 +849,7 @@ function MonatScreen() {
           {/* minWidth:0 auf Box+Input: Inputs haben in Flex-Layouts eine
               intrinsische Mindestbreite und schoben sonst den Kategorien-
               Schalter rechts aus dem Bild. */}
-          <MonthSearchBox committed={search} onSubmit={onSearchSubmit} onClear={onSearchClear}/>
+          <MonthSearchBox committed={search} onSubmit={onSearchSubmit} onClear={onSearchClear} suggestions={allTags}/>
           <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
             <span style={{color:T.txt2,fontSize:11}}>Kategorien</span>
             <div onClick={()=>setShowAllCats(v=>!v)}
