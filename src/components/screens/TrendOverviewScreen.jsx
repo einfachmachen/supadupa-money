@@ -119,8 +119,11 @@ const MIN_PER_ROW = 3;
 // den Zeilen vergleichbar bleiben. Werte über dem Balken als kurze "xxK"-Form
 // (fmtK). Bei Einnahmen/Ausgaben wird der vorgemerkte (noch nicht gebuchte)
 // Anteil oben im Balken heller dargestellt — der Gesamtbetrag (inkl.
-// Vormerkungen) bleibt aber gleich.
-function YearBarRows({ perYear, get, getPending, color, onSelectYear }) {
+// Vormerkungen) bleibt aber gleich. Beim Endekontostand gibt es keinen
+// Anteil INNERHALB eines Jahres (nur einen einzigen Stichtags-Betrag) —
+// dort markiert stattdessen "isProjected" das GANZE Jahr als Prognose
+// (aktuelles + zukünftige Jahre), analog hell dargestellt.
+function YearBarRows({ perYear, get, getPending, isProjected, color, onSelectYear }) {
   const containerRef = useRef(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -204,10 +207,13 @@ function YearBarRows({ perYear, get, getPending, color, onSelectYear }) {
               const yBot = yOf(Math.min(v, 0));
               const ySplit = yOf(Math.max(vActual, 0));
               const showSplit = vPending > 0.005 && ySplit > yTop + 0.5;
+              const projected = isProjected ? isProjected(r) : false;
               return (
                 <g key={r.year} onClick={() => onSelectYear(r.year)} style={{ cursor: "pointer" }}>
                   <rect x={x} y={0} width={bw} height={rowH} fill="transparent" />
-                  {showSplit ? (
+                  {projected ? (
+                    <rect x={x + bw * 0.22} y={yTop} width={barVisW} height={Math.max(1, yBot - yTop)} rx={2} fill={color} opacity={0.35} />
+                  ) : showSplit ? (
                     <>
                       <rect x={x + bw * 0.22} y={ySplit} width={barVisW} height={Math.max(1, yBot - ySplit)} rx={2} fill={color} opacity={0.85} />
                       <rect x={x + bw * 0.22} y={yTop} width={barVisW} height={Math.max(1, ySplit - yTop)} rx={2} fill={color} opacity={0.35} />
@@ -399,6 +405,7 @@ function TrendOverviewScreen() {
                 {layout === "vertical"
                   ? <YearBarRows perYear={perYear} get={r => r[activeMetric.key]}
                       getPending={activeMetric.split ? (r => r[`${activeMetric.key}Pending`]) : null}
+                      isProjected={activeMetric.key === "saldo" ? (r => r.year >= new Date().getFullYear()) : null}
                       color={activeMetric.color(null, T)} onSelectYear={openYear} />
                   : <YearBarListHorizontal perYear={perYear} get={r => r[activeMetric.key]}
                       getPending={activeMetric.split ? (r => r[`${activeMetric.key}Pending`]) : null}
@@ -407,6 +414,7 @@ function TrendOverviewScreen() {
               <div style={{ color: T.txt2, fontSize: 11, marginTop: 10, textAlign: "center" }}>
                 {layout === "vertical" ? "Balken" : "Zeile"} antippen → Money Mood für dieses Jahr
                 {activeMetric.split ? " · hell = vorgemerkt" : ""}
+                {activeMetric.key === "saldo" && layout === "vertical" ? " · hell = Prognose (laufendes/zukünftiges Jahr)" : ""}
               </div>
             </>
           )}
