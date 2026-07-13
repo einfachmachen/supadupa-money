@@ -1935,7 +1935,7 @@ function DashboardScreenV2() {
                         {/* Zeile 2: Datum + Status/Badges links, Betrag rechts (volle Breite) */}
                         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
                           <div style={{color:T.txt2,fontSize:12,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",minWidth:0}}>
-                            <span style={{color:"rgba(220,90,20,0.9)"}}>{tx.date}</span>
+                            <span>{tx.date}</span>
                             {tx.pending&&<span style={{
                               background:tx._seriesTyp==="finanzierung"?"rgba(245,166,35,0.2)":tx._seriesId?"rgba(170,204,0,0.15)":"rgba(74,159,212,0.15)",
                               color:tx._seriesTyp==="finanzierung"?T.gold:tx._seriesId?T.pos:T.blue,
