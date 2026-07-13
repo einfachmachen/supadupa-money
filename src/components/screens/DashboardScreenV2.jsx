@@ -1540,7 +1540,7 @@ function DashboardScreenV2() {
                   {Li(dashDrill.cat.icon,18,dashDrill.cat.color||T.txt2)}
                 </div>}
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{color:dashDrill.cat ? T.blue : dashDrill.isIncome ? T.pos : "#EA4025",
+                  <div style={{color:dashDrill.cat ? T.blue : dashDrill.isIncome ? T.pos : T.neg,
                     fontSize:19,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{dashDrill.label||dashDrill.cat?.name}</div>
                   <div style={{color:T.txt2,fontSize:13,display:"flex",gap:8,alignItems:"center"}}>
                     {dashDrill.cat ? (()=>{
