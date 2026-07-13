@@ -48,6 +48,52 @@ const MonthSearchBox = React.memo(function MonthSearchBox({ committed, onSubmit,
   );
 });
 
+// Kategorie-/Badge-/Tag-Zeile einer Buchung — einzeilig gekürzt. Das Ausklapp-
+// Symbol erscheint NUR, wenn der Inhalt tatsächlich überläuft (per DOM-Messung
+// scrollWidth vs. clientWidth ermittelt, nicht per Heuristik — Icons/Badges
+// sind unterschiedlich breit, eine Zeichen-Schätzung wäre unzuverlässig).
+// Eigener State pro Zeile: bleibt beim Aufklappen "wissend", dass sie zuvor
+// übergelaufen ist (sonst würde der Pfeil beim Aufklappen verschwinden, weil
+// im aufgeklappten/umgebrochenen Zustand naturgemäß nichts mehr überläuft).
+const TxInfoLine = React.memo(function TxInfoLine({ color, children }) {
+  const innerRef = React.useRef(null);
+  const [expanded, setExpanded] = React.useState(false);
+  const [overflowing, setOverflowing] = React.useState(false);
+  const measure = React.useCallback(() => {
+    const el = innerRef.current;
+    if (!el) return;
+    setOverflowing(el.scrollWidth > el.clientWidth + 1);
+  }, []);
+  React.useLayoutEffect(() => {
+    if (expanded) return; // im umgebrochenen Zustand nie erneut messen
+    measure();
+  });
+  // Bei Rotation/Fenstergröße neu messen — schmalere Breite kann eine vorher
+  // passende Zeile zum Überlaufen bringen (oder umgekehrt).
+  React.useEffect(() => {
+    if (expanded) return;
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [expanded, measure]);
+  return (
+    <div data-txinfo-line onClick={overflowing ? (e=>{e.stopPropagation();setExpanded(v=>!v);}) : undefined}
+      style={{color,fontSize:10,marginTop:1,fontWeight:600,
+        display:"flex",alignItems:"center",gap:4,cursor:overflowing?"pointer":"default"}}>
+      <div ref={innerRef} style={{display:"flex",alignItems:"center",gap:4,minWidth:0,flex:1,
+        ...(expanded
+          ? {flexWrap:"wrap",whiteSpace:"normal"}
+          : {overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"})}}>
+        {children}
+      </div>
+      {overflowing&&(
+        <span style={{flexShrink:0,display:"inline-flex"}}>
+          {Li(expanded?"chevron-up":"chevron-down",9,T.txt2)}
+        </span>
+      )}
+    </div>
+  );
+});
+
 function MonatScreen() {
   const { cats,setCats,groups,setGroups,txs,setTxs,accounts,setAccounts,
     yearData,setYearData,year,setYear,month,setMonth,selAcc,isLand,
@@ -101,11 +147,8 @@ function MonatScreen() {
       setSelected(new Set());
       setBulkTags([]);
     };
-    // Infozeile (Kategorie/Badges/Tags) je Buchung einzeln aufklappbar — sonst
-    // schneidet die einzeilige Kürzung (whiteSpace:nowrap) bei vielen Badges
-    // z.B. Tags am Ende unsichtbar ab.
-    const [expandedInfo, setExpandedInfo] = useState(new Set());
-    const toggleInfoExpand = (id) => setExpandedInfo(p=>{const n=new Set(p);n.has(id)?n.delete(id):n.add(id);return n;});
+    // Infozeile (Kategorie/Badges/Tags) je Buchung: aufklappbar, aber nur wenn
+    // sie tatsächlich überläuft — Logik + State dafür lebt in <TxInfoLine>.
     const [budgetEditSub, setBudgetEditSub] = useState(null);
     const [budgetEditKey, setBudgetEditKey] = useState(0);
     const openBudgetEdit = (sub) => { setBudgetEditSub(sub); setBudgetEditKey(k=>k+1); };
@@ -1118,31 +1161,16 @@ function MonatScreen() {
                             <div style={{color:T.txt,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                               {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex"}}>{Li("sticky-note",9,T.gold)}</span>}
                             </div>
-                            <div onClick={e=>{e.stopPropagation();toggleInfoExpand(tx.id);}}
-                              style={{color:cat?.color||T.txt2,fontSize:10,marginTop:1,fontWeight:600,
-                                display:"flex",alignItems:"center",gap:4,cursor:"pointer"}}>
-                              {/* Innerer Container trägt die Kürzung — das Ausklapp-
-                                  Symbol steht als Geschwister DANACH, außerhalb des
-                                  überlaufenden Bereichs, und bleibt so immer sichtbar
-                                  (vorher lag es selbst im gekürzten Bereich und
-                                  verschwand dadurch im eingeklappten Zustand). */}
-                              <div style={{display:"flex",alignItems:"center",gap:4,minWidth:0,flex:1,
-                                ...(expandedInfo.has(tx.id)
-                                  ? {flexWrap:"wrap",whiteSpace:"normal"}
-                                  : {overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"})}}>
-                                {tx.pending?"Vorgemerkt · ":""}{isS?involvedCats.map(c=>c.name).join(" · "):(()=>{const ss=getSub((tx.splits||[])[0]?.catId,(tx.splits||[])[0]?.subId);return ss?.name||cat?.name||"";})()}
-                                {tx.accountId&&tx.accountId!=="acc-giro"&&(()=>{const a=getAcc(tx.accountId);return(<span style={{background:a.color+"22",color:a.color,borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>{Li(a.icon,9,a.color)} {a.name}</span>)})()}
-                                {(tx.tags||[]).map(t=>(
-                                  <span key={t} style={{background:`${T.blue}1a`,color:T.blue,
-                                    borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>
-                                    #{t}
-                                  </span>
-                                ))}
-                              </div>
-                              <span style={{flexShrink:0,display:"inline-flex"}}>
-                                {Li(expandedInfo.has(tx.id)?"chevron-up":"chevron-down",9,T.txt2)}
-                              </span>
-                            </div>
+                            <TxInfoLine color={cat?.color||T.txt2}>
+                              {tx.pending?"Vorgemerkt · ":""}{isS?involvedCats.map(c=>c.name).join(" · "):(()=>{const ss=getSub((tx.splits||[])[0]?.catId,(tx.splits||[])[0]?.subId);return ss?.name||cat?.name||"";})()}
+                              {tx.accountId&&tx.accountId!=="acc-giro"&&(()=>{const a=getAcc(tx.accountId);return(<span style={{background:a.color+"22",color:a.color,borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>{Li(a.icon,9,a.color)} {a.name}</span>)})()}
+                              {(tx.tags||[]).map(t=>(
+                                <span key={t} style={{background:`${T.blue}1a`,color:T.blue,
+                                  borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>
+                                  #{t}
+                                </span>
+                              ))}
+                            </TxInfoLine>
                           </div>
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
                             <div style={{...amtStyle("pos",pal.val),...(tx.pending?{color:T.cell_inc}:{}),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmt(tx.totalAmount)}</div>
@@ -1274,47 +1302,32 @@ function MonatScreen() {
                             <div style={{color:T.txt,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                               {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex"}}>{Li("sticky-note",9,T.gold)}</span>}
                             </div>
-                            <div onClick={e=>{e.stopPropagation();toggleInfoExpand(tx.id);}}
-                              style={{color:cat?.color||T.txt2,fontSize:10,marginTop:1,fontWeight:600,
-                                display:"flex",alignItems:"center",gap:4,cursor:"pointer"}}>
-                              {/* Innerer Container trägt die Kürzung — das Ausklapp-
-                                  Symbol steht als Geschwister DANACH, außerhalb des
-                                  überlaufenden Bereichs, und bleibt so immer sichtbar
-                                  (vorher lag es selbst im gekürzten Bereich und
-                                  verschwand dadurch im eingeklappten Zustand). */}
-                              <div style={{display:"flex",alignItems:"center",gap:4,minWidth:0,flex:1,
-                                ...(expandedInfo.has(tx.id)
-                                  ? {flexWrap:"wrap",whiteSpace:"normal"}
-                                  : {overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"})}}>
-                                {tx.pending?"Vorgemerkt · ":""}{isS?involvedCats.map(c=>c.name).join(" · "):(()=>{const ss=getSub((tx.splits||[])[0]?.catId,(tx.splits||[])[0]?.subId);return ss?.name || cat?.name || "";})()}
-                                {tx.valueDate&&(
-                                <span style={{background:"rgba(200,210,220,0.1)",color:T.txt2,
-                                  borderRadius:5,padding:"1px 5px",fontSize:9,flexShrink:0}}>
-                                  {Li("calendar",8,T.txt2)} {(()=>{const[,m,d]=tx.valueDate.split("-");return `${d}.${m}.`;})()}
-                                </span>
-                              )}
-                              {tx.accountId&&tx.accountId!=="acc-giro"&&(()=>{const a=getAcc(tx.accountId);return(
-                                  <span style={{background:a.color+"22",color:a.color,borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>{Li(a.icon,9,a.color)} {a.name}</span>
-                                )})()}
-                              {/* Flexibler Topf: belastet nicht das Budget der eigenen Kategorie */}
-                              {tx._potSubId&&(
-                                <span style={{background:"rgba(245,166,35,0.15)",color:T.gold,
-                                  borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0,
-                                  display:"inline-flex",alignItems:"center",gap:3}}>
-                                  {Li("corner-up-right",8,T.gold)} aus Unvorh.
-                                </span>
-                              )}
-                              {(tx.tags||[]).map(t=>(
-                                <span key={t} style={{background:`${T.blue}1a`,color:T.blue,
-                                  borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>
-                                  #{t}
-                                </span>
-                              ))}
-                              </div>
-                              <span style={{flexShrink:0,display:"inline-flex"}}>
-                                {Li(expandedInfo.has(tx.id)?"chevron-up":"chevron-down",9,T.txt2)}
+                            <TxInfoLine color={cat?.color||T.txt2}>
+                              {tx.pending?"Vorgemerkt · ":""}{isS?involvedCats.map(c=>c.name).join(" · "):(()=>{const ss=getSub((tx.splits||[])[0]?.catId,(tx.splits||[])[0]?.subId);return ss?.name || cat?.name || "";})()}
+                              {tx.valueDate&&(
+                              <span style={{background:"rgba(200,210,220,0.1)",color:T.txt2,
+                                borderRadius:5,padding:"1px 5px",fontSize:9,flexShrink:0}}>
+                                {Li("calendar",8,T.txt2)} {(()=>{const[,m,d]=tx.valueDate.split("-");return `${d}.${m}.`;})()}
                               </span>
-                            </div>
+                            )}
+                            {tx.accountId&&tx.accountId!=="acc-giro"&&(()=>{const a=getAcc(tx.accountId);return(
+                                <span style={{background:a.color+"22",color:a.color,borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>{Li(a.icon,9,a.color)} {a.name}</span>
+                              )})()}
+                            {/* Flexibler Topf: belastet nicht das Budget der eigenen Kategorie */}
+                            {tx._potSubId&&(
+                              <span style={{background:"rgba(245,166,35,0.15)",color:T.gold,
+                                borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0,
+                                display:"inline-flex",alignItems:"center",gap:3}}>
+                                {Li("corner-up-right",8,T.gold)} aus Unvorh.
+                              </span>
+                            )}
+                            {(tx.tags||[]).map(t=>(
+                              <span key={t} style={{background:`${T.blue}1a`,color:T.blue,
+                                borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>
+                                #{t}
+                              </span>
+                            ))}
+                            </TxInfoLine>
                           </div>
                           {/* Amount */}
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
