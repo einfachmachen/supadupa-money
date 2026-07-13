@@ -1,6 +1,6 @@
 // Auto-generated module (siehe app-src.jsx)
 
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { Lbl } from "../atoms/Lbl.jsx";
 import { SupaField } from "../atoms/SupaField.jsx";
 import { CustomThemeEditor } from "./CustomThemeEditor.jsx";
@@ -11,6 +11,7 @@ import { INP } from "../../theme/palette.js";
 import { Li } from "../../utils/icons.jsx";
 import { makeYearData } from "../../utils/yearData.js";
 import { kvStore } from "../../utils/kvStore.js";
+import { cloudFingerprint } from "../../utils/cloudFingerprint.js";
 import WORKER_CODE from "../../../worker-data/data-store-worker.js?raw";
 
 // Einheitlicher Section-Rahmen: Trennlinie oben + Icon-Label-Header, damit
@@ -49,6 +50,15 @@ function SettingsInline() {
   const [showDebugExpand, setShowDebugExpand] = useState(false);
   const [workerCodeCopied, setWorkerCodeCopied] = useState(false);
   const [showIconSwipe, setShowIconSwipe] = useState(false);
+  // Kurz-Fingerabdruck aus Worker-URL+Secret — zum Vergleichen zwischen
+  // Geräten, ob sie wirklich auf denselben Cloud-Store zeigen (siehe
+  // cloudFingerprint.js). Rein clientseitig, kein Netzwerk-Request.
+  const [cfFingerprint, setCfFingerprint] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    cloudFingerprint(cfUrl, cfSecret).then(fp => { if (!cancelled) setCfFingerprint(fp); });
+    return () => { cancelled = true; };
+  }, [cfUrl, cfSecret]);
 
   return (
     <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 14px 24px"}}>
@@ -139,6 +149,17 @@ function SettingsInline() {
             display:"flex",alignItems:"center",gap:5}}>
           {Li("key",11,T.txt2)} Secret generieren &amp; kopieren
         </button>
+        {cfActive && cfFingerprint && (
+          <div style={{marginBottom:10,padding:"8px 10px",borderRadius:8,
+            border:`1px solid ${T.cf}44`,background:`${T.cf}0d`,
+            display:"flex",alignItems:"center",gap:8}}>
+            {Li("hash",13,T.cf)}
+            <div style={{flex:1}}>
+              <div style={{fontSize:10,color:T.txt2,fontWeight:600}}>Sync-Fingerabdruck (auf allen Geräten vergleichen)</div>
+              <div style={{fontSize:15,color:T.txt,fontWeight:800,letterSpacing:1.5,fontFamily:"monospace"}}>{cfFingerprint}</div>
+            </div>
+          </div>
+        )}
         <Lbl>Verschlüsselung — Passphrase (optional, Zero-Knowledge)</Lbl>
         <SupaField value={syncPass||""} onChange={v=>setSyncPass?.(v)}
           placeholder="leer = Daten unverschlüsselt in der Cloud" locked={false} type="password"/>
