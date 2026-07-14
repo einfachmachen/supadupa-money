@@ -1256,8 +1256,10 @@ function MonatScreen() {
                     <div key={tx.id} data-tx={tx.id} style={{borderRadius:isActiveTx?12:0,marginBottom:0,overflow:"hidden",
                       background:isActiveTx?T.surf2:(fulfilled?T.pos+"11":"transparent"),
                       boxShadow:isActiveTx?`0 6px 16px -6px rgba(0,0,0,0.28)`:"none",
-                      borderTop:`1px solid ${T.bd}`,position:"relative",
-                      transition:_reduceMotion?"none":"background-color .35s ease, box-shadow .35s ease, border-radius .35s ease"}}>
+                      borderTop:`1px solid ${T.bd}`,
+                      borderLeft:isActiveTx?`3px solid ${T.pos}`:"3px solid transparent",
+                      position:"relative",
+                      transition:_reduceMotion?"none":"background-color .35s ease, box-shadow .35s ease, border-radius .35s ease, border-left-color .35s ease"}}>
                       <div style={{position:"relative",zIndex:1}}>
                         <div style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px"}}>
                           <div style={{position:"relative",width:32,height:32,flexShrink:0,marginRight:8}}>
@@ -1434,8 +1436,9 @@ function MonatScreen() {
                       background: isActiveTx?T.surf2:(fulfilled ? T.pos+"11" : "transparent"),
                       boxShadow:isActiveTx?`0 6px 16px -6px rgba(0,0,0,0.28)`:"none",
                       borderTop:`1px solid ${T.bd}`,
+                      borderLeft:isActiveTx?`3px solid ${T.pos}`:"3px solid transparent",
                       position:"relative",
-                      transition:_reduceMotion?"none":"background-color .35s ease, box-shadow .35s ease, border-radius .35s ease",
+                      transition:_reduceMotion?"none":"background-color .35s ease, box-shadow .35s ease, border-radius .35s ease, border-left-color .35s ease",
                     }}>
 
 
