@@ -9,7 +9,7 @@ import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
 import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
 import { WerkzeugeSection } from "../organisms/WerkzeugeSection.jsx";
 import { AppCtx } from "../../state/AppContext.js";
-import { theme as T } from "../../theme/activeTheme.js";
+import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { PAL } from "../../theme/palette.js";
 import { amtStyle, readableOn } from "../../theme/amtPill.js";
 import { MONTHS_F } from "../../utils/constants.js";
@@ -296,27 +296,32 @@ function MonatScreen() {
     // Gleiche Gradient-Struktur für aktiv/inaktiv (2 Stops, 90deg) — nur so
     // kann der Browser beim Fokus-Wechsel sanft zwischen den Farben überblenden.
     const _rowGradient = (c1, c2) => `linear-gradient(90deg, ${c1} 0%, ${c2} 60%)`;
+    // Im Dark-Theme wirkte die grüne Verlaufs-Schattierung zu aufdringlich und
+    // überdeckte den Text. Stattdessen: helle Karte (wie im echten Hellthema),
+    // dadurch maximaler Kontrast zum dunklen Hintergrund ohne die Farbwäsche.
+    // Texte/Beträge auf der Karte werden per CSS-Regel (themes.css,
+    // [data-tx-focus-light]) auf die Hellthema-Töne umgeschaltet — Inline-
+    // Styles können keine Nachfahren-Farben übersteuern, CSS-Selektoren schon.
+    const _isDarkTheme = !isLightTheme();
     const setRowFocus = (container, id, active) => {
       if(!id) return;
       const row = container.querySelector(`[data-tx="${id}"]`);
       if(!row) return;
       const fulfilled = row.getAttribute("data-fulfilled") === "1";
       row.style.borderRadius = active ? "16px" : "0px";
-      // Echter Farb-/Kontrastwechsel (Vorbild: die satte Kartenfarbe der
-      // Bahn-App) statt nur leichtem Aufhellen — kräftiger Verlauf von der
-      // Akzentfarbe zur erhöhten Fläche. IMMER als Gradient mit gleicher
-      // Struktur (2 Stops, 90deg) gesetzt, auch inaktiv — nur so kann der
-      // Browser die Farbstopps sanft ineinander überblenden.
       row.style.background = active
-        ? _rowGradient(T.pos+"70", T.surf2)
+        ? (_isDarkTheme ? _rowGradient("#FFFFFF", "#F2F4EF") : _rowGradient(T.pos+"70", T.surf2))
         : _rowGradient(fulfilled?T.pos+"11":"transparent", fulfilled?T.pos+"11":"transparent");
+      row.setAttribute("data-tx-focus-light", (active && _isDarkTheme) ? "1" : "0");
       // Akzent als box-shadow (Glow + Innenstreifen) statt border-left: Die
       // App hat standardmäßig "Keine Rahmen" aktiv (mbt_noborders, siehe
       // App.jsx), was per CSS-Regel ".no-borders * { border-color:
       // transparent !important }" JEDE Rahmenfarbe überschreibt — auch
       // inline gesetzte. box-shadow ist davon nicht betroffen.
       row.style.boxShadow = active
-        ? `inset 4px 0 0 0 ${T.pos}, 0 10px 32px -6px ${T.pos}88, 0 2px 10px rgba(0,0,0,0.35)`
+        ? (_isDarkTheme
+            ? `inset 4px 0 0 0 ${T.pos}, 0 12px 30px -4px rgba(0,0,0,0.55)`
+            : `inset 4px 0 0 0 ${T.pos}, 0 10px 32px -6px ${T.pos}88, 0 2px 10px rgba(0,0,0,0.35)`)
         : "none";
       // Echtes Wachstum statt nur größerer Schrift: Zeile bekommt spürbar mehr
       // Luft (Padding) + leichte Skalierung — das "Pop"-Gefühl aus dem Video.
@@ -1342,7 +1347,7 @@ function MonatScreen() {
                             </ExpandableLine>
                           </div>
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
-                            <div data-role="tx-amt" style={{...amtStyle("pos",pal.val),...(tx.pending?{color:T.cell_inc}:{}),
+                            <div data-role="tx-amt" data-amt-tone="pos" style={{...amtStyle("pos",pal.val),...(tx.pending?{color:T.cell_inc}:{}),
                               fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
                               transition:_reduceMotion?"none":"font-size .4s cubic-bezier(.34,1.56,.64,1)"}}>{fmt(tx.totalAmount)}</div>
                             {isS&&(
@@ -1560,7 +1565,7 @@ function MonatScreen() {
                           </div>
                           {/* Amount */}
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
-                            <div data-role="tx-amt" style={{...amtStyle(type==="income"?"pos":tx.pending?"gold":"neg",pal.val),...(type==="income"&&tx.pending?{color:T.cell_inc}:{}),
+                            <div data-role="tx-amt" data-amt-tone={type==="income"?"pos":tx.pending?"gold":"neg"} style={{...amtStyle(type==="income"?"pos":tx.pending?"gold":"neg",pal.val),...(type==="income"&&tx.pending?{color:T.cell_inc}:{}),
                               fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
                               transition:_reduceMotion?"none":"font-size .4s cubic-bezier(.34,1.56,.64,1)"}}>
                               {fmt(tx.totalAmount)}
