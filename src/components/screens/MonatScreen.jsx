@@ -301,26 +301,38 @@ function MonatScreen() {
       const row = container.querySelector(`[data-tx="${id}"]`);
       if(!row) return;
       const fulfilled = row.getAttribute("data-fulfilled") === "1";
-      row.style.borderRadius = active ? "12px" : "0px";
-      // Echter Farbwechsel statt nur Grau-Aufhellen (Vorbild: der Farbverlauf
-      // der Bahn-App-Karte) — ein Verlauf von der Akzentfarbe zur normalen
-      // erhöhten Fläche, statt nur surf → surf2. IMMER als Gradient mit
-      // gleicher Struktur (2 Stops, 90deg) gesetzt, auch im inaktiven Zustand
-      // — nur so kann der Browser die Farbstopps sanft ineinander überblenden
-      // (unterschiedliche Gradient-Typen/-Stopps lassen sich nicht animieren).
+      row.style.borderRadius = active ? "16px" : "0px";
+      // Echter Farb-/Kontrastwechsel (Vorbild: die satte Kartenfarbe der
+      // Bahn-App) statt nur leichtem Aufhellen — kräftiger Verlauf von der
+      // Akzentfarbe zur erhöhten Fläche. IMMER als Gradient mit gleicher
+      // Struktur (2 Stops, 90deg) gesetzt, auch inaktiv — nur so kann der
+      // Browser die Farbstopps sanft ineinander überblenden.
       row.style.background = active
-        ? _rowGradient(T.pos+"2e", T.surf2)
+        ? _rowGradient(T.pos+"70", T.surf2)
         : _rowGradient(fulfilled?T.pos+"11":"transparent", fulfilled?T.pos+"11":"transparent");
-      // Akzent als box-shadow (inset-Streifen) statt border-left: Die App hat
-      // standardmäßig "Keine Rahmen" aktiv (mbt_noborders, siehe App.jsx), was
-      // per CSS-Regel ".no-borders * { border-color: transparent !important }"
-      // JEDE Rahmenfarbe überschreibt — auch inline gesetzte. box-shadow ist
-      // davon nicht betroffen und bleibt so auch mit dieser Einstellung sichtbar.
+      // Akzent als box-shadow (Glow + Innenstreifen) statt border-left: Die
+      // App hat standardmäßig "Keine Rahmen" aktiv (mbt_noborders, siehe
+      // App.jsx), was per CSS-Regel ".no-borders * { border-color:
+      // transparent !important }" JEDE Rahmenfarbe überschreibt — auch
+      // inline gesetzte. box-shadow ist davon nicht betroffen.
       row.style.boxShadow = active
-        ? `inset 3px 0 0 0 ${T.pos}, 0 6px 16px -6px rgba(0,0,0,0.28)`
+        ? `inset 4px 0 0 0 ${T.pos}, 0 10px 32px -6px ${T.pos}88, 0 2px 10px rgba(0,0,0,0.35)`
         : "none";
+      // Echtes Wachstum statt nur größerer Schrift: Zeile bekommt spürbar mehr
+      // Luft (Padding) + leichte Skalierung — das "Pop"-Gefühl aus dem Video.
+      row.style.transform = active ? "scale(1.035)" : "scale(1)";
+      row.style.zIndex = active ? "5" : "1";
+      const mainRow = row.querySelector('[data-role="tx-mainrow"]');
+      if(mainRow) mainRow.style.padding = active ? "16px 10px" : "3px 8px";
+      const icon = row.querySelector('[data-role="tx-icon"]');
+      if(icon) {
+        icon.style.width = active ? "42px" : "32px";
+        icon.style.height = active ? "42px" : "32px";
+      }
+      const desc = row.querySelector('[data-role="tx-desc"]');
+      if(desc) desc.style.fontSize = active ? "16px" : "13px";
       const amt = row.querySelector('[data-role="tx-amt"]');
-      if(amt) amt.style.fontSize = active ? "19px" : "16px";
+      if(amt) amt.style.fontSize = active ? "23px" : "16px";
       const detailGrid = row.querySelector('[data-role="tx-detail-grid"]');
       if(detailGrid) detailGrid.style.gridTemplateRows = active ? "1fr" : "0fr";
       const detailInner = row.querySelector('[data-role="tx-detail-inner"]');
@@ -360,9 +372,10 @@ function MonatScreen() {
         // funktioniert. Gleiches Scan-Prinzip wie der Monats-Scroll-Spy unten.
         // Eigener Abstand (FOCUS_GAP) zur Hero-Unterkante: direkt an der Kante
         // (wie beim Monats-Spy) verschwand die hervorgehobene Zeile sofort
-        // wieder unter dem Hero, kaum sichtbar. Mit Abstand bleibt sie erst
-        // richtig sichtbar, bevor sie weiterscrollt.
-        const FOCUS_GAP = 28;
+        // wieder unter dem Hero, kaum sichtbar. Mit deutlichem Abstand sitzt
+        // sie im oberen Drittel der sichtbaren Liste und bleibt lange genug
+        // sichtbar, um den Effekt überhaupt wahrzunehmen.
+        const FOCUS_GAP = 120;
         const focusRefTop = refTop + FOCUS_GAP;
         let curTx = null;
         for(const c of el.querySelectorAll("[data-tx]")){
@@ -1296,23 +1309,25 @@ function MonatScreen() {
                   const fulfilled  = effE!==""&&vD!==""&&normE===normD;
                   const vormInfo = _linkedVormInfo(tx);
                   return (
-                    <div key={tx.id} data-tx={tx.id} data-fulfilled={fulfilled?"1":"0"} style={{borderRadius:0,marginBottom:0,overflow:"hidden",
+                    <div key={tx.id} data-tx={tx.id} data-fulfilled={fulfilled?"1":"0"} style={{borderRadius:0,marginBottom:0,overflow:"visible",
                       background:_rowGradient(fulfilled?T.pos+"11":"transparent", fulfilled?T.pos+"11":"transparent"),
                       boxShadow:"none",
                       borderTop:`1px solid ${T.bd}`,
-                      position:"relative",
-                      transition:_reduceMotion?"none":"background .45s ease, box-shadow .45s ease, border-radius .45s ease"}}>
+                      position:"relative", transformOrigin:"center",
+                      transition:_reduceMotion?"none":"background .4s ease, box-shadow .4s cubic-bezier(.34,1.56,.64,1), border-radius .4s ease, transform .4s cubic-bezier(.34,1.56,.64,1)"}}>
                       <div style={{position:"relative",zIndex:1}}>
-                        <div style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px"}}>
+                        <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px",
+                          transition:_reduceMotion?"none":"padding .4s cubic-bezier(.34,1.56,.64,1)"}}>
                           <div style={{position:"relative",width:32,height:32,flexShrink:0,marginRight:8}}>
-                            <div onClick={e=>{e.stopPropagation();setTxIconPickM(txIconPickM===tx.id?null:tx.id);}}
-                              style={{width:32,height:32,borderRadius:9,cursor:"pointer",background:displayColor+"22",border:`1px solid ${txIconPickM===tx.id?displayColor+"66":T.bd}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                            <div data-role="tx-icon" onClick={e=>{e.stopPropagation();setTxIconPickM(txIconPickM===tx.id?null:tx.id);}}
+                              style={{width:32,height:32,borderRadius:9,cursor:"pointer",background:displayColor+"22",border:`1px solid ${txIconPickM===tx.id?displayColor+"66":T.bd}`,display:"flex",alignItems:"center",justifyContent:"center",
+                              transition:_reduceMotion?"none":"width .4s cubic-bezier(.34,1.56,.64,1), height .4s cubic-bezier(.34,1.56,.64,1)"}}>
                               {involvedCats.length>0?Li(displayIcon,16,displayColor):Li("help-circle",16,T.txt2)}
                             </div>
                           </div>
                           {txIconPickM===tx.id&&(<IconPickerDialog selectedIcon={involvedCats[0]?.icon||"help-circle"} selectedColor={involvedCats[0]?.color||T.txt2} onSelect={ic=>{if(involvedCats[0])setCats(p=>p.map(c=>c.id===involvedCats[0].id?{...c,icon:ic}:c));setTxIconPickM(null);}} onClose={()=>setTxIconPickM(null)}/>)}
                           <div onClick={()=>openEdit(tx)} style={{flex:1,minWidth:0,marginRight:6,cursor:"pointer"}}>
-                            <ExpandableLine style={{color:T.txt,fontSize:13,fontWeight:700}}>
+                            <ExpandableLine data-role="tx-desc" style={{color:T.txt,fontSize:13,fontWeight:700,transition:_reduceMotion?"none":"font-size .4s cubic-bezier(.34,1.56,.64,1)"}}>
                               {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.gold)}</span>}
                             </ExpandableLine>
                             <ExpandableLine style={{color:cat?.color||T.txt2,fontSize:10,marginTop:1,fontWeight:600}}>
@@ -1329,7 +1344,7 @@ function MonatScreen() {
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
                             <div data-role="tx-amt" style={{...amtStyle("pos",pal.val),...(tx.pending?{color:T.cell_inc}:{}),
                               fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
-                              transition:_reduceMotion?"none":"font-size .3s cubic-bezier(.2,.8,.2,1)"}}>{fmt(tx.totalAmount)}</div>
+                              transition:_reduceMotion?"none":"font-size .4s cubic-bezier(.34,1.56,.64,1)"}}>{fmt(tx.totalAmount)}</div>
                             {isS&&(
                               <div style={{marginTop:2}}>
                                 {(tx.splits||[]).filter(sp=>sp.catId).map((sp,si)=>{
@@ -1352,9 +1367,9 @@ function MonatScreen() {
                             NICHT über React-State/Re-Render gesteuert (siehe setRowFocus
                             weiter oben), sondern per direktem DOM-Zugriff aktiviert. */}
                         <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr",
-                          transition:_reduceMotion?"none":"grid-template-rows .4s cubic-bezier(.2,.8,.2,1)"}}>
+                          transition:_reduceMotion?"none":"grid-template-rows .4s cubic-bezier(.34,1.56,.64,1)"}}>
                           <div data-role="tx-detail-inner" style={{overflow:"hidden",opacity:0,
-                            transition:_reduceMotion?"none":"opacity .3s ease .03s"}}>
+                            transition:_reduceMotion?"none":"opacity .35s ease .05s"}}>
                             <div style={{padding:"2px 8px 11px 40px",display:"flex",flexDirection:"column",gap:6}}>
                               {tx.note&&<div style={{fontSize:11.5,color:T.txt2,lineHeight:1.5}}>{tx.note}</div>}
                               {isS&&(
@@ -1475,25 +1490,27 @@ function MonatScreen() {
 
                   return (
                     <div key={tx.id} data-tx={tx.id} data-fulfilled={fulfilled?"1":"0"} style={{
-                      borderRadius:0, marginBottom:0, overflow:"hidden",
+                      borderRadius:0, marginBottom:0, overflow:"visible",
                       background: _rowGradient(fulfilled?T.pos+"11":"transparent", fulfilled?T.pos+"11":"transparent"),
                       boxShadow:"none",
                       borderTop:`1px solid ${T.bd}`,
-                      position:"relative",
-                      transition:_reduceMotion?"none":"background .45s ease, box-shadow .45s ease, border-radius .45s ease",
+                      position:"relative", transformOrigin:"center",
+                      transition:_reduceMotion?"none":"background .4s ease, box-shadow .4s cubic-bezier(.34,1.56,.64,1), border-radius .4s ease, transform .4s cubic-bezier(.34,1.56,.64,1)",
                     }}>
 
 
                       <div style={{position:"relative",zIndex:1}}>
                         {/* Main row */}
-                        <div style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px"}}>
+                        <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px",
+                          transition:_reduceMotion?"none":"padding .4s cubic-bezier(.34,1.56,.64,1)"}}>
                           {/* Icon — immer Icon-Picker */}
                           <div style={{position:"relative",width:32,height:32,flexShrink:0,marginRight:8}}>
-                            <div onClick={e=>{e.stopPropagation();setTxIconPickM(txIconPickM===tx.id?null:tx.id);}}
+                            <div data-role="tx-icon" onClick={e=>{e.stopPropagation();setTxIconPickM(txIconPickM===tx.id?null:tx.id);}}
                               style={{width:32,height:32,borderRadius:9,cursor:"pointer",
                                 background:displayColor+"22",
                                 border:`1px solid ${txIconPickM===tx.id?displayColor+"66":T.bd}`,
-                                display:"flex",alignItems:"center",justifyContent:"center"}}>
+                                display:"flex",alignItems:"center",justifyContent:"center",
+                                transition:_reduceMotion?"none":"width .4s cubic-bezier(.34,1.56,.64,1), height .4s cubic-bezier(.34,1.56,.64,1)"}}>
                               {involvedCats.length>0
                                 ? Li(displayIcon,16,displayColor)
                                 : tx.pending ? (tx._seriesTyp==="finanzierung"?Li("credit-card",16,T.gold):tx._seriesId?Li("repeat",16,T.pos):Li("calendar",16,T.gold)) : Li("help-circle",16,T.txt2)}
@@ -1511,7 +1528,7 @@ function MonatScreen() {
                           )}
                           {/* Text — Klick öffnet Edit */}
                           <div onClick={()=>openEdit(tx)} style={{flex:1,minWidth:0,marginRight:6,cursor:"pointer"}}>
-                            <ExpandableLine style={{color:T.txt,fontSize:13,fontWeight:700}}>
+                            <ExpandableLine data-role="tx-desc" style={{color:T.txt,fontSize:13,fontWeight:700,transition:_reduceMotion?"none":"font-size .4s cubic-bezier(.34,1.56,.64,1)"}}>
                               {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.gold)}</span>}
                             </ExpandableLine>
                             <ExpandableLine style={{color:cat?.color||T.txt2,fontSize:10,marginTop:1,fontWeight:600}}>
@@ -1545,7 +1562,7 @@ function MonatScreen() {
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
                             <div data-role="tx-amt" style={{...amtStyle(type==="income"?"pos":tx.pending?"gold":"neg",pal.val),...(type==="income"&&tx.pending?{color:T.cell_inc}:{}),
                               fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
-                              transition:_reduceMotion?"none":"font-size .3s cubic-bezier(.2,.8,.2,1)"}}>
+                              transition:_reduceMotion?"none":"font-size .4s cubic-bezier(.34,1.56,.64,1)"}}>
                               {fmt(tx.totalAmount)}
                             </div>
                             {isS&&(
@@ -1571,9 +1588,9 @@ function MonatScreen() {
                             NICHT über React-State/Re-Render gesteuert (siehe setRowFocus
                             weiter oben), sondern per direktem DOM-Zugriff aktiviert. */}
                         <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr",
-                          transition:_reduceMotion?"none":"grid-template-rows .4s cubic-bezier(.2,.8,.2,1)"}}>
+                          transition:_reduceMotion?"none":"grid-template-rows .4s cubic-bezier(.34,1.56,.64,1)"}}>
                           <div data-role="tx-detail-inner" style={{overflow:"hidden",opacity:0,
-                            transition:_reduceMotion?"none":"opacity .3s ease .03s"}}>
+                            transition:_reduceMotion?"none":"opacity .35s ease .05s"}}>
                             <div style={{padding:"2px 8px 11px 40px",display:"flex",flexDirection:"column",gap:6}}>
                               {tx.note&&<div style={{fontSize:11.5,color:T.txt2,lineHeight:1.5}}>{tx.note}</div>}
                               {isS&&(
