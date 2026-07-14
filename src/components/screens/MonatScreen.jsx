@@ -283,12 +283,38 @@ function MonatScreen() {
     const lastScrollTopRef = useRef(null);// für die Scroll-Richtung
     // Fokus-Effekt: die Buchungszeile, die gerade an der Referenzlinie (Unterkante
     // Hero/Sticky) ankommt, wächst und zeigt Notiz/Splits/Vormerkungs-Abgleich
-    // vollständig — ohne Antippen. Ref vermeidet unnötige Re-Renders, wenn sich
-    // beim Scrollen nichts an der aktiven Zeile ändert.
+    // vollständig — ohne Antippen. BEWUSST kein useState dafür: bei großen
+    // Listen (viele hundert/tausend Vormerkungen, z. B. unbegrenzt wiederkehrende
+    // Serien) würde JEDER Scroll-Frame einen Re-Render der kompletten Monatsliste
+    // auslösen und den Effekt praktisch unsichtbar machen (Update kommt nie an,
+    // bevor der nächste Scroll-Frame schon weiterzieht). Stattdessen wird direkt
+    // per DOM auf genau die betroffene(n) Zeile(n) zugegriffen (siehe setRowFocus)
+    // — kein Re-Render nötig, bleibt auch bei riesigen Listen flüssig.
     const activeTxIdRef = useRef(null);
-    const [activeTxId, setActiveTxId] = useState(null);
     const _reduceMotion = typeof window!=="undefined" && window.matchMedia
       && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const setRowFocus = (container, id, active) => {
+      if(!id) return;
+      const row = container.querySelector(`[data-tx="${id}"]`);
+      if(!row) return;
+      const fulfilled = row.getAttribute("data-fulfilled") === "1";
+      row.style.borderRadius = active ? "12px" : "0px";
+      row.style.background = active ? T.surf2 : (fulfilled ? T.pos+"11" : "transparent");
+      // Akzent als box-shadow (inset-Streifen) statt border-left: Die App hat
+      // standardmäßig "Keine Rahmen" aktiv (mbt_noborders, siehe App.jsx), was
+      // per CSS-Regel ".no-borders * { border-color: transparent !important }"
+      // JEDE Rahmenfarbe überschreibt — auch inline gesetzte. box-shadow ist
+      // davon nicht betroffen und bleibt so auch mit dieser Einstellung sichtbar.
+      row.style.boxShadow = active
+        ? `inset 3px 0 0 0 ${T.pos}, 0 6px 16px -6px rgba(0,0,0,0.28)`
+        : "none";
+      const amt = row.querySelector('[data-role="tx-amt"]');
+      if(amt) amt.style.fontSize = active ? "19px" : "16px";
+      const detailGrid = row.querySelector('[data-role="tx-detail-grid"]');
+      if(detailGrid) detailGrid.style.gridTemplateRows = active ? "1fr" : "0fr";
+      const detailInner = row.querySelector('[data-role="tx-detail-inner"]');
+      if(detailInner) detailInner.style.opacity = active ? "1" : "0";
+    };
     // Vormerkung/Ist-Abgleich für den Fokus-Effekt: liefert die verknüpfte
     // Vormerkung (geplanter Betrag/Datum) + ob autoMatchVormerkungen/MatchingScreen
     // eine Betragsabweichung markiert haben (siehe vormMatch.js _amtMismatch).
@@ -327,8 +353,9 @@ function MonatScreen() {
           else break;
         }
         if(curTx !== activeTxIdRef.current){
+          setRowFocus(el, activeTxIdRef.current, false);
           activeTxIdRef.current = curTx;
-          setActiveTxId(curTx);
+          setRowFocus(el, curTx, true);
         }
 
         if(!multiMonth) return;
@@ -1250,16 +1277,14 @@ function MonatScreen() {
                   const normE  = fmt(pn(effE)), normD = fmt(pn(vD));
                   const needsHatch = effE!==""&&vD!==""&&normE!==normD;
                   const fulfilled  = effE!==""&&vD!==""&&normE===normD;
-                  const isActiveTx = tx.id===activeTxId;
-                  const vormInfo = isActiveTx ? _linkedVormInfo(tx) : null;
+                  const vormInfo = _linkedVormInfo(tx);
                   return (
-                    <div key={tx.id} data-tx={tx.id} style={{borderRadius:isActiveTx?12:0,marginBottom:0,overflow:"hidden",
-                      background:isActiveTx?T.surf2:(fulfilled?T.pos+"11":"transparent"),
-                      boxShadow:isActiveTx?`0 6px 16px -6px rgba(0,0,0,0.28)`:"none",
+                    <div key={tx.id} data-tx={tx.id} data-fulfilled={fulfilled?"1":"0"} style={{borderRadius:0,marginBottom:0,overflow:"hidden",
+                      background:fulfilled?T.pos+"11":"transparent",
+                      boxShadow:"none",
                       borderTop:`1px solid ${T.bd}`,
-                      borderLeft:isActiveTx?`3px solid ${T.pos}`:"3px solid transparent",
                       position:"relative",
-                      transition:_reduceMotion?"none":"background-color .35s ease, box-shadow .35s ease, border-radius .35s ease, border-left-color .35s ease"}}>
+                      transition:_reduceMotion?"none":"background-color .35s ease, box-shadow .35s ease, border-radius .35s ease"}}>
                       <div style={{position:"relative",zIndex:1}}>
                         <div style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px"}}>
                           <div style={{position:"relative",width:32,height:32,flexShrink:0,marginRight:8}}>
@@ -1285,10 +1310,10 @@ function MonatScreen() {
                             </ExpandableLine>
                           </div>
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
-                            <div style={{...amtStyle("pos",pal.val),...(tx.pending?{color:T.cell_inc}:{}),
-                              fontSize:isActiveTx?19:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
+                            <div data-role="tx-amt" style={{...amtStyle("pos",pal.val),...(tx.pending?{color:T.cell_inc}:{}),
+                              fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
                               transition:_reduceMotion?"none":"font-size .3s cubic-bezier(.2,.8,.2,1)"}}>{fmt(tx.totalAmount)}</div>
-                            {!isActiveTx&&isS&&(
+                            {isS&&(
                               <div style={{marginTop:2}}>
                                 {(tx.splits||[]).filter(sp=>sp.catId).map((sp,si)=>{
                                   const spCat=getCat(sp.catId);
@@ -1306,10 +1331,12 @@ function MonatScreen() {
                           </div>
                         </div>
                         {/* Fokus-Effekt: Notiz/Splits/Vormerkungs-Abgleich vollständig,
-                            solange diese Zeile an der Scroll-Referenzlinie steht. */}
-                        <div style={{display:"grid",gridTemplateRows:isActiveTx?"1fr":"0fr",
+                            solange diese Zeile an der Scroll-Referenzlinie steht. Wird
+                            NICHT über React-State/Re-Render gesteuert (siehe setRowFocus
+                            weiter oben), sondern per direktem DOM-Zugriff aktiviert. */}
+                        <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr",
                           transition:_reduceMotion?"none":"grid-template-rows .4s cubic-bezier(.2,.8,.2,1)"}}>
-                          <div style={{overflow:"hidden",opacity:isActiveTx?1:0,
+                          <div data-role="tx-detail-inner" style={{overflow:"hidden",opacity:0,
                             transition:_reduceMotion?"none":"opacity .3s ease .03s"}}>
                             <div style={{padding:"2px 8px 11px 40px",display:"flex",flexDirection:"column",gap:6}}>
                               {tx.note&&<div style={{fontSize:11.5,color:T.txt2,lineHeight:1.5}}>{tx.note}</div>}
@@ -1427,18 +1454,16 @@ function MonatScreen() {
                   const normE  = fmt(pn(effE)), normD = fmt(pn(vD));
                   const needsHatch = effE!==""&&vD!==""&&normE!==normD;
                   const fulfilled  = effE!==""&&vD!==""&&normE===normD;
-                  const isActiveTx = tx.id===activeTxId;
-                  const vormInfo = isActiveTx ? _linkedVormInfo(tx) : null;
+                  const vormInfo = _linkedVormInfo(tx);
 
                   return (
-                    <div key={tx.id} data-tx={tx.id} style={{
-                      borderRadius:isActiveTx?12:0, marginBottom:0, overflow:"hidden",
-                      background: isActiveTx?T.surf2:(fulfilled ? T.pos+"11" : "transparent"),
-                      boxShadow:isActiveTx?`0 6px 16px -6px rgba(0,0,0,0.28)`:"none",
+                    <div key={tx.id} data-tx={tx.id} data-fulfilled={fulfilled?"1":"0"} style={{
+                      borderRadius:0, marginBottom:0, overflow:"hidden",
+                      background: fulfilled ? T.pos+"11" : "transparent",
+                      boxShadow:"none",
                       borderTop:`1px solid ${T.bd}`,
-                      borderLeft:isActiveTx?`3px solid ${T.pos}`:"3px solid transparent",
                       position:"relative",
-                      transition:_reduceMotion?"none":"background-color .35s ease, box-shadow .35s ease, border-radius .35s ease, border-left-color .35s ease",
+                      transition:_reduceMotion?"none":"background-color .35s ease, box-shadow .35s ease, border-radius .35s ease",
                     }}>
 
 
@@ -1501,12 +1526,12 @@ function MonatScreen() {
                           </div>
                           {/* Amount */}
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
-                            <div style={{...amtStyle(type==="income"?"pos":tx.pending?"gold":"neg",pal.val),...(type==="income"&&tx.pending?{color:T.cell_inc}:{}),
-                              fontSize:isActiveTx?19:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
+                            <div data-role="tx-amt" style={{...amtStyle(type==="income"?"pos":tx.pending?"gold":"neg",pal.val),...(type==="income"&&tx.pending?{color:T.cell_inc}:{}),
+                              fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
                               transition:_reduceMotion?"none":"font-size .3s cubic-bezier(.2,.8,.2,1)"}}>
                               {fmt(tx.totalAmount)}
                             </div>
-                            {!isActiveTx&&isS&&(
+                            {isS&&(
                               <div style={{marginTop:2}}>
                                 {(tx.splits||[]).filter(sp=>sp.catId).map((sp,si)=>{
                                   const spCat=getCat(sp.catId);
@@ -1525,10 +1550,12 @@ function MonatScreen() {
                         </div>
 
                         {/* Fokus-Effekt: Notiz/Splits/Vormerkungs-Abgleich vollständig,
-                            solange diese Zeile an der Scroll-Referenzlinie steht. */}
-                        <div style={{display:"grid",gridTemplateRows:isActiveTx?"1fr":"0fr",
+                            solange diese Zeile an der Scroll-Referenzlinie steht. Wird
+                            NICHT über React-State/Re-Render gesteuert (siehe setRowFocus
+                            weiter oben), sondern per direktem DOM-Zugriff aktiviert. */}
+                        <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr",
                           transition:_reduceMotion?"none":"grid-template-rows .4s cubic-bezier(.2,.8,.2,1)"}}>
-                          <div style={{overflow:"hidden",opacity:isActiveTx?1:0,
+                          <div data-role="tx-detail-inner" style={{overflow:"hidden",opacity:0,
                             transition:_reduceMotion?"none":"opacity .3s ease .03s"}}>
                             <div style={{padding:"2px 8px 11px 40px",display:"flex",flexDirection:"column",gap:6}}>
                               {tx.note&&<div style={{fontSize:11.5,color:T.txt2,lineHeight:1.5}}>{tx.note}</div>}
