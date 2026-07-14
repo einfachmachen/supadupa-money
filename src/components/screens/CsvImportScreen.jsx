@@ -39,6 +39,10 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const [search,  setSearch]        = useState("");
   const [bulkCat, setBulkCat]       = useState({catId:"",subId:""});
   const [doneCount, setDoneCount]   = useState(0);
+  // Offene Vormerkungen, die beim Import automatisch mit neuen Buchungen
+  // verknüpft wurden — für den Hinweis auf dem "Fertig"-Screen (Gegenchecken,
+  // da autoMatchVormerkungen nicht den Verwendungszweck prüft).
+  const [matchedVorm, setMatchedVorm] = useState([]);
   const [showCatAssign, setShowCatAssign] = useState(false);
   const [selAccId, setSelAccId]     = useState(""); // Zielkonto für Import
   // Tag(s) für den GESAMTEN Import-Batch — z.B. "#aida" für eine komplette
@@ -816,7 +820,9 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
       // Offene Vormerkungen automatisch mit den neu importierten echten
       // Buchungen verknüpfen, wenn eindeutig (gleiches Konto, exakter Betrag,
       // enges Datumsfenster) — erspart das manuelle Zuordnen im Normalfall.
-      return autoMatchVormerkungen(withGiroLinks).txs;
+      const { txs: next, matched } = autoMatchVormerkungen(withGiroLinks);
+      setMatchedVorm(matched);
+      return next;
     });
     setDoneCount(newTxs.length);
 
@@ -1874,6 +1880,34 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                       importieren — der Kontostand wird dann automatisch erkannt.
                     </span>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Offene Vormerkungen, die automatisch mit importierten Buchungen
+              verknüpft wurden — zum Gegenchecken, da autoMatchVormerkungen
+              nur Konto+Betrag+Datum prüft, nicht den Verwendungszweck. */}
+          {matchedVorm.length > 0 && (
+            <div style={{background:"rgba(34,197,94,0.10)",border:`1px solid ${T.pos}44`,
+              borderRadius:11,padding:MPad,width:"100%",maxWidth:380,display:"flex",gap:10,alignItems:"flex-start"}}>
+              {Li("link",16,T.pos)}
+              <div style={{flex:1}}>
+                <div style={{color:T.pos,fontSize:MFSl,fontWeight:700,marginBottom:3}}>
+                  {matchedVorm.length===1 ? "1 Vormerkung automatisch zugeordnet" : `${matchedVorm.length} Vormerkungen automatisch zugeordnet`}
+                </div>
+                <div style={{marginTop:2,display:"flex",flexDirection:"column",gap:3}}>
+                  {matchedVorm.map((m,i)=>(
+                    <div key={i} style={{display:"flex",justifyContent:"space-between",gap:8,fontSize:MFSl}}>
+                      <span style={{color:T.txt,fontWeight:600}}>{m.desc||"(ohne Bezeichnung)"}</span>
+                      <span style={{color:T.txt2,fontFamily:NUM_FONT}}>
+                        {fmt(Math.abs(m.totalAmount||0))} € · {(m.date||"").split("-").reverse().join(".")}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{color:T.txt2,fontSize:MFSd,marginTop:4}}>
+                  Kurz prüfen, ob das passt — Matching erfolgt nur über Konto, Betrag und Datum.
                 </div>
               </div>
             </div>

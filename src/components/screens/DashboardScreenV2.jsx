@@ -135,6 +135,9 @@ function DashboardScreenV2() {
     // ── Bank-Abruf direkt im Dashboard (Pull-to-Refresh) ──
     // bankFetch: null | {status:"loading"|"done"|"error", reason?, message?, staged?, dupeItems?}
     const [bankFetch, setBankFetch] = useState(null);
+    // Kurzer Hinweis, welche Vormerkungen nach einem Bank-Abruf automatisch
+    // zugeordnet wurden — zum schnellen Gegenchecken (siehe autoMatchVormerkungen).
+    const [matchToast, setMatchToast] = useState(null);
     // Proaktiver Hinweis auf nicht zugeordnete Bank-Konten — rein lokaler
     // Check (kein Bank-API-Aufruf), damit das SOFORT beim Öffnen des
     // Dashboards auffällt und nicht erst beim nächsten aktiven Abruf.
@@ -191,7 +194,12 @@ function DashboardScreenV2() {
         const sorted = [...staged, ...p].sort((x, y) => y.date.localeCompare(x.date));
         // Offene Vormerkungen automatisch mit neu übernommenen echten
         // Buchungen verknüpfen, wenn eindeutig (siehe CsvImportScreen).
-        return autoMatchVormerkungen(sorted).txs;
+        const { txs: next, matched } = autoMatchVormerkungen(sorted);
+        if (matched.length) {
+          setMatchToast(matched);
+          setTimeout(() => setMatchToast(null), 8000);
+        }
+        return next;
       });
       setBankFetch(null);
     }, [setTxs]);
@@ -981,6 +989,33 @@ function DashboardScreenV2() {
         {bankFetch && (
           <BankFetchPanel state={bankFetch} onClose={()=>setBankFetch(null)} onRefetch={runBankFetch}
             onUpdateStaged={updateStaged} onConfirm={commitStaged}/>
+        )}
+
+        {/* Kurzer Hinweis nach dem Übernehmen: welche offenen Vormerkungen
+            wurden automatisch mit den neuen Buchungen verknüpft — zum
+            Gegenchecken, da das Matching rein auf Konto+Betrag+Datum beruht
+            (siehe autoMatchVormerkungen), nicht auf dem Verwendungszweck. */}
+        {matchToast && (
+          <div style={{margin:"8px 16px",padding:"10px 14px",borderRadius:11,
+            background:"rgba(34,197,94,0.10)",border:`1px solid ${T.pos}44`,
+            display:"flex",gap:10,alignItems:"flex-start"}}>
+            {Li("link",16,T.pos)}
+            <div style={{flex:1}}>
+              <div style={{color:T.pos,fontSize:13,fontWeight:700,marginBottom:2}}>
+                {matchToast.length===1 ? "1 Vormerkung automatisch zugeordnet" : `${matchToast.length} Vormerkungen automatisch zugeordnet`}
+              </div>
+              <div style={{color:T.txt2,fontSize:12,lineHeight:1.6}}>
+                {matchToast.map(m => {
+                  const [y,mo,d] = (m.date||"").split("-");
+                  return `${m.desc||"(ohne Bezeichnung)"} · ${fmt(Math.abs(m.totalAmount||0))} € · ${d}.${mo}.${y}`;
+                }).join(" — ")}
+              </div>
+            </div>
+            <button onClick={()=>setMatchToast(null)}
+              style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",padding:2}}>
+              {Li("x",14,T.txt2)}
+            </button>
+          </div>
         )}
 
         {/* Schalter: Umbuchungen (interne Transfers) + Erstattungen aus den

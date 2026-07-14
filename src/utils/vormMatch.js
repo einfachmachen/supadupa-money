@@ -132,6 +132,11 @@ export function autoMatchVormerkungen(txs) {
   const uniquePairs = pairs.filter(p => countByPend[p.pendId] === 1 && countByReal[p.realId] === 1);
 
   let next = txs;
-  uniquePairs.forEach(p => { next = linkPendingToReal(next, p.pendId, p.realId); });
-  return { txs: next, linkedCount: uniquePairs.length };
+  const matched = [];
+  uniquePairs.forEach(p => {
+    const pend = txs.find(t => t.id === p.pendId);
+    if (pend) matched.push({ pendId: p.pendId, realId: p.realId, desc: pend.desc, totalAmount: pend.totalAmount, date: pend.date });
+    next = linkPendingToReal(next, p.pendId, p.realId);
+  });
+  return { txs: next, linkedCount: uniquePairs.length, matched };
 }
