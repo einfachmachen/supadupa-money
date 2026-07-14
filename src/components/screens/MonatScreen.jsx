@@ -281,22 +281,61 @@ function MonatScreen() {
     const spyTick = useRef(false);
     const spyTimerRef = useRef(null);     // Scroll-Spy entprellt (s. u.)
     const lastScrollTopRef = useRef(null);// für die Scroll-Richtung
+    // Fokus-Effekt: die Buchungszeile, die gerade an der Referenzlinie (Unterkante
+    // Hero/Sticky) ankommt, wächst und zeigt Notiz/Splits/Vormerkungs-Abgleich
+    // vollständig — ohne Antippen. Ref vermeidet unnötige Re-Renders, wenn sich
+    // beim Scrollen nichts an der aktiven Zeile ändert.
+    const activeTxIdRef = useRef(null);
+    const [activeTxId, setActiveTxId] = useState(null);
+    const _reduceMotion = typeof window!=="undefined" && window.matchMedia
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // Vormerkung/Ist-Abgleich für den Fokus-Effekt: liefert die verknüpfte
+    // Vormerkung (geplanter Betrag/Datum) + ob autoMatchVormerkungen/MatchingScreen
+    // eine Betragsabweichung markiert haben (siehe vormMatch.js _amtMismatch).
+    const _linkedVormInfo = (tx) => {
+      const lid = (tx.linkedIds||[])[0];
+      if(!lid) return null;
+      const vm = txs.find(t=>t.id===lid);
+      if(!vm) return null;
+      const mm = tx._amtMismatch;
+      return {
+        plannedAmt: mm ? mm.pendAmt : Math.abs(vm.totalAmount),
+        actualAmt: mm ? mm.realAmt : Math.abs(tx.totalAmount),
+        plannedDate: vm.date,
+        mismatch: !!mm,
+      };
+    };
     // Pro Wisch nur EIN Monat: bei jedem touchstart wird genau ein Nachladen
     // freigegeben; danach erst wieder beim nächsten Wisch.
     const canRevealRef = useRef(false);
     const onListTouchStart = (e)=>{ canRevealRef.current = true; onTS?.(e); };
     const onListScroll = ()=>{
-      if(!multiMonth || spyTick.current) return;
+      if(spyTick.current) return;
       spyTick.current = true;
       requestAnimationFrame(()=>{
         spyTick.current = false;
         const el = listRef.current; if(!el) return;
+        const refTop = stickyRef.current ? stickyRef.current.getBoundingClientRect().bottom
+                                          : el.getBoundingClientRect().top;
+
+        // Fokus-Effekt: eindeutigste Buchungszeile an der Referenzlinie ermitteln
+        // — unabhängig vom Multi-Monats-Modus, damit es auch bei Suche/Filtern
+        // funktioniert. Gleiches Scan-Prinzip wie der Monats-Scroll-Spy unten.
+        let curTx = null;
+        for(const c of el.querySelectorAll("[data-tx]")){
+          if(c.getBoundingClientRect().top - refTop <= 8) curTx = c.getAttribute("data-tx");
+          else break;
+        }
+        if(curTx !== activeTxIdRef.current){
+          activeTxIdRef.current = curTx;
+          setActiveTxId(curTx);
+        }
+
+        if(!multiMonth) return;
         // 1) Scroll-Spy — ENTPRELLT: Monat (Hero/+ Button) folgt erst, wenn das
         //    Scrollen kurz ruht. Würde der Monat schon WÄHREND des Wischens
         //    wechseln, löste jeder Monatswechsel eine teure Budget-Neuberechnung
         //    (calcOpenBudgetDetails) aus → die Liste flackerte/leerte sich.
-        const refTop = stickyRef.current ? stickyRef.current.getBoundingClientRect().bottom
-                                          : el.getBoundingClientRect().top;
         let cur = null;
         for(const c of el.querySelectorAll("[data-month]")){
           if(c.getBoundingClientRect().top - refTop <= 8) cur = c.getAttribute("data-month");
@@ -1211,8 +1250,14 @@ function MonatScreen() {
                   const normE  = fmt(pn(effE)), normD = fmt(pn(vD));
                   const needsHatch = effE!==""&&vD!==""&&normE!==normD;
                   const fulfilled  = effE!==""&&vD!==""&&normE===normD;
+                  const isActiveTx = tx.id===activeTxId;
+                  const vormInfo = isActiveTx ? _linkedVormInfo(tx) : null;
                   return (
-                    <div key={tx.id} style={{borderRadius:0,marginBottom:0,overflow:"hidden",background:fulfilled?T.pos+"11":"transparent",borderTop:`1px solid ${T.bd}`,position:"relative"}}>
+                    <div key={tx.id} data-tx={tx.id} style={{borderRadius:isActiveTx?12:0,marginBottom:0,overflow:"hidden",
+                      background:isActiveTx?T.surf2:(fulfilled?T.pos+"11":"transparent"),
+                      boxShadow:isActiveTx?`0 6px 16px -6px rgba(0,0,0,0.28)`:"none",
+                      borderTop:`1px solid ${T.bd}`,position:"relative",
+                      transition:_reduceMotion?"none":"background-color .35s ease, box-shadow .35s ease, border-radius .35s ease"}}>
                       <div style={{position:"relative",zIndex:1}}>
                         <div style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px"}}>
                           <div style={{position:"relative",width:32,height:32,flexShrink:0,marginRight:8}}>
@@ -1238,9 +1283,62 @@ function MonatScreen() {
                             </ExpandableLine>
                           </div>
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
-                            <div style={{...amtStyle("pos",pal.val),...(tx.pending?{color:T.cell_inc}:{}),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmt(tx.totalAmount)}</div>
+                            <div style={{...amtStyle("pos",pal.val),...(tx.pending?{color:T.cell_inc}:{}),
+                              fontSize:isActiveTx?19:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
+                              transition:_reduceMotion?"none":"font-size .3s cubic-bezier(.2,.8,.2,1)"}}>{fmt(tx.totalAmount)}</div>
+                            {!isActiveTx&&isS&&(
+                              <div style={{marginTop:2}}>
+                                {(tx.splits||[]).filter(sp=>sp.catId).map((sp,si)=>{
+                                  const spCat=getCat(sp.catId);
+                                  return (
+                                    <div key={sp.id} style={{display:"flex",alignItems:"center",gap:3,justifyContent:"flex-end",marginBottom:1}}>
+                                      <span style={{width:6,height:6,borderRadius:"50%",background:spCat?.color||T.txt2,flexShrink:0,display:"inline-block"}}/>
+                                      <span style={{...amtStyle(spCat?.color||T.txt2),fontSize:9,fontFamily:NUM_FONT,fontWeight:700}}>{fmt(pn(sp.amount))}</span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                             {fulfilled&&<div style={{color:T.pos,fontSize:9}}>{Li("check",9,T.pos)} erfüllt</div>}
                             {needsHatch&&<div style={{color:pal.hdr,fontSize:9}}>{Li("alert-circle",9,T.gold)} offen</div>}
+                          </div>
+                        </div>
+                        {/* Fokus-Effekt: Notiz/Splits/Vormerkungs-Abgleich vollständig,
+                            solange diese Zeile an der Scroll-Referenzlinie steht. */}
+                        <div style={{display:"grid",gridTemplateRows:isActiveTx?"1fr":"0fr",
+                          transition:_reduceMotion?"none":"grid-template-rows .4s cubic-bezier(.2,.8,.2,1)"}}>
+                          <div style={{overflow:"hidden",opacity:isActiveTx?1:0,
+                            transition:_reduceMotion?"none":"opacity .3s ease .03s"}}>
+                            <div style={{padding:"2px 8px 11px 40px",display:"flex",flexDirection:"column",gap:6}}>
+                              {tx.note&&<div style={{fontSize:11.5,color:T.txt2,lineHeight:1.5}}>{tx.note}</div>}
+                              {isS&&(
+                                <div style={{display:"flex",flexDirection:"column",gap:3,borderTop:`1px dashed ${T.bd}`,paddingTop:6}}>
+                                  {(tx.splits||[]).filter(sp=>sp.catId).map(sp=>{
+                                    const spCat=getCat(sp.catId), spSub=getSub(sp.catId,sp.subId);
+                                    return (
+                                      <div key={sp.id} style={{display:"flex",justifyContent:"space-between",gap:8,fontSize:11.5}}>
+                                        <span style={{color:T.txt2}}>{spSub?.name||spCat?.name||"—"}</span>
+                                        <span style={{color:T.txt,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmt(pn(sp.amount))} €</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                              {vormInfo&&(
+                                <div style={{display:"flex",alignItems:"center",gap:8,fontSize:11,
+                                  background:vormInfo.mismatch?T.gold+"1a":T.pos+"15",
+                                  border:`1px solid ${vormInfo.mismatch?T.gold+"55":T.pos+"40"}`,
+                                  borderRadius:9,padding:"6px 9px"}}>
+                                  {Li("link",12,vormInfo.mismatch?T.gold:T.pos)}
+                                  <span style={{color:T.txt}}>
+                                    Vormerkung{" "}
+                                    <span style={{textDecoration:"line-through",color:T.txt2,fontFamily:NUM_FONT}}>{fmt(vormInfo.plannedAmt)} €</span>
+                                    {" → "}
+                                    <span style={{fontWeight:700,color:vormInfo.mismatch?T.gold:T.pos,fontFamily:NUM_FONT}}>{fmt(vormInfo.actualAmt)} €</span>
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1327,15 +1425,19 @@ function MonatScreen() {
                   const normE  = fmt(pn(effE)), normD = fmt(pn(vD));
                   const needsHatch = effE!==""&&vD!==""&&normE!==normD;
                   const fulfilled  = effE!==""&&vD!==""&&normE===normD;
+                  const isActiveTx = tx.id===activeTxId;
+                  const vormInfo = isActiveTx ? _linkedVormInfo(tx) : null;
 
                   return (
-                    <div key={tx.id} style={{
-                      borderRadius:0, marginBottom:0, overflow:"hidden",
-                      background: fulfilled ? T.pos+"11" : "transparent",
+                    <div key={tx.id} data-tx={tx.id} style={{
+                      borderRadius:isActiveTx?12:0, marginBottom:0, overflow:"hidden",
+                      background: isActiveTx?T.surf2:(fulfilled ? T.pos+"11" : "transparent"),
+                      boxShadow:isActiveTx?`0 6px 16px -6px rgba(0,0,0,0.28)`:"none",
                       borderTop:`1px solid ${T.bd}`,
                       position:"relative",
+                      transition:_reduceMotion?"none":"background-color .35s ease, box-shadow .35s ease, border-radius .35s ease",
                     }}>
-                      
+
 
                       <div style={{position:"relative",zIndex:1}}>
                         {/* Main row */}
@@ -1396,10 +1498,12 @@ function MonatScreen() {
                           </div>
                           {/* Amount */}
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
-                            <div style={{...amtStyle(type==="income"?"pos":tx.pending?"gold":"neg",pal.val),...(type==="income"&&tx.pending?{color:T.cell_inc}:{}),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>
+                            <div style={{...amtStyle(type==="income"?"pos":tx.pending?"gold":"neg",pal.val),...(type==="income"&&tx.pending?{color:T.cell_inc}:{}),
+                              fontSize:isActiveTx?19:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
+                              transition:_reduceMotion?"none":"font-size .3s cubic-bezier(.2,.8,.2,1)"}}>
                               {fmt(tx.totalAmount)}
                             </div>
-                            {isS&&(
+                            {!isActiveTx&&isS&&(
                               <div style={{marginTop:2}}>
                                 {(tx.splits||[]).filter(sp=>sp.catId).map((sp,si)=>{
                                   const spCat=getCat(sp.catId);
@@ -1414,6 +1518,45 @@ function MonatScreen() {
                             )}
                             {fulfilled&&<div style={{color:T.pos,fontSize:9}}>{Li("check",9,T.pos)} erfüllt</div>}
                             {needsHatch&&<div style={{color:pal.hdr,fontSize:9}}>{Li("alert-circle",9,T.gold)} offen</div>}
+                          </div>
+                        </div>
+
+                        {/* Fokus-Effekt: Notiz/Splits/Vormerkungs-Abgleich vollständig,
+                            solange diese Zeile an der Scroll-Referenzlinie steht. */}
+                        <div style={{display:"grid",gridTemplateRows:isActiveTx?"1fr":"0fr",
+                          transition:_reduceMotion?"none":"grid-template-rows .4s cubic-bezier(.2,.8,.2,1)"}}>
+                          <div style={{overflow:"hidden",opacity:isActiveTx?1:0,
+                            transition:_reduceMotion?"none":"opacity .3s ease .03s"}}>
+                            <div style={{padding:"2px 8px 11px 40px",display:"flex",flexDirection:"column",gap:6}}>
+                              {tx.note&&<div style={{fontSize:11.5,color:T.txt2,lineHeight:1.5}}>{tx.note}</div>}
+                              {isS&&(
+                                <div style={{display:"flex",flexDirection:"column",gap:3,borderTop:`1px dashed ${T.bd}`,paddingTop:6}}>
+                                  {(tx.splits||[]).filter(sp=>sp.catId).map(sp=>{
+                                    const spCat=getCat(sp.catId), spSub=getSub(sp.catId,sp.subId);
+                                    return (
+                                      <div key={sp.id} style={{display:"flex",justifyContent:"space-between",gap:8,fontSize:11.5}}>
+                                        <span style={{color:T.txt2}}>{spSub?.name||spCat?.name||"—"}</span>
+                                        <span style={{color:T.txt,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmt(pn(sp.amount))} €</span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                              {vormInfo&&(
+                                <div style={{display:"flex",alignItems:"center",gap:8,fontSize:11,
+                                  background:vormInfo.mismatch?T.gold+"1a":T.pos+"15",
+                                  border:`1px solid ${vormInfo.mismatch?T.gold+"55":T.pos+"40"}`,
+                                  borderRadius:9,padding:"6px 9px"}}>
+                                  {Li("link",12,vormInfo.mismatch?T.gold:T.pos)}
+                                  <span style={{color:T.txt}}>
+                                    Vormerkung{" "}
+                                    <span style={{textDecoration:"line-through",color:T.txt2,fontFamily:NUM_FONT}}>{fmt(vormInfo.plannedAmt)} €</span>
+                                    {" → "}
+                                    <span style={{fontWeight:700,color:vormInfo.mismatch?T.gold:T.pos,fontFamily:NUM_FONT}}>{fmt(vormInfo.actualAmt)} €</span>
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
 
