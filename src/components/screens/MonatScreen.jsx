@@ -293,13 +293,24 @@ function MonatScreen() {
     const activeTxIdRef = useRef(null);
     const _reduceMotion = typeof window!=="undefined" && window.matchMedia
       && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // Gleiche Gradient-Struktur für aktiv/inaktiv (2 Stops, 90deg) — nur so
+    // kann der Browser beim Fokus-Wechsel sanft zwischen den Farben überblenden.
+    const _rowGradient = (c1, c2) => `linear-gradient(90deg, ${c1} 0%, ${c2} 60%)`;
     const setRowFocus = (container, id, active) => {
       if(!id) return;
       const row = container.querySelector(`[data-tx="${id}"]`);
       if(!row) return;
       const fulfilled = row.getAttribute("data-fulfilled") === "1";
       row.style.borderRadius = active ? "12px" : "0px";
-      row.style.background = active ? T.surf2 : (fulfilled ? T.pos+"11" : "transparent");
+      // Echter Farbwechsel statt nur Grau-Aufhellen (Vorbild: der Farbverlauf
+      // der Bahn-App-Karte) — ein Verlauf von der Akzentfarbe zur normalen
+      // erhöhten Fläche, statt nur surf → surf2. IMMER als Gradient mit
+      // gleicher Struktur (2 Stops, 90deg) gesetzt, auch im inaktiven Zustand
+      // — nur so kann der Browser die Farbstopps sanft ineinander überblenden
+      // (unterschiedliche Gradient-Typen/-Stopps lassen sich nicht animieren).
+      row.style.background = active
+        ? _rowGradient(T.pos+"2e", T.surf2)
+        : _rowGradient(fulfilled?T.pos+"11":"transparent", fulfilled?T.pos+"11":"transparent");
       // Akzent als box-shadow (inset-Streifen) statt border-left: Die App hat
       // standardmäßig "Keine Rahmen" aktiv (mbt_noborders, siehe App.jsx), was
       // per CSS-Regel ".no-borders * { border-color: transparent !important }"
@@ -347,9 +358,15 @@ function MonatScreen() {
         // Fokus-Effekt: eindeutigste Buchungszeile an der Referenzlinie ermitteln
         // — unabhängig vom Multi-Monats-Modus, damit es auch bei Suche/Filtern
         // funktioniert. Gleiches Scan-Prinzip wie der Monats-Scroll-Spy unten.
+        // Eigener Abstand (FOCUS_GAP) zur Hero-Unterkante: direkt an der Kante
+        // (wie beim Monats-Spy) verschwand die hervorgehobene Zeile sofort
+        // wieder unter dem Hero, kaum sichtbar. Mit Abstand bleibt sie erst
+        // richtig sichtbar, bevor sie weiterscrollt.
+        const FOCUS_GAP = 28;
+        const focusRefTop = refTop + FOCUS_GAP;
         let curTx = null;
         for(const c of el.querySelectorAll("[data-tx]")){
-          if(c.getBoundingClientRect().top - refTop <= 8) curTx = c.getAttribute("data-tx");
+          if(c.getBoundingClientRect().top - focusRefTop <= 8) curTx = c.getAttribute("data-tx");
           else break;
         }
         if(curTx !== activeTxIdRef.current){
@@ -1280,11 +1297,11 @@ function MonatScreen() {
                   const vormInfo = _linkedVormInfo(tx);
                   return (
                     <div key={tx.id} data-tx={tx.id} data-fulfilled={fulfilled?"1":"0"} style={{borderRadius:0,marginBottom:0,overflow:"hidden",
-                      background:fulfilled?T.pos+"11":"transparent",
+                      background:_rowGradient(fulfilled?T.pos+"11":"transparent", fulfilled?T.pos+"11":"transparent"),
                       boxShadow:"none",
                       borderTop:`1px solid ${T.bd}`,
                       position:"relative",
-                      transition:_reduceMotion?"none":"background-color .35s ease, box-shadow .35s ease, border-radius .35s ease"}}>
+                      transition:_reduceMotion?"none":"background .45s ease, box-shadow .45s ease, border-radius .45s ease"}}>
                       <div style={{position:"relative",zIndex:1}}>
                         <div style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px"}}>
                           <div style={{position:"relative",width:32,height:32,flexShrink:0,marginRight:8}}>
@@ -1459,11 +1476,11 @@ function MonatScreen() {
                   return (
                     <div key={tx.id} data-tx={tx.id} data-fulfilled={fulfilled?"1":"0"} style={{
                       borderRadius:0, marginBottom:0, overflow:"hidden",
-                      background: fulfilled ? T.pos+"11" : "transparent",
+                      background: _rowGradient(fulfilled?T.pos+"11":"transparent", fulfilled?T.pos+"11":"transparent"),
                       boxShadow:"none",
                       borderTop:`1px solid ${T.bd}`,
                       position:"relative",
-                      transition:_reduceMotion?"none":"background-color .35s ease, box-shadow .35s ease, border-radius .35s ease",
+                      transition:_reduceMotion?"none":"background .45s ease, box-shadow .45s ease, border-radius .45s ease",
                     }}>
 
 
