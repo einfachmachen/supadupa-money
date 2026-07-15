@@ -1842,6 +1842,15 @@ function MonatScreen() {
             </div>
           );
         })()}
+        {/* Scroll-Reserve für den Fokus-Effekt: die Referenzlinie sitzt ein
+           gutes Stück unter dem Hero (FOCUS_GAP) — bei kurzen Listen (z.B.
+           nach einer Tag-/Suchfilterung mit nur wenigen Treffern) reicht die
+           Liste sonst gar nicht so weit zum Scrollen, dass die untersten
+           Einträge diese Linie je erreichen und dadurch nie den Fokus-Effekt
+           bekommen. Eine großzügige, an der Viewport-Höhe orientierte
+           Leerfläche am Ende garantiert genug Scroll-Weg für JEDEN Eintrag,
+           unabhängig davon, wie kurz die (gefilterte) Liste ist. */}
+        <div style={{height:"70vh"}}/>
         <div style={{height:16}}/>
       </div>
       {budgetEditSub&&budgetEditSub.id&&<BudgetEditorModal
