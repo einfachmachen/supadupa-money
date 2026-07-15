@@ -2978,14 +2978,20 @@ Abbrechen = ${remoteName}-Stand laden`
         return (
           <div onClick={()=>{ setYear(s.yr); setMainTab("erfassen"); setSubTab("mood"); }}
             style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",
-              background:T.neg,color:"#fff",padding:"7px 12px",flexShrink:0,
+              // Kräftiges, festes Rot statt T.neg — manche Themes definieren
+              // "neg" bewusst blass/pastellig (z.B. #FFA090, #FFC5C4) für den
+              // Einsatz als kleine Textfarbe auf grauem Grund; als VOLLFLÄCHIGER
+              // Banner-Hintergrund mit weißer Schrift wirkt dieselbe Farbe dann
+              // wie "Weiß auf Rosa" und ist kaum zu erkennen. Diese Warnung
+              // muss in jedem Theme gleich gut lesbar bleiben.
+              background:"#C0311A",color:"#fff",padding:"7px 12px",flexShrink:0,
               boxShadow:"0 1px 6px rgba(0,0,0,0.3)"}}>
             {Li("alert-triangle",16,"#fff")}
-            <div style={{flex:1,minWidth:0,lineHeight:1.3}}>
-              <div style={{fontSize:12.5,fontWeight:700}}>
+            <div style={{flex:1,minWidth:0,lineHeight:1.25}}>
+              <div style={{fontSize:12.5,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                 Liquiditäts-Engpass ab {label}: Konto fällt auf {s.saldoVal < 0 ? "−" : ""}{fmt(s.saldoVal)} €
               </div>
-              <div style={{fontSize:11,opacity:0.92}}>
+              <div style={{fontSize:11,opacity:0.92,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                 {fmt(s.deficit)} € unter Puffer ({fmt(w.buffer)} €){w.count>1?` · +${w.count-1} weitere${w.count-1===1?"r":""} Monat${w.count-1===1?"":"e"}`:""} · tippen
               </div>
             </div>
