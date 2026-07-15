@@ -95,7 +95,7 @@ const MonthSearchBox = React.memo(function MonthSearchBox({ committed, onSubmit,
 // umschließenden "antippen öffnet Bearbeiten"-Bereichs. Würde stattdessen die
 // GANZE Zeile bei Überlauf das Antippen abfangen, käme man bei jeder
 // übergelaufenen Buchung nicht mehr an den Bearbeiten-Dialog heran.
-const ExpandableLine = React.memo(function ExpandableLine({ style, children }) {
+const ExpandableLine = React.memo(function ExpandableLine({ style, children, ...rest }) {
   const innerRef = React.useRef(null);
   const [expanded, setExpanded] = React.useState(false);
   const [overflowing, setOverflowing] = React.useState(false);
@@ -116,7 +116,7 @@ const ExpandableLine = React.memo(function ExpandableLine({ style, children }) {
     return () => window.removeEventListener("resize", measure);
   }, [expanded, measure]);
   return (
-    <div data-expandable-line style={{display:"flex",alignItems:"center",gap:4,...style}}>
+    <div data-expandable-line {...rest} style={{display:"flex",alignItems:"center",gap:4,...style}}>
       <div ref={innerRef} style={{display:"flex",alignItems:"center",gap:4,minWidth:0,flex:1,
         ...(expanded
           ? {flexWrap:"wrap",whiteSpace:"normal"}
@@ -309,6 +309,36 @@ function MonatScreen() {
     // lesbar). Dafür zählt JEDE Zeilenart mit: echte Buchungen, Budget-
     // Restanzeigen UND die Tagessaldo-Kopfzeile — alles trägt [data-tx],
     // damit beim Scrollen lückenlos irgendetwas im Fokus steht.
+    // Truncation (Ellipsis/nowrap) einer Zeile für die Dauer des Fokus
+    // aufheben, damit ein eingeklappter Buchungstext beim Scrollen wirklich
+    // VOLLSTÄNDIG lesbar wird statt nur größer+trotzdem abgeschnitten. Der
+    // ursprüngliche Zustand wird im Dataset zwischengespeichert, damit ein
+    // manuell (per Chevron) aufgeklappter Text beim Deaktivieren nicht
+    // versehentlich wieder zugeklappt wird.
+    const _setTruncationOverride = (target, active) => {
+      if(!target) return;
+      if(active){
+        if(target.dataset.focusOrigWs===undefined){
+          target.dataset.focusOrigWs = target.style.whiteSpace||"";
+          target.dataset.focusOrigOf = target.style.overflow||"";
+          target.dataset.focusOrigTo = target.style.textOverflow||"";
+          target.dataset.focusOrigFw = target.style.flexWrap||"";
+        }
+        target.style.whiteSpace = "normal";
+        target.style.overflow = "visible";
+        target.style.textOverflow = "clip";
+        target.style.flexWrap = "wrap";
+      } else if(target.dataset.focusOrigWs!==undefined){
+        target.style.whiteSpace = target.dataset.focusOrigWs;
+        target.style.overflow = target.dataset.focusOrigOf;
+        target.style.textOverflow = target.dataset.focusOrigTo;
+        target.style.flexWrap = target.dataset.focusOrigFw;
+        delete target.dataset.focusOrigWs;
+        delete target.dataset.focusOrigOf;
+        delete target.dataset.focusOrigTo;
+        delete target.dataset.focusOrigFw;
+      }
+    };
     const setRowFocus = (row, active) => {
       if(!row) return;
       const fulfilled = row.getAttribute("data-fulfilled") === "1";
@@ -322,7 +352,24 @@ function MonatScreen() {
       // (CSS-Regel [data-tx-focus-light] in themes.css; Inline-Styles
       // können keine Nachfahren-Farben übersteuern).
       row.style.background = active ? "#F4F6F0" : (restBg!=null ? restBg : (fulfilled ? T.pos+"11" : "transparent"));
-      row.setAttribute("data-tx-focus-light", active ? "1" : "0");
+      // Das Attribut steuert per CSS die (dunkle) Textfarbe auf der hellen
+      // Fläche. Beim Aktivieren sofort setzen — aber beim Deaktivieren ERST
+      // NACH Abschluss des Hintergrund-Fades (siehe transition unten) wieder
+      // entfernen. Sonst läuft die Text-/Iconfarbe (sofortiger Attribut-
+      // Wechsel) dem noch 400ms lang ausfaufenden hellen Hintergrund davon —
+      // für einen kurzen Moment steht dann z.B. heller/weißer Text auf einem
+      // noch nicht ganz abgedunkelten (also ebenfalls hellen) Hintergrund
+      // und wird unlesbar.
+      clearTimeout(row._focusOffTimer);
+      if(active){
+        row._focusOffTimer = null;
+        row.setAttribute("data-tx-focus-light", "1");
+      } else {
+        row._focusOffTimer = setTimeout(()=>{
+          row.setAttribute("data-tx-focus-light", "0");
+          row._focusOffTimer = null;
+        }, 420);
+      }
       // box-shadow statt border: Die App hat standardmäßig "Keine Rahmen"
       // aktiv (mbt_noborders, App.jsx), was per CSS-Regel ".no-borders *
       // { border-color: transparent !important }" JEDE Rahmenfarbe
@@ -330,16 +377,31 @@ function MonatScreen() {
       // betroffen.
       row.style.boxShadow = active ? `inset 4px 0 0 0 ${T.pos}, 0 10px 26px -6px rgba(0,0,0,0.4)` : "none";
       row.style.borderRadius = active ? "14px" : "0px";
-      row.style.transform = active ? "scale(1.02)" : "scale(1)";
+      row.style.transform = active ? "scale(1.025)" : "scale(1)";
       row.style.zIndex = active ? "5" : "1";
       const mainRow = row.querySelector('[data-role="tx-mainrow"]');
-      if(mainRow) mainRow.style.padding = active ? "14px 10px" : "3px 8px";
+      if(mainRow) mainRow.style.padding = active ? "18px 12px" : "3px 8px";
+      const iconWrap = row.querySelector('[data-role="tx-icon-wrap"]');
+      if(iconWrap) { const s = active ? "46px" : "32px"; iconWrap.style.width = s; iconWrap.style.height = s; }
       const icon = row.querySelector('[data-role="tx-icon"]');
-      if(icon) { const s = active ? "40px" : "32px"; icon.style.width = s; icon.style.height = s; }
+      if(icon) { const s = active ? "46px" : "32px"; icon.style.width = s; icon.style.height = s; }
       const desc = row.querySelector('[data-role="tx-desc"]');
-      if(desc) desc.style.fontSize = active ? "15px" : "13px";
+      if(desc) {
+        desc.style.fontSize = active ? "18px" : "13px";
+        // tx-desc kann entweder das <ExpandableLine>-Wurzel-div selbst sein
+        // (trägt dann data-expandable-line, das eigentliche Kürzungs-Div ist
+        // sein erstes Kind) oder — bei Budget-Restanzeigen — direkt das
+        // kürzende Div selbst.
+        const truncTarget = desc.hasAttribute("data-expandable-line") ? desc.firstElementChild : desc;
+        _setTruncationOverride(truncTarget, active);
+      }
+      const subline = row.querySelector('[data-role="tx-subline"]');
+      if(subline) {
+        const truncTarget = subline.hasAttribute("data-expandable-line") ? subline.firstElementChild : subline;
+        _setTruncationOverride(truncTarget, active);
+      }
       const amt = row.querySelector('[data-role="tx-amt"]');
-      if(amt) amt.style.fontSize = active ? "21px" : "16px";
+      if(amt) amt.style.fontSize = active ? "23px" : "16px";
       const detailGrid = row.querySelector('[data-role="tx-detail-grid"]');
       if(detailGrid) detailGrid.style.gridTemplateRows = active ? "1fr" : "0fr";
       const detailInner = row.querySelector('[data-role="tx-detail-inner"]');
@@ -1342,7 +1404,8 @@ function MonatScreen() {
                       <div style={{position:"relative",zIndex:1}}>
                         <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px",
                           transition:_reduceMotion?"none":"padding .4s cubic-bezier(.34,1.56,.64,1)"}}>
-                          <div style={{position:"relative",width:32,height:32,flexShrink:0,marginRight:8}}>
+                          <div data-role="tx-icon-wrap" style={{position:"relative",width:32,height:32,flexShrink:0,marginRight:8,
+                            transition:_reduceMotion?"none":"width .4s cubic-bezier(.34,1.56,.64,1), height .4s cubic-bezier(.34,1.56,.64,1)"}}>
                             <div data-role="tx-icon" onClick={e=>{e.stopPropagation();setTxIconPickM(txIconPickM===tx.id?null:tx.id);}}
                               style={{width:32,height:32,borderRadius:9,cursor:"pointer",background:displayColor+"22",border:`1px solid ${txIconPickM===tx.id?displayColor+"66":T.bd}`,display:"flex",alignItems:"center",justifyContent:"center",
                               "--icon-accent":displayColor,
@@ -1355,7 +1418,7 @@ function MonatScreen() {
                             <ExpandableLine data-role="tx-desc" style={{color:T.txt,fontSize:13,fontWeight:700,transition:_reduceMotion?"none":"font-size .4s cubic-bezier(.34,1.56,.64,1)"}}>
                               {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.gold)}</span>}
                             </ExpandableLine>
-                            <ExpandableLine style={{color:cat?.color||T.txt2,fontSize:10,marginTop:1,fontWeight:600}}>
+                            <ExpandableLine data-role="tx-subline" style={{color:cat?.color||T.txt2,fontSize:10,marginTop:1,fontWeight:600}}>
                               {tx.pending?"Vorgemerkt · ":""}{isS?involvedCats.map(c=>c.name).join(" · "):(()=>{const ss=getSub((tx.splits||[])[0]?.catId,(tx.splits||[])[0]?.subId);return ss?.name||cat?.name||"";})()}
                               {tx.accountId&&tx.accountId!=="acc-giro"&&(()=>{const a=getAcc(tx.accountId);return(<span style={{background:a.color+"22",color:a.color,borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>{Li(a.icon,9,a.color)} {a.name}</span>)})()}
                               {(tx.tags||[]).map(t=>(
@@ -1545,7 +1608,8 @@ function MonatScreen() {
                         <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px",
                           transition:_reduceMotion?"none":"padding .4s cubic-bezier(.34,1.56,.64,1)"}}>
                           {/* Icon — immer Icon-Picker */}
-                          <div style={{position:"relative",width:32,height:32,flexShrink:0,marginRight:8}}>
+                          <div data-role="tx-icon-wrap" style={{position:"relative",width:32,height:32,flexShrink:0,marginRight:8,
+                            transition:_reduceMotion?"none":"width .4s cubic-bezier(.34,1.56,.64,1), height .4s cubic-bezier(.34,1.56,.64,1)"}}>
                             <div data-role="tx-icon" onClick={e=>{e.stopPropagation();setTxIconPickM(txIconPickM===tx.id?null:tx.id);}}
                               style={{width:32,height:32,borderRadius:9,cursor:"pointer",
                                 background:displayColor+"22",
@@ -1573,7 +1637,7 @@ function MonatScreen() {
                             <ExpandableLine data-role="tx-desc" style={{color:T.txt,fontSize:13,fontWeight:700,transition:_reduceMotion?"none":"font-size .4s cubic-bezier(.34,1.56,.64,1)"}}>
                               {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.gold)}</span>}
                             </ExpandableLine>
-                            <ExpandableLine style={{color:cat?.color||T.txt2,fontSize:10,marginTop:1,fontWeight:600}}>
+                            <ExpandableLine data-role="tx-subline" style={{color:cat?.color||T.txt2,fontSize:10,marginTop:1,fontWeight:600}}>
                               {tx.pending?"Vorgemerkt · ":""}{isS?involvedCats.map(c=>c.name).join(" · "):(()=>{const ss=getSub((tx.splits||[])[0]?.catId,(tx.splits||[])[0]?.subId);return ss?.name || cat?.name || "";})()}
                               {tx.valueDate&&(
                               <span style={{background:"rgba(200,210,220,0.1)",color:T.txt2,
