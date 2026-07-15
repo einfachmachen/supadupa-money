@@ -461,11 +461,22 @@ function MonatScreen() {
         // sichtbar, um den Effekt überhaupt wahrzunehmen.
         const FOCUS_GAP = 120;
         const focusRefTop = refTop + FOCUS_GAP;
-        let curTx = null;
-        for(const c of el.querySelectorAll("[data-tx]")){
-          if(c.getBoundingClientRect().top - focusRefTop <= 8) curTx = c.getAttribute("data-tx");
+        const rowsArr = Array.from(el.querySelectorAll("[data-tx]"));
+        let curIdx = -1;
+        for(let i=0;i<rowsArr.length;i++){
+          if(rowsArr[i].getBoundingClientRect().top - focusRefTop <= 8) curIdx = i;
           else break;
         }
+        // Aktive Zeilen sind jetzt (Icon/Text-Wachstum + eigene volle Betrags-
+        // zeile) deutlich höher als vorher — bis die NÄCHSTE Zeile die
+        // Referenzlinie erreicht, kann die aktuelle dabei so weit hochscrollen,
+        // dass ihr oberer Rand unter den Hero rutscht und dort einen Großteil
+        // ihres (ja größer gewachsenen) Inhalts verdeckt. Sobald das droht,
+        // auf die nächste Zeile ausweichen statt an der verdeckten festzuhalten.
+        if(curIdx>=0 && curIdx<rowsArr.length-1 && rowsArr[curIdx].getBoundingClientRect().top < refTop){
+          curIdx += 1;
+        }
+        const curTx = curIdx>=0 ? rowsArr[curIdx].getAttribute("data-tx") : null;
         if(curTx !== activeTxIdRef.current){
           if(activeTxIdRef.current) setRowFocus(el.querySelector(`[data-tx="${activeTxIdRef.current}"]`), false);
           activeTxIdRef.current = curTx;
