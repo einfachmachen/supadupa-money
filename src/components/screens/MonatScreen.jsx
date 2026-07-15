@@ -323,20 +323,28 @@ function MonatScreen() {
           target.dataset.focusOrigOf = target.style.overflow||"";
           target.dataset.focusOrigTo = target.style.textOverflow||"";
           target.dataset.focusOrigFw = target.style.flexWrap||"";
+          target.dataset.focusOrigWb = target.style.overflowWrap||"";
         }
         target.style.whiteSpace = "normal";
         target.style.overflow = "visible";
         target.style.textOverflow = "clip";
         target.style.flexWrap = "wrap";
+        // Ein einzelnes langes Wort/Token ohne Leerzeichen (z.B. ein
+        // zusammengeschriebener Kontoname) würde sonst nicht umbrechen und
+        // in die Betragsspalte hineinlaufen ("Beträge und Buchungstexte
+        // überlagern sich") — erzwingt einen Umbruch auch mitten im Wort.
+        target.style.overflowWrap = "anywhere";
       } else if(target.dataset.focusOrigWs!==undefined){
         target.style.whiteSpace = target.dataset.focusOrigWs;
         target.style.overflow = target.dataset.focusOrigOf;
         target.style.textOverflow = target.dataset.focusOrigTo;
         target.style.flexWrap = target.dataset.focusOrigFw;
+        target.style.overflowWrap = target.dataset.focusOrigWb;
         delete target.dataset.focusOrigWs;
         delete target.dataset.focusOrigOf;
         delete target.dataset.focusOrigTo;
         delete target.dataset.focusOrigFw;
+        delete target.dataset.focusOrigWb;
       }
     };
     const setRowFocus = (row, active) => {
@@ -1261,7 +1269,7 @@ function MonatScreen() {
                 <div data-tx={"day-"+date} data-rest-bg="rgba(255,255,255,0.04)"
                   style={{display:"flex",alignItems:"center",position:"relative",transformOrigin:"center",
                   padding:"7px 10px 6px",gap:8,background:"rgba(255,255,255,0.04)",
-                  transition:_reduceMotion?"none":"background .15s ease, box-shadow .4s cubic-bezier(.34,1.56,.64,1), border-radius .4s ease, transform .4s cubic-bezier(.34,1.56,.64,1), color .15s ease"}}>
+                  transition:_reduceMotion?"none":"background .15s ease, box-shadow .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease, transform .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                   <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
                     <span style={{color:T.txt,fontSize:12,fontWeight:700}}>{showFullDate?fmtDFull(date):fmtD(date)}</span>
                     <span style={{color:T.txt2,fontSize:10}}>{dayName(date)}</span>
@@ -1309,7 +1317,7 @@ function MonatScreen() {
                       <span data-role="tx-amt" data-amt-tone={bigVal>=0?"pos":"neg"} style={{
                         ...amtStyle(bigVal>=0?"pos":"neg"),
                         fontSize:18,fontWeight:800,fontFamily:NUM_FONT,whiteSpace:"nowrap",
-                        transition:_reduceMotion?"none":"font-size .4s cubic-bezier(.34,1.56,.64,1), color .15s ease"}}>
+                        transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                         {bigVal>=0?"":"−"}{fmt(Math.abs(bigVal))}
                       </span>
                     </div>
@@ -1317,7 +1325,7 @@ function MonatScreen() {
                   })() : (
                     <span data-role="tx-amt" data-amt-tone={dayNet>=0?"pos":"neg"} style={{...amtStyle(dayNet>=0?"pos":"neg"),fontSize:18,fontWeight:800,
                       fontFamily:NUM_FONT,flexShrink:0,marginRight:8,
-                      transition:_reduceMotion?"none":"font-size .4s cubic-bezier(.34,1.56,.64,1), color .15s ease"}}>
+                      transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                       {dayNet>=0?"":"−"}{fmt(Math.abs(dayNet))}
                     </span>
                   )}
@@ -1398,22 +1406,22 @@ function MonatScreen() {
                       boxShadow:"none",
                       borderTop:`1px solid ${T.bd}`,
                       position:"relative", transformOrigin:"center",
-                      transition:_reduceMotion?"none":"background .15s ease, box-shadow .4s cubic-bezier(.34,1.56,.64,1), border-radius .4s ease, transform .4s cubic-bezier(.34,1.56,.64,1), color .15s ease"}}>
+                      transition:_reduceMotion?"none":"background .15s ease, box-shadow .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease, transform .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                       <div style={{position:"relative",zIndex:1}}>
                         <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px",
-                          transition:_reduceMotion?"none":"padding .4s cubic-bezier(.34,1.56,.64,1)"}}>
+                          transition:_reduceMotion?"none":"padding .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                           <div data-role="tx-icon-wrap" style={{position:"relative",width:32,height:32,flexShrink:0,marginRight:8,
-                            transition:_reduceMotion?"none":"width .4s cubic-bezier(.34,1.56,.64,1), height .4s cubic-bezier(.34,1.56,.64,1)"}}>
+                            transition:_reduceMotion?"none":"width .45s cubic-bezier(0.16, 1, 0.3, 1), height .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                             <div data-role="tx-icon" onClick={e=>{e.stopPropagation();setTxIconPickM(txIconPickM===tx.id?null:tx.id);}}
                               style={{width:32,height:32,borderRadius:9,cursor:"pointer",background:displayColor+"22",border:`1px solid ${txIconPickM===tx.id?displayColor+"66":T.bd}`,display:"flex",alignItems:"center",justifyContent:"center",
                               "--icon-accent":displayColor,
-                              transition:_reduceMotion?"none":"width .4s cubic-bezier(.34,1.56,.64,1), height .4s cubic-bezier(.34,1.56,.64,1)"}}>
+                              transition:_reduceMotion?"none":"width .45s cubic-bezier(0.16, 1, 0.3, 1), height .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                               {involvedCats.length>0?Li(displayIcon,16,displayColor):Li("help-circle",16,T.txt2)}
                             </div>
                           </div>
                           {txIconPickM===tx.id&&(<IconPickerDialog selectedIcon={involvedCats[0]?.icon||"help-circle"} selectedColor={involvedCats[0]?.color||T.txt2} onSelect={ic=>{if(involvedCats[0])setCats(p=>p.map(c=>c.id===involvedCats[0].id?{...c,icon:ic}:c));setTxIconPickM(null);}} onClose={()=>setTxIconPickM(null)}/>)}
                           <div onClick={()=>openEdit(tx)} style={{flex:1,minWidth:0,marginRight:6,cursor:"pointer"}}>
-                            <ExpandableLine data-role="tx-desc" style={{color:T.txt,fontSize:13,fontWeight:700,transition:_reduceMotion?"none":"font-size .4s cubic-bezier(.34,1.56,.64,1), color .15s ease"}}>
+                            <ExpandableLine data-role="tx-desc" style={{color:T.txt,fontSize:13,fontWeight:700,transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                               {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.gold)}</span>}
                             </ExpandableLine>
                             <ExpandableLine data-role="tx-subline" style={{color:cat?.color||T.txt2,fontSize:10,marginTop:1,fontWeight:600,transition:_reduceMotion?"none":"color .15s ease"}}>
@@ -1430,7 +1438,7 @@ function MonatScreen() {
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
                             <div data-role="tx-amt" data-amt-tone="pos" style={{...amtStyle("pos",pal.val),...(tx.pending?{color:T.cell_inc}:{}),
                               fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
-                              transition:_reduceMotion?"none":"font-size .4s cubic-bezier(.34,1.56,.64,1), color .15s ease"}}>{fmt(tx.totalAmount)}</div>
+                              transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{fmt(tx.totalAmount)}</div>
                             {isS&&(
                               <div style={{marginTop:2}}>
                                 {(tx.splits||[]).filter(sp=>sp.catId).map((sp,si)=>{
@@ -1453,7 +1461,7 @@ function MonatScreen() {
                             NICHT über React-State/Re-Render gesteuert (siehe setRowFocus
                             weiter oben), sondern per direktem DOM-Zugriff aktiviert. */}
                         <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr",
-                          transition:_reduceMotion?"none":"grid-template-rows .4s cubic-bezier(.34,1.56,.64,1)"}}>
+                          transition:_reduceMotion?"none":"grid-template-rows .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                           <div data-role="tx-detail-inner" style={{overflow:"hidden",opacity:0,
                             transition:_reduceMotion?"none":"opacity .35s ease .05s"}}>
                             <div style={{padding:"2px 8px 11px 40px",display:"flex",flexDirection:"column",gap:6}}>
@@ -1528,17 +1536,17 @@ function MonatScreen() {
                     return (
                       <div key={"rb-"+name} data-tx={"rb-"+date+"-"+name} style={{borderRadius:0,marginBottom:0,overflow:"visible",background:"transparent",borderTop:`1px solid ${T.bd}`,
                         position:"relative",transformOrigin:"center",
-                        transition:_reduceMotion?"none":"background .15s ease, box-shadow .4s cubic-bezier(.34,1.56,.64,1), border-radius .4s ease, transform .4s cubic-bezier(.34,1.56,.64,1), color .15s ease"}}>
+                        transition:_reduceMotion?"none":"background .15s ease, box-shadow .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease, transform .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                         <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px",
-                          transition:_reduceMotion?"none":"padding .4s cubic-bezier(.34,1.56,.64,1)"}}>
+                          transition:_reduceMotion?"none":"padding .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                           <div data-role="tx-icon" style={{width:32,height:32,borderRadius:9,flexShrink:0,marginRight:8,background:accentCol+"22",border:`1px solid ${T.bd}`,display:"flex",alignItems:"center",justifyContent:"center",
                             "--icon-accent":accentCol,
-                            transition:_reduceMotion?"none":"width .4s cubic-bezier(.34,1.56,.64,1), height .4s cubic-bezier(.34,1.56,.64,1)"}}>
+                            transition:_reduceMotion?"none":"width .45s cubic-bezier(0.16, 1, 0.3, 1), height .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                             {Li(isOverspent?"alert-triangle":"target",16,accentCol)}
                           </div>
                           <div style={{flex:1,minWidth:0,marginRight:6}}>
                             <div data-role="tx-desc" style={{color:isOverspent?T.neg:T.txt,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
-                              transition:_reduceMotion?"none":"font-size .4s cubic-bezier(.34,1.56,.64,1), color .15s ease"}}>{subName}</div>
+                              transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{subName}</div>
                             {/* Verbrauch als Punkt auf feiner Linie (gleiche Sprache wie
                                 der Dashboard-Pegel) statt Balken + Prozent-Text */}
                             <div style={{marginTop:6,position:"relative",height:8,maxWidth:140}}>
@@ -1557,7 +1565,7 @@ function MonatScreen() {
                             <span style={{...amtStyle(spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold",spent===0?T.txt2:accentCol),fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",transition:_reduceMotion?"none":"color .15s ease"}}>{spent===0?"—":fmt(Math.abs(spent))}</span>
                             <span style={{color:T.txt2,fontSize:10,marginLeft:8,transition:_reduceMotion?"none":"color .15s ease"}}>{isOverspent?"zuviel:":"Rest:"}</span>
                             <span data-role="tx-amt" data-amt-tone={isOverspent?"neg":open>0?"gold":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"gold":"txt2"),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
-                              transition:_reduceMotion?"none":"font-size .4s cubic-bezier(.34,1.56,.64,1), color .15s ease"}}>{fmt(Math.abs(signedOpen))}</span>
+                              transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{fmt(Math.abs(signedOpen))}</span>
                           </div>
                         </div>
                       </div>
@@ -1600,24 +1608,24 @@ function MonatScreen() {
                       boxShadow:"none",
                       borderTop:`1px solid ${T.bd}`,
                       position:"relative", transformOrigin:"center",
-                      transition:_reduceMotion?"none":"background .15s ease, box-shadow .4s cubic-bezier(.34,1.56,.64,1), border-radius .4s ease, transform .4s cubic-bezier(.34,1.56,.64,1), color .15s ease",
+                      transition:_reduceMotion?"none":"background .15s ease, box-shadow .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease, transform .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease",
                     }}>
 
 
                       <div style={{position:"relative",zIndex:1}}>
                         {/* Main row */}
                         <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px",
-                          transition:_reduceMotion?"none":"padding .4s cubic-bezier(.34,1.56,.64,1)"}}>
+                          transition:_reduceMotion?"none":"padding .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                           {/* Icon — immer Icon-Picker */}
                           <div data-role="tx-icon-wrap" style={{position:"relative",width:32,height:32,flexShrink:0,marginRight:8,
-                            transition:_reduceMotion?"none":"width .4s cubic-bezier(.34,1.56,.64,1), height .4s cubic-bezier(.34,1.56,.64,1)"}}>
+                            transition:_reduceMotion?"none":"width .45s cubic-bezier(0.16, 1, 0.3, 1), height .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                             <div data-role="tx-icon" onClick={e=>{e.stopPropagation();setTxIconPickM(txIconPickM===tx.id?null:tx.id);}}
                               style={{width:32,height:32,borderRadius:9,cursor:"pointer",
                                 background:displayColor+"22",
                                 border:`1px solid ${txIconPickM===tx.id?displayColor+"66":T.bd}`,
                                 display:"flex",alignItems:"center",justifyContent:"center",
                                 "--icon-accent":displayColor,
-                                transition:_reduceMotion?"none":"width .4s cubic-bezier(.34,1.56,.64,1), height .4s cubic-bezier(.34,1.56,.64,1)"}}>
+                                transition:_reduceMotion?"none":"width .45s cubic-bezier(0.16, 1, 0.3, 1), height .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                               {involvedCats.length>0
                                 ? Li(displayIcon,16,displayColor)
                                 : tx.pending ? (tx._seriesTyp==="finanzierung"?Li("credit-card",16,T.gold):tx._seriesId?Li("repeat",16,T.pos):Li("calendar",16,T.gold)) : Li("help-circle",16,T.txt2)}
@@ -1635,7 +1643,7 @@ function MonatScreen() {
                           )}
                           {/* Text — Klick öffnet Edit */}
                           <div onClick={()=>openEdit(tx)} style={{flex:1,minWidth:0,marginRight:6,cursor:"pointer"}}>
-                            <ExpandableLine data-role="tx-desc" style={{color:T.txt,fontSize:13,fontWeight:700,transition:_reduceMotion?"none":"font-size .4s cubic-bezier(.34,1.56,.64,1), color .15s ease"}}>
+                            <ExpandableLine data-role="tx-desc" style={{color:T.txt,fontSize:13,fontWeight:700,transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                               {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.gold)}</span>}
                             </ExpandableLine>
                             <ExpandableLine data-role="tx-subline" style={{color:cat?.color||T.txt2,fontSize:10,marginTop:1,fontWeight:600,transition:_reduceMotion?"none":"color .15s ease"}}>
@@ -1669,7 +1677,7 @@ function MonatScreen() {
                           <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
                             <div data-role="tx-amt" data-amt-tone={type==="income"?"pos":tx.pending?"gold":"neg"} style={{...amtStyle(type==="income"?"pos":tx.pending?"gold":"neg",pal.val),...(type==="income"&&tx.pending?{color:T.cell_inc}:{}),
                               fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
-                              transition:_reduceMotion?"none":"font-size .4s cubic-bezier(.34,1.56,.64,1), color .15s ease"}}>
+                              transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                               {fmt(tx.totalAmount)}
                             </div>
                             {isS&&(
@@ -1695,7 +1703,7 @@ function MonatScreen() {
                             NICHT über React-State/Re-Render gesteuert (siehe setRowFocus
                             weiter oben), sondern per direktem DOM-Zugriff aktiviert. */}
                         <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr",
-                          transition:_reduceMotion?"none":"grid-template-rows .4s cubic-bezier(.34,1.56,.64,1)"}}>
+                          transition:_reduceMotion?"none":"grid-template-rows .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                           <div data-role="tx-detail-inner" style={{overflow:"hidden",opacity:0,
                             transition:_reduceMotion?"none":"opacity .35s ease .05s"}}>
                             <div style={{padding:"2px 8px 11px 40px",display:"flex",flexDirection:"column",gap:6}}>

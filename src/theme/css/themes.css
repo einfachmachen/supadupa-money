@@ -147,14 +147,24 @@
      (Farben sind dort jeweils explizit gesetzt) — deshalb hier per
      Datenattribut + Nachfahren-Selektor kräftige, gut lesbare Text-/
      Betragsfarben auf der hellen Fläche erzwungen. Gilt für JEDE Zeilenart
-     (echte Buchungen, Budget-Restanzeigen, Tagessaldo-Kopfzeile). */
-  [data-tx-focus-light="1"],
-  [data-tx-focus-light="1"] * {
+     (echte Buchungen, Budget-Restanzeigen, Tagessaldo-Kopfzeile).
+     WICHTIG: [data-tx-focus-light="1"] wird absichtlich DREIFACH wiederholt
+     (Spezifität 0,3,0) — die App hat ein bestehendes "neutrale Beträge"-
+     Feature (.amts-neutral [style*="Questrial"] { color: var(--amt-neutral)
+     !important; }, siehe base.css), das per Default (amtMode<2) aktiv ist,
+     ebenfalls !important nutzt UND Spezifität 0,2,0 hat (1 Klasse + 1
+     Attribut). Mit nur EINER Wiederholung (0,2,0) wäre es ein Unentschieden
+     gewesen, das je nach Stylesheet-Reihenfolge hätte kippen können — dann
+     blieben Beträge (alle mit der Questrial-Zahlenschrift) in ihrer blassen
+     Neutralfarbe auf der hellen Fokus-Fläche unsichtbar. 0,3,0 gewinnt
+     garantiert, unabhängig von der Ladereihenfolge. */
+  [data-tx-focus-light="1"][data-tx-focus-light="1"][data-tx-focus-light="1"],
+  [data-tx-focus-light="1"][data-tx-focus-light="1"][data-tx-focus-light="1"] * {
     color: #1E2418 !important;
   }
-  [data-tx-focus-light="1"] [data-amt-tone="pos"] { color: #4D6E00 !important; }
-  [data-tx-focus-light="1"] [data-amt-tone="neg"] { color: #A82815 !important; }
-  [data-tx-focus-light="1"] [data-amt-tone="gold"] { color: #8A5A00 !important; }
+  [data-tx-focus-light="1"][data-tx-focus-light="1"] [data-amt-tone="pos"] { color: #4D6E00 !important; }
+  [data-tx-focus-light="1"][data-tx-focus-light="1"] [data-amt-tone="neg"] { color: #A82815 !important; }
+  [data-tx-focus-light="1"][data-tx-focus-light="1"] [data-amt-tone="gold"] { color: #8A5A00 !important; }
   /* Icon-Badge: kräftige (satte) Akzentfarbe statt der blassen Farbtönung —
      ein weißes/blasses Plättchen führte dazu, dass ein ebenso helles Icon
      (z.B. eine helle Kategoriefarbe) darauf komplett unsichtbar wurde
