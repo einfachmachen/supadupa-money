@@ -155,11 +155,17 @@
   [data-tx-focus-light="1"] [data-amt-tone="pos"] { color: #4D6E00 !important; }
   [data-tx-focus-light="1"] [data-amt-tone="neg"] { color: #A82815 !important; }
   [data-tx-focus-light="1"] [data-amt-tone="gold"] { color: #8A5A00 !important; }
-  /* Icon-Badge: eigenes weißes Plättchen statt der blassen Farbtönung, die
-     auf der hellen Fläche sonst kaum sichtbar wäre — Icon behält seine
-     Kategoriefarbe, sticht aber klar hervor. */
+  /* Icon-Badge: kräftige (satte) Akzentfarbe statt der blassen Farbtönung —
+     ein weißes/blasses Plättchen führte dazu, dass ein ebenso helles Icon
+     (z.B. eine helle Kategoriefarbe) darauf komplett unsichtbar wurde
+     ("Weiß auf Weiß"). --icon-accent wird pro Zeile inline gesetzt (Icon-
+     Container in MonatScreen.jsx). Das Icon selbst wird immer auf Weiß
+     erzwungen, damit es auf JEDER Akzentfarbe garantiert lesbar bleibt. */
   [data-tx-focus-light="1"] [data-role="tx-icon"] {
-    background: rgba(255,255,255,0.88) !important;
+    background: var(--icon-accent, #6B7280) !important;
+  }
+  [data-tx-focus-light="1"] [data-role="tx-icon"] svg {
+    stroke: #FFFFFF !important;
   }
 
   /* ── Randlos-Modus ── */

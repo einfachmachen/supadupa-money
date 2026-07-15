@@ -291,6 +291,17 @@ function MonatScreen() {
     // per DOM auf genau die betroffene(n) Zeile(n) zugegriffen (siehe setRowFocus)
     // — kein Re-Render nötig, bleibt auch bei riesigen Listen flüssig.
     const activeTxIdRef = useRef(null);
+    // Mindest-Standzeit pro aktiver Zeile: bei einem schnellen Wisch/Fling
+    // wechselte die aktive Zeile sonst mehrfach pro Sekunde durch — jede kaum
+    // länger sichtbar als ein Frame, wirkte flackernd statt organisch. Ein
+    // Wechsel wird deshalb erst übernommen, wenn seit dem letzten Wechsel
+    // mind. MIN_DWELL_MS vergangen sind; ein nachgelagerter Timer sorgt dafür,
+    // dass der zuletzt ermittelte Zielwert trotzdem ankommt, auch wenn der
+    // Scroll währenddessen ganz zum Stillstand kommt (keine weiteren
+    // Scroll-Events mehr, die sonst nachkorrigieren könnten).
+    const lastSwitchAtRef = useRef(0);
+    const pendingSwitchTimerRef = useRef(null);
+    const MIN_DWELL_MS = 140;
     const _reduceMotion = typeof window!=="undefined" && window.matchMedia
       && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     // Immer NUR EINE Zeile ist aktiv — kein Kaskaden-Effekt über mehrere
@@ -379,9 +390,22 @@ function MonatScreen() {
           else break;
         }
         if(curTx !== activeTxIdRef.current){
-          if(activeTxIdRef.current) setRowFocus(el.querySelector(`[data-tx="${activeTxIdRef.current}"]`), false);
-          activeTxIdRef.current = curTx;
-          if(curTx) setRowFocus(el.querySelector(`[data-tx="${curTx}"]`), true);
+          const applySwitch = (id) => {
+            if(activeTxIdRef.current) setRowFocus(el.querySelector(`[data-tx="${activeTxIdRef.current}"]`), false);
+            activeTxIdRef.current = id;
+            lastSwitchAtRef.current = performance.now();
+            if(id) setRowFocus(el.querySelector(`[data-tx="${id}"]`), true);
+          };
+          clearTimeout(pendingSwitchTimerRef.current);
+          const elapsed = performance.now() - lastSwitchAtRef.current;
+          if(elapsed >= MIN_DWELL_MS){
+            applySwitch(curTx);
+          } else {
+            const targetId = curTx;
+            pendingSwitchTimerRef.current = setTimeout(()=>{
+              if(activeTxIdRef.current !== targetId) applySwitch(targetId);
+            }, MIN_DWELL_MS - elapsed);
+          }
         }
 
         if(!multiMonth) return;
@@ -1199,7 +1223,7 @@ function MonatScreen() {
                     // Links klein als Zusatz der reine Ist-Verlauf "ohne Budget".
                     const bigVal = daySaldo!==null ? daySaldo : headSaldo;
                     return (
-                    <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0,marginRight:8}}>
                       {/* Zusatzinfos LINKS neben dem Tagessaldo, größer & lesbar */}
                       {(hasReservierung||hasDayPend)&&(
                         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1,lineHeight:1.2}}>
@@ -1232,7 +1256,7 @@ function MonatScreen() {
                     );
                   })() : (
                     <span data-role="tx-amt" data-amt-tone={dayNet>=0?"pos":"neg"} style={{...amtStyle(dayNet>=0?"pos":"neg"),fontSize:18,fontWeight:800,
-                      fontFamily:NUM_FONT,flexShrink:0,
+                      fontFamily:NUM_FONT,flexShrink:0,marginRight:8,
                       transition:_reduceMotion?"none":"font-size .4s cubic-bezier(.34,1.56,.64,1)"}}>
                       {dayNet>=0?"":"−"}{fmt(Math.abs(dayNet))}
                     </span>
@@ -1321,6 +1345,7 @@ function MonatScreen() {
                           <div style={{position:"relative",width:32,height:32,flexShrink:0,marginRight:8}}>
                             <div data-role="tx-icon" onClick={e=>{e.stopPropagation();setTxIconPickM(txIconPickM===tx.id?null:tx.id);}}
                               style={{width:32,height:32,borderRadius:9,cursor:"pointer",background:displayColor+"22",border:`1px solid ${txIconPickM===tx.id?displayColor+"66":T.bd}`,display:"flex",alignItems:"center",justifyContent:"center",
+                              "--icon-accent":displayColor,
                               transition:_reduceMotion?"none":"width .4s cubic-bezier(.34,1.56,.64,1), height .4s cubic-bezier(.34,1.56,.64,1)"}}>
                               {involvedCats.length>0?Li(displayIcon,16,displayColor):Li("help-circle",16,T.txt2)}
                             </div>
@@ -1446,6 +1471,7 @@ function MonatScreen() {
                         <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px",
                           transition:_reduceMotion?"none":"padding .4s cubic-bezier(.34,1.56,.64,1)"}}>
                           <div data-role="tx-icon" style={{width:32,height:32,borderRadius:9,flexShrink:0,marginRight:8,background:accentCol+"22",border:`1px solid ${T.bd}`,display:"flex",alignItems:"center",justifyContent:"center",
+                            "--icon-accent":accentCol,
                             transition:_reduceMotion?"none":"width .4s cubic-bezier(.34,1.56,.64,1), height .4s cubic-bezier(.34,1.56,.64,1)"}}>
                             {Li(isOverspent?"alert-triangle":"target",16,accentCol)}
                           </div>
@@ -1525,6 +1551,7 @@ function MonatScreen() {
                                 background:displayColor+"22",
                                 border:`1px solid ${txIconPickM===tx.id?displayColor+"66":T.bd}`,
                                 display:"flex",alignItems:"center",justifyContent:"center",
+                                "--icon-accent":displayColor,
                                 transition:_reduceMotion?"none":"width .4s cubic-bezier(.34,1.56,.64,1), height .4s cubic-bezier(.34,1.56,.64,1)"}}>
                               {involvedCats.length>0
                                 ? Li(displayIcon,16,displayColor)
