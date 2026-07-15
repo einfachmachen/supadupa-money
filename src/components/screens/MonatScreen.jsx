@@ -410,10 +410,19 @@ function MonatScreen() {
         amtBlock.style.paddingTop = active ? "10px" : "0";
         amtBlock.style.borderTop = active ? "1px solid rgba(30,36,24,0.12)" : "none";
         amtBlock.style.marginRight = active ? "0" : "8px";
-        // Budget-Restanzeige: spent-Betrag links, Rest/zuviel rechts — nutzt
-        // so die volle Breite statt rechtsbündig zusammenzurücken. Bei
-        // Buchungszeilen (kein Flex-Container hier) folgenlos.
+        // Budget-Restanzeige: nutzt die volle Breite statt rechtsbündig
+        // zusammenzurücken. Bei Buchungszeilen (kein Flex-Container hier)
+        // folgenlos.
         amtBlock.style.justifyContent = active ? "space-between" : "flex-end";
+        // Rechts steht — wie bei jeder anderen Zeile auch — der tatsächliche
+        // (verbrauchte) Betrag; "Rest:"/"zuviel:" rutscht dafür als kleinere
+        // Einheit nach links. Per CSS-order umgeschaltet (DOM-Reihenfolge
+        // bleibt für den Ruhezustand unverändert: dort stehen beide ohnehin
+        // rechtsbündig gepackt in derselben Lesereihenfolge wie zuvor).
+        const restWrap = amtBlock.querySelector('[data-role="tx-restwrap"]');
+        const mainAmt = amtBlock.querySelector('[data-role="tx-amt"]');
+        if(restWrap) restWrap.style.order = active ? "1" : "0";
+        if(mainAmt) mainAmt.style.order = active ? "2" : "0";
       }
       const amt = row.querySelector('[data-role="tx-amt"]');
       if(amt) amt.style.fontSize = active ? "27px" : "16px";
@@ -1573,14 +1582,20 @@ function MonatScreen() {
                             </div>
                           </div>
                           {/* Rechts: eine Zeile — genutzter Betrag (ohne Label, selbstsprechend)
-                              links, „Rest:" (offen) rechts. */}
+                              links, „Rest:" (offen) rechts. In der aktiven (zweizeiligen)
+                              Fokus-Ansicht steht rechts stattdessen der tatsächliche
+                              (verbrauchte) Betrag groß, wie bei jeder anderen Zeile auch —
+                              "Rest:"/"zuviel:" rutscht dafür als kleinere Einheit nach links
+                              (siehe order-Umschaltung in setRowFocus). */}
                           <div data-role="tx-amtblock" style={{textAlign:"right",flexShrink:0,marginRight:8,
                             display:"flex",justifyContent:"flex-end",alignItems:"baseline",gap:6,
                             transition:_reduceMotion?"none":"flex-basis .45s cubic-bezier(0.16, 1, 0.3, 1), margin .45s cubic-bezier(0.16, 1, 0.3, 1), padding .45s cubic-bezier(0.16, 1, 0.3, 1), border-color .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
-                            <span style={{...amtStyle(spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold",spent===0?T.txt2:accentCol),fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",transition:_reduceMotion?"none":"color .15s ease"}}>{spent===0?"—":fmt(Math.abs(spent))}</span>
-                            <span style={{color:T.txt2,fontSize:10,marginLeft:8,transition:_reduceMotion?"none":"color .15s ease"}}>{isOverspent?"zuviel:":"Rest:"}</span>
-                            <span data-role="tx-amt" data-amt-tone={isOverspent?"neg":open>0?"gold":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"gold":"txt2"),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
-                              transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{fmt(Math.abs(signedOpen))}</span>
+                            <span data-role="tx-amt" data-amt-tone={spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold"} style={{...amtStyle(spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold",spent===0?T.txt2:accentCol),fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{spent===0?"—":fmt(Math.abs(spent))}</span>
+                            <span data-role="tx-restwrap" style={{display:"inline-flex",alignItems:"baseline",gap:6}}>
+                              <span style={{color:T.txt2,fontSize:10,marginLeft:8,transition:_reduceMotion?"none":"color .15s ease"}}>{isOverspent?"zuviel:":"Rest:"}</span>
+                              <span data-amt-tone={isOverspent?"neg":open>0?"gold":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"gold":"txt2"),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
+                                transition:_reduceMotion?"none":"color .15s ease"}}>{fmt(Math.abs(signedOpen))}</span>
+                            </span>
                           </div>
                         </div>
                       </div>
