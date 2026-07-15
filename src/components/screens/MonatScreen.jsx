@@ -291,17 +291,12 @@ function MonatScreen() {
     // per DOM auf genau die betroffene(n) Zeile(n) zugegriffen (siehe setRowFocus)
     // — kein Re-Render nötig, bleibt auch bei riesigen Listen flüssig.
     const activeTxIdRef = useRef(null);
-    // Mindest-Standzeit pro aktiver Zeile: bei einem schnellen Wisch/Fling
-    // wechselte die aktive Zeile sonst mehrfach pro Sekunde durch — jede kaum
-    // länger sichtbar als ein Frame, wirkte flackernd statt organisch. Ein
-    // Wechsel wird deshalb erst übernommen, wenn seit dem letzten Wechsel
-    // mind. MIN_DWELL_MS vergangen sind; ein nachgelagerter Timer sorgt dafür,
-    // dass der zuletzt ermittelte Zielwert trotzdem ankommt, auch wenn der
-    // Scroll währenddessen ganz zum Stillstand kommt (keine weiteren
-    // Scroll-Events mehr, die sonst nachkorrigieren könnten).
-    const lastSwitchAtRef = useRef(0);
-    const pendingSwitchTimerRef = useRef(null);
-    const MIN_DWELL_MS = 140;
+    // Frühere Mindest-Standzeit (Dwell-Gate) wieder entfernt: das Umschalten
+    // reagierte dadurch spürbar verzögert auf Maus-Scrollrad-Eingaben (mehrere
+    // Notches ohne sichtbare Reaktion). Das ursprüngliche Flacker-Problem, das
+    // die Gate lösen sollte, ist inzwischen an der Wurzel behoben (kurze,
+    // synchron laufende Farb-/Hintergrund-Transitionen statt eines harten
+    // Wechsels) — direktes 1:1-Folgen der Scrollposition ist jetzt sicher.
     const _reduceMotion = typeof window!=="undefined" && window.matchMedia
       && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     // Immer NUR EINE Zeile ist aktiv — kein Kaskaden-Effekt über mehrere
@@ -472,22 +467,9 @@ function MonatScreen() {
           else break;
         }
         if(curTx !== activeTxIdRef.current){
-          const applySwitch = (id) => {
-            if(activeTxIdRef.current) setRowFocus(el.querySelector(`[data-tx="${activeTxIdRef.current}"]`), false);
-            activeTxIdRef.current = id;
-            lastSwitchAtRef.current = performance.now();
-            if(id) setRowFocus(el.querySelector(`[data-tx="${id}"]`), true);
-          };
-          clearTimeout(pendingSwitchTimerRef.current);
-          const elapsed = performance.now() - lastSwitchAtRef.current;
-          if(elapsed >= MIN_DWELL_MS){
-            applySwitch(curTx);
-          } else {
-            const targetId = curTx;
-            pendingSwitchTimerRef.current = setTimeout(()=>{
-              if(activeTxIdRef.current !== targetId) applySwitch(targetId);
-            }, MIN_DWELL_MS - elapsed);
-          }
+          if(activeTxIdRef.current) setRowFocus(el.querySelector(`[data-tx="${activeTxIdRef.current}"]`), false);
+          activeTxIdRef.current = curTx;
+          if(curTx) setRowFocus(el.querySelector(`[data-tx="${curTx}"]`), true);
         }
 
         if(!multiMonth) return;
