@@ -140,12 +140,14 @@
     ) !important;
   }
 
-  /* ── Fokus-Effekt Monatsliste: kräftige Akzentkarte im Dark-Theme ──
-     Inline-Styles können keine Nachfahren übersteuern (Farben sind dort
-     jeweils explizit gesetzt) — deshalb hier per Datenattribut + Nachfahren-
-     Selektor. Die Karte selbst bleibt eine gesättigte Akzentfarbe (kein
-     Hellthema-Look, siehe setRowIntensity in MonatScreen.jsx), nur Text/
-     Beträge brauchen auf der satten Fläche die Hellthema-Kontrastwerte. */
+  /* ── Fokus-Effekt Monatsliste: EINE aktive Zeile, einfarbiger heller
+     Hintergrund (#F4F6F0, siehe setRowFocus in MonatScreen.jsx) — bewusst
+     KEIN Verlauf/keine Farbwäsche, das machte laut Nutzer-Feedback den Text
+     schlechter lesbar. Inline-Styles können keine Nachfahren übersteuern
+     (Farben sind dort jeweils explizit gesetzt) — deshalb hier per
+     Datenattribut + Nachfahren-Selektor kräftige, gut lesbare Text-/
+     Betragsfarben auf der hellen Fläche erzwungen. Gilt für JEDE Zeilenart
+     (echte Buchungen, Budget-Restanzeigen, Tagessaldo-Kopfzeile). */
   [data-tx-focus-light="1"],
   [data-tx-focus-light="1"] * {
     color: #1E2418 !important;
@@ -154,7 +156,7 @@
   [data-tx-focus-light="1"] [data-amt-tone="neg"] { color: #A82815 !important; }
   [data-tx-focus-light="1"] [data-amt-tone="gold"] { color: #8A5A00 !important; }
   /* Icon-Badge: eigenes weißes Plättchen statt der blassen Farbtönung, die
-     auf der satten Akzentkarte sonst verwaschen wirkt — Icon behält seine
+     auf der hellen Fläche sonst kaum sichtbar wäre — Icon behält seine
      Kategoriefarbe, sticht aber klar hervor. */
   [data-tx-focus-light="1"] [data-role="tx-icon"] {
     background: rgba(255,255,255,0.88) !important;

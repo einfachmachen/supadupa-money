@@ -9,7 +9,7 @@ import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
 import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
 import { WerkzeugeSection } from "../organisms/WerkzeugeSection.jsx";
 import { AppCtx } from "../../state/AppContext.js";
-import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
+import { theme as T } from "../../theme/activeTheme.js";
 import { PAL } from "../../theme/palette.js";
 import { amtStyle, readableOn } from "../../theme/amtPill.js";
 import { MONTHS_F } from "../../utils/constants.js";
@@ -288,76 +288,52 @@ function MonatScreen() {
     // Serien) würde JEDER Scroll-Frame einen Re-Render der kompletten Monatsliste
     // auslösen und den Effekt praktisch unsichtbar machen (Update kommt nie an,
     // bevor der nächste Scroll-Frame schon weiterzieht). Stattdessen wird direkt
-    // per DOM auf genau die betroffene(n) Zeile(n) zugegriffen (siehe setRowIntensity/setRowDetail)
+    // per DOM auf genau die betroffene(n) Zeile(n) zugegriffen (siehe setRowFocus)
     // — kein Re-Render nötig, bleibt auch bei riesigen Listen flüssig.
     const activeTxIdRef = useRef(null);
     const _reduceMotion = typeof window!=="undefined" && window.matchMedia
       && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    // Gleiche Gradient-Struktur immer (2 Stops, 90deg) — nur so kann der
-    // Browser beim Fokus-Wechsel sanft zwischen den Farben überblenden.
-    const _rowGradient = (c1, c2) => `linear-gradient(90deg, ${c1} 0%, ${c2} 60%)`;
-    const _lerp = (a,b,t) => a + (b-a)*t;
-    const _hexA = v => Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,"0");
-    // Kontinuierlicher Fokus-Effekt (Vorbild: die wachsende Karte der Bahn-App)
-    // — nicht nur EINE Zeile springt hart zwischen normal/aktiv, sondern alle
-    // Zeilen in der Nähe der Referenzlinie wachsen/schrumpfen stufenlos je
-    // Abstand (t = 0..1, siehe onListScroll). Kräftige, gesättigte Akzentfarbe
-    // statt heller Karte — kein "Hellthema"-Look, dafür Text dunkel für
-    // Kontrast auf der satten Farbe (CSS-Regel [data-tx-focus-light] in
-    // themes.css; Inline-Styles können keine Nachfahren-Farben übersteuern).
-    const _isDarkTheme = !isLightTheme();
-    const _peakAlpha = _isDarkTheme ? 210 : 110;
-    const setRowIntensity = (row, t) => {
-      const fulfilled = row.getAttribute("data-fulfilled") === "1";
-      if(t <= 0.02) {
-        const baseBg = fulfilled ? T.pos+"11" : "transparent";
-        row.style.background = _rowGradient(baseBg, baseBg);
-        row.style.boxShadow = "none";
-        row.style.borderRadius = "0px";
-        row.style.transform = "scale(1)";
-        row.style.zIndex = "1";
-        row.setAttribute("data-tx-focus-light", "0");
-        const mainRow = row.querySelector('[data-role="tx-mainrow"]'); if(mainRow) mainRow.style.padding = "3px 8px";
-        const icon = row.querySelector('[data-role="tx-icon"]'); if(icon){ icon.style.width="32px"; icon.style.height="32px"; }
-        const desc = row.querySelector('[data-role="tx-desc"]'); if(desc) desc.style.fontSize = "13px";
-        const amt = row.querySelector('[data-role="tx-amt"]'); if(amt) amt.style.fontSize = "16px";
-        return;
-      }
-      const a1 = _hexA(_peakAlpha*t);
-      const a2 = _hexA(255*Math.min(1, t/0.55));
-      row.style.background = _rowGradient(`${T.pos}${a1}`, `${T.surf2}${a2}`);
-      row.setAttribute("data-tx-focus-light", (_isDarkTheme && t>0.45) ? "1" : "0");
-      // Akzent als box-shadow (Glow + Innenstreifen) statt border-left: Die
-      // App hat standardmäßig "Keine Rahmen" aktiv (mbt_noborders, siehe
-      // App.jsx), was per CSS-Regel ".no-borders * { border-color:
-      // transparent !important }" JEDE Rahmenfarbe überschreibt — auch
-      // inline gesetzte. box-shadow ist davon nicht betroffen.
-      row.style.boxShadow = `inset ${(4*t).toFixed(1)}px 0 0 0 ${T.pos}, 0 ${Math.round(_lerp(0,12,t))}px ${Math.round(_lerp(0,30,t))}px -4px rgba(0,0,0,${(0.5*t).toFixed(2)})`;
-      row.style.borderRadius = `${Math.round(_lerp(0,16,t))}px`;
-      // Echtes Wachstum statt nur größerer Schrift: Zeile bekommt spürbar mehr
-      // Luft (Padding) + leichte Skalierung — das "Pop"-Gefühl aus dem Video.
-      row.style.transform = `scale(${_lerp(1,1.035,t).toFixed(3)})`;
-      row.style.zIndex = t>0.3 ? "5" : "1";
-      const mainRow = row.querySelector('[data-role="tx-mainrow"]');
-      if(mainRow) mainRow.style.padding = `${_lerp(3,16,t).toFixed(1)}px ${_lerp(8,10,t).toFixed(1)}px`;
-      const icon = row.querySelector('[data-role="tx-icon"]');
-      if(icon) { const s = `${_lerp(32,42,t).toFixed(1)}px`; icon.style.width = s; icon.style.height = s; }
-      const desc = row.querySelector('[data-role="tx-desc"]');
-      if(desc) desc.style.fontSize = `${_lerp(13,16,t).toFixed(1)}px`;
-      const amt = row.querySelector('[data-role="tx-amt"]');
-      if(amt) amt.style.fontSize = `${_lerp(16,23,t).toFixed(1)}px`;
-    };
-    // Notiz/Splits/Vormerkungs-Abgleich klappen NUR für die eine Zeile ganz
-    // auf, die der Referenzlinie am nächsten ist — sonst wären mehrere
-    // Detailblöcke gleichzeitig offen, das wäre unübersichtlich.
-    const setRowDetail = (row, open) => {
+    // Immer NUR EINE Zeile ist aktiv — kein Kaskaden-Effekt über mehrere
+    // Nachbarzeilen mehr (das machte alles gleichzeitig unruhig/schwerer
+    // lesbar). Dafür zählt JEDE Zeilenart mit: echte Buchungen, Budget-
+    // Restanzeigen UND die Tagessaldo-Kopfzeile — alles trägt [data-tx],
+    // damit beim Scrollen lückenlos irgendetwas im Fokus steht.
+    const setRowFocus = (row, active) => {
       if(!row) return;
+      const fulfilled = row.getAttribute("data-fulfilled") === "1";
+      // Manche Zeilenarten (z.B. Tagessaldo-Kopfzeile) haben im Ruhezustand
+      // eine eigene Hintergrundfarbe statt "transparent" — data-rest-bg
+      // verrät setRowFocus, wohin beim Deaktivieren zurückgesetzt wird.
+      const restBg = row.getAttribute("data-rest-bg");
+      // Einfarbiger heller Hintergrund (keine Farbwäsche/kein Verlauf) —
+      // sonst wird laut Nutzer-Feedback der Text schlechter lesbar. Text/
+      // Beträge auf der hellen Fläche kräftig eingefärbt statt gedämpft
+      // (CSS-Regel [data-tx-focus-light] in themes.css; Inline-Styles
+      // können keine Nachfahren-Farben übersteuern).
+      row.style.background = active ? "#F4F6F0" : (restBg!=null ? restBg : (fulfilled ? T.pos+"11" : "transparent"));
+      row.setAttribute("data-tx-focus-light", active ? "1" : "0");
+      // box-shadow statt border: Die App hat standardmäßig "Keine Rahmen"
+      // aktiv (mbt_noborders, App.jsx), was per CSS-Regel ".no-borders *
+      // { border-color: transparent !important }" JEDE Rahmenfarbe
+      // überschreibt — auch inline gesetzte. box-shadow ist davon nicht
+      // betroffen.
+      row.style.boxShadow = active ? `inset 4px 0 0 0 ${T.pos}, 0 10px 26px -6px rgba(0,0,0,0.4)` : "none";
+      row.style.borderRadius = active ? "14px" : "0px";
+      row.style.transform = active ? "scale(1.02)" : "scale(1)";
+      row.style.zIndex = active ? "5" : "1";
+      const mainRow = row.querySelector('[data-role="tx-mainrow"]');
+      if(mainRow) mainRow.style.padding = active ? "14px 10px" : "3px 8px";
+      const icon = row.querySelector('[data-role="tx-icon"]');
+      if(icon) { const s = active ? "40px" : "32px"; icon.style.width = s; icon.style.height = s; }
+      const desc = row.querySelector('[data-role="tx-desc"]');
+      if(desc) desc.style.fontSize = active ? "15px" : "13px";
+      const amt = row.querySelector('[data-role="tx-amt"]');
+      if(amt) amt.style.fontSize = active ? "21px" : "16px";
       const detailGrid = row.querySelector('[data-role="tx-detail-grid"]');
-      if(detailGrid) detailGrid.style.gridTemplateRows = open ? "1fr" : "0fr";
+      if(detailGrid) detailGrid.style.gridTemplateRows = active ? "1fr" : "0fr";
       const detailInner = row.querySelector('[data-role="tx-detail-inner"]');
-      if(detailInner) detailInner.style.opacity = open ? "1" : "0";
+      if(detailInner) detailInner.style.opacity = active ? "1" : "0";
     };
-    const prevWindowRef = useRef(new Set());
     // Vormerkung/Ist-Abgleich für den Fokus-Effekt: liefert die verknüpfte
     // Vormerkung (geplanter Betrag/Datum) + ob autoMatchVormerkungen/MatchingScreen
     // eine Betragsabweichung markiert haben (siehe vormMatch.js _amtMismatch).
@@ -397,41 +373,16 @@ function MonatScreen() {
         // sichtbar, um den Effekt überhaupt wahrzunehmen.
         const FOCUS_GAP = 120;
         const focusRefTop = refTop + FOCUS_GAP;
-        const rowsArr = Array.from(el.querySelectorAll("[data-tx]"));
-        let curIdx = -1;
-        for(let i=0;i<rowsArr.length;i++){
-          if(rowsArr[i].getBoundingClientRect().top - focusRefTop <= 8) curIdx = i;
+        let curTx = null;
+        for(const c of el.querySelectorAll("[data-tx]")){
+          if(c.getBoundingClientRect().top - focusRefTop <= 8) curTx = c.getAttribute("data-tx");
           else break;
         }
-        const curTx = curIdx>=0 ? rowsArr[curIdx].getAttribute("data-tx") : null;
         if(curTx !== activeTxIdRef.current){
-          setRowDetail(activeTxIdRef.current ? el.querySelector(`[data-tx="${activeTxIdRef.current}"]`) : null, false);
+          if(activeTxIdRef.current) setRowFocus(el.querySelector(`[data-tx="${activeTxIdRef.current}"]`), false);
           activeTxIdRef.current = curTx;
-          setRowDetail(curIdx>=0 ? rowsArr[curIdx] : null, true);
+          if(curTx) setRowFocus(el.querySelector(`[data-tx="${curTx}"]`), true);
         }
-
-        // Kontinuierliches Wachstum für ein Fenster von Nachbarzeilen um die
-        // fokussierte Zeile — nicht nur EINE Zeile ändert sich, sondern alle
-        // in Reichweite (Vorbild: die Bahn-App, bei der mehrere Abschnitte
-        // gleichzeitig fließend wachsen/schrumpfen, je nach Nähe zur Linie).
-        const FOCUS_RANGE = 170, WIN = 3;
-        const newWindow = new Set();
-        if(curIdx>=0){
-          const lo = Math.max(0,curIdx-WIN), hi = Math.min(rowsArr.length-1,curIdx+WIN);
-          for(let i=lo;i<=hi;i++){
-            const dist = rowsArr[i].getBoundingClientRect().top - focusRefTop;
-            const t = Math.max(0, 1 - Math.abs(dist)/FOCUS_RANGE);
-            newWindow.add(rowsArr[i].getAttribute("data-tx"));
-            setRowIntensity(rowsArr[i], t);
-          }
-        }
-        prevWindowRef.current.forEach(id=>{
-          if(!newWindow.has(id)){
-            const row = el.querySelector(`[data-tx="${id}"]`);
-            if(row) setRowIntensity(row, 0);
-          }
-        });
-        prevWindowRef.current = newWindow;
 
         if(!multiMonth) return;
         // 1) Scroll-Spy — ENTPRELLT: Monat (Hero/+ Button) folgt erst, wenn das
@@ -1229,8 +1180,10 @@ function MonatScreen() {
             const hasDayPend = dayTxs.some(t=>t.pending);
             return (
               <div key={date} data-month={date.slice(0,7)} style={{margin:"14px 8px 0",border:`1px solid ${T.bd}`,borderRadius:12,overflow:"hidden",background:T.surf||"rgba(255,255,255,0.03)"}}>
-                <div style={{display:"flex",alignItems:"center",
-                  padding:"7px 10px 6px",gap:8,background:"rgba(255,255,255,0.04)"}}>
+                <div data-tx={"day-"+date} data-rest-bg="rgba(255,255,255,0.04)"
+                  style={{display:"flex",alignItems:"center",position:"relative",transformOrigin:"center",
+                  padding:"7px 10px 6px",gap:8,background:"rgba(255,255,255,0.04)",
+                  transition:_reduceMotion?"none":"background .4s ease, box-shadow .4s cubic-bezier(.34,1.56,.64,1), border-radius .4s ease, transform .4s cubic-bezier(.34,1.56,.64,1)"}}>
                   <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
                     <span style={{color:T.txt,fontSize:12,fontWeight:700}}>{showFullDate?fmtDFull(date):fmtD(date)}</span>
                     <span style={{color:T.txt2,fontSize:10}}>{dayName(date)}</span>
@@ -1269,16 +1222,18 @@ function MonatScreen() {
                           })()}
                         </div>
                       )}
-                      <span style={{
+                      <span data-role="tx-amt" data-amt-tone={bigVal>=0?"pos":"neg"} style={{
                         ...amtStyle(bigVal>=0?"pos":"neg"),
-                        fontSize:18,fontWeight:800,fontFamily:NUM_FONT,whiteSpace:"nowrap"}}>
+                        fontSize:18,fontWeight:800,fontFamily:NUM_FONT,whiteSpace:"nowrap",
+                        transition:_reduceMotion?"none":"font-size .4s cubic-bezier(.34,1.56,.64,1)"}}>
                         {bigVal>=0?"":"−"}{fmt(Math.abs(bigVal))}
                       </span>
                     </div>
                     );
                   })() : (
-                    <span style={{...amtStyle(dayNet>=0?"pos":"neg"),fontSize:18,fontWeight:800,
-                      fontFamily:NUM_FONT,flexShrink:0}}>
+                    <span data-role="tx-amt" data-amt-tone={dayNet>=0?"pos":"neg"} style={{...amtStyle(dayNet>=0?"pos":"neg"),fontSize:18,fontWeight:800,
+                      fontFamily:NUM_FONT,flexShrink:0,
+                      transition:_reduceMotion?"none":"font-size .4s cubic-bezier(.34,1.56,.64,1)"}}>
                       {dayNet>=0?"":"−"}{fmt(Math.abs(dayNet))}
                     </span>
                   )}
@@ -1355,7 +1310,7 @@ function MonatScreen() {
                   const vormInfo = _linkedVormInfo(tx);
                   return (
                     <div key={tx.id} data-tx={tx.id} data-fulfilled={fulfilled?"1":"0"} style={{borderRadius:0,marginBottom:0,overflow:"visible",
-                      background:_rowGradient(fulfilled?T.pos+"11":"transparent", fulfilled?T.pos+"11":"transparent"),
+                      background: fulfilled?T.pos+"11":"transparent",
                       boxShadow:"none",
                       borderTop:`1px solid ${T.bd}`,
                       position:"relative", transformOrigin:"center",
@@ -1409,7 +1364,7 @@ function MonatScreen() {
                         </div>
                         {/* Fokus-Effekt: Notiz/Splits/Vormerkungs-Abgleich vollständig,
                             solange diese Zeile an der Scroll-Referenzlinie steht. Wird
-                            NICHT über React-State/Re-Render gesteuert (siehe setRowDetail
+                            NICHT über React-State/Re-Render gesteuert (siehe setRowFocus
                             weiter oben), sondern per direktem DOM-Zugriff aktiviert. */}
                         <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr",
                           transition:_reduceMotion?"none":"grid-template-rows .4s cubic-bezier(.34,1.56,.64,1)"}}>
@@ -1485,13 +1440,18 @@ function MonatScreen() {
                     const signedOpen   = isIncome ?  open :  -open;
                     const fmtSigned = v => (v<0?"-":"+") + fmt(Math.abs(v));
                     return (
-                      <div key={"rb-"+name} style={{borderRadius:0,marginBottom:0,overflow:"hidden",background:"transparent",borderTop:`1px solid ${T.bd}`}}>
-                        <div style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px"}}>
-                          <div style={{width:32,height:32,borderRadius:9,flexShrink:0,marginRight:8,background:accentCol+"22",border:`1px solid ${T.bd}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      <div key={"rb-"+name} data-tx={"rb-"+date+"-"+name} style={{borderRadius:0,marginBottom:0,overflow:"visible",background:"transparent",borderTop:`1px solid ${T.bd}`,
+                        position:"relative",transformOrigin:"center",
+                        transition:_reduceMotion?"none":"background .4s ease, box-shadow .4s cubic-bezier(.34,1.56,.64,1), border-radius .4s ease, transform .4s cubic-bezier(.34,1.56,.64,1)"}}>
+                        <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px",
+                          transition:_reduceMotion?"none":"padding .4s cubic-bezier(.34,1.56,.64,1)"}}>
+                          <div data-role="tx-icon" style={{width:32,height:32,borderRadius:9,flexShrink:0,marginRight:8,background:accentCol+"22",border:`1px solid ${T.bd}`,display:"flex",alignItems:"center",justifyContent:"center",
+                            transition:_reduceMotion?"none":"width .4s cubic-bezier(.34,1.56,.64,1), height .4s cubic-bezier(.34,1.56,.64,1)"}}>
                             {Li(isOverspent?"alert-triangle":"target",16,accentCol)}
                           </div>
                           <div style={{flex:1,minWidth:0,marginRight:6}}>
-                            <div style={{color:isOverspent?T.neg:T.txt,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{subName}</div>
+                            <div data-role="tx-desc" style={{color:isOverspent?T.neg:T.txt,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
+                              transition:_reduceMotion?"none":"font-size .4s cubic-bezier(.34,1.56,.64,1)"}}>{subName}</div>
                             {/* Verbrauch als Punkt auf feiner Linie (gleiche Sprache wie
                                 der Dashboard-Pegel) statt Balken + Prozent-Text */}
                             <div style={{marginTop:6,position:"relative",height:8,maxWidth:140}}>
@@ -1506,7 +1466,8 @@ function MonatScreen() {
                             display:"flex",justifyContent:"flex-end",alignItems:"baseline",gap:6}}>
                             <span style={{...amtStyle(spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold",spent===0?T.txt2:accentCol),fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{spent===0?"—":fmt(Math.abs(spent))}</span>
                             <span style={{color:T.txt2,fontSize:10,marginLeft:8}}>{isOverspent?"zuviel:":"Rest:"}</span>
-                            <span style={{...amtStyle(isOverspent?"neg":open>0?"gold":"txt2"),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmt(Math.abs(signedOpen))}</span>
+                            <span data-role="tx-amt" data-amt-tone={isOverspent?"neg":open>0?"gold":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"gold":"txt2"),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
+                              transition:_reduceMotion?"none":"font-size .4s cubic-bezier(.34,1.56,.64,1)"}}>{fmt(Math.abs(signedOpen))}</span>
                           </div>
                         </div>
                       </div>
@@ -1545,7 +1506,7 @@ function MonatScreen() {
                   return (
                     <div key={tx.id} data-tx={tx.id} data-fulfilled={fulfilled?"1":"0"} style={{
                       borderRadius:0, marginBottom:0, overflow:"visible",
-                      background: _rowGradient(fulfilled?T.pos+"11":"transparent", fulfilled?T.pos+"11":"transparent"),
+                      background: fulfilled?T.pos+"11":"transparent",
                       boxShadow:"none",
                       borderTop:`1px solid ${T.bd}`,
                       position:"relative", transformOrigin:"center",
@@ -1639,7 +1600,7 @@ function MonatScreen() {
 
                         {/* Fokus-Effekt: Notiz/Splits/Vormerkungs-Abgleich vollständig,
                             solange diese Zeile an der Scroll-Referenzlinie steht. Wird
-                            NICHT über React-State/Re-Render gesteuert (siehe setRowDetail
+                            NICHT über React-State/Re-Render gesteuert (siehe setRowFocus
                             weiter oben), sondern per direktem DOM-Zugriff aktiviert. */}
                         <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr",
                           transition:_reduceMotion?"none":"grid-template-rows .4s cubic-bezier(.34,1.56,.64,1)"}}>
