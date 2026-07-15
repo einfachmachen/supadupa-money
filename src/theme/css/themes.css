@@ -140,19 +140,25 @@
     ) !important;
   }
 
-  /* ── Fokus-Effekt Monatsliste: helle Karte im Dark-Theme ──
+  /* ── Fokus-Effekt Monatsliste: kräftige Akzentkarte im Dark-Theme ──
      Inline-Styles können keine Nachfahren übersteuern (Farben sind dort
      jeweils explizit gesetzt) — deshalb hier per Datenattribut + Nachfahren-
-     Selektor. Werte sind die Light-Theme-Töne (Dove Sport Hell), damit Text/
-     Beträge auf der hellen Karte denselben Kontrast haben wie im echten
-     Hellthema. Siehe setRowFocus in MonatScreen.jsx. */
+     Selektor. Die Karte selbst bleibt eine gesättigte Akzentfarbe (kein
+     Hellthema-Look, siehe setRowIntensity in MonatScreen.jsx), nur Text/
+     Beträge brauchen auf der satten Fläche die Hellthema-Kontrastwerte. */
   [data-tx-focus-light="1"],
   [data-tx-focus-light="1"] * {
     color: #1E2418 !important;
   }
-  [data-tx-focus-light="1"] [data-amt-tone="pos"] { color: #6B9900 !important; }
-  [data-tx-focus-light="1"] [data-amt-tone="neg"] { color: #C0311A !important; }
-  [data-tx-focus-light="1"] [data-amt-tone="gold"] { color: #C07800 !important; }
+  [data-tx-focus-light="1"] [data-amt-tone="pos"] { color: #4D6E00 !important; }
+  [data-tx-focus-light="1"] [data-amt-tone="neg"] { color: #A82815 !important; }
+  [data-tx-focus-light="1"] [data-amt-tone="gold"] { color: #8A5A00 !important; }
+  /* Icon-Badge: eigenes weißes Plättchen statt der blassen Farbtönung, die
+     auf der satten Akzentkarte sonst verwaschen wirkt — Icon behält seine
+     Kategoriefarbe, sticht aber klar hervor. */
+  [data-tx-focus-light="1"] [data-role="tx-icon"] {
+    background: rgba(255,255,255,0.88) !important;
+  }
 
   /* ── Randlos-Modus ── */
   .no-borders * {

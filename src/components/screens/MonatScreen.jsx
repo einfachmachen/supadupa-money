@@ -288,61 +288,76 @@ function MonatScreen() {
     // Serien) würde JEDER Scroll-Frame einen Re-Render der kompletten Monatsliste
     // auslösen und den Effekt praktisch unsichtbar machen (Update kommt nie an,
     // bevor der nächste Scroll-Frame schon weiterzieht). Stattdessen wird direkt
-    // per DOM auf genau die betroffene(n) Zeile(n) zugegriffen (siehe setRowFocus)
+    // per DOM auf genau die betroffene(n) Zeile(n) zugegriffen (siehe setRowIntensity/setRowDetail)
     // — kein Re-Render nötig, bleibt auch bei riesigen Listen flüssig.
     const activeTxIdRef = useRef(null);
     const _reduceMotion = typeof window!=="undefined" && window.matchMedia
       && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    // Gleiche Gradient-Struktur für aktiv/inaktiv (2 Stops, 90deg) — nur so
-    // kann der Browser beim Fokus-Wechsel sanft zwischen den Farben überblenden.
+    // Gleiche Gradient-Struktur immer (2 Stops, 90deg) — nur so kann der
+    // Browser beim Fokus-Wechsel sanft zwischen den Farben überblenden.
     const _rowGradient = (c1, c2) => `linear-gradient(90deg, ${c1} 0%, ${c2} 60%)`;
-    // Im Dark-Theme wirkte die grüne Verlaufs-Schattierung zu aufdringlich und
-    // überdeckte den Text. Stattdessen: helle Karte (wie im echten Hellthema),
-    // dadurch maximaler Kontrast zum dunklen Hintergrund ohne die Farbwäsche.
-    // Texte/Beträge auf der Karte werden per CSS-Regel (themes.css,
-    // [data-tx-focus-light]) auf die Hellthema-Töne umgeschaltet — Inline-
-    // Styles können keine Nachfahren-Farben übersteuern, CSS-Selektoren schon.
+    const _lerp = (a,b,t) => a + (b-a)*t;
+    const _hexA = v => Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,"0");
+    // Kontinuierlicher Fokus-Effekt (Vorbild: die wachsende Karte der Bahn-App)
+    // — nicht nur EINE Zeile springt hart zwischen normal/aktiv, sondern alle
+    // Zeilen in der Nähe der Referenzlinie wachsen/schrumpfen stufenlos je
+    // Abstand (t = 0..1, siehe onListScroll). Kräftige, gesättigte Akzentfarbe
+    // statt heller Karte — kein "Hellthema"-Look, dafür Text dunkel für
+    // Kontrast auf der satten Farbe (CSS-Regel [data-tx-focus-light] in
+    // themes.css; Inline-Styles können keine Nachfahren-Farben übersteuern).
     const _isDarkTheme = !isLightTheme();
-    const setRowFocus = (container, id, active) => {
-      if(!id) return;
-      const row = container.querySelector(`[data-tx="${id}"]`);
-      if(!row) return;
+    const _peakAlpha = _isDarkTheme ? 210 : 110;
+    const setRowIntensity = (row, t) => {
       const fulfilled = row.getAttribute("data-fulfilled") === "1";
-      row.style.borderRadius = active ? "16px" : "0px";
-      row.style.background = active
-        ? (_isDarkTheme ? _rowGradient("#FFFFFF", "#F2F4EF") : _rowGradient(T.pos+"70", T.surf2))
-        : _rowGradient(fulfilled?T.pos+"11":"transparent", fulfilled?T.pos+"11":"transparent");
-      row.setAttribute("data-tx-focus-light", (active && _isDarkTheme) ? "1" : "0");
+      if(t <= 0.02) {
+        const baseBg = fulfilled ? T.pos+"11" : "transparent";
+        row.style.background = _rowGradient(baseBg, baseBg);
+        row.style.boxShadow = "none";
+        row.style.borderRadius = "0px";
+        row.style.transform = "scale(1)";
+        row.style.zIndex = "1";
+        row.setAttribute("data-tx-focus-light", "0");
+        const mainRow = row.querySelector('[data-role="tx-mainrow"]'); if(mainRow) mainRow.style.padding = "3px 8px";
+        const icon = row.querySelector('[data-role="tx-icon"]'); if(icon){ icon.style.width="32px"; icon.style.height="32px"; }
+        const desc = row.querySelector('[data-role="tx-desc"]'); if(desc) desc.style.fontSize = "13px";
+        const amt = row.querySelector('[data-role="tx-amt"]'); if(amt) amt.style.fontSize = "16px";
+        return;
+      }
+      const a1 = _hexA(_peakAlpha*t);
+      const a2 = _hexA(255*Math.min(1, t/0.55));
+      row.style.background = _rowGradient(`${T.pos}${a1}`, `${T.surf2}${a2}`);
+      row.setAttribute("data-tx-focus-light", (_isDarkTheme && t>0.45) ? "1" : "0");
       // Akzent als box-shadow (Glow + Innenstreifen) statt border-left: Die
       // App hat standardmäßig "Keine Rahmen" aktiv (mbt_noborders, siehe
       // App.jsx), was per CSS-Regel ".no-borders * { border-color:
       // transparent !important }" JEDE Rahmenfarbe überschreibt — auch
       // inline gesetzte. box-shadow ist davon nicht betroffen.
-      row.style.boxShadow = active
-        ? (_isDarkTheme
-            ? `inset 4px 0 0 0 ${T.pos}, 0 12px 30px -4px rgba(0,0,0,0.55)`
-            : `inset 4px 0 0 0 ${T.pos}, 0 10px 32px -6px ${T.pos}88, 0 2px 10px rgba(0,0,0,0.35)`)
-        : "none";
+      row.style.boxShadow = `inset ${(4*t).toFixed(1)}px 0 0 0 ${T.pos}, 0 ${Math.round(_lerp(0,12,t))}px ${Math.round(_lerp(0,30,t))}px -4px rgba(0,0,0,${(0.5*t).toFixed(2)})`;
+      row.style.borderRadius = `${Math.round(_lerp(0,16,t))}px`;
       // Echtes Wachstum statt nur größerer Schrift: Zeile bekommt spürbar mehr
       // Luft (Padding) + leichte Skalierung — das "Pop"-Gefühl aus dem Video.
-      row.style.transform = active ? "scale(1.035)" : "scale(1)";
-      row.style.zIndex = active ? "5" : "1";
+      row.style.transform = `scale(${_lerp(1,1.035,t).toFixed(3)})`;
+      row.style.zIndex = t>0.3 ? "5" : "1";
       const mainRow = row.querySelector('[data-role="tx-mainrow"]');
-      if(mainRow) mainRow.style.padding = active ? "16px 10px" : "3px 8px";
+      if(mainRow) mainRow.style.padding = `${_lerp(3,16,t).toFixed(1)}px ${_lerp(8,10,t).toFixed(1)}px`;
       const icon = row.querySelector('[data-role="tx-icon"]');
-      if(icon) {
-        icon.style.width = active ? "42px" : "32px";
-        icon.style.height = active ? "42px" : "32px";
-      }
+      if(icon) { const s = `${_lerp(32,42,t).toFixed(1)}px`; icon.style.width = s; icon.style.height = s; }
       const desc = row.querySelector('[data-role="tx-desc"]');
-      if(desc) desc.style.fontSize = active ? "16px" : "13px";
+      if(desc) desc.style.fontSize = `${_lerp(13,16,t).toFixed(1)}px`;
       const amt = row.querySelector('[data-role="tx-amt"]');
-      if(amt) amt.style.fontSize = active ? "23px" : "16px";
-      const detailGrid = row.querySelector('[data-role="tx-detail-grid"]');
-      if(detailGrid) detailGrid.style.gridTemplateRows = active ? "1fr" : "0fr";
-      const detailInner = row.querySelector('[data-role="tx-detail-inner"]');
-      if(detailInner) detailInner.style.opacity = active ? "1" : "0";
+      if(amt) amt.style.fontSize = `${_lerp(16,23,t).toFixed(1)}px`;
     };
+    // Notiz/Splits/Vormerkungs-Abgleich klappen NUR für die eine Zeile ganz
+    // auf, die der Referenzlinie am nächsten ist — sonst wären mehrere
+    // Detailblöcke gleichzeitig offen, das wäre unübersichtlich.
+    const setRowDetail = (row, open) => {
+      if(!row) return;
+      const detailGrid = row.querySelector('[data-role="tx-detail-grid"]');
+      if(detailGrid) detailGrid.style.gridTemplateRows = open ? "1fr" : "0fr";
+      const detailInner = row.querySelector('[data-role="tx-detail-inner"]');
+      if(detailInner) detailInner.style.opacity = open ? "1" : "0";
+    };
+    const prevWindowRef = useRef(new Set());
     // Vormerkung/Ist-Abgleich für den Fokus-Effekt: liefert die verknüpfte
     // Vormerkung (geplanter Betrag/Datum) + ob autoMatchVormerkungen/MatchingScreen
     // eine Betragsabweichung markiert haben (siehe vormMatch.js _amtMismatch).
@@ -382,16 +397,41 @@ function MonatScreen() {
         // sichtbar, um den Effekt überhaupt wahrzunehmen.
         const FOCUS_GAP = 120;
         const focusRefTop = refTop + FOCUS_GAP;
-        let curTx = null;
-        for(const c of el.querySelectorAll("[data-tx]")){
-          if(c.getBoundingClientRect().top - focusRefTop <= 8) curTx = c.getAttribute("data-tx");
+        const rowsArr = Array.from(el.querySelectorAll("[data-tx]"));
+        let curIdx = -1;
+        for(let i=0;i<rowsArr.length;i++){
+          if(rowsArr[i].getBoundingClientRect().top - focusRefTop <= 8) curIdx = i;
           else break;
         }
+        const curTx = curIdx>=0 ? rowsArr[curIdx].getAttribute("data-tx") : null;
         if(curTx !== activeTxIdRef.current){
-          setRowFocus(el, activeTxIdRef.current, false);
+          setRowDetail(activeTxIdRef.current ? el.querySelector(`[data-tx="${activeTxIdRef.current}"]`) : null, false);
           activeTxIdRef.current = curTx;
-          setRowFocus(el, curTx, true);
+          setRowDetail(curIdx>=0 ? rowsArr[curIdx] : null, true);
         }
+
+        // Kontinuierliches Wachstum für ein Fenster von Nachbarzeilen um die
+        // fokussierte Zeile — nicht nur EINE Zeile ändert sich, sondern alle
+        // in Reichweite (Vorbild: die Bahn-App, bei der mehrere Abschnitte
+        // gleichzeitig fließend wachsen/schrumpfen, je nach Nähe zur Linie).
+        const FOCUS_RANGE = 170, WIN = 3;
+        const newWindow = new Set();
+        if(curIdx>=0){
+          const lo = Math.max(0,curIdx-WIN), hi = Math.min(rowsArr.length-1,curIdx+WIN);
+          for(let i=lo;i<=hi;i++){
+            const dist = rowsArr[i].getBoundingClientRect().top - focusRefTop;
+            const t = Math.max(0, 1 - Math.abs(dist)/FOCUS_RANGE);
+            newWindow.add(rowsArr[i].getAttribute("data-tx"));
+            setRowIntensity(rowsArr[i], t);
+          }
+        }
+        prevWindowRef.current.forEach(id=>{
+          if(!newWindow.has(id)){
+            const row = el.querySelector(`[data-tx="${id}"]`);
+            if(row) setRowIntensity(row, 0);
+          }
+        });
+        prevWindowRef.current = newWindow;
 
         if(!multiMonth) return;
         // 1) Scroll-Spy — ENTPRELLT: Monat (Hero/+ Button) folgt erst, wenn das
@@ -1369,7 +1409,7 @@ function MonatScreen() {
                         </div>
                         {/* Fokus-Effekt: Notiz/Splits/Vormerkungs-Abgleich vollständig,
                             solange diese Zeile an der Scroll-Referenzlinie steht. Wird
-                            NICHT über React-State/Re-Render gesteuert (siehe setRowFocus
+                            NICHT über React-State/Re-Render gesteuert (siehe setRowDetail
                             weiter oben), sondern per direktem DOM-Zugriff aktiviert. */}
                         <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr",
                           transition:_reduceMotion?"none":"grid-template-rows .4s cubic-bezier(.34,1.56,.64,1)"}}>
@@ -1390,20 +1430,29 @@ function MonatScreen() {
                                   })}
                                 </div>
                               )}
-                              {vormInfo&&(
+                              {vormInfo&&(vormInfo.mismatch ? (
                                 <div style={{display:"flex",alignItems:"center",gap:8,fontSize:11,
-                                  background:vormInfo.mismatch?T.gold+"1a":T.pos+"15",
-                                  border:`1px solid ${vormInfo.mismatch?T.gold+"55":T.pos+"40"}`,
-                                  borderRadius:9,padding:"6px 9px"}}>
-                                  {Li("link",12,vormInfo.mismatch?T.gold:T.pos)}
+                                  background:T.gold+"22", borderRadius:9,padding:"6px 9px",
+                                  boxShadow:`inset 0 0 0 1px ${T.gold}55`}}>
+                                  {Li("alert-triangle",12,T.gold)}
                                   <span style={{color:T.txt}}>
                                     Vormerkung{" "}
                                     <span style={{textDecoration:"line-through",color:T.txt2,fontFamily:NUM_FONT}}>{fmt(vormInfo.plannedAmt)} €</span>
                                     {" → "}
-                                    <span style={{fontWeight:700,color:vormInfo.mismatch?T.gold:T.pos,fontFamily:NUM_FONT}}>{fmt(vormInfo.actualAmt)} €</span>
+                                    <span style={{fontWeight:700,color:T.gold,fontFamily:NUM_FONT}}>{fmt(vormInfo.actualAmt)} €</span>
                                   </span>
                                 </div>
-                              )}
+                              ) : (
+                                <div style={{display:"flex",alignItems:"center",gap:8,fontSize:11,
+                                  background:T.pos+"1c", borderRadius:9,padding:"6px 9px",
+                                  boxShadow:`inset 0 0 0 1px ${T.pos}44`}}>
+                                  {Li("check-circle",12,T.pos)}
+                                  <span style={{color:T.txt}}>
+                                    Vormerkung erfüllt{" "}
+                                    <span style={{fontWeight:700,color:T.pos,fontFamily:NUM_FONT}}>({fmt(vormInfo.actualAmt)} €)</span>
+                                  </span>
+                                </div>
+                              ))}
                             </div>
                           </div>
                         </div>
@@ -1590,7 +1639,7 @@ function MonatScreen() {
 
                         {/* Fokus-Effekt: Notiz/Splits/Vormerkungs-Abgleich vollständig,
                             solange diese Zeile an der Scroll-Referenzlinie steht. Wird
-                            NICHT über React-State/Re-Render gesteuert (siehe setRowFocus
+                            NICHT über React-State/Re-Render gesteuert (siehe setRowDetail
                             weiter oben), sondern per direktem DOM-Zugriff aktiviert. */}
                         <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr",
                           transition:_reduceMotion?"none":"grid-template-rows .4s cubic-bezier(.34,1.56,.64,1)"}}>
@@ -1611,20 +1660,29 @@ function MonatScreen() {
                                   })}
                                 </div>
                               )}
-                              {vormInfo&&(
+                              {vormInfo&&(vormInfo.mismatch ? (
                                 <div style={{display:"flex",alignItems:"center",gap:8,fontSize:11,
-                                  background:vormInfo.mismatch?T.gold+"1a":T.pos+"15",
-                                  border:`1px solid ${vormInfo.mismatch?T.gold+"55":T.pos+"40"}`,
-                                  borderRadius:9,padding:"6px 9px"}}>
-                                  {Li("link",12,vormInfo.mismatch?T.gold:T.pos)}
+                                  background:T.gold+"22", borderRadius:9,padding:"6px 9px",
+                                  boxShadow:`inset 0 0 0 1px ${T.gold}55`}}>
+                                  {Li("alert-triangle",12,T.gold)}
                                   <span style={{color:T.txt}}>
                                     Vormerkung{" "}
                                     <span style={{textDecoration:"line-through",color:T.txt2,fontFamily:NUM_FONT}}>{fmt(vormInfo.plannedAmt)} €</span>
                                     {" → "}
-                                    <span style={{fontWeight:700,color:vormInfo.mismatch?T.gold:T.pos,fontFamily:NUM_FONT}}>{fmt(vormInfo.actualAmt)} €</span>
+                                    <span style={{fontWeight:700,color:T.gold,fontFamily:NUM_FONT}}>{fmt(vormInfo.actualAmt)} €</span>
                                   </span>
                                 </div>
-                              )}
+                              ) : (
+                                <div style={{display:"flex",alignItems:"center",gap:8,fontSize:11,
+                                  background:T.pos+"1c", borderRadius:9,padding:"6px 9px",
+                                  boxShadow:`inset 0 0 0 1px ${T.pos}44`}}>
+                                  {Li("check-circle",12,T.pos)}
+                                  <span style={{color:T.txt}}>
+                                    Vormerkung erfüllt{" "}
+                                    <span style={{fontWeight:700,color:T.pos,fontFamily:NUM_FONT}}>({fmt(vormInfo.actualAmt)} €)</span>
+                                  </span>
+                                </div>
+                              ))}
                             </div>
                           </div>
                         </div>
