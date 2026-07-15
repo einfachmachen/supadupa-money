@@ -380,7 +380,15 @@ function MonatScreen() {
       row.style.transform = active ? "scale(1.025)" : "scale(1)";
       row.style.zIndex = active ? "5" : "1";
       const mainRow = row.querySelector('[data-role="tx-mainrow"]');
-      if(mainRow) mainRow.style.padding = active ? "18px 12px" : "3px 8px";
+      if(mainRow) {
+        mainRow.style.padding = active ? "18px 12px" : "3px 8px";
+        // Aktiv: Icon+Text oben, Betrag auf eigener, voller Breite darunter
+        // statt in derselben Zeile zusammengequetscht — sonst blieb bei
+        // mehrzeiligem (umgebrochenem) Text oben UND unten ungenutzter
+        // Leerraum neben Icon/Betrag stehen. flex-wrap + flex-basis:100% auf
+        // dem Betrags-Block erzwingt den Umbruch auf eine eigene Zeile.
+        mainRow.style.flexWrap = active ? "wrap" : "nowrap";
+      }
       const iconWrap = row.querySelector('[data-role="tx-icon-wrap"]');
       if(iconWrap) { const s = active ? "46px" : "32px"; iconWrap.style.width = s; iconWrap.style.height = s; }
       const icon = row.querySelector('[data-role="tx-icon"]');
@@ -400,8 +408,20 @@ function MonatScreen() {
         const truncTarget = subline.hasAttribute("data-expandable-line") ? subline.firstElementChild : subline;
         _setTruncationOverride(truncTarget, active);
       }
+      const amtBlock = row.querySelector('[data-role="tx-amtblock"]');
+      if(amtBlock) {
+        amtBlock.style.flexBasis = active ? "100%" : "auto";
+        amtBlock.style.marginTop = active ? "10px" : "0";
+        amtBlock.style.paddingTop = active ? "10px" : "0";
+        amtBlock.style.borderTop = active ? "1px solid rgba(30,36,24,0.12)" : "none";
+        amtBlock.style.marginRight = active ? "0" : "8px";
+        // Budget-Restanzeige: spent-Betrag links, Rest/zuviel rechts — nutzt
+        // so die volle Breite statt rechtsbündig zusammenzurücken. Bei
+        // Buchungszeilen (kein Flex-Container hier) folgenlos.
+        amtBlock.style.justifyContent = active ? "space-between" : "flex-end";
+      }
       const amt = row.querySelector('[data-role="tx-amt"]');
-      if(amt) amt.style.fontSize = active ? "23px" : "16px";
+      if(amt) amt.style.fontSize = active ? "27px" : "16px";
       const detailGrid = row.querySelector('[data-role="tx-detail-grid"]');
       if(detailGrid) detailGrid.style.gridTemplateRows = active ? "1fr" : "0fr";
       const detailInner = row.querySelector('[data-role="tx-detail-inner"]');
@@ -1435,7 +1455,8 @@ function MonatScreen() {
                               ))}
                             </ExpandableLine>
                           </div>
-                          <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
+                          <div data-role="tx-amtblock" style={{textAlign:"right",flexShrink:0,marginRight:8,
+                            transition:_reduceMotion?"none":"flex-basis .45s cubic-bezier(0.16, 1, 0.3, 1), margin .45s cubic-bezier(0.16, 1, 0.3, 1), padding .45s cubic-bezier(0.16, 1, 0.3, 1), border-color .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                             <div data-role="tx-amt" data-amt-tone="pos" style={{...amtStyle("pos",pal.val),...(tx.pending?{color:T.cell_inc}:{}),
                               fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
                               transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{fmt(tx.totalAmount)}</div>
@@ -1560,8 +1581,9 @@ function MonatScreen() {
                           </div>
                           {/* Rechts: eine Zeile — genutzter Betrag (ohne Label, selbstsprechend)
                               links, „Rest:" (offen) rechts. */}
-                          <div style={{textAlign:"right",flexShrink:0,marginRight:8,
-                            display:"flex",justifyContent:"flex-end",alignItems:"baseline",gap:6}}>
+                          <div data-role="tx-amtblock" style={{textAlign:"right",flexShrink:0,marginRight:8,
+                            display:"flex",justifyContent:"flex-end",alignItems:"baseline",gap:6,
+                            transition:_reduceMotion?"none":"flex-basis .45s cubic-bezier(0.16, 1, 0.3, 1), margin .45s cubic-bezier(0.16, 1, 0.3, 1), padding .45s cubic-bezier(0.16, 1, 0.3, 1), border-color .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                             <span style={{...amtStyle(spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold",spent===0?T.txt2:accentCol),fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",transition:_reduceMotion?"none":"color .15s ease"}}>{spent===0?"—":fmt(Math.abs(spent))}</span>
                             <span style={{color:T.txt2,fontSize:10,marginLeft:8,transition:_reduceMotion?"none":"color .15s ease"}}>{isOverspent?"zuviel:":"Rest:"}</span>
                             <span data-role="tx-amt" data-amt-tone={isOverspent?"neg":open>0?"gold":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"gold":"txt2"),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
@@ -1674,7 +1696,8 @@ function MonatScreen() {
                             </ExpandableLine>
                           </div>
                           {/* Amount */}
-                          <div style={{textAlign:"right",flexShrink:0,marginRight:8}}>
+                          <div data-role="tx-amtblock" style={{textAlign:"right",flexShrink:0,marginRight:8,
+                            transition:_reduceMotion?"none":"flex-basis .45s cubic-bezier(0.16, 1, 0.3, 1), margin .45s cubic-bezier(0.16, 1, 0.3, 1), padding .45s cubic-bezier(0.16, 1, 0.3, 1), border-color .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                             <div data-role="tx-amt" data-amt-tone={type==="income"?"pos":tx.pending?"gold":"neg"} style={{...amtStyle(type==="income"?"pos":tx.pending?"gold":"neg",pal.val),...(type==="income"&&tx.pending?{color:T.cell_inc}:{}),
                               fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
                               transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
