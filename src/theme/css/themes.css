@@ -181,6 +181,12 @@
   [data-tx-focus-light="1"] [data-role="tx-progress-dot"][data-dot-tone="neg"] { background: #A82815 !important; }
   [data-tx-focus-light="1"] [data-role="tx-progress-dot"][data-dot-tone="gold"] { background: #8A5A00 !important; }
   [data-tx-focus-light="1"] [data-role="tx-progress-dot"][data-dot-tone="inc"] { background: #1D6F8C !important; }
+  /* Tagessaldo-Kopfzeile: dieselbe Farbe-über-`background`-Problematik bei
+     der grünen/roten Verbindungslinie zwischen Datum und Saldo. */
+  [data-tx-focus-light="1"] [data-role="tx-connector"] {
+    background: #4D6E00 !important;
+  }
+  [data-tx-focus-light="1"] [data-role="tx-connector"][data-dot-tone="neg"] { background: #A82815 !important; }
 
   /* ── Randlos-Modus ── */
   .no-borders * {
