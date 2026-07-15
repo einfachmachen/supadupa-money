@@ -2981,11 +2981,11 @@ Abbrechen = ${remoteName}-Stand laden`
               background:T.neg,color:"#fff",padding:"7px 12px",flexShrink:0,
               boxShadow:"0 1px 6px rgba(0,0,0,0.3)"}}>
             {Li("alert-triangle",16,"#fff")}
-            <div style={{flex:1,minWidth:0,lineHeight:1.25}}>
-              <div style={{fontSize:12.5,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+            <div style={{flex:1,minWidth:0,lineHeight:1.3}}>
+              <div style={{fontSize:12.5,fontWeight:700}}>
                 Liquiditäts-Engpass ab {label}: Konto fällt auf {s.saldoVal < 0 ? "−" : ""}{fmt(s.saldoVal)} €
               </div>
-              <div style={{fontSize:11,opacity:0.92,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+              <div style={{fontSize:11,opacity:0.92}}>
                 {fmt(s.deficit)} € unter Puffer ({fmt(w.buffer)} €){w.count>1?` · +${w.count-1} weitere${w.count-1===1?"r":""} Monat${w.count-1===1?"":"e"}`:""} · tippen
               </div>
             </div>
