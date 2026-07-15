@@ -167,6 +167,20 @@
   [data-tx-focus-light="1"] [data-role="tx-icon"] svg {
     stroke: #FFFFFF !important;
   }
+  /* Budget-Restanzeige: Verbrauchs-Pegel (feine Linie + Punkt) wurde bisher
+     über `background` eingefärbt (T.bd fürs Line, pos/neg/gold-Theme-Werte
+     für den Punkt) — die obige Regel überschreibt nur `color`, nicht
+     `background`, daher blieb der Pegel auf der hellen Fläche unsichtbar
+     ("verschluckt"). Eigene, kräftige Farben für Linie + Punkt erzwingen. */
+  [data-tx-focus-light="1"] [data-role="tx-progress-track"] {
+    background: rgba(30,36,24,0.3) !important;
+  }
+  [data-tx-focus-light="1"] [data-role="tx-progress-dot"] {
+    background: #4D6E00 !important;
+  }
+  [data-tx-focus-light="1"] [data-role="tx-progress-dot"][data-dot-tone="neg"] { background: #A82815 !important; }
+  [data-tx-focus-light="1"] [data-role="tx-progress-dot"][data-dot-tone="gold"] { background: #8A5A00 !important; }
+  [data-tx-focus-light="1"] [data-role="tx-progress-dot"][data-dot-tone="inc"] { background: #1D6F8C !important; }
 
   /* ── Randlos-Modus ── */
   .no-borders * {

@@ -1544,8 +1544,9 @@ function MonatScreen() {
                             {/* Verbrauch als Punkt auf feiner Linie (gleiche Sprache wie
                                 der Dashboard-Pegel) statt Balken + Prozent-Text */}
                             <div style={{marginTop:6,position:"relative",height:8,maxWidth:140}}>
-                              <div style={{position:"absolute",left:0,right:0,top:3.25,height:1.5,background:T.bd,borderRadius:1}}/>
-                              <div style={{position:"absolute",left:`calc(3px + (100% - 6px) * ${Math.min(1,barW/100)})`,
+                              <div data-role="tx-progress-track" style={{position:"absolute",left:0,right:0,top:3.25,height:1.5,background:T.bd,borderRadius:1}}/>
+                              <div data-role="tx-progress-dot" data-dot-tone={isIncome?"inc":(pct>=100?"neg":pct>=75?"gold":"pos")}
+                                style={{position:"absolute",left:`calc(3px + (100% - 6px) * ${Math.min(1,barW/100)})`,
                                 top:1,width:6,height:6,borderRadius:"50%",background:barCol,transform:"translateX(-50%)"}}/>
                             </div>
                           </div>
