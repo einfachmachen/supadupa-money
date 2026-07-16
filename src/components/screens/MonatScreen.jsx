@@ -467,6 +467,11 @@ function MonatScreen() {
       row.querySelectorAll('[data-role="tx-daydetail"]').forEach(el=>{
         el.style.fontSize = active ? "14px" : "11px";
       });
+      // "Rest:"/"zuviel:"-Beschriftung wächst mit dem dazugehörigen Wert mit
+      // (vorher blieb sie klein, während der Wert daneben schon 27px groß war).
+      row.querySelectorAll('[data-role="tx-rest-label"]').forEach(el=>{
+        el.style.fontSize = active ? "14px" : "10px";
+      });
       const detailGrid = row.querySelector('[data-role="tx-detail-grid"]');
       const detailInner = row.querySelector('[data-role="tx-detail-inner"]');
       // Ein leerer Detail-Bereich (keine Notiz, kein Split, kein Vormerkungs-
@@ -1694,8 +1699,9 @@ function MonatScreen() {
                             <div data-role="tx-amtbar" style={{display:"flex",alignItems:"baseline",gap:10,
                               transition:_reduceMotion?"none":"background .15s ease, padding .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease"}}>
                               <span data-role="tx-restwrap" style={{display:"inline-flex",alignItems:"baseline",gap:6}}>
-                                <span style={{color:T.txt2,fontSize:10,marginLeft:8,transition:_reduceMotion?"none":"color .15s ease"}}>{isOverspent?"zuviel:":"Rest:"}</span>
-                                <span data-role="tx-rest-amt" data-amt-tone={isOverspent?"neg":open>0?"gold":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"gold":"txt2"),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
+                                <span data-role="tx-rest-label" data-amt-tone={isOverspent?"neg":open>0?"pos":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"pos":"txt2"),fontSize:10,fontWeight:700,marginLeft:8,
+                                  transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{isOverspent?"zuviel:":"Rest:"}</span>
+                                <span data-role="tx-rest-amt" data-amt-tone={isOverspent?"neg":open>0?"pos":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"pos":"txt2"),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
                                   transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{fmt(Math.abs(signedOpen))}</span>
                               </span>
                               <span data-role="tx-spentside" style={{display:"inline-flex",alignItems:"baseline"}}>
@@ -1711,7 +1717,7 @@ function MonatScreen() {
                           transition:_reduceMotion?"none":"grid-template-rows .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                           <div data-role="tx-detail-inner" style={{overflow:"hidden",opacity:0,
                             transition:_reduceMotion?"none":"opacity .35s ease .05s"}}>
-                            <div style={{padding:"2px 8px 11px 40px",display:"flex",flexDirection:"column",gap:0}}>
+                            <div style={{padding:"2px 8px 11px 10px",display:"flex",flexDirection:"column",gap:0}}>
                               {payments.map((p,pi)=>(
                                 <div key={pi} style={{display:"flex",alignItems:"baseline",gap:6,padding:"1px 2px",fontSize:12.5}}>
                                   <span style={{fontSize:10.5,fontWeight:600,color:T.txt2,flexShrink:0,width:40,textAlign:"left",fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{p.dateLabel}</span>
