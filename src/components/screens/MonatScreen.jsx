@@ -149,6 +149,7 @@ function MonatScreen() {
     onTS,onTE,
     budgets={},
     navigateToSparen,
+    scrollToTodayTick,
   } = useContext(AppCtx);
 
     const _isSelAcc = t => !selAcc || t.accountId===selAcc || (!t.accountId && selAcc==="acc-giro");
@@ -281,6 +282,44 @@ function MonatScreen() {
     const spyTick = useRef(false);
     const spyTimerRef = useRef(null);     // Scroll-Spy entprellt (s. u.)
     const lastScrollTopRef = useRef(null);// für die Scroll-Richtung
+    // Doppeltipp auf den +Button (jumpToToday in App.jsx) setzte bisher NUR den
+    // Anker-Monat — die Liste selbst blieb an ihrer alten Scroll-Position stehen.
+    // scrollToTodayTick zählt bei jedem Sprung hoch; hier reagieren wir darauf,
+    // indem wir zur heutigen Tageszeile scrollen (oder zur nächstgelegenen, falls
+    // heute selbst keine Buchung/kein Budget-Eintrag hat). Retry per rAF, weil der
+    // Anker-Monat-Wechsel ggf. erst noch "range" zurücksetzt (siehe Effekt oben) —
+    // die neue Zeile ist dann erst NACH einem weiteren Render im DOM vorhanden.
+    const scrollToTodayFirstRun = useRef(true);
+    useEffect(() => {
+      if(scrollToTodayFirstRun.current) { scrollToTodayFirstRun.current = false; return; }
+      const todayISO = new Date().toISOString().slice(0,10);
+      let attempts = 0;
+      const tryScroll = () => {
+        const el = listRef.current;
+        if(!el) return;
+        let target = el.querySelector(`[data-tx="day-${todayISO}"]`);
+        if(!target) {
+          const rows = Array.from(el.querySelectorAll('[data-tx^="day-"]'));
+          const todayMs = new Date(todayISO).getTime();
+          for(const r of rows) {
+            const iso = r.getAttribute("data-tx").slice(4);
+            const ms = new Date(iso).getTime();
+            if(!target || Math.abs(ms-todayMs) < Math.abs(new Date(target.getAttribute("data-tx").slice(4)).getTime()-todayMs)) {
+              target = r;
+            }
+          }
+        }
+        if(target) {
+          const refTop = stickyRef.current ? stickyRef.current.getBoundingClientRect().bottom : el.getBoundingClientRect().top;
+          const delta = target.getBoundingClientRect().top - (refTop + 12);
+          el.scrollTop += delta;
+        } else if(attempts < 15) {
+          attempts++;
+          requestAnimationFrame(tryScroll);
+        }
+      };
+      requestAnimationFrame(tryScroll);
+    }, [scrollToTodayTick]);
     // Fokus-Effekt: die Buchungszeile, die gerade an der Referenzlinie (Unterkante
     // Hero/Sticky) ankommt, wächst und zeigt Notiz/Splits/Vormerkungs-Abgleich
     // vollständig — ohne Antippen. BEWUSST kein useState dafür: bei großen
@@ -863,9 +902,12 @@ function MonatScreen() {
     if(!inSearchMode && budgetDetailsEnde.items.length  && !byDate[endeIso])  byDate[endeIso]=[];
     const dates   = Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
     const fmtD    = iso=>{ const[,,d]=iso.split("-"); return `${d}.`; };
-    // Vollständiges Datum dd.mm.jjjj — bei Suche/Mehr-Monats-Ansicht nötig, damit
-    // erkennbar bleibt, aus welchem Monat/Jahr ein Tag stammt.
-    const fmtDFull = iso=>{ const[y,m,d]=iso.split("-"); return `${d}.${m}.${y}`; };
+    // "Tag. Monat" (z.B. "17. Sep") — bei Suche/Mehr-Monats-Ansicht nötig, damit
+    // erkennbar bleibt, aus welchem Monat ein Tag stammt, aber wie in der
+    // Giro-Ansicht so kompakt wie möglich (kein Jahr, Monat als Kurzname statt
+    // zweistelliger Zahl).
+    const MONTHS_SHORT_HDR = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
+    const fmtDFull = iso=>{ const[,m,d]=iso.split("-"); return `${d}. ${MONTHS_SHORT_HDR[parseInt(m,10)-1]}`; };
     const showFullDate = inSearchMode || range.from !== range.to;
     const dayName = iso=>["So","Mo","Di","Mi","Do","Fr","Sa"][new Date(iso).getDay()];
 

@@ -222,6 +222,10 @@ export default function SupaDupaMoney() {
   // damit Pfeil-Klicks im Modal nicht den schweren Hauptcontent re-rendern lassen.
   const [frozenYear,  setFrozenYear]  = useState(CUR_YEAR);
   const [frozenMonth, setFrozenMonth] = useState(new Date().getMonth());
+  // Zähler statt Boolean: MonatScreen beobachtet ihn per useEffect und scrollt
+  // bei JEDER Änderung erneut zum heutigen Tag — auch wenn "heute" (Anker-Monat)
+  // sich zwischen zwei Sprüngen gar nicht geändert hat.
+  const [scrollToTodayTick, setScrollToTodayTick] = useState(0);
   const [selAcc,        setSelAcc]       = useState(null); // Globaler Konto-Filter (null = Gesamt)
   const [col3Name,      setCol3Name]     = useState("aktuell");
   const [csvRules,      setCsvRules]     = useState({});
@@ -2717,6 +2721,10 @@ Abbrechen = ${remoteName}-Stand laden`
   const jumpToToday = () => {
     const t = new Date();
     setMonth(t.getMonth()); setYear(t.getFullYear());
+    // MonatScreen scrollt selbst zur heutigen Zeile, sobald sich dieser Zähler
+    // ändert (siehe scrollToTodayTick-Effekt dort) — nur den Anker-Monat zu
+    // setzen reicht nicht, die Liste blieb sonst an ihrer alten Scroll-Position.
+    setScrollToTodayTick(n=>n+1);
   };
   const jumpToTxEdge = (direction /* "first"|"last" */) => {
     const relevant = txs.filter(t=>!t._budgetSubId && (!selAcc || t.accountId===selAcc));
@@ -2745,6 +2753,7 @@ Abbrechen = ${remoteName}-Stand laden`
     vehicles, setVehicles,
     yearData, setYearData,
     year: frozenYear, setYear, month: frozenMonth, setMonth,
+    scrollToTodayTick,
     selAcc, setSelAcc, isLand,
     showAllMonths, setShowAllMonths, mainTab, setMainTab, subTab, setSubTab,
     col3Name, setCol3Name, modal, setModal, mgmtCat, setMgmtCat,
@@ -2834,7 +2843,7 @@ Abbrechen = ${remoteName}-Stand laden`
     favIcons, setFavIcons,
   }), [
     cats, groups, txs, accounts, vehicles, yearData,
-    frozenYear, frozenMonth, year, selAcc, isLand,
+    frozenYear, frozenMonth, year, selAcc, isLand, scrollToTodayTick,
     showAllMonths, mainTab, subTab, col3Name, modal, mgmtCat,
     editTx, newTx, newCat, newSubName, exportModal,
     _txIndex, sparOpenRequest,
