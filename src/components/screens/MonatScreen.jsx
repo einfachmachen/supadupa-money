@@ -772,7 +772,7 @@ function MonatScreen() {
           });
         }
       }
-      for(const list of m.values()) list.sort((a,b)=>a.day-b.day);
+      for(const list of m.values()) list.sort((a,b)=>b.day-a.day);
       return m;
     }, [txs, year, month]);
 
@@ -1614,7 +1614,7 @@ function MonatScreen() {
                                 </div>
                               ) : (
                                 <div data-role="tx-vorm-status" style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:700,
-                                  background:T.pos, borderRadius:9,padding:"7px 10px"}}>
+                                  background:"#4D6E00", borderRadius:9,padding:"7px 10px"}}>
                                   {Li("check-circle",13,"#fff")}
                                   <span>
                                     Vormerkung erfüllt{" "}
@@ -1894,7 +1894,7 @@ function MonatScreen() {
                                 </div>
                               ) : (
                                 <div data-role="tx-vorm-status" style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:700,
-                                  background:T.pos, borderRadius:9,padding:"7px 10px"}}>
+                                  background:"#4D6E00", borderRadius:9,padding:"7px 10px"}}>
                                   {Li("check-circle",13,"#fff")}
                                   <span>
                                     Vormerkung erfüllt{" "}
