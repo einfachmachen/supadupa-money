@@ -197,6 +197,16 @@
     background: #4D6E00 !important;
   }
   [data-tx-focus-light="1"] [data-role="tx-connector"][data-dot-tone="neg"] { background: #A82815 !important; }
+  /* Vormerkung-erfüllt-Balken (Kassenbon-Stil, nur sichtbar solange die
+     Zeile aktiv ist): voll eingefärbter grüner Balken mit weißem Text statt
+     einer blassen Tönung. Braucht eine noch höhere Spezifität (0,4,0) als
+     die obige DREIFACH-Regel (0,3,0), sonst gewinnt weiterhin deren
+     erzwungenes dunkles Text — hier ausnahmsweise gewollt hell auf kräftigem
+     Grund. */
+  [data-tx-focus-light="1"] [data-role="tx-vorm-status"][data-role="tx-vorm-status"][data-role="tx-vorm-status"],
+  [data-tx-focus-light="1"] [data-role="tx-vorm-status"][data-role="tx-vorm-status"][data-role="tx-vorm-status"] * {
+    color: #FFFFFF !important;
+  }
 
   /* ── Randlos-Modus ── */
   .no-borders * {

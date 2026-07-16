@@ -407,29 +407,68 @@ function MonatScreen() {
       if(amtBlock) {
         amtBlock.style.flexBasis = active ? "100%" : "auto";
         amtBlock.style.marginTop = active ? "10px" : "0";
-        amtBlock.style.paddingTop = active ? "10px" : "0";
-        amtBlock.style.borderTop = active ? "1px solid rgba(30,36,24,0.12)" : "none";
         amtBlock.style.marginRight = active ? "0" : "8px";
         // Budget-Restanzeige: nutzt die volle Breite statt rechtsbündig
         // zusammenzurücken. Bei Buchungszeilen (kein Flex-Container hier)
         // folgenlos.
         amtBlock.style.justifyContent = active ? "space-between" : "flex-end";
-        // Rechts steht — wie bei jeder anderen Zeile auch — der tatsächliche
-        // (verbrauchte) Betrag; "Rest:"/"zuviel:" rutscht dafür als kleinere
-        // Einheit nach links. Per CSS-order umgeschaltet (DOM-Reihenfolge
-        // bleibt für den Ruhezustand unverändert: dort stehen beide ohnehin
-        // rechtsbündig gepackt in derselben Lesereihenfolge wie zuvor).
-        const restWrap = amtBlock.querySelector('[data-role="tx-restwrap"]');
-        const mainAmt = amtBlock.querySelector('[data-role="tx-amt"]');
-        if(restWrap) restWrap.style.order = active ? "1" : "0";
-        if(mainAmt) mainAmt.style.order = active ? "2" : "0";
       }
+      // Kassenbon-Leiste: statt einer dünnen Trennlinie ein hervorgehobener,
+      // hell hinterlegter Balken um den Betrag (Buchungen) bzw. um
+      // Rest/zuviel + tatsächlichen Betrag (Budget-Restanzeige) — bündelt
+      // den wichtigsten Wert der Zeile sichtbar statt ihn in Leerraum
+      // "schwimmen" zu lassen.
+      const amtBar = row.querySelector('[data-role="tx-amtbar"]');
+      if(amtBar) {
+        amtBar.style.background = active ? "rgba(30,36,24,0.06)" : "transparent";
+        amtBar.style.borderRadius = active ? "10px" : "0";
+        amtBar.style.padding = active ? "10px 12px" : "0";
+      }
+      // "Betrag"-Beschriftung (nur bei echten Buchungen) — im Ruhezustand per
+      // display:none komplett aus dem Layout genommen (nicht nur unsichtbar),
+      // sonst würde ein transparentes Element trotzdem Platz beanspruchen
+      // und den Betrag im Ruhezustand nach rechts verschieben.
+      const amtLabel = row.querySelector('[data-role="tx-amt-label"]');
+      if(amtLabel) amtLabel.style.display = active ? "block" : "none";
+      const spentLabel = row.querySelector('[data-role="tx-spent-label"]');
+      if(spentLabel) spentLabel.style.display = active ? "block" : "none";
+      // Rechts steht — wie bei jeder anderen Zeile auch — der tatsächliche
+      // (verbrauchte) Betrag; "Rest:"/"zuviel:" rutscht dafür als kleinere
+      // Einheit nach links. Per CSS-order umgeschaltet (DOM-Reihenfolge
+      // bleibt für den Ruhezustand unverändert: dort stehen beide ohnehin
+      // rechtsbündig gepackt in derselben Lesereihenfolge wie zuvor). Aktiv
+      // stapeln sich Beschriftung+Wert je Seite (column) statt in einer
+      // Zeile (row), damit beide Seiten wie im Kassenbon-Vorbild aussehen.
+      const restWrap = amtBlock ? amtBlock.querySelector('[data-role="tx-restwrap"]') : null;
+      const spentSide = amtBlock ? amtBlock.querySelector('[data-role="tx-spentside"]') : null;
+      if(restWrap) {
+        restWrap.style.order = active ? "1" : "0";
+        restWrap.style.flexDirection = active ? "column" : "row";
+        restWrap.style.alignItems = active ? "flex-start" : "baseline";
+      }
+      if(spentSide) {
+        spentSide.style.order = active ? "2" : "0";
+        spentSide.style.flexDirection = active ? "column" : "row";
+        spentSide.style.alignItems = active ? "flex-end" : "baseline";
+      }
+      // Verbrauchs-Pegel-Linie (Budget-Restanzeige): zieht aktiv bis zum
+      // rechten Kartenrand statt auf eine feste Breite begrenzt zu sein —
+      // im Ruhezustand bleibt die kompakte Breite unverändert.
+      const progressWrap = row.querySelector('[data-role="tx-progress-wrap"]');
+      if(progressWrap) progressWrap.style.maxWidth = active ? "none" : "140px";
       const amt = row.querySelector('[data-role="tx-amt"]');
       if(amt) amt.style.fontSize = active ? "27px" : "16px";
       const detailGrid = row.querySelector('[data-role="tx-detail-grid"]');
-      if(detailGrid) detailGrid.style.gridTemplateRows = active ? "1fr" : "0fr";
       const detailInner = row.querySelector('[data-role="tx-detail-inner"]');
-      if(detailInner) detailInner.style.opacity = active ? "1" : "0";
+      // Ein leerer Detail-Bereich (keine Notiz, kein Split, kein Vormerkungs-
+      // Abgleich, keine Einzelzahlungen) soll auch aktiv KEINEN Platz
+      // beanspruchen — sonst bleibt trotz "nichts anzuzeigen" ein paar Pixel
+      // Padding sichtbar. Prüfung rein per DOM (padding-Wrapper hat dann
+      // keine Kind-Elemente), keine Render-Logik-Änderung nötig.
+      const detailHasContent = detailInner && detailInner.firstElementChild
+        && detailInner.firstElementChild.children.length > 0;
+      if(detailGrid) detailGrid.style.gridTemplateRows = (active && detailHasContent) ? "1fr" : "0fr";
+      if(detailInner) detailInner.style.opacity = (active && detailHasContent) ? "1" : "0";
     };
     // Vormerkung/Ist-Abgleich für den Fokus-Effekt: liefert die verknüpfte
     // Vormerkung (geplanter Betrag/Datum) + ob autoMatchVormerkungen/MatchingScreen
@@ -682,6 +721,35 @@ function MonatScreen() {
       return m;
     }, [txs, year, month]);
 
+    // Einzelzahlungen pro Sub (für die aufklappbare Liste in der aktiven
+    // Budget-Restanzeige) — analog zu _subDayMap, aber mit den einzelnen
+    // Buchungen statt nur Tages-Summen. Einmal pro Render aufgebaut, nicht
+    // pro Zeile/Sub, aus denselben Monats-Buchungen wie _subDayMap.
+    const _subPaymentsMap = useMemo(()=>{
+      const MONTHS_SHORT=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
+      const m = new Map();
+      const monthTxs = _txsInMonth(year, month);
+      for(const t of monthTxs) {
+        if(t._linkedTo || t._budgetSubId) continue;
+        const d = new Date(t.date);
+        const day = d.getDate();
+        const splits = t.splits || [];
+        const seenSubs = new Set();
+        for(const sp of splits) {
+          if(!sp.subId || seenSubs.has(sp.subId)) continue;
+          seenSubs.add(sp.subId);
+          const amt = (sp.amount!=null && sp.amount!==0) ? Math.abs(sp.amount) : Math.abs(t.totalAmount);
+          if(!m.has(sp.subId)) m.set(sp.subId, []);
+          m.get(sp.subId).push({
+            day, dateLabel:`${String(day).padStart(2,"0")}. ${MONTHS_SHORT[d.getMonth()]}`,
+            desc: t.desc || "Buchung", amount: amt,
+          });
+        }
+      }
+      for(const list of m.values()) list.sort((a,b)=>a.day-b.day);
+      return m;
+    }, [txs, year, month]);
+
     // Liefert Summe für Sub bis maxDay (real ODER pending).
     const _subSumUpTo = (subId, maxDay, kind /* "r" | "p" */) => {
       let s = 0;
@@ -749,7 +817,7 @@ function MonatScreen() {
           const pend = _subSumUpTo(sub.id, maxDay, "p");
           const spent = real + pend;
           const open = bgt - spent; // kann negativ sein (Budget überschritten)
-          if(open !== 0) items.push({name:`${cat.name} / ${sub.name}`, spent, budget:bgt, open, type:cat.type});
+          if(open !== 0) items.push({name:`${cat.name} / ${sub.name}`, subId:sub.id, spent, budget:bgt, open, type:cat.type});
           totalOpen += Math.max(0, open); // nur positives Restbudget zählt für Abzug
         });
       });
@@ -1458,10 +1526,14 @@ function MonatScreen() {
                             </ExpandableLine>
                           </div>
                           <div data-role="tx-amtblock" style={{textAlign:"right",flexShrink:0,marginRight:8,
-                            transition:_reduceMotion?"none":"flex-basis .45s cubic-bezier(0.16, 1, 0.3, 1), margin .45s cubic-bezier(0.16, 1, 0.3, 1), padding .45s cubic-bezier(0.16, 1, 0.3, 1), border-color .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
-                            <div data-role="tx-amt" data-amt-tone="pos" style={{...amtStyle("pos",pal.val),...(tx.pending?{color:T.cell_inc}:{}),
-                              fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
-                              transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{fmt(tx.totalAmount)}</div>
+                            transition:_reduceMotion?"none":"flex-basis .45s cubic-bezier(0.16, 1, 0.3, 1), margin .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
+                            <div data-role="tx-amtbar" style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:8,
+                              transition:_reduceMotion?"none":"background .15s ease, padding .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease"}}>
+                              <span data-role="tx-amt-label" style={{display:"none",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.03em"}}>Betrag</span>
+                              <div data-role="tx-amt" data-amt-tone="pos" style={{...amtStyle("pos",pal.val),...(tx.pending?{color:T.cell_inc}:{}),
+                                fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
+                                transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{fmt(tx.totalAmount)}</div>
+                            </div>
                             {isS&&(
                               <div style={{marginTop:2}}>
                                 {(tx.splits||[]).filter(sp=>sp.catId).map((sp,si)=>{
@@ -1515,13 +1587,12 @@ function MonatScreen() {
                                   </span>
                                 </div>
                               ) : (
-                                <div style={{display:"flex",alignItems:"center",gap:8,fontSize:11,
-                                  background:T.pos+"1c", borderRadius:9,padding:"6px 9px",
-                                  boxShadow:`inset 0 0 0 1px ${T.pos}44`}}>
-                                  {Li("check-circle",12,T.pos)}
-                                  <span style={{color:T.txt}}>
+                                <div data-role="tx-vorm-status" style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:700,
+                                  background:T.pos, borderRadius:9,padding:"7px 10px"}}>
+                                  {Li("check-circle",13,"#fff")}
+                                  <span>
                                     Vormerkung erfüllt{" "}
-                                    <span style={{fontWeight:700,color:T.pos,fontFamily:NUM_FONT}}>({fmt(vormInfo.actualAmt)} €)</span>
+                                    <span style={{fontWeight:800,fontFamily:NUM_FONT}}>({fmt(vormInfo.actualAmt)} €)</span>
                                   </span>
                                 </div>
                               ))}
@@ -1546,7 +1617,7 @@ function MonatScreen() {
                   if(filt==="mismatch"||filt==="expense"||filt==="income"||filt==="uncat") return null;
                   const details = isMitteDay ? budgetDetailsMitte : budgetDetailsEnde;
                   if(!details.items.length) return null;
-                  return details.items.map(({name,spent,budget,open,type})=>{
+                  return details.items.map(({name,subId,spent,budget,open,type})=>{
                     const isIncome = type==="income";
                     const isOverspent = !isIncome && open < 0;
                     const accentCol = isIncome ? T.cell_inc : (isOverspent ? T.neg : T.gold);
@@ -1556,6 +1627,9 @@ function MonatScreen() {
                     const barW = Math.min(100, pct);
                     const signedOpen   = isIncome ?  open :  -open;
                     const fmtSigned = v => (v<0?"-":"+") + fmt(Math.abs(v));
+                    // Einzelzahlungen, die in "spent" eingeflossen sind — für die
+                    // Kassenbon-Liste im Detailbereich der aktiven Zeile.
+                    const payments = (_subPaymentsMap.get(subId)||[]).filter(p=>p.day<=(isMitteDay?14:lastDayOfMonth));
                     return (
                       <div key={"rb-"+name} data-tx={"rb-"+date+"-"+name} style={{borderRadius:0,marginBottom:0,overflow:"visible",background:"transparent",borderTop:`1px solid ${T.bd}`,
                         position:"relative",transformOrigin:"center",
@@ -1572,7 +1646,8 @@ function MonatScreen() {
                               transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{subName}</div>
                             {/* Verbrauch als Punkt auf feiner Linie (gleiche Sprache wie
                                 der Dashboard-Pegel) statt Balken + Prozent-Text */}
-                            <div style={{marginTop:6,position:"relative",height:8,maxWidth:140}}>
+                            <div data-role="tx-progress-wrap" style={{marginTop:6,position:"relative",height:8,maxWidth:140,
+                              transition:_reduceMotion?"none":"max-width .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                               <div data-role="tx-progress-track" style={{position:"absolute",left:0,right:0,top:3.25,height:1.5,background:T.bd,borderRadius:1,
                                 transition:_reduceMotion?"none":"background .15s ease"}}/>
                               <div data-role="tx-progress-dot" data-dot-tone={isIncome?"inc":(pct>=100?"neg":pct>=75?"gold":"pos")}
@@ -1589,13 +1664,37 @@ function MonatScreen() {
                               (siehe order-Umschaltung in setRowFocus). */}
                           <div data-role="tx-amtblock" style={{textAlign:"right",flexShrink:0,marginRight:8,
                             display:"flex",justifyContent:"flex-end",alignItems:"baseline",gap:6,
-                            transition:_reduceMotion?"none":"flex-basis .45s cubic-bezier(0.16, 1, 0.3, 1), margin .45s cubic-bezier(0.16, 1, 0.3, 1), padding .45s cubic-bezier(0.16, 1, 0.3, 1), border-color .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
-                            <span data-role="tx-amt" data-amt-tone={spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold"} style={{...amtStyle(spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold",spent===0?T.txt2:accentCol),fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{spent===0?"—":fmt(Math.abs(spent))}</span>
-                            <span data-role="tx-restwrap" style={{display:"inline-flex",alignItems:"baseline",gap:6}}>
-                              <span style={{color:T.txt2,fontSize:10,marginLeft:8,transition:_reduceMotion?"none":"color .15s ease"}}>{isOverspent?"zuviel:":"Rest:"}</span>
-                              <span data-amt-tone={isOverspent?"neg":open>0?"gold":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"gold":"txt2"),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
-                                transition:_reduceMotion?"none":"color .15s ease"}}>{fmt(Math.abs(signedOpen))}</span>
-                            </span>
+                            transition:_reduceMotion?"none":"flex-basis .45s cubic-bezier(0.16, 1, 0.3, 1), margin .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
+                            <div data-role="tx-amtbar" style={{display:"flex",alignItems:"baseline",gap:14,
+                              transition:_reduceMotion?"none":"background .15s ease, padding .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease"}}>
+                              <span data-role="tx-restwrap" style={{display:"inline-flex",alignItems:"baseline",gap:6}}>
+                                <span style={{color:T.txt2,fontSize:10,marginLeft:8,transition:_reduceMotion?"none":"color .15s ease"}}>{isOverspent?"zuviel:":"Rest:"}</span>
+                                <span data-amt-tone={isOverspent?"neg":open>0?"gold":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"gold":"txt2"),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
+                                  transition:_reduceMotion?"none":"color .15s ease"}}>{fmt(Math.abs(signedOpen))}</span>
+                              </span>
+                              <span data-role="tx-spentside" style={{display:"inline-flex",alignItems:"baseline",gap:6}}>
+                                <span data-role="tx-spent-label" style={{display:"none",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.03em"}}>Verbraucht</span>
+                                <span data-role="tx-amt" data-amt-tone={spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold"} style={{...amtStyle(spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold",spent===0?T.txt2:accentCol),fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{spent===0?"—":fmt(Math.abs(spent))}</span>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        {/* Fokus-Effekt: Einzelzahlungen, die in "spent" eingeflossen sind —
+                            wie bei Buchungen NICHT über React-State gesteuert (siehe
+                            setRowFocus), sondern per direktem DOM-Zugriff ein-/ausgeblendet. */}
+                        <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr",
+                          transition:_reduceMotion?"none":"grid-template-rows .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
+                          <div data-role="tx-detail-inner" style={{overflow:"hidden",opacity:0,
+                            transition:_reduceMotion?"none":"opacity .35s ease .05s"}}>
+                            <div style={{padding:"2px 8px 11px 40px",display:"flex",flexDirection:"column",gap:2}}>
+                              {payments.map((p,pi)=>(
+                                <div key={pi} style={{display:"flex",alignItems:"baseline",gap:7,padding:"2px 4px",fontSize:12.5}}>
+                                  <span style={{fontSize:10.5,fontWeight:600,color:T.txt2,flexShrink:0,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{p.dateLabel}</span>
+                                  <span style={{flex:1,minWidth:0,fontWeight:600,color:T.txt,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.desc}</span>
+                                  <span style={{fontWeight:700,color:T.txt,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",flexShrink:0}}>{fmt(p.amount)}</span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1705,11 +1804,15 @@ function MonatScreen() {
                           </div>
                           {/* Amount */}
                           <div data-role="tx-amtblock" style={{textAlign:"right",flexShrink:0,marginRight:8,
-                            transition:_reduceMotion?"none":"flex-basis .45s cubic-bezier(0.16, 1, 0.3, 1), margin .45s cubic-bezier(0.16, 1, 0.3, 1), padding .45s cubic-bezier(0.16, 1, 0.3, 1), border-color .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
-                            <div data-role="tx-amt" data-amt-tone={type==="income"?"pos":tx.pending?"gold":"neg"} style={{...amtStyle(type==="income"?"pos":tx.pending?"gold":"neg",pal.val),...(type==="income"&&tx.pending?{color:T.cell_inc}:{}),
-                              fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
-                              transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
-                              {fmt(tx.totalAmount)}
+                            transition:_reduceMotion?"none":"flex-basis .45s cubic-bezier(0.16, 1, 0.3, 1), margin .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
+                            <div data-role="tx-amtbar" style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:8,
+                              transition:_reduceMotion?"none":"background .15s ease, padding .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease"}}>
+                              <span data-role="tx-amt-label" style={{display:"none",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.03em"}}>Betrag</span>
+                              <div data-role="tx-amt" data-amt-tone={type==="income"?"pos":tx.pending?"gold":"neg"} style={{...amtStyle(type==="income"?"pos":tx.pending?"gold":"neg",pal.val),...(type==="income"&&tx.pending?{color:T.cell_inc}:{}),
+                                fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
+                                transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
+                                {fmt(tx.totalAmount)}
+                              </div>
                             </div>
                             {isS&&(
                               <div style={{marginTop:2}}>
@@ -1765,13 +1868,12 @@ function MonatScreen() {
                                   </span>
                                 </div>
                               ) : (
-                                <div style={{display:"flex",alignItems:"center",gap:8,fontSize:11,
-                                  background:T.pos+"1c", borderRadius:9,padding:"6px 9px",
-                                  boxShadow:`inset 0 0 0 1px ${T.pos}44`}}>
-                                  {Li("check-circle",12,T.pos)}
-                                  <span style={{color:T.txt}}>
+                                <div data-role="tx-vorm-status" style={{display:"flex",alignItems:"center",gap:8,fontSize:12,fontWeight:700,
+                                  background:T.pos, borderRadius:9,padding:"7px 10px"}}>
+                                  {Li("check-circle",13,"#fff")}
+                                  <span>
                                     Vormerkung erfüllt{" "}
-                                    <span style={{fontWeight:700,color:T.pos,fontFamily:NUM_FONT}}>({fmt(vormInfo.actualAmt)} €)</span>
+                                    <span style={{fontWeight:800,fontFamily:NUM_FONT}}>({fmt(vormInfo.actualAmt)} €)</span>
                                   </span>
                                 </div>
                               ))}
