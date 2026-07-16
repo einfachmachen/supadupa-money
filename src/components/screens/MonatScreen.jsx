@@ -422,7 +422,7 @@ function MonatScreen() {
       if(amtBar) {
         amtBar.style.background = active ? "rgba(30,36,24,0.06)" : "transparent";
         amtBar.style.borderRadius = active ? "10px" : "0";
-        amtBar.style.padding = active ? "10px 12px" : "0";
+        amtBar.style.padding = active ? "8px 10px" : "0";
       }
       // "Betrag"-Beschriftung (nur bei echten Buchungen) — im Ruhezustand per
       // display:none komplett aus dem Layout genommen (nicht nur unsichtbar),
@@ -456,8 +456,20 @@ function MonatScreen() {
       // im Ruhezustand bleibt die kompakte Breite unverändert.
       const progressWrap = row.querySelector('[data-role="tx-progress-wrap"]');
       if(progressWrap) progressWrap.style.maxWidth = active ? "none" : "140px";
-      const amt = row.querySelector('[data-role="tx-amt"]');
-      if(amt) amt.style.fontSize = active ? "27px" : "16px";
+      // "Rest:"/"zuviel:" (tx-rest-amt) wächst jetzt GLEICH GROSS wie der
+      // tatsächliche (verbrauchte) Betrag mit — vorher blieb es klein, weil
+      // nur [data-role="tx-amt"] gewachsen ist. querySelectorAll statt
+      // querySelector, da BEIDE Werte (Verbraucht + Rest/zuviel) wachsen
+      // sollen, nicht nur der erste Treffer im DOM.
+      row.querySelectorAll('[data-role="tx-amt"], [data-role="tx-rest-amt"]').forEach(el=>{
+        el.style.fontSize = active ? "27px" : "16px";
+      });
+      // Tagessaldo-Kopfzeile: die kleinen Zusatzinfos ("ohne Budget X" /
+      // "inkl. N Vorm.") links neben dem großen Saldo wachsen aktiv mit,
+      // statt bei jeder anderen Zeile größer zu werden nur hier nicht.
+      row.querySelectorAll('[data-role="tx-daydetail"]').forEach(el=>{
+        el.style.fontSize = active ? "14px" : "11px";
+      });
       const detailGrid = row.querySelector('[data-role="tx-detail-grid"]');
       const detailInner = row.querySelector('[data-role="tx-detail-inner"]');
       // Ein leerer Detail-Bereich (keine Notiz, kein Split, kein Vormerkungs-
@@ -521,8 +533,21 @@ function MonatScreen() {
         // dass ihr oberer Rand unter den Hero rutscht und dort einen Großteil
         // ihres (ja größer gewachsenen) Inhalts verdeckt. Sobald das droht,
         // auf die nächste Zeile ausweichen statt an der verdeckten festzuhalten.
-        if(curIdx>=0 && curIdx<rowsArr.length-1 && rowsArr[curIdx].getBoundingClientRect().top < refTop){
-          curIdx += 1;
+        // AUSNAHME: Zeilen mit einer langen aufgeklappten Liste (viele
+        // Einzelzahlungen) sind absichtlich SEHR hoch — deren Kopf (Icon/
+        // Text) verschwindet dabei zwangsläufig früh unter dem Hero, während
+        // man die Liste noch durchliest. Dort erst wechseln, wenn die GANZE
+        // Zeile (inkl. Liste) durchgescrollt ist, sonst springt der Fokus
+        // schon nach dem ersten Wischen zur nächsten Zeile, bevor man die
+        // Liste zu Ende lesen konnte.
+        if(curIdx>=0 && curIdx<rowsArr.length-1){
+          const curRow = rowsArr[curIdx];
+          const curRect = curRow.getBoundingClientRect();
+          if(curRect.top < refTop){
+            const grid = curRow.querySelector('[data-role="tx-detail-grid"]');
+            const hasLongDetail = grid && grid.getBoundingClientRect().height > 80;
+            if(!hasLongDetail || curRect.bottom < refTop) curIdx += 1;
+          }
         }
         const curTx = curIdx>=0 ? rowsArr[curIdx].getAttribute("data-tx") : null;
         if(curTx !== activeTxIdRef.current){
@@ -1386,7 +1411,7 @@ function MonatScreen() {
                       {(hasReservierung||hasDayPend)&&(
                         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1,lineHeight:1.2}}>
                           {hasReservierung&&(
-                            <span style={{...amtStyle(dayIst>=0?"txt2":"neg"),fontSize:11,fontFamily:NUM_FONT,fontWeight:600,whiteSpace:"nowrap",transition:_reduceMotion?"none":"color .15s ease"}}>
+                            <span data-role="tx-daydetail" style={{...amtStyle(dayIst>=0?"txt2":"neg"),fontSize:11,fontFamily:NUM_FONT,fontWeight:600,whiteSpace:"nowrap",transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                               ohne Budget {dayIst>=0?"":"−"}{fmt(Math.abs(dayIst))}
                             </span>
                           )}
@@ -1398,7 +1423,7 @@ function MonatScreen() {
                             });
                             const n = pendUpToDay.length;
                             const todayPend = dayTxs.filter(t=>t.pending&&!t._budgetSubId);
-                            return <span style={{color:T.gold,fontSize:11,whiteSpace:"nowrap",transition:_reduceMotion?"none":"color .15s ease"}}>
+                            return <span data-role="tx-daydetail" style={{color:T.gold,fontSize:11,whiteSpace:"nowrap",transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                               inkl. {n} Vorm. ({todayPend.length} heute)
                             </span>;
                           })()}
@@ -1665,12 +1690,12 @@ function MonatScreen() {
                           <div data-role="tx-amtblock" style={{textAlign:"right",flexShrink:0,marginRight:8,
                             display:"flex",justifyContent:"flex-end",alignItems:"baseline",gap:6,
                             transition:_reduceMotion?"none":"flex-basis .45s cubic-bezier(0.16, 1, 0.3, 1), margin .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
-                            <div data-role="tx-amtbar" style={{display:"flex",alignItems:"baseline",gap:14,
+                            <div data-role="tx-amtbar" style={{display:"flex",alignItems:"baseline",gap:10,
                               transition:_reduceMotion?"none":"background .15s ease, padding .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease"}}>
                               <span data-role="tx-restwrap" style={{display:"inline-flex",alignItems:"baseline",gap:6}}>
                                 <span style={{color:T.txt2,fontSize:10,marginLeft:8,transition:_reduceMotion?"none":"color .15s ease"}}>{isOverspent?"zuviel:":"Rest:"}</span>
-                                <span data-amt-tone={isOverspent?"neg":open>0?"gold":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"gold":"txt2"),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
-                                  transition:_reduceMotion?"none":"color .15s ease"}}>{fmt(Math.abs(signedOpen))}</span>
+                                <span data-role="tx-rest-amt" data-amt-tone={isOverspent?"neg":open>0?"gold":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"gold":"txt2"),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
+                                  transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{fmt(Math.abs(signedOpen))}</span>
                               </span>
                               <span data-role="tx-spentside" style={{display:"inline-flex",alignItems:"baseline",gap:6}}>
                                 <span data-role="tx-spent-label" style={{display:"none",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.03em"}}>Verbraucht</span>
@@ -1686,10 +1711,10 @@ function MonatScreen() {
                           transition:_reduceMotion?"none":"grid-template-rows .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                           <div data-role="tx-detail-inner" style={{overflow:"hidden",opacity:0,
                             transition:_reduceMotion?"none":"opacity .35s ease .05s"}}>
-                            <div style={{padding:"2px 8px 11px 40px",display:"flex",flexDirection:"column",gap:2}}>
+                            <div style={{padding:"2px 8px 11px 40px",display:"flex",flexDirection:"column",gap:0}}>
                               {payments.map((p,pi)=>(
-                                <div key={pi} style={{display:"flex",alignItems:"baseline",gap:7,padding:"2px 4px",fontSize:12.5}}>
-                                  <span style={{fontSize:10.5,fontWeight:600,color:T.txt2,flexShrink:0,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{p.dateLabel}</span>
+                                <div key={pi} style={{display:"flex",alignItems:"baseline",gap:6,padding:"1px 2px",fontSize:12.5}}>
+                                  <span style={{fontSize:10.5,fontWeight:600,color:T.txt2,flexShrink:0,width:40,textAlign:"right",fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{p.dateLabel}</span>
                                   <span style={{flex:1,minWidth:0,fontWeight:600,color:T.txt,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.desc}</span>
                                   <span style={{fontWeight:700,color:T.txt,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",flexShrink:0}}>{fmt(p.amount)}</span>
                                 </div>
