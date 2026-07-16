@@ -376,7 +376,7 @@ function MonatScreen() {
       row.style.zIndex = active ? "5" : "1";
       const mainRow = row.querySelector('[data-role="tx-mainrow"]');
       if(mainRow) {
-        mainRow.style.padding = active ? "18px 12px" : "3px 8px";
+        mainRow.style.padding = active ? "12px 12px" : "3px 8px";
         // Aktiv: Icon+Text oben, Betrag auf eigener, voller Breite darunter
         // statt in derselben Zeile zusammengequetscht — sonst blieb bei
         // mehrzeiligem (umgebrochenem) Text oben UND unten ungenutzter
@@ -430,27 +430,16 @@ function MonatScreen() {
       // und den Betrag im Ruhezustand nach rechts verschieben.
       const amtLabel = row.querySelector('[data-role="tx-amt-label"]');
       if(amtLabel) amtLabel.style.display = active ? "block" : "none";
-      const spentLabel = row.querySelector('[data-role="tx-spent-label"]');
-      if(spentLabel) spentLabel.style.display = active ? "block" : "none";
       // Rechts steht — wie bei jeder anderen Zeile auch — der tatsächliche
       // (verbrauchte) Betrag; "Rest:"/"zuviel:" rutscht dafür als kleinere
       // Einheit nach links. Per CSS-order umgeschaltet (DOM-Reihenfolge
       // bleibt für den Ruhezustand unverändert: dort stehen beide ohnehin
-      // rechtsbündig gepackt in derselben Lesereihenfolge wie zuvor). Aktiv
-      // stapeln sich Beschriftung+Wert je Seite (column) statt in einer
-      // Zeile (row), damit beide Seiten wie im Kassenbon-Vorbild aussehen.
+      // rechtsbündig gepackt in derselben Lesereihenfolge wie zuvor). Beide
+      // Seiten bleiben EINZEILIG (kein Stapeln mehr) — nur größer.
       const restWrap = amtBlock ? amtBlock.querySelector('[data-role="tx-restwrap"]') : null;
       const spentSide = amtBlock ? amtBlock.querySelector('[data-role="tx-spentside"]') : null;
-      if(restWrap) {
-        restWrap.style.order = active ? "1" : "0";
-        restWrap.style.flexDirection = active ? "column" : "row";
-        restWrap.style.alignItems = active ? "flex-start" : "baseline";
-      }
-      if(spentSide) {
-        spentSide.style.order = active ? "2" : "0";
-        spentSide.style.flexDirection = active ? "column" : "row";
-        spentSide.style.alignItems = active ? "flex-end" : "baseline";
-      }
+      if(restWrap) restWrap.style.order = active ? "1" : "0";
+      if(spentSide) spentSide.style.order = active ? "2" : "0";
       // Verbrauchs-Pegel-Linie (Budget-Restanzeige): zieht aktiv bis zum
       // rechten Kartenrand statt auf eine feste Breite begrenzt zu sein —
       // im Ruhezustand bleibt die kompakte Breite unverändert.
@@ -536,17 +525,20 @@ function MonatScreen() {
         // AUSNAHME: Zeilen mit einer langen aufgeklappten Liste (viele
         // Einzelzahlungen) sind absichtlich SEHR hoch — deren Kopf (Icon/
         // Text) verschwindet dabei zwangsläufig früh unter dem Hero, während
-        // man die Liste noch durchliest. Dort erst wechseln, wenn die GANZE
-        // Zeile (inkl. Liste) durchgescrollt ist, sonst springt der Fokus
-        // schon nach dem ersten Wischen zur nächsten Zeile, bevor man die
-        // Liste zu Ende lesen konnte.
+        // man die Liste noch durchliest. Dort erst wechseln, sobald die Liste
+        // VOLLSTÄNDIG sichtbar ist (ihr unteres Ende ungefähr auf Höhe der
+        // Bottom-Bar/+Button steht) — nicht erst, wenn die ganze (sehr hohe)
+        // Zeile komplett unter den Hero durchgescrollt ist, sonst müsste man
+        // weit über die eigentlich schon fertig gelesene Liste hinausscrollen.
         if(curIdx>=0 && curIdx<rowsArr.length-1){
           const curRow = rowsArr[curIdx];
           const curRect = curRow.getBoundingClientRect();
           if(curRect.top < refTop){
             const grid = curRow.querySelector('[data-role="tx-detail-grid"]');
             const hasLongDetail = grid && grid.getBoundingClientRect().height > 80;
-            if(!hasLongDetail || curRect.bottom < refTop) curIdx += 1;
+            const BOTTOM_BAR_H = 80;
+            const listFullyVisible = curRect.bottom <= (window.innerHeight - BOTTOM_BAR_H);
+            if(!hasLongDetail || listFullyVisible) curIdx += 1;
           }
         }
         const curTx = curIdx>=0 ? rowsArr[curIdx].getAttribute("data-tx") : null;
@@ -1697,8 +1689,7 @@ function MonatScreen() {
                                 <span data-role="tx-rest-amt" data-amt-tone={isOverspent?"neg":open>0?"gold":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"gold":"txt2"),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
                                   transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{fmt(Math.abs(signedOpen))}</span>
                               </span>
-                              <span data-role="tx-spentside" style={{display:"inline-flex",alignItems:"baseline",gap:6}}>
-                                <span data-role="tx-spent-label" style={{display:"none",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.03em"}}>Verbraucht</span>
+                              <span data-role="tx-spentside" style={{display:"inline-flex",alignItems:"baseline"}}>
                                 <span data-role="tx-amt" data-amt-tone={spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold"} style={{...amtStyle(spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold",spent===0?T.txt2:accentCol),fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{spent===0?"—":fmt(Math.abs(spent))}</span>
                               </span>
                             </div>
@@ -1714,7 +1705,7 @@ function MonatScreen() {
                             <div style={{padding:"2px 8px 11px 40px",display:"flex",flexDirection:"column",gap:0}}>
                               {payments.map((p,pi)=>(
                                 <div key={pi} style={{display:"flex",alignItems:"baseline",gap:6,padding:"1px 2px",fontSize:12.5}}>
-                                  <span style={{fontSize:10.5,fontWeight:600,color:T.txt2,flexShrink:0,width:40,textAlign:"right",fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{p.dateLabel}</span>
+                                  <span style={{fontSize:10.5,fontWeight:600,color:T.txt2,flexShrink:0,width:40,textAlign:"left",fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{p.dateLabel}</span>
                                   <span style={{flex:1,minWidth:0,fontWeight:600,color:T.txt,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.desc}</span>
                                   <span style={{fontWeight:700,color:T.txt,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",flexShrink:0}}>{fmt(p.amount)}</span>
                                 </div>
