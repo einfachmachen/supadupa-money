@@ -423,6 +423,14 @@ function MonatScreen() {
         amtBar.style.background = active ? "rgba(30,36,24,0.06)" : "transparent";
         amtBar.style.borderRadius = active ? "10px" : "0";
         amtBar.style.padding = active ? "8px 10px" : "0";
+        // Budget-Restanzeige: amtBar ist hier ein FLEX-KIND von amtBlock
+        // (nicht wie bei Buchungen ein Block-Element, das automatisch die
+        // volle Breite füllt) — ohne explizite Breite bleibt es auf die
+        // Inhaltsbreite geschrumpft, "space-between" hätte dann nichts zu
+        // verteilen und der verbrauchte Betrag klebt links neben "Rest:"
+        // statt rechtsbündig wie bei jeder anderen Zeile auch.
+        amtBar.style.width = active ? "100%" : "auto";
+        amtBar.style.justifyContent = active ? "space-between" : "flex-start";
       }
       // "Betrag"-Beschriftung (nur bei echten Buchungen) — im Ruhezustand per
       // display:none komplett aus dem Layout genommen (nicht nur unsichtbar),
@@ -525,20 +533,21 @@ function MonatScreen() {
         // AUSNAHME: Zeilen mit einer langen aufgeklappten Liste (viele
         // Einzelzahlungen) sind absichtlich SEHR hoch — deren Kopf (Icon/
         // Text) verschwindet dabei zwangsläufig früh unter dem Hero, während
-        // man die Liste noch durchliest. Dort erst wechseln, sobald die Liste
-        // VOLLSTÄNDIG sichtbar ist (ihr unteres Ende ungefähr auf Höhe der
-        // Bottom-Bar/+Button steht) — nicht erst, wenn die ganze (sehr hohe)
-        // Zeile komplett unter den Hero durchgescrollt ist, sonst müsste man
-        // weit über die eigentlich schon fertig gelesene Liste hinausscrollen.
+        // man die Liste noch durchliest. Ein fixer "unteres Ende sichtbar"-
+        // Schwellwert griff hier zu früh (bei kürzeren Listen war "Bottom
+        // schon über der Bottom-Bar" fast sofort erfüllt, sobald der Kopf
+        // die Hero-Kante erreichte). Stattdessen für solche Zeilen GAR KEINE
+        // Vorab-Korrektur: die normale Auswahlschleife oben übernimmt automatisch
+        // erst dann die nächste Zeile, wenn DEREN Anfang die Referenzlinie
+        // erreicht — was zwangsläufig ein komplettes Durchscrollen der davor
+        // liegenden (hohen) Liste voraussetzt.
         if(curIdx>=0 && curIdx<rowsArr.length-1){
           const curRow = rowsArr[curIdx];
           const curRect = curRow.getBoundingClientRect();
           if(curRect.top < refTop){
             const grid = curRow.querySelector('[data-role="tx-detail-grid"]');
             const hasLongDetail = grid && grid.getBoundingClientRect().height > 80;
-            const BOTTOM_BAR_H = 80;
-            const listFullyVisible = curRect.bottom <= (window.innerHeight - BOTTOM_BAR_H);
-            if(!hasLongDetail || listFullyVisible) curIdx += 1;
+            if(!hasLongDetail) curIdx += 1;
           }
         }
         const curTx = curIdx>=0 ? rowsArr[curIdx].getAttribute("data-tx") : null;
