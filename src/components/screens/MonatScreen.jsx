@@ -684,7 +684,15 @@ function MonatScreen() {
             // baute fälschlich auf dem alten auf, statt ihn zu ersetzen.
             activeRow.style.transform = "scale(1.025)";
             const drift = refTop - activeRow.getBoundingClientRect().top;
-            activeRow.style.transform = Math.abs(drift) > 1
+            // Toleranz bewusst grosszügig (>3px, nicht >1px): winzige
+            // Sub-Pixel-Messschwankungen (Scroll-Position ist bei hoher
+            // Bildschirmdichte oft nicht ganzzahlig) lagen sonst GENAU an der
+            // Schwelle und kippten Frame für Frame zwischen "kein Ausgleich"
+            // und "1px Ausgleich" hin und her — sichtbar als ständiges
+            // Wackeln an der Oberkante (von einem Nutzer gemeldet). Echte,
+            // durch die Chromium-Eigenheit verursachte Abweichungen sind
+            // deutlich größer als das und werden weiterhin ausgeglichen.
+            activeRow.style.transform = Math.abs(drift) > 3
               ? `translateY(${drift}px) scale(1.025)`
               : "scale(1.025)";
           }
