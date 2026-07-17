@@ -330,6 +330,7 @@ function MonatScreen() {
     // per DOM auf genau die betroffene(n) Zeile(n) zugegriffen (siehe setRowFocus)
     // — kein Re-Render nötig, bleibt auch bei riesigen Listen flüssig.
     const activeTxIdRef = useRef(null);
+    const activeIdxRef = useRef(-1);
     // Frühere Mindest-Standzeit (Dwell-Gate) wieder entfernt: das Umschalten
     // reagierte dadurch spürbar verzögert auf Maus-Scrollrad-Eingaben (mehrere
     // Notches ohne sichtbare Reaktion). Das ursprüngliche Flacker-Problem, das
@@ -587,8 +588,36 @@ function MonatScreen() {
         }
         const curTx = curIdx>=0 ? rowsArr[curIdx].getAttribute("data-tx") : null;
         if(curTx !== activeTxIdRef.current){
-          if(activeTxIdRef.current) setRowFocus(el.querySelector(`[data-tx="${activeTxIdRef.current}"]`), false);
+          const oldRow = activeTxIdRef.current ? el.querySelector(`[data-tx="${activeTxIdRef.current}"]`) : null;
+          // Die vorher aktive Zeile schrumpft beim Deaktivieren (Icon/Text/
+          // Betrags-Padding zurück) — läuft das animiert (0.45s) ab, rutscht
+          // ALLES darunter währenddessen unbemerkt nach oben, weil im
+          // Dokumentfluss einfach weniger Platz gebraucht wird. Die gerade
+          // erst aktivierte NÄCHSTE Zeile (die exakt an der Hero-Kante stehen
+          // sollte) wandert dadurch im Lauf der Animation unter den Hero,
+          // obwohl sie im Moment der Aktivierung korrekt positioniert war —
+          // sichtbar als "oben abgeschnitten". Fix: das Schrumpfen der alten
+          // Zeile synchron (ohne Übergang) vorwegnehmen und den dadurch
+          // wegfallenden Höhenunterschied sofort per scrollTop ausgleichen,
+          // BEVOR die neue Zeile aktiviert wird — nur relevant, wenn die alte
+          // Zeile (in Listenreihenfolge) VOR der neuen liegt (Vorwärts-Scroll).
+          if(oldRow && activeIdxRef.current>=0 && curIdx>activeIdxRef.current){
+            const beforeH = oldRow.getBoundingClientRect().height;
+            const affected = [oldRow, ...oldRow.querySelectorAll("*")];
+            const prevTr = affected.map(k=>k.style.transition);
+            affected.forEach(k=>{ k.style.transition = "none"; });
+            setRowFocus(oldRow, false);
+            void oldRow.offsetHeight; // reflow erzwingen, damit die Höhe sofort feststeht
+            const afterH = oldRow.getBoundingClientRect().height;
+            el.scrollTop -= (beforeH - afterH);
+            requestAnimationFrame(()=>{
+              affected.forEach((k,i)=>{ if(k.isConnected) k.style.transition = prevTr[i]; });
+            });
+          } else if(oldRow) {
+            setRowFocus(oldRow, false);
+          }
           activeTxIdRef.current = curTx;
+          activeIdxRef.current = curIdx;
           if(curTx) setRowFocus(el.querySelector(`[data-tx="${curTx}"]`), true);
         }
 
@@ -1421,7 +1450,7 @@ function MonatScreen() {
             return (
               <div key={date} data-month={date.slice(0,7)} style={{margin:"14px 8px 0",border:`1px solid ${T.bd}`,borderRadius:12,overflow:"hidden",background:T.surf||"rgba(255,255,255,0.03)"}}>
                 <div data-tx={"day-"+date} data-rest-bg="rgba(255,255,255,0.04)"
-                  style={{display:"flex",alignItems:"center",position:"relative",transformOrigin:"center",
+                  style={{display:"flex",alignItems:"center",position:"relative",transformOrigin:"top center",
                   padding:"7px 10px 6px",gap:8,background:"rgba(255,255,255,0.04)",
                   transition:_reduceMotion?"none":"background .15s ease, box-shadow .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease, transform .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                   <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
@@ -1559,7 +1588,7 @@ function MonatScreen() {
                       background: fulfilled?T.pos+"11":"transparent",
                       boxShadow:"none",
                       borderTop:`1px solid ${T.bd}`,
-                      position:"relative", transformOrigin:"center",
+                      position:"relative", transformOrigin:"top center",
                       transition:_reduceMotion?"none":"background .15s ease, box-shadow .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease, transform .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                       <div style={{position:"relative",zIndex:1}}>
                         <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px",
@@ -1696,7 +1725,7 @@ function MonatScreen() {
                     const payments = (_subPaymentsMap.get(subId)||[]).filter(p=>p.day<=(isMitteDay?14:lastDayOfMonth));
                     return (
                       <div key={"rb-"+name} data-tx={"rb-"+date+"-"+name} style={{borderRadius:0,marginBottom:0,overflow:"visible",background:"transparent",borderTop:`1px solid ${T.bd}`,
-                        position:"relative",transformOrigin:"center",
+                        position:"relative",transformOrigin:"top center",
                         transition:_reduceMotion?"none":"background .15s ease, box-shadow .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease, transform .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                         <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px",
                           transition:_reduceMotion?"none":"padding .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
@@ -1800,7 +1829,7 @@ function MonatScreen() {
                       background: fulfilled?T.pos+"11":"transparent",
                       boxShadow:"none",
                       borderTop:`1px solid ${T.bd}`,
-                      position:"relative", transformOrigin:"center",
+                      position:"relative", transformOrigin:"top center",
                       transition:_reduceMotion?"none":"background .15s ease, box-shadow .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease, transform .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease",
                     }}>
 
