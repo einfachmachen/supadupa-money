@@ -1501,7 +1501,7 @@ function MonatScreen() {
                     ausführlichen Kommentar bei der Einnahmen-Zeile weiter unten. */}
                 <div style={{position:"relative"}}>
                 <div data-tx={"day-"+date} data-rest-bg="rgba(255,255,255,0.04)"
-                  style={{display:"flex",alignItems:"center",transformOrigin:"top center",
+                  style={{display:"flex",alignItems:"center",position:"relative",transformOrigin:"top center",
                   padding:"7px 10px 6px",gap:8,background:"rgba(255,255,255,0.04)"}}>
                   <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
                     <span style={{color:T.txt,fontSize:12,fontWeight:700}}>{showFullDate?fmtDFull(date):fmtD(date)}</span>
@@ -1657,7 +1657,7 @@ function MonatScreen() {
                       // Zeile weiterhin unbegrenzt "geklebt", da nichts ihren
                       // Dokumentfluss-Platz auf die eigene (natürliche) Höhe
                       // begrenzt.
-                      transformOrigin:"top center"}}>
+                      position:"relative",transformOrigin:"top center"}}>
                       <div style={{position:"relative",zIndex:1}}>
                         <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px",transition:_reduceMotion?"none":"padding .3s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                           <div data-role="tx-icon-wrap" style={{position:"relative",width:32,height:32,flexShrink:0,marginRight:8,transition:_reduceMotion?"none":"width .3s cubic-bezier(0.16, 1, 0.3, 1), height .3s cubic-bezier(0.16, 1, 0.3, 1)"}}>
@@ -1801,7 +1801,7 @@ function MonatScreen() {
                       // ausführlichen Kommentar bei der Einnahmen-Zeile oben.
                       <div key={"rb-"+name} style={{position:"relative"}}>
                       <div data-tx={"rb-"+date+"-"+name} style={{borderRadius:0,marginBottom:0,overflow:"visible",background:"transparent",borderTop:`1px solid ${T.bd}`,
-                        transformOrigin:"top center"}}>
+                        position:"relative",transformOrigin:"top center"}}>
                         <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px",transition:_reduceMotion?"none":"padding .3s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                           <div data-role="tx-icon" style={{width:32,height:32,borderRadius:9,flexShrink:0,marginRight:8,background:accentCol+"22",border:`1px solid ${T.bd}`,display:"flex",alignItems:"center",justifyContent:"center",
                             "--icon-accent":accentCol,transition:_reduceMotion?"none":"width .3s cubic-bezier(0.16, 1, 0.3, 1), height .3s cubic-bezier(0.16, 1, 0.3, 1)"}}>
@@ -1914,7 +1914,7 @@ function MonatScreen() {
                       background: fulfilled?T.pos+"11":"transparent",
                       boxShadow:"none",
                       borderTop:`1px solid ${T.bd}`,
-                      transformOrigin:"top center",
+                      position:"relative",transformOrigin:"top center",
                       }}>
 
 
