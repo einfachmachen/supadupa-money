@@ -586,6 +586,15 @@ function MonatScreen() {
         const el = listRef.current; if(!el) return;
         const refTop = stickyRef.current ? stickyRef.current.getBoundingClientRect().bottom
                                           : el.getBoundingClientRect().top;
+        // Sicherheitsnetz für die --mbt-hero-h-Variable (siehe ResizeObserver
+        // oben): auf einem realen Gerät blieb sie beobachtet manchmal hinter
+        // der tatsächlichen Hero-Höhe zurück (Zeile dockte dann teilweise
+        // HINTER dem Hero an, statt direkt darunter — sichtbar als "kopflose"
+        // Karte, obwohl die Andock-Logik selbst korrekt arbeitete). Hier wird
+        // sie bei jedem Scroll-Frame zusätzlich aus derselben, bereits
+        // bewährten Messung nachgezogen — kostet nur eine einzelne
+        // Eigenschafts-Zuweisung und schließt jede Störanfälligkeit aus.
+        el.style.setProperty("--mbt-hero-h", (refTop - el.getBoundingClientRect().top) + "px");
 
         // Fokus-Effekt: eindeutigste Buchungszeile an der Referenzlinie ermitteln
         // — unabhängig vom Multi-Monats-Modus, damit es auch bei Suche/Filtern
