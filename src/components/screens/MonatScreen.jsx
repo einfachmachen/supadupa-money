@@ -282,22 +282,20 @@ function MonatScreen() {
     const spyTick = useRef(false);
     const spyTimerRef = useRef(null);     // Scroll-Spy entprellt (s. u.)
     const lastScrollTopRef = useRef(null);// für die Scroll-Richtung
-    // Fokus-Effekt v2: statt die Docking-Position jeden Scroll-Frame per JS
-    // zu berechnen (siehe verworfene Vorgänger-Versuche), übernimmt der
-    // Browser das Andocken selbst — jede Zeile bekommt position:"sticky" mit
-    // demselben top-Wert (CSS-Variable statt State, damit eine Änderung der
-    // Hero-Höhe — z. B. Liquiditäts-Engpass-Banner erscheint/verschwindet —
-    // KEIN Re-Render aller Zeilen auslöst). Ein ResizeObserver hält die
-    // Variable synchron, unabhängig vom Scrollen.
-    useEffect(() => {
-      const heroEl = stickyRef.current, listEl = listRef.current;
-      if(!heroEl || !listEl) return;
-      const sync = () => listEl.style.setProperty("--mbt-hero-h", heroEl.getBoundingClientRect().height + "px");
-      sync();
-      const ro = new ResizeObserver(sync);
-      ro.observe(heroEl);
-      return () => ro.disconnect();
-    }, []);
+    // Fokus-Effekt v2: die Docking-Position der aktiven Zeile wird jeden
+    // Scroll-Frame per JS berechnet und per transform gesetzt (siehe
+    // onListScroll weiter unten) — NICHT per CSS position:"sticky". Ein
+    // früherer Versuch, das Andocken dem Browser zu überlassen (jede Zeile
+    // per position:"sticky" mit demselben --mbt-hero-h-top-Wert), erwies
+    // sich als unzuverlässig: in mehreren, unabhängig voneinander isolierten
+    // Szenarien hörte der Browser mitten im Andocken von selbst auf, die
+    // Zeile an der Hero-Kante zu halten (nicht durch Übergänge, Vorfahren-
+    // Overflow oder die CSS-Variable selbst verursacht — alles einzeln
+    // ausgeschlossen). Die direkte JS-Berechnung ist unabhängig von dieser
+    // Eigenheit, weil sie nie auf eine vom Browser gehaltene Position
+    // angewiesen ist, sondern die benötigte Verschiebung jedes Mal frisch
+    // aus der natürlichen (nicht verschobenen) Dokumentfluss-Position
+    // berechnet.
     // Doppeltipp auf den +Button (jumpToToday in App.jsx) setzte bisher NUR den
     // Anker-Monat — die Liste selbst blieb an ihrer alten Scroll-Position stehen.
     // scrollToTodayTick zählt bei jedem Sprung hoch; hier reagieren wir darauf,
@@ -592,30 +590,16 @@ function MonatScreen() {
         const el = listRef.current; if(!el) return;
         const refTop = stickyRef.current ? stickyRef.current.getBoundingClientRect().bottom
                                           : el.getBoundingClientRect().top;
-        // Sicherheitsnetz für die --mbt-hero-h-Variable (siehe ResizeObserver
-        // oben): auf einem realen Gerät blieb sie beobachtet manchmal hinter
-        // der tatsächlichen Hero-Höhe zurück (Zeile dockte dann teilweise
-        // HINTER dem Hero an, statt direkt darunter — sichtbar als "kopflose"
-        // Karte, obwohl die Andock-Logik selbst korrekt arbeitete). Hier wird
-        // sie bei jedem Scroll-Frame zusätzlich aus derselben, bereits
-        // bewährten Messung nachgezogen — kostet nur eine einzelne
-        // Eigenschafts-Zuweisung und schließt jede Störanfälligkeit aus.
-        {
-          const heroHNow = Math.round(refTop - el.getBoundingClientRect().top);
-          if(heroHNow !== el.__mbtLastHeroH){
-            el.__mbtLastHeroH = heroHNow;
-            el.style.setProperty("--mbt-hero-h", heroHNow + "px");
-          }
-        }
 
-        // Ein evtl. im VORIGEN Frame gesetzter Andock-Ausgleich (siehe weiter
-        // unten) MUSS vor der Binärsuche zurückgesetzt werden: er wirkt sich
+        // Ein evtl. im VORIGEN Frame gesetztes Andock-transform (siehe weiter
+        // unten) MUSS vor der Binärsuche zurückgesetzt werden: es wirkt sich
         // auf getBoundingClientRect() aus (transform beeinflusst die
-        // gemessene Position), die Binärsuche würde die künstlich an die
-        // Referenzlinie gehaltene Zeile sonst IMMER als "noch nicht
-        // vorbeigescrollt" werten — die Zeile bliebe dadurch für immer aktiv
-        // (rückkoppelnd selbstbestätigend), unabhängig vom tatsächlichen
-        // Scrollfortschritt.
+        // gemessene Position) — die Binärsuche braucht die natürliche
+        // (nicht verschobene) Dokumentfluss-Position, sonst würde sie die
+        // künstlich an die Referenzlinie gehaltene Zeile IMMER als "noch
+        // nicht vorbeigescrollt" werten und diese bliebe dadurch für immer
+        // aktiv (rückkoppelnd selbstbestätigend), unabhängig vom
+        // tatsächlichen Scrollfortschritt.
         if(activeTxIdRef.current){
           const prevActiveRow = el.querySelector(`[data-tx="${activeTxIdRef.current}"]`);
           if(prevActiveRow) prevActiveRow.style.transform = "scale(1.025)";
@@ -651,67 +635,30 @@ function MonatScreen() {
             }
           }
         }
-        // Keine Sonderfälle mehr nötig (weder für lange Einzelzahlungslisten
-        // noch für die "kopflose Karte"): jede Zeile dockt jetzt selbst per
-        // CSS position:"sticky" an der Hero-Kante an (top:"var(--mbt-hero-h)")
-        // — der Browser garantiert dabei strukturell, dass ihre Oberkante nie
-        // über die Referenzlinie hinausrutscht, während sie andockt ist. Eine
-        // Zeile mit langer Detailliste dockt dadurch von selbst entsprechend
-        // länger an (sie nimmt mehr Dokumentfluss-Platz ein, bevor die
-        // nächste Zeile sie ablöst) — ganz ohne die frühere, mehrfach
-        // gescheiterte manuelle Nachbildung dieses Verhaltens in JS.
         const curTx = curIdx>=0 ? rowsArr[curIdx].getAttribute("data-tx") : null;
         if(curTx !== activeTxIdRef.current){
           if(activeTxIdRef.current) setRowFocus(el.querySelector(`[data-tx="${activeTxIdRef.current}"]`), false);
           activeTxIdRef.current = curTx;
           if(curTx) setRowFocus(el.querySelector(`[data-tx="${curTx}"]`), true);
         }
-        // Sicherheitsnetz gegen einen beobachteten Chromium-Eigenheit: direkt
-        // nach dem Scrollen weg von scrollTop 0 (der Hero "engagiert" sein
-        // eigenes Andocken zum ersten Mal) rutschen die ersten ein bis zwei
-        // andockenden Zeilen trotz korrektem "position:sticky" sichtbar mit
-        // durch — der Browser wendet den Sticky-Versatz für sie kurzzeitig
-        // nicht an, obwohl computed style ihn korrekt meldet. Ausführlich
-        // isoliert (CSS-Variable, Übergänge, Wrapper-Struktur — alle bereits
-        // ausgeschlossen); hier daher als gezielter, rein korrigierender
-        // Ausgleich statt einer erneuten Nachbildung der ganzen Andock-Logik:
-        // weicht die TATSÄCHLICHE Position der aktiven Zeile von der Hero-
-        // Kante ab, wird die Differenz per transform (rein optisch, ändert
-        // den Dokumentfluss nicht) ausgeglichen — sobald der Browser von
-        // selbst wieder korrekt andockt, wird kein Ausgleich mehr gebraucht
-        // und die Differenz ist 0.
+        // Andocken an der Hero-Kante: komplett per JS-transform, NICHT per CSS
+        // position:"sticky" (siehe ausführlicher Kommentar weiter oben, wo die
+        // dafür verantwortliche useEffect früher stand). Die Verschiebung wird
+        // JEDEN Frame frisch aus der natürlichen (nicht verschobenen)
+        // Dokumentfluss-Position berechnet — kein Rate-/Ausgleichs-Mechanismus
+        // nötig, der (wie bei position:"sticky" beobachtet) mit der Zeit
+        // auseinanderlaufen könnte: die Zeile landet immer exakt an der
+        // Referenzlinie, unabhängig davon, wie lange sie schon andockt.
         if(curTx){
           const activeRow = el.querySelector(`[data-tx="${curTx}"]`);
           if(activeRow){
             // Muss VOR der Messung auf die reine Skalierung zurückgesetzt
-            // werden — sonst würde ein bereits gesetzter Ausgleich aus dem
-            // vorigen Frame die Messung selbst verfälschen (transform wirkt
-            // sich auf getBoundingClientRect() aus) und der neue Ausgleich
-            // baute fälschlich auf dem alten auf, statt ihn zu ersetzen.
+            // werden — sonst würde die vom VORIGEN Frame gesetzte Verschiebung
+            // die Messung selbst verfälschen (transform wirkt sich auf
+            // getBoundingClientRect() aus).
             activeRow.style.transform = "scale(1.025)";
-            {
-              const drift = refTop - activeRow.getBoundingClientRect().top;
-              // Toleranz bewusst grosszügig (>3px, nicht >1px): winzige
-              // Sub-Pixel-Messschwankungen (Scroll-Position ist bei hoher
-              // Bildschirmdichte oft nicht ganzzahlig) lagen sonst GENAU an der
-              // Schwelle und kippten Frame für Frame zwischen "kein Ausgleich"
-              // und "1px Ausgleich" hin und her — sichtbar als ständiges
-              // Wackeln an der Oberkante. Zusätzlich auf max. 40px gedeckelt:
-              // bei einer sehr langen angedockten Zeile (langer Notiz-/Splits-/
-              // Einzelzahlungs-Detailbereich) hört der Browser mitten im
-              // Andocken manchmal von selbst auf, sie an der Hero-Kante zu
-              // halten (eigenständig beobachtet, unabhängig von der bereits
-              // behobenen Tageskarten-Clipping-Ursache) — ohne Deckel wuchs
-              // der Ausgleich dann unbegrenzt (mehrere hundert Pixel), bis er
-              // schließlich sichtbar "einschnappte" (von einem Nutzer als
-              // "springt" gemeldet). Mit Deckel bleibt die Zeile in diesem
-              // Fall einfach ein kleines Stück hinter der Hero-Kante zurück,
-              // statt sich unnatürlich weit künstlich dorthin ziehen zu lassen.
-              const clampedDrift = Math.max(-40, Math.min(40, drift));
-              activeRow.style.transform = Math.abs(clampedDrift) > 3
-                ? `translateY(${clampedDrift}px) scale(1.025)`
-                : "scale(1.025)";
-            }
+            const naturalTop = activeRow.getBoundingClientRect().top;
+            activeRow.style.transform = `translateY(${refTop - naturalTop}px) scale(1.025)`;
           }
         }
 
@@ -1554,7 +1501,7 @@ function MonatScreen() {
                     ausführlichen Kommentar bei der Einnahmen-Zeile weiter unten. */}
                 <div style={{position:"relative"}}>
                 <div data-tx={"day-"+date} data-rest-bg="rgba(255,255,255,0.04)"
-                  style={{display:"flex",alignItems:"center",position:"sticky",top:"var(--mbt-hero-h, 0px)",transformOrigin:"top center",
+                  style={{display:"flex",alignItems:"center",transformOrigin:"top center",
                   padding:"7px 10px 6px",gap:8,background:"rgba(255,255,255,0.04)"}}>
                   <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
                     <span style={{color:T.txt,fontSize:12,fontWeight:700}}>{showFullDate?fmtDFull(date):fmtD(date)}</span>
@@ -1710,7 +1657,7 @@ function MonatScreen() {
                       // Zeile weiterhin unbegrenzt "geklebt", da nichts ihren
                       // Dokumentfluss-Platz auf die eigene (natürliche) Höhe
                       // begrenzt.
-                      position:"sticky",top:"var(--mbt-hero-h, 0px)",transformOrigin:"top center"}}>
+                      transformOrigin:"top center"}}>
                       <div style={{position:"relative",zIndex:1}}>
                         <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px",transition:_reduceMotion?"none":"padding .3s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                           <div data-role="tx-icon-wrap" style={{position:"relative",width:32,height:32,flexShrink:0,marginRight:8,transition:_reduceMotion?"none":"width .3s cubic-bezier(0.16, 1, 0.3, 1), height .3s cubic-bezier(0.16, 1, 0.3, 1)"}}>
@@ -1854,7 +1801,7 @@ function MonatScreen() {
                       // ausführlichen Kommentar bei der Einnahmen-Zeile oben.
                       <div key={"rb-"+name} style={{position:"relative"}}>
                       <div data-tx={"rb-"+date+"-"+name} style={{borderRadius:0,marginBottom:0,overflow:"visible",background:"transparent",borderTop:`1px solid ${T.bd}`,
-                        position:"sticky",top:"var(--mbt-hero-h, 0px)",transformOrigin:"top center"}}>
+                        transformOrigin:"top center"}}>
                         <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px",transition:_reduceMotion?"none":"padding .3s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                           <div data-role="tx-icon" style={{width:32,height:32,borderRadius:9,flexShrink:0,marginRight:8,background:accentCol+"22",border:`1px solid ${T.bd}`,display:"flex",alignItems:"center",justifyContent:"center",
                             "--icon-accent":accentCol,transition:_reduceMotion?"none":"width .3s cubic-bezier(0.16, 1, 0.3, 1), height .3s cubic-bezier(0.16, 1, 0.3, 1)"}}>
@@ -1967,7 +1914,7 @@ function MonatScreen() {
                       background: fulfilled?T.pos+"11":"transparent",
                       boxShadow:"none",
                       borderTop:`1px solid ${T.bd}`,
-                      position:"sticky",top:"var(--mbt-hero-h, 0px)",transformOrigin:"top center",
+                      transformOrigin:"top center",
                       }}>
 
 
