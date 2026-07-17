@@ -596,6 +596,19 @@ function MonatScreen() {
         // Eigenschafts-Zuweisung und schließt jede Störanfälligkeit aus.
         el.style.setProperty("--mbt-hero-h", (refTop - el.getBoundingClientRect().top) + "px");
 
+        // Ein evtl. im VORIGEN Frame gesetzter Andock-Ausgleich (siehe weiter
+        // unten) MUSS vor der Binärsuche zurückgesetzt werden: er wirkt sich
+        // auf getBoundingClientRect() aus (transform beeinflusst die
+        // gemessene Position), die Binärsuche würde die künstlich an die
+        // Referenzlinie gehaltene Zeile sonst IMMER als "noch nicht
+        // vorbeigescrollt" werten — die Zeile bliebe dadurch für immer aktiv
+        // (rückkoppelnd selbstbestätigend), unabhängig vom tatsächlichen
+        // Scrollfortschritt.
+        if(activeTxIdRef.current){
+          const prevActiveRow = el.querySelector(`[data-tx="${activeTxIdRef.current}"]`);
+          if(prevActiveRow) prevActiveRow.style.transform = "scale(1.025)";
+        }
+
         // Fokus-Effekt: eindeutigste Buchungszeile an der Referenzlinie ermitteln
         // — unabhängig vom Multi-Monats-Modus, damit es auch bei Suche/Filtern
         // funktioniert. Gleiches Scan-Prinzip wie der Monats-Scroll-Spy unten.
@@ -640,6 +653,35 @@ function MonatScreen() {
           if(activeTxIdRef.current) setRowFocus(el.querySelector(`[data-tx="${activeTxIdRef.current}"]`), false);
           activeTxIdRef.current = curTx;
           if(curTx) setRowFocus(el.querySelector(`[data-tx="${curTx}"]`), true);
+        }
+        // Sicherheitsnetz gegen einen beobachteten Chromium-Eigenheit: direkt
+        // nach dem Scrollen weg von scrollTop 0 (der Hero "engagiert" sein
+        // eigenes Andocken zum ersten Mal) rutschen die ersten ein bis zwei
+        // andockenden Zeilen trotz korrektem "position:sticky" sichtbar mit
+        // durch — der Browser wendet den Sticky-Versatz für sie kurzzeitig
+        // nicht an, obwohl computed style ihn korrekt meldet. Ausführlich
+        // isoliert (CSS-Variable, Übergänge, Wrapper-Struktur — alle bereits
+        // ausgeschlossen); hier daher als gezielter, rein korrigierender
+        // Ausgleich statt einer erneuten Nachbildung der ganzen Andock-Logik:
+        // weicht die TATSÄCHLICHE Position der aktiven Zeile von der Hero-
+        // Kante ab, wird die Differenz per transform (rein optisch, ändert
+        // den Dokumentfluss nicht) ausgeglichen — sobald der Browser von
+        // selbst wieder korrekt andockt, wird kein Ausgleich mehr gebraucht
+        // und die Differenz ist 0.
+        if(curTx){
+          const activeRow = el.querySelector(`[data-tx="${curTx}"]`);
+          if(activeRow){
+            // Muss VOR der Messung auf die reine Skalierung zurückgesetzt
+            // werden — sonst würde ein bereits gesetzter Ausgleich aus dem
+            // vorigen Frame die Messung selbst verfälschen (transform wirkt
+            // sich auf getBoundingClientRect() aus) und der neue Ausgleich
+            // baute fälschlich auf dem alten auf, statt ihn zu ersetzen.
+            activeRow.style.transform = "scale(1.025)";
+            const drift = refTop - activeRow.getBoundingClientRect().top;
+            activeRow.style.transform = Math.abs(drift) > 1
+              ? `translateY(${drift}px) scale(1.025)`
+              : "scale(1.025)";
+          }
         }
 
         if(!multiMonth) return;
@@ -1476,8 +1518,7 @@ function MonatScreen() {
                 <div style={{position:"relative"}}>
                 <div data-tx={"day-"+date} data-rest-bg="rgba(255,255,255,0.04)"
                   style={{display:"flex",alignItems:"center",position:"sticky",top:"var(--mbt-hero-h, 0px)",transformOrigin:"top center",
-                  padding:"7px 10px 6px",gap:8,background:"rgba(255,255,255,0.04)",
-                  transition:_reduceMotion?"none":"background .15s ease, box-shadow .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease, color .15s ease"}}>
+                  padding:"7px 10px 6px",gap:8,background:"rgba(255,255,255,0.04)"}}>
                   <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
                     <span style={{color:T.txt,fontSize:12,fontWeight:700}}>{showFullDate?fmtDFull(date):fmtD(date)}</span>
                     <span style={{color:T.txt2,fontSize:10}}>{dayName(date)}</span>
@@ -1632,8 +1673,7 @@ function MonatScreen() {
                       // Zeile weiterhin unbegrenzt "geklebt", da nichts ihren
                       // Dokumentfluss-Platz auf die eigene (natürliche) Höhe
                       // begrenzt.
-                      position:"sticky",top:"var(--mbt-hero-h, 0px)",transformOrigin:"top center",
-                      transition:_reduceMotion?"none":"background .15s ease, box-shadow .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease, color .15s ease"}}>
+                      position:"sticky",top:"var(--mbt-hero-h, 0px)",transformOrigin:"top center"}}>
                       <div style={{position:"relative",zIndex:1}}>
                         <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px"}}>
                           <div data-role="tx-icon-wrap" style={{position:"relative",width:32,height:32,flexShrink:0,marginRight:8}}>
@@ -1768,8 +1808,7 @@ function MonatScreen() {
                       // ausführlichen Kommentar bei der Einnahmen-Zeile oben.
                       <div key={"rb-"+name} style={{position:"relative"}}>
                       <div data-tx={"rb-"+date+"-"+name} style={{borderRadius:0,marginBottom:0,overflow:"visible",background:"transparent",borderTop:`1px solid ${T.bd}`,
-                        position:"sticky",top:"var(--mbt-hero-h, 0px)",transformOrigin:"top center",
-                        transition:_reduceMotion?"none":"background .15s ease, box-shadow .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease, color .15s ease"}}>
+                        position:"sticky",top:"var(--mbt-hero-h, 0px)",transformOrigin:"top center"}}>
                         <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px"}}>
                           <div data-role="tx-icon" style={{width:32,height:32,borderRadius:9,flexShrink:0,marginRight:8,background:accentCol+"22",border:`1px solid ${T.bd}`,display:"flex",alignItems:"center",justifyContent:"center",
                             "--icon-accent":accentCol}}>
@@ -1818,13 +1857,7 @@ function MonatScreen() {
                         <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr"}}>
                           <div data-role="tx-detail-inner" style={{overflow:"hidden",opacity:0,
                             transition:_reduceMotion?"none":"opacity .35s ease .05s"}}>
-                            {/* maxHeight+eigenes Scrollen statt unbegrenzt in die Höhe zu
-                                wachsen: eine Kategorie mit sehr vielen Einzelzahlungen
-                                (theoretisch hunderte) würde sonst eine Zeile von mehreren
-                                tausend Pixel Höhe erzeugen — das sprengte nicht nur die
-                                Lesbarkeit, sondern auch die native position:"sticky"-
-                                Andock-Berechnung des Browsers bei sehr großen Elementen. */}
-                            <div style={{padding:"2px 8px 11px 10px",display:"flex",flexDirection:"column",gap:0,maxHeight:"46vh",overflowY:"auto"}}>
+                            <div style={{padding:"2px 8px 11px 10px",display:"flex",flexDirection:"column",gap:0}}>
                               {payments.map((p,pi)=>(
                                 <div key={pi} style={{display:"flex",alignItems:"baseline",gap:6,padding:"1px 2px",fontSize:12.5}}>
                                   <span style={{fontSize:10.5,fontWeight:600,color:T.txt2,flexShrink:0,width:40,textAlign:"left",fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{p.dateLabel}</span>
@@ -1879,8 +1912,7 @@ function MonatScreen() {
                       boxShadow:"none",
                       borderTop:`1px solid ${T.bd}`,
                       position:"sticky",top:"var(--mbt-hero-h, 0px)",transformOrigin:"top center",
-                      transition:_reduceMotion?"none":"background .15s ease, box-shadow .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease, color .15s ease",
-                    }}>
+                      }}>
 
 
                       <div style={{position:"relative",zIndex:1}}>
