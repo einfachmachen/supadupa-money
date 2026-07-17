@@ -413,6 +413,19 @@ function MonatScreen() {
       row.style.borderRadius = active ? "14px" : "0px";
       row.style.transform = active ? "scale(1.025)" : "scale(1)";
       row.style.zIndex = active ? "5" : "1";
+      // Schrumpfen (aktiv→inaktiv) deutlich schneller als Wachsen — ohne das
+      // reißt die vorherige Zeile beim Zurückschrumpfen (Icon/Padding/
+      // Detailliste) über die volle 0.45s hinweg am Dokumentfluss, und die
+      // gerade erst aktivierte NÄCHSTE Zeile rutscht dabei sichtbar unter den
+      // Hero, obwohl sie im Moment des Wechsels richtig stand. Ein exakter
+      // Ausgleich (synchrones Vorwegnehmen + scrollTop-Korrektur bzw. Reflow-
+      // Erzwingung) wurde bei einer großen, nicht virtualisierten Liste so
+      // teuer, dass das Scrollen spürbar hängen blieb — ein kürzerer
+      // Schrumpf-Übergang kostet nichts an Performance und verkleinert das
+      // Zeitfenster für den Effekt drastisch, auch wenn er ihn nicht auf 0
+      // reduziert. transitionDuration als Kurzform überschreibt alle in der
+      // (mehrteiligen) transition-Deklaration genannten Dauern einheitlich.
+      const _fastShrink = el => { if(el) el.style.transitionDuration = active ? "" : "0.12s"; };
       const mainRow = row.querySelector('[data-role="tx-mainrow"]');
       if(mainRow) {
         mainRow.style.padding = active ? "12px 12px" : "3px 8px";
@@ -422,11 +435,12 @@ function MonatScreen() {
         // Leerraum neben Icon/Betrag stehen. flex-wrap + flex-basis:100% auf
         // dem Betrags-Block erzwingt den Umbruch auf eine eigene Zeile.
         mainRow.style.flexWrap = active ? "wrap" : "nowrap";
+        _fastShrink(mainRow);
       }
       const iconWrap = row.querySelector('[data-role="tx-icon-wrap"]');
-      if(iconWrap) { const s = active ? "46px" : "32px"; iconWrap.style.width = s; iconWrap.style.height = s; }
+      if(iconWrap) { const s = active ? "46px" : "32px"; iconWrap.style.width = s; iconWrap.style.height = s; _fastShrink(iconWrap); }
       const icon = row.querySelector('[data-role="tx-icon"]');
-      if(icon) { const s = active ? "46px" : "32px"; icon.style.width = s; icon.style.height = s; }
+      if(icon) { const s = active ? "46px" : "32px"; icon.style.width = s; icon.style.height = s; _fastShrink(icon); }
       const desc = row.querySelector('[data-role="tx-desc"]');
       if(desc) {
         desc.style.fontSize = active ? "18px" : "13px";
@@ -470,6 +484,7 @@ function MonatScreen() {
         // statt rechtsbündig wie bei jeder anderen Zeile auch.
         amtBar.style.width = active ? "100%" : "auto";
         amtBar.style.justifyContent = active ? "space-between" : "flex-start";
+        _fastShrink(amtBar);
       }
       // "Betrag"-Beschriftung (nur bei echten Buchungen) — im Ruhezustand per
       // display:none komplett aus dem Layout genommen (nicht nur unsichtbar),
@@ -520,7 +535,10 @@ function MonatScreen() {
       // keine Kind-Elemente), keine Render-Logik-Änderung nötig.
       const detailHasContent = detailInner && detailInner.firstElementChild
         && detailInner.firstElementChild.children.length > 0;
-      if(detailGrid) detailGrid.style.gridTemplateRows = (active && detailHasContent) ? "1fr" : "0fr";
+      if(detailGrid) {
+        detailGrid.style.gridTemplateRows = (active && detailHasContent) ? "1fr" : "0fr";
+        _fastShrink(detailGrid);
+      }
       if(detailInner) detailInner.style.opacity = (active && detailHasContent) ? "1" : "0";
     };
     // Vormerkung/Ist-Abgleich für den Fokus-Effekt: liefert die verknüpfte
@@ -560,11 +578,27 @@ function MonatScreen() {
         // nicht früher (ein früherer Versuch mit Abstand fühlte sich beliebig
         // an, der Wechsel folgte scheinbar zufälligen Elementen statt der
         // aktiven Zeile selbst).
+        // Per Binärsuche statt linearem Scan ab Index 0: bei einer langen
+        // Liste (tausende Buchungen, nicht virtualisiert) rief der lineare
+        // Scan getBoundingClientRect() auf JEDER vorangehenden Zeile auf —
+        // bei tiefer Scroll-Position mehrere hundert Mal PRO SCROLL-FRAME,
+        // was sich als spürbares Hängenbleiben bemerkbar machte. Die Zeilen
+        // liegen von oben nach unten sortiert vor, die Bedingung "Oberkante
+        // <= Referenzlinie" ist deshalb monoton — Binärsuche liefert dasselbe
+        // Ergebnis in O(log n) statt O(n).
         const rowsArr = Array.from(el.querySelectorAll("[data-tx]"));
         let curIdx = -1;
-        for(let i=0;i<rowsArr.length;i++){
-          if(rowsArr[i].getBoundingClientRect().top - refTop <= 8) curIdx = i;
-          else break;
+        {
+          let lo = 0, hi = rowsArr.length - 1;
+          while(lo <= hi){
+            const mid = (lo + hi) >> 1;
+            if(rowsArr[mid].getBoundingClientRect().top - refTop <= 8){
+              curIdx = mid;
+              lo = mid + 1;
+            } else {
+              hi = mid - 1;
+            }
+          }
         }
         // AUSNAHME: Zeilen mit einer langen aufgeklappten Liste (viele
         // Einzelzahlungen) sind absichtlich SEHR hoch — würde man erst beim
@@ -585,36 +619,16 @@ function MonatScreen() {
             if(curRect.bottom <= btnTop - 8) curIdx += 1;
           }
         }
+        // Absichtlich KEIN künstlicher Ausgleich mehr für das Schrumpfen der
+        // vorherigen Zeile (weder per scrollTop-Manipulation noch per
+        // erzwungenem synchronem Reflow): beide Varianten wurden bei einer
+        // großen, nicht virtualisierten Liste (tausende Buchungen) so teuer,
+        // dass das Scrollen spürbar hängen blieb — schlimmer als die kleine
+        // (durch transformOrigin:"top center" oben bereits stark reduzierte)
+        // Restungenauigkeit, die sie beheben sollten.
         const curTx = curIdx>=0 ? rowsArr[curIdx].getAttribute("data-tx") : null;
         if(curTx !== activeTxIdRef.current){
-          const oldRow = activeTxIdRef.current ? el.querySelector(`[data-tx="${activeTxIdRef.current}"]`) : null;
-          if(oldRow) {
-            // Die alte Zeile schrumpft beim Deaktivieren (Icon/Padding/
-            // Detailliste zurück) — läuft das animiert ab, rutscht die neu
-            // aktivierte Zeile darunter im Lauf der Animation sichtbar nach
-            // oben, obwohl sie im Moment des Wechsels richtig stand. Fix: nur
-            // die paar Elemente, die tatsächlich Höhe ändern, kurz OHNE
-            // Übergang schrumpfen lassen und den wegfallenden Höhenunterschied
-            // sofort per scrollTop ausgleichen — NICHT die komplette Zeile
-            // samt aller Kind-Elemente (das war bei einer langen Liste mit
-            // hunderten Einträgen spürbar langsam bis hin zum Hängenbleiben).
-            const heightEls = [oldRow,
-              oldRow.querySelector('[data-role="tx-mainrow"]'),
-              oldRow.querySelector('[data-role="tx-icon-wrap"]'),
-              oldRow.querySelector('[data-role="tx-amtbar"]'),
-              oldRow.querySelector('[data-role="tx-detail-grid"]'),
-            ].filter(Boolean);
-            const beforeH = oldRow.getBoundingClientRect().height;
-            const prevTr = heightEls.map(k=>k.style.transition);
-            heightEls.forEach(k=>{ k.style.transition = "none"; });
-            setRowFocus(oldRow, false);
-            void oldRow.offsetHeight; // Reflow erzwingen, damit die neue Höhe sofort feststeht
-            const afterH = oldRow.getBoundingClientRect().height;
-            el.scrollTop -= (beforeH - afterH);
-            requestAnimationFrame(()=>{
-              heightEls.forEach((k,i)=>{ k.style.transition = prevTr[i]; });
-            });
-          }
+          if(activeTxIdRef.current) setRowFocus(el.querySelector(`[data-tx="${activeTxIdRef.current}"]`), false);
           activeTxIdRef.current = curTx;
           if(curTx) setRowFocus(el.querySelector(`[data-tx="${curTx}"]`), true);
         }
