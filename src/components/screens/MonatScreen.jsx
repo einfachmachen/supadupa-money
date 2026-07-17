@@ -555,43 +555,34 @@ function MonatScreen() {
         // Fokus-Effekt: eindeutigste Buchungszeile an der Referenzlinie ermitteln
         // — unabhängig vom Multi-Monats-Modus, damit es auch bei Suche/Filtern
         // funktioniert. Gleiches Scan-Prinzip wie der Monats-Scroll-Spy unten.
-        // Eigener Abstand (FOCUS_GAP) zur Hero-Unterkante: direkt an der Kante
-        // (wie beim Monats-Spy) verschwand die hervorgehobene Zeile sofort
-        // wieder unter dem Hero, kaum sichtbar. Mit deutlichem Abstand sitzt
-        // sie im oberen Drittel der sichtbaren Liste und bleibt lange genug
-        // sichtbar, um den Effekt überhaupt wahrzunehmen.
-        const FOCUS_GAP = 120;
-        const focusRefTop = refTop + FOCUS_GAP;
+        // KEIN künstlicher Abstand mehr zur Hero-Unterkante: eine Zeile wird
+        // aktiv, sobald IHRE eigene Oberkante die Hero-Unterkante erreicht —
+        // nicht früher (ein früherer Versuch mit Abstand fühlte sich beliebig
+        // an, der Wechsel folgte scheinbar zufälligen Elementen statt der
+        // aktiven Zeile selbst).
         const rowsArr = Array.from(el.querySelectorAll("[data-tx]"));
         let curIdx = -1;
         for(let i=0;i<rowsArr.length;i++){
-          if(rowsArr[i].getBoundingClientRect().top - focusRefTop <= 8) curIdx = i;
+          if(rowsArr[i].getBoundingClientRect().top - refTop <= 8) curIdx = i;
           else break;
         }
-        // Aktive Zeilen sind jetzt (Icon/Text-Wachstum + eigene volle Betrags-
-        // zeile) deutlich höher als vorher — bis die NÄCHSTE Zeile die
-        // Referenzlinie erreicht, kann die aktuelle dabei so weit hochscrollen,
-        // dass ihr oberer Rand unter den Hero rutscht und dort einen Großteil
-        // ihres (ja größer gewachsenen) Inhalts verdeckt. Sobald das droht,
-        // auf die nächste Zeile ausweichen statt an der verdeckten festzuhalten.
         // AUSNAHME: Zeilen mit einer langen aufgeklappten Liste (viele
-        // Einzelzahlungen) sind absichtlich SEHR hoch — deren Kopf (Icon/
-        // Text) verschwindet dabei zwangsläufig früh unter dem Hero, während
-        // man die Liste noch durchliest. Ein fixer "unteres Ende sichtbar"-
-        // Schwellwert griff hier zu früh (bei kürzeren Listen war "Bottom
-        // schon über der Bottom-Bar" fast sofort erfüllt, sobald der Kopf
-        // die Hero-Kante erreichte). Stattdessen für solche Zeilen GAR KEINE
-        // Vorab-Korrektur: die normale Auswahlschleife oben übernimmt automatisch
-        // erst dann die nächste Zeile, wenn DEREN Anfang die Referenzlinie
-        // erreicht — was zwangsläufig ein komplettes Durchscrollen der davor
-        // liegenden (hohen) Liste voraussetzt.
+        // Einzelzahlungen) sind absichtlich SEHR hoch — würde man erst beim
+        // natürlichen Erreichen der nächsten Zeile wechseln, müsste die ganze
+        // (sehr hohe) Liste bis fast zur Hero-Kante durchgescrollt werden,
+        // obwohl sie längst vollständig lesbar war. Solche Zeilen geben den
+        // Fokus stattdessen schon frei, sobald ihr UNTERES Ende knapp über
+        // der Oberkante des +Buttons ankommt (data-tour="master-plus") — die
+        // Liste war dann bereits komplett am Bildschirm sichtbar.
         if(curIdx>=0 && curIdx<rowsArr.length-1){
           const curRow = rowsArr[curIdx];
           const curRect = curRow.getBoundingClientRect();
-          if(curRect.top < refTop){
-            const grid = curRow.querySelector('[data-role="tx-detail-grid"]');
-            const hasLongDetail = grid && grid.getBoundingClientRect().height > 80;
-            if(!hasLongDetail) curIdx += 1;
+          const grid = curRow.querySelector('[data-role="tx-detail-grid"]');
+          const hasLongDetail = grid && grid.getBoundingClientRect().height > 80;
+          if(hasLongDetail) {
+            const masterBtn = document.querySelector('[data-tour="master-plus"]');
+            const btnTop = masterBtn ? masterBtn.getBoundingClientRect().top : (window.innerHeight - 90);
+            if(curRect.bottom <= btnTop - 8) curIdx += 1;
           }
         }
         const curTx = curIdx>=0 ? rowsArr[curIdx].getAttribute("data-tx") : null;
