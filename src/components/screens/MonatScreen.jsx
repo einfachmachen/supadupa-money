@@ -600,7 +600,13 @@ function MonatScreen() {
         // sie bei jedem Scroll-Frame zusätzlich aus derselben, bereits
         // bewährten Messung nachgezogen — kostet nur eine einzelne
         // Eigenschafts-Zuweisung und schließt jede Störanfälligkeit aus.
-        el.style.setProperty("--mbt-hero-h", (refTop - el.getBoundingClientRect().top) + "px");
+        {
+          const heroHNow = Math.round(refTop - el.getBoundingClientRect().top);
+          if(heroHNow !== el.__mbtLastHeroH){
+            el.__mbtLastHeroH = heroHNow;
+            el.style.setProperty("--mbt-hero-h", heroHNow + "px");
+          }
+        }
 
         // Ein evtl. im VORIGEN Frame gesetzter Andock-Ausgleich (siehe weiter
         // unten) MUSS vor der Binärsuche zurückgesetzt werden: er wirkt sich
@@ -683,18 +689,29 @@ function MonatScreen() {
             // sich auf getBoundingClientRect() aus) und der neue Ausgleich
             // baute fälschlich auf dem alten auf, statt ihn zu ersetzen.
             activeRow.style.transform = "scale(1.025)";
-            const drift = refTop - activeRow.getBoundingClientRect().top;
-            // Toleranz bewusst grosszügig (>3px, nicht >1px): winzige
-            // Sub-Pixel-Messschwankungen (Scroll-Position ist bei hoher
-            // Bildschirmdichte oft nicht ganzzahlig) lagen sonst GENAU an der
-            // Schwelle und kippten Frame für Frame zwischen "kein Ausgleich"
-            // und "1px Ausgleich" hin und her — sichtbar als ständiges
-            // Wackeln an der Oberkante (von einem Nutzer gemeldet). Echte,
-            // durch die Chromium-Eigenheit verursachte Abweichungen sind
-            // deutlich größer als das und werden weiterhin ausgeglichen.
-            activeRow.style.transform = Math.abs(drift) > 3
-              ? `translateY(${drift}px) scale(1.025)`
-              : "scale(1.025)";
+            {
+              const drift = refTop - activeRow.getBoundingClientRect().top;
+              // Toleranz bewusst grosszügig (>3px, nicht >1px): winzige
+              // Sub-Pixel-Messschwankungen (Scroll-Position ist bei hoher
+              // Bildschirmdichte oft nicht ganzzahlig) lagen sonst GENAU an der
+              // Schwelle und kippten Frame für Frame zwischen "kein Ausgleich"
+              // und "1px Ausgleich" hin und her — sichtbar als ständiges
+              // Wackeln an der Oberkante. Zusätzlich auf max. 40px gedeckelt:
+              // bei einer sehr langen angedockten Zeile (langer Notiz-/Splits-/
+              // Einzelzahlungs-Detailbereich) hört der Browser mitten im
+              // Andocken manchmal von selbst auf, sie an der Hero-Kante zu
+              // halten (eigenständig beobachtet, unabhängig von der bereits
+              // behobenen Tageskarten-Clipping-Ursache) — ohne Deckel wuchs
+              // der Ausgleich dann unbegrenzt (mehrere hundert Pixel), bis er
+              // schließlich sichtbar "einschnappte" (von einem Nutzer als
+              // "springt" gemeldet). Mit Deckel bleibt die Zeile in diesem
+              // Fall einfach ein kleines Stück hinter der Hero-Kante zurück,
+              // statt sich unnatürlich weit künstlich dorthin ziehen zu lassen.
+              const clampedDrift = Math.max(-40, Math.min(40, drift));
+              activeRow.style.transform = Math.abs(clampedDrift) > 3
+                ? `translateY(${clampedDrift}px) scale(1.025)`
+                : "scale(1.025)";
+            }
           }
         }
 
