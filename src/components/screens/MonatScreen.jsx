@@ -624,7 +624,7 @@ function MonatScreen() {
             const masterBtn = document.querySelector('[data-tour="master-plus"]');
             const btnTop = masterBtn ? masterBtn.getBoundingClientRect().top : (window.innerHeight - 90);
             if(curRect.bottom <= btnTop - 8) curIdx += 1;
-          } else if(curRect.top < refTop - INACTIVE_ROW_HEIGHT) {
+          } else {
             // Fehlerbild "kopflose Karte": die aktive Zeile wächst beim
             // Aktivieren (Icon/Schrift/Notiz/Vormerkungs-Box) — und schiebt
             // dadurch die NÄCHSTE Zeile weiter nach unten. Je mehr sie
@@ -632,11 +632,16 @@ function MonatScreen() {
             // Hero-Kante erreicht (das bisherige Wechsel-Kriterium) — und
             // genau in dieser Zeit scrollt die eigene Kopfzeile (Icon+Name)
             // längst unsichtbar an der Hero-Kante vorbei, während Betrag/
-            // Notiz weiter unten noch sichtbar bleiben. Deshalb hier NICHT
-            // auf die nächste Zeile warten, sondern selbst wechseln, sobald
-            // die eigene (kleine, inaktive) Zeilenhöhe überschritten ist —
-            // das entkoppelt den Wechselzeitpunkt vom eigenen Wachstum.
-            curIdx += 1;
+            // Notiz weiter unten noch sichtbar bleiben. Ein erster Versuch
+            // mit einem geschätzten Pixel-Grenzwert (60px) reichte nicht:
+            // das eigentliche Icon kann schon vorher komplett verschwunden
+            // sein. Deshalb hier NICHT auf die nächste Zeile warten, sondern
+            // direkt das TATSÄCHLICH gerenderte Icon dieser Zeile messen —
+            // sobald dessen Unterkante die Hero-Kante erreicht (es also
+            // komplett unsichtbar wäre), wird gewechselt.
+            const iconEl = curRow.querySelector('[data-role="tx-icon-wrap"]') || curRow.querySelector('[data-role="tx-icon"]');
+            const headerBottom = iconEl ? iconEl.getBoundingClientRect().bottom : curRect.top + INACTIVE_ROW_HEIGHT;
+            if(headerBottom <= refTop) curIdx += 1;
           }
         }
         // Absichtlich KEIN künstlicher Ausgleich mehr für das Schrumpfen der
