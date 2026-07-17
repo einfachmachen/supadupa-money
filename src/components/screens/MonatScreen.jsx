@@ -1517,7 +1517,13 @@ function MonatScreen() {
             // Hat dieser Tag Vormerkungen?
             const hasDayPend = dayTxs.some(t=>t.pending);
             return (
-              <div key={date} data-month={date.slice(0,7)} style={{margin:"14px 8px 0",border:`1px solid ${T.bd}`,borderRadius:12,overflow:"hidden",background:T.surf||"rgba(255,255,255,0.03)"}}>
+              // KEIN overflow:"hidden" hier (war früher nur für die runden Ecken
+              // gedacht): jede Zeile im Tages-Block dockt per position:"sticky"
+              // an der Hero-Kante an — ein Vorfahr mit overflow:"hidden" schneidet
+              // eine angedockte Zeile von unten ab, sobald die Tageskarte selbst
+              // weiter nach oben scrollt, als "Fläche schiebt sich von unten zu"
+              // sichtbar (genau das gemeldete Problem).
+              <div key={date} data-month={date.slice(0,7)} style={{margin:"14px 8px 0",border:`1px solid ${T.bd}`,borderRadius:12,background:T.surf||"rgba(255,255,255,0.03)"}}>
                 {/* Eigener leerer Wrapper NUR um die Kopfzeile (nicht um den
                     ganzen Tages-Block!) für den Dokumentfluss-Platz — siehe
                     ausführlichen Kommentar bei der Einnahmen-Zeile weiter unten. */}
