@@ -330,6 +330,12 @@ function MonatScreen() {
     // per DOM auf genau die betroffene(n) Zeile(n) zugegriffen (siehe setRowFocus)
     // — kein Re-Render nötig, bleibt auch bei riesigen Listen flüssig.
     const activeTxIdRef = useRef(null);
+    // Grobe Schätzung der INAKTIVEN Zeilenhöhe (Icon 32px + Padding + eine
+    // Zeile Text) — dient als Sicherheitsabstand in onListScroll, um die
+    // aktive Zeile spätestens dann zu wechseln, wenn ihre Kopfzeile bei
+    // eigenem Wachstum längst unsichtbar an der Hero-Kante vorbeigescrollt
+    // wäre (siehe Kommentar dort).
+    const INACTIVE_ROW_HEIGHT = 60;
     // Frühere Mindest-Standzeit (Dwell-Gate) wieder entfernt: das Umschalten
     // reagierte dadurch spürbar verzögert auf Maus-Scrollrad-Eingaben (mehrere
     // Notches ohne sichtbare Reaktion). Das ursprüngliche Flacker-Problem, das
@@ -618,6 +624,19 @@ function MonatScreen() {
             const masterBtn = document.querySelector('[data-tour="master-plus"]');
             const btnTop = masterBtn ? masterBtn.getBoundingClientRect().top : (window.innerHeight - 90);
             if(curRect.bottom <= btnTop - 8) curIdx += 1;
+          } else if(curRect.top < refTop - INACTIVE_ROW_HEIGHT) {
+            // Fehlerbild "kopflose Karte": die aktive Zeile wächst beim
+            // Aktivieren (Icon/Schrift/Notiz/Vormerkungs-Box) — und schiebt
+            // dadurch die NÄCHSTE Zeile weiter nach unten. Je mehr sie
+            // wächst, desto länger dauert es, bis die nächste Zeile die
+            // Hero-Kante erreicht (das bisherige Wechsel-Kriterium) — und
+            // genau in dieser Zeit scrollt die eigene Kopfzeile (Icon+Name)
+            // längst unsichtbar an der Hero-Kante vorbei, während Betrag/
+            // Notiz weiter unten noch sichtbar bleiben. Deshalb hier NICHT
+            // auf die nächste Zeile warten, sondern selbst wechseln, sobald
+            // die eigene (kleine, inaktive) Zeilenhöhe überschritten ist —
+            // das entkoppelt den Wechselzeitpunkt vom eigenen Wachstum.
+            curIdx += 1;
           }
         }
         // Absichtlich KEIN künstlicher Ausgleich mehr für das Schrumpfen der
