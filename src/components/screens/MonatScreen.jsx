@@ -404,17 +404,6 @@ function MonatScreen() {
       // eine eigene Hintergrundfarbe statt "transparent" — data-rest-bg
       // verrät setRowFocus, wohin beim Deaktivieren zurückgesetzt wird.
       const restBg = row.getAttribute("data-rest-bg");
-      // Vorgezogen (wird schon für boxShadow/borderRadius unten gebraucht,
-      // nicht erst für den Detailbereich selbst weiter unten): der Detail-
-      // bereich schwebt jetzt als eigene Fläche UNTER der Zeile (siehe
-      // detailGrid weiter unten) statt im Dokumentfluss mitzuwachsen — damit
-      // bestimmt die Länge von Notiz/Splits/Einzelzahlungen nicht mehr, wie
-      // lange die Zeile an der Hero-Kante andockt (vorher: "gefühlt ewig
-      // scrollen" bei langen Einzelzahlungslisten).
-      const detailGrid = row.querySelector('[data-role="tx-detail-grid"]');
-      const detailInner = row.querySelector('[data-role="tx-detail-inner"]');
-      const detailHasContent = detailInner && detailInner.firstElementChild
-        && detailInner.firstElementChild.children.length > 0;
       // Einfarbiger heller Hintergrund (keine Farbwäsche/kein Verlauf) —
       // sonst wird laut Nutzer-Feedback der Text schlechter lesbar. Text/
       // Beträge auf der hellen Fläche kräftig eingefärbt statt gedämpft
@@ -436,16 +425,8 @@ function MonatScreen() {
       // { border-color: transparent !important }" JEDE Rahmenfarbe
       // überschreibt — auch inline gesetzte. box-shadow ist davon nicht
       // betroffen.
-      // Ist ein Detailbereich vorhanden, bilden Zeile + schwebender
-      // Detailbereich optisch EINE durchgehende Karte: der äußere Schatten
-      // (drop-shadow) und die unteren runden Ecken gehören dann an die
-      // UNTERKANTE des Detailbereichs, nicht mehr an die (jetzt kurze)
-      // Zeile selbst — sonst gäbe es an der Nahtstelle einen sichtbaren
-      // doppelten Rundungs-/Schatten-Bruch.
-      row.style.boxShadow = active
-        ? (detailHasContent ? `inset 4px 0 0 0 ${T.pos}` : `inset 4px 0 0 0 ${T.pos}, 0 10px 26px -6px rgba(0,0,0,0.4)`)
-        : "none";
-      row.style.borderRadius = active ? (detailHasContent ? "14px 14px 0 0" : "14px") : "0px";
+      row.style.boxShadow = active ? `inset 4px 0 0 0 ${T.pos}, 0 10px 26px -6px rgba(0,0,0,0.4)` : "none";
+      row.style.borderRadius = active ? "14px" : "0px";
       row.style.transform = active ? "scale(1.025)" : "scale(1)";
       row.style.zIndex = active ? "5" : "1";
       // Icon-Maße, Schriftgrößen, Innenabstände und Detailbereich-Höhe
@@ -569,16 +550,17 @@ function MonatScreen() {
       row.querySelectorAll('[data-role="tx-rest-label"]').forEach(el=>{
         el.style.fontSize = active ? "14px" : "10px";
       });
-      // detailGrid/detailInner/detailHasContent: siehe Anfang der Funktion.
+      const detailGrid = row.querySelector('[data-role="tx-detail-grid"]');
+      const detailInner = row.querySelector('[data-role="tx-detail-inner"]');
+      // Ein leerer Detail-Bereich (keine Notiz, kein Split, kein Vormerkungs-
+      // Abgleich, keine Einzelzahlungen) soll auch aktiv KEINEN Platz
+      // beanspruchen — sonst bleibt trotz "nichts anzuzeigen" ein paar Pixel
+      // Padding sichtbar. Prüfung rein per DOM (padding-Wrapper hat dann
+      // keine Kind-Elemente), keine Render-Logik-Änderung nötig.
+      const detailHasContent = detailInner && detailInner.firstElementChild
+        && detailInner.firstElementChild.children.length > 0;
       if(detailGrid) {
         detailGrid.style.gridTemplateRows = (active && detailHasContent) ? "1fr" : "0fr";
-        // Schwebt jetzt per position:"absolute" unterhalb der Zeile (siehe
-        // JSX) statt im Dokumentfluss mitzuwachsen — braucht deshalb seinen
-        // EIGENEN Hintergrund/Schatten/Eckenrundung, um zusammen mit der
-        // (jetzt kurzen) Zeile optisch wie EINE durchgehende Karte zu wirken.
-        detailGrid.style.background = (active && detailHasContent) ? "#F4F6F0" : "transparent";
-        detailGrid.style.boxShadow = (active && detailHasContent) ? `inset 4px 0 0 0 ${T.pos}, 0 10px 26px -6px rgba(0,0,0,0.4)` : "none";
-        detailGrid.style.borderRadius = (active && detailHasContent) ? "0 0 14px 14px" : "0px";
       }
       if(detailInner) detailInner.style.opacity = (active && detailHasContent) ? "1" : "0";
     };
@@ -1758,13 +1740,15 @@ function MonatScreen() {
                             solange diese Zeile an der Scroll-Referenzlinie steht. Wird
                             NICHT über React-State/Re-Render gesteuert (siehe setRowFocus
                             weiter oben), sondern per direktem DOM-Zugriff aktiviert. */}
-                        {/* Schwebt als eigene Fläche UNTER der (kompakten) Zeile statt im
-                            Dokumentfluss mitzuwachsen (position:"absolute" statt normaler
-                            Fluss) — sonst würde die Andock-Dauer an der Hero-Kante mit der
-                            Länge von Notiz/Splits/Einzelzahlungen mitwachsen ("gefühlt ewig
-                            scrollen" bei langen Listen). Hintergrund/Schatten/Eckenrundung
-                            werden per setRowFocus gesetzt (siehe dort). */}
-                        <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr",position:"absolute",top:"100%",left:0,right:0,zIndex:1,
+                        {/* maxHeight-Deckel: die Andock-Dauer an der Hero-Kante wächst
+                            weiterhin mit der Länge von Notiz/Splits/Einzelzahlungen mit
+                            (typische, kurze Listen bleiben dadurch vollständig lesbar,
+                            während man durchscrollt) — aber nicht mehr UNBEGRENZT: ab
+                            60vh wird abgeschnitten, statt bei extrem langen Listen
+                            "gefühlt ewig" andocken zu müssen. overflow:"hidden" (nicht
+                            "auto"!) — eine scrollbare Fläche hier hätte Mausrad-Events
+                            vom äußeren Listen-Scroll abgefangen (bereits einmal isoliert). */}
+                        <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr",maxHeight:"60vh",overflow:"hidden",
                           transition:_reduceMotion?"none":"grid-template-rows .3s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                           <div data-role="tx-detail-inner" style={{overflow:"hidden",opacity:0,
                             transition:_reduceMotion?"none":"opacity .35s ease .05s"}}>
@@ -1892,13 +1876,15 @@ function MonatScreen() {
                         {/* Fokus-Effekt: Einzelzahlungen, die in "spent" eingeflossen sind —
                             wie bei Buchungen NICHT über React-State gesteuert (siehe
                             setRowFocus), sondern per direktem DOM-Zugriff ein-/ausgeblendet. */}
-                        {/* Schwebt als eigene Fläche UNTER der (kompakten) Zeile statt im
-                            Dokumentfluss mitzuwachsen (position:"absolute" statt normaler
-                            Fluss) — sonst würde die Andock-Dauer an der Hero-Kante mit der
-                            Länge von Notiz/Splits/Einzelzahlungen mitwachsen ("gefühlt ewig
-                            scrollen" bei langen Listen). Hintergrund/Schatten/Eckenrundung
-                            werden per setRowFocus gesetzt (siehe dort). */}
-                        <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr",position:"absolute",top:"100%",left:0,right:0,zIndex:1,
+                        {/* maxHeight-Deckel: die Andock-Dauer an der Hero-Kante wächst
+                            weiterhin mit der Länge von Notiz/Splits/Einzelzahlungen mit
+                            (typische, kurze Listen bleiben dadurch vollständig lesbar,
+                            während man durchscrollt) — aber nicht mehr UNBEGRENZT: ab
+                            60vh wird abgeschnitten, statt bei extrem langen Listen
+                            "gefühlt ewig" andocken zu müssen. overflow:"hidden" (nicht
+                            "auto"!) — eine scrollbare Fläche hier hätte Mausrad-Events
+                            vom äußeren Listen-Scroll abgefangen (bereits einmal isoliert). */}
+                        <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr",maxHeight:"60vh",overflow:"hidden",
                           transition:_reduceMotion?"none":"grid-template-rows .3s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                           <div data-role="tx-detail-inner" style={{overflow:"hidden",opacity:0,
                             transition:_reduceMotion?"none":"opacity .35s ease .05s"}}>
@@ -2051,13 +2037,15 @@ function MonatScreen() {
                             solange diese Zeile an der Scroll-Referenzlinie steht. Wird
                             NICHT über React-State/Re-Render gesteuert (siehe setRowFocus
                             weiter oben), sondern per direktem DOM-Zugriff aktiviert. */}
-                        {/* Schwebt als eigene Fläche UNTER der (kompakten) Zeile statt im
-                            Dokumentfluss mitzuwachsen (position:"absolute" statt normaler
-                            Fluss) — sonst würde die Andock-Dauer an der Hero-Kante mit der
-                            Länge von Notiz/Splits/Einzelzahlungen mitwachsen ("gefühlt ewig
-                            scrollen" bei langen Listen). Hintergrund/Schatten/Eckenrundung
-                            werden per setRowFocus gesetzt (siehe dort). */}
-                        <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr",position:"absolute",top:"100%",left:0,right:0,zIndex:1,
+                        {/* maxHeight-Deckel: die Andock-Dauer an der Hero-Kante wächst
+                            weiterhin mit der Länge von Notiz/Splits/Einzelzahlungen mit
+                            (typische, kurze Listen bleiben dadurch vollständig lesbar,
+                            während man durchscrollt) — aber nicht mehr UNBEGRENZT: ab
+                            60vh wird abgeschnitten, statt bei extrem langen Listen
+                            "gefühlt ewig" andocken zu müssen. overflow:"hidden" (nicht
+                            "auto"!) — eine scrollbare Fläche hier hätte Mausrad-Events
+                            vom äußeren Listen-Scroll abgefangen (bereits einmal isoliert). */}
+                        <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr",maxHeight:"60vh",overflow:"hidden",
                           transition:_reduceMotion?"none":"grid-template-rows .3s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                           <div data-role="tx-detail-inner" style={{overflow:"hidden",opacity:0,
                             transition:_reduceMotion?"none":"opacity .35s ease .05s"}}>
