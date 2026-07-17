@@ -330,7 +330,6 @@ function MonatScreen() {
     // per DOM auf genau die betroffene(n) Zeile(n) zugegriffen (siehe setRowFocus)
     // — kein Re-Render nötig, bleibt auch bei riesigen Listen flüssig.
     const activeTxIdRef = useRef(null);
-    const activeIdxRef = useRef(-1);
     // Frühere Mindest-Standzeit (Dwell-Gate) wieder entfernt: das Umschalten
     // reagierte dadurch spürbar verzögert auf Maus-Scrollrad-Eingaben (mehrere
     // Notches ohne sichtbare Reaktion). Das ursprüngliche Flacker-Problem, das
@@ -589,35 +588,34 @@ function MonatScreen() {
         const curTx = curIdx>=0 ? rowsArr[curIdx].getAttribute("data-tx") : null;
         if(curTx !== activeTxIdRef.current){
           const oldRow = activeTxIdRef.current ? el.querySelector(`[data-tx="${activeTxIdRef.current}"]`) : null;
-          // Die vorher aktive Zeile schrumpft beim Deaktivieren (Icon/Text/
-          // Betrags-Padding zurück) — läuft das animiert (0.45s) ab, rutscht
-          // ALLES darunter währenddessen unbemerkt nach oben, weil im
-          // Dokumentfluss einfach weniger Platz gebraucht wird. Die gerade
-          // erst aktivierte NÄCHSTE Zeile (die exakt an der Hero-Kante stehen
-          // sollte) wandert dadurch im Lauf der Animation unter den Hero,
-          // obwohl sie im Moment der Aktivierung korrekt positioniert war —
-          // sichtbar als "oben abgeschnitten". Fix: das Schrumpfen der alten
-          // Zeile synchron (ohne Übergang) vorwegnehmen und den dadurch
-          // wegfallenden Höhenunterschied sofort per scrollTop ausgleichen,
-          // BEVOR die neue Zeile aktiviert wird — nur relevant, wenn die alte
-          // Zeile (in Listenreihenfolge) VOR der neuen liegt (Vorwärts-Scroll).
-          if(oldRow && activeIdxRef.current>=0 && curIdx>activeIdxRef.current){
+          if(oldRow) {
+            // Die alte Zeile schrumpft beim Deaktivieren (Icon/Padding/
+            // Detailliste zurück) — läuft das animiert ab, rutscht die neu
+            // aktivierte Zeile darunter im Lauf der Animation sichtbar nach
+            // oben, obwohl sie im Moment des Wechsels richtig stand. Fix: nur
+            // die paar Elemente, die tatsächlich Höhe ändern, kurz OHNE
+            // Übergang schrumpfen lassen und den wegfallenden Höhenunterschied
+            // sofort per scrollTop ausgleichen — NICHT die komplette Zeile
+            // samt aller Kind-Elemente (das war bei einer langen Liste mit
+            // hunderten Einträgen spürbar langsam bis hin zum Hängenbleiben).
+            const heightEls = [oldRow,
+              oldRow.querySelector('[data-role="tx-mainrow"]'),
+              oldRow.querySelector('[data-role="tx-icon-wrap"]'),
+              oldRow.querySelector('[data-role="tx-amtbar"]'),
+              oldRow.querySelector('[data-role="tx-detail-grid"]'),
+            ].filter(Boolean);
             const beforeH = oldRow.getBoundingClientRect().height;
-            const affected = [oldRow, ...oldRow.querySelectorAll("*")];
-            const prevTr = affected.map(k=>k.style.transition);
-            affected.forEach(k=>{ k.style.transition = "none"; });
+            const prevTr = heightEls.map(k=>k.style.transition);
+            heightEls.forEach(k=>{ k.style.transition = "none"; });
             setRowFocus(oldRow, false);
-            void oldRow.offsetHeight; // reflow erzwingen, damit die Höhe sofort feststeht
+            void oldRow.offsetHeight; // Reflow erzwingen, damit die neue Höhe sofort feststeht
             const afterH = oldRow.getBoundingClientRect().height;
             el.scrollTop -= (beforeH - afterH);
             requestAnimationFrame(()=>{
-              affected.forEach((k,i)=>{ if(k.isConnected) k.style.transition = prevTr[i]; });
+              heightEls.forEach((k,i)=>{ k.style.transition = prevTr[i]; });
             });
-          } else if(oldRow) {
-            setRowFocus(oldRow, false);
           }
           activeTxIdRef.current = curTx;
-          activeIdxRef.current = curIdx;
           if(curTx) setRowFocus(el.querySelector(`[data-tx="${curTx}"]`), true);
         }
 
