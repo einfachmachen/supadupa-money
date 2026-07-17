@@ -429,23 +429,13 @@ function MonatScreen() {
       row.style.borderRadius = active ? "14px" : "0px";
       row.style.transform = active ? "scale(1.025)" : "scale(1)";
       row.style.zIndex = active ? "5" : "1";
-      // Jede Eigenschaft, die die Zeilenhöhe verändert (Padding, Icon-Maße,
-      // Schriftgrößen, Detailbereich-Höhe), springt bewusst INSTANT — ohne
-      // CSS-transition — statt animiert zu wachsen/schrumpfen (siehe die
-      // jeweiligen transition-Deklarationen weiter unten in der JSX, die für
-      // genau diese Eigenschaften keine Dauer mehr angeben). Grund: solange
-      // eine solche Eigenschaft noch mitten in der Animation ist, weicht die
-      // tatsächliche (visuelle) Zeilenposition von dem ab, was ein direkt
-      // danach gemessenes getBoundingClientRect() liefert — bei einer langen,
-      // nicht virtualisierten Liste reichte das wiederholt aus, um beim
-      // Weiterscrollen während des Ab-/Aufbaus einer Zeile (v.a. der hohen
-      // Einzelzahlungsliste) sichtbare Sprünge und sogar "kopflose" Karten zu
-      // erzeugen, deren Kopfzeile hinter dem Hero verschwand, während ihr
-      // Detailbereich noch sichtbar blieb. Rein optische Eigenschaften ohne
-      // Einfluss auf den Dokumentfluss (Hintergrund, box-shadow, border-
-      // radius, transform-Skalierung, Textfarbe, opacity) bleiben dagegen wie
-      // gehabt sanft animiert — sie können diese Klasse von Fehlern nicht
-      // auslösen, weil nachfolgende Geschwister währenddessen nicht umfließen.
+      // Icon-Maße, Schriftgrößen, Innenabstände und Detailbereich-Höhe
+      // wachsen/schrumpfen sanft animiert (siehe die jeweiligen transition-
+      // Deklarationen in der JSX weiter unten). WICHTIG dabei: nur auf
+      // KIND-Elementen der Zeile, NIE auf der Zeile selbst (dem sticky-
+      // positionierten Element) — eine Transition DORT verwirrt Chromiums
+      // Andock-Berechnung nachweislich (ausführlich isoliert), Übergänge auf
+      // Kind-Elementen sind davon dagegen nicht betroffen.
       const mainRow = row.querySelector('[data-role="tx-mainrow"]');
       if(mainRow) {
         mainRow.style.padding = active ? "12px 12px" : "3px 8px";
@@ -455,6 +445,22 @@ function MonatScreen() {
         // Leerraum neben Icon/Betrag stehen. flex-wrap + flex-basis:100% auf
         // dem Betrags-Block erzwingt den Umbruch auf eine eigene Zeile.
         mainRow.style.flexWrap = active ? "wrap" : "nowrap";
+        // "Von unten hochschieben": beim Aktivieren rutscht die Kopfzeile
+        // einmalig ein kurzes Stück nach oben, statt einfach an fester
+        // Stelle zu wachsen — zusammen mit dem Wachsen entsteht so der
+        // Eindruck, die Buchung rücke von unten ins Bild. Bewusst per Web
+        // Animations API (element.animate) statt CSS-transition: braucht
+        // dadurch keine "erst zurücksetzen, dann neu setzen"-Klimmzüge und
+        // interferiert nicht mit der bereits laufenden padding-Transition
+        // auf demselben Element. Nur beim AKTIVIEREN (nicht beim
+        // Deaktivieren) — sonst bliebe inaktiven Zeilen dauerhaft ein
+        // Versatz, der den Dokumentfluss durcheinanderbrächte.
+        if(active && !_reduceMotion){
+          mainRow.animate(
+            [{ transform: "translateY(14px)" }, { transform: "translateY(0)" }],
+            { duration: 300, easing: "cubic-bezier(0.16, 1, 0.3, 1)" }
+          );
+        }
       }
       const iconWrap = row.querySelector('[data-role="tx-icon-wrap"]');
       if(iconWrap) { const s = active ? "46px" : "32px"; iconWrap.style.width = s; iconWrap.style.height = s; }
