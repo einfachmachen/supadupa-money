@@ -282,6 +282,22 @@ function MonatScreen() {
     const spyTick = useRef(false);
     const spyTimerRef = useRef(null);     // Scroll-Spy entprellt (s. u.)
     const lastScrollTopRef = useRef(null);// für die Scroll-Richtung
+    // Fokus-Effekt v2: statt die Docking-Position jeden Scroll-Frame per JS
+    // zu berechnen (siehe verworfene Vorgänger-Versuche), übernimmt der
+    // Browser das Andocken selbst — jede Zeile bekommt position:"sticky" mit
+    // demselben top-Wert (CSS-Variable statt State, damit eine Änderung der
+    // Hero-Höhe — z. B. Liquiditäts-Engpass-Banner erscheint/verschwindet —
+    // KEIN Re-Render aller Zeilen auslöst). Ein ResizeObserver hält die
+    // Variable synchron, unabhängig vom Scrollen.
+    useEffect(() => {
+      const heroEl = stickyRef.current, listEl = listRef.current;
+      if(!heroEl || !listEl) return;
+      const sync = () => listEl.style.setProperty("--mbt-hero-h", heroEl.getBoundingClientRect().height + "px");
+      sync();
+      const ro = new ResizeObserver(sync);
+      ro.observe(heroEl);
+      return () => ro.disconnect();
+    }, []);
     // Doppeltipp auf den +Button (jumpToToday in App.jsx) setzte bisher NUR den
     // Anker-Monat — die Liste selbst blieb an ihrer alten Scroll-Position stehen.
     // scrollToTodayTick zählt bei jedem Sprung hoch; hier reagieren wir darauf,
@@ -330,12 +346,6 @@ function MonatScreen() {
     // per DOM auf genau die betroffene(n) Zeile(n) zugegriffen (siehe setRowFocus)
     // — kein Re-Render nötig, bleibt auch bei riesigen Listen flüssig.
     const activeTxIdRef = useRef(null);
-    // Grobe Schätzung der INAKTIVEN Zeilenhöhe (Icon 32px + Padding + eine
-    // Zeile Text) — dient als Sicherheitsabstand in onListScroll, um die
-    // aktive Zeile spätestens dann zu wechseln, wenn ihre Kopfzeile bei
-    // eigenem Wachstum längst unsichtbar an der Hero-Kante vorbeigescrollt
-    // wäre (siehe Kommentar dort).
-    const INACTIVE_ROW_HEIGHT = 60;
     // Frühere Mindest-Standzeit (Dwell-Gate) wieder entfernt: das Umschalten
     // reagierte dadurch spürbar verzögert auf Maus-Scrollrad-Eingaben (mehrere
     // Notches ohne sichtbare Reaktion). Das ursprüngliche Flacker-Problem, das
@@ -607,50 +617,15 @@ function MonatScreen() {
             }
           }
         }
-        // AUSNAHME: Zeilen mit einer langen aufgeklappten Liste (viele
-        // Einzelzahlungen) sind absichtlich SEHR hoch — würde man erst beim
-        // natürlichen Erreichen der nächsten Zeile wechseln, müsste die ganze
-        // (sehr hohe) Liste bis fast zur Hero-Kante durchgescrollt werden,
-        // obwohl sie längst vollständig lesbar war. Solche Zeilen geben den
-        // Fokus stattdessen schon frei, sobald ihr UNTERES Ende knapp über
-        // der Oberkante des +Buttons ankommt (data-tour="master-plus") — die
-        // Liste war dann bereits komplett am Bildschirm sichtbar.
-        if(curIdx>=0 && curIdx<rowsArr.length-1){
-          const curRow = rowsArr[curIdx];
-          const curRect = curRow.getBoundingClientRect();
-          const grid = curRow.querySelector('[data-role="tx-detail-grid"]');
-          const hasLongDetail = grid && grid.getBoundingClientRect().height > 80;
-          if(hasLongDetail) {
-            const masterBtn = document.querySelector('[data-tour="master-plus"]');
-            const btnTop = masterBtn ? masterBtn.getBoundingClientRect().top : (window.innerHeight - 90);
-            if(curRect.bottom <= btnTop - 8) curIdx += 1;
-          } else {
-            // Fehlerbild "kopflose Karte": die aktive Zeile wächst beim
-            // Aktivieren (Icon/Schrift/Notiz/Vormerkungs-Box) — und schiebt
-            // dadurch die NÄCHSTE Zeile weiter nach unten. Je mehr sie
-            // wächst, desto länger dauert es, bis die nächste Zeile die
-            // Hero-Kante erreicht (das bisherige Wechsel-Kriterium) — und
-            // genau in dieser Zeit scrollt die eigene Kopfzeile (Icon+Name)
-            // längst unsichtbar an der Hero-Kante vorbei, während Betrag/
-            // Notiz weiter unten noch sichtbar bleiben. Ein erster Versuch
-            // mit einem geschätzten Pixel-Grenzwert (60px) reichte nicht:
-            // das eigentliche Icon kann schon vorher komplett verschwunden
-            // sein. Deshalb hier NICHT auf die nächste Zeile warten, sondern
-            // direkt das TATSÄCHLICH gerenderte Icon dieser Zeile messen —
-            // sobald dessen Unterkante die Hero-Kante erreicht (es also
-            // komplett unsichtbar wäre), wird gewechselt.
-            const iconEl = curRow.querySelector('[data-role="tx-icon-wrap"]') || curRow.querySelector('[data-role="tx-icon"]');
-            const headerBottom = iconEl ? iconEl.getBoundingClientRect().bottom : curRect.top + INACTIVE_ROW_HEIGHT;
-            if(headerBottom <= refTop) curIdx += 1;
-          }
-        }
-        // Absichtlich KEIN künstlicher Ausgleich mehr für das Schrumpfen der
-        // vorherigen Zeile (weder per scrollTop-Manipulation noch per
-        // erzwungenem synchronem Reflow): beide Varianten wurden bei einer
-        // großen, nicht virtualisierten Liste (tausende Buchungen) so teuer,
-        // dass das Scrollen spürbar hängen blieb — schlimmer als die kleine
-        // (durch transformOrigin:"top center" oben bereits stark reduzierte)
-        // Restungenauigkeit, die sie beheben sollten.
+        // Keine Sonderfälle mehr nötig (weder für lange Einzelzahlungslisten
+        // noch für die "kopflose Karte"): jede Zeile dockt jetzt selbst per
+        // CSS position:"sticky" an der Hero-Kante an (top:"var(--mbt-hero-h)")
+        // — der Browser garantiert dabei strukturell, dass ihre Oberkante nie
+        // über die Referenzlinie hinausrutscht, während sie andockt ist. Eine
+        // Zeile mit langer Detailliste dockt dadurch von selbst entsprechend
+        // länger an (sie nimmt mehr Dokumentfluss-Platz ein, bevor die
+        // nächste Zeile sie ablöst) — ganz ohne die frühere, mehrfach
+        // gescheiterte manuelle Nachbildung dieses Verhaltens in JS.
         const curTx = curIdx>=0 ? rowsArr[curIdx].getAttribute("data-tx") : null;
         if(curTx !== activeTxIdRef.current){
           if(activeTxIdRef.current) setRowFocus(el.querySelector(`[data-tx="${activeTxIdRef.current}"]`), false);
@@ -1486,10 +1461,14 @@ function MonatScreen() {
             const hasDayPend = dayTxs.some(t=>t.pending);
             return (
               <div key={date} data-month={date.slice(0,7)} style={{margin:"14px 8px 0",border:`1px solid ${T.bd}`,borderRadius:12,overflow:"hidden",background:T.surf||"rgba(255,255,255,0.03)"}}>
+                {/* Eigener leerer Wrapper NUR um die Kopfzeile (nicht um den
+                    ganzen Tages-Block!) für den Dokumentfluss-Platz — siehe
+                    ausführlichen Kommentar bei der Einnahmen-Zeile weiter unten. */}
+                <div style={{position:"relative"}}>
                 <div data-tx={"day-"+date} data-rest-bg="rgba(255,255,255,0.04)"
-                  style={{display:"flex",alignItems:"center",position:"relative",transformOrigin:"top center",
+                  style={{display:"flex",alignItems:"center",position:"sticky",top:"var(--mbt-hero-h, 0px)",transformOrigin:"top center",
                   padding:"7px 10px 6px",gap:8,background:"rgba(255,255,255,0.04)",
-                  transition:_reduceMotion?"none":"background .15s ease, box-shadow .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease, transform .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
+                  transition:_reduceMotion?"none":"background .15s ease, box-shadow .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease, color .15s ease"}}>
                   <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
                     <span style={{color:T.txt,fontSize:12,fontWeight:700}}>{showFullDate?fmtDFull(date):fmtD(date)}</span>
                     <span style={{color:T.txt2,fontSize:10}}>{dayName(date)}</span>
@@ -1549,6 +1528,7 @@ function MonatScreen() {
                       {dayNet>=0?"":"−"}{fmt(Math.abs(dayNet))}
                     </span>
                   )}
+                </div>
                 </div>
                 {/* ── Minus-Warnung ── */}
                 {(()=>{
@@ -1621,12 +1601,30 @@ function MonatScreen() {
                   const fulfilled  = effE!==""&&vD!==""&&normE===normD;
                   const vormInfo = _linkedVormInfo(tx);
                   return (
-                    <div key={tx.id} data-tx={tx.id} data-fulfilled={fulfilled?"1":"0"} style={{borderRadius:0,marginBottom:0,overflow:"visible",
+                    // Äußerer Wrapper OHNE eigenes Styling: definiert nur den
+                    // Dokumentfluss-Platz (per position:"relative"), den das
+                    // sticky Kind unten für sein An-/Abdocken braucht — sonst
+                    // "kleben" mehrere Zeilen gleichzeitig übereinander (siehe
+                    // Kommentar an der sticky-Deklaration selbst).
+                    <div key={tx.id} style={{position:"relative"}}>
+                    <div data-tx={tx.id} data-fulfilled={fulfilled?"1":"0"} style={{borderRadius:0,marginBottom:0,overflow:"visible",
                       background: fulfilled?T.pos+"11":"transparent",
                       boxShadow:"none",
                       borderTop:`1px solid ${T.bd}`,
-                      position:"relative", transformOrigin:"top center",
-                      transition:_reduceMotion?"none":"background .15s ease, box-shadow .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease, transform .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
+                      // position:"sticky" statt der früheren, mehrfach
+                      // gescheiterten manuellen JS-Nachbildung ("kopflose
+                      // Karte", Rücksprünge, Hänger): der Browser übernimmt
+                      // das An-/Abdocken an der Hero-Kante selbst und
+                      // garantiert dabei strukturell, dass die Oberkante nie
+                      // über die Referenzlinie hinausrutscht, solange die
+                      // Zeile angedockt ist. WICHTIG: braucht den eigenen,
+                      // sonst leeren Wrapper-Div oben — ohne ihn (direkt als
+                      // Listen-Geschwister) hätte jede bereits passierte
+                      // Zeile weiterhin unbegrenzt "geklebt", da nichts ihren
+                      // Dokumentfluss-Platz auf die eigene (natürliche) Höhe
+                      // begrenzt.
+                      position:"sticky",top:"var(--mbt-hero-h, 0px)",transformOrigin:"top center",
+                      transition:_reduceMotion?"none":"background .15s ease, box-shadow .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease, color .15s ease"}}>
                       <div style={{position:"relative",zIndex:1}}>
                         <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px"}}>
                           <div data-role="tx-icon-wrap" style={{position:"relative",width:32,height:32,flexShrink:0,marginRight:8}}>
@@ -1726,6 +1724,7 @@ function MonatScreen() {
                         </div>
                       </div>
                     </div>
+                    </div>
                   );
                 })}
 
@@ -1756,9 +1755,12 @@ function MonatScreen() {
                     // Kassenbon-Liste im Detailbereich der aktiven Zeile.
                     const payments = (_subPaymentsMap.get(subId)||[]).filter(p=>p.day<=(isMitteDay?14:lastDayOfMonth));
                     return (
-                      <div key={"rb-"+name} data-tx={"rb-"+date+"-"+name} style={{borderRadius:0,marginBottom:0,overflow:"visible",background:"transparent",borderTop:`1px solid ${T.bd}`,
-                        position:"relative",transformOrigin:"top center",
-                        transition:_reduceMotion?"none":"background .15s ease, box-shadow .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease, transform .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
+                      // Eigener leerer Wrapper für den Dokumentfluss-Platz — siehe
+                      // ausführlichen Kommentar bei der Einnahmen-Zeile oben.
+                      <div key={"rb-"+name} style={{position:"relative"}}>
+                      <div data-tx={"rb-"+date+"-"+name} style={{borderRadius:0,marginBottom:0,overflow:"visible",background:"transparent",borderTop:`1px solid ${T.bd}`,
+                        position:"sticky",top:"var(--mbt-hero-h, 0px)",transformOrigin:"top center",
+                        transition:_reduceMotion?"none":"background .15s ease, box-shadow .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease, color .15s ease"}}>
                         <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px"}}>
                           <div data-role="tx-icon" style={{width:32,height:32,borderRadius:9,flexShrink:0,marginRight:8,background:accentCol+"22",border:`1px solid ${T.bd}`,display:"flex",alignItems:"center",justifyContent:"center",
                             "--icon-accent":accentCol}}>
@@ -1807,7 +1809,13 @@ function MonatScreen() {
                         <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr"}}>
                           <div data-role="tx-detail-inner" style={{overflow:"hidden",opacity:0,
                             transition:_reduceMotion?"none":"opacity .35s ease .05s"}}>
-                            <div style={{padding:"2px 8px 11px 10px",display:"flex",flexDirection:"column",gap:0}}>
+                            {/* maxHeight+eigenes Scrollen statt unbegrenzt in die Höhe zu
+                                wachsen: eine Kategorie mit sehr vielen Einzelzahlungen
+                                (theoretisch hunderte) würde sonst eine Zeile von mehreren
+                                tausend Pixel Höhe erzeugen — das sprengte nicht nur die
+                                Lesbarkeit, sondern auch die native position:"sticky"-
+                                Andock-Berechnung des Browsers bei sehr großen Elementen. */}
+                            <div style={{padding:"2px 8px 11px 10px",display:"flex",flexDirection:"column",gap:0,maxHeight:"46vh",overflowY:"auto"}}>
                               {payments.map((p,pi)=>(
                                 <div key={pi} style={{display:"flex",alignItems:"baseline",gap:6,padding:"1px 2px",fontSize:12.5}}>
                                   <span style={{fontSize:10.5,fontWeight:600,color:T.txt2,flexShrink:0,width:40,textAlign:"left",fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{p.dateLabel}</span>
@@ -1818,6 +1826,7 @@ function MonatScreen() {
                             </div>
                           </div>
                         </div>
+                      </div>
                       </div>
                     );
                   });
@@ -1852,13 +1861,16 @@ function MonatScreen() {
                   const vormInfo = _linkedVormInfo(tx);
 
                   return (
-                    <div key={tx.id} data-tx={tx.id} data-fulfilled={fulfilled?"1":"0"} style={{
+                    // Eigener leerer Wrapper für den Dokumentfluss-Platz — siehe
+                    // ausführlichen Kommentar bei der Einnahmen-Zeile oben.
+                    <div key={tx.id} style={{position:"relative"}}>
+                    <div data-tx={tx.id} data-fulfilled={fulfilled?"1":"0"} style={{
                       borderRadius:0, marginBottom:0, overflow:"visible",
                       background: fulfilled?T.pos+"11":"transparent",
                       boxShadow:"none",
                       borderTop:`1px solid ${T.bd}`,
-                      position:"relative", transformOrigin:"top center",
-                      transition:_reduceMotion?"none":"background .15s ease, box-shadow .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease, transform .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease",
+                      position:"sticky",top:"var(--mbt-hero-h, 0px)",transformOrigin:"top center",
+                      transition:_reduceMotion?"none":"background .15s ease, box-shadow .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease, color .15s ease",
                     }}>
 
 
@@ -2017,6 +2029,7 @@ function MonatScreen() {
                           </div>
                         )}
                       </div>
+                    </div>
                     </div>
                   );
                 })}
