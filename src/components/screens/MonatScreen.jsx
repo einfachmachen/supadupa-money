@@ -413,19 +413,23 @@ function MonatScreen() {
       row.style.borderRadius = active ? "14px" : "0px";
       row.style.transform = active ? "scale(1.025)" : "scale(1)";
       row.style.zIndex = active ? "5" : "1";
-      // Schrumpfen (aktiv→inaktiv) deutlich schneller als Wachsen — ohne das
-      // reißt die vorherige Zeile beim Zurückschrumpfen (Icon/Padding/
-      // Detailliste) über die volle 0.45s hinweg am Dokumentfluss, und die
-      // gerade erst aktivierte NÄCHSTE Zeile rutscht dabei sichtbar unter den
-      // Hero, obwohl sie im Moment des Wechsels richtig stand. Ein exakter
-      // Ausgleich (synchrones Vorwegnehmen + scrollTop-Korrektur bzw. Reflow-
-      // Erzwingung) wurde bei einer großen, nicht virtualisierten Liste so
-      // teuer, dass das Scrollen spürbar hängen blieb — ein kürzerer
-      // Schrumpf-Übergang kostet nichts an Performance und verkleinert das
-      // Zeitfenster für den Effekt drastisch, auch wenn er ihn nicht auf 0
-      // reduziert. transitionDuration als Kurzform überschreibt alle in der
-      // (mehrteiligen) transition-Deklaration genannten Dauern einheitlich.
-      const _fastShrink = el => { if(el) el.style.transitionDuration = active ? "" : "0.12s"; };
+      // Jede Eigenschaft, die die Zeilenhöhe verändert (Padding, Icon-Maße,
+      // Schriftgrößen, Detailbereich-Höhe), springt bewusst INSTANT — ohne
+      // CSS-transition — statt animiert zu wachsen/schrumpfen (siehe die
+      // jeweiligen transition-Deklarationen weiter unten in der JSX, die für
+      // genau diese Eigenschaften keine Dauer mehr angeben). Grund: solange
+      // eine solche Eigenschaft noch mitten in der Animation ist, weicht die
+      // tatsächliche (visuelle) Zeilenposition von dem ab, was ein direkt
+      // danach gemessenes getBoundingClientRect() liefert — bei einer langen,
+      // nicht virtualisierten Liste reichte das wiederholt aus, um beim
+      // Weiterscrollen während des Ab-/Aufbaus einer Zeile (v.a. der hohen
+      // Einzelzahlungsliste) sichtbare Sprünge und sogar "kopflose" Karten zu
+      // erzeugen, deren Kopfzeile hinter dem Hero verschwand, während ihr
+      // Detailbereich noch sichtbar blieb. Rein optische Eigenschaften ohne
+      // Einfluss auf den Dokumentfluss (Hintergrund, box-shadow, border-
+      // radius, transform-Skalierung, Textfarbe, opacity) bleiben dagegen wie
+      // gehabt sanft animiert — sie können diese Klasse von Fehlern nicht
+      // auslösen, weil nachfolgende Geschwister währenddessen nicht umfließen.
       const mainRow = row.querySelector('[data-role="tx-mainrow"]');
       if(mainRow) {
         mainRow.style.padding = active ? "12px 12px" : "3px 8px";
@@ -435,12 +439,11 @@ function MonatScreen() {
         // Leerraum neben Icon/Betrag stehen. flex-wrap + flex-basis:100% auf
         // dem Betrags-Block erzwingt den Umbruch auf eine eigene Zeile.
         mainRow.style.flexWrap = active ? "wrap" : "nowrap";
-        _fastShrink(mainRow);
       }
       const iconWrap = row.querySelector('[data-role="tx-icon-wrap"]');
-      if(iconWrap) { const s = active ? "46px" : "32px"; iconWrap.style.width = s; iconWrap.style.height = s; _fastShrink(iconWrap); }
+      if(iconWrap) { const s = active ? "46px" : "32px"; iconWrap.style.width = s; iconWrap.style.height = s; }
       const icon = row.querySelector('[data-role="tx-icon"]');
-      if(icon) { const s = active ? "46px" : "32px"; icon.style.width = s; icon.style.height = s; _fastShrink(icon); }
+      if(icon) { const s = active ? "46px" : "32px"; icon.style.width = s; icon.style.height = s; }
       const desc = row.querySelector('[data-role="tx-desc"]');
       if(desc) {
         desc.style.fontSize = active ? "18px" : "13px";
@@ -484,7 +487,6 @@ function MonatScreen() {
         // statt rechtsbündig wie bei jeder anderen Zeile auch.
         amtBar.style.width = active ? "100%" : "auto";
         amtBar.style.justifyContent = active ? "space-between" : "flex-start";
-        _fastShrink(amtBar);
       }
       // "Betrag"-Beschriftung (nur bei echten Buchungen) — im Ruhezustand per
       // display:none komplett aus dem Layout genommen (nicht nur unsichtbar),
@@ -537,7 +539,6 @@ function MonatScreen() {
         && detailInner.firstElementChild.children.length > 0;
       if(detailGrid) {
         detailGrid.style.gridTemplateRows = (active && detailHasContent) ? "1fr" : "0fr";
-        _fastShrink(detailGrid);
       }
       if(detailInner) detailInner.style.opacity = (active && detailHasContent) ? "1" : "0";
     };
@@ -1491,7 +1492,7 @@ function MonatScreen() {
                       {(hasReservierung||hasDayPend)&&(
                         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1,lineHeight:1.2}}>
                           {hasReservierung&&(
-                            <span data-role="tx-daydetail" style={{...amtStyle(dayIst>=0?"txt2":"neg"),fontSize:11,fontFamily:NUM_FONT,fontWeight:600,whiteSpace:"nowrap",transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
+                            <span data-role="tx-daydetail" style={{...amtStyle(dayIst>=0?"txt2":"neg"),fontSize:11,fontFamily:NUM_FONT,fontWeight:600,whiteSpace:"nowrap",transition:_reduceMotion?"none":"color .15s ease"}}>
                               ohne Budget {dayIst>=0?"":"−"}{fmt(Math.abs(dayIst))}
                             </span>
                           )}
@@ -1503,7 +1504,7 @@ function MonatScreen() {
                             });
                             const n = pendUpToDay.length;
                             const todayPend = dayTxs.filter(t=>t.pending&&!t._budgetSubId);
-                            return <span data-role="tx-daydetail" style={{color:T.gold,fontSize:11,whiteSpace:"nowrap",transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
+                            return <span data-role="tx-daydetail" style={{color:T.gold,fontSize:11,whiteSpace:"nowrap",transition:_reduceMotion?"none":"color .15s ease"}}>
                               inkl. {n} Vorm. ({todayPend.length} heute)
                             </span>;
                           })()}
@@ -1512,7 +1513,7 @@ function MonatScreen() {
                       <span data-role="tx-amt" data-amt-tone={bigVal>=0?"pos":"neg"} style={{
                         ...amtStyle(bigVal>=0?"pos":"neg"),
                         fontSize:18,fontWeight:800,fontFamily:NUM_FONT,whiteSpace:"nowrap",
-                        transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
+                        transition:_reduceMotion?"none":"color .15s ease"}}>
                         {bigVal>=0?"":"−"}{fmt(Math.abs(bigVal))}
                       </span>
                     </div>
@@ -1520,7 +1521,7 @@ function MonatScreen() {
                   })() : (
                     <span data-role="tx-amt" data-amt-tone={dayNet>=0?"pos":"neg"} style={{...amtStyle(dayNet>=0?"pos":"neg"),fontSize:18,fontWeight:800,
                       fontFamily:NUM_FONT,flexShrink:0,marginRight:8,
-                      transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
+                      transition:_reduceMotion?"none":"color .15s ease"}}>
                       {dayNet>=0?"":"−"}{fmt(Math.abs(dayNet))}
                     </span>
                   )}
@@ -1603,20 +1604,17 @@ function MonatScreen() {
                       position:"relative", transformOrigin:"top center",
                       transition:_reduceMotion?"none":"background .15s ease, box-shadow .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease, transform .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                       <div style={{position:"relative",zIndex:1}}>
-                        <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px",
-                          transition:_reduceMotion?"none":"padding .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
-                          <div data-role="tx-icon-wrap" style={{position:"relative",width:32,height:32,flexShrink:0,marginRight:8,
-                            transition:_reduceMotion?"none":"width .45s cubic-bezier(0.16, 1, 0.3, 1), height .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
+                        <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px"}}>
+                          <div data-role="tx-icon-wrap" style={{position:"relative",width:32,height:32,flexShrink:0,marginRight:8}}>
                             <div data-role="tx-icon" onClick={e=>{e.stopPropagation();setTxIconPickM(txIconPickM===tx.id?null:tx.id);}}
                               style={{width:32,height:32,borderRadius:9,cursor:"pointer",background:displayColor+"22",border:`1px solid ${txIconPickM===tx.id?displayColor+"66":T.bd}`,display:"flex",alignItems:"center",justifyContent:"center",
-                              "--icon-accent":displayColor,
-                              transition:_reduceMotion?"none":"width .45s cubic-bezier(0.16, 1, 0.3, 1), height .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
+                              "--icon-accent":displayColor}}>
                               {involvedCats.length>0?Li(displayIcon,16,displayColor):Li("help-circle",16,T.txt2)}
                             </div>
                           </div>
                           {txIconPickM===tx.id&&(<IconPickerDialog selectedIcon={involvedCats[0]?.icon||"help-circle"} selectedColor={involvedCats[0]?.color||T.txt2} onSelect={ic=>{if(involvedCats[0])setCats(p=>p.map(c=>c.id===involvedCats[0].id?{...c,icon:ic}:c));setTxIconPickM(null);}} onClose={()=>setTxIconPickM(null)}/>)}
                           <div onClick={()=>openEdit(tx)} style={{flex:1,minWidth:0,marginRight:6,cursor:"pointer"}}>
-                            <ExpandableLine data-role="tx-desc" style={{color:T.txt,fontSize:13,fontWeight:700,transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
+                            <ExpandableLine data-role="tx-desc" style={{color:T.txt,fontSize:13,fontWeight:700,transition:_reduceMotion?"none":"color .15s ease"}}>
                               {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.gold)}</span>}
                             </ExpandableLine>
                             <ExpandableLine data-role="tx-subline" style={{color:cat?.color||T.txt2,fontSize:10,marginTop:1,fontWeight:600,transition:_reduceMotion?"none":"color .15s ease"}}>
@@ -1630,14 +1628,13 @@ function MonatScreen() {
                               ))}
                             </ExpandableLine>
                           </div>
-                          <div data-role="tx-amtblock" style={{textAlign:"right",flexShrink:0,marginRight:8,
-                            transition:_reduceMotion?"none":"flex-basis .45s cubic-bezier(0.16, 1, 0.3, 1), margin .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
+                          <div data-role="tx-amtblock" style={{textAlign:"right",flexShrink:0,marginRight:8}}>
                             <div data-role="tx-amtbar" style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:8,
-                              transition:_reduceMotion?"none":"background .15s ease, padding .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease"}}>
+                              transition:_reduceMotion?"none":"background .15s ease, border-radius .4s ease"}}>
                               <span data-role="tx-amt-label" style={{display:"none",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.03em"}}>Betrag</span>
                               <div data-role="tx-amt" data-amt-tone="pos" style={{...amtStyle("pos",pal.val),...(tx.pending?{color:T.cell_inc}:{}),
                                 fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
-                                transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{fmt(tx.totalAmount)}</div>
+                                transition:_reduceMotion?"none":"color .15s ease"}}>{fmt(tx.totalAmount)}</div>
                             </div>
                             {isS&&(
                               <div style={{marginTop:2}}>
@@ -1660,8 +1657,7 @@ function MonatScreen() {
                             solange diese Zeile an der Scroll-Referenzlinie steht. Wird
                             NICHT über React-State/Re-Render gesteuert (siehe setRowFocus
                             weiter oben), sondern per direktem DOM-Zugriff aktiviert. */}
-                        <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr",
-                          transition:_reduceMotion?"none":"grid-template-rows .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
+                        <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr"}}>
                           <div data-role="tx-detail-inner" style={{overflow:"hidden",opacity:0,
                             transition:_reduceMotion?"none":"opacity .35s ease .05s"}}>
                             <div style={{padding:"2px 8px 11px 40px",display:"flex",flexDirection:"column",gap:6}}>
@@ -1739,16 +1735,14 @@ function MonatScreen() {
                       <div key={"rb-"+name} data-tx={"rb-"+date+"-"+name} style={{borderRadius:0,marginBottom:0,overflow:"visible",background:"transparent",borderTop:`1px solid ${T.bd}`,
                         position:"relative",transformOrigin:"top center",
                         transition:_reduceMotion?"none":"background .15s ease, box-shadow .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease, transform .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
-                        <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px",
-                          transition:_reduceMotion?"none":"padding .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
+                        <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px"}}>
                           <div data-role="tx-icon" style={{width:32,height:32,borderRadius:9,flexShrink:0,marginRight:8,background:accentCol+"22",border:`1px solid ${T.bd}`,display:"flex",alignItems:"center",justifyContent:"center",
-                            "--icon-accent":accentCol,
-                            transition:_reduceMotion?"none":"width .45s cubic-bezier(0.16, 1, 0.3, 1), height .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
+                            "--icon-accent":accentCol}}>
                             {Li(isOverspent?"alert-triangle":"target",16,accentCol)}
                           </div>
                           <div style={{flex:1,minWidth:0,marginRight:6}}>
                             <div data-role="tx-desc" style={{color:isOverspent?T.neg:T.txt,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
-                              transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{subName}</div>
+                              transition:_reduceMotion?"none":"color .15s ease"}}>{subName}</div>
                             {/* Verbrauch als Punkt auf feiner Linie (gleiche Sprache wie
                                 der Dashboard-Pegel) statt Balken + Prozent-Text */}
                             <div data-role="tx-progress-wrap" style={{marginTop:6,position:"relative",height:8,maxWidth:140,
@@ -1768,18 +1762,17 @@ function MonatScreen() {
                               "Rest:"/"zuviel:" rutscht dafür als kleinere Einheit nach links
                               (siehe order-Umschaltung in setRowFocus). */}
                           <div data-role="tx-amtblock" style={{textAlign:"right",flexShrink:0,marginRight:8,
-                            display:"flex",justifyContent:"flex-end",alignItems:"baseline",gap:6,
-                            transition:_reduceMotion?"none":"flex-basis .45s cubic-bezier(0.16, 1, 0.3, 1), margin .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
+                            display:"flex",justifyContent:"flex-end",alignItems:"baseline",gap:6}}>
                             <div data-role="tx-amtbar" style={{display:"flex",alignItems:"baseline",gap:10,
-                              transition:_reduceMotion?"none":"background .15s ease, padding .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease"}}>
+                              transition:_reduceMotion?"none":"background .15s ease, border-radius .4s ease"}}>
                               <span data-role="tx-restwrap" style={{display:"inline-flex",alignItems:"baseline",gap:6}}>
                                 <span data-role="tx-rest-label" data-amt-tone={isOverspent?"neg":open>0?"pos":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"pos":"txt2"),fontSize:10,fontWeight:700,marginLeft:8,
-                                  transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{isOverspent?"zuviel:":"Rest:"}</span>
+                                  transition:_reduceMotion?"none":"color .15s ease"}}>{isOverspent?"zuviel:":"Rest:"}</span>
                                 <span data-role="tx-rest-amt" data-amt-tone={isOverspent?"neg":open>0?"pos":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"pos":"txt2"),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
-                                  transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{fmt(Math.abs(signedOpen))}</span>
+                                  transition:_reduceMotion?"none":"color .15s ease"}}>{fmt(Math.abs(signedOpen))}</span>
                               </span>
                               <span data-role="tx-spentside" style={{display:"inline-flex",alignItems:"baseline"}}>
-                                <span data-role="tx-amt" data-amt-tone={spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold"} style={{...amtStyle(spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold",spent===0?T.txt2:accentCol),fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{spent===0?"—":fmt(Math.abs(spent))}</span>
+                                <span data-role="tx-amt" data-amt-tone={spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold"} style={{...amtStyle(spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold",spent===0?T.txt2:accentCol),fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",transition:_reduceMotion?"none":"color .15s ease"}}>{spent===0?"—":fmt(Math.abs(spent))}</span>
                               </span>
                             </div>
                           </div>
@@ -1787,8 +1780,7 @@ function MonatScreen() {
                         {/* Fokus-Effekt: Einzelzahlungen, die in "spent" eingeflossen sind —
                             wie bei Buchungen NICHT über React-State gesteuert (siehe
                             setRowFocus), sondern per direktem DOM-Zugriff ein-/ausgeblendet. */}
-                        <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr",
-                          transition:_reduceMotion?"none":"grid-template-rows .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
+                        <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr"}}>
                           <div data-role="tx-detail-inner" style={{overflow:"hidden",opacity:0,
                             transition:_reduceMotion?"none":"opacity .35s ease .05s"}}>
                             <div style={{padding:"2px 8px 11px 10px",display:"flex",flexDirection:"column",gap:0}}>
@@ -1848,18 +1840,15 @@ function MonatScreen() {
 
                       <div style={{position:"relative",zIndex:1}}>
                         {/* Main row */}
-                        <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px",
-                          transition:_reduceMotion?"none":"padding .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
+                        <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px"}}>
                           {/* Icon — immer Icon-Picker */}
-                          <div data-role="tx-icon-wrap" style={{position:"relative",width:32,height:32,flexShrink:0,marginRight:8,
-                            transition:_reduceMotion?"none":"width .45s cubic-bezier(0.16, 1, 0.3, 1), height .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
+                          <div data-role="tx-icon-wrap" style={{position:"relative",width:32,height:32,flexShrink:0,marginRight:8}}>
                             <div data-role="tx-icon" onClick={e=>{e.stopPropagation();setTxIconPickM(txIconPickM===tx.id?null:tx.id);}}
                               style={{width:32,height:32,borderRadius:9,cursor:"pointer",
                                 background:displayColor+"22",
                                 border:`1px solid ${txIconPickM===tx.id?displayColor+"66":T.bd}`,
                                 display:"flex",alignItems:"center",justifyContent:"center",
-                                "--icon-accent":displayColor,
-                                transition:_reduceMotion?"none":"width .45s cubic-bezier(0.16, 1, 0.3, 1), height .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
+                                "--icon-accent":displayColor}}>
                               {involvedCats.length>0
                                 ? Li(displayIcon,16,displayColor)
                                 : tx.pending ? (tx._seriesTyp==="finanzierung"?Li("credit-card",16,T.gold):tx._seriesId?Li("repeat",16,T.pos):Li("calendar",16,T.gold)) : Li("help-circle",16,T.txt2)}
@@ -1877,7 +1866,7 @@ function MonatScreen() {
                           )}
                           {/* Text — Klick öffnet Edit */}
                           <div onClick={()=>openEdit(tx)} style={{flex:1,minWidth:0,marginRight:6,cursor:"pointer"}}>
-                            <ExpandableLine data-role="tx-desc" style={{color:T.txt,fontSize:13,fontWeight:700,transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
+                            <ExpandableLine data-role="tx-desc" style={{color:T.txt,fontSize:13,fontWeight:700,transition:_reduceMotion?"none":"color .15s ease"}}>
                               {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.gold)}</span>}
                             </ExpandableLine>
                             <ExpandableLine data-role="tx-subline" style={{color:cat?.color||T.txt2,fontSize:10,marginTop:1,fontWeight:600,transition:_reduceMotion?"none":"color .15s ease"}}>
@@ -1908,14 +1897,13 @@ function MonatScreen() {
                             </ExpandableLine>
                           </div>
                           {/* Amount */}
-                          <div data-role="tx-amtblock" style={{textAlign:"right",flexShrink:0,marginRight:8,
-                            transition:_reduceMotion?"none":"flex-basis .45s cubic-bezier(0.16, 1, 0.3, 1), margin .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
+                          <div data-role="tx-amtblock" style={{textAlign:"right",flexShrink:0,marginRight:8}}>
                             <div data-role="tx-amtbar" style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:8,
-                              transition:_reduceMotion?"none":"background .15s ease, padding .45s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease"}}>
+                              transition:_reduceMotion?"none":"background .15s ease, border-radius .4s ease"}}>
                               <span data-role="tx-amt-label" style={{display:"none",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.03em"}}>Betrag</span>
                               <div data-role="tx-amt" data-amt-tone={type==="income"?"pos":tx.pending?"gold":"neg"} style={{...amtStyle(type==="income"?"pos":tx.pending?"gold":"neg",pal.val),...(type==="income"&&tx.pending?{color:T.cell_inc}:{}),
                                 fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
-                                transition:_reduceMotion?"none":"font-size .45s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
+                                transition:_reduceMotion?"none":"color .15s ease"}}>
                                 {fmt(tx.totalAmount)}
                               </div>
                             </div>
@@ -1941,8 +1929,7 @@ function MonatScreen() {
                             solange diese Zeile an der Scroll-Referenzlinie steht. Wird
                             NICHT über React-State/Re-Render gesteuert (siehe setRowFocus
                             weiter oben), sondern per direktem DOM-Zugriff aktiviert. */}
-                        <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr",
-                          transition:_reduceMotion?"none":"grid-template-rows .45s cubic-bezier(0.16, 1, 0.3, 1)"}}>
+                        <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr"}}>
                           <div data-role="tx-detail-inner" style={{overflow:"hidden",opacity:0,
                             transition:_reduceMotion?"none":"opacity .35s ease .05s"}}>
                             <div style={{padding:"2px 8px 11px 40px",display:"flex",flexDirection:"column",gap:6}}>
