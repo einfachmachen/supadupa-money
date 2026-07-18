@@ -1781,6 +1781,17 @@ Abbrechen = ${remoteName}-Stand laden`
     };
   }, [liquidityWarnings]);
 
+  // ── Überfällige Vormerkungen: gesetztes Buchungsdatum bereits vergangen, aber
+  // die tatsächliche (Bank-)Buchung ist bisher nicht eingetroffen — zählt im
+  // Saldo schon mit, kann aber real abweichen. Eigener Banner analog zur
+  // Schieflage-Warnung, da es zuvor nur unauffällig im Chevron einer einzelnen
+  // Buchung sichtbar war (Nutzer-Feedback: "fällt sonst nicht auf").
+  const overduePending = useMemo(()=>{
+    const todayISO = new Date().toISOString().slice(0,10);
+    return (txs||[]).filter(t=>t.pending && !t._linkedTo && t.date < todayISO)
+      .sort((a,b)=>a.date.localeCompare(b.date));
+  }, [txs]);
+
   // ── Prognostizierter Saldo (inkl. offene Vormerkungen bis Halbmonat oder Monatsende) ──
   const _progDetailCache = React.useRef({});
   const _progDetailTxsRef = React.useRef(null);
@@ -3002,6 +3013,35 @@ Abbrechen = ${remoteName}-Stand laden`
               </div>
               <div style={{fontSize:11,opacity:0.92,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                 {fmt(s.deficit)} € unter Puffer ({fmt(w.buffer)} €){w.count>1?` · +${w.count-1} weitere${w.count-1===1?"r":""} Monat${w.count-1===1?"":"e"}`:""} · tippen
+              </div>
+            </div>
+            {Li("chevron-right",18,"#fff")}
+          </div>
+        );
+      })()}
+
+      {/* ── Überfällige-Vormerkungen-Warnung: schlanker, antippbarer Balken ganz oben
+          (alle Screens). Erscheint, solange mind. eine Vormerkung ein bereits
+          vergangenes Buchungsdatum hat und noch nicht real gebucht wurde. Tippen
+          springt zum betroffenen Monat in der Buchungs-Ansicht. ── */}
+      {overduePending.length>0 && (()=>{
+        const first = overduePending[0];
+        const dateStr = first.date.split("-").reverse().join(".");
+        const firstD = new Date(first.date);
+        return (
+          <div onClick={()=>{ setYear(firstD.getFullYear()); setMonth(firstD.getMonth()); setMainTab("erfassen"); setSubTab("monat"); }}
+            style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",
+              background:"#8A5A00",color:"#fff",padding:"7px 12px",flexShrink:0,
+              boxShadow:"0 1px 6px rgba(0,0,0,0.3)"}}>
+            {Li("alert-triangle",16,"#fff")}
+            <div style={{flex:1,minWidth:0,lineHeight:1.25}}>
+              <div style={{fontSize:12.5,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                {overduePending.length===1
+                  ? `Überfällige Vormerkung: ${first.desc||"Buchung"}`
+                  : `${overduePending.length} überfällige Vormerkungen`}
+              </div>
+              <div style={{fontSize:11,opacity:0.92,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                seit {dateStr} noch nicht als tatsächliche Buchung eingetroffen · tippen
               </div>
             </div>
             {Li("chevron-right",18,"#fff")}
