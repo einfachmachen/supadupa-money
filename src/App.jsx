@@ -353,6 +353,7 @@ export default function SupaDupaMoney() {
   const [showVormMenu,   setShowVormMenu]   = useState(false);
   const [showVormHub,    setShowVormHub]    = useState(false);
   const [editVormTx,    setEditVormTx]    = useState(null); // Bearbeiten-Modus für VormerkungHub
+  const [showOverdueList, setShowOverdueList] = useState(false); // Liste überfälliger Vormerkungen (Banner-Tap)
   const [showSupaQuick,  setShowSupaQuick]  = useState(false);
   const [showRecurring,     setShowRecurring]     = useState(false);
   const [showKategorisieren,setShowKategorisieren] = useState(false);
@@ -3026,13 +3027,12 @@ Abbrechen = ${remoteName}-Stand laden`
       {/* ── Überfällige-Vormerkungen-Warnung: schlanker, antippbarer Balken ganz oben
           (alle Screens). Erscheint, solange mind. eine Vormerkung ein bereits
           vergangenes Buchungsdatum hat und noch nicht real gebucht wurde. Tippen
-          springt zum betroffenen Monat in der Buchungs-Ansicht. ── */}
+          öffnet eine Liste der betroffenen Vormerkungen. ── */}
       {overduePending.length>0 && (()=>{
         const first = overduePending[0];
         const dateStr = first.date.split("-").reverse().join(".");
-        const firstD = new Date(first.date);
         return (
-          <div onClick={()=>{ setYear(firstD.getFullYear()); setMonth(firstD.getMonth()); setMainTab("erfassen"); setSubTab("monat"); }}
+          <div onClick={()=>setShowOverdueList(true)}
             style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",
               background:"#8A5A00",color:"#fff",padding:"7px 12px",flexShrink:0,
               boxShadow:"0 1px 6px rgba(0,0,0,0.3)"}}>
@@ -3051,6 +3051,39 @@ Abbrechen = ${remoteName}-Stand laden`
           </div>
         );
       })()}
+
+      {showOverdueList && (
+        <Overlay onClose={()=>setShowOverdueList(false)}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+            <div style={{fontSize:16,fontWeight:800,color:T.txt}}>Überfällige Vormerkungen</div>
+            <div onClick={()=>setShowOverdueList(false)} style={{cursor:"pointer",color:T.txt2}}>{Li("x",20)}</div>
+          </div>
+          {overduePending.map(tx=>{
+            const sp = (tx.splits||[])[0];
+            const cat = getCat(sp?.catId);
+            const isInc = (tx._csvType||(tx.totalAmount>=0?"income":"expense"))==="income";
+            return (
+              <div key={tx.id} onClick={()=>{ setShowOverdueList(false); openEdit(tx); }}
+                style={{display:"flex",alignItems:"center",gap:10,padding:"11px 8px",
+                  borderBottom:`1px solid ${T.bd}`,cursor:"pointer"}}>
+                {Li("alert-triangle",16,T.gold)}
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:14,fontWeight:700,color:T.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                    {tx.desc||cat?.name||"Buchung"}
+                  </div>
+                  <div style={{fontSize:11.5,color:T.txt2,marginTop:1}}>
+                    seit {tx.date.split("-").reverse().join(".")}
+                  </div>
+                </div>
+                <div style={{fontSize:14,fontWeight:700,color:isInc?T.pos:T.txt,flexShrink:0}}>
+                  {isInc?"+":"−"}{fmt(Math.abs(tx.totalAmount))} €
+                </div>
+                {Li("chevron-right",16,T.txt2)}
+              </div>
+            );
+          })}
+        </Overlay>
+      )}
 
       {/* ── Offline-/Sync-Hinweis (dauerhaft sichtbar, alle Screens) ── */}
       <SyncStatusBadge/>
