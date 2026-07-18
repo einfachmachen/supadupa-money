@@ -147,6 +147,30 @@ function DashboardScreenV2() {
     const pullRef = useRef({ startY: 0, active: false });
     const [pullDist, setPullDist] = useState(0);
     const PULL_THRESHOLD = 70;
+    // Bank-Zeile → Staged-Tx-Form (auch für den nachträglichen "trotzdem
+    // übernehmen"-Fall bei fälschlich als Dublette erkannten Zeilen genutzt,
+    // s. promoteDupeItem).
+    const ebRowToStagedTx = (row, accId, todayIso) => ({
+      id: "eb-" + uid(),
+      // Vormerkungen: frühestens am nächsten Banktag belastet (wie manuelle VM);
+      // das Roh-Datum bleibt im Fingerprint (_fp) → stabile Dubletten-Erkennung.
+      date: row.pending ? pendingDebitDate(row.isoDate, todayIso) : row.isoDate,
+      // Vormerkungen signiert (wie manuelle VM), echte Buchungen als Betrag.
+      totalAmount: row.pending ? row.amount : Math.abs(row.amount),
+      desc: row.desc, note: "", pending: !!row.pending, accountId: accId, splits: [],
+      _csvType: row.amount > 0 ? "income" : "expense", _fp: row.fp, _csvSource: "Enable Banking",
+      // Markiert: diese Vormerkung stammt von der Bank selbst (PDNG-Status),
+      // nicht vom Nutzer manuell angelegt — unterscheidet in MatchingScreen,
+      // ob mit einer echten Buchung ODER mit einer weiteren, manuell
+      // angelegten Vormerkung verknüpft werden kann (linkPendingToPending).
+      ...(row.pending ? { _bankPending: true } : {}),
+      ...(row._ebRef ? { _ebRef: row._ebRef } : {}),
+    });
+    // "heute" für die Banktag-Logik der Vormerkungen.
+    const _todayIsoForBankFetch = () => {
+      const _tn = new Date();
+      return `${_tn.getFullYear()}-${String(_tn.getMonth()+1).padStart(2,"0")}-${String(_tn.getDate()).padStart(2,"0")}`;
+    };
     // aspsp=null → alle Banken auf einmal; aspsp gesetzt → nur diese Bank.
     const runBankFetch = React.useCallback(async (aspsp = null) => {
       const banks = await listConnectedBanks();
@@ -155,25 +179,8 @@ function DashboardScreenV2() {
       if (!res.ok) { setBankFetch({ status: "error", reason: res.reason, message: res.message, detail: res.detail, aspsp, banks }); return; }
       const newItems = res.items.filter((i) => i.status === "new");
       const dupeItems = res.items.filter((i) => i.status !== "new");
-      // "heute" für die Banktag-Logik der Vormerkungen.
-      const _tn = new Date();
-      const todayIso = `${_tn.getFullYear()}-${String(_tn.getMonth()+1).padStart(2,"0")}-${String(_tn.getDate()).padStart(2,"0")}`;
-      const added = newItems.map(({ row, accId }) => ({
-        id: "eb-" + uid(),
-        // Vormerkungen: frühestens am nächsten Banktag belastet (wie manuelle VM);
-        // das Roh-Datum bleibt im Fingerprint (_fp) → stabile Dubletten-Erkennung.
-        date: row.pending ? pendingDebitDate(row.isoDate, todayIso) : row.isoDate,
-        // Vormerkungen signiert (wie manuelle VM), echte Buchungen als Betrag.
-        totalAmount: row.pending ? row.amount : Math.abs(row.amount),
-        desc: row.desc, note: "", pending: !!row.pending, accountId: accId, splits: [],
-        _csvType: row.amount > 0 ? "income" : "expense", _fp: row.fp, _csvSource: "Enable Banking",
-        // Markiert: diese Vormerkung stammt von der Bank selbst (PDNG-Status),
-        // nicht vom Nutzer manuell angelegt — unterscheidet in MatchingScreen,
-        // ob mit einer echten Buchung ODER mit einer weiteren, manuell
-        // angelegten Vormerkung verknüpft werden kann (linkPendingToPending).
-        ...(row.pending ? { _bankPending: true } : {}),
-        ...(row._ebRef ? { _ebRef: row._ebRef } : {}),
-      }));
+      const todayIso = _todayIsoForBankFetch();
+      const added = newItems.map(({ row, accId }) => ebRowToStagedTx(row, accId, todayIso));
       // NICHT direkt importieren — die abgerufenen Einträge werden zunächst nur
       // zur Prüfung "geparkt" (staged) und erst beim Tippen auf „Übernehmen"
       // tatsächlich in die Buchungen/den Saldo übernommen.
@@ -182,6 +189,21 @@ function DashboardScreenV2() {
       // Bank ab — hier zählt der volle, ungefilterte lokale Stand).
       findUnmappedEbAccounts().then(setUnmappedEbAccounts);
     }, [txs, accounts]);
+    // Als "evtl. Dublette" eingeklappte Zeile doch übernehmen — die Dubletten-
+    // Erkennung vergleicht nur Konto+Datum+Betrag (nicht den Text), daher kann
+    // eine zweite, tatsächlich eigenständige Buchung mit zufällig gleichem
+    // Betrag am selben Tag fälschlich als "maybe" markiert werden (Nutzer-
+    // Feedback: zwei echte Euroeingänge wurden so nie zum Import angeboten).
+    // Bei "exact" (Text+Betrag+Datum stimmen exakt überein) bleibt es beim
+    // Ausblenden — das ist praktisch sicher eine echte Dublette.
+    const promoteDupeItem = React.useCallback((it) => {
+      const tx = ebRowToStagedTx(it.row, it.accId, _todayIsoForBankFetch());
+      setBankFetch((bf) => bf && bf.status === "done" ? {
+        ...bf,
+        staged: [...(bf.staged || []), tx],
+        dupeItems: (bf.dupeItems || []).filter((d) => d !== it),
+      } : bf);
+    }, []);
     // Geparkte Einträge bearbeiten (Kategorie/Löschen) ohne sie schon zu importieren.
     const updateStaged = React.useCallback((updater) =>
       setBankFetch((bf) => bf && bf.status === "done"
@@ -988,7 +1010,7 @@ function DashboardScreenV2() {
             erster Kategorie, gefiltert nach aktueller Kontosicht (selAcc). */}
         {bankFetch && (
           <BankFetchPanel state={bankFetch} onClose={()=>setBankFetch(null)} onRefetch={runBankFetch}
-            onUpdateStaged={updateStaged} onConfirm={commitStaged}/>
+            onUpdateStaged={updateStaged} onConfirm={commitStaged} onPromoteDupe={promoteDupeItem}/>
         )}
 
         {/* Kurzer Hinweis nach dem Übernehmen: welche offenen Vormerkungen

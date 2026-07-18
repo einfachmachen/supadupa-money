@@ -88,7 +88,7 @@ function Row({ t, accName, setRowCat, removeRow, setRowNote, setRowTags, allTags
   );
 }
 
-function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }) {
+function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm, onPromoteDupe }) {
   const { accounts, txs } = useContext(AppCtx);
   const allTags = React.useMemo(()=>getAllTags(txs), [txs]);
   const [showExisting, setShowExisting] = useState(false);
@@ -225,6 +225,14 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }
   const newTxs = state.staged || [];
   const dupeItems = state.dupeItems || [];
   const unmapped = state.unmapped || [];
+  // "exact" (Text+Betrag+Datum stimmen exakt überein) bleibt eingeklappt — quasi
+  // sicher eine echte Dublette. "maybe" vergleicht nur Konto+Datum+Betrag und
+  // kann eine zweite, eigenständige Buchung mit zufällig gleichem Betrag am
+  // selben Tag fälschlich treffen (Nutzer-Feedback: zwei echte EUROWINGS-
+  // Buchungen wurden so nie zum Import angeboten) — deshalb IMMER sichtbar,
+  // nicht erst nach manuellem Ausklappen entdeckbar.
+  const exactDupes = dupeItems.filter((it) => it.status === "exact");
+  const maybeDupes = dupeItems.filter((it) => it.status !== "exact");
 
   // Konten ohne Zuordnung wurden bewusst ÜBERSPRUNGEN (nicht geraten) — sonst
   // landen z. B. Tagesgeld-Umsätze unbemerkt auf Giro. Das muss auffallen.
@@ -257,7 +265,8 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }
   return wrap(
     <>
       <Header
-        title={`${newTxs.length} neue Buchung${newTxs.length !== 1 ? "en" : ""}`}
+        title={`${newTxs.length} neue Buchung${newTxs.length !== 1 ? "en" : ""}`
+          + (maybeDupes.length > 0 ? ` · ${maybeDupes.length} zu prüfen` : "")}
         right={newTxs.length > 0 && (
           <span style={{ color: T.txt2, fontSize: 11 }}>
             {newTxs.filter((t) => (t.splits || [])[0]?.catId).length}/{newTxs.length} kat.
@@ -266,6 +275,40 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }
       />
       <BankChips />
       <UnmappedWarning />
+      {maybeDupes.length > 0 && (
+        <div style={{ borderTop: `1px solid ${T.bd}`, background: T.gold + "14" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "10px 12px 6px" }}>
+            {Li("alert-triangle", 15, T.gold)}
+            <span style={{ color: T.txt, fontSize: 12.5, lineHeight: 1.5 }}>
+              <b>{maybeDupes.length} mögliche Dublette{maybeDupes.length !== 1 ? "n" : ""}</b> — Konto, Datum und
+              Betrag stimmen mit einer bestehenden Buchung überein, Text/Gegenpartei aber nicht. Bitte prüfen: eigene,
+              neue Buchung oder tatsächlich schon vorhanden?
+            </span>
+          </div>
+          {maybeDupes.map((it, i) => (
+            <div key={(it.row._ebRef || it.row.fp) + "|maybe|" + i}
+              style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "6px 12px" }}>
+              <span style={{ color: T.txt2, fontSize: 11.5, flexShrink: 0 }}>{it.row.isoDate.slice(5)}</span>
+              <span style={{ fontSize: 9, background: "rgba(255,255,255,0.08)", color: T.txt2,
+                borderRadius: 4, padding: "1px 5px", fontWeight: 700, flexShrink: 0, letterSpacing: 0.2 }}>
+                {accName(it.accId)}
+              </span>
+              <span style={{ flex: 1, color: T.txt, fontSize: 12.5, overflow: "hidden",
+                textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.row.desc}</span>
+              <span style={{ color: it.row.amount < 0 ? T.neg : T.pos, fontSize: 12.5, fontWeight: 700,
+                fontVariantNumeric: "tabular-nums", fontFamily: NUM_FONT, flexShrink: 0 }}>
+                {fmt(Math.abs(it.row.amount))} €
+              </span>
+              <button onClick={() => onPromoteDupe?.(it)} title="Als neue, eigenständige Buchung übernehmen"
+                style={{ flexShrink: 0, background: "transparent", border: `1px solid ${T.gold}88`, borderRadius: 6,
+                  color: T.gold, fontSize: 10.5, fontWeight: 800, padding: "2px 6px", cursor: "pointer",
+                  fontFamily: "inherit" }}>
+                als neu übernehmen
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
       {newTxs.length > 0 && (
         <div style={{ padding: "7px 12px", borderTop: `1px solid ${T.bd}`, color: T.txt2,
           fontSize: 11.5, lineHeight: 1.4, display: "flex", alignItems: "center", gap: 6 }}>
@@ -287,16 +330,16 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }
         setRowCat={setRowCat} removeRow={removeRow} setRowNote={setRowNote}
         setRowTags={setRowTags} allTags={allTags} />)}
 
-      {dupeItems.length > 0 && (
+      {exactDupes.length > 0 && (
         <>
           <button onClick={() => setShowExisting((v) => !v)}
             style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "3px 12px 9px",
               borderTop: `1px solid ${T.bd}`, background: "transparent", border: "none", cursor: "pointer",
               color: T.txt2, fontSize: 12.5, fontWeight: 700, fontFamily: "inherit" }}>
             {Li(showExisting ? "chevron-up" : "chevron-down", 16, T.txt2)}
-            {dupeItems.length} bereits vorhanden{dupeItems.length !== 1 ? "e" : ""} (eingeklappt)
+            {exactDupes.length} bereits vorhanden{exactDupes.length !== 1 ? "e" : ""} (eingeklappt)
           </button>
-          {showExisting && dupeItems.map((it, i) => (
+          {showExisting && exactDupes.map((it, i) => (
             <div key={(it.row._ebRef || it.row.fp) + "|" + i}
               style={{ display: "flex", alignItems: "baseline", gap: 8, padding: "6px 12px",
                 borderTop: `1px solid ${T.bd}`, opacity: 0.65 }}>
@@ -307,9 +350,7 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }
               </span>
               <span style={{ flex: 1, color: T.txt2, fontSize: 12.5, overflow: "hidden",
                 textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.row.desc}</span>
-              <span style={{ color: T.txt2, fontSize: 11, flexShrink: 0 }}>
-                {it.status === "exact" ? "vorhanden" : "evtl. Dublette"}
-              </span>
+              <span style={{ color: T.txt2, fontSize: 11, flexShrink: 0 }}>vorhanden</span>
               <span style={{ color: it.row.amount < 0 ? T.neg : T.pos, fontSize: 12.5, fontWeight: 700,
                 fontVariantNumeric: "tabular-nums", fontFamily: NUM_FONT, flexShrink: 0 }}>
                 {fmt(Math.abs(it.row.amount))} €
