@@ -511,36 +511,40 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
           const grpAccId = grp?.accountId || "";
           // Strikt: nur Kategorien deren Gruppe zum gewählten Konto gehört
           return grpAccId === catAccFilter;
-        }).map(cat=>(
+        }).map(cat=>{
+          // Ohne eigene Farbe (cat.color==="", s. "Standardfarbe verwenden") greift
+          // hier derselbe Typ-Standard wie im Dashboard (catColor-Fallback in
+          // DashboardScreenV2): Grün bei Einnahme, Rot bei Ausgabe. WICHTIG: die
+          // Farbe NIE roh mit cat.color+"XX" verketten — ist cat.color leer, ergibt
+          // das ungültiges CSS ("XX") und die Fläche fällt unbemerkt auf Schwarz/
+          // transparent zurück, statt die Standardfarbe zu zeigen.
+          const grp = (groups||[]).find(g=>g.type===cat.type);
+          const isInc = (grp?.behavior || cat.type)==="income";
+          const dispColor = cat.color || (isInc ? T.pos : T.neg);
+          return (
           <div key={cat.id} style={{marginBottom:4}}>
 
             {/* Kategorie-Header */}
             <div style={{display:"flex",alignItems:"center",gap:8,
               padding:"2px 10px",borderRadius:S.radius/2,
-              background:cat.color+"18",
-              border:`2px solid ${cat.color}44`,
+              background:dispColor+"18",
+              border:`2px solid ${dispColor}44`,
               marginBottom:2}}>
               {/* Icon — antippen öffnet Icon-Picker (mit Farb-Picker integriert) */}
               <button onClick={()=>setIconPickFor({type:"cat", id:cat.id})}
                 style={{width:28,height:28,minWidth:28,minHeight:28,maxWidth:28,maxHeight:28,
                 aspectRatio:"1 / 1",boxSizing:"border-box",borderRadius:8,
-                background:cat.color+"33",border:`1.5px solid ${cat.color}66`,
+                background:dispColor+"33",border:`1.5px solid ${dispColor}66`,
                 display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
                 cursor:"pointer",fontFamily:"inherit",padding:0,lineHeight:0}}>
-                {cat.icon ? Li(cat.icon,18,cat.color||T.blue) : null}
+                {cat.icon ? Li(cat.icon,18,dispColor) : null}
               </button>
               <span style={{flex:1,minWidth:0,color:T.txt,fontSize:20,fontWeight:600,
                 overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{cat.name}</span>
-              {(()=>{
-                const grp = (groups||[]).find(g=>g.type===cat.type);
-                const isInc = (grp?.behavior || cat.type)==="income";
-                return (
-                  <span style={{color:isInc?T.pos:T.neg,fontSize:18,fontWeight:800,
-                    flexShrink:0,lineHeight:1,padding:"0 2px"}}>
-                    {isInc ? "+" : "−"}
-                  </span>
-                );
-              })()}
+              <span style={{color:isInc?T.pos:T.neg,fontSize:18,fontWeight:800,
+                flexShrink:0,lineHeight:1,padding:"0 2px"}}>
+                {isInc ? "+" : "−"}
+              </span>
               <button onClick={()=>{
                 const grp = (groups||[]).find(g=>g.type===cat.type);
                 const beh = grp?.behavior || cat.type;
@@ -656,11 +660,11 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                     <button onClick={()=>setIconPickFor({type:"sub", id:sub.id})}
                       style={{width:24,height:24,minWidth:24,minHeight:24,maxWidth:24,maxHeight:24,
                       aspectRatio:"1 / 1",boxSizing:"border-box",borderRadius:5,
-                      background:(sub.color||cat.color)+"22",
-                      border:`1px solid ${(sub.color||cat.color)}55`,
+                      background:(sub.color||dispColor)+"22",
+                      border:`1px solid ${(sub.color||dispColor)}55`,
                       display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
                       cursor:"pointer",fontFamily:"inherit",padding:0,lineHeight:0}}>
-                      {sub.icon ? Li(sub.icon,15,sub.color||cat.color||T.blue) : null}
+                      {sub.icon ? Li(sub.icon,15,sub.color||dispColor) : null}
                     </button>
                     {/* Name – Klick zeigt Rahmen + Lösch-Button */}
                     <SubNameField sub={sub} cat={cat} setCats={setCats} S={S} T={T} />
@@ -804,7 +808,8 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
               {Li("plus",S.fs-8,T.txt2)} Unterkategorie hinzufügen
             </button>
           </div>
-        ))}
+          );
+        })}
       </div>
       {/* Icon-Picker Dialog (mit Farb-Picker und Bereich „bereits verwendet") */}
       {iconPickFor && (() => {
@@ -815,7 +820,13 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
         const parentCat = iconPickFor.type==="sub"
           ? cats.find(c => (c.subs||[]).some(s=>s.id===iconPickFor.id))
           : null;
-        const color = target.color || parentCat?.color || T.blue;
+        // Gleicher Typ-Standard-Fallback wie in der Liste (Grün/Rot statt Blau),
+        // damit die Vorschau im Farb-Picker zeigt, was die Kategorie tatsächlich
+        // ohne eigene Farbe anzeigen würde.
+        const catForType = iconPickFor.type==="cat" ? target : parentCat;
+        const grpForType = (groups||[]).find(g=>g.type===catForType?.type);
+        const isIncForType = (grpForType?.behavior || catForType?.type)==="income";
+        const color = target.color || parentCat?.color || (isIncForType ? T.pos : T.neg);
         return (
           <IconPickerDialog
             selectedIcon={target.icon||""}
