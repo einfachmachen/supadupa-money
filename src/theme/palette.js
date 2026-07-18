@@ -16,7 +16,7 @@ const PAL = new Proxy({}, { get:(_,type)=>{
   };
   return {
     income:    {bg:T.pal_inc_bg,bd:T.pal_inc_bd,hdr:T.pal_inc_hdr,fld:T.pal_inc_fld,val:T.pal_inc_val,lbl:hexToRgba(T.pal_inc_hdr,0.25)},
-    expense:   {bg:T.pal_exp_bg,bd:T.pal_exp_bd,hdr:T.neg,fld:T.pal_exp_fld,val:T.neg,lbl:hexToRgba(T.neg,0.25)},
+    expense:   {bg:T.pal_exp_bg,bd:T.pal_exp_bd,hdr:T.cond_neg,fld:T.pal_exp_fld,val:T.cond_neg,lbl:hexToRgba(T.cond_neg,0.25)},
     tagesgeld: {bg:T.pal_tg_bg, bd:T.pal_tg_bd, hdr:T.pal_tg_hdr,fld:T.pal_tg_fld,val:T.pal_tg_val,lbl:hexToRgba(T.pal_tg_hdr,0.25)},
   }[type] || {};
 }});

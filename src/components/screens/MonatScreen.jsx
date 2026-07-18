@@ -1346,8 +1346,8 @@ function MonatScreen() {
         <div style={{display:"flex",gap:6,padding:"0 10px 6px"}}>
           {(()=>{
             const chips = [
-              ["expense","Ausgaben",  T.neg,    T.tab_exp],
-              ["income", "Einnahmen", T.pos,    T.tab_inc],
+              ["expense","Ausgaben",  T.cond_neg,    T.tab_exp],
+              ["income", "Einnahmen", T.cond_pos,    T.tab_inc],
               ["pending","vorgemerkt",T.gold,   T.tab_pend],
               ["uncat",  "？",        T.txt2,   T.disabled],
             ];
@@ -1426,8 +1426,8 @@ function MonatScreen() {
               const totalIncome  = mTxs.reduce((s,t)=>s+Math.abs(t.totalAmount||0),0) - totalExpense;
               return (
                 <span style={{marginLeft:"auto",display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
-                  {totalExpense>0&&<span style={{color:T.neg,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(totalExpense)}</span>}
-                  {totalIncome>0&&<span style={{color:T.pos,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>+{fmt(totalIncome)}</span>}
+                  {totalExpense>0&&<span style={{color:T.cond_neg,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(totalExpense)}</span>}
+                  {totalIncome>0&&<span style={{color:T.cond_pos,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>+{fmt(totalIncome)}</span>}
                 </span>
               );
             })()}
@@ -1539,7 +1539,7 @@ function MonatScreen() {
                       der hellen aktiven Fläche (siehe Verbrauchs-Pegel-Fix). */}
                   <div data-role="tx-connector" data-dot-tone={(daySaldo!==null?daySaldo:headSaldo!==null?headSaldo:dayNet)>=0?"pos":"neg"}
                     style={{flex:1,height:2,
-                    background:(daySaldo!==null?daySaldo:headSaldo!==null?headSaldo:dayNet)>=0?T.pos:T.neg,
+                    background:(daySaldo!==null?daySaldo:headSaldo!==null?headSaldo:dayNet)>=0?T.pos:T.cond_neg,
                     opacity:0.85,borderRadius:1,minWidth:10,
                     transition:_reduceMotion?"none":"background .15s ease"}}/>
                   {headSaldo!==null ? (()=>{
@@ -1552,7 +1552,7 @@ function MonatScreen() {
                       {(hasReservierung||hasDayPend)&&(
                         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1,lineHeight:1.2}}>
                           {hasReservierung&&(
-                            <span data-role="tx-daydetail" style={{...amtStyle(dayIst>=0?"txt2":"neg"),fontSize:11,fontFamily:NUM_FONT,fontWeight:600,whiteSpace:"nowrap",transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
+                            <span data-role="tx-daydetail" style={{...amtStyle(dayIst>=0?"txt2":"neg",dayIst>=0?undefined:T.cond_neg),fontSize:11,fontFamily:NUM_FONT,fontWeight:600,whiteSpace:"nowrap",transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                               ohne Budget {dayIst>=0?"":"−"}{fmt(Math.abs(dayIst))}
                             </span>
                           )}
@@ -1602,29 +1602,29 @@ function MonatScreen() {
                   return (
                     <div style={{
                       margin:"2px 0 3px",
-                      background:`${T.neg}18`,
-                      border:`1px solid ${T.neg}44`,
+                      background:`${T.cond_neg}18`,
+                      border:`1px solid ${T.cond_neg}44`,
                       borderRadius:8,
                       padding:"7px 10px",
                       display:"flex",alignItems:"center",gap:10,
                     }}>
                       <div style={{flexShrink:0,width:28,height:28,borderRadius:8,
-                        background:`${T.neg}22`,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                        {Li("alert-triangle",14,T.neg)}
+                        background:`${T.cond_neg}22`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                        {Li("alert-triangle",14,T.cond_neg)}
                       </div>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{color:T.neg,fontSize:12,fontWeight:700,lineHeight:1.3}}>
+                        <div style={{color:T.cond_neg,fontSize:12,fontWeight:700,lineHeight:1.3}}>
                           {nurBudget ? "Nach Budget im Minus" : "Kontostand im Minus"}: −{fmt(w.deficit)} €
                         </div>
                         <div style={{color:T.txt2,fontSize:10,marginTop:2,lineHeight:1.4}}>
                           {w.nextPos
                             ? <>Fehlbetrag ausgleichen bis <span style={{color:T.gold,fontWeight:700}}>{nextLabel}</span>
                               {w.nextPos.name&&<span> ({w.nextPos.name})</span>}
-                              {" — mindestens "}<span style={{...amtStyle("neg"),fontWeight:700,fontFamily:NUM_FONT}}>
+                              {" — mindestens "}<span style={{...amtStyle("neg",T.cond_neg),fontWeight:700,fontFamily:NUM_FONT}}>
                                 {fmt(w.deficit)} €
                               </span>{" einplanen"}</>
                             : <>Kein positiver Saldo-Tag im Monat gefunden — mindestens{" "}
-                              <span style={{...amtStyle("neg"),fontWeight:700,fontFamily:NUM_FONT}}>
+                              <span style={{...amtStyle("neg",T.cond_neg),fontWeight:700,fontFamily:NUM_FONT}}>
                                 {fmt(w.deficit)} €
                               </span>{" fehlen"}</>
                           }
@@ -1814,9 +1814,9 @@ function MonatScreen() {
                   return details.items.map(({name,subId,spent,budget,open,type})=>{
                     const isIncome = type==="income";
                     const isOverspent = !isIncome && open < 0;
-                    const accentCol = isIncome ? T.cell_inc : (isOverspent ? T.neg : T.gold);
+                    const accentCol = isIncome ? T.cell_inc : (isOverspent ? T.cond_neg : T.gold);
                     const pct = budget > 0 ? Math.min(150, spent/budget*100) : 100;
-                    const barCol = isIncome ? T.cell_inc : (pct>=100?T.neg:pct>=75?T.gold:T.pos);
+                    const barCol = isIncome ? T.cell_inc : (pct>=100?T.cond_neg:pct>=75?T.gold:T.pos);
                     const subName = name.split(" / ")[1]||name;
                     const barW = Math.min(100, pct);
                     const signedOpen   = isIncome ?  open :  -open;
@@ -1836,7 +1836,7 @@ function MonatScreen() {
                             {Li(isOverspent?"alert-triangle":"target",16,accentCol)}
                           </div>
                           <div style={{flex:1,minWidth:0,marginRight:6}}>
-                            <div data-role="tx-desc" style={{color:isOverspent?T.neg:T.txt,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
+                            <div data-role="tx-desc" style={{color:isOverspent?T.cond_neg:T.txt,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
                               transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{subName}</div>
                             {/* Verbrauch als Punkt auf feiner Linie (gleiche Sprache wie
                                 der Dashboard-Pegel) statt Balken + Prozent-Text */}
@@ -1862,9 +1862,9 @@ function MonatScreen() {
                             <div data-role="tx-amtbar" style={{display:"flex",alignItems:"baseline",gap:10,
                               transition:_reduceMotion?"none":"background .15s ease, padding .3s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease"}}>
                               <span data-role="tx-restwrap" style={{display:"inline-flex",alignItems:"baseline",gap:6}}>
-                                <span data-role="tx-rest-label" data-amt-tone={isOverspent?"neg":open>0?"pos":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"pos":"txt2"),fontSize:10,fontWeight:700,marginLeft:8,
+                                <span data-role="tx-rest-label" data-amt-tone={isOverspent?"neg":open>0?"pos":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"pos":"txt2",isOverspent?T.cond_neg:undefined),fontSize:10,fontWeight:700,marginLeft:8,
                                   transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{isOverspent?"zuviel:":"Rest:"}</span>
-                                <span data-role="tx-rest-amt" data-amt-tone={isOverspent?"neg":open>0?"pos":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"pos":"txt2"),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
+                                <span data-role="tx-rest-amt" data-amt-tone={isOverspent?"neg":open>0?"pos":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"pos":"txt2",isOverspent?T.cond_neg:undefined),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
                                   transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{fmt(Math.abs(signedOpen))}</span>
                               </span>
                               <span data-role="tx-spentside" style={{display:"inline-flex",alignItems:"baseline"}}>
