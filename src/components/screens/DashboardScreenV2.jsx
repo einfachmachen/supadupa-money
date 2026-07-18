@@ -1404,7 +1404,14 @@ function DashboardScreenV2() {
                 const iMitte = istMitte + (isIncome?0:resMitte(cat));
                 const iEnde  = istEnde  + (isIncome?0:resEnde(cat));
                 const iAkt   = _catTxMaps.sumRealByCat.get(cat.id) || 0;
-                const catColor = cat.color || (isIncome ? T.pos : T.neg);
+                // T.pos/T.neg statt T.cond_pos/T.cond_neg wären hier falsch: manche
+                // Themes definieren "neg" bewusst blass/pastellig (WCAG-Kontrast für
+                // kleine Textfarbe auf grauem Grund, s. Schieflage-Banner weiter
+                // unten) — als vollflächige Icon-Fläche wirkt das dann wie Rosa statt
+                // Rot (Nutzer-Feedback). "cond_pos"/"cond_neg" sind die für genau
+                // diesen Zweck (große, farbkräftige Flächen) gedachten Varianten,
+                // schon genutzt in SaldoHeroV2 für denselben Grund.
+                const catColor = cat.color || (isIncome ? T.cond_pos : T.cond_neg);
                 const accLabel = !selAcc ? _accLabelByCat.get(cat.id) : null;
                 // Konten dieser Kategorie (für kleines Konto-Symbol neben dem Namen,
                 // wie in den Vormerken-Dialogen). Nur wenn kein Konto-Filter aktiv.

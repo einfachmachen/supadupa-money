@@ -290,10 +290,10 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
           <div onClick={()=>setEditColor("")}
             title="Standardfarbe verwenden (automatisch Grün bei Einnahme, Rot bei Ausgabe)"
             style={{width:44,height:44,borderRadius:S.radius/2,
-              background:(editType==="income"?T.pos:T.neg)+"33",
+              background:(editType==="income"?T.cond_pos:T.cond_neg)+"33",
               border:`3px ${!editColor?"solid #fff":"dashed "+T.bd}`,
               cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            {Li("rotate-ccw",18,editType==="income"?T.pos:T.neg)}
+            {Li("rotate-ccw",18,editType==="income"?T.cond_pos:T.cond_neg)}
           </div>
           {COLORS.map(c=>(
             <div key={c} onClick={()=>setEditColor(c)}
@@ -348,10 +348,10 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
           <div onClick={()=>setNewColor("")}
             title="Standardfarbe verwenden (automatisch Grün bei Einnahme, Rot bei Ausgabe)"
             style={{width:44,height:44,borderRadius:S.radius/2,
-              background:(newType==="income"?T.pos:T.neg)+"33",
+              background:(newType==="income"?T.cond_pos:T.cond_neg)+"33",
               border:`3px ${!newColor?"solid #fff":"dashed "+T.bd}`,
               cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            {Li("rotate-ccw",18,newType==="income"?T.pos:T.neg)}
+            {Li("rotate-ccw",18,newType==="income"?T.cond_pos:T.cond_neg)}
           </div>
           {COLORS.map(c=>(
             <div key={c} onClick={()=>setNewColor(c)}
@@ -520,7 +520,12 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
           // transparent zurück, statt die Standardfarbe zu zeigen.
           const grp = (groups||[]).find(g=>g.type===cat.type);
           const isInc = (grp?.behavior || cat.type)==="income";
-          const dispColor = cat.color || (isInc ? T.pos : T.neg);
+          // cond_pos/cond_neg statt pos/neg: manche Themes definieren "neg" bewusst
+          // blass/pastellig (WCAG-Kontrast für kleine Textfarbe auf grauem Grund) —
+          // als vollflächige Icon-Fläche wirkt das dann wie Rosa statt Rot
+          // (Nutzer-Feedback). cond_pos/cond_neg sind für genau diesen Zweck (große,
+          // farbkräftige Flächen) gedacht, schon genutzt in SaldoHeroV2.
+          const dispColor = cat.color || (isInc ? T.cond_pos : T.cond_neg);
           return (
           <div key={cat.id} style={{marginBottom:4}}>
 
@@ -541,7 +546,10 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
               </button>
               <span style={{flex:1,minWidth:0,color:T.txt,fontSize:20,fontWeight:600,
                 overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{cat.name}</span>
-              <span style={{color:isInc?T.pos:T.neg,fontSize:18,fontWeight:800,
+              {/* cond_pos/cond_neg statt pos/neg (s.o.) — sonst wirkt dieses reine
+                  Typ-Zeichen (bewusst UNABHÄNGIG von einer evtl. eigenen
+                  Kategorie-Farbe) neben dem jetzt kräftigeren Icon wieder blass. */}
+              <span style={{color:isInc?T.cond_pos:T.cond_neg,fontSize:18,fontWeight:800,
                 flexShrink:0,lineHeight:1,padding:"0 2px"}}>
                 {isInc ? "+" : "−"}
               </span>
@@ -826,7 +834,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
         const catForType = iconPickFor.type==="cat" ? target : parentCat;
         const grpForType = (groups||[]).find(g=>g.type===catForType?.type);
         const isIncForType = (grpForType?.behavior || catForType?.type)==="income";
-        const color = target.color || parentCat?.color || (isIncForType ? T.pos : T.neg);
+        const color = target.color || parentCat?.color || (isIncForType ? T.cond_pos : T.cond_neg);
         return (
           <IconPickerDialog
             selectedIcon={target.icon||""}

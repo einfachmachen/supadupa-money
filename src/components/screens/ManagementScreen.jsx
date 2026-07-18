@@ -95,14 +95,21 @@ function ManagementScreen({activeTab="kategorien"}) {
   };
     if(cat){
       const grp = (groups||[]).find(g=>g.type===cat.type);
+      const isIncCat = (grp?.behavior || cat.type)==="income";
+      // cond_pos/cond_neg statt pos/neg bzw. T.txt2: manche Themes definieren "neg"
+      // bewusst blass/pastellig (WCAG-Kontrast für kleine Textfarbe auf grauem
+      // Grund) — als vollflächige Icon-Fläche wirkt das dann wie Rosa statt Rot
+      // (Nutzer-Feedback). cond_pos/cond_neg sind für genau diesen Zweck (große,
+      // farbkräftige Flächen) gedacht, schon genutzt in SaldoHeroV2.
+      const dispColorCat = cat.color || (isIncCat ? T.cond_pos : T.cond_neg);
       return (
         <div style={{overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
           {showIconPicker==="cat"&&<IconPickerDialog selectedIcon={cat.icon} selectedColor={cat.color} onSelect={ic=>updateCat(cat.id,"icon",ic)} onClose={()=>setShowIconPicker(null)}/>}
           <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px 6px"}}>
             <button onClick={()=>setMgmtCat(null)} style={{background:"rgba(255,255,255,0.08)",border:"none",color:T.txt,borderRadius:10,width:34,height:34,cursor:"pointer",fontSize:18}}>{Li("arrow-left",13)}</button>
             <button onClick={()=>setShowIconPicker("cat")}
-              style={{width:36,height:36,borderRadius:11,background:cat.color+"33",border:`1px solid ${cat.color+"44"}`,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
-              {Li(cat.icon,20,cat.color||T.txt2)}
+              style={{width:36,height:36,borderRadius:11,background:dispColorCat+"33",border:`1px solid ${dispColorCat}44`,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
+              {Li(cat.icon,20,dispColorCat)}
             </button>
             {/* Eigene Farbe zurücksetzen: ohne gesetztes cat.color greift der
                 Typ-Standard (Einnahmen grün / Ausgaben rot, s. DashboardScreenV2
@@ -676,7 +683,14 @@ function ManagementScreen({activeTab="kategorien"}) {
             )}
 
             {/* Kategorien dieser Gruppe */}
-            {!collapsedGrps.has(grp.id) && (_cats).filter(c=>c.type===grp.type).map((cat,ci,arr)=>(
+            {!collapsedGrps.has(grp.id) && (_cats).filter(c=>c.type===grp.type).map((cat,ci,arr)=>{
+              // cond_pos/cond_neg statt pos/neg bzw. T.txt2: manche Themes definieren
+              // "neg" bewusst blass/pastellig (WCAG-Kontrast für kleine Textfarbe auf
+              // grauem Grund) — als vollflächige Icon-Fläche wirkt das dann wie Rosa
+              // statt Rot (Nutzer-Feedback).
+              const isIncRow = (grp.behavior || grp.type)==="income";
+              const dispColorRow = cat.color || (isIncRow ? T.cond_pos : T.cond_neg);
+              return (
               <div key={cat.id}
                 data-dropzone="cat" data-dropid={cat.id}
                 onPointerUp={e=>{
@@ -702,10 +716,10 @@ function ManagementScreen({activeTab="kategorien"}) {
                 </div>
                 <div onClick={()=>setMgmtCat(cat.id)} style={{display:"flex",alignItems:"center",gap:8,flex:1,cursor:"pointer",minWidth:0}}>
                   <button onClick={e=>{e.stopPropagation();setShowIconPicker(`cat-list-${cat.id}`);}}
-                    style={{width:28,height:28,borderRadius:8,background:cat.color+"22",flexShrink:0,
+                    style={{width:28,height:28,borderRadius:8,background:dispColorRow+"22",flexShrink:0,
                       display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",
-                      border:dropTargetCat===cat.id?`2px dashed ${T.blue}`:`1px solid ${cat.color+"33"}`}}>
-                    {cat.icon?Li(cat.icon,16,cat.color||T.txt2):<span style={{color:T.txt2,fontSize:16,opacity:0.3}}>·</span>}
+                      border:dropTargetCat===cat.id?`2px dashed ${T.blue}`:`1px solid ${dispColorRow}33`}}>
+                    {cat.icon?Li(cat.icon,16,dispColorRow):<span style={{color:T.txt2,fontSize:16,opacity:0.3}}>·</span>}
                   </button>
                   {showIconPicker===`cat-list-${cat.id}`&&(
                     <IconPickerDialog selectedIcon={cat.icon} selectedColor={cat.color}
@@ -716,7 +730,8 @@ function ManagementScreen({activeTab="kategorien"}) {
                   {Li("chevron-right",13,T.txt2)}
                 </div>
               </div>
-            ))}
+              );
+            })}
             {(_cats).filter(c=>c.type===grp.type).length===0&&(
               <div style={{color:T.txt2,fontSize:11,padding:"4px 24px 6px"}}>Noch keine Kategorien</div>
             )}
