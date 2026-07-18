@@ -34,6 +34,18 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   const [sparSubId, setSparSubId]   = useState(()=>kvStore.getItem("mbt_spar_subid")||"");
   const [sparAccId, setSparAccId]   = useState(()=>kvStore.getItem("mbt_spar_accid")||"");
   const [sparPlanName, setSparPlanName] = useState(()=>kvStore.getItem("mbt_spar_planname")||"Sparplan 1");
+  // Nach programmatischem Setzen (Dropdown-Auswahl) bleibt scrollLeft bei 0 —
+  // text-align:right allein wirkt sich NICHT auf die Scroll-Position eines
+  // <input> aus (nur auf die Ausrichtung bei Restplatz). Ohne diesen Ref bliebe
+  // bei einem langen Plan-Namen der ANFANG sichtbar und das (aussagekräftigere)
+  // Ende unsichtbar abgeschnitten.
+  const planNameInputRef = useRef(null);
+  const scrollPlanNameToEnd = () => {
+    requestAnimationFrame(() => {
+      const el = planNameInputRef.current;
+      if (el) el.scrollLeft = el.scrollWidth;
+    });
+  };
   // Einheitlicher sparDesc-Builder — nur vom Plannamen abhängig
   const buildSparDesc = (name) => "Sparen·"+(name||"Plan");
   // Bestehende Sparplan-Series für aktuellen Plannamen finden
@@ -420,10 +432,12 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
           {/* Planname + bestehende Pläne */}
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <span style={{color:T.txt2,fontSize:10,flexShrink:0}}>Planname</span>
-            <input value={sparPlanName}
+            <input ref={planNameInputRef} value={sparPlanName}
               onChange={e=>{setSparPlanName(e.target.value);kvStore.setItem("mbt_spar_planname",e.target.value);}}
               placeholder="z.B. Sparplan 1"
-              style={{...INP,marginBottom:0,flex:1,fontSize:11,padding:"4px 8px"}}/>
+              // rechtsbündig: bei einem langen (z.B. geladenen) Plannamen bleibt so
+              // das Ende sichtbar, statt unbemerkt rechts abgeschnitten zu sein.
+              style={{...INP,marginBottom:0,flex:1,minWidth:0,fontSize:11,padding:"4px 8px",textAlign:"right"}}/>
             {(()=>{
               // Dropdown mit bestehenden Plänen
               const existingDescs = [...new Set(
@@ -447,9 +461,18 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                     setResult(null);
                     didAutoLoadRef.current = false;
                     e.target.value = "";
+                    scrollPlanNameToEnd();
                   }}
                   style={{background:T.surf2,color:T.txt2,border:`1px solid ${currentMatches?T.pos:T.bd}`,
-                    borderRadius:8,padding:"4px 6px",fontSize:10,fontFamily:"inherit",cursor:"pointer"}}>
+                    borderRadius:8,padding:"4px 6px",fontSize:10,fontFamily:"inherit",cursor:"pointer",
+                    // Feste Breite statt natürlicher Größe: Browser bemessen die
+                    // geschlossene Box eines <select> oft an der BREITESTEN <option>
+                    // (hier: der längste Plan-Name), nicht am sichtbaren Label
+                    // ("✓ geladen"/"⋯ laden") — ohne feste Breite würde ein langer
+                    // Plan-Name das Element aufblähen und das Planname-Feld daneben
+                    // verdrängen. flexShrink:0, damit die feste Breite nicht ihrerseits
+                    // vom Flex-Layout unterschritten (und der Text abgeschnitten) wird.
+                    width:78,flexShrink:0,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
                   <option value="">{currentMatches?"✓ geladen":"⋯ laden"}</option>
                   {existingDescs.map(d=>(
                     <option key={d} value={d}>{d.replace(/^Sparen·/,"")}</option>
