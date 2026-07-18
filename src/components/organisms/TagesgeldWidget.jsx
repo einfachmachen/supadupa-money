@@ -4,7 +4,6 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import { CatPicker } from "../molecules/CatPicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
-import { INP } from "../../theme/palette.js";
 import { fmt, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
@@ -14,6 +13,21 @@ import { isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
 function TagesgeldWidget({year, month, initialCollapsed=true}) {
   const {  getKumulierterSaldo, txs, setTxs, cats, accounts, setAccounts, getAcc, budgets, getCat, getBudgetForMonth, selAcc, getProgEndeAccGlobal, resetProgEndeCache, sparOpenRequest } = useContext(AppCtx);
   const MONTHS_G=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
+  // Ein Feld-Stil für ALLE Eingaben/Auswahlen im Widget (Planname, Puffer,
+  // Vorschau, Monate, Abgang/Zugang) — vorher nutzten die oberen Felder das
+  // generische INP (leicht aufgehelltes Weiß-Overlay, Radius 11) und die
+  // untere "Vormerkungsserie anlegen"-Karte eigene, flachere Werte (Radius 8,
+  // Grundfarbe T.surf2) — dadurch wirkte der Dialog wie aus zwei Stilen
+  // zusammengesetzt (Nutzer-Feedback). Jetzt einheitlich das dezente, flache
+  // T.surf2-Grau statt des Overlays.
+  // fontSize:16 (nicht kleiner!) — echte <input>/<select>-Elemente werden von
+  // der globalen iOS-Zoom-Schutzregel (input,select,textarea{font-size:16px
+  // !important}, siehe themes.css) ohnehin auf 16px erzwungen; ein kleinerer
+  // Wert hier wäre wirkungslos. Damit das feste "Giro"-<span> (davon NICHT
+  // betroffen) optisch dazu passt, bekommt es hier bewusst denselben Wert.
+  const FIELD = {background:T.surf2, border:`1px solid ${T.bd}`, borderRadius:10,
+    padding:"5px 8px", fontSize:16, color:T.txt, fontFamily:"inherit", outline:"none",
+    boxSizing:"border-box"};
 
   // Mindest-Puffer aus acc-giro.minPuffer (Quelle der Wahrheit)
   const giroAcc = accounts.find(a=>a.id==="acc-giro");
@@ -437,7 +451,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
               placeholder="z.B. Sparplan 1"
               // rechtsbündig: bei einem langen (z.B. geladenen) Plannamen bleibt so
               // das Ende sichtbar, statt unbemerkt rechts abgeschnitten zu sein.
-              style={{...INP,marginBottom:0,flex:1,minWidth:0,fontSize:11,padding:"4px 8px",textAlign:"right"}}/>
+              style={{...FIELD,flex:1,minWidth:0,textAlign:"right"}}/>
             {(()=>{
               // Dropdown mit bestehenden Plänen
               const existingDescs = [...new Set(
@@ -463,8 +477,8 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                     e.target.value = "";
                     scrollPlanNameToEnd();
                   }}
-                  style={{background:T.surf2,color:T.txt2,border:`1px solid ${currentMatches?T.pos:T.bd}`,
-                    borderRadius:8,padding:"4px 6px",fontSize:10,fontFamily:"inherit",cursor:"pointer",
+                  style={{...FIELD,border:`1px solid ${currentMatches?T.pos:T.bd}`,
+                    color:T.txt2,padding:"4px 6px",cursor:"pointer",
                     // Feste Breite statt natürlicher Größe: Browser bemessen die
                     // geschlossene Box eines <select> oft an der BREITESTEN <option>
                     // (hier: der längste Plan-Name), nicht am sichtbaren Label
@@ -472,7 +486,9 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                     // Plan-Name das Element aufblähen und das Planname-Feld daneben
                     // verdrängen. flexShrink:0, damit die feste Breite nicht ihrerseits
                     // vom Flex-Layout unterschritten (und der Text abgeschnitten) wird.
-                    width:78,flexShrink:0,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                    // 112px, da der Text bei den erzwungenen 16px (s.o.) breiter
+                    // ausfällt als bei den ursprünglich angenommenen 10px.
+                    width:112,flexShrink:0,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
                   <option value="">{currentMatches?"✓ geladen":"⋯ laden"}</option>
                   {existingDescs.map(d=>(
                     <option key={d} value={d}>{d.replace(/^Sparen·/,"")}</option>
@@ -486,19 +502,19 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
             <span style={{color:T.txt2,fontSize:10,flex:1}}>Mindest-Puffer (€)</span>
             <input type="number" value={puffer}
               onChange={e=>{const v=parseInt(e.target.value)||0;setPuffer(v);if(result) setResultOutdated(true);}}
-              style={{...INP,marginBottom:0,width:80,textAlign:"right",fontSize:12,padding:"4px 8px"}}/>
+              style={{...FIELD,width:80,textAlign:"right"}}/>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <span style={{color:T.txt2,fontSize:10,flex:1}}>Vorschau bis (Enddatum)</span>
             <input type="date" min={monateToEndDate(1)} value={monateToEndDate(monate)}
               onChange={e=>{const n=endDateToMonate(e.target.value);if(n) setMonatePersist(n);}}
-              style={{...INP,marginBottom:0,width:140,textAlign:"right",fontSize:12,padding:"4px 8px",colorScheme:"dark"}}/>
+              style={{...FIELD,width:140,textAlign:"right",colorScheme:"dark"}}/>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <span style={{color:T.txt2,fontSize:10,flex:1}}>oder Anzahl Monate</span>
             <input type="number" min="1" max={SPAR_MAX_MONATE} value={monate}
               onChange={e=>{const v=Math.max(1,Math.min(SPAR_MAX_MONATE,parseInt(e.target.value)||3));setMonatePersist(v);}}
-              style={{...INP,marginBottom:0,width:80,textAlign:"right",fontSize:12,padding:"4px 8px"}}/>
+              style={{...FIELD,width:80,textAlign:"right"}}/>
           </div>
         </div>
 
@@ -637,9 +653,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
             {/* Zeile 1 — Abgang: immer Giro (Konto fix), expense-Kategorie auf Giro */}
             <div style={{display:"flex",alignItems:"center",gap:6}}>
               <span style={{color:T.txt2,fontSize:10,minWidth:50}}>Abgang</span>
-              <span style={{color:T.txt2,fontSize:11,padding:"5px 8px",
-                background:T.surf2,border:`1px solid ${T.bd}`,borderRadius:8,
-                fontWeight:600,minWidth:90,textAlign:"center"}}>Giro</span>
+              <span style={{...FIELD,color:T.txt2,fontWeight:600,minWidth:90,textAlign:"center"}}>Giro</span>
               <div style={{flex:1,minWidth:0}}>
                 <CatPicker
                   value={sparCatId+"|"+sparSubId}
@@ -663,9 +677,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                     setSparTgtSubId(""); kvStore.setItem("mbt_spar_tgt_subid","");
                   }
                 }}
-                style={{background:T.surf2,color:T.txt,border:`1px solid ${T.bd}`,
-                  borderRadius:8,padding:"5px 8px",fontSize:11,fontFamily:"inherit",
-                  minWidth:90,maxWidth:130}}>
+                style={{...FIELD,minWidth:90,maxWidth:130,cursor:"pointer"}}>
                 <option value="">— kein Konto —</option>
                 {accounts.filter(a=>a.id!=="acc-giro").map(a=>(
                   <option key={a.id} value={a.id}>{a.name}</option>
