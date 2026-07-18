@@ -19,10 +19,16 @@ import { saldoEnde } from "../../utils/saldo.js";
 import { buildTxIdMap, isDuplCounterpart } from "../../utils/tx.js";
 import { YearSectionHeader } from "../molecules/YearSectionHeader.jsx";
 
+// cond_pos/cond_neg statt pos/neg: manche Themes definieren "neg" bewusst
+// blass/pastellig (WCAG-Kontrast für kleine Textfarbe auf grauem Grund) — als
+// Balkenfläche (zusätzlich mit 0.35/0.85 Opacity überlagert, s.u.) wirkt das
+// dann wie verwaschenes Rosa/Grau statt Rot (Nutzer-Feedback). cond_pos/
+// cond_neg sind für genau diesen Zweck (große, farbkräftige Flächen)
+// gedacht, schon genutzt in SaldoHeroV2.
 const METRICS = [
-  { key: "saldo",   label: "Endekontostand", icon: "wallet",             color: (v,T)=>T.blue, split: false },
-  { key: "income",  label: "Einnahmen",      icon: "arrow-down-circle",  color: (v,T)=>T.pos,  split: true },
-  { key: "expense", label: "Ausgaben",       icon: "arrow-up-circle",    color: (v,T)=>T.neg,  split: true },
+  { key: "saldo",   label: "Endekontostand", icon: "wallet",             color: (v,T)=>T.blue,     split: false },
+  { key: "income",  label: "Einnahmen",      icon: "arrow-down-circle",  color: (v,T)=>T.cond_pos, split: true },
+  { key: "expense", label: "Ausgaben",       icon: "arrow-up-circle",    color: (v,T)=>T.cond_neg, split: true },
 ];
 
 // Kompakte Kurzform für die Balken-Beschriftung ("15.7K" statt "15.737,42 €") —
