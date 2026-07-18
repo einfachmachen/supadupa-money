@@ -9,7 +9,7 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, pn, uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
-function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAmount=0, onSplit=null, filterType=null, openUp=false, accountId=null, noMargin=false}) {
+function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAmount=0, onSplit=null, filterType=null, openUp=false, accountId=null, noMargin=false, triggerStyle}) {
   const { cats, groups, accounts, setCats, setGroups, quickBtns, setQuickBtns } = useContext(AppCtx);
   const [step,    setStep]    = useState(0);  // 0=Gruppe 1=Kat 2=Unterkat
   const [selGrp,  setSelGrp]  = useState(null);
@@ -138,7 +138,7 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
             border:`1px solid ${open||curCat?T.blue:T.bds}`,
             background:"rgba(255,255,255,0.06)",color:curCat?T.txt:T.txt2,
             fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",
-            justifyContent:"space-between",gap:6,minWidth:0}}>
+            justifyContent:"space-between",gap:6,minWidth:0,...triggerStyle}}>
           <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
             {curCat&&<span style={{marginRight:4,display:"inline-flex",alignItems:"center"}}>{Li(curCat.icon,13,curCat.color||T.txt2)}</span>}
             {label}

@@ -53,6 +53,12 @@ function Row({ t, accName, setRowCat, removeRow, setRowNote, setRowTags, allTags
             accountId={t.accountId}
             placeholder={isInc ? "— Einnahmen-Kategorie —" : "— Ausgaben-Kategorie —"}
             noMargin
+            // Notiz/Tag sind <input>-Felder — eine globale Regel (themes.css,
+            // "prevent iOS zoom") erzwingt dort per !important 16px Schrift,
+            // unabhängig von jeder Inline-Angabe. Das Kategorie-Feld ist ein
+            // <button> (von der Regel nicht betroffen) und wäre ohne diese
+            // Angleichung spürbar kleiner/niedriger als die beiden anderen.
+            triggerStyle={{fontSize:16}}
           />
         </div>
         {categorized && Li("check-circle", 18, T.pos)}
@@ -66,9 +72,17 @@ function Row({ t, accName, setRowCat, removeRow, setRowNote, setRowTags, allTags
         placeholder="eigene Notiz (optional)"
         style={{ width: "100%", boxSizing: "border-box", marginTop: 6, background: "rgba(255,255,255,0.05)",
           border: `1px solid ${T.bd}`, borderRadius: 7, padding: "5px 8px",
-          color: T.txt, fontSize: 12, outline: "none", fontFamily: "inherit" }} />
+          color: T.txt, fontSize: 16, outline: "none", fontFamily: "inherit" }} />
       <div style={{ marginTop: 6 }}>
-        <TagInput value={t.tags||[]} onChange={(tags) => setRowTags(t.id, tags)} suggestions={allTags} placeholder="Tag (optional)…"/>
+        {/* border:"none" statt nur 1px+transparent (wie bei Kategorie/Notiz im
+            randlosen Modus): TagInput ist ein <div>, die globale ".no-borders
+            input/button"-Regel (die dort die Breite mit auf 0 setzt) greift
+            bei einem div nicht — ohne diese explizite Angabe bliebe die
+            Zeile 2px höher als die anderen beiden Felder. */}
+        <TagInput value={t.tags||[]} onChange={(tags) => setRowTags(t.id, tags)} suggestions={allTags} placeholder="Tag (optional)…"
+          style={{padding:"5px 8px",marginBottom:0,borderRadius:7,border:"none"}}
+          inputStyle={{fontSize:16}}
+        />
       </div>
     </div>
   );

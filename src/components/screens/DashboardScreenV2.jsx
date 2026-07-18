@@ -1943,6 +1943,7 @@ function DashboardScreenV2() {
                       </div>
                     );
                   };
+                  const _todayISOdrill = new Date().toISOString().slice(0,10);
                   return sorted.map((tx,idx)=>{
                     return (<React.Fragment key={tx.id}>
                       {(()=>{
@@ -1982,15 +1983,29 @@ function DashboardScreenV2() {
                         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
                           <div style={{color:T.txt2,fontSize:12,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",minWidth:0}}>
                             <span>{tx.date}</span>
-                            {tx.pending&&<span style={{
-                              background:tx._seriesTyp==="finanzierung"?"rgba(245,166,35,0.28)":tx._seriesId?"rgba(170,204,0,0.24)":"rgba(74,159,212,0.24)",
-                              border:`1px solid ${(tx._seriesTyp==="finanzierung"?T.gold:tx._seriesId?T.pos:T.blue)}66`,
-                              color:T.txt,
-                              borderRadius:4,padding:"2px 6px",fontSize:11,fontWeight:700,
-                              display:"inline-flex",alignItems:"center",gap:4}}>
-                              {tx._seriesTyp==="finanzierung"?Li("credit-card",10,T.gold):tx._seriesId?Li("repeat",10,T.pos):Li("calendar",10,T.blue)}
-                              {tx._seriesTyp==="finanzierung"?"Finanzierung":tx._seriesId?"wiederkehrend":"vorgemerkt"}
-                            </span>}
+                            {tx.pending&&(tx.date<_todayISOdrill ? (
+                              // Buchungsdatum bereits vergangen, aber noch keine tatsächliche
+                              // Buchung eingetroffen — bisher gar nicht hervorgehoben und dadurch
+                              // leicht übersehen (Nutzer-Feedback), deshalb eigener Warn-Stil statt
+                              // der sonst nach Serientyp eingefärbten Badge.
+                              <span title="Buchungsdatum bereits vergangen, aber noch nicht als tatsächliche Buchung eingetroffen" style={{
+                                background:"rgba(245,166,35,0.28)",border:`1px solid ${T.gold}88`,color:T.gold,
+                                borderRadius:4,padding:"2px 6px",fontSize:11,fontWeight:800,
+                                display:"inline-flex",alignItems:"center",gap:4}}>
+                                {Li("alert-triangle",10,T.gold)}
+                                vorgemerkt · überfällig
+                              </span>
+                            ) : (
+                              <span style={{
+                                background:tx._seriesTyp==="finanzierung"?"rgba(245,166,35,0.28)":tx._seriesId?"rgba(170,204,0,0.24)":"rgba(74,159,212,0.24)",
+                                border:`1px solid ${(tx._seriesTyp==="finanzierung"?T.gold:tx._seriesId?T.pos:T.blue)}66`,
+                                color:T.txt,
+                                borderRadius:4,padding:"2px 6px",fontSize:11,fontWeight:700,
+                                display:"inline-flex",alignItems:"center",gap:4}}>
+                                {tx._seriesTyp==="finanzierung"?Li("credit-card",10,T.gold):tx._seriesId?Li("repeat",10,T.pos):Li("calendar",10,T.blue)}
+                                {tx._seriesTyp==="finanzierung"?"Finanzierung":tx._seriesId?"wiederkehrend":"vorgemerkt"}
+                              </span>
+                            ))}
                             {tx._seriesId&&tx._seriesTotal>1&&tx._seriesIdx&&tx._seriesTyp==="finanzierung"&&<span style={{color:T.txt,fontSize:11,fontWeight:700,
                               background:"rgba(245,166,35,0.24)",border:`1px solid ${T.gold}66`,borderRadius:4,padding:"1px 6px"}}>
                               {tx._seriesIdx} / {tx._seriesTotal}

@@ -153,6 +153,14 @@ function MonatScreen() {
   } = useContext(AppCtx);
 
     const _isSelAcc = t => !selAcc || t.accountId===selAcc || (!t.accountId && selAcc==="acc-giro");
+    // Vorgemerkte Buchung, deren gesetztes Datum bereits vergangen ist, ohne
+    // dass die tatsächliche (Bank-)Buchung bisher eingetroffen wäre — zählt
+    // im Saldo schon mit, obwohl bei der Bank selbst evtl. noch nichts
+    // abgebucht wurde. Vorher nirgends optisch hervorgehoben, dadurch leicht
+    // zu übersehen (Nutzer-Feedback: "versteckt unterm Chevron fällt es sonst
+    // nicht auf").
+    const _todayISO3 = new Date().toISOString().slice(0,10);
+    const _isOverduePending = t => !!t.pending && t.date < _todayISO3;
     // Index für schnelle _linkedTo-Partner-Lookup (für Sparen-Transfer-Erkennung)
     const _txsById = useMemo(()=>buildTxIdMap(txs), [txs]);
     const _isDupl  = t => isDuplCounterpart(t, _txsById);
@@ -1688,7 +1696,12 @@ function MonatScreen() {
                               {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.gold)}</span>}
                             </ExpandableLine>
                             <ExpandableLine data-role="tx-subline" style={{color:cat?.color||T.txt2,fontSize:10,marginTop:1,fontWeight:600,transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
-                              {tx.pending?"Vorgemerkt · ":""}{isS?involvedCats.map(c=>c.name).join(" · "):(()=>{const ss=getSub((tx.splits||[])[0]?.catId,(tx.splits||[])[0]?.subId);return ss?.name||cat?.name||"";})()}
+                              {tx.pending && (_isOverduePending(tx)
+                                ? <span style={{color:T.gold,fontWeight:800,display:"inline-flex",alignItems:"center",gap:2}}
+                                    title="Buchungsdatum bereits vergangen, aber noch nicht als tatsächliche Buchung eingetroffen">
+                                    {Li("alert-triangle",9,T.gold)}Vorgemerkt · überfällig ·{" "}
+                                  </span>
+                                : "Vorgemerkt · ")}{isS?involvedCats.map(c=>c.name).join(" · "):(()=>{const ss=getSub((tx.splits||[])[0]?.catId,(tx.splits||[])[0]?.subId);return ss?.name||cat?.name||"";})()}
                               {tx.accountId&&tx.accountId!=="acc-giro"&&(()=>{const a=getAcc(tx.accountId);return(<span style={{background:a.color+"22",color:a.color,borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>{Li(a.icon,9,a.color)} {a.name}</span>)})()}
                               {(tx.tags||[]).map(t=>(
                                 <span key={t} style={{background:`${T.blue}1a`,color:T.blue,
@@ -1965,7 +1978,12 @@ function MonatScreen() {
                               {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.gold)}</span>}
                             </ExpandableLine>
                             <ExpandableLine data-role="tx-subline" style={{color:cat?.color||T.txt2,fontSize:10,marginTop:1,fontWeight:600,transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
-                              {tx.pending?"Vorgemerkt · ":""}{isS?involvedCats.map(c=>c.name).join(" · "):(()=>{const ss=getSub((tx.splits||[])[0]?.catId,(tx.splits||[])[0]?.subId);return ss?.name || cat?.name || "";})()}
+                              {tx.pending && (_isOverduePending(tx)
+                                ? <span style={{color:T.gold,fontWeight:800,display:"inline-flex",alignItems:"center",gap:2}}
+                                    title="Buchungsdatum bereits vergangen, aber noch nicht als tatsächliche Buchung eingetroffen">
+                                    {Li("alert-triangle",9,T.gold)}Vorgemerkt · überfällig ·{" "}
+                                  </span>
+                                : "Vorgemerkt · ")}{isS?involvedCats.map(c=>c.name).join(" · "):(()=>{const ss=getSub((tx.splits||[])[0]?.catId,(tx.splits||[])[0]?.subId);return ss?.name || cat?.name || "";})()}
                               {tx.valueDate&&(
                               <span style={{background:"rgba(200,210,220,0.1)",color:T.txt2,
                                 borderRadius:5,padding:"1px 5px",fontSize:9,flexShrink:0}}>
