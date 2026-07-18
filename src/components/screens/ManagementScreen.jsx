@@ -104,6 +104,20 @@ function ManagementScreen({activeTab="kategorien"}) {
               style={{width:36,height:36,borderRadius:11,background:cat.color+"33",border:`1px solid ${cat.color+"44"}`,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
               {Li(cat.icon,20,cat.color||T.txt2)}
             </button>
+            {/* Eigene Farbe zurücksetzen: ohne gesetztes cat.color greift der
+                Typ-Standard (Einnahmen grün / Ausgaben rot, s. DashboardScreenV2
+                catColor-Fallback) — sonst bleibt eine einmal per Drag&Drop oder
+                Gruppen-Vererbung gesetzte Farbe für immer bestehen, ohne
+                erkennbaren Weg zurück. Nur sichtbar, wenn eine Farbe gesetzt ist. */}
+            {cat.color && (
+              <button onClick={()=>updateCat(cat.id,"color","")}
+                title="Eigene Farbe entfernen — zeigt wieder die Standardfarbe (Einnahmen grün / Ausgaben rot)"
+                style={{background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bd}`,color:T.txt2,
+                  borderRadius:9,width:30,height:30,display:"flex",alignItems:"center",justifyContent:"center",
+                  cursor:"pointer",flexShrink:0}}>
+                {Li("rotate-ccw",14,T.txt2)}
+              </button>
+            )}
             <div style={{flex:1}}>
               <div style={{color:T.blue,fontSize:16,fontWeight:700}}>{cat.name}</div>
               <div style={{color:T.txt2,fontSize:11}}>{grp?.label||cat.type} · {(cat.subs||[]).length} Unterkategorien</div>

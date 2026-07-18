@@ -169,7 +169,11 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
   // registriert werden (sonst App-weite Re-Renders → Tipp-Lag).
   const liveRef = React.useRef({});
   liveRef.current = { newName, newColor, newType, editName, editColor, editType, editPriority, selCat, catAccFilter };
-  const openNewCat = () => { setNewName(""); setNewColor(T.blue); setView("newCat"); };
+  // Kein voreingestellter Farbwert (statt T.blue) — so behält eine neue
+  // Kategorie ohne bewusste Farbwahl den Typ-Standard (Grün bei Einnahme, Rot
+  // bei Ausgabe, s. catColor-Fallback in DashboardScreenV2), statt fest auf
+  // Blau zu laufen und diesen Standard nie mehr zu zeigen.
+  const openNewCat = () => { setNewName(""); setNewColor(""); setView("newCat"); };
   const saveEditCat = () => {
     const { editName, editColor, editType, editPriority, selCat, catAccFilter } = liveRef.current;
     if(!editName.trim() || !selCat) return;
@@ -278,6 +282,19 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
         </>)}
         <div style={{color:T.txt2,fontSize:S.fs-4,marginBottom:6,fontWeight:600}}>Farbe</div>
         <div style={{display:"flex",gap:S.gap/2,flexWrap:"wrap",marginBottom:S.gap*1.5}}>
+          {/* Standardfarbe: löscht die eigene Farbe wieder, statt eine feste
+              Farbe zu wählen — die Kategorie zeigt dann automatisch Grün
+              (Einnahme) bzw. Rot (Ausgabe), s. catColor-Fallback. Ohne diese
+              Option bleibt eine einmal (z.B. versehentlich) gewählte Farbe für
+              immer bestehen, ohne erkennbaren Weg zurück. */}
+          <div onClick={()=>setEditColor("")}
+            title="Standardfarbe verwenden (automatisch Grün bei Einnahme, Rot bei Ausgabe)"
+            style={{width:44,height:44,borderRadius:S.radius/2,
+              background:(editType==="income"?T.pos:T.neg)+"33",
+              border:`3px ${!editColor?"solid #fff":"dashed "+T.bd}`,
+              cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            {Li("rotate-ccw",18,editType==="income"?T.pos:T.neg)}
+          </div>
           {COLORS.map(c=>(
             <div key={c} onClick={()=>setEditColor(c)}
               style={{width:44,height:44,borderRadius:S.radius/2,background:c,
@@ -326,6 +343,16 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
         </div>
         <div style={{color:T.txt2,fontSize:S.fs-4,marginBottom:6,fontWeight:600}}>Farbe</div>
         <div style={{display:"flex",gap:S.gap/2,flexWrap:"wrap",marginBottom:S.gap*1.5}}>
+          {/* Standardfarbe (voreingestellt, s. openNewCat): zeigt automatisch
+              Grün (Einnahme) bzw. Rot (Ausgabe), s. catColor-Fallback. */}
+          <div onClick={()=>setNewColor("")}
+            title="Standardfarbe verwenden (automatisch Grün bei Einnahme, Rot bei Ausgabe)"
+            style={{width:44,height:44,borderRadius:S.radius/2,
+              background:(newType==="income"?T.pos:T.neg)+"33",
+              border:`3px ${!newColor?"solid #fff":"dashed "+T.bd}`,
+              cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            {Li("rotate-ccw",18,newType==="income"?T.pos:T.neg)}
+          </div>
           {COLORS.map(c=>(
             <div key={c} onClick={()=>setNewColor(c)}
               style={{width:44,height:44,borderRadius:S.radius/2,background:c,
@@ -519,7 +546,10 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                 const beh = grp?.behavior || cat.type;
                 setSelCat(cat);
                 setEditName(cat.name);
-                setEditColor(cat.color||T.blue);
+                // "" statt T.blue-Fallback: eine Kategorie ohne eigene Farbe zeigt
+                // beim Öffnen sonst fälschlich "Blau ausgewählt", obwohl sie in
+                // Wahrheit auf dem Typ-Standard (Grün/Rot) läuft.
+                setEditColor(cat.color||"");
                 setEditType(beh==="income" ? "income" : "expense");
                 setEditPriority(cat.priority||"normal");
                 setView("editCat");
