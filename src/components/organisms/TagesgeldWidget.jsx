@@ -442,7 +442,12 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
       )}
 
       {!collapsed&&<>
-        <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:8}}>
+        {/* Gleicher dunkler Karten-Hintergrund wie "Sofort-Betrag" und
+            "Vormerkungsserie anlegen" weiter unten — sonst liegen die Felder
+            direkt auf der (gleichfarbigen) Widget-Fläche und sind praktisch
+            nicht mehr als Felder erkennbar (Nutzer-Feedback). */}
+        <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:8,
+          background:"rgba(0,0,0,0.15)",borderRadius:10,padding:"10px 12px"}}>
           {/* Planname + bestehende Pläne */}
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <span style={{color:T.txt2,fontSize:10,flexShrink:0}}>Planname</span>
@@ -661,6 +666,9 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                   placeholder="— unkategorisiert —"
                   filterType="expense"
                   accountId="acc-giro"
+                  // 16px passend zum daneben erzwungenen 16px des "Giro"-Felds
+                  // (FIELD) — sonst wirkt die Zeile in der Schriftgröße uneinheitlich.
+                  triggerStyle={{fontSize:16}}
                 />
               </div>
             </div>
@@ -690,6 +698,8 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                   placeholder={sparAccId?"— unkategorisiert —":"— erst Konto wählen —"}
                   filterType="income"
                   accountId={sparAccId||null}
+                  // 16px passend zum erzwungenen 16px des Zugang-<select> daneben.
+                  triggerStyle={{fontSize:16}}
                 />
               </div>
             </div>
