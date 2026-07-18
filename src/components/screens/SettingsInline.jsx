@@ -419,6 +419,18 @@ function SettingsInline() {
                 )}
               </label>
             ))}
+            <div style={{borderTop:`1px dashed ${T.bd}`,marginTop:6,paddingTop:6}}>
+              <label style={{display:"flex",alignItems:"center",
+                gap:8,padding:"5px 0",cursor:"pointer",fontSize:12,color:T.txt}}>
+                <input type="checkbox" checked={!!debugFlags?.enable_scroll_focus}
+                  onChange={e=>setDebugFlag("enable_scroll_focus",e.target.checked)}
+                  style={{cursor:"pointer"}}/>
+                <span style={{flex:1}}>Scroll-Vergrößerung (Fokus-Effekt, Monat)</span>
+                {debugFlags?.enable_scroll_focus && (
+                  <span style={{color:T.gold,fontSize:10,fontWeight:700}}>AN</span>
+                )}
+              </label>
+            </div>
             <button onClick={()=>{setDebugFlags({});kvStore.removeItem("mbt_debug_flags");}}
               style={{marginTop:8,padding:"6px 12px",borderRadius:7,
                 background:"transparent",border:`1px solid ${T.bd}`,

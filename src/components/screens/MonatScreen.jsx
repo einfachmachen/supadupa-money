@@ -591,74 +591,88 @@ function MonatScreen() {
         const refTop = stickyRef.current ? stickyRef.current.getBoundingClientRect().bottom
                                           : el.getBoundingClientRect().top;
 
-        // Ein evtl. im VORIGEN Frame gesetztes Andock-transform (siehe weiter
-        // unten) MUSS vor der Binärsuche zurückgesetzt werden: es wirkt sich
-        // auf getBoundingClientRect() aus (transform beeinflusst die
-        // gemessene Position) — die Binärsuche braucht die natürliche
-        // (nicht verschobene) Dokumentfluss-Position, sonst würde sie die
-        // künstlich an die Referenzlinie gehaltene Zeile IMMER als "noch
-        // nicht vorbeigescrollt" werten und diese bliebe dadurch für immer
-        // aktiv (rückkoppelnd selbstbestätigend), unabhängig vom
-        // tatsächlichen Scrollfortschritt.
-        if(activeTxIdRef.current){
-          const prevActiveRow = el.querySelector(`[data-tx="${activeTxIdRef.current}"]`);
-          if(prevActiveRow) prevActiveRow.style.transform = "scale(1.025)";
-        }
+        // Fokus-Effekt (Scroll-Vergrößerung/Andocken der aktiven Zeile):
+        // standardmäßig AUS, per verstecktem Schalter im "Performance-Debug"-
+        // Ausklapper (Chevron) in den Einstellungen anschaltbar
+        // (window.MBT_DEBUG.enable_scroll_focus). War die Zeile aus einer
+        // vorigen Sitzung (Schalter war an) noch aktiv, wird sie einmalig
+        // sauber zurückgesetzt, statt für immer vergrößert/angedockt stehen
+        // zu bleiben.
+        if(!window.MBT_DEBUG?.enable_scroll_focus){
+          if(activeTxIdRef.current){
+            setRowFocus(el.querySelector(`[data-tx="${activeTxIdRef.current}"]`), false);
+            activeTxIdRef.current = null;
+          }
+        } else {
+          // Ein evtl. im VORIGEN Frame gesetztes Andock-transform (siehe weiter
+          // unten) MUSS vor der Binärsuche zurückgesetzt werden: es wirkt sich
+          // auf getBoundingClientRect() aus (transform beeinflusst die
+          // gemessene Position) — die Binärsuche braucht die natürliche
+          // (nicht verschobene) Dokumentfluss-Position, sonst würde sie die
+          // künstlich an die Referenzlinie gehaltene Zeile IMMER als "noch
+          // nicht vorbeigescrollt" werten und diese bliebe dadurch für immer
+          // aktiv (rückkoppelnd selbstbestätigend), unabhängig vom
+          // tatsächlichen Scrollfortschritt.
+          if(activeTxIdRef.current){
+            const prevActiveRow = el.querySelector(`[data-tx="${activeTxIdRef.current}"]`);
+            if(prevActiveRow) prevActiveRow.style.transform = "scale(1.025)";
+          }
 
-        // Fokus-Effekt: eindeutigste Buchungszeile an der Referenzlinie ermitteln
-        // — unabhängig vom Multi-Monats-Modus, damit es auch bei Suche/Filtern
-        // funktioniert. Gleiches Scan-Prinzip wie der Monats-Scroll-Spy unten.
-        // KEIN künstlicher Abstand mehr zur Hero-Unterkante: eine Zeile wird
-        // aktiv, sobald IHRE eigene Oberkante die Hero-Unterkante erreicht —
-        // nicht früher (ein früherer Versuch mit Abstand fühlte sich beliebig
-        // an, der Wechsel folgte scheinbar zufälligen Elementen statt der
-        // aktiven Zeile selbst).
-        // Per Binärsuche statt linearem Scan ab Index 0: bei einer langen
-        // Liste (tausende Buchungen, nicht virtualisiert) rief der lineare
-        // Scan getBoundingClientRect() auf JEDER vorangehenden Zeile auf —
-        // bei tiefer Scroll-Position mehrere hundert Mal PRO SCROLL-FRAME,
-        // was sich als spürbares Hängenbleiben bemerkbar machte. Die Zeilen
-        // liegen von oben nach unten sortiert vor, die Bedingung "Oberkante
-        // <= Referenzlinie" ist deshalb monoton — Binärsuche liefert dasselbe
-        // Ergebnis in O(log n) statt O(n).
-        const rowsArr = Array.from(el.querySelectorAll("[data-tx]"));
-        let curIdx = -1;
-        {
-          let lo = 0, hi = rowsArr.length - 1;
-          while(lo <= hi){
-            const mid = (lo + hi) >> 1;
-            if(rowsArr[mid].getBoundingClientRect().top - refTop <= 8){
-              curIdx = mid;
-              lo = mid + 1;
-            } else {
-              hi = mid - 1;
+          // Fokus-Effekt: eindeutigste Buchungszeile an der Referenzlinie ermitteln
+          // — unabhängig vom Multi-Monats-Modus, damit es auch bei Suche/Filtern
+          // funktioniert. Gleiches Scan-Prinzip wie der Monats-Scroll-Spy unten.
+          // KEIN künstlicher Abstand mehr zur Hero-Unterkante: eine Zeile wird
+          // aktiv, sobald IHRE eigene Oberkante die Hero-Unterkante erreicht —
+          // nicht früher (ein früherer Versuch mit Abstand fühlte sich beliebig
+          // an, der Wechsel folgte scheinbar zufälligen Elementen statt der
+          // aktiven Zeile selbst).
+          // Per Binärsuche statt linearem Scan ab Index 0: bei einer langen
+          // Liste (tausende Buchungen, nicht virtualisiert) rief der lineare
+          // Scan getBoundingClientRect() auf JEDER vorangehenden Zeile auf —
+          // bei tiefer Scroll-Position mehrere hundert Mal PRO SCROLL-FRAME,
+          // was sich als spürbares Hängenbleiben bemerkbar machte. Die Zeilen
+          // liegen von oben nach unten sortiert vor, die Bedingung "Oberkante
+          // <= Referenzlinie" ist deshalb monoton — Binärsuche liefert dasselbe
+          // Ergebnis in O(log n) statt O(n).
+          const rowsArr = Array.from(el.querySelectorAll("[data-tx]"));
+          let curIdx = -1;
+          {
+            let lo = 0, hi = rowsArr.length - 1;
+            while(lo <= hi){
+              const mid = (lo + hi) >> 1;
+              if(rowsArr[mid].getBoundingClientRect().top - refTop <= 8){
+                curIdx = mid;
+                lo = mid + 1;
+              } else {
+                hi = mid - 1;
+              }
             }
           }
-        }
-        const curTx = curIdx>=0 ? rowsArr[curIdx].getAttribute("data-tx") : null;
-        if(curTx !== activeTxIdRef.current){
-          if(activeTxIdRef.current) setRowFocus(el.querySelector(`[data-tx="${activeTxIdRef.current}"]`), false);
-          activeTxIdRef.current = curTx;
-          if(curTx) setRowFocus(el.querySelector(`[data-tx="${curTx}"]`), true);
-        }
-        // Andocken an der Hero-Kante: komplett per JS-transform, NICHT per CSS
-        // position:"sticky" (siehe ausführlicher Kommentar weiter oben, wo die
-        // dafür verantwortliche useEffect früher stand). Die Verschiebung wird
-        // JEDEN Frame frisch aus der natürlichen (nicht verschobenen)
-        // Dokumentfluss-Position berechnet — kein Rate-/Ausgleichs-Mechanismus
-        // nötig, der (wie bei position:"sticky" beobachtet) mit der Zeit
-        // auseinanderlaufen könnte: die Zeile landet immer exakt an der
-        // Referenzlinie, unabhängig davon, wie lange sie schon andockt.
-        if(curTx){
-          const activeRow = el.querySelector(`[data-tx="${curTx}"]`);
-          if(activeRow){
-            // Muss VOR der Messung auf die reine Skalierung zurückgesetzt
-            // werden — sonst würde die vom VORIGEN Frame gesetzte Verschiebung
-            // die Messung selbst verfälschen (transform wirkt sich auf
-            // getBoundingClientRect() aus).
-            activeRow.style.transform = "scale(1.025)";
-            const naturalTop = activeRow.getBoundingClientRect().top;
-            activeRow.style.transform = `translateY(${refTop - naturalTop}px) scale(1.025)`;
+          const curTx = curIdx>=0 ? rowsArr[curIdx].getAttribute("data-tx") : null;
+          if(curTx !== activeTxIdRef.current){
+            if(activeTxIdRef.current) setRowFocus(el.querySelector(`[data-tx="${activeTxIdRef.current}"]`), false);
+            activeTxIdRef.current = curTx;
+            if(curTx) setRowFocus(el.querySelector(`[data-tx="${curTx}"]`), true);
+          }
+          // Andocken an der Hero-Kante: komplett per JS-transform, NICHT per CSS
+          // position:"sticky" (siehe ausführlicher Kommentar weiter oben, wo die
+          // dafür verantwortliche useEffect früher stand). Die Verschiebung wird
+          // JEDEN Frame frisch aus der natürlichen (nicht verschobenen)
+          // Dokumentfluss-Position berechnet — kein Rate-/Ausgleichs-Mechanismus
+          // nötig, der (wie bei position:"sticky" beobachtet) mit der Zeit
+          // auseinanderlaufen könnte: die Zeile landet immer exakt an der
+          // Referenzlinie, unabhängig davon, wie lange sie schon andockt.
+          if(curTx){
+            const activeRow = el.querySelector(`[data-tx="${curTx}"]`);
+            if(activeRow){
+              // Muss VOR der Messung auf die reine Skalierung zurückgesetzt
+              // werden — sonst würde die vom VORIGEN Frame gesetzte Verschiebung
+              // die Messung selbst verfälschen (transform wirkt sich auf
+              // getBoundingClientRect() aus).
+              activeRow.style.transform = "scale(1.025)";
+              const naturalTop = activeRow.getBoundingClientRect().top;
+              activeRow.style.transform = `translateY(${refTop - naturalTop}px) scale(1.025)`;
+            }
           }
         }
 
