@@ -1788,7 +1788,10 @@ Abbrechen = ${remoteName}-Stand laden`
   // Buchung sichtbar war (Nutzer-Feedback: "fällt sonst nicht auf").
   const overduePending = useMemo(()=>{
     const todayISO = new Date().toISOString().slice(0,10);
-    return (txs||[]).filter(t=>t.pending && !t._linkedTo && t.date < todayISO)
+    // _budgetSubId-Zeilen sind interne Budget-Platzhalter (nicht vom Nutzer
+    // angelegte Vormerkungen) und liegen technisch immer "in der Vergangenheit"
+    // sobald ihre Phase (Mitte/Ende) verstrichen ist — zählen hier nicht mit.
+    return (txs||[]).filter(t=>t.pending && !t._linkedTo && !t._budgetSubId && t.date < todayISO)
       .sort((a,b)=>a.date.localeCompare(b.date));
   }, [txs]);
 
