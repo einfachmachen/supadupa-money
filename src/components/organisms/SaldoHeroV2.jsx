@@ -24,9 +24,27 @@ function SaldoHeroV2({
   onDrillBuchIn, onDrillBuchOut, onDrillPendIn, onDrillPendOut, onDrillUncatIn, onDrillUncatOut,
   detailsOpen, setDetailsOpen, hideDetailRows,
 }) {
-  const { selAcc, setSelAcc, accounts, getKumulierterSaldo, txs, getCat, getSub, amtMode, setAmtMode, setShowGuidedTour } = useContext(AppCtx);
+  const { selAcc, setSelAcc, accounts, getKumulierterSaldo, txs, getCat, getSub, amtMode, setAmtMode, setShowGuidedTour, debugFlags, setDebugFlag } = useContext(AppCtx);
   const [progDrill, setProgDrill] = useState(null);
   const [accMenuOpen, setAccMenuOpen] = useState(false);
+  // Versteckter Schalter für den Fokus-Effekt (Scroll-Vergrößerung/Andocken in
+  // der Monatsliste, standardmäßig aus): per Long-Press auf das Ausklapp-
+  // Chevron umschaltbar, statt in den Einstellungen vergraben zu sein — dort
+  // verirrt man sich laut Nutzer-Feedback kaum hin. Kurzer Farbwechsel am
+  // Chevron als einzige Rückmeldung, bewusst unauffällig.
+  const [focusEffectFlash, setFocusEffectFlash] = useState(false);
+  const focusPressTimer = React.useRef(null);
+  const focusLongPressed = React.useRef(false);
+  const startFocusPress = () => {
+    focusLongPressed.current = false;
+    focusPressTimer.current = setTimeout(() => {
+      focusLongPressed.current = true;
+      setDebugFlag?.("enable_scroll_focus", !debugFlags?.enable_scroll_focus);
+      setFocusEffectFlash(true);
+      setTimeout(() => setFocusEffectFlash(false), 500);
+    }, 650);
+  };
+  const cancelFocusPress = () => clearTimeout(focusPressTimer.current);
   // Augensymbol: nur 2 Stufen — unscharf (0) ↔ sichtbar. Sichtbar ist neutral-
   // weiß (1), solange der Detail-Block eingeklappt ist; farbig (2) nur, wenn er
   // über das Ausklapp-Chevron geöffnet wurde.
@@ -40,6 +58,12 @@ function SaldoHeroV2({
       setAmtMode?.(m => m===0 ? 0 : (nv ? 2 : 1));
       return nv;
     });
+  };
+  const handleChevronClick = () => {
+    // Nach einem erfolgreichen Long-Press soll der (gleichzeitig ausgelöste)
+    // normale Klick NICHT zusätzlich noch die Details auf-/zuklappen.
+    if(focusLongPressed.current){ focusLongPressed.current = false; return; }
+    toggleDetails();
   };
 
   const accLabel = selAcc===null
@@ -265,11 +289,12 @@ function SaldoHeroV2({
             </span>
           </div>
           <div style={{flex:1}}/>
-          <span onClick={toggleDetails}
+          <span onClick={handleChevronClick}
+            onPointerDown={startFocusPress} onPointerUp={cancelFocusPress} onPointerLeave={cancelFocusPress}
             title={detailsOpen?"Details ausblenden":"Details anzeigen"}
             style={{cursor:"pointer",userSelect:"none",opacity:0.75,
               display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
-            {Li(detailsOpen?"chevron-up":"chevron-down",24,T.txt2)}
+            {Li(detailsOpen?"chevron-up":"chevron-down",24,focusEffectFlash?T.gold:T.txt2)}
           </span>
         </div>
         </div>
@@ -365,11 +390,12 @@ function SaldoHeroV2({
           display:"flex",flexDirection:"column",alignItems:"center",
           padding:"2px 0 4px",pointerEvents:"none"}}>
           {renderAccPill({lift:true})}
-          <span onClick={toggleDetails}
+          <span onClick={handleChevronClick}
+            onPointerDown={startFocusPress} onPointerUp={cancelFocusPress} onPointerLeave={cancelFocusPress}
             title={detailsOpen?"Details ausblenden":"Details anzeigen"}
             style={{pointerEvents:"auto",cursor:"pointer",userSelect:"none",opacity:0.75,
               display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
-            {Li(detailsOpen?"chevron-up":"chevron-down",26,T.txt2)}
+            {Li(detailsOpen?"chevron-up":"chevron-down",26,focusEffectFlash?T.gold:T.txt2)}
           </span>
         </div>
       </div>
