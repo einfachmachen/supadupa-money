@@ -14,6 +14,66 @@ import { CatPicker } from "../molecules/CatPicker.jsx";
 import { TagInput } from "../atoms/TagInput.jsx";
 import { getAllTags } from "../../utils/search.js";
 
+// WICHTIG: als eigene, TOP-LEVEL-Komponente definiert (nicht als Closure
+// innerhalb von BankFetchPanel) — sonst wäre Row bei JEDEM Tastendruck im
+// Notiz-Feld eine für React NEUE Komponenten-Identität (jeder Render von
+// BankFetchPanel erzeugt sonst eine neue Funktionsreferenz), wodurch React
+// das <input> bei jedem Buchstaben komplett neu montiert und damit den Fokus
+// (und die Bildschirmtastatur) verliert.
+function Row({ t, accName, setRowCat, removeRow, setRowNote, setRowTags, allTags }) {
+  const sp = (t.splits || [])[0];
+  const categorized = !!sp?.catId;
+  const isInc = t._csvType === "income";
+  return (
+    <div style={{ padding: "9px 12px", borderTop: `1px solid ${T.bd}` }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ color: T.txt2, fontSize: 12, flexShrink: 0 }}>{t.date.slice(8)}.{t.date.slice(5, 7)}.</span>
+        {t.pending && (
+          <span style={{ fontSize: 9, background: "rgba(245,166,35,0.18)", color: T.gold,
+            borderRadius: 4, padding: "1px 5px", fontWeight: 800, border: `1px solid ${T.gold}55`,
+            flexShrink: 0, letterSpacing: 0.3 }}>VORGEMERKT</span>
+        )}
+        <span style={{ fontSize: 9, background: "rgba(255,255,255,0.08)", color: T.txt2,
+          borderRadius: 4, padding: "1px 5px", fontWeight: 700, flexShrink: 0, letterSpacing: 0.2 }}>
+          {accName(t.accountId)}
+        </span>
+        <span style={{ flex: 1, color: T.txt, fontSize: 13.5, fontWeight: 600, overflow: "hidden",
+          textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.desc || "Buchung"}</span>
+        <span style={{ color: t.pending ? T.gold : (isInc ? T.pos : T.neg), fontSize: 14, fontWeight: 800,
+          fontVariantNumeric: "tabular-nums", fontFamily: NUM_FONT, flexShrink: 0 }}>
+          {isInc ? "" : "−"}{fmt(Math.abs(t.totalAmount))} €
+        </span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <CatPicker
+            value={(sp?.catId || "") + "|" + (sp?.subId || "")}
+            onChange={(catId, subId) => setRowCat(t.id, catId, subId)}
+            filterType={isInc ? "income" : "expense"}
+            accountId={t.accountId}
+            placeholder={isInc ? "— Einnahmen-Kategorie —" : "— Ausgaben-Kategorie —"}
+            noMargin
+          />
+        </div>
+        {categorized && Li("check-circle", 18, T.pos)}
+        <button onClick={() => removeRow(t.id)} title="Eintrag löschen"
+          style={{ background: "transparent", border: "none", cursor: "pointer", padding: 4,
+            display: "inline-flex", alignItems: "center", flexShrink: 0 }}>
+          {Li("trash-2", 16, T.neg)}
+        </button>
+      </div>
+      <input value={t.note || ""} onChange={(e) => setRowNote(t.id, e.target.value)}
+        placeholder="eigene Notiz (optional)"
+        style={{ width: "100%", boxSizing: "border-box", marginTop: 6, background: "rgba(255,255,255,0.05)",
+          border: `1px solid ${T.bd}`, borderRadius: 7, padding: "5px 8px",
+          color: T.txt, fontSize: 12, outline: "none", fontFamily: "inherit" }} />
+      <div style={{ marginTop: 6 }}>
+        <TagInput value={t.tags||[]} onChange={(tags) => setRowTags(t.id, tags)} suggestions={allTags} placeholder="Tag (optional)…"/>
+      </div>
+    </div>
+  );
+}
+
 function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }) {
   const { accounts, txs } = useContext(AppCtx);
   const allTags = React.useMemo(()=>getAllTags(txs), [txs]);
@@ -180,59 +240,6 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }
     );
   }
 
-  const Row = ({ t }) => {
-    const sp = (t.splits || [])[0];
-    const categorized = !!sp?.catId;
-    const isInc = t._csvType === "income";
-    return (
-      <div style={{ padding: "9px 12px", borderTop: `1px solid ${T.bd}` }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ color: T.txt2, fontSize: 12, flexShrink: 0 }}>{t.date.slice(8)}.{t.date.slice(5, 7)}.</span>
-          {t.pending && (
-            <span style={{ fontSize: 9, background: "rgba(245,166,35,0.18)", color: T.gold,
-              borderRadius: 4, padding: "1px 5px", fontWeight: 800, border: `1px solid ${T.gold}55`,
-              flexShrink: 0, letterSpacing: 0.3 }}>VORGEMERKT</span>
-          )}
-          <span style={{ fontSize: 9, background: "rgba(255,255,255,0.08)", color: T.txt2,
-            borderRadius: 4, padding: "1px 5px", fontWeight: 700, flexShrink: 0, letterSpacing: 0.2 }}>
-            {accName(t.accountId)}
-          </span>
-          <span style={{ flex: 1, color: T.txt, fontSize: 13.5, fontWeight: 600, overflow: "hidden",
-            textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.desc || "Buchung"}</span>
-          <span style={{ color: t.pending ? T.gold : (isInc ? T.pos : T.neg), fontSize: 14, fontWeight: 800,
-            fontVariantNumeric: "tabular-nums", fontFamily: NUM_FONT, flexShrink: 0 }}>
-            {isInc ? "" : "−"}{fmt(Math.abs(t.totalAmount))} €
-          </span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <CatPicker
-              value={(sp?.catId || "") + "|" + (sp?.subId || "")}
-              onChange={(catId, subId) => setRowCat(t.id, catId, subId)}
-              filterType={isInc ? "income" : "expense"}
-              accountId={t.accountId}
-              placeholder={isInc ? "— Einnahmen-Kategorie —" : "— Ausgaben-Kategorie —"}
-            />
-          </div>
-          {categorized && Li("check-circle", 18, T.pos)}
-          <button onClick={() => removeRow(t.id)} title="Eintrag löschen"
-            style={{ background: "transparent", border: "none", cursor: "pointer", padding: 4,
-              display: "inline-flex", alignItems: "center", flexShrink: 0 }}>
-            {Li("trash-2", 16, T.neg)}
-          </button>
-        </div>
-        <input value={t.note || ""} onChange={(e) => setRowNote(t.id, e.target.value)}
-          placeholder="eigene Notiz (optional)"
-          style={{ width: "100%", boxSizing: "border-box", marginTop: 6, background: "rgba(255,255,255,0.05)",
-            border: `1px solid ${T.bd}`, borderRadius: 7, padding: "5px 8px",
-            color: T.txt, fontSize: 12, outline: "none", fontFamily: "inherit" }} />
-        <div style={{ marginTop: 6 }}>
-          <TagInput value={t.tags||[]} onChange={(tags) => setRowTags(t.id, tags)} suggestions={allTags} placeholder="Tag (optional)…"/>
-        </div>
-      </div>
-    );
-  };
-
   return wrap(
     <>
       <Header
@@ -262,12 +269,14 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm }
             placeholder="Tag hinzufügen, z.B. aida…"/>
         </div>
       )}
-      {newTxs.map((t) => <Row key={t.id} t={t} />)}
+      {newTxs.map((t) => <Row key={t.id} t={t} accName={accName}
+        setRowCat={setRowCat} removeRow={removeRow} setRowNote={setRowNote}
+        setRowTags={setRowTags} allTags={allTags} />)}
 
       {dupeItems.length > 0 && (
         <>
           <button onClick={() => setShowExisting((v) => !v)}
-            style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "9px 12px",
+            style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "3px 12px 9px",
               borderTop: `1px solid ${T.bd}`, background: "transparent", border: "none", cursor: "pointer",
               color: T.txt2, fontSize: 12.5, fontWeight: 700, fontFamily: "inherit" }}>
             {Li(showExisting ? "chevron-up" : "chevron-down", 16, T.txt2)}

@@ -1250,6 +1250,7 @@ function MonatScreen() {
               onDrillUncatIn ={(isMitte)=>setFilt("uncat")}
               onDrillUncatOut={(isMitte)=>setFilt("uncat")}
               detailsOpen={heroDetailsOpen} setDetailsOpen={setHeroDetailsOpen}
+              showScrollFocusToggle
             />
           );
         })()}

@@ -23,28 +23,11 @@ function SaldoHeroV2({
   prognoseMitte, prognoseEnde, detailMitte, detailEnde, saldoMitte, saldoEnde,
   onDrillBuchIn, onDrillBuchOut, onDrillPendIn, onDrillPendOut, onDrillUncatIn, onDrillUncatOut,
   detailsOpen, setDetailsOpen, hideDetailRows,
+  showScrollFocusToggle,
 }) {
   const { selAcc, setSelAcc, accounts, getKumulierterSaldo, txs, getCat, getSub, amtMode, setAmtMode, setShowGuidedTour, debugFlags, setDebugFlag } = useContext(AppCtx);
   const [progDrill, setProgDrill] = useState(null);
   const [accMenuOpen, setAccMenuOpen] = useState(false);
-  // Versteckter Schalter für den Fokus-Effekt (Scroll-Vergrößerung/Andocken in
-  // der Monatsliste, standardmäßig aus): per Long-Press auf das Ausklapp-
-  // Chevron umschaltbar, statt in den Einstellungen vergraben zu sein — dort
-  // verirrt man sich laut Nutzer-Feedback kaum hin. Kurzer Farbwechsel am
-  // Chevron als einzige Rückmeldung, bewusst unauffällig.
-  const [focusEffectFlash, setFocusEffectFlash] = useState(false);
-  const focusPressTimer = React.useRef(null);
-  const focusLongPressed = React.useRef(false);
-  const startFocusPress = () => {
-    focusLongPressed.current = false;
-    focusPressTimer.current = setTimeout(() => {
-      focusLongPressed.current = true;
-      setDebugFlag?.("enable_scroll_focus", !debugFlags?.enable_scroll_focus);
-      setFocusEffectFlash(true);
-      setTimeout(() => setFocusEffectFlash(false), 500);
-    }, 650);
-  };
-  const cancelFocusPress = () => clearTimeout(focusPressTimer.current);
   // Augensymbol: nur 2 Stufen — unscharf (0) ↔ sichtbar. Sichtbar ist neutral-
   // weiß (1), solange der Detail-Block eingeklappt ist; farbig (2) nur, wenn er
   // über das Ausklapp-Chevron geöffnet wurde.
@@ -58,12 +41,6 @@ function SaldoHeroV2({
       setAmtMode?.(m => m===0 ? 0 : (nv ? 2 : 1));
       return nv;
     });
-  };
-  const handleChevronClick = () => {
-    // Nach einem erfolgreichen Long-Press soll der (gleichzeitig ausgelöste)
-    // normale Klick NICHT zusätzlich noch die Details auf-/zuklappen.
-    if(focusLongPressed.current){ focusLongPressed.current = false; return; }
-    toggleDetails();
   };
 
   const accLabel = selAcc===null
@@ -289,12 +266,11 @@ function SaldoHeroV2({
             </span>
           </div>
           <div style={{flex:1}}/>
-          <span onClick={handleChevronClick}
-            onPointerDown={startFocusPress} onPointerUp={cancelFocusPress} onPointerLeave={cancelFocusPress}
+          <span onClick={toggleDetails}
             title={detailsOpen?"Details ausblenden":"Details anzeigen"}
             style={{cursor:"pointer",userSelect:"none",opacity:0.75,
               display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
-            {Li(detailsOpen?"chevron-up":"chevron-down",24,focusEffectFlash?T.gold:T.txt2)}
+            {Li(detailsOpen?"chevron-up":"chevron-down",24,T.txt2)}
           </span>
         </div>
         </div>
@@ -390,12 +366,11 @@ function SaldoHeroV2({
           display:"flex",flexDirection:"column",alignItems:"center",
           padding:"2px 0 4px",pointerEvents:"none"}}>
           {renderAccPill({lift:true})}
-          <span onClick={handleChevronClick}
-            onPointerDown={startFocusPress} onPointerUp={cancelFocusPress} onPointerLeave={cancelFocusPress}
+          <span onClick={toggleDetails}
             title={detailsOpen?"Details ausblenden":"Details anzeigen"}
             style={{pointerEvents:"auto",cursor:"pointer",userSelect:"none",opacity:0.75,
               display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
-            {Li(detailsOpen?"chevron-up":"chevron-down",26,focusEffectFlash?T.gold:T.txt2)}
+            {Li(detailsOpen?"chevron-up":"chevron-down",26,T.txt2)}
           </span>
         </div>
       </div>
@@ -420,6 +395,19 @@ function SaldoHeroV2({
               mIn={uInM} mOut={uOutM} eIn={uInE} eOut={uOutE}
               clrIn={T.gold} clrOut={T.gold}
               onTapIn={onDrillUncatIn} onTapOut={onDrillUncatOut}/>
+          )}
+          {showScrollFocusToggle && (
+            <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8,paddingTop:8,borderTop:`1px solid ${T.bd}`}}>
+              <span style={{flex:1,color:T.txt2,fontSize:11.5}}>Scroll-Vergrößerung (Zeile wächst/dockt an)</span>
+              <div onClick={()=>setDebugFlag?.("enable_scroll_focus", !debugFlags?.enable_scroll_focus)}
+                style={{width:40,height:24,borderRadius:12,cursor:"pointer",
+                  background:debugFlags?.enable_scroll_focus?T.blue:"rgba(255,255,255,0.12)",
+                  position:"relative",transition:"background 0.2s",flexShrink:0}}>
+                <div style={{position:"absolute",top:3,
+                  left:debugFlags?.enable_scroll_focus?19:3,width:18,height:18,borderRadius:"50%",
+                  background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}/>
+              </div>
+            </div>
           )}
         </div>
       )}
