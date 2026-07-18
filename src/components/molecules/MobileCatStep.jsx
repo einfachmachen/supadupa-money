@@ -92,7 +92,7 @@ function MobileCatStep({csvType, catId, subId, accountId, onSelect, S, btnBase, 
       {newMode==="cat"&&<>
         <div style={{color:T.txt2,fontSize:S.fs-4,marginBottom:6}}>Typ</div>
         <div style={{display:"flex",gap:S.gap/2,marginBottom:S.gap}}>
-          {[["expense","Ausgabe",T.neg],["income","Einnahme",T.pos]].map(([t,l,c])=>(
+          {[["expense","Ausgabe",T.cond_neg],["income","Einnahme",T.cond_pos]].map(([t,l,c])=>(
             <button key={t} onClick={()=>setNewType(t)}
               style={{flex:1,padding:`${S.pad}px`,borderRadius:S.radius,
                 background:newType===t?c+"22":"rgba(255,255,255,0.06)",

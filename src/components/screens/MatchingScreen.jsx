@@ -259,7 +259,7 @@ function MatchingScreen({onClose, onBack}) {
                   padding:"12px",border:`1px solid ${T.gold}44`}}>
                   {/* Ausgabe / Einnahme Toggle */}
                   <div style={{display:"flex",gap:4,marginBottom:6}}>
-                    {[["expense","Ausgabe",T.neg],["income","Einnahme",T.pos]].map(([val,label,col])=>(
+                    {[["expense","Ausgabe",T.cond_neg],["income","Einnahme",T.cond_pos]].map(([val,label,col])=>(
                       <button key={val} onClick={()=>setNewPend(p=>({...p,csvType:val,catId:"",subId:""}))}
                         style={{flex:1,padding:"5px",borderRadius:8,cursor:"pointer",fontSize:11,fontWeight:700,
                           border:`2px solid ${newPend.csvType===val?col:"transparent"}`,

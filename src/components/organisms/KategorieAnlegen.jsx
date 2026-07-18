@@ -26,7 +26,7 @@ function KategorieAnlegen({onDone}) {
     <div style={{marginTop:4}}>
       {/* Ausgaben / Einnahmen Toggle */}
       <div style={{display:"flex",gap:4,marginBottom:10}}>
-        {[["expense","Ausgaben",T.neg],["income","Einnahmen",T.pos]].map(([v,l,col])=>(
+        {[["expense","Ausgaben",T.cond_neg],["income","Einnahmen",T.cond_pos]].map(([v,l,col])=>(
           <button key={v} onClick={()=>setCatType(v)}
             style={{flex:1,padding:"7px",borderRadius:10,cursor:"pointer",fontSize:13,fontWeight:700,
               border:`2px solid ${catType===v?col:T.bd}`,

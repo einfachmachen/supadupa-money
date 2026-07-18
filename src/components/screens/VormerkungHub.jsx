@@ -809,7 +809,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
 
               {/* 1. Ausgabe / Einnahme */}
               <div style={{display:"flex",gap:4,marginBottom:8}}>
-                {[["expense","− Ausgabe",T.neg],["income","+ Einnahme",T.pos]].map(([val,label,col])=>{
+                {[["expense","− Ausgabe",T.cond_neg],["income","+ Einnahme",T.cond_pos]].map(([val,label,col])=>{
                   const active = csvType===val;
                   return (
                     <button key={val} onClick={()=>{setCsvType(val);setCatId("");setSubId("");}}

@@ -430,8 +430,8 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
           {/* Ausgabe / Einnahme / Umbuchung */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:S.gap,marginBottom:S.gap}}>
             {[
-              ["expense","Ausgabe",T.neg,false],
-              ["income","Einnahme",T.pos,false],
+              ["expense","Ausgabe",T.cond_neg,false],
+              ["income","Einnahme",T.cond_pos,false],
               ["transfer","Umbuchung",T.blue,true],
             ].map(([t,l,c,trans])=>{
               const active = trans ? isTransfer : (!isTransfer && csvType===t);

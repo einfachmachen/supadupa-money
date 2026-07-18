@@ -247,7 +247,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
           autoFocus style={{...inp(),marginBottom:S.gap}}/>
         <div style={{color:T.txt2,fontSize:S.fs-4,marginBottom:6,fontWeight:600}}>Typ</div>
         <div style={{display:"flex",gap:S.gap/2,marginBottom:S.gap}}>
-          {[["expense","Ausgabe",T.neg],["income","Einnahme",T.pos]].map(([t,l,c])=>(
+          {[["expense","Ausgabe",T.cond_neg],["income","Einnahme",T.cond_pos]].map(([t,l,c])=>(
             <button key={t} onClick={()=>setEditType(t)}
               style={{flex:1,padding:`${S.pad}px`,borderRadius:S.radius,
                 background:editType===t?c+"22":"rgba(255,255,255,0.06)",
@@ -312,8 +312,8 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
             setView("list");
           }
         }} style={{...btnCenter,background:"transparent",
-          border:`1.5px solid ${T.neg}44`,color:T.neg,fontWeight:400}}>
-          {Li("trash-2",S.fs-4,T.neg)} Kategorie löschen
+          border:`1.5px solid ${T.cond_neg}44`,color:T.cond_neg,fontWeight:400}}>
+          {Li("trash-2",S.fs-4,T.cond_neg)} Kategorie löschen
         </button>
       </div>
     </div>
@@ -330,7 +330,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
           placeholder="z.B. Freizeit" autoFocus style={{...inp(),marginBottom:S.gap}}/>
         <div style={{color:T.txt2,fontSize:S.fs-4,marginBottom:6,fontWeight:600}}>Typ</div>
         <div style={{display:"flex",gap:S.gap/2,marginBottom:S.gap}}>
-          {[["expense","Ausgabe",T.neg],["income","Einnahme",T.pos]].map(([t,l,c])=>(
+          {[["expense","Ausgabe",T.cond_neg],["income","Einnahme",T.cond_pos]].map(([t,l,c])=>(
             <button key={t} onClick={()=>setNewType(t)}
               style={{flex:1,padding:`${S.pad}px`,borderRadius:S.radius,
                 background:newType===t?c+"22":"rgba(255,255,255,0.06)",
@@ -795,9 +795,9 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                         {(curGesamt>0||curMitte>0)&&(
                           <button onClick={doDeleteBudget}
                             style={{padding:`${S.pad}px ${S.padL}px`,borderRadius:S.radius,
-                              border:`1px solid ${T.neg}44`,background:`${T.neg}11`,
-                              color:T.neg,cursor:"pointer",fontFamily:"inherit",fontSize:S.fs-4}}>
-                            {Li("trash-2",16,T.neg)}
+                              border:`1px solid ${T.cond_neg}44`,background:`${T.cond_neg}11`,
+                              color:T.cond_neg,cursor:"pointer",fontFamily:"inherit",fontSize:S.fs-4}}>
+                            {Li("trash-2",16,T.cond_neg)}
                           </button>
                         )}
                       </div>
