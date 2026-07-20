@@ -1,7 +1,9 @@
 // Feature-Tour: kurzer Rundgang durch alle Kernfunktionen der App. Standard-
-// Ansicht ist die Einsteiger-Erklärung je Karte, die sich per "mehr …"/"noch
-// mehr …" um die Profi- bzw. Erfahren-Ebene ergänzen lässt (statt vorher drei
-// separat anwählbaren Ebenen, die unerfahrene Nutzer eher verwirrt haben).
+// Ansicht ist die Einsteiger-Erklärung je Karte, die sich am Ende der jeweils
+// EIGENEN Karte per "mehr …"/"noch mehr …" um die Profi- bzw. Erfahren-Ebene
+// ergänzen lässt — unabhängig von allen anderen Karten, damit man Feature für
+// Feature aufklappen und wieder einklappen kann, statt vorher drei separat
+// anwählbaren Ebenen, die unerfahrene Nutzer eher verwirrt haben.
 // Die "Für Kids"-Ebene ist bewusst kein Teil dieser Eskalation, sondern ein
 // eigener Modus — per Teddy-Symbol im Header umschaltbar. Text kommt komplett
 // aus content/featureTour.js, dieser Screen ist reine Anzeige.
@@ -22,21 +24,21 @@ const COMIC_COLORS = ["#FF6B6B", "#FFA94D", "#FFD43B", "#69DB7C", "#3BC9DB", "#4
 function FeatureTourScreen({ onClose, onBack, mobileMode=false }) {
   const { setMasterOverride } = useContext(AppCtx);
   const [kidsMode, setKidsMode] = useState(() => kvStore.getItem("mbt_tourKids") === "1");
-  const [expand, setExpand] = useState(() => Math.min(2, parseInt(kvStore.getItem("mbt_tourExpand") || "0", 10) || 0));
+  // Je Karte eine eigene Ausklapp-Stufe (0/1/2) — unabhängig von den anderen
+  // Karten, damit sich jedes Feature einzeln vertiefen und beim Weitergehen
+  // zum nächsten wieder einklappen lässt.
+  const [expandLevels, setExpandLevels] = useState(() => FEATURE_TOUR.map(() => 0));
 
   const toggleKids = () => {
     const next = !kidsMode;
     setKidsMode(next);
     kvStore.setItem("mbt_tourKids", next ? "1" : "0");
   };
-  const expandMore = () => {
-    const next = Math.min(2, expand + 1);
-    setExpand(next);
-    kvStore.setItem("mbt_tourExpand", String(next));
+  const expandMore = (i) => {
+    setExpandLevels(prev => prev.map((v, idx) => idx === i ? Math.min(2, v + 1) : v));
   };
-  const collapseAll = () => {
-    setExpand(0);
-    kvStore.setItem("mbt_tourExpand", "0");
+  const collapseCard = (i) => {
+    setExpandLevels(prev => prev.map((v, idx) => idx === i ? 0 : v));
   };
 
   // "+"-Button übernehmen — wie bei den anderen Daten-Tab-Vollbild-Screens
@@ -73,18 +75,6 @@ function FeatureTourScreen({ onClose, onBack, mobileMode=false }) {
           </button>
         }/>
 
-      {!kidsMode && (
-        <div style={{flexShrink:0, padding:"10px 16px 2px", display:"flex",
-          alignItems:"center", justifyContent:"center"}}>
-          <button onClick={expand<2 ? expandMore : collapseAll}
-            style={{background:`${T.blue}1a`, border:`1px solid ${T.blue}44`, borderRadius:20,
-              cursor:"pointer", color:T.blue, fontSize:13.5, fontWeight:700, fontFamily:"inherit",
-              padding:"7px 16px"}}>
-            {expand===0 ? "mehr …" : expand===1 ? "noch mehr …" : "▲ weniger anzeigen"}
-          </button>
-        </div>
-      )}
-
       <div style={{flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch",
         padding:"12px 16px 24px", display:"flex", flexDirection:"column",
         gap: kidsMode ? 22 : 10}}>
@@ -113,27 +103,35 @@ function FeatureTourScreen({ onClose, onBack, mobileMode=false }) {
               </div>
             </div>
           );
-        }) : FEATURE_TOUR.map((f, i) => (
-          <div key={i} style={{background:T.surf, border:`1px solid ${T.bd}`, borderRadius:14,
-            padding:"14px 14px"}}>
-            <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:8}}>
-              <div style={{width:36, height:36, borderRadius:10, flexShrink:0,
-                background:`${T.blue}1f`, display:"flex", alignItems:"center", justifyContent:"center"}}>
-                {Li(f.icon, 18, T.blue)}
+        }) : FEATURE_TOUR.map((f, i) => {
+          const lvl = expandLevels[i] || 0;
+          return (
+            <div key={i} style={{background:T.surf, border:`1px solid ${T.bd}`, borderRadius:14,
+              padding:"14px 14px"}}>
+              <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:8}}>
+                <div style={{width:36, height:36, borderRadius:10, flexShrink:0,
+                  background:`${T.blue}1f`, display:"flex", alignItems:"center", justifyContent:"center"}}>
+                  {Li(f.icon, 18, T.blue)}
+                </div>
+                <div style={{color:T.txt, fontSize:16, fontWeight:700}}>{f.title}</div>
               </div>
-              <div style={{color:T.txt, fontSize:16, fontWeight:700}}>{f.title}</div>
+              <div style={{color:T.txt2, fontSize:14, lineHeight:1.5}}>{f.eli20}</div>
+              {lvl>=1 && (
+                <div style={{color:T.txt2, fontSize:13.5, lineHeight:1.5, marginTop:10,
+                  paddingTop:10, borderTop:`1px solid ${T.bd}`}}>{f.eli30}</div>
+              )}
+              {lvl>=2 && (
+                <div style={{color:T.txt2, fontSize:13.5, lineHeight:1.5, marginTop:10,
+                  paddingTop:10, borderTop:`1px solid ${T.bd}`}}>{f.eli60}</div>
+              )}
+              <button onClick={() => lvl<2 ? expandMore(i) : collapseCard(i)}
+                style={{marginTop:10, background:"transparent", border:"none", cursor:"pointer",
+                  color:T.blue, fontSize:13, fontWeight:700, fontFamily:"inherit", padding:0}}>
+                {lvl===0 ? "mehr …" : lvl===1 ? "noch mehr …" : "▲ weniger anzeigen"}
+              </button>
             </div>
-            <div style={{color:T.txt2, fontSize:14, lineHeight:1.5}}>{f.eli20}</div>
-            {expand>=1 && (
-              <div style={{color:T.txt2, fontSize:13.5, lineHeight:1.5, marginTop:10,
-                paddingTop:10, borderTop:`1px solid ${T.bd}`}}>{f.eli30}</div>
-            )}
-            {expand>=2 && (
-              <div style={{color:T.txt2, fontSize:13.5, lineHeight:1.5, marginTop:10,
-                paddingTop:10, borderTop:`1px solid ${T.bd}`}}>{f.eli60}</div>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
