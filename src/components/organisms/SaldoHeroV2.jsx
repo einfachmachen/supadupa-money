@@ -14,6 +14,7 @@ import { amtStyle } from "../../theme/amtPill.js";
 import { fmt, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { ThemeSwitcherMini } from "../molecules/ThemeSwitcherMini.jsx";
+import { kvStore } from "../../utils/kvStore.js";
 
 function SaldoHeroV2({
   year, month,
@@ -25,9 +26,15 @@ function SaldoHeroV2({
   detailsOpen, setDetailsOpen, hideDetailRows,
   showScrollFocusToggle,
 }) {
-  const { selAcc, setSelAcc, accounts, getKumulierterSaldo, txs, getCat, getSub, amtMode, setAmtMode, setShowGuidedTour, debugFlags, setDebugFlag } = useContext(AppCtx);
+  const { selAcc, setSelAcc, accounts, getKumulierterSaldo, txs, getCat, getSub, amtMode, setAmtMode, setShowFeatureTour, debugFlags, setDebugFlag } = useContext(AppCtx);
   const [progDrill, setProgDrill] = useState(null);
   const [accMenuOpen, setAccMenuOpen] = useState(false);
+  // "?"-Symbol öffnet die Feature-Tour direkt am konkreten Feature (hier im
+  // Hero) in der normalen Ansicht; das Teddy-Symbol daneben startet dieselbe
+  // Tour im Kids-Modus — beide steuern nur den gemerkten Modus, bevor der
+  // Screen geöffnet wird.
+  const openTour = (e) => { e.stopPropagation(); kvStore.setItem("mbt_tourKids", "0"); setShowFeatureTour?.(true); };
+  const openTourKids = (e) => { e.stopPropagation(); kvStore.setItem("mbt_tourKids", "1"); setShowFeatureTour?.(true); };
   // Augensymbol: nur 2 Stufen — unscharf (0) ↔ sichtbar. Sichtbar ist neutral-
   // weiß (1), solange der Detail-Block eingeklappt ist; farbig (2) nur, wenn er
   // über das Ausklapp-Chevron geöffnet wurde.
@@ -200,8 +207,13 @@ function SaldoHeroV2({
           frühere Versuch, es in die Auge-Zone zu quetschen, der den Betrag
           bei größeren Summen abgeschnitten hat). */}
       {!isEditorial && (
-        <div style={{position:"absolute",top:4,right:10,zIndex:2}}>
-          <span onClick={(e)=>{e.stopPropagation();setShowGuidedTour?.(true);}} title="Feature-Tour"
+        <div style={{position:"absolute",top:4,right:10,zIndex:2,display:"flex",alignItems:"center"}}>
+          <span onClick={openTourKids} title="Feature-Tour für Kids"
+            style={{cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,fontSize:16,
+              display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
+            🧸
+          </span>
+          <span onClick={openTour} title="Feature-Tour"
             style={{cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,
               display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
             {Li("help-circle",19,T.txt2)}
@@ -220,7 +232,12 @@ function SaldoHeroV2({
           <span style={{color:T.lbl,fontSize:9,fontWeight:800,letterSpacing:2.5}}>KONTOSTAND</span>
           {renderAccPill({menuAlign:"left"})}
           <div style={{flex:1}}/>
-          <span onClick={(e)=>{e.stopPropagation();setShowGuidedTour?.(true);}} title="Feature-Tour"
+          <span onClick={openTourKids} title="Feature-Tour für Kids"
+            style={{cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,fontSize:16,
+              display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
+            🧸
+          </span>
+          <span onClick={openTour} title="Feature-Tour"
             style={{cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,
               display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
             {Li("help-circle",19,T.txt2)}

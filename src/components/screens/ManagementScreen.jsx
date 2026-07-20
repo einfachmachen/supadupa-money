@@ -34,7 +34,7 @@ function ManagementScreen({activeTab="kategorien"}) {
     budgets={}, setBudgets,
     onTS,onTE, globalDrag,
     setShowCsv, setShowBankWizard, setShowDataMgr, setShowCloudSetup, setShowFuelAnalysis,
-    setShowFeatureTour, setShowMatching,
+    setShowMatching,
     setShowMobileKategorien,
   } = useContext(AppCtx);
   const [mergeTarget, setMergeTarget] = useState(null);
@@ -252,7 +252,10 @@ function ManagementScreen({activeTab="kategorien"}) {
               // "Suche & Summe" wurde als eigene, zu versteckte Ansicht entfernt —
               // dieselbe (globale) Suche samt Zeitraum und Summen-Anzeige lebt jetzt
               // direkt in der Monatsansicht (dort gab es schon eine Suche).
-              const tourRow     = {icon:"compass",    color:T.blue,         label:"Feature-Tour anzeigen", sub:"Kurzer Rundgang durch die App",   onClick:()=>setShowFeatureTour?.(true)};
+              // Die Feature-Tour hat hier bewusst keinen eigenen Menüpunkt mehr —
+              // sie öffnet sich nur noch über das "?"-Symbol direkt am Hero, wo
+              // die Erklärungen auch inhaltlich hingehören (Teddy-Symbol daneben
+              // für den Kids-Modus, siehe SaldoHeroV2.jsx).
               const settingsRow = {icon:"settings",   color:T.txt2,         label:"Einstellungen",         sub:"Theme, Beträge, Sicherheit …",    onClick:()=>setMgrTab("einstellungen")};
               // Erststart-Fortschritt (gleiche Herleitung wie im Dashboard,
               // rein aus vorhandenen Daten — kein eigener Flag nötig).
@@ -264,8 +267,8 @@ function ManagementScreen({activeTab="kategorien"}) {
               // Tankverbrauch (direkt vor Vormerkungen zuordnen) — sie bleiben
               // also erreichbar, drängen sich aber nicht mehr in den Vordergrund.
               return schnellstartDone
-                ? [bankRow, dataMgrRow, cloudRow, fuelRow, kontenRow, budgetRow, csvRow, matchingRow, tourRow, settingsRow]
-                : [kontenRow, budgetRow, csvRow, bankRow, dataMgrRow, cloudRow, fuelRow, matchingRow, tourRow, settingsRow];
+                ? [bankRow, dataMgrRow, cloudRow, fuelRow, kontenRow, budgetRow, csvRow, matchingRow, settingsRow]
+                : [kontenRow, budgetRow, csvRow, bankRow, dataMgrRow, cloudRow, fuelRow, matchingRow, settingsRow];
             })().map((it,i)=>(
               <button key={i} onClick={it.onClick} data-tour={it.tourId}
                 style={{display:"flex",alignItems:"center",gap:12,width:"100%",textAlign:"left",
