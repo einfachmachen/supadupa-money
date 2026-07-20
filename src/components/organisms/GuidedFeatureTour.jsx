@@ -34,6 +34,12 @@ import { GUIDED_TOUR_STAGES } from "../../content/guidedTourStages.js";
 const POLL_MS = 60;
 const POLL_TIMEOUT_MS = 1500;
 
+// Bunte Comic-Palette für den Kids-Modus — bewusst feste, kräftige Farben
+// statt Theme-Tokens: die Kids-Ansicht soll wie ein Comicheft wirken,
+// unabhängig vom gerade aktiven (ggf. gedeckten) Farbschema. Dieselbe
+// Palette wie zuvor in der (inzwischen entfernten) statischen FeatureTour.
+const COMIC_COLORS = ["#FF6B6B", "#FFA94D", "#FFD43B", "#69DB7C", "#3BC9DB", "#4DABF7", "#B197FC", "#F783AC"];
+
 function GuidedFeatureTour({ onClose, initialStage=0 }) {
   const { setMainTab, setSubTab, setActiveStructurTab } = useContext(AppCtx);
   const [stageIndex, setStageIndex] = useState(initialStage);
@@ -49,6 +55,11 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
   const stage = GUIDED_TOUR_STAGES[stageIndex];
   const step = stage.steps[stepIndex];
   const target = step.target;
+  // Fortlaufender Index über alle Stufen/Schritte hinweg — für eine stabile,
+  // aber pro Schritt wechselnde Comic-Farbe/-Neigung im Kids-Modus.
+  const flatIndex = GUIDED_TOUR_STAGES.slice(0, stageIndex).reduce((s,st)=>s+st.steps.length, 0) + stepIndex;
+  const comicColor = COMIC_COLORS[flatIndex % COMIC_COLORS.length];
+  const comicTilt = flatIndex % 2 === 0 ? -1.2 : 1.2;
   const isLastStepOfStage = stepIndex === stage.steps.length - 1;
   const isLastStage = stageIndex === GUIDED_TOUR_STAGES.length - 1;
   const isVeryLast = isLastStepOfStage && isLastStage;
@@ -182,9 +193,16 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
         }} />
       )}
 
-      {/* Callout-Karte */}
-      <div style={{ position: "fixed", ...cardStyle, background: T.surf, border: `1px solid ${T.bd}`,
-        borderRadius: 16, padding: "14px 16px", boxShadow: "0 12px 32px rgba(0,0,0,0.5)",
+      {/* Callout-Karte — im Kids-Modus leicht schräg, kräftig umrandet mit
+          Comic-Sticker-Schatten und großem Emoji-Badge (Stil wie zuvor in
+          der entfernten statischen FeatureTour), sonst die normale,
+          ruhige Karte. */}
+      <div style={{ position: "fixed", ...cardStyle,
+        transform: `${cardStyle.transform||""} rotate(${kidsMode?comicTilt:0}deg)`,
+        background: T.surf,
+        border: kidsMode ? `3px solid ${comicColor}` : `1px solid ${T.bd}`,
+        borderRadius: kidsMode ? 22 : 16, padding: "14px 16px",
+        boxShadow: kidsMode ? `4px 4px 0 ${comicColor}77, 0 12px 32px rgba(0,0,0,0.5)` : "0 12px 32px rgba(0,0,0,0.5)",
         opacity: ready ? 1 : 0, transition: "opacity 0.15s ease", maxWidth: 480, margin: "0 auto" }}>
         {/* Stufen-Reiter — jederzeit frei anwählbar, unabhängig vom Fortschritt.
             Sitzt jetzt oben IN der Karte statt als eigene fixe Leiste, damit
@@ -206,14 +224,23 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
           })}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-            background: `${T.blue}1f`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {Li(step.icon, 18, T.blue)}
-          </div>
-          <div style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 15, fontWeight: 700 }}>{step.title}</div>
+          {kidsMode ? (
+            <div style={{ width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
+              background: comicColor, display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 24, boxShadow: `0 3px 0 ${comicColor}99` }}>
+              {step.emoji || "✨"}
+            </div>
+          ) : (
+            <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+              background: `${T.blue}1f`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {Li(step.icon, 18, T.blue)}
+            </div>
+          )}
+          <div style={{ flex: 1, minWidth: 0, color: T.txt,
+            fontSize: kidsMode ? 17 : 15, fontWeight: kidsMode ? 800 : 700 }}>{step.title}</div>
           <button onClick={toggleKids}
             title={kidsMode ? "Zur normalen Ansicht" : "Für Kids"}
-            style={{ background: kidsMode ? `${T.blue}33` : "transparent", border: "none",
+            style={{ background: kidsMode ? `${comicColor}33` : "transparent", border: "none",
               cursor: "pointer", padding: 4, borderRadius: 8, fontSize: 16,
               display: "inline-flex", alignItems: "center", flexShrink: 0 }}>
             🧸
@@ -226,7 +253,7 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
         </div>
 
         {kidsMode ? (
-          <div style={{ color: T.txt, fontSize: 13.5, lineHeight: 1.5, marginBottom: 12 }}>
+          <div style={{ color: T.txt, fontSize: 15.5, lineHeight: 1.55, fontWeight: 500, marginBottom: 12 }}>
             {step.eli10}
           </div>
         ) : (
@@ -263,8 +290,8 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
           )}
           <button onClick={goNext}
             style={{ padding: "8px 16px", borderRadius: 10, border: "none",
-              background: T.blue, color: T.on_accent || "#fff", fontSize: 13, fontWeight: 700,
-              cursor: "pointer", fontFamily: "inherit" }}>
+              background: kidsMode ? comicColor : T.blue, color: kidsMode ? "#1A1A1A" : (T.on_accent || "#fff"),
+              fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
             {isVeryLast ? "Fertig ✓" : isLastStepOfStage ? "Nächste Stufe →" : "Weiter"}
           </button>
         </div>

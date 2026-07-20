@@ -263,6 +263,21 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   // Extrahierte Aktualisierungs-Logik — nutzbar von Button UND autoAnpassen
   const doAktualisieren = (rows, seriesId, tgtSeriesId, sparDesc) => {
     const sparMonate = rows.filter(r=>r.zusaetzlich>0);
+    // Monatsschlüssel (Jahr*12+Monat) der bisher vorhandenen Raten dieser
+    // Serie merken, BEVOR sie entfernt werden — eine vom Nutzer manuell
+    // gelöschte einzelne Rate innerhalb der bisher abgedeckten Spanne soll
+    // beim Neuberechnen nicht stillschweigend wieder auftauchen. Nur echte
+    // NEUE Monate (jenseits der bisherigen Spanne, z.B. weil der Plan
+    // verlängert wurde) werden neu angelegt.
+    const oldPendingOfSeries = txs.filter(t=>(t._seriesId===seriesId||t._seriesId===tgtSeriesId)&&t.pending);
+    const existingKeys = new Set(oldPendingOfSeries.map(t=>{ const d=new Date(t.date); return d.getFullYear()*12+d.getMonth(); }));
+    const maxExistingKey = existingKeys.size ? Math.max(...existingKeys) : -Infinity;
+    const keptMonate = sparMonate.filter(row=>{
+      const key = row.y*12+row.m;
+      // Innerhalb der bisherigen Spanne, aber keine vorhandene Rate mehr →
+      // wurde bewusst gelöscht, nicht wieder anlegen.
+      return !(key <= maxExistingKey && !existingKeys.has(key));
+    });
     setTxs(p=>{
       // Nur PENDING Buchungen der alten Serie entfernen — echte (bereits gebuchte) bleiben
       const ohne = p.filter(t=>{
@@ -270,8 +285,8 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
         if(!t.pending) return true; // bereits gebucht — behalten
         return false; // pending — entfernen
       });
-      if(!sparMonate.length) return ohne;
-      const newTxs = sparMonate.flatMap((row,i)=>{
+      if(!keptMonate.length) return ohne;
+      const newTxs = keptMonate.flatMap((row,i)=>{
         const pad2 = n=>String(n).padStart(2,"0");
         const lastDay = new Date(row.y, row.m+1, 0).getDate();
         const date = `${row.y}-${pad2(row.m+1)}-${pad2(lastDay)}`;
@@ -280,7 +295,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
           id:"pend-"+uid(), date, desc:sparDesc,
           totalAmount:amount, pending:true, _csvType:"expense",
           accountId:"acc-giro",
-          _seriesId:seriesId, _seriesIdx:i+1, _seriesTotal:sparMonate.length,
+          _seriesId:seriesId, _seriesIdx:i+1, _seriesTotal:keptMonate.length,
           splits:sparCatId?[{id:uid(),catId:sparCatId,subId:sparSubId||"",amount}]
                           :[{id:uid(),catId:"",subId:"",amount}],
         };
@@ -290,7 +305,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
           totalAmount:row.zusaetzlich, pending:true, _csvType:"income",
           accountId:sparAccId,
           _linkedTo:abgang.id,
-          _seriesId:tgtSeriesId, _seriesIdx:i+1, _seriesTotal:sparMonate.length,
+          _seriesId:tgtSeriesId, _seriesIdx:i+1, _seriesTotal:keptMonate.length,
           splits:sparTgtCatId?[{id:uid(),catId:sparTgtCatId,subId:sparTgtSubId||"",amount:row.zusaetzlich}]
                              :[{id:uid(),catId:"",subId:"",amount:row.zusaetzlich}],
         };
@@ -298,7 +313,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
       });
       return [...ohne, ...newTxs];
     });
-    return sparMonate.length;
+    return keptMonate.length;
   };
 
   const berechnen = (onDone, accOverride) => {

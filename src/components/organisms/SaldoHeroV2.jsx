@@ -30,11 +30,10 @@ function SaldoHeroV2({
   const [progDrill, setProgDrill] = useState(null);
   const [accMenuOpen, setAccMenuOpen] = useState(false);
   // "?"-Symbol öffnet die interaktive, hervorhebende Tour (GuidedFeatureTour)
-  // direkt am konkreten Feature (Spotlight); das Teddy-Symbol daneben startet
-  // dieselbe Tour im Kids-Modus — beide steuern nur den gemerkten Modus,
-  // bevor der Screen geöffnet wird.
+  // direkt am konkreten Feature (Spotlight), immer im normalen (nicht Kids-)
+  // Modus — den Kids-Modus schaltet man bei Bedarf über das Teddy-Symbol IN
+  // der Tour-Karte selbst um (siehe GuidedFeatureTour.jsx).
   const openTour = (e) => { e.stopPropagation(); kvStore.setItem("mbt_tourKids", "0"); setShowGuidedTour?.(true); };
-  const openTourKids = (e) => { e.stopPropagation(); kvStore.setItem("mbt_tourKids", "1"); setShowGuidedTour?.(true); };
   // Augensymbol: nur 2 Stufen — unscharf (0) ↔ sichtbar. Sichtbar ist neutral-
   // weiß (1), solange der Detail-Block eingeklappt ist; farbig (2) nur, wenn er
   // über das Ausklapp-Chevron geöffnet wurde.
@@ -194,29 +193,17 @@ function SaldoHeroV2({
     <div style={{
       padding: `5px ${framePad}px 6px`,
       position:"relative"}}>
-      {/* Freier Bereich links oben: minimaler Theme-Umschalter (im Editorial-
-          Layout sitzt er stattdessen inline in der Kicker-Zeile). */}
+      {/* Freier Bereich links oben: minimaler Theme-Umschalter, direkt darunter
+          das Feature-Tour-Symbol (im Editorial-Layout sitzt beides stattdessen
+          inline in der Kicker-Zeile). */}
       {!isEditorial && (
-        <div data-tour="theme-switcher" style={{position:"absolute",top:8,left:14,zIndex:2}}>
-          <ThemeSwitcherMini/>
-        </div>
-      )}
-      {/* Feature-Tour-Symbol: spiegelbildlich zum Theme-Umschalter (oben
-          rechts statt oben links) — rein absolut positioniert, kostet also
-          KEINE Breite von der zentrierten Betrags-Zeile (anders als der
-          frühere Versuch, es in die Auge-Zone zu quetschen, der den Betrag
-          bei größeren Summen abgeschnitten hat). */}
-      {!isEditorial && (
-        <div style={{position:"absolute",top:4,right:10,zIndex:2,display:"flex",alignItems:"center"}}>
-          <span onClick={openTourKids} title="Feature-Tour für Kids"
-            style={{cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,fontSize:16,
-              display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
-            🧸
-          </span>
+        <div style={{position:"absolute",top:8,left:14,zIndex:2,
+          display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+          <div data-tour="theme-switcher"><ThemeSwitcherMini/></div>
           <span onClick={openTour} title="Feature-Tour"
-            style={{cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,
+            style={{cursor:"pointer",userSelect:"none",width:22,height:22,
               display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
-            {Li("help-circle",19,T.txt2)}
+            {Li("help-circle",17,T.txt2)}
           </span>
         </div>
       )}
@@ -229,19 +216,14 @@ function SaldoHeroV2({
             Handler/Zustände wie das Standard-Layout — nur anders angeordnet. */}
         <div style={{display:"flex",alignItems:"center",gap:8,padding:"2px 0 0",userSelect:"none"}}>
           <span data-tour="theme-switcher"><ThemeSwitcherMini/></span>
+          <span onClick={openTour} title="Feature-Tour"
+            style={{cursor:"pointer",userSelect:"none",width:22,height:22,
+              display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
+            {Li("help-circle",17,T.txt2)}
+          </span>
           <span style={{color:T.lbl,fontSize:9,fontWeight:800,letterSpacing:2.5}}>KONTOSTAND</span>
           {renderAccPill({menuAlign:"left"})}
           <div style={{flex:1}}/>
-          <span onClick={openTourKids} title="Feature-Tour für Kids"
-            style={{cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,fontSize:16,
-              display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
-            🧸
-          </span>
-          <span onClick={openTour} title="Feature-Tour"
-            style={{cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,
-              display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
-            {Li("help-circle",19,T.txt2)}
-          </span>
           <span onClick={toggleEye} title="Beträge ein-/ausblenden"
             style={{cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,
               display:"inline-flex",alignItems:"center",justifyContent:"center"}}>

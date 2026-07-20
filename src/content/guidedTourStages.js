@@ -21,6 +21,7 @@ const GUIDED_TOUR_STAGES = [
     steps: [
       {
         icon: "wallet",
+        emoji: "🐷",
         title: "Kontostand & Prognose",
         eli10: "Oben siehst du dein Sparschwein-Guthaben — und die App verrät dir schon heute, wie voll es Mitte und Ende des Monats sein wird. Kein Rechnen nötig!",
         eli20: "Der große Betrag oben ist dein aktueller Kontostand. MITTE und ENDE zeigen dir, wo du am 14. und am Monatsende ungefähr stehst — inklusive geplanter Zahlungen, die noch kommen.",
@@ -30,6 +31,7 @@ const GUIDED_TOUR_STAGES = [
       },
       {
         icon: "credit-card",
+        emoji: "💳",
         title: "Konten einrichten",
         eli10: "Zuerst richtest du deine Konten ein — z.B. dein Girokonto, wo dein Taschengeld ankommt. Tippe hier, um eins anzulegen oder zu bearbeiten.",
         eli20: "Erster Schritt: Konten anlegen (Girokonto, ggf. Tagesgeld/Sparkonto). Reihenfolge und ein Mindestpuffer je Konto lassen sich hier auch einstellen.",
@@ -39,6 +41,7 @@ const GUIDED_TOUR_STAGES = [
       },
       {
         icon: "layers",
+        emoji: "🎯",
         title: "Kategorien & Budgets",
         eli10: "Jede Ausgabe bekommt eine Kategorie und ein Symbol — so siehst du auf einen Blick, wofür dein Geld drauf geht. Du kannst auch ein Limit setzen, z.B. „höchstens 20€ für Süßigkeiten“.",
         eli20: "Hier legst du Kategorien an/passt sie an und setzt optional Budgets je Kategorie — ein Limit pro Monat, bei dessen Überschreitung die App dich warnt.",
@@ -48,6 +51,7 @@ const GUIDED_TOUR_STAGES = [
       },
       {
         icon: "download",
+        emoji: "📥",
         title: "Buchungen importieren",
         eli10: "Statt jede Buchung einzeln einzutippen, kannst du eine Datei aus deiner Banking-App importieren — die App sortiert vieles automatisch in die richtigen Kategorien ein.",
         eli20: "Der CSV-Import holt deine Buchungen aus dem Online-Banking auf einmal rein und schlägt automatisch Kategorien vor. Vorgemerkte Zahlungen erkennt er dabei auch automatisch wieder.",
@@ -57,6 +61,7 @@ const GUIDED_TOUR_STAGES = [
       },
       {
         icon: "clock",
+        emoji: "⏰",
         title: "Vormerkungen anlegen",
         eli10: "Weißt du schon heute, dass am Monatsanfang die Miete abgeht? Das kannst du vormerken — einmalig, jeden Monat wiederkehrend, oder als Finanzierung (z.B. Ratenkauf). Tippe auf das große Plus, um loszulegen.",
         eli20: "Über den großen Plus-Knopf legst du Vormerkungen an: einmalige, wiederkehrende (z.B. Miete jeden Monat) oder Finanzierungen (z.B. Raten mit fester Laufzeit) — sie fließen sofort in die Prognose ein.",
@@ -66,6 +71,7 @@ const GUIDED_TOUR_STAGES = [
       },
       {
         icon: "link",
+        emoji: "🧩",
         title: "Vormerkung ↔ Buchung zuordnen",
         eli10: "Wenn die echte Zahlung dann passiert, verknüpft die App das oft automatisch. Klappt es nicht von allein, schlägt dir der Bearbeiten-Dialog einer Vormerkung passende Buchungen direkt zum Antippen vor.",
         eli20: "Öffnest du eine Vormerkung zum Bearbeiten, schlägt dir die App dort passende Buchungen zum Verknüpfen vor (nach Betrag/Datum sortiert) — ein Tipp genügt zum Zuordnen.",
@@ -75,6 +81,7 @@ const GUIDED_TOUR_STAGES = [
       },
       {
         icon: "shield-check",
+        emoji: "🚨",
         title: "Warnungen",
         eli10: "Falls dein Konto mal knapp wird, sagt dir die App rechtzeitig Bescheid — mit einer Warnung, bevor es wirklich passiert.",
         eli20: "Unter „Details anzeigen“ findest du eine Warnungen-Kachel: Sie meldet sich, wenn dein Kontostand unter den eingestellten Mindestpuffer zu fallen droht — inklusive Folgemonate.",
@@ -90,6 +97,7 @@ const GUIDED_TOUR_STAGES = [
     steps: [
       {
         icon: "piggy-bank",
+        emoji: "💰",
         title: "Sparen & Tagesgeld",
         eli10: "Für Sparziele gibt's ein eigenes Sparschwein-Symbol — hier kannst du festlegen, dass automatisch etwas Geld vom Girokonto ins Sparkonto wandert.",
         eli20: "Unter „Details anzeigen“ versteckt sich das Sparschwein-Symbol: dort richtest du einen Sparplan ein, der monatlich einen festen Betrag vom Giro- aufs Tagesgeldkonto verschiebt (und kannst ihn jederzeit anpassen).",
@@ -99,6 +107,7 @@ const GUIDED_TOUR_STAGES = [
       },
       {
         icon: "palette",
+        emoji: "🎪",
         title: "Themes & Personalisierung",
         eli10: "Du kannst der App ein komplett neues Aussehen geben — Weltraum, Zirkus, Abenteuer im Wald, und noch viele mehr. Es gibt sogar eine Diashow!",
         eli20: "Über die bunten Punkte oben links wechselst Du das Farbschema — von dezent bis richtig verspielt. Eine Diashow schaltet automatisch jede Sekunde weiter.",
@@ -114,6 +123,7 @@ const GUIDED_TOUR_STAGES = [
     steps: [
       {
         icon: "cloud",
+        emoji: "☁️",
         title: "Cloud-Synchronisierung",
         eli10: "Wenn du magst, kann die App eine Kopie deiner Daten sicher im Internet ablegen, damit du auf mehreren Geräten dasselbe siehst. Das ist ein eigener, geführter Assistent — hier geht's los.",
         eli20: "Optionaler Cloud-Sync (eigene Cloudflare-Worker-Instanz) hält Daten geräteübergreifend aktuell. Ein eigener Einrichtungsassistent führt Schritt für Schritt durch — ganz ohne Cloud-Sync läuft die App genauso gut, nur lokal.",
@@ -123,6 +133,7 @@ const GUIDED_TOUR_STAGES = [
       },
       {
         icon: "landmark",
+        emoji: "🏦",
         title: "Bank-Anbindung",
         eli10: "Die App kann sich (mit deiner Erlaubnis) direkt bei der Bank die neuesten Buchungen holen. Auch das ist ein eigener, geführter Assistent.",
         eli20: "Die Bank-Anbindung (Enable Banking) hat ihren eigenen Einrichtungsassistenten, der Schritt für Schritt durch Anmeldung und Konto-Zuordnung führt.",
@@ -132,6 +143,7 @@ const GUIDED_TOUR_STAGES = [
       },
       {
         icon: "shield",
+        emoji: "🛡️",
         title: "Offline & Datenschutz",
         eli10: "Die App funktioniert auch ganz ohne Internet — sogar tief im Wald oder auf dem Schiff. Deine Daten liegen erstmal nur auf deinem eigenen Gerät.",
         eli20: "Alle Berechnungen laufen direkt auf Deinem Handy, komplett offline nutzbar. Standardmäßig gehört niemand sonst zu Deinen Finanzdaten dazu.",
