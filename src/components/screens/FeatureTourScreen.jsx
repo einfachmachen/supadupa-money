@@ -1,6 +1,10 @@
-// Feature-Tour: kurzer Rundgang durch alle Kernfunktionen der App, wahlweise
-// in vier Erklär-Ebenen (Für Kids / Einsteiger / Profi / Erfahren) — Text
-// kommt komplett aus content/featureTour.js, dieser Screen ist reine Anzeige.
+// Feature-Tour: kurzer Rundgang durch alle Kernfunktionen der App. Standard-
+// Ansicht ist die Einsteiger-Erklärung je Karte, die sich per "mehr …"/"noch
+// mehr …" um die Profi- bzw. Erfahren-Ebene ergänzen lässt (statt vorher drei
+// separat anwählbaren Ebenen, die unerfahrene Nutzer eher verwirrt haben).
+// Die "Für Kids"-Ebene ist bewusst kein Teil dieser Eskalation, sondern ein
+// eigener Modus — per Teddy-Symbol im Header umschaltbar. Text kommt komplett
+// aus content/featureTour.js, dieser Screen ist reine Anzeige.
 
 import React, { useContext, useEffect, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
@@ -8,7 +12,7 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
-import { FEATURE_TOUR, FEATURE_TOUR_LEVELS } from "../../content/featureTour.js";
+import { FEATURE_TOUR } from "../../content/featureTour.js";
 
 // Bunte Comic-Palette für die "Für Kids"-Ebene — bewusst feste, kräftige
 // Farben statt Theme-Tokens: die Kids-Ansicht soll wie ein Comicheft wirken,
@@ -17,11 +21,22 @@ const COMIC_COLORS = ["#FF6B6B", "#FFA94D", "#FFD43B", "#69DB7C", "#3BC9DB", "#4
 
 function FeatureTourScreen({ onClose, onBack, mobileMode=false }) {
   const { setMasterOverride } = useContext(AppCtx);
-  const [level, setLevel] = useState(() => kvStore.getItem("mbt_tourLevel") || "eli20");
+  const [kidsMode, setKidsMode] = useState(() => kvStore.getItem("mbt_tourKids") === "1");
+  const [expand, setExpand] = useState(() => Math.min(2, parseInt(kvStore.getItem("mbt_tourExpand") || "0", 10) || 0));
 
-  const pickLevel = (key) => {
-    setLevel(key);
-    kvStore.setItem("mbt_tourLevel", key);
+  const toggleKids = () => {
+    const next = !kidsMode;
+    setKidsMode(next);
+    kvStore.setItem("mbt_tourKids", next ? "1" : "0");
+  };
+  const expandMore = () => {
+    const next = Math.min(2, expand + 1);
+    setExpand(next);
+    kvStore.setItem("mbt_tourExpand", String(next));
+  };
+  const collapseAll = () => {
+    setExpand(0);
+    kvStore.setItem("mbt_tourExpand", "0");
   };
 
   // "+"-Button übernehmen — wie bei den anderen Daten-Tab-Vollbild-Screens
@@ -44,30 +59,24 @@ function FeatureTourScreen({ onClose, onBack, mobileMode=false }) {
   return (
     <div style={{position:"fixed", inset:0, background:T.bg, zIndex:15,
       display:"flex", flexDirection:"column"}}>
-      <MobileHeader title="Feature-Tour" subtitle="Kurzer Rundgang durch die App"
-        icon="compass" iconColor={T.blue} onBack={onBack} onClose={onClose}/>
-
-      <div style={{display:"flex", gap:8, padding:"12px 16px 4px", flexShrink:0,
-        overflowX:"auto", WebkitOverflowScrolling:"touch"}}>
-        {FEATURE_TOUR_LEVELS.map(lv => {
-          const active = lv.key === level;
-          return (
-            <button key={lv.key} onClick={() => pickLevel(lv.key)}
-              style={{flexShrink:0, padding:"8px 14px", borderRadius:20, cursor:"pointer",
-                fontFamily:"inherit", fontSize:14, fontWeight:700,
-                border:`1px solid ${active ? T.blue : T.bd}`,
-                background: active ? `${T.blue}22` : "transparent",
-                color: active ? T.blue : T.txt2}}>
-              {lv.label}
-            </button>
-          );
-        })}
-      </div>
+      <MobileHeader title="Feature-Tour"
+        subtitle={kidsMode ? "Für Kids 🧸" : "Kurzer Rundgang durch die App"}
+        icon="compass" iconColor={T.blue} onBack={onBack} onClose={onClose}
+        right={
+          <button onClick={toggleKids}
+            aria-label={kidsMode ? "Zur normalen Ansicht" : "Kids-Ansicht"}
+            title={kidsMode ? "Zur normalen Ansicht" : "Kids-Ansicht"}
+            style={{width:40, height:40, borderRadius:12, border:"none", cursor:"pointer",
+              background: kidsMode ? `${T.blue}33` : "rgba(255,255,255,0.08)",
+              fontSize:20, display:"flex", alignItems:"center", justifyContent:"center", padding:0}}>
+            🧸
+          </button>
+        }/>
 
       <div style={{flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch",
         padding:"12px 16px 24px", display:"flex", flexDirection:"column",
-        gap: level==="eli10" ? 22 : 10}}>
-        {level==="eli10" ? FEATURE_TOUR.map((f, i) => {
+        gap: kidsMode ? 22 : 10}}>
+        {kidsMode ? FEATURE_TOUR.map((f, i) => {
           const c = COMIC_COLORS[i % COMIC_COLORS.length];
           const tilt = i % 2 === 0 ? -1.5 : 1.5;
           return (
@@ -92,19 +101,34 @@ function FeatureTourScreen({ onClose, onBack, mobileMode=false }) {
               </div>
             </div>
           );
-        }) : FEATURE_TOUR.map((f, i) => (
-          <div key={i} style={{background:T.surf, border:`1px solid ${T.bd}`, borderRadius:14,
-            padding:"14px 14px"}}>
-            <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:8}}>
-              <div style={{width:36, height:36, borderRadius:10, flexShrink:0,
-                background:`${T.blue}1f`, display:"flex", alignItems:"center", justifyContent:"center"}}>
-                {Li(f.icon, 18, T.blue)}
+        }) : <>
+          {FEATURE_TOUR.map((f, i) => (
+            <div key={i} style={{background:T.surf, border:`1px solid ${T.bd}`, borderRadius:14,
+              padding:"14px 14px"}}>
+              <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:8}}>
+                <div style={{width:36, height:36, borderRadius:10, flexShrink:0,
+                  background:`${T.blue}1f`, display:"flex", alignItems:"center", justifyContent:"center"}}>
+                  {Li(f.icon, 18, T.blue)}
+                </div>
+                <div style={{color:T.txt, fontSize:16, fontWeight:700}}>{f.title}</div>
               </div>
-              <div style={{color:T.txt, fontSize:16, fontWeight:700}}>{f.title}</div>
+              <div style={{color:T.txt2, fontSize:14, lineHeight:1.5}}>{f.eli20}</div>
+              {expand>=1 && (
+                <div style={{color:T.txt2, fontSize:13.5, lineHeight:1.5, marginTop:10,
+                  paddingTop:10, borderTop:`1px solid ${T.bd}`}}>{f.eli30}</div>
+              )}
+              {expand>=2 && (
+                <div style={{color:T.txt2, fontSize:13.5, lineHeight:1.5, marginTop:10,
+                  paddingTop:10, borderTop:`1px solid ${T.bd}`}}>{f.eli60}</div>
+              )}
             </div>
-            <div style={{color:T.txt2, fontSize:14, lineHeight:1.5}}>{f[level]}</div>
-          </div>
-        ))}
+          ))}
+          <button onClick={expand<2 ? expandMore : collapseAll}
+            style={{alignSelf:"center", background:"transparent", border:"none", cursor:"pointer",
+              color:T.blue, fontSize:14, fontWeight:700, fontFamily:"inherit", padding:"8px 16px"}}>
+            {expand===0 ? "mehr …" : expand===1 ? "noch mehr …" : "weniger anzeigen"}
+          </button>
+        </>}
       </div>
     </div>
   );
