@@ -13,6 +13,7 @@ import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { isFuelSelection, checkOdometerPlausibility } from "../../utils/fuel.js";
 import { getAllTags } from "../../utils/search.js";
+import { recordDeletedTxs } from "../../utils/txTombstones.js";
 
 function EditPopup() {
   const { cats,setCats,groups,setGroups,txs,setTxs,accounts,setAccounts,
@@ -931,7 +932,7 @@ function EditPopup() {
             {editTx?.pending && (editTx?._seriesId || editTx?._budgetSubId) ? (<>
               <div style={{color:T.neg,fontSize:10,fontWeight:700,textAlign:"center",marginTop:4}}>Welche Vormerkungen löschen?</div>
               <div style={{display:"flex",gap:4}}>
-                <button onClick={()=>{ setTxs(p=>p.filter(x=>x.id!==editTx.id)); setEditTx(null); }}
+                <button onClick={()=>{ recordDeletedTxs(editTx.id); setTxs(p=>p.filter(x=>x.id!==editTx.id)); setEditTx(null); }}
                   style={{flex:1,padding:"8px 4px",borderRadius:10,border:`1px solid ${T.neg}44`,
                     background:`${T.neg}10`,color:T.neg,fontSize:11,fontWeight:700,
                     cursor:"pointer",fontFamily:"inherit"}}>
@@ -939,7 +940,9 @@ function EditPopup() {
                 </button>
                 <button onClick={()=>{
                   const sid=editTx._seriesId, bid=editTx._budgetSubId, thisDate=editTx.date;
-                  setTxs(p=>p.filter(t=>!((sid?t._seriesId===sid:t._budgetSubId===bid) && t.pending && t.date>=thisDate)));
+                  const match = t=>((sid?t._seriesId===sid:t._budgetSubId===bid) && t.pending && t.date>=thisDate);
+                  recordDeletedTxs(txs.filter(match).map(t=>t.id));
+                  setTxs(p=>p.filter(t=>!match(t)));
                   setEditTx(null);
                 }} style={{flex:1,padding:"8px 4px",borderRadius:10,border:`1px solid ${T.neg}44`,
                     background:`${T.neg}10`,color:T.neg,fontSize:11,fontWeight:700,
@@ -948,7 +951,9 @@ function EditPopup() {
                 </button>
                 <button onClick={()=>{
                   const sid=editTx._seriesId, bid=editTx._budgetSubId;
-                  setTxs(p=>p.filter(t=>sid ? t._seriesId!==sid : !(t._budgetSubId===bid&&t.pending)));
+                  const match = t=>(sid ? t._seriesId===sid : (t._budgetSubId===bid&&t.pending));
+                  recordDeletedTxs(txs.filter(match).map(t=>t.id));
+                  setTxs(p=>p.filter(t=>!match(t)));
                   setEditTx(null);
                 }} style={{flex:1,padding:"8px 4px",borderRadius:10,border:`1px solid ${T.neg}44`,
                     background:`${T.neg}18`,color:T.neg,fontSize:11,fontWeight:700,

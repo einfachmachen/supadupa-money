@@ -18,6 +18,7 @@ import { groupBudgetPairs, budgetOpenRestFor } from "../../utils/budgets.js";
 import { dayOf, drillSort, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
+import { recordDeletedTxs } from "../../utils/txTombstones.js";
 import { txFingerprint, isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
 import { saldoAt, budgetPlaceholderActive } from "../../utils/saldo.js";
 import { pendingDebitDate } from "../../utils/date.js";
@@ -907,6 +908,7 @@ function DashboardScreenV2() {
                 });
                 sorted.slice(1).forEach(t=>toDelete.add(t.id));
               });
+              recordDeletedTxs([...toDelete]);
               setTxs(p=>p.filter(t=>!toDelete.has(t.id)));
               setShowDupDetail(false);
             }} style={{background:T.neg,border:"none",borderRadius:9,padding:"7px 14px",

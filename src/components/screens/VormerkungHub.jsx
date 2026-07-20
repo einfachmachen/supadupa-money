@@ -16,6 +16,7 @@ import { isoAddMonths, nextBankWorkday, calcRecurringCount } from "../../utils/d
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { isFuelSelection, checkOdometerPlausibility } from "../../utils/fuel.js";
+import { recordDeletedTxs } from "../../utils/txTombstones.js";
 
 function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}) {
   const { cats, groups, txs, setTxs, accounts, vehicles, setVehicles, year, month, getCat, getSub, setMasterOverride } = useContext(AppCtx);
@@ -683,16 +684,19 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
     const seriesId = editVorm._seriesId;
     if(!seriesId || editScope==="single") {
       if(!window.confirm("Diese Vormerkung löschen?")) return;
+      recordDeletedTxs(editVorm.id);
       setTxs(p=>p.filter(t=>t.id!==editVorm.id));
     } else if(editScope==="from") {
       if(!window.confirm("Diese und alle folgenden Vormerkungen löschen?")) return;
       setTxs(prevTxs=>{
         const seriesTxs=prevTxs.filter(t=>t._seriesId===seriesId).sort((a,b)=>a.date.localeCompare(b.date));
         const toDelete=new Set(seriesTxs.filter(t=>t.date>=scopeFrom).map(t=>t.id));
+        recordDeletedTxs([...toDelete]);
         return prevTxs.filter(t=>!toDelete.has(t.id));
       });
     } else {
       if(!window.confirm("Alle Vormerkungen dieser Serie löschen?")) return;
+      recordDeletedTxs(txs.filter(t=>t._seriesId===seriesId).map(t=>t.id));
       setTxs(p=>p.filter(t=>t._seriesId!==seriesId));
     }
     onClose();

@@ -85,6 +85,7 @@ import { encryptJSON, decryptJSON, isEncrypted, freshSaltB64 } from "./utils/syn
 import { exportEbForSync, importEbFromSync } from "./utils/enableBankingStore.js";
 import { saldoAt, saldoEnde, saldoMitte } from "./utils/saldo.js";
 import { getSyncBadgeState } from "./utils/syncBadge.js";
+import { recordDeletedTxs, filterTombstonedTxs } from "./utils/txTombstones.js";
 
 export default function SupaDupaMoney() {
   const [mainTab,       setMainTab]      = useState("erfassen"); // erfassen|struktur|mehr
@@ -483,20 +484,17 @@ export default function SupaDupaMoney() {
     const saltB64 = syncPass ? freshSaltB64() : null;
     const wrap = (obj) => syncPass ? encryptJSON(obj, syncPass, {salt:saltB64}) : Promise.resolve(obj);
 
-    // Delta-Sync: Config nur wenn geändert
-    const configStr = JSON.stringify(configOnly);
-    const configHash = configStr.length + "|" + configStr.slice(0,100);
-    let configWrites = 0;
-    if(configHash !== savedConfigHashRef.current) {
-      const body = await wrap({...configOnly, saved_at:Date.now()});
-      await fetch(`${base}/config`, {method:"PUT", headers,
-        body:JSON.stringify(body)
-      }).then(r=>{if(!r.ok)throw new Error(`CF config: ${r.status}`);});
-      savedConfigHashRef.current = configHash;
-      configWrites = 1;
-    }
-
-    // Delta-Sync: nur geänderte Jahre schreiben
+    // Reihenfolge bewusst: erst die Buchungs-Jahre schreiben, Config zuletzt.
+    // cfSave() macht mehrere unabhängige PUT-Requests — schlägt einer davon
+    // fehl (Netz-Hänger), bricht die Funktion mit einer Exception ab. Würde
+    // Config ZUERST geschrieben, stünde auf dem Server danach ein neuer
+    // saved_at-Zeitstempel, obwohl die Buchungsdaten für das fehlgeschlagene
+    // Jahr noch den alten Stand zeigen — die App hielte den Cloud-Stand beim
+    // nächsten Start fälschlich für vollständig synchron und "neuer", ein
+    // bestätigtes Nachladen würde dann bereits gelöschte Buchungen aus dem
+    // veralteten Jahres-Datensatz wieder aufleben lassen. Erst wenn ALLE
+    // Jahres-Schreibvorgänge durch sind, ist der Stand auch wirklich
+    // vollständig — erst dann darf Config (und damit saved_at) folgen.
     let txWrites = 0;
     for(const [y,arr] of Object.entries(byYear)) {
       const hash = arr.length + "|" + arr.map(t=>t.id).sort().join(",").slice(0,200);
@@ -508,6 +506,22 @@ export default function SupaDupaMoney() {
         savedYearHashRef.current[y] = hash;
         txWrites++;
       }
+    }
+
+    // Delta-Sync: Config nur wenn geändert — saved_at kommt 1:1 vom Aufrufer
+    // (payload.saved_at), damit der lokale Sync-Anker (setCfSyncedAt) exakt
+    // denselben Zeitstempel trägt wie das, was gerade tatsächlich auf dem
+    // Server steht.
+    const configStr = JSON.stringify(configOnly);
+    const configHash = configStr.length + "|" + configStr.slice(0,100);
+    let configWrites = 0;
+    if(configHash !== savedConfigHashRef.current) {
+      const body = await wrap({...configOnly, saved_at: configOnly.saved_at||Date.now()});
+      await fetch(`${base}/config`, {method:"PUT", headers,
+        body:JSON.stringify(body)
+      }).then(r=>{if(!r.ok)throw new Error(`CF config: ${r.status}`);});
+      savedConfigHashRef.current = configHash;
+      configWrites = 1;
     }
     console.log(`CF Delta-Sync: ${configWrites} config + ${txWrites} Jahre (von ${Object.keys(byYear).length})`);
   };
@@ -1017,8 +1031,13 @@ export default function SupaDupaMoney() {
       setCats((d.cats||[]).map(c=>({...c,subs:Array.isArray(c.subs)?c.subs:[],icon:c.icon||"tag",color:c.color||T.blue})));
     if(force || (Array.isArray(d.groups) && d.groups.length))
       setGroups(d.groups||[]);
-    if(force || (Array.isArray(d.txs) && d.txs.length))
-      setTxs(migrateBudgetDates(migrateRecurringOvershoot(stripBudgetSeries(migrateSeries((d.txs||[]).map(t=>({...t,splits:Array.isArray(t.splits)?t.splits:[]})))))));
+    if(force || (Array.isArray(d.txs) && d.txs.length)) {
+      // Vor dem Übernehmen lokal längst gelöschte Buchungen ausfiltern —
+      // sonst kann ein (teilweise fehlgeschlagener oder veralteter) Cloud-
+      // Snapshot eine Löschung rückgängig machen, siehe utils/txTombstones.js.
+      const incomingTxs = filterTombstonedTxs(d.txs||[], d.saved_at);
+      setTxs(migrateBudgetDates(migrateRecurringOvershoot(stripBudgetSeries(migrateSeries(incomingTxs.map(t=>({...t,splits:Array.isArray(t.splits)?t.splits:[]})))))));
+    }
     if(force || (Array.isArray(d.accounts) && d.accounts.length)) {
       // Migration: alten Puffer ins Giro-Konto übernehmen
       const oldPuffer = parseInt(kvStore.getItem("mbt_tagesgeld_puffer")||"0");
@@ -2540,7 +2559,7 @@ Abbrechen = ${remoteName}-Stand laden`
     setEditTx(null);
   };
 
-  const deleteFromEdit = () => { if(!window.confirm("Diese Buchung wirklich löschen?")) return; setTxs(p=>p.filter(x=>x.id!==editTx.id)); setEditTx(null); };
+  const deleteFromEdit = () => { if(!window.confirm("Diese Buchung wirklich löschen?")) return; recordDeletedTxs(editTx.id); setTxs(p=>p.filter(x=>x.id!==editTx.id)); setEditTx(null); };
   const updEditSplit = (sid,f,v) => setEditTx(p=>({...p, splits:p.splits.map(s=>s.id===sid?{...s,[f]:v,...(f==="catId"?{subId:""}:{})}:s)}));
 
   const buildRows = (cs, gs=groups) => {
