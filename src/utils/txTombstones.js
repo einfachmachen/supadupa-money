@@ -10,14 +10,22 @@
 // Buchungs-Datensatz zurück. Genauso kann ein zweites Gerät/Tab mit
 // veraltetem lokalem Stand eine bereits gelöschte Buchung erneut hochladen.
 //
-// Fix: jede lokale Löschung wird hier mit Zeitstempel gemerkt (rein lokal,
-// kvStore/IndexedDB — kein eigener Cloud-Sync nötig). applyData() filtert
-// beim Übernehmen von Cloud-/Lokal-Daten Buchungen heraus, die NACH dem
-// Snapshot-Zeitstempel (saved_at) des geladenen Datensatzes gelöscht wurden
-// — der Snapshot ist dann nachweislich älter als unsere Löschung. Taucht
-// eine ID dagegen in einem NEUEREN Snapshot wieder auf, wurde sie
+// Fix: jede lokale Löschung wird hier mit Zeitstempel gemerkt. applyData()
+// filtert beim Übernehmen von Cloud-/Lokal-Daten Buchungen heraus, die NACH
+// dem Snapshot-Zeitstempel (saved_at) des geladenen Datensatzes gelöscht
+// wurden — der Snapshot ist dann nachweislich älter als unsere Löschung.
+// Taucht eine ID dagegen in einem NEUEREN Snapshot wieder auf, wurde sie
 // offenbar bewusst neu angelegt — dann gewinnt der Snapshot und der
 // Tombstone wird verworfen.
+//
+// Zweites Gerät (z.B. Mac löscht, iPhone hat die Buchung noch lokal):
+// dieses Gerät kennt die Löschung nicht und kann sie beim eigenen nächsten
+// Push versehentlich wieder hochladen. Deshalb werden Tombstones auch als
+// Teil des Config-Payloads mitsynchronisiert (getTombstonesForSync/
+// mergeRemoteTombstones) — jedes Gerät lernt beim nächsten Cloud-Kontakt
+// (auch ohne expliziten "Cloud laden"-Klick) die Löschungen der anderen
+// Geräte und bereinigt seinen eigenen lokalen Stand entsprechend, BEVOR es
+// wieder etwas hochlädt.
 import { kvStore } from "./kvStore.js";
 
 const KEY = "mbt_tx_tombstones";
@@ -66,4 +74,30 @@ export function filterTombstonedTxs(txs, snapshotTs) {
   });
   if(mapChanged) writeAll(map);
   return out;
+}
+
+// Für den Cloud-Sync: alle bekannten Tombstones als flaches {id: deletedAtMs},
+// zum Mitschicken im Config-Payload (siehe cfSave in App.jsx).
+export function getTombstonesForSync() {
+  const map = readAll();
+  prune(map);
+  return map;
+}
+
+// Von einem anderen Gerät mitgelieferte Tombstones lokal übernehmen (bei
+// jedem Cloud-Kontakt, nicht erst nach einem bestätigten "Cloud laden").
+// Gibt zurück, ob sich dadurch der lokale Bestand verändert hat — der
+// Aufrufer sollte dann den eigenen `txs`-State per filterTombstonedTxs(…, 0)
+// bereinigen, damit eine an anderer Stelle gelöschte Buchung nicht beim
+// nächsten eigenen Push versehentlich erneut hochgeladen wird.
+export function mergeRemoteTombstones(remoteMap) {
+  if(!remoteMap || typeof remoteMap !== "object") return false;
+  const local = readAll();
+  let changed = false;
+  Object.entries(remoteMap).forEach(([id, ts]) => {
+    if(!id || typeof ts !== "number") return;
+    if(local[id] === undefined || ts < local[id]) { local[id] = ts; changed = true; }
+  });
+  if(changed) { prune(local); writeAll(local); }
+  return changed;
 }

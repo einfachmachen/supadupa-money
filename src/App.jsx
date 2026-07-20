@@ -85,7 +85,7 @@ import { encryptJSON, decryptJSON, isEncrypted, freshSaltB64 } from "./utils/syn
 import { exportEbForSync, importEbFromSync } from "./utils/enableBankingStore.js";
 import { saldoAt, saldoEnde, saldoMitte } from "./utils/saldo.js";
 import { getSyncBadgeState } from "./utils/syncBadge.js";
-import { recordDeletedTxs, filterTombstonedTxs } from "./utils/txTombstones.js";
+import { recordDeletedTxs, filterTombstonedTxs, getTombstonesForSync, mergeRemoteTombstones } from "./utils/txTombstones.js";
 
 export default function SupaDupaMoney() {
   const [mainTab,       setMainTab]      = useState("erfassen"); // erfassen|struktur|mehr
@@ -474,6 +474,12 @@ export default function SupaDupaMoney() {
       const ct = JSON.parse(kvStore.getItem("mbt_custom_themes")||"{}");
       if(ct && Object.keys(ct).length) configOnly.customThemes = ct;
     } catch(e) {}
+    // Tombstones gelöschter Buchungen mitschicken — sonst kennt ein zweites
+    // Gerät (z.B. iPhone) eine auf dem Mac gelöschte Buchung nicht und lädt
+    // sie beim eigenen nächsten Push versehentlich wieder hoch (siehe
+    // utils/txTombstones.js).
+    const tombstones = getTombstonesForSync();
+    if(Object.keys(tombstones).length) configOnly._txTombstones = tombstones;
     const byYear = compressTxByYear(allTxs);
     const base = normCfUrl(cfUrl);
     const headers = {"Content-Type":"application/json","X-Secret":cfSecret};
@@ -1162,6 +1168,16 @@ Abbrechen = ${remoteName}-Stand laden`
           if(cfActive) {
             cfLoad().then(cdata=>{
               setCfStatus("ok");
+              // Tombstones anderer Geräte IMMER übernehmen und sofort auf den
+              // eigenen lokalen Stand anwenden — unabhängig davon, ob unten
+              // ein "Cloud hat neuere Daten"-Hinweis erscheint. Sonst würde
+              // dieses Gerät eine anderswo gelöschte Buchung beim eigenen
+              // nächsten Push wieder mit hochladen (siehe txTombstones.js).
+              if(cdata._txTombstones) {
+                const tombstonesChanged = mergeRemoteTombstones(cdata._txTombstones);
+                delete cdata._txTombstones;
+                if(tombstonesChanged) setTxs(prev => filterTombstonedTxs(prev, 0));
+              }
               const cTs = cdata.saved_at||0;
               const lastSynced = getCfSyncedAt();
               // Sync-Anker vorhanden (Normalfall): jede Abweichung vom zuletzt
@@ -1197,6 +1213,7 @@ Abbrechen = ${remoteName}-Stand laden`
         if(cfActive) {
           try {
             const cdata = await cfLoad();
+            if(cdata._txTombstones) { mergeRemoteTombstones(cdata._txTombstones); delete cdata._txTombstones; }
             if(cdata.cats?.length) {
               applyData(cdata);
               // Sofort lokal speichern damit nächster Start funktioniert
@@ -2827,6 +2844,7 @@ Abbrechen = ${remoteName}-Stand laden`
         // markieren, obwohl nichts lokal geändert wurde.
         setSyncStatus("loading");
         const d = await cfLoad();
+        if(d && d._txTombstones) { mergeRemoteTombstones(d._txTombstones); delete d._txTombstones; }
         // force=true: ALLE Felder 1:1 vom Cloud-Stand übernehmen, auch wenn
         // einzelne davon dort leer sind — der Nutzer hat den Überschreib-
         // Hinweis bereits bestätigt und erwartet danach garantiert exakt
