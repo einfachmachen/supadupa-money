@@ -26,15 +26,15 @@ function SaldoHeroV2({
   detailsOpen, setDetailsOpen, hideDetailRows,
   showScrollFocusToggle,
 }) {
-  const { selAcc, setSelAcc, accounts, getKumulierterSaldo, txs, getCat, getSub, amtMode, setAmtMode, setShowFeatureTour, debugFlags, setDebugFlag } = useContext(AppCtx);
+  const { selAcc, setSelAcc, accounts, getKumulierterSaldo, txs, getCat, getSub, amtMode, setAmtMode, setShowGuidedTour, debugFlags, setDebugFlag } = useContext(AppCtx);
   const [progDrill, setProgDrill] = useState(null);
   const [accMenuOpen, setAccMenuOpen] = useState(false);
-  // "?"-Symbol öffnet die Feature-Tour direkt am konkreten Feature (hier im
-  // Hero) in der normalen Ansicht; das Teddy-Symbol daneben startet dieselbe
-  // Tour im Kids-Modus — beide steuern nur den gemerkten Modus, bevor der
-  // Screen geöffnet wird.
-  const openTour = (e) => { e.stopPropagation(); kvStore.setItem("mbt_tourKids", "0"); setShowFeatureTour?.(true); };
-  const openTourKids = (e) => { e.stopPropagation(); kvStore.setItem("mbt_tourKids", "1"); setShowFeatureTour?.(true); };
+  // "?"-Symbol öffnet die interaktive, hervorhebende Tour (GuidedFeatureTour)
+  // direkt am konkreten Feature (Spotlight); das Teddy-Symbol daneben startet
+  // dieselbe Tour im Kids-Modus — beide steuern nur den gemerkten Modus,
+  // bevor der Screen geöffnet wird.
+  const openTour = (e) => { e.stopPropagation(); kvStore.setItem("mbt_tourKids", "0"); setShowGuidedTour?.(true); };
+  const openTourKids = (e) => { e.stopPropagation(); kvStore.setItem("mbt_tourKids", "1"); setShowGuidedTour?.(true); };
   // Augensymbol: nur 2 Stufen — unscharf (0) ↔ sichtbar. Sichtbar ist neutral-
   // weiß (1), solange der Detail-Block eingeklappt ist; farbig (2) nur, wenn er
   // über das Ausklapp-Chevron geöffnet wurde.

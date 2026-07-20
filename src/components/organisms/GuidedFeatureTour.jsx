@@ -1,13 +1,20 @@
 // Interaktive, hervorhebende Feature-Tour — ausgelöst über das "?"-Symbol im
-// Hero. Anders als der statische FeatureTourScreen (Textkarten im Daten-Tab,
-// bleibt als Alternative bestehen) hebt diese Version das jeweils erklärte
-// UI-Element direkt hervor (Spotlight) und springt dafür bei Bedarf selbst
-// zwischen den Tabs — Schritt für Schritt über "Weiter"/"Zurück".
+// Hero. Hebt das jeweils erklärte UI-Element direkt hervor (Spotlight) und
+// springt dafür bei Bedarf selbst zwischen den Tabs — Schritt für Schritt
+// über "Weiter"/"Zurück".
 //
 // Organisiert in drei frei anwählbaren "Zündstufen" (Reiter oben: Schnell-
 // start/Komfort/Cloud & Bank, siehe content/guidedTourStages.js) — von
 // einfach zu anspruchsvoll, aber ohne Zwang zur Reihenfolge: wer direkt zur
 // Bank-Anbindung will, kann das jederzeit tun.
+//
+// Je Schritt zeigt die Karte standardmäßig die Einsteiger-Erklärung, die
+// sich per "mehr …"/"noch mehr …" um die Profi- bzw. Erfahren-Ebene ergänzen
+// lässt (setzt beim Schrittwechsel zurück — jeder Schritt startet wieder
+// bei der Grundaussage). Die "Für Kids"-Ebene ist davon getrennt: ein
+// Teddy-Symbol neben dem Schließen-Button schaltet die gesamte Tour in den
+// Kids-Modus, genau wie das Teddy-Symbol im Hero (gleicher kvStore-Schlüssel
+// "mbt_tourKids", damit beide Einstiegspunkte konsistent bleiben).
 //
 // Architektur: läuft rein über echte DOM-Elemente mit data-tour-Attributen
 // statt über direkten Zugriff auf lokalen State anderer Screens — genau wie
@@ -22,7 +29,6 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { Li } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
-import { FEATURE_TOUR_LEVELS } from "../../content/featureTour.js";
 import { GUIDED_TOUR_STAGES } from "../../content/guidedTourStages.js";
 
 const POLL_MS = 60;
@@ -32,7 +38,10 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
   const { setMainTab, setSubTab, setActiveStructurTab } = useContext(AppCtx);
   const [stageIndex, setStageIndex] = useState(initialStage);
   const [stepIndex, setStepIndex] = useState(0);
-  const [level, setLevel] = useState(() => kvStore.getItem("mbt_tourLevel") || "eli20");
+  const [kidsMode, setKidsMode] = useState(() => kvStore.getItem("mbt_tourKids") === "1");
+  // Ausklapp-Stufe (0/1/2) für "mehr …"/"noch mehr …" — startet bei jedem
+  // Schrittwechsel wieder bei 0, s. Effect unten.
+  const [expandLevel, setExpandLevel] = useState(0);
   const [rect, setRect] = useState(null);   // {top,left,width,height} des Ziel-Elements, oder null
   const [ready, setReady] = useState(false); // true, sobald Ziel gefunden ODER Timeout erreicht
   const pollRef = useRef(null);
@@ -44,7 +53,14 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
   const isLastStage = stageIndex === GUIDED_TOUR_STAGES.length - 1;
   const isVeryLast = isLastStepOfStage && isLastStage;
 
-  const pickLevel = (key) => { setLevel(key); kvStore.setItem("mbt_tourLevel", key); };
+  const toggleKids = () => {
+    const next = !kidsMode;
+    setKidsMode(next);
+    kvStore.setItem("mbt_tourKids", next ? "1" : "0");
+  };
+  const expandMore = () => setExpandLevel(v => Math.min(2, v + 1));
+  const collapseExpand = () => setExpandLevel(0);
+  useEffect(() => { setExpandLevel(0); }, [stageIndex, stepIndex]);
 
   const gotoStage = (i) => { setStageIndex(i); setStepIndex(0); };
 
@@ -195,6 +211,13 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
             {Li(step.icon, 18, T.blue)}
           </div>
           <div style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 15, fontWeight: 700 }}>{step.title}</div>
+          <button onClick={toggleKids}
+            title={kidsMode ? "Zur normalen Ansicht" : "Für Kids"}
+            style={{ background: kidsMode ? `${T.blue}33` : "transparent", border: "none",
+              cursor: "pointer", padding: 4, borderRadius: 8, fontSize: 16,
+              display: "inline-flex", alignItems: "center", flexShrink: 0 }}>
+            🧸
+          </button>
           <button onClick={onClose} title="Tour beenden"
             style={{ background: "transparent", border: "none", cursor: "pointer", padding: 4,
               display: "inline-flex", alignItems: "center", flexShrink: 0 }}>
@@ -202,25 +225,28 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
           </button>
         </div>
 
-        <div style={{ display: "flex", gap: 6, marginBottom: 8, overflowX: "auto" }}>
-          {FEATURE_TOUR_LEVELS.map(lv => {
-            const active = lv.key === level;
-            return (
-              <button key={lv.key} onClick={() => pickLevel(lv.key)}
-                style={{ flexShrink: 0, padding: "5px 10px", borderRadius: 20, cursor: "pointer",
-                  fontFamily: "inherit", fontSize: 11.5, fontWeight: 700,
-                  border: `1px solid ${active ? T.blue : T.bd}`,
-                  background: active ? `${T.blue}22` : "transparent",
-                  color: active ? T.blue : T.txt2 }}>
-                {lv.label}
-              </button>
-            );
-          })}
-        </div>
-
-        <div style={{ color: T.txt, fontSize: 13.5, lineHeight: 1.5, marginBottom: 12 }}>
-          {step[level]}
-        </div>
+        {kidsMode ? (
+          <div style={{ color: T.txt, fontSize: 13.5, lineHeight: 1.5, marginBottom: 12 }}>
+            {step.eli10}
+          </div>
+        ) : (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ color: T.txt, fontSize: 13.5, lineHeight: 1.5 }}>{step.eli20}</div>
+            {expandLevel>=1 && (
+              <div style={{ color: T.txt2, fontSize: 12.5, lineHeight: 1.5, marginTop: 8,
+                paddingTop: 8, borderTop: `1px solid ${T.bd}` }}>{step.eli30}</div>
+            )}
+            {expandLevel>=2 && (
+              <div style={{ color: T.txt2, fontSize: 12.5, lineHeight: 1.5, marginTop: 8,
+                paddingTop: 8, borderTop: `1px solid ${T.bd}` }}>{step.eli60}</div>
+            )}
+            <button onClick={expandLevel<2 ? expandMore : collapseExpand}
+              style={{ marginTop: 8, background: "transparent", border: "none", cursor: "pointer",
+                color: T.blue, fontSize: 12, fontWeight: 700, fontFamily: "inherit", padding: 0 }}>
+              {expandLevel===0 ? "mehr …" : expandLevel===1 ? "noch mehr …" : "▲ weniger anzeigen"}
+            </button>
+          </div>
+        )}
 
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ color: T.txt2, fontSize: 11.5, fontWeight: 600, flexShrink: 0 }}>
