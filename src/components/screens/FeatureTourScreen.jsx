@@ -73,6 +73,18 @@ function FeatureTourScreen({ onClose, onBack, mobileMode=false }) {
           </button>
         }/>
 
+      {!kidsMode && (
+        <div style={{flexShrink:0, padding:"10px 16px 2px", display:"flex",
+          alignItems:"center", justifyContent:"center"}}>
+          <button onClick={expand<2 ? expandMore : collapseAll}
+            style={{background:`${T.blue}1a`, border:`1px solid ${T.blue}44`, borderRadius:20,
+              cursor:"pointer", color:T.blue, fontSize:13.5, fontWeight:700, fontFamily:"inherit",
+              padding:"7px 16px"}}>
+            {expand===0 ? "mehr …" : expand===1 ? "noch mehr …" : "▲ weniger anzeigen"}
+          </button>
+        </div>
+      )}
+
       <div style={{flex:1, overflowY:"auto", WebkitOverflowScrolling:"touch",
         padding:"12px 16px 24px", display:"flex", flexDirection:"column",
         gap: kidsMode ? 22 : 10}}>
@@ -101,34 +113,27 @@ function FeatureTourScreen({ onClose, onBack, mobileMode=false }) {
               </div>
             </div>
           );
-        }) : <>
-          {FEATURE_TOUR.map((f, i) => (
-            <div key={i} style={{background:T.surf, border:`1px solid ${T.bd}`, borderRadius:14,
-              padding:"14px 14px"}}>
-              <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:8}}>
-                <div style={{width:36, height:36, borderRadius:10, flexShrink:0,
-                  background:`${T.blue}1f`, display:"flex", alignItems:"center", justifyContent:"center"}}>
-                  {Li(f.icon, 18, T.blue)}
-                </div>
-                <div style={{color:T.txt, fontSize:16, fontWeight:700}}>{f.title}</div>
+        }) : FEATURE_TOUR.map((f, i) => (
+          <div key={i} style={{background:T.surf, border:`1px solid ${T.bd}`, borderRadius:14,
+            padding:"14px 14px"}}>
+            <div style={{display:"flex", alignItems:"center", gap:10, marginBottom:8}}>
+              <div style={{width:36, height:36, borderRadius:10, flexShrink:0,
+                background:`${T.blue}1f`, display:"flex", alignItems:"center", justifyContent:"center"}}>
+                {Li(f.icon, 18, T.blue)}
               </div>
-              <div style={{color:T.txt2, fontSize:14, lineHeight:1.5}}>{f.eli20}</div>
-              {expand>=1 && (
-                <div style={{color:T.txt2, fontSize:13.5, lineHeight:1.5, marginTop:10,
-                  paddingTop:10, borderTop:`1px solid ${T.bd}`}}>{f.eli30}</div>
-              )}
-              {expand>=2 && (
-                <div style={{color:T.txt2, fontSize:13.5, lineHeight:1.5, marginTop:10,
-                  paddingTop:10, borderTop:`1px solid ${T.bd}`}}>{f.eli60}</div>
-              )}
+              <div style={{color:T.txt, fontSize:16, fontWeight:700}}>{f.title}</div>
             </div>
-          ))}
-          <button onClick={expand<2 ? expandMore : collapseAll}
-            style={{alignSelf:"center", background:"transparent", border:"none", cursor:"pointer",
-              color:T.blue, fontSize:14, fontWeight:700, fontFamily:"inherit", padding:"8px 16px"}}>
-            {expand===0 ? "mehr …" : expand===1 ? "noch mehr …" : "weniger anzeigen"}
-          </button>
-        </>}
+            <div style={{color:T.txt2, fontSize:14, lineHeight:1.5}}>{f.eli20}</div>
+            {expand>=1 && (
+              <div style={{color:T.txt2, fontSize:13.5, lineHeight:1.5, marginTop:10,
+                paddingTop:10, borderTop:`1px solid ${T.bd}`}}>{f.eli30}</div>
+            )}
+            {expand>=2 && (
+              <div style={{color:T.txt2, fontSize:13.5, lineHeight:1.5, marginTop:10,
+                paddingTop:10, borderTop:`1px solid ${T.bd}`}}>{f.eli60}</div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
