@@ -10,6 +10,7 @@ import { kvStore } from "../../utils/kvStore.js";
 import { restMitte, restEnde, phaseStillReachable } from "../../utils/saldo.js";
 import { isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
 import { planLegDecisions } from "../../utils/sparPlanSeries.js";
+import { getSparWatermark, noteSparWatermark } from "../../utils/sparWatermarks.js";
 
 function TagesgeldWidget({year, month, initialCollapsed=true}) {
   const {  getKumulierterSaldo, txs, setTxs, cats, accounts, setAccounts, getAcc, budgets, getCat, getBudgetForMonth, selAcc, getProgEndeAccGlobal, resetProgEndeCache, sparOpenRequest } = useContext(AppCtx);
@@ -273,8 +274,14 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     // nur die Tagesgeld-Einnahme, der Giro-Abgang blieb bestehen).
     const oldAbgang = txs.filter(t=>t._seriesId===seriesId&&t.pending);
     const oldZugang = txs.filter(t=>t._seriesId===tgtSeriesId&&t.pending);
+    // Wasserzeichen aus vorherigen Läufen: schützt vor dem "letzte Rate
+    // gelöscht"-Fall, in dem oldAbgang/oldZugang allein die alte Spanne
+    // fälschlich verkürzt anzeigen würden (siehe utils/sparWatermarks.js).
+    const historicalMaxAbgangKey = getSparWatermark(seriesId);
+    const historicalMaxZugangKey = getSparWatermark(tgtSeriesId);
     const decisions = new Map(
-      planLegDecisions(sparMonate.map(row=>row.y*12+row.m), oldAbgang, oldZugang, !!sparAccId)
+      planLegDecisions(sparMonate.map(row=>row.y*12+row.m), oldAbgang, oldZugang, !!sparAccId,
+        historicalMaxAbgangKey, historicalMaxZugangKey)
         .map(d=>[d.key, d])
     );
 
@@ -324,6 +331,16 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
       });
       return [...ohne, ...newTxs];
     });
+    // Wasserzeichen auf die gerade berechnete Planspanne vorziehen (nie
+    // zurücksetzen) — unabhängig davon, ob einzelne Monate wegen einer
+    // vorherigen Löschung gerade übersprungen wurden. Erst dadurch "weiß"
+    // ein künftiger Lauf (auch auf einem anderen, synchronisierten Gerät),
+    // wie weit diese Serie tatsächlich schon einmal reichte.
+    const maxSparMonateKey = sparMonate.length ? Math.max(...sparMonate.map(row=>row.y*12+row.m)) : -Infinity;
+    if(isFinite(maxSparMonateKey)) {
+      noteSparWatermark(seriesId, maxSparMonateKey);
+      if(sparAccId) noteSparWatermark(tgtSeriesId, maxSparMonateKey);
+    }
     return sparMonate.length;
   };
 
@@ -772,6 +789,12 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                     return [abgang, zugang];
                   });
                   setTxs(p=>[...p, ...newTxs]);
+                  // Wasserzeichen direkt bei Erstanlage setzen, damit eine
+                  // spätere Löschung der letzten Rate schon beim allerersten
+                  // "Neuberechnen" korrekt erkannt wird (siehe doAktualisieren).
+                  const maxKey = Math.max(...sparMonate.map(row=>row.y*12+row.m));
+                  noteSparWatermark(seriesId, maxKey);
+                  if(sparAccId) noteSparWatermark(seriesId+"-tgt", maxKey);
                   showToast(`✓ ${sparMonate.length} Sparvormerkungen angelegt${sparAccId?" (Abgang + Zugang)":""}`);
                 }} disabled={!result}
                   style={{padding:"7px 14px",borderRadius:10,border:"none",

@@ -75,4 +75,35 @@ describe("sparPlanSeries", () => {
     const decisions = planLegDecisions([sep], [], [{ date: "2026-09-30" }], false);
     expect(decisions[0].keepZugang).toBe(false);
   });
+
+  it("REGRESSION (Rundtrip-Bug): wird die LETZTE (zeitlich am weitesten entfernte) Zugang-Rate gelöscht, verkürzt sich die aus den verbleibenden Buchungen abgeleitete Spanne — ohne Wasserzeichen sieht der gelöschte Monat wie neu aus und würde fälschlich wieder angelegt", () => {
+    const aug = keyOfDate("2026-08-31"), sep = keyOfDate("2026-09-30"), okt = keyOfDate("2026-10-31");
+    // Serie ging ursprünglich bis Oktober; die Zugang-Seite von Oktober (der
+    // spätesten Rate) wurde gelöscht — August/September blieben unangetastet.
+    const oldAbgang = [{ date: "2026-08-31" }, { date: "2026-09-30" }, { date: "2026-10-31" }];
+    const oldZugang = [{ date: "2026-08-31" }, { date: "2026-09-30" }]; // Oktober fehlt — war die letzte Rate
+    // OHNE Wasserzeichen (alter Bug): max(oldZugang) ist jetzt September,
+    // Oktober liegt "jenseits" davon → sieht wie ein echter neuer Monat aus.
+    const buggy = planLegDecisions([aug, sep, okt], oldAbgang, oldZugang, true);
+    expect(buggy.find(d => d.key === okt).keepZugang).toBe(true); // reproduziert den Bug
+
+    // MIT Wasserzeichen (Fix): die Serie reichte historisch nachweislich bis
+    // Oktober — Oktober liegt also INNERHALB der bekannten Spanne und die
+    // fehlende Zugang-Rate wird korrekt als bewusst gelöscht erkannt.
+    const fixed = planLegDecisions([aug, sep, okt], oldAbgang, oldZugang, true, -Infinity, okt);
+    expect(fixed.find(d => d.key === okt).keepZugang).toBe(false);
+    // August/September (weiterhin vorhanden) bleiben davon unberührt.
+    expect(fixed.find(d => d.key === aug).keepZugang).toBe(true);
+    expect(fixed.find(d => d.key === sep).keepZugang).toBe(true);
+  });
+
+  it("Wasserzeichen jenseits der aktuell berechneten Planspanne blockiert eine echte Plan-Verlängerung nicht", () => {
+    const aug = keyOfDate("2026-08-31"), nov = keyOfDate("2026-11-30");
+    // Wasserzeichen aus einem früheren Lauf reichte nur bis August; November
+    // ist eine ECHTE Verlängerung (z.B. Enddatum im Widget erhöht) und muss
+    // trotzdem angelegt werden.
+    const decisions = planLegDecisions([aug, nov], [{ date: "2026-08-31" }], [{ date: "2026-08-31" }], true, aug, aug);
+    expect(decisions.find(d => d.key === nov).keepZugang).toBe(true);
+    expect(decisions.find(d => d.key === nov).keepAbgang).toBe(true);
+  });
 });

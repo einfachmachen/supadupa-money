@@ -86,6 +86,7 @@ import { exportEbForSync, importEbFromSync } from "./utils/enableBankingStore.js
 import { saldoAt, saldoEnde, saldoMitte } from "./utils/saldo.js";
 import { getSyncBadgeState } from "./utils/syncBadge.js";
 import { recordDeletedTxs, filterTombstonedTxs, getTombstonesForSync, mergeRemoteTombstones } from "./utils/txTombstones.js";
+import { getSparWatermarksForSync, mergeRemoteSparWatermarks } from "./utils/sparWatermarks.js";
 
 export default function SupaDupaMoney() {
   const [mainTab,       setMainTab]      = useState("erfassen"); // erfassen|struktur|mehr
@@ -480,6 +481,12 @@ export default function SupaDupaMoney() {
     // utils/txTombstones.js).
     const tombstones = getTombstonesForSync();
     if(Object.keys(tombstones).length) configOnly._txTombstones = tombstones;
+    // Sparplan-Wasserzeichen mitschicken — sonst kennt ein zweites Gerät die
+    // frühere Spanne eines Sparplan-Beins nicht und könnte eine dort zuvor
+    // gelöschte letzte Rate beim eigenen "Neuberechnen" für neu halten und
+    // wieder anlegen (siehe utils/sparWatermarks.js).
+    const sparWatermarks = getSparWatermarksForSync();
+    if(Object.keys(sparWatermarks).length) configOnly._sparWatermarks = sparWatermarks;
     const byYear = compressTxByYear(allTxs);
     const base = normCfUrl(cfUrl);
     const headers = {"Content-Type":"application/json","X-Secret":cfSecret};
@@ -1178,6 +1185,7 @@ Abbrechen = ${remoteName}-Stand laden`
                 delete cdata._txTombstones;
                 if(tombstonesChanged) setTxs(prev => filterTombstonedTxs(prev, 0));
               }
+              if(cdata._sparWatermarks) { mergeRemoteSparWatermarks(cdata._sparWatermarks); delete cdata._sparWatermarks; }
               const cTs = cdata.saved_at||0;
               const lastSynced = getCfSyncedAt();
               // Sync-Anker vorhanden (Normalfall): jede Abweichung vom zuletzt
@@ -1214,6 +1222,7 @@ Abbrechen = ${remoteName}-Stand laden`
           try {
             const cdata = await cfLoad();
             if(cdata._txTombstones) { mergeRemoteTombstones(cdata._txTombstones); delete cdata._txTombstones; }
+            if(cdata._sparWatermarks) { mergeRemoteSparWatermarks(cdata._sparWatermarks); delete cdata._sparWatermarks; }
             if(cdata.cats?.length) {
               applyData(cdata);
               // Sofort lokal speichern damit nächster Start funktioniert
@@ -2882,6 +2891,7 @@ Abbrechen = ${remoteName}-Stand laden`
         setSyncStatus("loading");
         const d = await cfLoad();
         if(d && d._txTombstones) { mergeRemoteTombstones(d._txTombstones); delete d._txTombstones; }
+        if(d && d._sparWatermarks) { mergeRemoteSparWatermarks(d._sparWatermarks); delete d._sparWatermarks; }
         // force=true: ALLE Felder 1:1 vom Cloud-Stand übernehmen, auch wenn
         // einzelne davon dort leer sind — der Nutzer hat den Überschreib-
         // Hinweis bereits bestätigt und erwartet danach garantiert exakt

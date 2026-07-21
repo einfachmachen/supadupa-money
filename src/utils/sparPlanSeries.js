@@ -21,11 +21,20 @@ export function keyOfDate(dateStr) {
 // oldAbgang/oldZugang: Arrays der bisherigen PENDING Buchungen dieser Serie
 // (je Objekt mit .date), BEVOR sie entfernt werden.
 // hasZugangAccount: ob überhaupt ein Zielkonto für die Zugang-Seite gesetzt ist.
-export function planLegDecisions(months, oldAbgang, oldZugang, hasZugangAccount) {
+// historicalMaxAbgangKey/historicalMaxZugangKey: persistiertes Wasserzeichen
+// (siehe utils/sparWatermarks.js) — die weiteste Spanne, die dieses Bein
+// JEMALS erreicht hat, unabhängig von zwischenzeitlichen Löschungen. Ohne
+// das würde das Löschen ausgerechnet der LETZTEN (am weitesten in der
+// Zukunft liegenden) Rate eines Beins den aus oldAbgang/oldZugang
+// abgeleiteten Höchstwert mit nach unten ziehen — die gelöschte Rate läge
+// dann außerhalb der (jetzt kleineren) alten Spanne und sähe wie ein echter
+// neuer Monat aus, würde also fälschlich wieder angelegt.
+export function planLegDecisions(months, oldAbgang, oldZugang, hasZugangAccount,
+  historicalMaxAbgangKey = -Infinity, historicalMaxZugangKey = -Infinity) {
   const abgangKeys = new Set((oldAbgang || []).map(t => keyOfDate(t.date)));
   const zugangKeys = new Set((oldZugang || []).map(t => keyOfDate(t.date)));
-  const maxAbgangKey = abgangKeys.size ? Math.max(...abgangKeys) : -Infinity;
-  const maxZugangKey = zugangKeys.size ? Math.max(...zugangKeys) : -Infinity;
+  const maxAbgangKey = Math.max(abgangKeys.size ? Math.max(...abgangKeys) : -Infinity, historicalMaxAbgangKey);
+  const maxZugangKey = Math.max(zugangKeys.size ? Math.max(...zugangKeys) : -Infinity, historicalMaxZugangKey);
   // Innerhalb der bisherigen Spanne dieses Beins, aber keine vorhandene Rate
   // mehr → wurde bewusst gelöscht, nicht wieder anlegen. Jenseits der
   // bisherigen Spanne (oder wenn es noch nie eine Rate gab) → echter neuer
