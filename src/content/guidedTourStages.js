@@ -67,7 +67,14 @@ const GUIDED_TOUR_STAGES = [
         eli20: "Der große Kreis unten zeigt normalerweise das heutige Datum — durch Doppel-Tippen verwandelt er sich in den großen Plus-Knopf. Darüber legst du Vormerkungen an: einmalige, wiederkehrende (z.B. Miete jeden Monat) oder Finanzierungen (z.B. Raten mit fester Laufzeit) — sie fließen sofort in die Prognose ein.",
         eli30: "Eine Vormerkung lässt sich auf mehrere Kategorien gleichzeitig aufteilen (Splits) — praktisch, wenn eine Zahlung z.B. Miete und Nebenkosten in einer Summe abdeckt.",
         eli60: "Ist das Datum einer Vormerkung verstrichen, ohne dass die echte Buchung eingetroffen ist, markiert die App sie als überfällig und weist Dich mit einem Banner darauf hin.",
-        target: { tab: "home", selector: '[data-tour="master-plus"]' },
+        // pinCard: "top" — die Erklärkarte wird an einer festen, sicheren
+        // Stelle oben angezeigt statt relativ zum Ziel positioniert. Grund:
+        // der große +-Button lebt in der unteren Navigationsleiste, kann je
+        // nach Zustand (klein/vergrößert) unterschiedlich groß und weit nach
+        // oben verschoben sein — die Karte konnte ihn dadurch verdecken oder
+        // von ihm verdeckt werden. Die Hervorhebung selbst bleibt unverändert
+        // am echten Button; nur die Karte weicht ihm konsequent aus.
+        target: { tab: "home", selector: '[data-tour="master-plus"]', pinCard: "top" },
       },
       {
         icon: "link",

@@ -188,7 +188,16 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
   const usableBottom = vh - NAV_BOTTOM_H;
   const SAFE_TOP = "max(env(safe-area-inset-top, 0px) + 10px, 10px)";
   let cardStyle;
-  if (rect) {
+  if (target.pinCard === "top") {
+    // Bewusst NICHT relativ zum Ziel platziert (siehe Kommentar am Schritt
+    // in guidedTourStages.js) — manche Ziele (z.B. der große +-Button) sind
+    // zu variabel in Größe/Position, um sie zuverlässig zu umgehen. Die
+    // Hervorhebung (rect-Rahmen weiter unten) zeigt trotzdem an der echten
+    // Stelle an; nur die Karte weicht konsequent an eine feste, sichere
+    // Stelle aus.
+    cardStyle = { top: `max(${SAFE_TOP}, ${usableTop}px)`, left: CARD_PAD, right: CARD_PAD,
+      maxHeight: usableBottom - usableTop };
+  } else if (rect) {
     const spaceBelow = usableBottom - rect.top - rect.height;
     const spaceAbove = rect.top - usableTop;
     const placeBelow = spaceBelow > 220 || spaceBelow > spaceAbove;
