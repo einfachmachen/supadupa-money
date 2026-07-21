@@ -3629,8 +3629,9 @@ Abbrechen = ${remoteName}-Stand laden`
           const { isFlat, bg, fg } = plusBtnColors(T);
 
           return (
-            <div key={key} data-tour="master-plus" style={plusWrapperShell(plusArretiert)}>
+            <div key={key} style={plusWrapperShell(plusArretiert)}>
               <button
+                data-tour="master-plus"
                 className="plus-master-btn"
                 onPointerDown={onPointerDown}
                 onPointerMove={onPointerMove}
