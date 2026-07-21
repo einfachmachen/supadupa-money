@@ -41,7 +41,7 @@ const POLL_TIMEOUT_MS = 1500;
 const COMIC_COLORS = ["#FF6B6B", "#FFA94D", "#FFD43B", "#69DB7C", "#3BC9DB", "#4DABF7", "#B197FC", "#F783AC"];
 
 function GuidedFeatureTour({ onClose, initialStage=0 }) {
-  const { setMainTab, setSubTab, setActiveStructurTab } = useContext(AppCtx);
+  const { setMainTab, setSubTab, setActiveStructurTab, setMasterOverride } = useContext(AppCtx);
   const [stageIndex, setStageIndex] = useState(initialStage);
   const [stepIndex, setStepIndex] = useState(0);
   const [kidsMode, setKidsMode] = useState(() => kvStore.getItem("mbt_tourKids") === "1");
@@ -50,6 +50,7 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
   const [expandLevel, setExpandLevel] = useState(0);
   const [rect, setRect] = useState(null);   // {top,left,width,height} des Ziel-Elements, oder null
   const [ready, setReady] = useState(false); // true, sobald Ziel gefunden ODER Timeout erreicht
+  const [plusRect, setPlusRect] = useState(null); // {top,height} des echten +-Knopfs — für die Karten-Positionierung
   const pollRef = useRef(null);
 
   const stage = GUIDED_TOUR_STAGES[stageIndex];
@@ -154,6 +155,58 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
     if (stageIndex > 0) { setStageIndex(i => i - 1); setStepIndex(GUIDED_TOUR_STAGES[stageIndex-1].steps.length - 1); }
   };
   const isVeryFirst = stageIndex === 0 && stepIndex === 0;
+  const isPlusTarget = target.selector === '[data-tour="master-plus"]';
+
+  // Misst die reale Position des +-Knopfs (unabhängig vom gerade
+  // hervorgehobenen Ziel) — Grund: der Knopf steckt in der App-eigenen
+  // unteren Navigationsleiste, die per CSS einen sehr hohen z-index trägt
+  // (siehe themes.css, ".nav-bottom") und dadurch IMMER über der Tour liegt,
+  // egal welchen z-index die Tour selbst hat. Ein fest verdrahteter
+  // Sicherheitsabstand (siehe NAV_BOTTOM_H weiter unten) reicht deshalb
+  // nicht, sobald der Knopf größer/anders positioniert ist als angenommen —
+  // die Karte muss die ECHTE, gemessene Position kennen, um ihr in JEDEM
+  // Schritt zuverlässig auszuweichen (Regression: Nutzer-Feedback, mehrere
+  // Erklärkarten wurden trotz vorherigem Fix weiterhin vom +-Knopf verdeckt).
+  useEffect(() => {
+    const measure = () => {
+      // ".plus-master-btn" statt "[data-tour=...]": Sobald die Tour selbst
+      // den Override belegt (siehe Effect weiter unten), verliert der Knopf
+      // sein data-tour-Attribut (das trägt nur die reguläre Variante,
+      // MasterOverrideSlot rendert bewusst ohne) — die Klasse dagegen tragen
+      // BEIDE Varianten, damit die Messung in jedem Zustand funktioniert.
+      const el = document.querySelector('.plus-master-btn');
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      setPlusRect(prev => (prev && prev.top === r.top && prev.height === r.height) ? prev
+        : { top: r.top, height: r.height });
+    };
+    measure();
+    const rafId = requestAnimationFrame(measure); // erneut messen, nachdem Tab-Wechsel/Layout sich gesetzt haben
+    window.addEventListener("resize", measure);
+    return () => { cancelAnimationFrame(rafId); window.removeEventListener("resize", measure); };
+  }, [ready]);
+
+  // Während die Tour offen ist, übernimmt der +-Knopf selbst Weiter/Zurück/
+  // Abbrechen (Tipp/Wisch-links/Doppel-Tipp) — zusätzlich zu den Buttons in
+  // der Karte, nicht als Ersatz dafür. Ausnahme: der Schritt, der den
+  // +-Knopf SELBST erklärt ("Vormerkungen anlegen") — dort muss er seine
+  // echten Gesten (v.a. Doppel-Tipp verwandelt Datum → Plus) demonstrieren
+  // können, die Tour darf ihn dafür nicht mit eigener Navigation belegen.
+  useEffect(() => {
+    if (isPlusTarget) return;
+    const words = [isVeryLast ? "Fertig✓" : isLastStepOfStage ? "Nächste" : "Weiter"];
+    if (!isVeryFirst) words.push("←Zurück");
+    words.push("2×Abbrechen");
+    setMasterOverride({
+      label: words.join(" "),
+      confirmOnTapDismissOnDouble: true,   // Einzel-Tipp → onConfirm, Doppel-Tipp → onDismiss
+      onConfirm: goNext,
+      onBack: isVeryFirst ? null : goPrev,
+      onDismiss: () => onClose?.(),
+    });
+    return () => setMasterOverride(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stageIndex, stepIndex, isPlusTarget]);
 
   // Callout-Position: unterhalb des Ziels, wenn genug Platz ist, sonst
   // darüber; ohne Ziel (oder solange nicht "ready") zentriert. Der obere
@@ -178,14 +231,23 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
   // Zeile GENAU in dieser Zone — die App-eigene Leiste fing den Klick dann
   // ab, ohne dass optisch etwas verdeckt aussah (Playwright bestätigte:
   // "<div> from <div class='nav-bottom'> intercepts pointer events").
-  // Fix: ein fester Sicherheitsabstand unten (NAV_BOTTOM_H), den die Karte
-  // (inkl. maxHeight) nie unterschreitet.
+  // Fix: ein Sicherheitsabstand unten, den die Karte (inkl. maxHeight) nie
+  // unterschreitet — bevorzugt aus der ECHTEN, gemessenen Position des
+  // +-Knopfs (plusRect) abgeleitet, weil ".nav-bottom" per CSS einen sehr
+  // hohen z-index trägt (liegt IMMER über der Tour) und der Knopf selbst
+  // weiter nach oben herausragt als die Leiste hoch ist — ein reiner
+  // Leisten-Sicherheitsabstand reichte deshalb nicht aus (Regression:
+  // Nutzer-Feedback, Karten wurden trotz vorherigem NAV_BOTTOM_H-Fix
+  // weiterhin vom +-Knopf verdeckt). NAV_BOTTOM_H bleibt nur als Fallback,
+  // solange plusRect noch nicht gemessen werden konnte.
   const vh = typeof window !== "undefined" ? window.innerHeight : 800;
   const CARD_PAD = 14;
   const TOP_SAFE_APPROX = 40;   // grobe Notch/Statusleiste-Reserve für die Höhenrechnung
-  const NAV_BOTTOM_H = 64;      // Reserve für die App-eigene untere Navigationsleiste
+  const NAV_BOTTOM_H = 64;      // Fallback-Reserve, falls plusRect (noch) nicht gemessen werden konnte
+  const PLUS_BTN_MARGIN = 14;
+  const navBottomH = plusRect ? Math.max(NAV_BOTTOM_H, (vh - plusRect.top) + PLUS_BTN_MARGIN) : NAV_BOTTOM_H;
   const usableTop = TOP_SAFE_APPROX;
-  const usableBottom = vh - NAV_BOTTOM_H;
+  const usableBottom = vh - navBottomH;
   const SAFE_TOP = "max(env(safe-area-inset-top, 0px) + 10px, 10px)";
   let cardStyle;
   if (target.pinCard === "top") {
@@ -206,7 +268,7 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
       cardStyle = { top: `max(${SAFE_TOP}, ${top}px)`, left: CARD_PAD, right: CARD_PAD,
         maxHeight: Math.max(160, usableBottom - top) };
     } else {
-      const bottom = Math.max(vh - rect.top + 14, NAV_BOTTOM_H + 14);
+      const bottom = Math.max(vh - rect.top + 14, navBottomH + 14);
       cardStyle = { bottom, left: CARD_PAD, right: CARD_PAD,
         maxHeight: Math.max(160, (vh - bottom) - usableTop) };
     }
