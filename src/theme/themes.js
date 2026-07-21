@@ -692,8 +692,11 @@ THEMES.deepocean = {
   txt:"#F4F6F9", txt2:"rgba(200,215,240,0.72)", lbl:"rgba(200,215,240,0.54)",
   // blue/neg gegenüber surf2 (#545C66) aufgehellt (3.5:1/3.2:1 → 4.5:1+ WCAG-
   // Kontrast) — bei kleiner Schrift (Badges, Tags) war die vorige, dunklere
-  // Fassung auf diesem mittleren Grau kaum zu erkennen.
-  blue:"#65E3FD", pos:"#BFFF00", neg:"#FFC5C4", gold:"#FFC861",
+  // Fassung auf diesem mittleren Grau kaum zu erkennen. neg auf denselben
+  // kräftigen Rotton wie err/cond_neg vereinheitlicht — das vorige helle
+  // Rosa (#FFC5C4) wirkte neben dem satten Chartreuse-Grün von pos zu blass
+  // und wie Rosa statt Rot (Nutzer-Feedback).
+  blue:"#65E3FD", pos:"#BFFF00", neg:"#FF5252", gold:"#FFC861",
   on_accent:"#06121A", disabled:"#3A414A", warn:"#FFB54A", override:"#C2820F",
   mid:"#67E8F9",
   cell_inc:"#BFFF00", cell_inc_bg:"#141F00", cell_inc_bd:"#4A6600",
