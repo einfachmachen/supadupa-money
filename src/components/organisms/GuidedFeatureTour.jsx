@@ -106,7 +106,14 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
         rafId = requestAnimationFrame(() => {
           if (cancelled) return;
           const r = el.getBoundingClientRect();
-          setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
+          // Form des Ziels übernehmen (z.B. runder +/Datums-Button) — ein
+          // fest verdrahtetes borderRadius:16 auf der Hervorhebung sah bei
+          // runden Zielen wie ein zusätzliches "abgerundetes Quadrat" hinter
+          // dem eigentlich kreisrunden Element aus (Nutzer-Feedback), weil
+          // die Ecken der Box über den Kreis hinausragten.
+          const targetRadius = getComputedStyle(el).borderRadius;
+          setRect({ top: r.top, left: r.left, width: r.width, height: r.height,
+            borderRadius: targetRadius && targetRadius !== "0px" ? targetRadius : "16px" });
           setReady(true);
         });
         return true;
@@ -216,11 +223,11 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
           position: "fixed",
           top: rect.top - 6, left: rect.left - 6,
           width: rect.width + 12, height: rect.height + 12,
-          borderRadius: 16,
+          borderRadius: rect.borderRadius || 16,
           border: `2px solid ${T.blue}`,
           boxShadow: `0 0 0 4000px rgba(0,0,0,0.72)`,
           pointerEvents: "none",
-          transition: "top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease",
+          transition: "top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease, border-radius 0.25s ease",
         }} />
       )}
 

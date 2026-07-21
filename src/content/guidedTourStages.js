@@ -63,7 +63,7 @@ const GUIDED_TOUR_STAGES = [
         icon: "clock",
         emoji: "⏰",
         title: "Vormerkungen anlegen",
-        eli10: "Der runde Knopf unten zeigt dir normalerweise das heutige Datum. Tippst du zweimal schnell drauf, wird er zum großen Plus. Weißt du schon heute, dass am Monatsanfang die Miete abgeht? Das kannst du dann vormerken — einmalig, jeden Monat wiederkehrend, oder als Finanzierung (z.B. Ratenkauf).",
+        eli10: "Papa oder Mama zahlt jeden Monat pünktlich die Miete, damit wir hier wohnen bleiben dürfen — dafür tragen sie hier eine „wiederkehrende Vormerkung“ ein, damit die App das nie vergisst. Kaufst du dir jedes Mal, wenn du Taschengeld bekommst, ein neues Comic-Heft oder Sticker? Genau sowas könntest du hier auch eintragen — dann siehst du immer, wie viel Taschengeld dir noch übrig bleibt.",
         eli20: "Der große Kreis unten zeigt normalerweise das heutige Datum — durch Doppel-Tippen verwandelt er sich in den großen Plus-Knopf. Darüber legst du Vormerkungen an: einmalige, wiederkehrende (z.B. Miete jeden Monat) oder Finanzierungen (z.B. Raten mit fester Laufzeit) — sie fließen sofort in die Prognose ein.",
         eli30: "Eine Vormerkung lässt sich auf mehrere Kategorien gleichzeitig aufteilen (Splits) — praktisch, wenn eine Zahlung z.B. Miete und Nebenkosten in einer Summe abdeckt.",
         eli60: "Ist das Datum einer Vormerkung verstrichen, ohne dass die echte Buchung eingetroffen ist, markiert die App sie als überfällig und weist Dich mit einem Banner darauf hin.",
