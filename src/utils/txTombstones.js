@@ -10,13 +10,24 @@
 // Buchungs-Datensatz zurück. Genauso kann ein zweites Gerät/Tab mit
 // veraltetem lokalem Stand eine bereits gelöschte Buchung erneut hochladen.
 //
-// Fix: jede lokale Löschung wird hier mit Zeitstempel gemerkt. applyData()
-// filtert beim Übernehmen von Cloud-/Lokal-Daten Buchungen heraus, die NACH
-// dem Snapshot-Zeitstempel (saved_at) des geladenen Datensatzes gelöscht
-// wurden — der Snapshot ist dann nachweislich älter als unsere Löschung.
-// Taucht eine ID dagegen in einem NEUEREN Snapshot wieder auf, wurde sie
-// offenbar bewusst neu angelegt — dann gewinnt der Snapshot und der
-// Tombstone wird verworfen.
+// Fix: jede lokale Löschung wird hier mit Zeitstempel gemerkt und filtert
+// beim Übernehmen von Cloud-/Lokal-Daten BEDINGUNGSLOS jede Buchung heraus,
+// die als gelöscht vermerkt ist.
+//
+// FRÜHERE FASSUNG (Bug, monatelang Ursache für "gelöschte Buchung kommt
+// nach jedem Laden zurück"): filterTombstonedTxs() verglich den Lösch-
+// Zeitstempel gegen den saved_at des geladenen Snapshots und verwarf den
+// Tombstone, sobald saved_at NEUER war — die Annahme war "dann wurde die
+// Buchung wohl bewusst neu angelegt". saved_at ist aber ein GLOBALER
+// Zeitstempel für die gesamte Config (Themes, Budgets, alles) und rückt bei
+// JEDER Kleinigkeit vor, nicht nur wenn ausgerechnet diese eine Buchung
+// absichtlich neu angelegt wurde — in der Praxis war saved_at nach kurzer
+// Zeit fast immer neuer als jeder Tombstone, wodurch die Löschmarkierung
+// beim nächsten Laden zuverlässig wieder verworfen wurde. Da eine neu
+// angelegte Buchung ohnehin immer eine FRISCHE ID bekommt (nie die einer
+// gelöschten), gibt es keinen legitimen Fall, in dem dieselbe ID absichtlich
+// wieder auftauchen sollte — die Sonderregel war unnötig und schädlich.
+// Tombstones laufen jetzt ausschließlich über die feste MAX_AGE_MS-Frist ab.
 //
 // Zweites Gerät (z.B. Mac löscht, iPhone hat die Buchung noch lokal):
 // dieses Gerät kennt die Löschung nicht und kann sie beim eigenen nächsten
@@ -53,27 +64,16 @@ export function recordDeletedTxs(ids) {
   writeAll(map);
 }
 
-// Entfernt aus `txs` alle Buchungen, deren Tombstone NEUER ist als der
-// Snapshot-Zeitstempel — also lokal gelöscht wurde, NACHDEM dieser
-// Datensatz (Cloud oder lokal) gespeichert wurde. Ältere/gleichzeitige
-// Tombstones gegenüber einem NEUEREN Snapshot werden verworfen (die
-// Buchung wurde offenbar absichtlich neu angelegt).
-export function filterTombstonedTxs(txs, snapshotTs) {
+// Entfernt aus `txs` bedingungslos alle Buchungen, die lokal als gelöscht
+// vermerkt sind — unabhängig davon, wie "neu" der geladene Datensatz
+// aussieht (siehe Kommentar oben, warum ein Freshness-Vergleich hier der
+// eigentliche Bug war).
+export function filterTombstonedTxs(txs) {
   if(!Array.isArray(txs) || !txs.length) return txs;
   const map = readAll();
   const ids = Object.keys(map);
   if(!ids.length) return txs;
-  const ts = snapshotTs || 0;
-  let mapChanged = false;
-  const out = txs.filter(t => {
-    const deletedAt = map[t.id];
-    if(deletedAt === undefined) return true;
-    if(deletedAt > ts) return false;
-    delete map[t.id]; mapChanged = true;
-    return true;
-  });
-  if(mapChanged) writeAll(map);
-  return out;
+  return txs.filter(t => map[t.id] === undefined);
 }
 
 // Für den Cloud-Sync: alle bekannten Tombstones als flaches {id: deletedAtMs},
@@ -87,7 +87,7 @@ export function getTombstonesForSync() {
 // Von einem anderen Gerät mitgelieferte Tombstones lokal übernehmen (bei
 // jedem Cloud-Kontakt, nicht erst nach einem bestätigten "Cloud laden").
 // Gibt zurück, ob sich dadurch der lokale Bestand verändert hat — der
-// Aufrufer sollte dann den eigenen `txs`-State per filterTombstonedTxs(…, 0)
+// Aufrufer sollte dann den eigenen `txs`-State per filterTombstonedTxs(…)
 // bereinigen, damit eine an anderer Stelle gelöschte Buchung nicht beim
 // nächsten eigenen Push versehentlich erneut hochgeladen wird.
 export function mergeRemoteTombstones(remoteMap) {

@@ -492,8 +492,8 @@ export default function SupaDupaMoney() {
     } catch(e) { console.warn("Tombstone-/Wasserzeichen-Vorabgleich vor Push übersprungen:", e); }
     // Lokalen State direkt mitbereinigen, damit die UI nicht kurzzeitig eine
     // Buchung zeigt, die der folgende Push ohnehin schon ausschließt.
-    const allTxs = filterTombstonedTxs(rawTxs, 0);
-    if(allTxs.length !== rawTxs.length) setTxs(prev => filterTombstonedTxs(prev, 0));
+    const allTxs = filterTombstonedTxs(rawTxs);
+    if(allTxs.length !== rawTxs.length) setTxs(prev => filterTombstonedTxs(prev));
 
     // Privaten Bank-Schlüssel (.pem) + Verbindungsdaten NUR mitsynchronisieren,
     // wenn eine Passphrase aktiv ist — dann landet er ausschließlich verschlüsselt
@@ -521,6 +521,21 @@ export default function SupaDupaMoney() {
     const sparWatermarks = getSparWatermarksForSync();
     if(Object.keys(sparWatermarks).length) configOnly._sparWatermarks = sparWatermarks;
     const byYear = compressTxByYear(allTxs);
+    // Jahre, für die die Cloud noch Daten hat, dieses Gerät lokal aber GAR
+    // KEINE Buchungen mehr (z.B. weil die letzte/einzige Buchung dieses
+    // Jahres gerade eben durch einen Tombstone herausgefiltert wurde) —
+    // ohne das würde die obige Schreib-Schleife dieses Jahr komplett
+    // überspringen (sie iteriert nur über lokal vorhandene Jahre) und der
+    // veraltete Cloud-Datensatz für dieses Jahr bliebe für immer stehen,
+    // inklusive der eigentlich gelöschten Buchung. Explizit ein leeres Array
+    // ergänzen, damit die Schreib-Schleife dieses Jahr trotzdem anfasst.
+    try {
+      const keysRes = await fetch(`${base}/keys`, {headers:{"X-Secret":cfSecret}});
+      if(keysRes.ok) {
+        const keys = await keysRes.json();
+        (keys.txYears||[]).forEach(y => { if(!(y in byYear)) byYear[y] = []; });
+      }
+    } catch(e) { console.warn("Jahres-Liste vor Push nicht abrufbar, übersprungen:", e); }
 
     // Zero-Knowledge: Ist eine Passphrase gesetzt, wird jeder Body vor dem
     // Hochladen client-seitig verschlüsselt. Ein gemeinsamer Salt pro Sync-Lauf
@@ -1079,7 +1094,7 @@ export default function SupaDupaMoney() {
       // Vor dem Übernehmen lokal längst gelöschte Buchungen ausfiltern —
       // sonst kann ein (teilweise fehlgeschlagener oder veralteter) Cloud-
       // Snapshot eine Löschung rückgängig machen, siehe utils/txTombstones.js.
-      const incomingTxs = filterTombstonedTxs(d.txs||[], d.saved_at);
+      const incomingTxs = filterTombstonedTxs(d.txs||[]);
       setTxs(migrateBudgetDates(migrateRecurringOvershoot(stripBudgetSeries(migrateSeries(incomingTxs.map(t=>({...t,splits:Array.isArray(t.splits)?t.splits:[]})))))));
     }
     if(force || (Array.isArray(d.accounts) && d.accounts.length)) {
@@ -1214,7 +1229,7 @@ Abbrechen = ${remoteName}-Stand laden`
               if(cdata._txTombstones) {
                 const tombstonesChanged = mergeRemoteTombstones(cdata._txTombstones);
                 delete cdata._txTombstones;
-                if(tombstonesChanged) setTxs(prev => filterTombstonedTxs(prev, 0));
+                if(tombstonesChanged) setTxs(prev => filterTombstonedTxs(prev));
               }
               if(cdata._sparWatermarks) { mergeRemoteSparWatermarks(cdata._sparWatermarks); delete cdata._sparWatermarks; }
               const cTs = cdata.saved_at||0;
