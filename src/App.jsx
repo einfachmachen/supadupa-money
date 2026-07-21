@@ -407,7 +407,11 @@ export default function SupaDupaMoney() {
     showSettings || showSupaQuick || showQuickPicker || !!modal || !!exportModal ||
     !!exportDialog || !!reviewQueue || dashDrillOpen || !!accIconPick || !!editTx;
   React.useEffect(() => {
-    if(mainTab==="struktur" && !_structOverlayOpen) {
+    // !showGuidedTour: sonst schwebt der vergrößerte Override-Knopf über der
+    // Feature-Tour-Karte (Regression: Nutzer-Feedback, "Kategorien & Budgets"
+    // -Schritt landet auf dem Struktur-Tab und triggert diesen Override
+    // unabhängig davon, welches Element die Tour gerade erklärt).
+    if(mainTab==="struktur" && !_structOverlayOpen && !showGuidedTour) {
       setMasterOverride({
         label: "←zurück 2×schließen",
         dismissOnDoubleTap: true,                          // Doppel-Tap → onDismiss; Einzel-Tap: nichts
@@ -431,7 +435,7 @@ export default function SupaDupaMoney() {
       });
       return () => setMasterOverride(null);
     }
-  }, [mainTab, activeStructurTab, _structOverlayOpen]);
+  }, [mainTab, activeStructurTab, _structOverlayOpen, showGuidedTour]);
   const [isDirty, setIsDirty] = useState(false);
   const [syncError, setSyncError] = useState("");
 
