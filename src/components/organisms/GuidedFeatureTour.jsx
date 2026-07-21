@@ -217,9 +217,9 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
   // zuletzt gemessene NORMALE Position (aus einem Schritt, in dem der Knopf
   // nicht selbst fliegt) — sonst würde die eigene Flugbewegung die nächste
   // Messung verfälschen (Rückkopplung).
-  const plusOriginalTopRef = useRef(null);
+  const plusOriginalTopRef = useRef(null); // {top,height} der normalen (nicht geflogenen) Knopf-Position
   useEffect(() => {
-    if (!isPlusTarget && plusRect) plusOriginalTopRef.current = plusRect.top;
+    if (!isPlusTarget && plusRect) plusOriginalTopRef.current = { top: plusRect.top, height: plusRect.height };
   }, [plusRect, isPlusTarget]);
 
   const cardRef = useRef(null);
@@ -232,16 +232,43 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
     return () => { cancelAnimationFrame(rafId); window.removeEventListener("resize", measure); };
   }, [isPlusTarget, expandLevel, kidsMode, ready]);
 
+  // Gestaffelte Einblendung (Nutzer-Wunsch): erst schwebt der echte Knopf aus
+  // seiner normalen Position sanft hoch, ERST DANACH blendet der dicke
+  // Goldrand ein, ERST DANACH erscheint der zweite (Navigations-)Knopf an der
+  // freigewordenen Stelle — nicht alles gleichzeitig. Diese Stufen laufen
+  // EINMALIG pro Schritt-Eintritt (abhängig von isPlusTarget, nicht von
+  // cardBottom) — sonst würde jedes Ausklappen von "mehr …" die ganze
+  // Sequenz von vorn beginnen lassen.
   useEffect(() => {
-    if (!isPlusTarget || cardBottom == null || plusOriginalTopRef.current == null) {
-      setTourPlusFly(null);
-      return;
-    }
+    if (!isPlusTarget) { setTourPlusFly(null); return; }
+    setTourPlusFly(v => (v && typeof v === "object") ? { ...v, borderReady: false, navReady: false }
+      : { deltaY: 0, borderReady: false, navReady: false });
+    const FLY_MS = 650;    // > CSS-Transition (0.6s) der Flugbewegung am Wrapper
+    const BORDER_MS = 300; // Goldrand blendet erst danach ein
+    const NAV_MS = 350;    // zweiter Knopf erst nach dem Goldrand
+    const t1 = setTimeout(() => setTourPlusFly(v => v ? { ...v, borderReady: true } : v), FLY_MS);
+    const t2 = setTimeout(() => setTourPlusFly(v => v ? { ...v, navReady: true } : v), FLY_MS + BORDER_MS + NAV_MS);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [isPlusTarget]);
+
+  // Ziel-Position separat und REAKTIV auf cardBottom — aktualisiert nur
+  // deltaY, lässt borderReady/navReady (s.o.) unangetastet, damit ein
+  // Ausklappen der Erklärung den Knopf nur sanft nachrückt statt die
+  // Einblend-Sequenz zu wiederholen. Der Knopf wird dabei MITTIG in die
+  // Lücke zwischen Kartenunterkante und seiner normalen Position gesetzt
+  // (unter Berücksichtigung seiner eigenen Höhe, nicht nur der Mittelpunkt
+  // der beiden Grenzlinien — sonst rutscht er zu weit Richtung Navigations-
+  // Knopf, s. Nutzer-Feedback/Screenshot).
+  useEffect(() => {
+    const orig = plusOriginalTopRef.current;
+    if (!isPlusTarget || cardBottom == null || !orig) return;
     const GAP = 20;
     const gapTop = cardBottom + GAP;
-    const gapBottom = plusOriginalTopRef.current - GAP;
-    const targetTop = gapBottom > gapTop ? (gapTop + gapBottom) / 2 : gapTop;
-    setTourPlusFly(Math.min(0, targetTop - plusOriginalTopRef.current));
+    const gapBottom = orig.top - GAP;
+    const availableHeight = gapBottom - gapTop;
+    const targetTop = availableHeight > orig.height ? gapTop + (availableHeight - orig.height) / 2 : gapTop;
+    const deltaY = Math.min(0, targetTop - orig.top);
+    setTourPlusFly(v => (v && typeof v === "object") ? { ...v, deltaY } : v);
   }, [isPlusTarget, cardBottom]);
   // Beim Verlassen der Tour in jedem Fall zurücksetzen.
   useEffect(() => () => setTourPlusFly(null), []);

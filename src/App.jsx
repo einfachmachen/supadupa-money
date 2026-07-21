@@ -3660,16 +3660,21 @@ Abbrechen = ${remoteName}-Stand laden`
           // Override-Variante, damit der Button überall gleich aussieht.
           const { isFlat, bg, fg } = plusBtnColors(T);
           // Dual-Knopf-Modus (Feature-Tour, "Vormerkungen anlegen"): der echte
-          // Knopf fliegt sichtbar an tourPlusFly (px, ≤0) nach oben — per
-          // Transform NUR am Wrapper, damit die gesamte Gestik oben (die mit
-          // e.clientX/Y in Bildschirmkoordinaten rechnet) komplett unangetastet
-          // bleibt. Ein goldener Rand macht die Sonderrolle zusätzlich deutlich.
+          // Knopf fliegt sichtbar an tourPlusFly.deltaY (px, ≤0) nach oben —
+          // per Transform NUR am Wrapper, damit die gesamte Gestik oben (die
+          // mit e.clientX/Y in Bildschirmkoordinaten rechnet) komplett
+          // unangetastet bleibt. Gestaffelt (s. GuidedFeatureTour.jsx): erst
+          // die Flugbewegung, DANN blendet der dicke Goldrand ein
+          // (borderReady), ERST DANACH erscheint der zweite Knopf (navReady).
           const flying = tourPlusFly != null;
+          const flyDelta = flying ? tourPlusFly.deltaY : 0;
+          const goldReady = flying && tourPlusFly.borderReady;
+          const navReady = flying && tourPlusFly.navReady;
 
           return (
             <React.Fragment key={key}>
               <div style={{...plusWrapperShell(plusArretiert),
-                transform: flying ? `translateY(${tourPlusFly}px)` : undefined,
+                transform: flying ? `translateY(${flyDelta}px)` : undefined,
                 transition: flying ? "transform 0.6s cubic-bezier(.34,1,.4,1)" : undefined}}>
                 <button
                   data-tour="master-plus"
@@ -3682,16 +3687,18 @@ Abbrechen = ${remoteName}-Stand laden`
                     ...plusBtnShell(SIZE),
                     // Flache Themes: Kontrastrahmen (in Textfarbe) definiert die
                     // Form, da der Schatten per CSS entfernt wird. Sonst dezenter
-                    // Rahmen in Nav-Farbe + Schatten wie gehabt. Fliegend: goldener
-                    // Rand statt dessen, unabhängig vom Theme klar erkennbar.
-                    border: flying ? "3px solid #FFD700" : (isFlat ? `2px solid ${fg}` : `3px solid ${T.surf}`),
+                    // Rahmen in Nav-Farbe + Schatten wie gehabt. Sobald goldReady:
+                    // dicker goldener Rand statt dessen, unabhängig vom Theme klar
+                    // erkennbar — blendet erst NACH der Flugbewegung ein.
+                    border: goldReady ? "5px solid #FFD700" : (isFlat ? `2px solid ${fg}` : `3px solid ${T.surf}`),
                     background: bg,
-                    boxShadow: flying ? "0 0 0 3px rgba(255,215,0,0.35), 0 8px 24px rgba(0,0,0,0.45)" : "none",
+                    boxShadow: goldReady ? "0 0 0 4px rgba(255,215,0,0.4), 0 8px 24px rgba(0,0,0,0.45)" : "none",
                     cursor:"pointer",
                     // Ruheposition. Im Drilldown vergrößert & frei ziehbar (s. Gesten);
                     // dort ohne Transition, damit das Ziehen direkt folgt.
                     transform: restingTransform,
-                    transition: moodDrillOpen ? "none" : "transform 0.25s cubic-bezier(.34,1.4,.64,1)",
+                    transition: moodDrillOpen ? "none"
+                      : "transform 0.25s cubic-bezier(.34,1.4,.64,1), border-color 0.4s ease, border-width 0.4s ease, box-shadow 0.4s ease",
                   }}>
                   {showMobilePicker ? (
                     <div style={{pointerEvents:"none",textAlign:"center",width:"86%"}}>
@@ -3717,9 +3724,18 @@ Abbrechen = ${remoteName}-Stand laden`
                 </button>
               </div>
               {/* Zweiter Knopf an der normalen Stelle: steuert die Tour weiter,
-                  während der echte Knopf oben seine eigene Geste zeigt. */}
+                  während der echte Knopf oben seine eigene Geste zeigt.
+                  Erscheint erst (sanft eingeblendet), NACHDEM der echte Knopf
+                  oben angekommen ist UND seinen Goldrand gezeigt hat. */}
               {flying && masterOverride && (
-                <MasterOverrideSlot override={masterOverride} SIZE={SIZE} T={T} plusArretiert={plusArretiert}/>
+                <div style={{
+                  opacity: navReady ? 1 : 0,
+                  transform: navReady ? "scale(1)" : "scale(0.6)",
+                  transition: "opacity 0.35s ease, transform 0.35s cubic-bezier(.34,1.4,.64,1)",
+                  pointerEvents: navReady ? "auto" : "none",
+                }}>
+                  <MasterOverrideSlot override={masterOverride} SIZE={SIZE} T={T} plusArretiert={plusArretiert}/>
+                </div>
               )}
             </React.Fragment>
           );
