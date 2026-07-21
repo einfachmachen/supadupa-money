@@ -1310,32 +1310,54 @@ Abbrechen = ${remoteName}-Stand laden`
   }, [startBalances]);
 
   // Auto-Erweiterung: Budget-Platzhalter immer bis Ende des 7. Jahres auffüllen
+  //
+  // bud.generatedThrough ist ein Wasserzeichen ("bis wohin wurde für dieses
+  // Budget schon generiert"), das NUR vorwärts läuft und nie aus den aktuell
+  // existierenden Platzhaltern neu abgeleitet wird. Vorherige Fassung las
+  // stattdessen bei jedem Lauf das Datum des SPÄTESTEN noch existierenden
+  // Platzhalters — löschte der Nutzer gezielt den am weitesten in der
+  // Zukunft liegenden Platzhalter (z.B. eine einzelne, nicht gewollte
+  // Tagesgeld-Rate), erkannte der nächste Lauf (der bei JEDEM Cloud-Laden
+  // erneut feuert, weil applyData() budgets() immer frisch referenziert)
+  // fälschlich eine Lücke und legte genau den gelöschten Platzhalter mit
+  // neuer ID wieder an — Tombstones konnten das nicht verhindern, weil sie
+  // an die ALTE ID gebunden sind. Das Wasserzeichen kennt nur "bis wohin",
+  // nicht "welche Einträge existieren gerade" — eine gelöschte einzelne
+  // Rate bleibt dadurch dauerhaft gelöscht, auch über Cloud-Syncs hinweg
+  // (das Wasserzeichen ist Teil von budgets und wird mitsynchronisiert).
   useEffect(()=>{
-    if(!txs.length || !Object.keys(budgets).length) return;
+    if(!Object.keys(budgets).length) return;
     const now = new Date();
     const curYear = now.getFullYear();
     const endYear = curYear + 6;
-    let needsUpdate = false;
     const toAdd = [];
+    let budgetsChanged = false;
+    const nextBudgets = {...budgets};
     Object.entries(budgets).forEach(([subId, bud])=>{
       if(!bud?.amount || !bud?.catId) return;
       const interval = bud.months||1;
-      // Letzter vorhandener Platzhalter für diese Unterkategorie
       const existing = txs.filter(t=>t._budgetSubId===subId&&t.pending)
         .sort((a,b)=>b.date.localeCompare(a.date));
-      const lastDate = existing[0]?.date;
-      if(!lastDate) return;
-      const lastYear = parseInt(lastDate.split("-")[0]);
+      const firstPend = existing[existing.length-1];
+      // Wasserzeichen einmalig aus dem aktuell spätesten Platzhalter
+      // bootstrappen (Bestandsdaten ohne dieses Feld) — danach nur noch
+      // fortschreiben, nie mehr aus existing ableiten.
+      let genThrough = bud.generatedThrough || existing[0]?.date || null;
+      if(!bud.generatedThrough && genThrough) {
+        nextBudgets[subId] = {...bud, generatedThrough: genThrough};
+        budgetsChanged = true;
+      }
+      if(!genThrough) return; // noch nie ein Platzhalter angelegt — nichts zu erweitern
+      const lastYear = parseInt(genThrough.split("-")[0]);
       if(lastYear >= endYear) return; // schon ausreichend
-      // Fehlende Einträge ab dem letzten+interval bis endYear
-      const [ly,lm] = lastDate.split("-").map(Number);
+      // Fehlende Einträge ab dem Wasserzeichen+interval bis endYear
+      const [ly,lm] = genThrough.split("-").map(Number);
       let curM = lm - 1 + interval;
       let curY = ly + Math.floor(curM/12);
       curM = curM % 12;
       const acc = accounts[0];
-      // Finde catId aus erstem Platzhalter
-      const firstPend = existing[existing.length-1];
       const catId = firstPend?.splits?.[0]?.catId || bud.catId;
+      let lastGenDate = genThrough;
       while(curY <= endYear) {
         // Tag aus gespeichertem startDate übernehmen, auf Monatslänge clampen
         const startDay = bud.startDate ? parseInt(bud.startDate.split("-")[2]) : 1;
@@ -1353,15 +1375,16 @@ Abbrechen = ${remoteName}-Stand laden`
           _budgetSubId: subId, _csvType:"expense",
           splits:[{id:uid(),catId,subId,amount:bud.amount}],
         });
-        needsUpdate = true;
+        lastGenDate = dateStr;
         curM += interval;
         curY += Math.floor(curM/12);
         curM = curM % 12;
       }
+      nextBudgets[subId] = {...nextBudgets[subId], generatedThrough: lastGenDate};
+      budgetsChanged = true;
     });
-    if(needsUpdate && toAdd.length>0) {
-      setTxs(p=>[...p,...toAdd]);
-    }
+    if(toAdd.length>0) setTxs(p=>[...p,...toAdd]);
+    if(budgetsChanged) setBudgets(nextBudgets);
   }, [budgets]); // läuft nur wenn sich budgets ändern (inkl. nach dem Laden)
 
   // ── Einmalige Bereinigung: alle endDate-Felder leeren + nach CF hochladen ──
