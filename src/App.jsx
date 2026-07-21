@@ -1311,20 +1311,16 @@ Abbrechen = ${remoteName}-Stand laden`
 
   // Auto-Erweiterung: Budget-Platzhalter immer bis Ende des 7. Jahres auffüllen
   //
-  // bud.generatedThrough ist ein Wasserzeichen ("bis wohin wurde für dieses
-  // Budget schon generiert"), das NUR vorwärts läuft und nie aus den aktuell
-  // existierenden Platzhaltern neu abgeleitet wird. Vorherige Fassung las
-  // stattdessen bei jedem Lauf das Datum des SPÄTESTEN noch existierenden
-  // Platzhalters — löschte der Nutzer gezielt den am weitesten in der
-  // Zukunft liegenden Platzhalter (z.B. eine einzelne, nicht gewollte
-  // Tagesgeld-Rate), erkannte der nächste Lauf (der bei JEDEM Cloud-Laden
-  // erneut feuert, weil applyData() budgets() immer frisch referenziert)
-  // fälschlich eine Lücke und legte genau den gelöschten Platzhalter mit
-  // neuer ID wieder an — Tombstones konnten das nicht verhindern, weil sie
-  // an die ALTE ID gebunden sind. Das Wasserzeichen kennt nur "bis wohin",
-  // nicht "welche Einträge existieren gerade" — eine gelöschte einzelne
-  // Rate bleibt dadurch dauerhaft gelöscht, auch über Cloud-Syncs hinweg
-  // (das Wasserzeichen ist Teil von budgets und wird mitsynchronisiert).
+  // Läuft NICHT mehr automatisch/lautlos — legt nichts mehr direkt an,
+  // sondern stellt einen Vorschlag (budgetExtProposal) auf, den der Nutzer
+  // im Popup unten explizit bestätigen oder ablehnen muss. Grund: trotz des
+  // Wasserzeichens (generatedThrough, das NUR vorwärts läuft und eine
+  // gelöschte Einzelrate nicht mehr aus den aktuell existierenden
+  // Platzhaltern zurückrechnet) kam eine gelöschte Tagesgeld-Buchung
+  // weiterhin zurück — die genaue Ursache dafür ist noch nicht restlos
+  // geklärt. Bis dahin: sichtbar machen statt raten, damit der Nutzer den
+  // tatsächlich vorgeschlagenen Automatismus selbst sehen und ablehnen kann.
+  const [budgetExtProposal, setBudgetExtProposal] = useState(null);
   useEffect(()=>{
     if(!Object.keys(budgets).length) return;
     const now = new Date();
@@ -1333,6 +1329,7 @@ Abbrechen = ${remoteName}-Stand laden`
     const toAdd = [];
     let budgetsChanged = false;
     const nextBudgets = {...budgets};
+    const proposalItems = [];
     Object.entries(budgets).forEach(([subId, bud])=>{
       if(!bud?.amount || !bud?.catId) return;
       const interval = bud.months||1;
@@ -1358,13 +1355,14 @@ Abbrechen = ${remoteName}-Stand laden`
       const acc = accounts[0];
       const catId = firstPend?.splits?.[0]?.catId || bud.catId;
       let lastGenDate = genThrough;
+      const theseNew = [];
       while(curY <= endYear) {
         // Tag aus gespeichertem startDate übernehmen, auf Monatslänge clampen
         const startDay = bud.startDate ? parseInt(bud.startDate.split("-")[2]) : 1;
         const maxDay = new Date(curY, curM+1, 0).getDate();
         const day = Math.min(startDay, maxDay);
         const dateStr = `${curY}-${String(curM+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-        toAdd.push({
+        const newTx = {
           id:"budget-"+subId+"-ext-"+curY+curM+"-"+Date.now(),
           date: dateStr,
           desc: firstPend?.desc||"Budget",
@@ -1374,17 +1372,33 @@ Abbrechen = ${remoteName}-Stand laden`
           pendingDate:"", repeatMonths: interval,
           _budgetSubId: subId, _csvType:"expense",
           splits:[{id:uid(),catId,subId,amount:bud.amount}],
-        });
+        };
+        toAdd.push(newTx);
+        theseNew.push(newTx);
         lastGenDate = dateStr;
         curM += interval;
         curY += Math.floor(curM/12);
         curM = curM % 12;
       }
+      if(theseNew.length) {
+        proposalItems.push({
+          subId, desc: firstPend?.desc||"Budget", count: theseNew.length,
+          from: theseNew[0].date, to: theseNew[theseNew.length-1].date,
+          amount: bud.amount, accountId: acc?.id||"acc-giro",
+          lastGenDate, prevGenThrough: bud.generatedThrough||null,
+        });
+      }
       nextBudgets[subId] = {...nextBudgets[subId], generatedThrough: lastGenDate};
       budgetsChanged = true;
     });
-    if(toAdd.length>0) setTxs(p=>[...p,...toAdd]);
-    if(budgetsChanged) setBudgets(nextBudgets);
+    // Ein reines Watermark-Bootstrap (keine neuen Buchungen, nur das Feld
+    // erstmalig gesetzt) braucht keine Nachfrage — nur wenn tatsächlich
+    // Buchungen entstehen würden, wird gefragt.
+    if(toAdd.length>0) {
+      setBudgetExtProposal({ items: proposalItems, toAdd, nextBudgets });
+    } else if(budgetsChanged) {
+      setBudgets(nextBudgets);
+    }
   }, [budgets]); // läuft nur wenn sich budgets ändern (inkl. nach dem Laden)
 
   // ── Einmalige Bereinigung: alle endDate-Felder leeren + nach CF hochladen ──
@@ -3139,6 +3153,59 @@ Abbrechen = ${remoteName}-Stand laden`
               </div>
             );
           })}
+        </Overlay>
+      )}
+
+      {/* ── Vorschlag: Budget-Platzhalter automatisch verlängern (Auto-Erweiterung).
+          Ersetzt den früheren lautlosen Automatismus — legt NICHTS mehr ohne
+          explizite Bestätigung an, siehe useEffect weiter oben. ── */}
+      {budgetExtProposal && (
+        <Overlay onClose={()=>{
+          setBudgets(budgetExtProposal.nextBudgets);
+          setBudgetExtProposal(null);
+        }}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+            <div style={{fontSize:16,fontWeight:800,color:T.txt}}>Wiederkehrende Budgets verlängern?</div>
+          </div>
+          <div style={{fontSize:12.5,color:T.txt2,marginBottom:12,lineHeight:1.4}}>
+            Für folgende Budgets werden neue Platzhalter-Buchungen vorgeschlagen,
+            damit die Vorschau weiter in die Zukunft reicht. Buchungen, die du
+            zuvor gelöscht hast, werden dabei NICHT wieder angelegt.
+          </div>
+          {budgetExtProposal.items.map(it=>{
+            const bud = budgets[it.subId];
+            const cat = bud?.catId ? getCat(bud.catId) : null;
+            const sub = cat ? getSub(cat.id, it.subId) : null;
+            const acc = getAcc(it.accountId);
+            return (
+              <div key={it.subId} style={{padding:"10px 8px",borderBottom:`1px solid ${T.bd}`}}>
+                <div style={{fontSize:14,fontWeight:700,color:T.txt}}>
+                  {sub?.name || cat?.name || it.desc}
+                </div>
+                <div style={{fontSize:11.5,color:T.txt2,marginTop:2}}>
+                  {it.count} neue Buchung{it.count===1?"":"en"} · {fmt(Math.abs(it.amount))} € ·
+                  {" "}{it.from.split("-").reverse().join(".")} – {it.to.split("-").reverse().join(".")} · {acc?.name}
+                </div>
+              </div>
+            );
+          })}
+          <div style={{display:"flex",gap:10,marginTop:16}}>
+            <button onClick={()=>{
+              setBudgets(budgetExtProposal.nextBudgets);
+              setBudgetExtProposal(null);
+            }} style={{flex:1,padding:"11px 0",borderRadius:10,border:`1px solid ${T.bd}`,
+              background:"transparent",color:T.txt,fontWeight:700,fontSize:14,cursor:"pointer"}}>
+              Ablehnen
+            </button>
+            <button onClick={()=>{
+              setTxs(p=>[...p,...budgetExtProposal.toAdd]);
+              setBudgets(budgetExtProposal.nextBudgets);
+              setBudgetExtProposal(null);
+            }} style={{flex:1,padding:"11px 0",borderRadius:10,border:"none",
+              background:T.gold,color:"#1a1a1a",fontWeight:800,fontSize:14,cursor:"pointer"}}>
+              Anlegen
+            </button>
+          </div>
         </Overlay>
       )}
 
