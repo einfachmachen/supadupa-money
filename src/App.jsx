@@ -461,7 +461,40 @@ export default function SupaDupaMoney() {
       Object.keys(clean.yearData[y][m]||{}).forEach(k=>{if(k.startsWith("jsub_"))delete clean.yearData[y][m][k];});
     }));
     // Aufteilen: config + txs pro Jahr
-    const {txs: allTxs, ...configOnly} = clean;
+    const {txs: rawTxs, ...configOnly} = clean;
+    const base = normCfUrl(cfUrl);
+    const headers = {"Content-Type":"application/json","X-Secret":cfSecret};
+
+    // Letzte Verteidigungslinie GEGEN wiederkehrende gelöschte Buchungen:
+    // BEVOR überhaupt irgendetwas hochgeladen wird, kurz die aktuell in der
+    // Cloud stehenden Tombstones/Sparplan-Wasserzeichen abholen und lokal
+    // übernehmen. Grund: dieses Gerät kann einen veralteten lokalen Stand
+    // haben (z.B. nach längerer Inaktivität + Reconnect-Auto-Save, oder wenn
+    // kurz zuvor ein ANDERES Gerät etwas gelöscht und synchronisiert hat) —
+    // ohne diesen Vorab-Abgleich würde so ein Push die fremde Löschung
+    // versehentlich rückgängig machen, unabhängig davon, wodurch die
+    // Buchung ursprünglich entstanden ist (Sparplan, Budget-Platzhalter,
+    // manuell, …). Das schließt das Zeitfenster, das die rein reaktive
+    // Übernahme beim Laden (cfLoad-Aufrufer) offen lässt, wenn ein Gerät
+    // zwischen zwei Loads einfach nur speichert.
+    try {
+      const remoteRes = await fetch(`${base}/config`, {headers:{"X-Secret":cfSecret}});
+      if(remoteRes.ok) {
+        const remoteRaw = await remoteRes.json();
+        const remoteConfig = isEncrypted(remoteRaw)
+          ? (syncPass ? await decryptJSON(remoteRaw, syncPass) : null)
+          : remoteRaw;
+        if(remoteConfig) {
+          if(remoteConfig._txTombstones) mergeRemoteTombstones(remoteConfig._txTombstones);
+          if(remoteConfig._sparWatermarks) mergeRemoteSparWatermarks(remoteConfig._sparWatermarks);
+        }
+      }
+    } catch(e) { console.warn("Tombstone-/Wasserzeichen-Vorabgleich vor Push übersprungen:", e); }
+    // Lokalen State direkt mitbereinigen, damit die UI nicht kurzzeitig eine
+    // Buchung zeigt, die der folgende Push ohnehin schon ausschließt.
+    const allTxs = filterTombstonedTxs(rawTxs, 0);
+    if(allTxs.length !== rawTxs.length) setTxs(prev => filterTombstonedTxs(prev, 0));
+
     // Privaten Bank-Schlüssel (.pem) + Verbindungsdaten NUR mitsynchronisieren,
     // wenn eine Passphrase aktiv ist — dann landet er ausschließlich verschlüsselt
     // im /config-Body. Ohne Passphrase verlässt der Schlüssel das Gerät nie.
@@ -475,10 +508,10 @@ export default function SupaDupaMoney() {
       const ct = JSON.parse(kvStore.getItem("mbt_custom_themes")||"{}");
       if(ct && Object.keys(ct).length) configOnly.customThemes = ct;
     } catch(e) {}
-    // Tombstones gelöschter Buchungen mitschicken — sonst kennt ein zweites
-    // Gerät (z.B. iPhone) eine auf dem Mac gelöschte Buchung nicht und lädt
-    // sie beim eigenen nächsten Push versehentlich wieder hoch (siehe
-    // utils/txTombstones.js).
+    // Tombstones gelöschter Buchungen mitschicken (inkl. der gerade eben von
+    // der Cloud übernommenen) — sonst kennt ein zweites Gerät (z.B. iPhone)
+    // eine auf dem Mac gelöschte Buchung nicht und lädt sie beim eigenen
+    // nächsten Push versehentlich wieder hoch (siehe utils/txTombstones.js).
     const tombstones = getTombstonesForSync();
     if(Object.keys(tombstones).length) configOnly._txTombstones = tombstones;
     // Sparplan-Wasserzeichen mitschicken — sonst kennt ein zweites Gerät die
@@ -488,8 +521,6 @@ export default function SupaDupaMoney() {
     const sparWatermarks = getSparWatermarksForSync();
     if(Object.keys(sparWatermarks).length) configOnly._sparWatermarks = sparWatermarks;
     const byYear = compressTxByYear(allTxs);
-    const base = normCfUrl(cfUrl);
-    const headers = {"Content-Type":"application/json","X-Secret":cfSecret};
 
     // Zero-Knowledge: Ist eine Passphrase gesetzt, wird jeder Body vor dem
     // Hochladen client-seitig verschlüsselt. Ein gemeinsamer Salt pro Sync-Lauf
