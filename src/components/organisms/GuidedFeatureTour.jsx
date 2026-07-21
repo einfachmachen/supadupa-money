@@ -41,7 +41,7 @@ const POLL_TIMEOUT_MS = 1500;
 const COMIC_COLORS = ["#FF6B6B", "#FFA94D", "#FFD43B", "#69DB7C", "#3BC9DB", "#4DABF7", "#B197FC", "#F783AC"];
 
 function GuidedFeatureTour({ onClose, initialStage=0 }) {
-  const { setMainTab, setSubTab, setActiveStructurTab, setMasterOverride } = useContext(AppCtx);
+  const { setMainTab, setSubTab, setActiveStructurTab, setMasterOverride, setTourPlusFly } = useContext(AppCtx);
   const [stageIndex, setStageIndex] = useState(initialStage);
   const [stepIndex, setStepIndex] = useState(0);
   const [kidsMode, setKidsMode] = useState(() => kvStore.getItem("mbt_tourKids") === "1");
@@ -188,12 +188,12 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
 
   // Während die Tour offen ist, übernimmt der +-Knopf selbst Weiter/Zurück/
   // Abbrechen (Tipp/Wisch-links/Doppel-Tipp) — zusätzlich zu den Buttons in
-  // der Karte, nicht als Ersatz dafür. Ausnahme: der Schritt, der den
-  // +-Knopf SELBST erklärt ("Vormerkungen anlegen") — dort muss er seine
-  // echten Gesten (v.a. Doppel-Tipp verwandelt Datum → Plus) demonstrieren
-  // können, die Tour darf ihn dafür nicht mit eigener Navigation belegen.
+  // der Karte, nicht als Ersatz dafür. Beim Schritt, der den +-Knopf SELBST
+  // erklärt ("Vormerkungen anlegen"), gilt das genauso — nur übernimmt dort
+  // NICHT der echte Knopf die Navigation (der muss seine eigenen Gesten frei
+  // demonstrieren können), sondern ein zweiter, zusätzlicher Knopf an seiner
+  // Stelle (s. tourPlusFly-Effect unten und renderMasterButton in App.jsx).
   useEffect(() => {
-    if (isPlusTarget) return;
     const words = [isVeryLast ? "Fertig✓" : isLastStepOfStage ? "Nächste" : "Weiter"];
     if (!isVeryFirst) words.push("←Zurück");
     words.push("2×Abbrechen");
@@ -206,7 +206,45 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
     });
     return () => setMasterOverride(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stageIndex, stepIndex, isPlusTarget]);
+  }, [stageIndex, stepIndex]);
+
+  // "Vormerkungen anlegen": der echte +-Knopf fliegt sichtbar (sanft animiert)
+  // in die Lücke zwischen Kartenunterkante und seiner normalen Position hoch,
+  // statt dort zu bleiben, wo ihn die Karte ohnehin schon meidet — so bleibt
+  // Platz für den zweiten (Navigations-)Knopf an seiner alten Stelle, UND der
+  // hochgeflogene echte Knopf ist als Besonderheit klar erkennbar (goldener
+  // Rand, s. renderMasterButton). plusOriginalTopRef merkt sich dafür die
+  // zuletzt gemessene NORMALE Position (aus einem Schritt, in dem der Knopf
+  // nicht selbst fliegt) — sonst würde die eigene Flugbewegung die nächste
+  // Messung verfälschen (Rückkopplung).
+  const plusOriginalTopRef = useRef(null);
+  useEffect(() => {
+    if (!isPlusTarget && plusRect) plusOriginalTopRef.current = plusRect.top;
+  }, [plusRect, isPlusTarget]);
+
+  const cardRef = useRef(null);
+  const [cardBottom, setCardBottom] = useState(null);
+  useEffect(() => {
+    if (!isPlusTarget) { setCardBottom(null); return; }
+    const measure = () => { if (cardRef.current) setCardBottom(cardRef.current.getBoundingClientRect().bottom); };
+    const rafId = requestAnimationFrame(measure);
+    window.addEventListener("resize", measure);
+    return () => { cancelAnimationFrame(rafId); window.removeEventListener("resize", measure); };
+  }, [isPlusTarget, expandLevel, kidsMode, ready]);
+
+  useEffect(() => {
+    if (!isPlusTarget || cardBottom == null || plusOriginalTopRef.current == null) {
+      setTourPlusFly(null);
+      return;
+    }
+    const GAP = 20;
+    const gapTop = cardBottom + GAP;
+    const gapBottom = plusOriginalTopRef.current - GAP;
+    const targetTop = gapBottom > gapTop ? (gapTop + gapBottom) / 2 : gapTop;
+    setTourPlusFly(Math.min(0, targetTop - plusOriginalTopRef.current));
+  }, [isPlusTarget, cardBottom]);
+  // Beim Verlassen der Tour in jedem Fall zurücksetzen.
+  useEffect(() => () => setTourPlusFly(null), []);
 
   // Callout-Position: unterhalb des Ziels, wenn genug Platz ist, sonst
   // darüber; ohne Ziel (oder solange nicht "ready") zentriert. Der obere
@@ -287,9 +325,15 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
           bewusst vollständig modal (nur über die eigenen Buttons steuerbar),
           damit ein Antippen des hervorgehobenen Elements nicht versehentlich
           echte Navigation auslöst, während man gerade die Erklärung liest. */}
-      {!rect && <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.72)" }} />}
+      {/* isPlusTarget: der echte Knopf fliegt sichtbar aus seiner ursprünglichen
+          Position weg (s. tourPlusFly) — ein Hervorhebungs-Rahmen an der
+          (dann veralteten) Ausgangsposition würde nur noch auf eine leere
+          Stelle zeigen. Der goldene Rand am geflogenen Knopf selbst (siehe
+          renderMasterButton in App.jsx) übernimmt die Hervorhebung stattdessen,
+          vor einer schlichten, flächigen Abdunkelung. */}
+      {(!rect || isPlusTarget) && <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.72)" }} />}
 
-      {rect && (
+      {rect && !isPlusTarget && (
         <div style={{
           position: "fixed",
           top: rect.top - 6, left: rect.left - 6,
@@ -306,7 +350,7 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
           Comic-Sticker-Schatten und großem Emoji-Badge (Stil wie zuvor in
           der entfernten statischen FeatureTour), sonst die normale,
           ruhige Karte. */}
-      <div style={{ position: "fixed", ...cardStyle,
+      <div ref={cardRef} style={{ position: "fixed", ...cardStyle,
         transform: `${cardStyle.transform||""} rotate(${kidsMode?comicTilt:0}deg)`,
         background: T.surf,
         border: kidsMode ? `3px solid ${comicColor}` : `1px solid ${T.bd}`,

@@ -304,6 +304,15 @@ export default function SupaDupaMoney() {
   // Wisch ← = Zurück, Wisch ↓ = Modal schließen.
   //   { label, onConfirm, onBack|null, onDismiss, disabled? }
   const [masterOverride, setMasterOverride] = useState(null);
+  // Feature-Tour, Schritt "Vormerkungen anlegen": dort erklärt der reale
+  // +-Knopf sich SELBST (Doppel-Tipp verwandelt Datum → Plus) — die Tour darf
+  // ihn deshalb nicht mit eigener Navigation belegen (siehe masterOverride-
+  // Nutzung in GuidedFeatureTour.jsx). Damit trotzdem über den Knopf
+  // navigiert werden kann, fliegt der ECHTE Knopf per Transform sichtbar nach
+  // oben (tourPlusFly = Ziel-Offset in px, ≤0) und ein ZWEITER, an der
+  // normalen Stelle bleibender Override-Knopf (aus masterOverride) steuert
+  // die Tour — s. renderMasterButton weiter unten (Dual-Knopf-Modus).
+  const [tourPlusFly, setTourPlusFly] = useState(null);
 
   // Merkt sich den zuletzt aktiven Haupt-Tab (außerhalb der Struktur-/
   // Einstellungs-Screens). Verlässt man die Einstellungen per Doppel-Tap,
@@ -2986,6 +2995,7 @@ Abbrechen = ${remoteName}-Stand laden`
     amtFont, setAmtFont,
     noBorders, setNoBorders,
     masterOverride, setMasterOverride,
+    tourPlusFly, setTourPlusFly,
     favIcons, setFavIcons,
   }), [
     cats, groups, txs, accounts, vehicles, yearData,
@@ -3004,7 +3014,7 @@ Abbrechen = ${remoteName}-Stand laden`
     cfActive, cfStatus, cfUrl, cfSecret,
     syncPass, syncEncActive, showCloudSetup, showFuelAnalysis, showGuidedTour,
     syncStatus, syncError, isDirty, isOnline, cfSaveOnClose,
-    dashDrillOpen, amtMode, amtFont, noBorders, masterOverride,
+    dashDrillOpen, amtMode, amtFont, noBorders, masterOverride, tourPlusFly,
     favIcons,
   ]);
 
@@ -3327,7 +3337,10 @@ Abbrechen = ${remoteName}-Stand laden`
           // Selbe Position, dieselbe Größe — nur Inhalt und Gestik ändern sich.
           // Damit der Knopf trotz offenem Modal (zIndex 300) klickbar bleibt,
           // setzen wir den Wrapper auf zIndex 500.
-          if(masterOverride) {
+          // Ausnahme: tourPlusFly gesetzt (Feature-Tour, Schritt "Vormerkungen
+          // anlegen") — dort ersetzt der Override den echten Knopf NICHT,
+          // sondern ergänzt ihn (Dual-Knopf-Modus weiter unten).
+          if(masterOverride && tourPlusFly == null) {
             return <MasterOverrideSlot key={key} override={masterOverride}
               SIZE={SIZE} T={T} plusArretiert={plusArretiert}/>;
           }
@@ -3646,53 +3659,69 @@ Abbrechen = ${remoteName}-Stand laden`
           // Farb-/Form-Logik zentral (siehe plusBtnColors) — identisch zur
           // Override-Variante, damit der Button überall gleich aussieht.
           const { isFlat, bg, fg } = plusBtnColors(T);
+          // Dual-Knopf-Modus (Feature-Tour, "Vormerkungen anlegen"): der echte
+          // Knopf fliegt sichtbar an tourPlusFly (px, ≤0) nach oben — per
+          // Transform NUR am Wrapper, damit die gesamte Gestik oben (die mit
+          // e.clientX/Y in Bildschirmkoordinaten rechnet) komplett unangetastet
+          // bleibt. Ein goldener Rand macht die Sonderrolle zusätzlich deutlich.
+          const flying = tourPlusFly != null;
 
           return (
-            <div key={key} style={plusWrapperShell(plusArretiert)}>
-              <button
-                data-tour="master-plus"
-                className="plus-master-btn"
-                onPointerDown={onPointerDown}
-                onPointerMove={onPointerMove}
-                onPointerUp={onPointerUp}
-                onPointerCancel={onPointerCancel}
-                style={{
-                  ...plusBtnShell(SIZE),
-                  // Flache Themes: Kontrastrahmen (in Textfarbe) definiert die
-                  // Form, da der Schatten per CSS entfernt wird. Sonst dezenter
-                  // Rahmen in Nav-Farbe + Schatten wie gehabt.
-                  border: isFlat ? `2px solid ${fg}` : `3px solid ${T.surf}`,
-                  background: bg,
-                  boxShadow: "none",
-                  cursor:"pointer",
-                  // Ruheposition. Im Drilldown vergrößert & frei ziehbar (s. Gesten);
-                  // dort ohne Transition, damit das Ziehen direkt folgt.
-                  transform: restingTransform,
-                  transition: moodDrillOpen ? "none" : "transform 0.25s cubic-bezier(.34,1.4,.64,1)",
-                }}>
-                {showMobilePicker ? (
-                  <div style={{pointerEvents:"none",textAlign:"center",width:"86%"}}>
-                    <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
-                      <span style={{fontSize:19,fontWeight:800,color:fg,lineHeight:1}}>‹</span>
-                      <span style={{fontSize:14,fontWeight:800,color:fg,lineHeight:1}}>zurück</span>
+            <React.Fragment key={key}>
+              <div style={{...plusWrapperShell(plusArretiert),
+                transform: flying ? `translateY(${tourPlusFly}px)` : undefined,
+                transition: flying ? "transform 0.6s cubic-bezier(.34,1,.4,1)" : undefined}}>
+                <button
+                  data-tour="master-plus"
+                  className="plus-master-btn"
+                  onPointerDown={onPointerDown}
+                  onPointerMove={onPointerMove}
+                  onPointerUp={onPointerUp}
+                  onPointerCancel={onPointerCancel}
+                  style={{
+                    ...plusBtnShell(SIZE),
+                    // Flache Themes: Kontrastrahmen (in Textfarbe) definiert die
+                    // Form, da der Schatten per CSS entfernt wird. Sonst dezenter
+                    // Rahmen in Nav-Farbe + Schatten wie gehabt. Fliegend: goldener
+                    // Rand statt dessen, unabhängig vom Theme klar erkennbar.
+                    border: flying ? "3px solid #FFD700" : (isFlat ? `2px solid ${fg}` : `3px solid ${T.surf}`),
+                    background: bg,
+                    boxShadow: flying ? "0 0 0 3px rgba(255,215,0,0.35), 0 8px 24px rgba(0,0,0,0.45)" : "none",
+                    cursor:"pointer",
+                    // Ruheposition. Im Drilldown vergrößert & frei ziehbar (s. Gesten);
+                    // dort ohne Transition, damit das Ziehen direkt folgt.
+                    transform: restingTransform,
+                    transition: moodDrillOpen ? "none" : "transform 0.25s cubic-bezier(.34,1.4,.64,1)",
+                  }}>
+                  {showMobilePicker ? (
+                    <div style={{pointerEvents:"none",textAlign:"center",width:"86%"}}>
+                      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
+                        <span style={{fontSize:19,fontWeight:800,color:fg,lineHeight:1}}>‹</span>
+                        <span style={{fontSize:14,fontWeight:800,color:fg,lineHeight:1}}>zurück</span>
+                      </div>
+                      <div style={{fontSize:8,fontWeight:700,color:fg,opacity:0.8,letterSpacing:0.3,marginTop:4,whiteSpace:"nowrap"}}>tippen</div>
                     </div>
-                    <div style={{fontSize:8,fontWeight:700,color:fg,opacity:0.8,letterSpacing:0.3,marginTop:4,whiteSpace:"nowrap"}}>tippen</div>
-                  </div>
-                ) : (<>
-                  {_dayStr && !onMoodScreen && (
-                    <div style={{fontSize:24,fontWeight:800,color:fg,lineHeight:1,pointerEvents:"none"}}>
-                      {_dayStr}
+                  ) : (<>
+                    {_dayStr && !onMoodScreen && (
+                      <div style={{fontSize:24,fontWeight:800,color:fg,lineHeight:1,pointerEvents:"none"}}>
+                        {_dayStr}
+                      </div>
+                    )}
+                    <div style={{fontSize:onMoodScreen?20:13,fontWeight:800,color:fg,letterSpacing:-0.3,whiteSpace:"nowrap",pointerEvents:"none"}}>
+                      {onMoodScreen ? year : `${monthNames[month]} ${year}`}
                     </div>
-                  )}
-                  <div style={{fontSize:onMoodScreen?20:13,fontWeight:800,color:fg,letterSpacing:-0.3,whiteSpace:"nowrap",pointerEvents:"none"}}>
-                    {onMoodScreen ? year : `${monthNames[month]} ${year}`}
-                  </div>
-                  <div style={{fontSize:8,fontWeight:700,color:fg,opacity:0.75,letterSpacing:0.6,marginTop:2,pointerEvents:"none"}}>
-                    WISCHEN
-                  </div>
-                </>)}
-              </button>
-            </div>
+                    <div style={{fontSize:8,fontWeight:700,color:fg,opacity:0.75,letterSpacing:0.6,marginTop:2,pointerEvents:"none"}}>
+                      WISCHEN
+                    </div>
+                  </>)}
+                </button>
+              </div>
+              {/* Zweiter Knopf an der normalen Stelle: steuert die Tour weiter,
+                  während der echte Knopf oben seine eigene Geste zeigt. */}
+              {flying && masterOverride && (
+                <MasterOverrideSlot override={masterOverride} SIZE={SIZE} T={T} plusArretiert={plusArretiert}/>
+              )}
+            </React.Fragment>
           );
         };
 
