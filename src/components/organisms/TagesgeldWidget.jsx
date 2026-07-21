@@ -9,6 +9,7 @@ import { Li } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
 import { restMitte, restEnde, phaseStillReachable } from "../../utils/saldo.js";
 import { isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
+import { planLegDecisions } from "../../utils/sparPlanSeries.js";
 
 function TagesgeldWidget({year, month, initialCollapsed=true}) {
   const {  getKumulierterSaldo, txs, setTxs, cats, accounts, setAccounts, getAcc, budgets, getCat, getBudgetForMonth, selAcc, getProgEndeAccGlobal, resetProgEndeCache, sparOpenRequest } = useContext(AppCtx);
@@ -263,21 +264,20 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   // Extrahierte Aktualisierungs-Logik — nutzbar von Button UND autoAnpassen
   const doAktualisieren = (rows, seriesId, tgtSeriesId, sparDesc) => {
     const sparMonate = rows.filter(r=>r.zusaetzlich>0);
-    // Monatsschlüssel (Jahr*12+Monat) der bisher vorhandenen Raten dieser
-    // Serie merken, BEVOR sie entfernt werden — eine vom Nutzer manuell
+    // Entscheidungslogik in utils/sparPlanSeries.js (testbar, siehe dort):
+    // pro Bein (Abgang vom Giro / Zugang aufs Zielkonto) GETRENNT merken,
+    // welche Monate bisher eine Rate hatten — eine vom Nutzer manuell
     // gelöschte einzelne Rate innerhalb der bisher abgedeckten Spanne soll
-    // beim Neuberechnen nicht stillschweigend wieder auftauchen. Nur echte
-    // NEUE Monate (jenseits der bisherigen Spanne, z.B. weil der Plan
-    // verlängert wurde) werden neu angelegt.
-    const oldPendingOfSeries = txs.filter(t=>(t._seriesId===seriesId||t._seriesId===tgtSeriesId)&&t.pending);
-    const existingKeys = new Set(oldPendingOfSeries.map(t=>{ const d=new Date(t.date); return d.getFullYear()*12+d.getMonth(); }));
-    const maxExistingKey = existingKeys.size ? Math.max(...existingKeys) : -Infinity;
-    const keptMonate = sparMonate.filter(row=>{
-      const key = row.y*12+row.m;
-      // Innerhalb der bisherigen Spanne, aber keine vorhandene Rate mehr →
-      // wurde bewusst gelöscht, nicht wieder anlegen.
-      return !(key <= maxExistingKey && !existingKeys.has(key));
-    });
+    // beim Neuberechnen nicht stillschweigend wieder auftauchen, auch dann
+    // nicht, wenn nur EIN Bein des verknüpften Paars gelöscht wurde (z.B.
+    // nur die Tagesgeld-Einnahme, der Giro-Abgang blieb bestehen).
+    const oldAbgang = txs.filter(t=>t._seriesId===seriesId&&t.pending);
+    const oldZugang = txs.filter(t=>t._seriesId===tgtSeriesId&&t.pending);
+    const decisions = new Map(
+      planLegDecisions(sparMonate.map(row=>row.y*12+row.m), oldAbgang, oldZugang, !!sparAccId)
+        .map(d=>[d.key, d])
+    );
+
     setTxs(p=>{
       // Nur PENDING Buchungen der alten Serie entfernen — echte (bereits gebuchte) bleiben
       const ohne = p.filter(t=>{
@@ -285,35 +285,46 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
         if(!t.pending) return true; // bereits gebucht — behalten
         return false; // pending — entfernen
       });
-      if(!keptMonate.length) return ohne;
-      const newTxs = keptMonate.flatMap((row,i)=>{
+      const newTxs = sparMonate.flatMap((row)=>{
+        const key = row.y*12+row.m;
+        const { keepAbgang, keepZugang } = decisions.get(key);
+        if(!keepAbgang && !keepZugang) return [];
         const pad2 = n=>String(n).padStart(2,"0");
         const lastDay = new Date(row.y, row.m+1, 0).getDate();
         const date = `${row.y}-${pad2(row.m+1)}-${pad2(lastDay)}`;
         const amount = -row.zusaetzlich;
-        const abgang = {
+        const abgang = keepAbgang ? {
           id:"pend-"+uid(), date, desc:sparDesc,
           totalAmount:amount, pending:true, _csvType:"expense",
           accountId:"acc-giro",
-          _seriesId:seriesId, _seriesIdx:i+1, _seriesTotal:keptMonate.length,
+          _seriesId:seriesId,
           splits:sparCatId?[{id:uid(),catId:sparCatId,subId:sparSubId||"",amount}]
                           :[{id:uid(),catId:"",subId:"",amount}],
-        };
-        if(!sparAccId) return [abgang];
+        } : null;
+        if(!keepZugang) return abgang ? [abgang] : [];
         const zugang = {
           id:"pend-"+uid(), date, desc:sparDesc,
           totalAmount:row.zusaetzlich, pending:true, _csvType:"income",
           accountId:sparAccId,
-          _linkedTo:abgang.id,
-          _seriesId:tgtSeriesId, _seriesIdx:i+1, _seriesTotal:keptMonate.length,
+          ...(abgang ? {_linkedTo:abgang.id} : {}),
+          _seriesId:tgtSeriesId,
           splits:sparTgtCatId?[{id:uid(),catId:sparTgtCatId,subId:sparTgtSubId||"",amount:row.zusaetzlich}]
                              :[{id:uid(),catId:"",subId:"",amount:row.zusaetzlich}],
         };
-        return [abgang, zugang];
+        return abgang ? [abgang, zugang] : [zugang];
+      });
+      // _seriesIdx/_seriesTotal erst hier vergeben (getrennt je Bein), damit
+      // die Zählung auch bei einseitig übersprungenen Monaten stimmt.
+      let ai = 0, zi = 0;
+      const abgangTotal = newTxs.filter(t=>t._seriesId===seriesId).length;
+      const zugangTotal = newTxs.filter(t=>t._seriesId===tgtSeriesId).length;
+      newTxs.forEach(t=>{
+        if(t._seriesId===seriesId) { ai++; t._seriesIdx=ai; t._seriesTotal=abgangTotal; }
+        else { zi++; t._seriesIdx=zi; t._seriesTotal=zugangTotal; }
       });
       return [...ohne, ...newTxs];
     });
-    return keptMonate.length;
+    return sparMonate.length;
   };
 
   const berechnen = (onDone, accOverride) => {
