@@ -155,18 +155,49 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
   // Reiter sitzen INNERHALB der Karte (nicht mehr als eigene fixe Leiste
   // oben) — so überlappen sie nie den hervorgehobenen Bereich (z.B. den
   // Hero-Kontostand) und wandern automatisch mit an die jeweils freie Stelle.
+  //
+  // WICHTIG: die Karte bekommt zusätzlich eine maxHeight, die zu ihrer
+  // Position passt — sonst schiebt "mehr …"/"noch mehr …" (variable Text-
+  // länge) die Zurück/Weiter-Buttons irgendwann über den Bildschirmrand
+  // hinaus und die Tour lässt sich nicht mehr bedienen. Das hervorgehobene
+  // Feature selbst (der "rect"-Rahmen) bleibt davon unberührt an seiner
+  // echten Position in der App — nur die Erklärung darunter/darüber darf
+  // bei Bedarf intern scrollen (siehe overflowY am Textblock unten).
+  //
+  // REGRESSION gefunden beim Testen: die App hat eine EIGENE, immer
+  // sichtbare untere Navigationsleiste (".nav-bottom", ca. 60px hoch,
+  // Teil des normalen Seiteninhalts, nicht der Tour). War die Karte nah
+  // genug am unteren Bildschirmrand platziert, landete ihre Zurück/Weiter-
+  // Zeile GENAU in dieser Zone — die App-eigene Leiste fing den Klick dann
+  // ab, ohne dass optisch etwas verdeckt aussah (Playwright bestätigte:
+  // "<div> from <div class='nav-bottom'> intercepts pointer events").
+  // Fix: ein fester Sicherheitsabstand unten (NAV_BOTTOM_H), den die Karte
+  // (inkl. maxHeight) nie unterschreitet.
   const vh = typeof window !== "undefined" ? window.innerHeight : 800;
   const CARD_PAD = 14;
+  const TOP_SAFE_APPROX = 40;   // grobe Notch/Statusleiste-Reserve für die Höhenrechnung
+  const NAV_BOTTOM_H = 64;      // Reserve für die App-eigene untere Navigationsleiste
+  const usableTop = TOP_SAFE_APPROX;
+  const usableBottom = vh - NAV_BOTTOM_H;
   const SAFE_TOP = "max(env(safe-area-inset-top, 0px) + 10px, 10px)";
   let cardStyle;
   if (rect) {
-    const spaceBelow = vh - rect.top - rect.height;
-    const placeBelow = spaceBelow > 220 || spaceBelow > rect.top;
-    cardStyle = placeBelow
-      ? { top: `max(${SAFE_TOP}, min(${rect.top + rect.height + 14}px, ${vh - 60}px))`, left: CARD_PAD, right: CARD_PAD }
-      : { bottom: Math.max(vh - rect.top + 14, 60), left: CARD_PAD, right: CARD_PAD };
+    const spaceBelow = usableBottom - rect.top - rect.height;
+    const spaceAbove = rect.top - usableTop;
+    const placeBelow = spaceBelow > 220 || spaceBelow > spaceAbove;
+    if (placeBelow) {
+      const top = Math.min(rect.top + rect.height + 14, usableBottom - 60);
+      cardStyle = { top: `max(${SAFE_TOP}, ${top}px)`, left: CARD_PAD, right: CARD_PAD,
+        maxHeight: Math.max(160, usableBottom - top) };
+    } else {
+      const bottom = Math.max(vh - rect.top + 14, NAV_BOTTOM_H + 14);
+      cardStyle = { bottom, left: CARD_PAD, right: CARD_PAD,
+        maxHeight: Math.max(160, (vh - bottom) - usableTop) };
+    }
   } else {
-    cardStyle = { top: "50%", left: CARD_PAD, right: CARD_PAD, transform: "translateY(-50%)" };
+    const bandCenter = (usableTop + usableBottom) / 2;
+    cardStyle = { top: bandCenter, left: CARD_PAD, right: CARD_PAD, transform: "translateY(-50%)",
+      maxHeight: usableBottom - usableTop };
   }
 
   return (
@@ -203,11 +234,14 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
         border: kidsMode ? `3px solid ${comicColor}` : `1px solid ${T.bd}`,
         borderRadius: kidsMode ? 22 : 16, padding: "14px 16px",
         boxShadow: kidsMode ? `4px 4px 0 ${comicColor}77, 0 12px 32px rgba(0,0,0,0.5)` : "0 12px 32px rgba(0,0,0,0.5)",
-        opacity: ready ? 1 : 0, transition: "opacity 0.15s ease", maxWidth: 480, margin: "0 auto" }}>
+        opacity: ready ? 1 : 0, transition: "opacity 0.15s ease", maxWidth: 480, margin: "0 auto",
+        display: "flex", flexDirection: "column", overflow: "hidden" }}>
         {/* Stufen-Reiter — jederzeit frei anwählbar, unabhängig vom Fortschritt.
             Sitzt jetzt oben IN der Karte statt als eigene fixe Leiste, damit
-            nie etwas anderes (z.B. der Hero-Kontostand) überdeckt wird. */}
-        <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+            nie etwas anderes (z.B. der Hero-Kontostand) überdeckt wird.
+            flexShrink:0 — bleibt IMMER sichtbar, egal wie lang die
+            aufgeklappte Erklärung darunter gerade ist. */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 10, flexShrink: 0 }}>
           {GUIDED_TOUR_STAGES.map((s, i) => {
             const active = i === stageIndex;
             return (
@@ -223,7 +257,7 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
             );
           })}
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexShrink: 0 }}>
           {kidsMode ? (
             <div style={{ width: 44, height: 44, borderRadius: "50%", flexShrink: 0,
               background: comicColor, display: "flex", alignItems: "center", justifyContent: "center",
@@ -252,30 +286,37 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
           </button>
         </div>
 
-        {kidsMode ? (
-          <div style={{ color: T.txt, fontSize: 15.5, lineHeight: 1.55, fontWeight: 500, marginBottom: 12 }}>
-            {step.eli10}
-          </div>
-        ) : (
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ color: T.txt, fontSize: 13.5, lineHeight: 1.5 }}>{step.eli20}</div>
-            {expandLevel>=1 && (
-              <div style={{ color: T.txt2, fontSize: 12.5, lineHeight: 1.5, marginTop: 8,
-                paddingTop: 8, borderTop: `1px solid ${T.bd}` }}>{step.eli30}</div>
-            )}
-            {expandLevel>=2 && (
-              <div style={{ color: T.txt2, fontSize: 12.5, lineHeight: 1.5, marginTop: 8,
-                paddingTop: 8, borderTop: `1px solid ${T.bd}` }}>{step.eli60}</div>
-            )}
-            <button onClick={expandLevel<2 ? expandMore : collapseExpand}
-              style={{ marginTop: 8, background: "transparent", border: "none", cursor: "pointer",
-                color: T.blue, fontSize: 12, fontWeight: 700, fontFamily: "inherit", padding: 0 }}>
-              {expandLevel===0 ? "mehr …" : expandLevel===1 ? "noch mehr …" : "▲ weniger anzeigen"}
-            </button>
-          </div>
-        )}
+        {/* Erklärungstext — einziger Bereich, der bei Bedarf intern scrollt.
+            flex:1 + minHeight:0 sorgt dafür, dass "mehr …"/"noch mehr …" die
+            Karte nie über den verfügbaren Platz hinaus wachsen lässt: Kopf-
+            zeile oben und Zurück/Weiter-Leiste unten bleiben so in jedem
+            Ausklapp-Zustand sichtbar und bedienbar. */}
+        <div style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", marginBottom: 12 }}>
+          {kidsMode ? (
+            <div style={{ color: T.txt, fontSize: 15.5, lineHeight: 1.55, fontWeight: 500 }}>
+              {step.eli10}
+            </div>
+          ) : (
+            <div>
+              <div style={{ color: T.txt, fontSize: 13.5, lineHeight: 1.5 }}>{step.eli20}</div>
+              {expandLevel>=1 && (
+                <div style={{ color: T.txt2, fontSize: 12.5, lineHeight: 1.5, marginTop: 8,
+                  paddingTop: 8, borderTop: `1px solid ${T.bd}` }}>{step.eli30}</div>
+              )}
+              {expandLevel>=2 && (
+                <div style={{ color: T.txt2, fontSize: 12.5, lineHeight: 1.5, marginTop: 8,
+                  paddingTop: 8, borderTop: `1px solid ${T.bd}` }}>{step.eli60}</div>
+              )}
+              <button onClick={expandLevel<2 ? expandMore : collapseExpand}
+                style={{ marginTop: 8, background: "transparent", border: "none", cursor: "pointer",
+                  color: T.blue, fontSize: 12, fontWeight: 700, fontFamily: "inherit", padding: 0 }}>
+                {expandLevel===0 ? "mehr …" : expandLevel===1 ? "noch mehr …" : "▲ weniger anzeigen"}
+              </button>
+            </div>
+          )}
+        </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           <span style={{ color: T.txt2, fontSize: 11.5, fontWeight: 600, flexShrink: 0 }}>
             {stage.label} · {stepIndex + 1}/{stage.steps.length}
           </span>
