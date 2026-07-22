@@ -1390,7 +1390,7 @@ function DashboardScreenV2() {
                 {/* Mitte-Wert */}
                 {showMitte && <span style={{position:"absolute",left:mitLeft,top:10,transform:"translateX(-50%)",color:T.mid||T.txt2,fontSize:16,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(mitte)}</span>}
                 {/* Ende-Wert rechts */}
-                {showEnde && <span style={{position:"absolute",right:0,top:10,color:T.gold||T.txt2,fontSize:16,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(ende)}</span>}
+                {showEnde && <span style={{position:"absolute",right:0,top:10,color:(isInc?T.cell_inc:T.cell_exp)||T.txt2,fontSize:16,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(ende)}</span>}
               </div>
             );
           };
