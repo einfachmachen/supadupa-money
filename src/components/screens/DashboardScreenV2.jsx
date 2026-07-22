@@ -860,6 +860,23 @@ function DashboardScreenV2() {
         style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch"}}>
         {/* Pull-to-Refresh-Indikator wird unterhalb des fixierten Hero
             gerendert (zwischen Hero und erster Kategorie) — siehe unten. */}
+        {/* TEMP-Diagnose: zwei Farbpunkte (Hellorange/Amber-Gelb) direkt aus
+            dem aktiven Theme — sichtbar OHNE Buchungen/Cloud-Zugang, damit
+            sich ein Cache-/Deploy-Stand geräteübergreifend prüfen lässt, ohne
+            echte Daten zu brauchen. Nach Abschluss der Farb-Abstimmung wieder
+            entfernen. */}
+        <div style={{margin:"6px 10px 0",padding:"8px 12px",borderRadius:12,
+          background:"rgba(255,255,255,0.04)",border:`1px solid ${T.bd}`,
+          display:"flex",alignItems:"center",gap:16,fontSize:11,color:T.txt2}}>
+          <span style={{display:"flex",alignItems:"center",gap:6}}>
+            <span style={{width:16,height:16,borderRadius:"50%",background:T.neg,display:"inline-block",flexShrink:0}}/>
+            Hellorange ({T.neg})
+          </span>
+          <span style={{display:"flex",alignItems:"center",gap:6}}>
+            <span style={{width:16,height:16,borderRadius:"50%",background:T.cell_exp,display:"inline-block",flexShrink:0}}/>
+            Amber-Gelb ({T.cell_exp})
+          </span>
+        </div>
         {/* Duplikat-Warnung */}
         {dupCount>0&&(
           <div style={{margin:"6px 10px",background:T.err_bg,border:`2px solid ${T.neg}`,borderRadius:12,padding:"10px 12px"}}>
