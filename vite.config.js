@@ -1,5 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import fs from "node:fs";
+import path from "node:path";
 
 // Eindeutige Build-ID pro Build (Zeitstempel). Wird sowohl ins Bundle injiziert
 // (__BUILD_ID__) als auch als version.json mit ausgeliefert. Die laufende App
@@ -23,6 +25,26 @@ export default defineConfig(() => ({
           fileName: "version.json",
           source: JSON.stringify({ buildId: BUILD_ID }),
         });
+      },
+    },
+    {
+      // sw.js bekommt bei jedem Build eine neue Build-ID eingefügt (als
+      // Kommentar). Grund: sw.js liegt in public/ und wird von Vite
+      // unverändert kopiert — ändert sich ihr Byte-Inhalt zwischen zwei
+      // Deploys NICHT, erkennt der Browser nie eine neue Service-Worker-
+      // Version und behält den alten (samt seinem gecachten JS/CSS) für immer
+      // — selbst wenn App komplett geschlossen und neu geöffnet wird
+      // (Regression: Nutzer-Feedback, neue Farben kamen im Inkognito-Fenster
+      // sofort an, in der normalen/installierten PWA aber gar nicht). Erst ein
+      // geänderter sw.js-Inhalt löst install()/activate() aus — und activate()
+      // räumt dort bereits alle alten Caches weg.
+      name: "stamp-sw-build-id",
+      closeBundle() {
+        const outDir = path.resolve(process.cwd(), "dist");
+        const swPath = path.join(outDir, "sw.js");
+        if (!fs.existsSync(swPath)) return;
+        const src = fs.readFileSync(swPath, "utf8");
+        fs.writeFileSync(swPath, `// build: ${BUILD_ID}\n${src}`);
       },
     },
   ],
