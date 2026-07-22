@@ -4,7 +4,7 @@ const THEMES = {
     bg:"#2C3035", surf:"#363B42", surf2:"#3D4349",
     bd:"rgba(200,210,220,0.15)", bds:"rgba(200,210,220,0.28)",
     txt:"#F0F2F4", txt2:"rgba(200,210,220,0.60)",
-    blue:"#AACC00", pos:"#AACC00", neg:"#FF6E40", gold:"#F5A623",
+    blue:"#AACC00", pos:"#AACC00", neg:"#FF9F1C", gold:"#F5A623",
     lbl:"rgba(200,210,220,0.45)",  // Sekundärtext auf Hintergrund (bg)
     vorm_bg:"#5A3A00", vorm_bd:"rgba(255,200,0,0.8)",  // Offene Vormerkungen Bar
     cf:"#F6821F",      // Cloudflare-Akzent
@@ -19,7 +19,7 @@ const THEMES = {
     pal_exp_bg:"#1F0608", pal_exp_bd:"#5C1018", pal_exp_fld:"#240408",
     pal_tg_bg:"#071820",  pal_tg_bd:"#1A3A48",  pal_tg_hdr:"#4A9FC0",  pal_tg_fld:"#091E2A",  pal_tg_val:"#80C8E0",
     hero_bg:"linear-gradient(135deg,#1A1D22,#252B34)", logo_c1:"#6B9900", logo_c2:"#AACC00", err_bg:"#7A1020",
-    cond_neg:"#FF6E40", cond_warn:"#E67E22", cond_gold:"#F1C40F", cond_pos:"#2ECC71",
+    cond_neg:"#FF9F1C", cond_warn:"#E67E22", cond_gold:"#F1C40F", cond_pos:"#2ECC71",
     name:"Dark (Dove Sport)",
   },
   light: {
@@ -55,7 +55,7 @@ const THEMES = {
     bg:"#161616", surf:"#232323", surf2:"#2C2C2C",
     bd:"rgba(255,165,0,0.18)", bds:"rgba(255,165,0,0.35)",
     txt:"#F0F0F0", txt2:"rgba(220,200,160,0.55)",
-    blue:"#FF9900", pos:"#67C15E", neg:"#FF6E40", gold:"#FF9900",
+    blue:"#FF9900", pos:"#67C15E", neg:"#FF9F1C", gold:"#FF9900",
     lbl:"rgba(220,200,160,0.45)",
     vorm_bg:"#2A1A00", vorm_bd:"rgba(255,153,0,0.7)",
     cf:"#FF9900", mid:"#67C15E",
@@ -68,7 +68,7 @@ const THEMES = {
     pal_exp_bg:"#1F0A0A", pal_exp_bd:"#5A2020", pal_exp_fld:"#280F0F",
     pal_tg_bg:"#1A1400", pal_tg_bd:"#4A3800", pal_tg_hdr:"#FF9900", pal_tg_fld:"#221A00", pal_tg_val:"#FFBB44",
     hero_bg:"linear-gradient(135deg,#1C1C1C,#2C2C2C)",  logo_c1:"#FF9900", logo_c2:"#FFBB44", err_bg:"#5A1010",
-    cond_neg:"#FF6E40", cond_warn:"#FF9900", cond_gold:"#FFD700", cond_pos:"#67C15E",
+    cond_neg:"#FF9F1C", cond_warn:"#FF9900", cond_gold:"#FFD700", cond_pos:"#67C15E",
     name:"Amazon Fire TV",
   },
   // ── Xbox Series S/X ──────────────────────────────────────────────────────
@@ -76,7 +76,7 @@ const THEMES = {
     bg:"#0A0A0A", surf:"#141414", surf2:"#1E1E1E",
     bd:"rgba(16,124,16,0.25)", bds:"rgba(16,124,16,0.50)",
     txt:"#FFFFFF", txt2:"rgba(180,220,180,0.55)",
-    blue:"#107C10", pos:"#5EC95E", neg:"#FF6E40", gold:"#FFB900",
+    blue:"#107C10", pos:"#5EC95E", neg:"#FF9F1C", gold:"#FFB900",
     lbl:"rgba(180,220,180,0.45)",
     vorm_bg:"#0A1A0A", vorm_bd:"rgba(16,124,16,0.75)",
     cf:"#107C10", mid:"#5EC95E",
@@ -89,7 +89,7 @@ const THEMES = {
     pal_exp_bg:"#1A0606", pal_exp_bd:"#4A1414", pal_exp_fld:"#220A0A",
     pal_tg_bg:"#0A1000", pal_tg_bd:"#203A10", pal_tg_hdr:"#107C10", pal_tg_fld:"#0E1A08", pal_tg_val:"#40A040",
     hero_bg:"linear-gradient(135deg,#0A0A0A,#141414)",   logo_c1:"#107C10", logo_c2:"#5EC95E", err_bg:"#4A0808",
-    cond_neg:"#FF6E40", cond_warn:"#FFB900", cond_gold:"#FFD700", cond_pos:"#5EC95E",
+    cond_neg:"#FF9F1C", cond_warn:"#FFB900", cond_gold:"#FFD700", cond_pos:"#5EC95E",
     name:"Xbox Series",
   },
   // ── PlayStation 5 ────────────────────────────────────────────────────────
@@ -97,7 +97,7 @@ const THEMES = {
     bg:"#050914", surf:"#0D1526", surf2:"#152038",
     bd:"rgba(0,160,214,0.20)", bds:"rgba(0,160,214,0.40)",
     txt:"#E8F0FF", txt2:"rgba(160,190,230,0.55)",
-    blue:"#00A0D6", pos:"#00CC88", neg:"#FF6E40", gold:"#F0C040",
+    blue:"#00A0D6", pos:"#00CC88", neg:"#FF9F1C", gold:"#F0C040",
     lbl:"rgba(160,190,230,0.45)",
     vorm_bg:"#0A0818", vorm_bd:"rgba(0,160,214,0.65)",
     cf:"#00A0D6", mid:"#00CC88",
@@ -110,7 +110,7 @@ const THEMES = {
     pal_exp_bg:"#180610", pal_exp_bd:"#501828", pal_exp_fld:"#200816",
     pal_tg_bg:"#04091A", pal_tg_bd:"#082040", pal_tg_hdr:"#00A0D6", pal_tg_fld:"#071230", pal_tg_val:"#40C8F0",
     hero_bg:"linear-gradient(135deg,#050914,#0D1526)",   logo_c1:"#00A0D6", logo_c2:"#00CC88", err_bg:"#4A0818",
-    cond_neg:"#FF6E40", cond_warn:"#F0C040", cond_gold:"#FFD700", cond_pos:"#00CC88",
+    cond_neg:"#FF9F1C", cond_warn:"#F0C040", cond_gold:"#FFD700", cond_pos:"#00CC88",
     name:"PlayStation 5",
   },
   // ── Disney+ ──────────────────────────────────────────────────────────────
@@ -118,7 +118,7 @@ const THEMES = {
     bg:"#040B1C", surf:"#0B1A38", surf2:"#122248",
     bd:"rgba(20,100,214,0.25)", bds:"rgba(20,100,214,0.48)",
     txt:"#F0F4FF", txt2:"rgba(160,185,230,0.55)",
-    blue:"#1464D6", pos:"#1AC8A0", neg:"#FF6E40", gold:"#F5C518",
+    blue:"#1464D6", pos:"#1AC8A0", neg:"#FF9F1C", gold:"#F5C518",
     lbl:"rgba(160,185,230,0.45)",
     vorm_bg:"#08102A", vorm_bd:"rgba(245,197,24,0.65)",
     cf:"#1464D6", mid:"#1AC8A0",
@@ -131,7 +131,7 @@ const THEMES = {
     pal_exp_bg:"#180610", pal_exp_bd:"#501828", pal_exp_fld:"#200816",
     pal_tg_bg:"#030A1A", pal_tg_bd:"#0A1C48", pal_tg_hdr:"#1464D6", pal_tg_fld:"#081030", pal_tg_val:"#4890F0",
     hero_bg:"linear-gradient(135deg,#040B1C,#0B1A38)",   logo_c1:"#1464D6", logo_c2:"#1AC8A0", err_bg:"#4A0810",
-    cond_neg:"#FF6E40", cond_warn:"#F5C518", cond_gold:"#FFD700", cond_pos:"#1AC8A0",
+    cond_neg:"#FF9F1C", cond_warn:"#F5C518", cond_gold:"#FFD700", cond_pos:"#1AC8A0",
     name:"Disney+",
   },
   // ── Netflix ──────────────────────────────────────────────────────────────
@@ -139,7 +139,7 @@ const THEMES = {
     bg:"#141414", surf:"#1F1F1F", surf2:"#2A2A2A",
     bd:"rgba(229,9,20,0.20)", bds:"rgba(229,9,20,0.40)",
     txt:"#FFFFFF", txt2:"rgba(200,200,200,0.55)",
-    blue:"#E50914", pos:"#46D369", neg:"#FF6E40", gold:"#F5A623",
+    blue:"#E50914", pos:"#46D369", neg:"#FF9F1C", gold:"#F5A623",
     lbl:"rgba(200,200,200,0.45)",
     vorm_bg:"#2A0808", vorm_bd:"rgba(229,9,20,0.70)",
     cf:"#E50914", mid:"#46D369",
@@ -152,7 +152,7 @@ const THEMES = {
     pal_exp_bg:"#1F0606", pal_exp_bd:"#601010", pal_exp_fld:"#280A0A",
     pal_tg_bg:"#141414", pal_tg_bd:"#3A1010", pal_tg_hdr:"#E50914", pal_tg_fld:"#1A0A0A", pal_tg_val:"#FF4444",
     hero_bg:"linear-gradient(135deg,#141414,#1F1F1F)",   logo_c1:"#E50914", logo_c2:"#FF4444", err_bg:"#5A0808",
-    cond_neg:"#FF6E40", cond_warn:"#F5A623", cond_gold:"#FFD700", cond_pos:"#46D369",
+    cond_neg:"#FF9F1C", cond_warn:"#F5A623", cond_gold:"#FFD700", cond_pos:"#46D369",
     name:"Netflix",
   },
   // ── MagentaTV ────────────────────────────────────────────────────────────
@@ -160,7 +160,7 @@ const THEMES = {
     bg:"#1A0018", surf:"#280028", surf2:"#340038",
     bd:"rgba(226,0,116,0.22)", bds:"rgba(226,0,116,0.44)",
     txt:"#FFE8F8", txt2:"rgba(255,180,240,0.55)",
-    blue:"#E20074", pos:"#60D080", neg:"#FF6E40", gold:"#FFB800",
+    blue:"#E20074", pos:"#60D080", neg:"#FF9F1C", gold:"#FFB800",
     lbl:"rgba(255,180,240,0.45)",
     vorm_bg:"#200018", vorm_bd:"rgba(226,0,116,0.70)",
     cf:"#E20074", mid:"#60D080",
@@ -173,7 +173,7 @@ const THEMES = {
     pal_exp_bg:"#1E0810", pal_exp_bd:"#601028", pal_exp_fld:"#280A14",
     pal_tg_bg:"#140010", pal_tg_bd:"#400040", pal_tg_hdr:"#E20074", pal_tg_fld:"#1C0018", pal_tg_val:"#FF60B0",
     hero_bg:"linear-gradient(135deg,#1A0018,#280028)",   logo_c1:"#E20074", logo_c2:"#FF60B0", err_bg:"#3A0010",
-    cond_neg:"#FF6E40", cond_warn:"#FFB800", cond_gold:"#FFD700", cond_pos:"#60D080",
+    cond_neg:"#FF9F1C", cond_warn:"#FFB800", cond_gold:"#FFD700", cond_pos:"#60D080",
     name:"MagentaTV",
   },
   // ── iOS / Apple Light ────────────────────────────────────────────────────
@@ -288,7 +288,7 @@ const THEMES = {
     pos:"#00D68F",
     cell_inc:"#00A770",  cell_inc_bg:"#00200F", cell_inc_bd:"#005030", cell_exp:"#FFCA28", over:"#FF7EB6",
     // Ausgaben: Hellorange
-    neg:"#FF6E40",
+    neg:"#FF9F1C",
     // Gold/Warn: Bernstein
     gold:"#FFB547",
     warn:"#FFB547",      override:"#CC8800",
@@ -308,7 +308,7 @@ const THEMES = {
     hero_bg:"linear-gradient(135deg,#0F1117,#1C1F2E)",
     logo_c1:"#4A42CC",   logo_c2:"#6C63FF",
     err:"#FF5370",       err_bg:"#250510",
-    cond_neg:"#FF6E40",  cond_warn:"#FFB547",  cond_gold:"#FFD166",  cond_pos:"#00D68F",
+    cond_neg:"#FF9F1C",  cond_warn:"#FFB547",  cond_gold:"#FFD166",  cond_pos:"#00D68F",
   },
 
   // ── Sand — Warmes Hellthema, erdige Töne, maximale Lesbarkeit ────────────────
@@ -418,7 +418,7 @@ const THEMES = {
     lbl:"#007A1E",
     blue:"#00FF41",
     pos:"#00FF41",
-    neg:"#FF6E40",
+    neg:"#FF9F1C",
     gold:"#FFD700",
     warn:"#FFD700",   override:"#CC9900",
     on_accent:"#0D0D0D", disabled:"#1A1A1A",
@@ -432,7 +432,7 @@ const THEMES = {
     hero_bg:"#0D0D0D",
     logo_c1:"#007A1E",   logo_c2:"#00FF41",
     err:"#FF4444",       err_bg:"#1A0000",
-    cond_neg:"#FF6E40",  cond_warn:"#FFD700",  cond_gold:"#FFD700",  cond_pos:"#00FF41",
+    cond_neg:"#FF9F1C",  cond_warn:"#FFD700",  cond_gold:"#FFD700",  cond_pos:"#00FF41",
   },
 
   // ── Swiss / International Style ───────────────────────────────────────────
@@ -525,8 +525,8 @@ THEMES.darkhell = {
   bd:"rgba(215,225,235,0.20)", bds:"rgba(215,225,235,0.34)",
   txt:"#F5F7F9", txt2:"rgba(218,228,238,0.72)",
   lbl:"rgba(218,228,238,0.58)",
-  neg:"#FF6E40",                       // Hellorange — bessere Lesbarkeit auf Grau
-  err:"#FFA090", cond_neg:"#FF6E40",
+  neg:"#FF9F1C",                       // Hellorange — bessere Lesbarkeit auf Grau
+  err:"#FFA090", cond_neg:"#FF9F1C",
   disabled:"#3A4046",
   hero_bg:"linear-gradient(135deg,#262B32,#363E48)",
   name:"Dark Hell (helleres Grau)",
@@ -563,7 +563,7 @@ THEMES.kontrastdunkel = {
   bg:"#000000", surf:"#141414", surf2:"#1F1F1F", surf3:"#0A0A0A",
   bd:"rgba(255,255,255,0.24)", bds:"rgba(255,255,255,0.44)",
   txt:"#FFFFFF", txt2:"rgba(255,255,255,0.82)", lbl:"rgba(255,255,255,0.64)",
-  blue:"#5AB7FF", pos:"#3FD06A", neg:"#FF6E40", gold:"#FFC83D",
+  blue:"#5AB7FF", pos:"#3FD06A", neg:"#FF9F1C", gold:"#FFC83D",
   on_accent:"#05140A", disabled:"#2A2A2A", warn:"#FFB02E", override:"#C2740A",
   mid:"#67E8F9",
   cell_inc:"#4AAF6C", cell_inc_bg:"#06160C", cell_inc_bd:"#1E5A33", cell_exp:"#FFCA28", over:"#FF7EB6",
@@ -574,7 +574,7 @@ THEMES.kontrastdunkel = {
   pal_exp_bg:"#200808", pal_exp_bd:"#5C1A14", pal_exp_fld:"#280A0A",
   pal_tg_bg:"#06121F", pal_tg_bd:"#1A3A55", pal_tg_hdr:"#5AB7FF", pal_tg_fld:"#0A1A2A", pal_tg_val:"#8FD0FF",
   hero_bg:"linear-gradient(135deg,#0A0A0A,#1C1C1C)", logo_c1:"#3FD06A", logo_c2:"#5AB7FF",
-  cond_neg:"#FF6E40", cond_warn:"#FFA53D", cond_gold:"#FFD23D", cond_pos:"#3FD06A",
+  cond_neg:"#FF9F1C", cond_warn:"#FFA53D", cond_gold:"#FFD23D", cond_pos:"#3FD06A",
   name:"★ Kontrast Dunkel (Empfohlen)",
 };
 
@@ -607,13 +607,13 @@ THEMES.mitternacht = {
   bg:"#0F1626", surf:"#18223A", surf2:"#1F2B47", surf3:"#0C1220",
   bd:"rgba(170,195,235,0.20)", bds:"rgba(170,195,235,0.36)",
   txt:"#EAF1FF", txt2:"rgba(200,215,245,0.74)", lbl:"rgba(200,215,245,0.56)",
-  blue:"#6CB4FF", pos:"#4FD08A", neg:"#FF6E40", gold:"#FFC861",
+  blue:"#6CB4FF", pos:"#4FD08A", neg:"#FF9F1C", gold:"#FFC861",
   on_accent:"#08101F", mid:"#67E8F9",
   cell_inc:"#4AAF7D", cell_inc_bg:"#08200F", cell_inc_bd:"#1E5A3A", cell_exp:"#FFCA28", over:"#FF7EB6",
   tab_exp:"#3A1015", tab_inc:"#0C2A1A", tab_pend:"#33260A",
   err:"#FF6F61", err_bg:"#33101A",
   hero_bg:"linear-gradient(135deg,#0C1220,#1A2742)", logo_c1:"#4FD08A", logo_c2:"#6CB4FF",
-  cond_neg:"#FF6E40", cond_warn:"#FFA552", cond_gold:"#FFD263", cond_pos:"#4FD08A",
+  cond_neg:"#FF9F1C", cond_warn:"#FFA552", cond_gold:"#FFD263", cond_pos:"#4FD08A",
   name:"Mitternacht Blau",
 };
 
@@ -645,7 +645,7 @@ THEMES.modernslate = {
   bg:"#1E222B", surf:"#282D37", surf2:"#313742", surf3:"#181B22",
   bd:"rgba(255,255,255,0.12)", bds:"rgba(255,255,255,0.24)",
   txt:"#FFFFFF", txt2:"#9098AC", lbl:"#727A90",
-  blue:"#5B9DF9", pos:"#A3E635", neg:"#FF6E40", gold:"#FBBF24",
+  blue:"#5B9DF9", pos:"#A3E635", neg:"#FF9F1C", gold:"#FBBF24",
   on_accent:"#0C1206", disabled:"#2A2F3A", warn:"#FBBF24", override:"#B5830F",
   mid:"#67E8F9",
   cell_inc:"#7FB329", cell_inc_bg:"#18200A", cell_inc_bd:"#4A6612", cell_exp:"#FFCA28", over:"#FF7EB6",
@@ -656,7 +656,7 @@ THEMES.modernslate = {
   pal_exp_bg:"#2A0E0E", pal_exp_bd:"#5C1A1A", pal_exp_fld:"#330F0F",
   pal_tg_bg:"#0E1B2E", pal_tg_bd:"#1E3A5C", pal_tg_hdr:"#5B9DF9", pal_tg_fld:"#0C1A2A", pal_tg_val:"#9CC9FF",
   hero_bg:"linear-gradient(135deg,#181B22,#282D37)", logo_c1:"#6FA80F", logo_c2:"#A3E635",
-  cond_neg:"#FF6E40", cond_warn:"#FBBF24", cond_gold:"#FCD34D", cond_pos:"#A3E635",
+  cond_neg:"#FF9F1C", cond_warn:"#FBBF24", cond_gold:"#FCD34D", cond_pos:"#A3E635",
   name:"Modern Slate",
 };
 
@@ -693,9 +693,9 @@ THEMES.deepocean = {
   // blue/neg gegenüber surf2 (#545C66) aufgehellt (3.5:1/3.2:1 → 4.5:1+ WCAG-
   // Kontrast) — bei kleiner Schrift (Badges, Tags) war die vorige, dunklere
   // Fassung auf diesem mittleren Grau kaum zu erkennen. neg jetzt Hellorange
-  // (#FF6E40) statt Rot — deutlich bessere Lesbarkeit im Dark Theme, klar
+  // (#FF9F1C) statt Rot — deutlich bessere Lesbarkeit im Dark Theme, klar
   // unterscheidbar vom separaten err-Ton.
-  blue:"#65E3FD", pos:"#BFFF00", neg:"#FF6E40", gold:"#FFC861",
+  blue:"#65E3FD", pos:"#BFFF00", neg:"#FF9F1C", gold:"#FFC861",
   on_accent:"#06121A", disabled:"#3A414A", warn:"#FFB54A", override:"#C2820F",
   mid:"#67E8F9",
   cell_inc:"#95C700", cell_inc_bg:"#141F00", cell_inc_bd:"#4A6600", cell_exp:"#FFCA28", over:"#FF7EB6",
@@ -706,7 +706,7 @@ THEMES.deepocean = {
   pal_exp_bg:"#2A0C0C", pal_exp_bd:"#5C1818", pal_exp_fld:"#330E0E",
   pal_tg_bg:"#0A1B2E", pal_tg_bd:"#1A4658", pal_tg_hdr:"#48CAE4", pal_tg_fld:"#08182A", pal_tg_val:"#8AE0F0",
   hero_bg:"linear-gradient(135deg,#2A2F36,#4B525B)", logo_c1:"#6FA800", logo_c2:"#BFFF00",
-  cond_neg:"#FF6E40", cond_warn:"#FFB54A", cond_gold:"#FFD263", cond_pos:"#BFFF00",
+  cond_neg:"#FF9F1C", cond_warn:"#FFB54A", cond_gold:"#FFD263", cond_pos:"#BFFF00",
   name:"Deep Ocean",
 };
 
@@ -770,7 +770,7 @@ THEMES.weltraumtaschengeld = {
   bg:"#0B0F2A", surf:"#141A3D", surf2:"#1B2350", surf3:"#080B1E",
   bd:"rgba(140,170,255,0.20)", bds:"rgba(140,170,255,0.36)",
   txt:"#EAF2FF", txt2:"rgba(200,220,255,0.70)", lbl:"rgba(200,220,255,0.54)",
-  blue:"#2EE6D6", pos:"#2EE6D6", neg:"#FF6E40", gold:"#FFD166",
+  blue:"#2EE6D6", pos:"#2EE6D6", neg:"#FF9F1C", gold:"#FFD166",
   on_accent:"#04201C", disabled:"#232B55", warn:"#FFB84A", override:"#C77A2E",
   mid:"#8A7CFF",
   cell_inc:"#24B3A7", cell_inc_bg:"#062420", cell_inc_bd:"#1A6E63", cell_exp:"#FFCA28", over:"#FF7EB6",
@@ -788,7 +788,7 @@ THEMES.weltraumtaschengeld = {
           "radial-gradient(circle at 55% 40%, rgba(255,255,255,0.4) 0 1px, transparent 2px), "+
           "linear-gradient(135deg,#0B0F2A,#1B2350)",
   logo_c1:"#2EE6D6", logo_c2:"#8A7CFF",
-  cond_neg:"#FF6E40", cond_warn:"#FFB84A", cond_gold:"#FFD166", cond_pos:"#2EE6D6",
+  cond_neg:"#FF9F1C", cond_warn:"#FFB84A", cond_gold:"#FFD166", cond_pos:"#2EE6D6",
   frame_border:"9px solid #2EE6D6", frame_ring:"#8A7CFF",
   nav_icons:{ home:"rocket", jahr:"telescope", daten:"gem" },
   name:"Weltraum-Taschengeld",
@@ -832,7 +832,7 @@ THEMES.magazin = {
   bd:"rgba(235,220,195,0.13)", bds:"rgba(235,220,195,0.26)",
   txt:"#F4EFE5", txt2:"rgba(226,212,188,0.60)", lbl:"rgba(226,212,188,0.46)",
   blue:"#E0975C",   // Kupfer-Akzent (Akzentfarbe der App)
-  pos:"#A3C585", neg:"#FF6E40", gold:"#D9B45B",
+  pos:"#A3C585", neg:"#FF9F1C", gold:"#D9B45B",
   on_accent:"#241304", disabled:"#2A2D34",
   warn:"#D9964A", override:"#A96A2A",
   mid:"#8FB6C9",
@@ -845,7 +845,7 @@ THEMES.magazin = {
   pal_tg_bg:"#101820", pal_tg_bd:"#2A4250", pal_tg_hdr:"#8FB6C9", pal_tg_fld:"#141E28", pal_tg_val:"#B8D5E2",
   hero_bg:"linear-gradient(150deg,#1A1D24 0%,#12141A 55%,#181314 100%)",
   logo_c1:"#E0975C", logo_c2:"#D9B45B",
-  cond_neg:"#FF6E40", cond_warn:"#D9964A", cond_gold:"#D9B45B", cond_pos:"#A3C585",
+  cond_neg:"#FF9F1C", cond_warn:"#D9964A", cond_gold:"#D9B45B", cond_pos:"#A3C585",
   hero_layout:"editorial",
   nav_icons:{ home:"newspaper", jahr:"trending-up", daten:"archive" },
   name:"Magazin (Editorial)",
