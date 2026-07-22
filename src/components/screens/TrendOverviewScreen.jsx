@@ -31,19 +31,16 @@ const METRICS = [
   { key: "expense", label: "Ausgaben",       icon: "arrow-up-circle",    color: (v,T)=>T.cond_neg, split: true },
 ];
 
-// Mischt eine Hex-Farbe Richtung Weiß (amt: 0=unverändert … 1=weiß). Für den
-// "noch nicht erreicht/nur vorgemerkt"-Anteil der Balken: eine per Opacity
-// abgedunkelte Farbe verschmilzt auf dunklem Hintergrund mit dessen Grauton
-// und wirkt dann wie ein ANDERER, bräunlicher Farbton statt wie ein
-// erkennbar HELLERES Hellorange (Nutzer-Feedback) — eine echte, aufgehellte
-// Farbvariante (statt reiner Transparenz) bleibt dagegen unabhängig vom
-// Hintergrund eindeutig als "selbe Farbe, nur heller" erkennbar.
-function lighten(hex, amt) {
+// Mischt eine Hex-Farbe Richtung Schwarz (amt: 0=unverändert … 1=schwarz). Für
+// den "aktuell/noch nicht abgeschlossen"-Anteil der Balken: ein leicht
+// abgedunkelter Ton bleibt eindeutig als "dieselbe Farbe, nur gedämpfter"
+// erkennbar (vs. Ampelfarbe oder reiner Transparenz).
+function darken(hex, amt) {
   const h = String(hex||"").replace("#","");
   const f = h.length < 6 ? h.split("").map(c=>c+c).join("") : h;
   if (!/^[0-9a-fA-F]{6}$/.test(f)) return hex;
   const r = parseInt(f.slice(0,2),16), g = parseInt(f.slice(2,4),16), b = parseInt(f.slice(4,6),16);
-  const mix = c => Math.round(c + (255-c)*amt);
+  const mix = c => Math.round(c * (1 - amt));
   return `rgb(${mix(r)},${mix(g)},${mix(b)})`;
 }
 
@@ -235,11 +232,11 @@ function YearBarRows({ perYear, get, getPending, isProjected, color, onSelectYea
                 <g key={r.year} onClick={() => onSelectYear(r.year)} style={{ cursor: "pointer" }}>
                   <rect x={x} y={0} width={bw} height={rowH} fill="transparent" />
                   {projected ? (
-                    <rect x={x + bw * 0.22} y={yTop} width={barVisW} height={Math.max(1, yBot - yTop)} rx={2} fill={lighten(color, 0.55)} />
+                    <rect x={x + bw * 0.22} y={yTop} width={barVisW} height={Math.max(1, yBot - yTop)} rx={2} fill={darken(color, 0.22)} />
                   ) : showSplit ? (
                     <>
                       <rect x={x + bw * 0.22} y={ySplit} width={barVisW} height={Math.max(1, yBot - ySplit)} rx={2} fill={color} opacity={0.85} />
-                      <rect x={x + bw * 0.22} y={yTop} width={barVisW} height={Math.max(1, ySplit - yTop)} rx={2} fill={lighten(color, 0.55)} />
+                      <rect x={x + bw * 0.22} y={yTop} width={barVisW} height={Math.max(1, ySplit - yTop)} rx={2} fill={darken(color, 0.22)} />
                     </>
                   ) : (
                     <rect x={x + bw * 0.22} y={yTop} width={barVisW} height={Math.max(1, yBot - yTop)} rx={2} fill={color} opacity={0.85} />
@@ -296,7 +293,7 @@ function YearBarListHorizontal({ perYear, get, getPending, color, onSelectYear }
                   <div style={{ position: "absolute", top: 0, bottom: 0, borderRadius: 2, background: color, opacity: 0.85,
                     left: v >= 0 ? `${zeroPct}%` : `${Math.max(0, zeroPct - pctActual)}%`,
                     width: `${pctActual}%` }} />
-                  <div style={{ position: "absolute", top: 0, bottom: 0, borderRadius: 2, background: lighten(color, 0.55),
+                  <div style={{ position: "absolute", top: 0, bottom: 0, borderRadius: 2, background: darken(color, 0.22),
                     left: v >= 0 ? `${zeroPct + pctActual}%` : `${Math.max(0, zeroPct - pct)}%`,
                     width: `${Math.max(0, pct - pctActual)}%` }} />
                 </>

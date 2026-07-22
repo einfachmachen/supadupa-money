@@ -15,12 +15,12 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { amtStyle } from "../../theme/amtPill.js";
 import { groupBudgetPairs, budgetOpenRestFor } from "../../utils/budgets.js";
-import { dayOf, drillSort, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
+import { dayOf, drillSort, fmt, pn, uid, NUM_FONT, darkenHex } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { recordDeletedTxs } from "../../utils/txTombstones.js";
 import { txFingerprint, isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
-import { saldoAt, budgetPlaceholderActive } from "../../utils/saldo.js";
+import { saldoAt, budgetPlaceholderActive, isBookingAbgeschlossen } from "../../utils/saldo.js";
 import { pendingDebitDate } from "../../utils/date.js";
 import { fetchNewBankTx, listConnectedBanks } from "../../utils/enableBankingFetch.js";
 import { findUnmappedEbAccounts } from "../../utils/enableBankingStore.js";
@@ -1292,6 +1292,22 @@ function DashboardScreenV2() {
           const isLight = (isLightTheme());
           const cellBg = T.cat_bg ? "rgba(255,255,255,0.10)" : isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)";
 
+          // Reale (nicht-pending) Buchungen: Hellorange/kräftiges Grün, bold wenn
+          // ihre Monatshälfte abgeschlossen ist, sonst abgedunkelt/condensed (noch
+          // aktuell/nicht abgeschlossen) — ersetzt die alte %-Budget-Ampel für den
+          // Betrag selbst (die Ampel bleibt nur für den Fortschritts-Punkt/-Strich,
+          // s. trafficColor unten).
+          const bookCol = (isInc, dateStr) => {
+            const base = isInc ? T.cond_pos : T.neg;
+            return isBookingAbgeschlossen(dateStr) ? base : darkenHex(base, 0.22);
+          };
+          // Für Aggregate ohne einzelnes Datum (Mitte-/Ende-Summen): abgeschlossen,
+          // wenn die jeweilige Monatshälfte (relativ zu heute) schon vorbei ist.
+          const bookColAbg = (isInc, abg) => {
+            const base = isInc ? T.cond_pos : T.neg;
+            return abg ? base : darkenHex(base, 0.22);
+          };
+
           // Ampelfarbe (6-stufig wie in V1):
           //  ≤25%  hellgrün     ≤50%  grün       ≤75%  gelb
           //  ≤100% orange       ≤125% hellrot    >125% rot
@@ -1302,8 +1318,8 @@ function DashboardScreenV2() {
             if(r<=50)  return isLight?"#43A047":"#4CAF50";
             if(r<=75)  return isLight?"#FBC02D":"#FDD835";
             if(r<=100) return isLight?"#FB8C00":"#FFA726";
-            if(r<=125) return isLight?"#E53935":"#EF5350";
-            return isLight?"#C62828":(T.err||"#E53935");
+            if(r<=125) return isLight?"#E53935":T.over;
+            return isLight?"#C62828":T.over;
           };
           // Text-Farbe (Ampel): bei Einnahmen nicht ampeln (immer grün/Akzent), bei Ausgaben ampeln
           const textColor = (amt, bgt, isInc) => {
@@ -1325,11 +1341,15 @@ function DashboardScreenV2() {
             // Budget-Kategorien: ein Punkt auf einer feinen Linie zeigt (ohne Zahl),
             // wieviel des Budgets (val) inkl. Vormerkungen schon verbraucht ist (cb).
             const usedFrac = stripe && val>0 ? Math.min(1, Math.max(0, cb/val)) : null;
+            // Betragsfarbe: fest Hellorange/kräftiges Grün (bold=abgeschlossen,
+            // abgedunkelt=aktuell) statt %-Budget-Ampel — opts.abg vom Aufrufer
+            // (true = diese Monatshälfte ist schon abgeschlossen).
+            const textCol = val>0 ? bookColAbg(isInc, !!opts.abg) : T.txt2;
             return (
               <div onClick={clickable?(e=>{e.stopPropagation();onClick();}):undefined}
                 style={{flex:1,position:"relative",textAlign:"center",
                   padding: stripe!=null ? "5px 0 9px" : "5px 0",borderRadius:7,background:cellBg,
-                  color:textColor(isInc?val:cb,bgt,isInc),
+                  color:textCol,
                   fontSize:opts.size||20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
                   opacity:opts.dim?0.55:0.9,overflow:"hidden",
                   cursor:clickable?"pointer":"default"}}>
@@ -1441,9 +1461,11 @@ function DashboardScreenV2() {
                   });
                 }
 
-                // Großer Hauptbetrag rechts = AKTUELLER Verbrauch (real gebucht), gefärbt nach Ampel
+                // Großer Hauptbetrag rechts = AKTUELLER Verbrauch (real gebucht) — fest
+                // Hellorange/kräftiges Grün, bold sobald der Monat (Ende-Hälfte) schon
+                // abgeschlossen ist, sonst abgedunkelt (Monat läuft noch).
                 // Mitte/Ende-Pillen zeigen die Prognose; oben zeigt der reale Stand.
-                const headColor = textColor(iAkt, budgetEnde, isIncome);
+                const headColor = iAkt>0 ? bookColAbg(isIncome, !endeReach) : T.txt2;
 
                 const isExpanded = expandedCats.has(cat.id);
                 const showPills  = detailsOpen || isExpanded;
@@ -1541,7 +1563,7 @@ function DashboardScreenV2() {
                         ? Math.max(_istAll, subBudget) : _istAll;
                       const sBudMitte = (()=>{ const g=getBudgetForMonth(sub.id,year,month)||0,
                         m=getBudgetForMonth(sub.id+"_mitte",year,month)||0; return (m>0&&m<g)?m:0; })();
-                      const sHead = textColor(sAkt, subBudget, isIncome);
+                      const sHead = sAkt>0 ? bookColAbg(isIncome, !endeReach) : T.txt2;
                       return (
                         <div key={sub.id}
                           style={{marginTop:6}}>
@@ -1575,9 +1597,9 @@ function DashboardScreenV2() {
                           }) : (
                           <div style={{display:"flex",gap:6}}>
                             {valuePill(sMitte, sBudMitte, isIncome,
-                              ()=>openSubInlineDrill(sub,subTxs,14,"Mitte",sMitte,false), {size:16, colorVal:_ist14})}
+                              ()=>openSubInlineDrill(sub,subTxs,14,"Mitte",sMitte,false), {size:16, colorVal:_ist14, abg:!mitteReach})}
                             {valuePill(sEnde, subBudget, isIncome,
-                              ()=>openSubInlineDrill(sub,subTxs,lastDay,"Ende",sEnde,false), {size:16, colorVal:_istAll})}
+                              ()=>openSubInlineDrill(sub,subTxs,lastDay,"Ende",sEnde,false), {size:16, colorVal:_istAll, abg:!endeReach})}
                           </div>
                           )}
                         </div>
@@ -1720,7 +1742,7 @@ function DashboardScreenV2() {
                                 borderRadius:4,padding:"1px 6px",fontSize:11,fontWeight:700}}>{tx._seriesId?"wiederkehrend":"vorgemerkt"}</span>}
                               <LinkBadges tx={tx}/>
                             </div>
-                            <span style={{...amtStyle(tx.pending?(cat.type==="income"?"cell_inc":"cell_exp"):cat.type==="income"?"pos":"neg"),fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>{fmt(amt)}</span>
+                            <span style={{...amtStyle(tx.pending?(cat.type==="income"?"cell_inc":"cell_exp"):cat.type==="income"?"pos":"neg", tx.pending?undefined:bookCol(cat.type==="income",tx.date)),fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>{fmt(amt)}</span>
                           </div>
                         </div>
                       );
@@ -1780,7 +1802,8 @@ function DashboardScreenV2() {
                                 ["aktuell",  aktuell,realEnde, 0, 0,   ()=>openSubDrill(31,"aktuell")],
                               ].map(([lbl,val,real,pnd,bgt,onCellClick])=>{
                                 const onlyPend = pnd>0 && real===0;
-                                const valCol = val===0 ? T.txt2 : onlyPend ? (cat.type==="income"?T.cell_inc:T.cell_exp) : (cat.type==="income"?T.pos:T.neg);
+                                const abg = lbl==="Mitte" ? !mitteReach : !endeReach;
+                                const valCol = val===0 ? T.txt2 : onlyPend ? (cat.type==="income"?T.cell_inc:T.cell_exp) : bookColAbg(cat.type==="income", abg);
                                 const pct = bgt>0 ? Math.min(110, val/bgt*100) : null;
                                 const barCol = pct===null ? T.pos
                                   : pct<=50  ? T.pos
@@ -1850,7 +1873,7 @@ function DashboardScreenV2() {
                               <div style={{display:"flex",justifyContent:"space-between",
                                 alignItems:"center",gap:8}}>
                                 <div style={{fontSize:9,color:T.txt2}}>
-                                  <span style={{...amtStyle("neg"),fontWeight:700,fontFamily:NUM_FONT}}>
+                                  <span style={{...amtStyle("neg", bookColAbg(false, !endeReach)),fontWeight:700,fontFamily:NUM_FONT}}>
                                     −{fmt(realAmt)}
                                   </span>
                                   {pendAmt>0&&<span style={{color:cat.type==="income"?T.cell_inc:T.cell_exp,fontFamily:NUM_FONT}}>
@@ -1892,7 +1915,7 @@ function DashboardScreenV2() {
                                   </span>}
                                   <LinkBadges tx={tx}/>
                                 </div>
-                                <span style={{color:tx.pending?(cat.type==="income"?T.cell_inc:T.cell_exp):(cat.type==="income"?T.pos:T.neg),fontSize:17,
+                                <span style={{color:tx.pending?(cat.type==="income"?T.cell_inc:T.cell_exp):bookCol(cat.type==="income",tx.date),fontSize:17,
                                   fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
                                   {fmt(amt)}
                                 </span>
@@ -2054,7 +2077,7 @@ function DashboardScreenV2() {
                             {isUncat&&<span style={{color:T.txt,background:"rgba(255,80,80,0.24)",border:`1px solid ${T.neg}66`,
                               borderRadius:4,padding:"1px 6px",fontSize:11,fontWeight:700}}>unkategorisiert</span>}
                           </div>
-                          <div style={{...amtStyle(dashDrill.isIncome?"pos":"neg"),...(dashDrill.isPending?{color:dashDrill.isIncome?T.cell_inc:T.cell_exp}:{}),fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
+                          <div style={{...amtStyle(dashDrill.isIncome?"pos":"neg", dashDrill.isPending?undefined:bookCol(dashDrill.isIncome,tx.date)),...(dashDrill.isPending?{color:dashDrill.isIncome?T.cell_inc:T.cell_exp}:{}),fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
                             {fmt(amt)}
                           </div>
                         </div>
@@ -2081,7 +2104,7 @@ function DashboardScreenV2() {
                                   display:"flex",alignItems:"center",gap:3}}>
                                   {Li("link",9,T.blue)} zugeordnet
                                 </span>}
-                                <span style={{color:isLinked?T.txt2:(dashDrill.isPending?(dashDrill.isIncome?T.cell_inc:T.cell_exp):(dashDrill.isIncome?T.pos:T.neg)),
+                                <span style={{color:isLinked?T.txt2:(dashDrill.isPending?(dashDrill.isIncome?T.cell_inc:T.cell_exp):bookCol(dashDrill.isIncome,tx.date)),
                                   fontSize:11,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0,
                                   opacity:isLinked?0.5:1}}>
                                   {fmt(pn(s.amount))}

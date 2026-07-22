@@ -11,7 +11,8 @@ import { SaldoPrognose } from "./SaldoPrognose.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { amtStyle } from "../../theme/amtPill.js";
-import { fmt, NUM_FONT } from "../../utils/format.js";
+import { fmt, NUM_FONT, darkenHex } from "../../utils/format.js";
+import { phaseStillReachable } from "../../utils/saldo.js";
 import { Li } from "../../utils/icons.jsx";
 import { ThemeSwitcherMini } from "../molecules/ThemeSwitcherMini.jsx";
 import { kvStore } from "../../utils/kvStore.js";
@@ -106,6 +107,17 @@ function SaldoHeroV2({
   // Mitte/Ende-Prognose behalten die Schwellwert-Ampel (<0 neg · ≤500 warn · ≤1000 gold · sonst pos).
   const saldoCol  = v => v==null?T.txt2:v<0?T.cond_neg:v<=500?T.cond_warn:v<=1000?T.cond_gold:T.cond_pos;
 
+  // Reale Buchungen (nicht Vormerkungen): Hellorange/kräftiges Grün, bold sobald
+  // die jeweilige Monatshälfte abgeschlossen ist, sonst abgedunkelt/condensed
+  // (Hälfte läuft noch).
+  const _lastDayHero = new Date(year, month+1, 0).getDate();
+  const mitteAbgHero = !phaseStillReachable(year, month, 14, {});
+  const endeAbgHero  = !phaseStillReachable(year, month, _lastDayHero, {});
+  const bookColHero  = (isInc, abg) => {
+    const base = isInc ? T.cond_pos : T.cond_neg;
+    return abg ? base : darkenHex(base, 0.22);
+  };
+
   // Mini-Zelle für Detail-Werte (Out|In Paar)
   // cond_neg/cond_pos statt neg/pos als Default: manche Themes definieren "neg"
   // bewusst blass/pastellig (WCAG-Kontrast für kleine Textfarbe auf grauem
@@ -128,13 +140,13 @@ function SaldoHeroV2({
       </div>
     </div>
   );
-  const DetailRow = ({label, mIn, mOut, eIn, eOut, clrIn, clrOut, onTapIn, onTapOut}) => (
+  const DetailRow = ({label, mIn, mOut, eIn, eOut, clrIn, clrOut, clrInM, clrOutM, clrInE, clrOutE, onTapIn, onTapOut}) => (
     <div style={{display:"flex",alignItems:"center",marginBottom:4}}>
-      <HalfCell vIn={mIn} vOut={mOut} clrIn={clrIn} clrOut={clrOut}
+      <HalfCell vIn={mIn} vOut={mOut} clrIn={clrInM??clrIn} clrOut={clrOutM??clrOut}
         dim={true} isMitte={true} onTapIn={onTapIn} onTapOut={onTapOut}/>
       <div style={{width:44,flexShrink:0,textAlign:"center",
         color:T.txt2,fontSize:10,fontWeight:600,letterSpacing:0.3}}>{label}</div>
-      <HalfCell vIn={eIn} vOut={eOut} clrIn={clrIn} clrOut={clrOut}
+      <HalfCell vIn={eIn} vOut={eOut} clrIn={clrInE??clrIn} clrOut={clrOutE??clrOut}
         dim={false} isMitte={false} onTapIn={onTapIn} onTapOut={onTapOut}/>
     </div>
   );
@@ -387,6 +399,8 @@ function SaldoHeroV2({
         <div style={{marginTop:2,paddingTop:6,borderTop:`1px solid ${T.bd}`}}>
           <DetailRow label="Buch."
             mIn={buchInM} mOut={buchOutM} eIn={buchInE} eOut={buchOutE}
+            clrInM={bookColHero(true,mitteAbgHero)} clrOutM={bookColHero(false,mitteAbgHero)}
+            clrInE={bookColHero(true,endeAbgHero)} clrOutE={bookColHero(false,endeAbgHero)}
             onTapIn={onDrillBuchIn} onTapOut={onDrillBuchOut}/>
           {(pendInE>0||pendOutE>0) && (
             <DetailRow label="VM"

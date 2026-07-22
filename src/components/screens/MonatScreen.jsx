@@ -1917,7 +1917,7 @@ function MonatScreen() {
                   const pal   = tx.pending
                     ? (type==="income"
                         ? {bg:T.cell_inc_bg,bd:T.cell_inc_bd,hdr:T.cell_inc,val:T.cell_inc}
-                        : {bg:T.on_accent,bd:"#7A5200",hdr:T.gold,val:T.gold})
+                        : {bg:T.on_accent,bd:"#7A5200",hdr:T.cell_exp,val:T.cell_exp})
                     : PAL[type]||PAL.expense;
                   const isS   = (tx.splits||[]).length>1;
                   const involvedCats = isS

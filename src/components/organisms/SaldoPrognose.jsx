@@ -3,8 +3,9 @@
 import React, { useContext, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
-import { fmt, NUM_FONT } from "../../utils/format.js";
+import { fmt, NUM_FONT, darkenHex } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
+import { isBookingAbgeschlossen } from "../../utils/saldo.js";
 
 function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, saldoEnde, getCat, getSub, initialOpen=null}) {
   if(window.MBT_DEBUG?.disable_drilldown) return null;
@@ -64,7 +65,12 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
           const cat=getCat((t.splits||[])[0]?.catId);
           const splitAmt = subId ? (t.splits||[]).find(sp=>sp.subId===subId)?.amount : null;
           const displayAmt = splitAmt!=null && splitAmt!==0 ? Math.abs(splitAmt) : Math.abs(t.totalAmount);
-          const amtCol = isInc ? (isPending?T.cell_inc:T.pos) : (isPending?T.cell_exp:T.neg);
+          // Reale Buchungen: Hellorange/kräftiges Grün, bold sobald ihre
+          // Monatshälfte abgeschlossen ist, sonst abgedunkelt (noch aktuell).
+          const amtCol = isPending
+            ? (isInc ? T.cell_inc : T.cell_exp)
+            : (()=>{ const base = isInc ? T.cond_pos : T.neg;
+                return isBookingAbgeschlossen(t.date) ? base : darkenHex(base, 0.22); })();
           return (
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:5,paddingLeft:indent?10:0,opacity:dimmed?0.65:1}}>
               <span style={{color:T.txt2,fontSize:12,flexShrink:0,fontFamily:NUM_FONT,width:36}}>{fmtD(t.date)}</span>

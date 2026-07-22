@@ -56,4 +56,16 @@ const drillSort = (a, b) => {
   return b.date.localeCompare(a.date);
 };
 
-export { fmt, pn, round2, sumAmounts, uid, dayOf, drillSort, NUM_FONT };
+// Mischt eine Hex-Farbe Richtung Schwarz (amt: 0=unverändert … 1=schwarz).
+// Für "aktuell/noch nicht abgeschlossen"-Buchungen: dieselbe Farbe wie
+// abgeschlossene Buchungen, nur sichtbar gedämpfter (condensed).
+const darkenHex = (hex, amt) => {
+  const h = String(hex||"").replace("#","");
+  const f = h.length < 6 ? h.split("").map(c=>c+c).join("") : h;
+  if (!/^[0-9a-fA-F]{6}$/.test(f)) return hex;
+  const r = parseInt(f.slice(0,2),16), g = parseInt(f.slice(2,4),16), b = parseInt(f.slice(4,6),16);
+  const mix = c => Math.round(c * (1 - amt));
+  return `rgb(${mix(r)},${mix(g)},${mix(b)})`;
+};
+
+export { fmt, pn, round2, sumAmounts, uid, dayOf, drillSort, NUM_FONT, darkenHex };

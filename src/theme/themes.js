@@ -11,7 +11,7 @@ const THEMES = {
     mid:"#67E8F9",     // "Mitte"-Label Farbe
     on_accent:"#1A1E00", disabled:"#2a2a2a",
     warn:"#F59E0B", override:"#B45309",
-    cell_inc:"#C8E645", cell_inc_bg:"#0F1A00", cell_inc_bd:"#4A6600", cell_exp:"#FFCA28",
+    cell_inc:"#9CB336", cell_inc_bg:"#0F1A00", cell_inc_bd:"#4A6600", cell_exp:"#FFCA28", over:"#FF7EB6",
     tab_exp:"#6B1A10", tab_inc:"#2A4A00", tab_pend:"#5A3A00",
     surf3:"#2A2E35", err:"#FF4444",
     // PAL: Buchungs-Panel-Farben
@@ -61,7 +61,7 @@ const THEMES = {
     cf:"#FF9900", mid:"#67C15E",
     on_accent:"#111111", disabled:"#333333",
     warn:"#FF9900", override:"#CC7700",
-    cell_inc:"#67C15E", cell_inc_bg:"#0D1F0C", cell_inc_bd:"#2A5A28", cell_exp:"#FFCA28",
+    cell_inc:"#509749", cell_inc_bg:"#0D1F0C", cell_inc_bd:"#2A5A28", cell_exp:"#FFCA28", over:"#FF7EB6",
     tab_exp:"#2A1010", tab_inc:"#0D1F0C", tab_pend:"#2A1A00",
     surf3:"#1C1C1C", err:"#E05252",
     pal_inc_bg:"#0D1F0C", pal_inc_bd:"#2A5A28", pal_inc_hdr:"#67C15E", pal_inc_fld:"#142014", pal_inc_val:"#8AE080",
@@ -82,7 +82,7 @@ const THEMES = {
     cf:"#107C10", mid:"#5EC95E",
     on_accent:"#FFFFFF", disabled:"#2A2A2A",
     warn:"#FFB900", override:"#CC8800",
-    cell_inc:"#5EC95E", cell_inc_bg:"#061406", cell_inc_bd:"#1A4A1A", cell_exp:"#FFCA28",
+    cell_inc:"#499D49", cell_inc_bg:"#061406", cell_inc_bd:"#1A4A1A", cell_exp:"#FFCA28", over:"#FF7EB6",
     tab_exp:"#1A0808", tab_inc:"#061406", tab_pend:"#1A1400",
     surf3:"#121212", err:"#D04040",
     pal_inc_bg:"#061406", pal_inc_bd:"#1A4A1A", pal_inc_hdr:"#5EC95E", pal_inc_fld:"#0A1E0A", pal_inc_val:"#80E080",
@@ -103,7 +103,7 @@ const THEMES = {
     cf:"#00A0D6", mid:"#00CC88",
     on_accent:"#FFFFFF", disabled:"#1A2A3A",
     warn:"#F0C040", override:"#C09030",
-    cell_inc:"#00CC88", cell_inc_bg:"#00180E", cell_inc_bd:"#005A38", cell_exp:"#FFCA28",
+    cell_inc:"#009F6A", cell_inc_bg:"#00180E", cell_inc_bd:"#005A38", cell_exp:"#FFCA28", over:"#FF7EB6",
     tab_exp:"#1A0818", tab_inc:"#00180E", tab_pend:"#180A00",
     surf3:"#0A1020", err:"#E84060",
     pal_inc_bg:"#00180E", pal_inc_bd:"#005A38", pal_inc_hdr:"#00CC88", pal_inc_fld:"#002010", pal_inc_val:"#40E8A8",
@@ -124,7 +124,7 @@ const THEMES = {
     cf:"#1464D6", mid:"#1AC8A0",
     on_accent:"#FFFFFF", disabled:"#1A2840",
     warn:"#F5C518", override:"#C89C14",
-    cell_inc:"#1AC8A0", cell_inc_bg:"#001A14", cell_inc_bd:"#006050", cell_exp:"#FFCA28",
+    cell_inc:"#149C7D", cell_inc_bg:"#001A14", cell_inc_bd:"#006050", cell_exp:"#FFCA28", over:"#FF7EB6",
     tab_exp:"#1A0810", tab_inc:"#001A14", tab_pend:"#1A1000",
     surf3:"#081428", err:"#E83050",
     pal_inc_bg:"#001A14", pal_inc_bd:"#006050", pal_inc_hdr:"#1AC8A0", pal_inc_fld:"#002018", pal_inc_val:"#50E8C0",
@@ -145,7 +145,7 @@ const THEMES = {
     cf:"#E50914", mid:"#46D369",
     on_accent:"#FFFFFF", disabled:"#333333",
     warn:"#F5A623", override:"#CC7700",
-    cell_inc:"#46D369", cell_inc_bg:"#091A0E", cell_inc_bd:"#1A5A28", cell_exp:"#FFCA28",
+    cell_inc:"#37A552", cell_inc_bg:"#091A0E", cell_inc_bd:"#1A5A28", cell_exp:"#FFCA28", over:"#FF7EB6",
     tab_exp:"#2A0808", tab_inc:"#091A0E", tab_pend:"#1A1200",
     surf3:"#1A1A1A", err:"#E50914",
     pal_inc_bg:"#091A0E", pal_inc_bd:"#1A5A28", pal_inc_hdr:"#46D369", pal_inc_fld:"#0E2016", pal_inc_val:"#70E890",
@@ -166,7 +166,7 @@ const THEMES = {
     cf:"#E20074", mid:"#60D080",
     on_accent:"#FFFFFF", disabled:"#3A003A",
     warn:"#FFB800", override:"#CC8C00",
-    cell_inc:"#60D080", cell_inc_bg:"#081A10", cell_inc_bd:"#205A30", cell_exp:"#FFCA28",
+    cell_inc:"#4BA264", cell_inc_bg:"#081A10", cell_inc_bd:"#205A30", cell_exp:"#FFCA28", over:"#FF7EB6",
     tab_exp:"#200010", tab_inc:"#081A10", tab_pend:"#180C00",
     surf3:"#1E0020", err:"#FF4060",
     pal_inc_bg:"#081A10", pal_inc_bd:"#205A30", pal_inc_hdr:"#60D080", pal_inc_fld:"#0E2018", pal_inc_val:"#88E8A0",
@@ -286,7 +286,7 @@ const THEMES = {
     blue:"#6C63FF",
     // Einnahmen: Smaragd
     pos:"#00D68F",
-    cell_inc:"#00D68F",  cell_inc_bg:"#00200F", cell_inc_bd:"#005030", cell_exp:"#FFCA28",
+    cell_inc:"#00A770",  cell_inc_bg:"#00200F", cell_inc_bd:"#005030", cell_exp:"#FFCA28", over:"#FF7EB6",
     // Ausgaben: Hellorange
     neg:"#FF6E40",
     // Gold/Warn: Bernstein
@@ -422,7 +422,7 @@ const THEMES = {
     gold:"#FFD700",
     warn:"#FFD700",   override:"#CC9900",
     on_accent:"#0D0D0D", disabled:"#1A1A1A",
-    cell_inc:"#00FF41",  cell_inc_bg:"#001A00", cell_inc_bd:"#005500", cell_exp:"#FFCA28",
+    cell_inc:"#00C733",  cell_inc_bg:"#001A00", cell_inc_bd:"#005500", cell_exp:"#FFCA28", over:"#FF7EB6",
     tab_exp:"#1A0000",   tab_inc:"#001A00",    tab_pend:"#1A1400",
     vorm_bg:"#1A1400",   vorm_bd:"#FFD70066",
     cf:"#00FF41",        mid:"#00CCFF",
@@ -566,7 +566,7 @@ THEMES.kontrastdunkel = {
   blue:"#5AB7FF", pos:"#3FD06A", neg:"#FF6E40", gold:"#FFC83D",
   on_accent:"#05140A", disabled:"#2A2A2A", warn:"#FFB02E", override:"#C2740A",
   mid:"#67E8F9",
-  cell_inc:"#5FE08A", cell_inc_bg:"#06160C", cell_inc_bd:"#1E5A33", cell_exp:"#FFCA28",
+  cell_inc:"#4AAF6C", cell_inc_bg:"#06160C", cell_inc_bd:"#1E5A33", cell_exp:"#FFCA28", over:"#FF7EB6",
   tab_exp:"#3A0E0A", tab_inc:"#0C2A16", tab_pend:"#332300",
   err:"#FF6B5E", err_bg:"#3A0A0A",
   vorm_bg:"#332300", vorm_bd:"rgba(255,200,0,0.9)",
@@ -609,7 +609,7 @@ THEMES.mitternacht = {
   txt:"#EAF1FF", txt2:"rgba(200,215,245,0.74)", lbl:"rgba(200,215,245,0.56)",
   blue:"#6CB4FF", pos:"#4FD08A", neg:"#FF6E40", gold:"#FFC861",
   on_accent:"#08101F", mid:"#67E8F9",
-  cell_inc:"#5FE0A0", cell_inc_bg:"#08200F", cell_inc_bd:"#1E5A3A", cell_exp:"#FFCA28",
+  cell_inc:"#4AAF7D", cell_inc_bg:"#08200F", cell_inc_bd:"#1E5A3A", cell_exp:"#FFCA28", over:"#FF7EB6",
   tab_exp:"#3A1015", tab_inc:"#0C2A1A", tab_pend:"#33260A",
   err:"#FF6F61", err_bg:"#33101A",
   hero_bg:"linear-gradient(135deg,#0C1220,#1A2742)", logo_c1:"#4FD08A", logo_c2:"#6CB4FF",
@@ -648,7 +648,7 @@ THEMES.modernslate = {
   blue:"#5B9DF9", pos:"#A3E635", neg:"#FF6E40", gold:"#FBBF24",
   on_accent:"#0C1206", disabled:"#2A2F3A", warn:"#FBBF24", override:"#B5830F",
   mid:"#67E8F9",
-  cell_inc:"#A3E635", cell_inc_bg:"#18200A", cell_inc_bd:"#4A6612", cell_exp:"#FFCA28",
+  cell_inc:"#7FB329", cell_inc_bg:"#18200A", cell_inc_bd:"#4A6612", cell_exp:"#FFCA28", over:"#FF7EB6",
   tab_exp:"#3A1414", tab_inc:"#1E2A0A", tab_pend:"#332A0A",
   err:"#FF4D4D", err_bg:"#350F0F",
   vorm_bg:"#332A0A", vorm_bd:"rgba(251,191,36,0.85)",
@@ -698,7 +698,7 @@ THEMES.deepocean = {
   blue:"#65E3FD", pos:"#BFFF00", neg:"#FF6E40", gold:"#FFC861",
   on_accent:"#06121A", disabled:"#3A414A", warn:"#FFB54A", override:"#C2820F",
   mid:"#67E8F9",
-  cell_inc:"#BFFF00", cell_inc_bg:"#141F00", cell_inc_bd:"#4A6600", cell_exp:"#FFCA28",
+  cell_inc:"#95C700", cell_inc_bg:"#141F00", cell_inc_bd:"#4A6600", cell_exp:"#FFCA28", over:"#FF7EB6",
   tab_exp:"#3A1010", tab_inc:"#1C2A00", tab_pend:"#332600",
   err:"#FF5252", err_bg:"#350E0E",
   vorm_bg:"#332600", vorm_bd:"rgba(255,200,97,0.8)",
@@ -773,7 +773,7 @@ THEMES.weltraumtaschengeld = {
   blue:"#2EE6D6", pos:"#2EE6D6", neg:"#FF6E40", gold:"#FFD166",
   on_accent:"#04201C", disabled:"#232B55", warn:"#FFB84A", override:"#C77A2E",
   mid:"#8A7CFF",
-  cell_inc:"#2EE6D6", cell_inc_bg:"#062420", cell_inc_bd:"#1A6E63", cell_exp:"#FFCA28",
+  cell_inc:"#24B3A7", cell_inc_bg:"#062420", cell_inc_bd:"#1A6E63", cell_exp:"#FFCA28", over:"#FF7EB6",
   tab_exp:"rgba(255,79,163,0.20)", tab_inc:"rgba(46,230,214,0.20)", tab_pend:"rgba(255,209,102,0.20)",
   err:"#FF4FA3", err_bg:"#33102A",
   vorm_bg:"#332A0A", vorm_bd:"rgba(255,209,102,0.85)",
@@ -836,7 +836,7 @@ THEMES.magazin = {
   on_accent:"#241304", disabled:"#2A2D34",
   warn:"#D9964A", override:"#A96A2A",
   mid:"#8FB6C9",
-  cell_inc:"#A3C585", cell_inc_bg:"#141B10", cell_inc_bd:"#3E5A2C", cell_exp:"#FFCA28",
+  cell_inc:"#7F9A68", cell_inc_bg:"#141B10", cell_inc_bd:"#3E5A2C", cell_exp:"#FFCA28", over:"#FF7EB6",
   tab_exp:"rgba(226,96,76,0.18)", tab_inc:"rgba(163,197,133,0.16)", tab_pend:"rgba(217,180,91,0.16)",
   err:"#E2604C", err_bg:"#3A140E",
   vorm_bg:"#2A2110", vorm_bd:"rgba(217,180,91,0.8)",
@@ -869,6 +869,11 @@ function getTheme(name) {
   // (#FFCA28 Amber-Gelb); alle anderen fallen auf "gold" zurück (bisheriges
   // Verhalten vor der Einführung dieses eigenen Tokens).
   if (!t.cell_exp)    t.cell_exp    = t.gold;
+  // over: Ersatzfarbe für massive Budgetüberschreitung (Ampel-Top-Stufen) —
+  // ersetzt in den 16 dunklen Themes das kräftige Rot (dort schlecht lesbar/
+  // störend, Nutzer-Feedback) durch ein helles Rosa. Alle anderen Themes
+  // (hell) behalten ihr bisheriges Rot (err) — dort kein Problem.
+  if (!t.over)        t.over        = t.err;
   if (!t.tab_exp)     t.tab_exp     = "#6B1A10";
   if (!t.tab_inc)     t.tab_inc     = "#2A4A00";
   if (!t.tab_pend)    t.tab_pend    = "#5A3A00";

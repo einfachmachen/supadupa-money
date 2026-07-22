@@ -321,6 +321,16 @@ function budgetPlaceholderActive(tx, ctx = {}) {
   const phaseEndDay = isMitte ? 14 : new Date(y, mo, 0).getDate();
   return phaseStillReachable(y, mo - 1, phaseEndDay, ctx);
 }
+// Ist eine REALE (nicht-pending) Buchung mit Datum dateStr "abgeschlossen"
+// (ihre Monatshälfte — Mitte 1..14 bzw. Ende 15..letzter — ist relativ zu
+// heute schon vorbei) oder noch "aktuell" (die Hälfte läuft noch)? Steuert
+// bold (abgeschlossen) vs. abgedunkelt/condensed (aktuell) Farbdarstellung.
+function isBookingAbgeschlossen(dateStr, ctx = {}) {
+  const [y, mo, d] = String(dateStr).split("-").map(Number); // mo: 1-basiert
+  const isMitte = d <= 14;
+  const phaseEndDay = isMitte ? 14 : new Date(y, mo, 0).getDate();
+  return !phaseStillReachable(y, mo - 1, phaseEndDay, ctx);
+}
 function shouldApplyMitteSprung(year, month, day, ctx) {
   if(day > 14) return false;
   // Tag muss heute/Zukunft sein UND die Phase noch verbrauchbar
@@ -394,4 +404,4 @@ export function saldoEnde(year, month, accId, ctx) {
   return saldoAt(year, month, lastDay, accId, ctx);
 }
 
-export { saldoAnchor, restMitte, restEnde, collectBudgets, phaseStillReachable, budgetPlaceholderActive };
+export { saldoAnchor, restMitte, restEnde, collectBudgets, phaseStillReachable, budgetPlaceholderActive, isBookingAbgeschlossen };
