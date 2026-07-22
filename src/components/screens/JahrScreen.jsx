@@ -550,7 +550,7 @@ function JahrScreen({forceSingle=false}) {
                     // Budget-Paar: als einzelne Zeile
                     if(tx._isBudgetPair) {
                       const cat2=getCat((tx.splits||[])[0]?.catId);
-                      const col2=T.neg;
+                      const col2=T.cell_exp; // Budget-Paar = Ausgabe-Vormerkung, nicht echte Buchung
                       return (
                         <div key={tx.id} style={{display:"flex",alignItems:"center",gap:10,
                           padding:"8px 14px",borderBottom:`1px solid ${T.bd}`,cursor:"pointer",

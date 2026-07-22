@@ -1720,7 +1720,7 @@ function DashboardScreenV2() {
                                 borderRadius:4,padding:"1px 6px",fontSize:11,fontWeight:700}}>{tx._seriesId?"wiederkehrend":"vorgemerkt"}</span>}
                               <LinkBadges tx={tx}/>
                             </div>
-                            <span style={{...amtStyle(tx.pending?"gold":cat.type==="income"?"pos":"neg"),fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>{fmt(amt)}</span>
+                            <span style={{...amtStyle(tx.pending?(cat.type==="income"?"cell_inc":"cell_exp"):cat.type==="income"?"pos":"neg"),fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>{fmt(amt)}</span>
                           </div>
                         </div>
                       );
@@ -1780,7 +1780,7 @@ function DashboardScreenV2() {
                                 ["aktuell",  aktuell,realEnde, 0, 0,   ()=>openSubDrill(31,"aktuell")],
                               ].map(([lbl,val,real,pnd,bgt,onCellClick])=>{
                                 const onlyPend = pnd>0 && real===0;
-                                const valCol = val===0 ? T.txt2 : onlyPend ? T.gold : (cat.type==="income"?T.pos:T.neg);
+                                const valCol = val===0 ? T.txt2 : onlyPend ? (cat.type==="income"?T.cell_inc:T.cell_exp) : (cat.type==="income"?T.pos:T.neg);
                                 const pct = bgt>0 ? Math.min(110, val/bgt*100) : null;
                                 const barCol = pct===null ? T.pos
                                   : pct<=50  ? T.pos
@@ -1853,8 +1853,8 @@ function DashboardScreenV2() {
                                   <span style={{...amtStyle("neg"),fontWeight:700,fontFamily:NUM_FONT}}>
                                     −{fmt(realAmt)}
                                   </span>
-                                  {pendAmt>0&&<span style={{color:T.gold,fontFamily:NUM_FONT}}>
-                                    {" "}+<span style={{color:T.gold}}>{cat.type==="income"?"+":"−"}{fmt(pendAmt)} vorgem.</span>
+                                  {pendAmt>0&&<span style={{color:cat.type==="income"?T.cell_inc:T.cell_exp,fontFamily:NUM_FONT}}>
+                                    {" "}+<span style={{color:cat.type==="income"?T.cell_inc:T.cell_exp}}>{cat.type==="income"?"+":"−"}{fmt(pendAmt)} vorgem.</span>
                                   </span>}
                                   <span style={{color:T.txt2}}> / {cat.type==="income"?"+":"−"}{fmt(budget)}</span>
                                 </div>
@@ -1892,7 +1892,7 @@ function DashboardScreenV2() {
                                   </span>}
                                   <LinkBadges tx={tx}/>
                                 </div>
-                                <span style={{color:tx.pending?T.gold:(cat.type==="income"?T.pos:T.neg),fontSize:17,
+                                <span style={{color:tx.pending?(cat.type==="income"?T.cell_inc:T.cell_exp):(cat.type==="income"?T.pos:T.neg),fontSize:17,
                                   fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
                                   {fmt(amt)}
                                 </span>
@@ -1945,9 +1945,9 @@ function DashboardScreenV2() {
                     const spent = Math.max(0, budgetFull - open);
                     const isInc = be ? be.isInc : dashDrill.isIncome;
                     const isOver = !isInc && open < 0;
-                    const mainCol = isInc ? T.cell_inc : (isOver ? T.neg : T.gold);
+                    const mainCol = isInc ? T.cell_inc : (isOver ? T.neg : T.cell_exp);
                     const usedCol = spent===0 ? T.txt2 : mainCol;
-                    const restCol = isOver ? T.neg : (open>0 ? (isInc?T.cell_inc:T.gold) : T.txt2);
+                    const restCol = isOver ? T.neg : (open>0 ? (isInc?T.cell_inc:T.cell_exp) : T.txt2);
                     const ratio = budgetFull>0 ? Math.min(1, spent/budgetFull) : 0;
                     const barCol = isInc ? T.cell_inc : (ratio>=1?T.neg:ratio>=0.75?T.gold:T.pos);
                     const sub = getSub((tx.splits||[])[0]?.catId, baseSubId);
@@ -2054,7 +2054,7 @@ function DashboardScreenV2() {
                             {isUncat&&<span style={{color:T.txt,background:"rgba(255,80,80,0.24)",border:`1px solid ${T.neg}66`,
                               borderRadius:4,padding:"1px 6px",fontSize:11,fontWeight:700}}>unkategorisiert</span>}
                           </div>
-                          <div style={{...amtStyle(dashDrill.isIncome?"pos":"neg"),...(dashDrill.isPending?{color:dashDrill.isIncome?T.cell_inc:T.gold}:{}),fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
+                          <div style={{...amtStyle(dashDrill.isIncome?"pos":"neg"),...(dashDrill.isPending?{color:dashDrill.isIncome?T.cell_inc:T.cell_exp}:{}),fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
                             {fmt(amt)}
                           </div>
                         </div>
@@ -2081,7 +2081,7 @@ function DashboardScreenV2() {
                                   display:"flex",alignItems:"center",gap:3}}>
                                   {Li("link",9,T.blue)} zugeordnet
                                 </span>}
-                                <span style={{color:isLinked?T.txt2:(dashDrill.isPending?(dashDrill.isIncome?T.cell_inc:T.gold):(dashDrill.isIncome?T.pos:T.neg)),
+                                <span style={{color:isLinked?T.txt2:(dashDrill.isPending?(dashDrill.isIncome?T.cell_inc:T.cell_exp):(dashDrill.isIncome?T.pos:T.neg)),
                                   fontSize:11,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0,
                                   opacity:isLinked?0.5:1}}>
                                   {fmt(pn(s.amount))}

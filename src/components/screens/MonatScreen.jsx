@@ -1814,9 +1814,13 @@ function MonatScreen() {
                   return details.items.map(({name,subId,spent,budget,open,type})=>{
                     const isIncome = type==="income";
                     const isOverspent = !isIncome && open < 0;
-                    const accentCol = isIncome ? T.cell_inc : (isOverspent ? T.cond_neg : T.gold);
+                    // isOverspent → neg (echtes Warnrot), sonst cell_exp (Ausgabe-Vormerkung-
+                    // Amber, Pendant zu cell_inc) — vorher teilten sich beide Zustände
+                    // cond_neg, wodurch "über Budget" und "normale Vormerkung" nicht mehr
+                    // zu unterscheiden waren.
+                    const accentCol = isIncome ? T.cell_inc : (isOverspent ? T.neg : T.cell_exp);
                     const pct = budget > 0 ? Math.min(150, spent/budget*100) : 100;
-                    const barCol = isIncome ? T.cell_inc : (pct>=100?T.cond_neg:pct>=75?T.gold:T.pos);
+                    const barCol = isIncome ? T.cell_inc : (pct>=100?T.neg:pct>=75?T.gold:T.pos);
                     const subName = name.split(" / ")[1]||name;
                     const barW = Math.min(100, pct);
                     const signedOpen   = isIncome ?  open :  -open;
@@ -1836,7 +1840,7 @@ function MonatScreen() {
                             {Li(isOverspent?"alert-triangle":"target",16,accentCol)}
                           </div>
                           <div style={{flex:1,minWidth:0,marginRight:6}}>
-                            <div data-role="tx-desc" style={{color:isOverspent?T.cond_neg:T.txt,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
+                            <div data-role="tx-desc" style={{color:isOverspent?T.neg:T.txt,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
                               transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{subName}</div>
                             {/* Verbrauch als Punkt auf feiner Linie (gleiche Sprache wie
                                 der Dashboard-Pegel) statt Balken + Prozent-Text */}
@@ -1862,13 +1866,13 @@ function MonatScreen() {
                             <div data-role="tx-amtbar" style={{display:"flex",alignItems:"baseline",gap:10,
                               transition:_reduceMotion?"none":"background .15s ease, padding .3s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease"}}>
                               <span data-role="tx-restwrap" style={{display:"inline-flex",alignItems:"baseline",gap:6}}>
-                                <span data-role="tx-rest-label" data-amt-tone={isOverspent?"neg":open>0?"pos":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"pos":"txt2",isOverspent?T.cond_neg:undefined),fontSize:10,fontWeight:700,marginLeft:8,
+                                <span data-role="tx-rest-label" data-amt-tone={isOverspent?"neg":open>0?"pos":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"pos":"txt2",isOverspent?T.neg:undefined),fontSize:10,fontWeight:700,marginLeft:8,
                                   transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{isOverspent?"zuviel:":"Rest:"}</span>
-                                <span data-role="tx-rest-amt" data-amt-tone={isOverspent?"neg":open>0?"pos":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"pos":"txt2",isOverspent?T.cond_neg:undefined),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
+                                <span data-role="tx-rest-amt" data-amt-tone={isOverspent?"neg":open>0?"pos":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"pos":"txt2",isOverspent?T.neg:undefined),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
                                   transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{fmt(Math.abs(signedOpen))}</span>
                               </span>
                               <span data-role="tx-spentside" style={{display:"inline-flex",alignItems:"baseline"}}>
-                                <span data-role="tx-amt" data-amt-tone={spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold"} style={{...amtStyle(spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"gold",spent===0?T.txt2:accentCol),fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{spent===0?"—":fmt(Math.abs(spent))}</span>
+                                <span data-role="tx-amt" data-amt-tone={spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"cell_exp"} style={{...amtStyle(spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"cell_exp",spent===0?T.txt2:accentCol),fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{spent===0?"—":fmt(Math.abs(spent))}</span>
                               </span>
                             </div>
                           </div>
