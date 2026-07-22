@@ -1299,13 +1299,13 @@ function DashboardScreenV2() {
           // s. trafficColor unten).
           const bookCol = (isInc, dateStr) => {
             const base = isInc ? T.cond_pos : T.neg;
-            return isBookingAbgeschlossen(dateStr) ? base : darkenHex(base, 0.22);
+            return isBookingAbgeschlossen(dateStr) ? base : darkenHex(base, 0.12);
           };
           // Für Aggregate ohne einzelnes Datum (Mitte-/Ende-Summen): abgeschlossen,
           // wenn die jeweilige Monatshälfte (relativ zu heute) schon vorbei ist.
           const bookColAbg = (isInc, abg) => {
             const base = isInc ? T.cond_pos : T.neg;
-            return abg ? base : darkenHex(base, 0.22);
+            return abg ? base : darkenHex(base, 0.12);
           };
 
           // Ampelfarbe (6-stufig wie in V1):

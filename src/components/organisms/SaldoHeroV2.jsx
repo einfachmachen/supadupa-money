@@ -115,7 +115,7 @@ function SaldoHeroV2({
   const endeAbgHero  = !phaseStillReachable(year, month, _lastDayHero, {});
   const bookColHero  = (isInc, abg) => {
     const base = isInc ? T.cond_pos : T.cond_neg;
-    return abg ? base : darkenHex(base, 0.22);
+    return abg ? base : darkenHex(base, 0.12);
   };
 
   // Mini-Zelle für Detail-Werte (Out|In Paar)

@@ -232,11 +232,11 @@ function YearBarRows({ perYear, get, getPending, isProjected, color, onSelectYea
                 <g key={r.year} onClick={() => onSelectYear(r.year)} style={{ cursor: "pointer" }}>
                   <rect x={x} y={0} width={bw} height={rowH} fill="transparent" />
                   {projected ? (
-                    <rect x={x + bw * 0.22} y={yTop} width={barVisW} height={Math.max(1, yBot - yTop)} rx={2} fill={darken(color, 0.22)} />
+                    <rect x={x + bw * 0.22} y={yTop} width={barVisW} height={Math.max(1, yBot - yTop)} rx={2} fill={darken(color, 0.12)} />
                   ) : showSplit ? (
                     <>
                       <rect x={x + bw * 0.22} y={ySplit} width={barVisW} height={Math.max(1, yBot - ySplit)} rx={2} fill={color} opacity={0.85} />
-                      <rect x={x + bw * 0.22} y={yTop} width={barVisW} height={Math.max(1, ySplit - yTop)} rx={2} fill={darken(color, 0.22)} />
+                      <rect x={x + bw * 0.22} y={yTop} width={barVisW} height={Math.max(1, ySplit - yTop)} rx={2} fill={darken(color, 0.12)} />
                     </>
                   ) : (
                     <rect x={x + bw * 0.22} y={yTop} width={barVisW} height={Math.max(1, yBot - yTop)} rx={2} fill={color} opacity={0.85} />
@@ -293,7 +293,7 @@ function YearBarListHorizontal({ perYear, get, getPending, color, onSelectYear }
                   <div style={{ position: "absolute", top: 0, bottom: 0, borderRadius: 2, background: color, opacity: 0.85,
                     left: v >= 0 ? `${zeroPct}%` : `${Math.max(0, zeroPct - pctActual)}%`,
                     width: `${pctActual}%` }} />
-                  <div style={{ position: "absolute", top: 0, bottom: 0, borderRadius: 2, background: darken(color, 0.22),
+                  <div style={{ position: "absolute", top: 0, bottom: 0, borderRadius: 2, background: darken(color, 0.12),
                     left: v >= 0 ? `${zeroPct + pctActual}%` : `${Math.max(0, zeroPct - pct)}%`,
                     width: `${Math.max(0, pct - pctActual)}%` }} />
                 </>

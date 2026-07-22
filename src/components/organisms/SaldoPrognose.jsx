@@ -70,7 +70,7 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
           const amtCol = isPending
             ? (isInc ? T.cell_inc : T.cell_exp)
             : (()=>{ const base = isInc ? T.cond_pos : T.neg;
-                return isBookingAbgeschlossen(t.date) ? base : darkenHex(base, 0.22); })();
+                return isBookingAbgeschlossen(t.date) ? base : darkenHex(base, 0.12); })();
           return (
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:5,paddingLeft:indent?10:0,opacity:dimmed?0.65:1}}>
               <span style={{color:T.txt2,fontSize:12,flexShrink:0,fontFamily:NUM_FONT,width:36}}>{fmtD(t.date)}</span>
