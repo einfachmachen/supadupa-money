@@ -70,8 +70,8 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
         const cat=getCat((tx.splits||[])[0]?.catId);
         const day=dayOf(tx.date);
         const isIncome = txType(tx)==="income"||(tx._csvType==="income");
-        // Vormerkungs-Farbschema: Einnahmen = Hellgrün, Ausgaben = Gold
-        const col = isIncome ? T.cell_inc : T.gold;
+        // Vormerkungs-Farbschema: Einnahmen = Hellgrün (cell_inc), Ausgaben = Amber-Gelb (cell_exp)
+        const col = isIncome ? T.cell_inc : T.cell_exp;
         const isS = (tx.splits||[]).length>1;
         const isExpanded = expandedId===tx.id;
         // Budget-Platzhalter: nur noch das offene Restbudget zeigen.
@@ -90,12 +90,12 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
               background:T.surf3,borderRadius:6,marginBottom:1}}>
               <div onClick={()=>openEdit(tx)}
                 style={{display:"flex",alignItems:"center",gap:8,padding:"5px 6px",cursor:"pointer"}}>
-                <span>{Li("target",18,T.gold)}</span>
+                <span>{Li("target",18,over?T.neg:T.cell_exp)}</span>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{color:T.txt,fontSize:14,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>
                   <div style={{color:T.txt2,fontSize:11}}>{isMitte?"Restbudget bis 14.":"Restbudget bis Monatsende"}</div>
                 </div>
-                <span style={{color:isMitte?T.mid:T.gold,fontSize:11,flexShrink:0}}>{isMitte?"Mitte":"Ende"}</span>
+                <span style={{color:isMitte?T.mid:T.cell_exp,fontSize:11,flexShrink:0}}>{isMitte?"Mitte":"Ende"}</span>
                 {rest==null ? (
                   <span style={{color:T.txt2,fontSize:15,fontFamily:NUM_FONT,flexShrink:0}}>—</span>
                 ) : over ? (
@@ -103,7 +103,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
                 ) : (
                   <span style={{display:"inline-flex",alignItems:"baseline",gap:4,flexShrink:0}}>
                     <span style={{color:T.txt2,fontSize:10}}>offen:</span>
-                    <span style={{color:T.gold,fontSize:15,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(rest)}</span>
+                    <span style={{color:T.cell_exp,fontSize:15,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(rest)}</span>
                   </span>
                 )}
                 <span style={{color:T.txt2,flexShrink:0}}>{Li("chevron-right",14)}</span>

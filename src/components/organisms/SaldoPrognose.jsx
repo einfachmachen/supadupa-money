@@ -60,10 +60,11 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
         const unbPend = drill.unbudgetedPend||[];
         const unbReal = drill.unbudgetedRealTxs||realTxsD.filter(r=>!budgets2.some(b=>b.realTxs.find(br=>br.id===r.id)));
         const hasAny = budgets2.length>0||unbPend.length>0||unbReal.length>0;
-        const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId}) => {
+        const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
           const cat=getCat((t.splits||[])[0]?.catId);
           const splitAmt = subId ? (t.splits||[]).find(sp=>sp.subId===subId)?.amount : null;
           const displayAmt = splitAmt!=null && splitAmt!==0 ? Math.abs(splitAmt) : Math.abs(t.totalAmount);
+          const amtCol = isInc ? (isPending?T.cell_inc:T.pos) : (isPending?T.cell_exp:T.neg);
           return (
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:5,paddingLeft:indent?10:0,opacity:dimmed?0.65:1}}>
               <span style={{color:T.txt2,fontSize:12,flexShrink:0,fontFamily:NUM_FONT,width:36}}>{fmtD(t.date)}</span>
@@ -75,7 +76,7 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
                   #{tg}
                 </span>
               ))}
-              <span style={{color:isInc?T.pos:T.neg,fontFamily:NUM_FONT,fontSize:13.5,fontWeight:700,flexShrink:0}}>{isInc?"+":"−"}{fmt(displayAmt)}</span>
+              <span style={{color:amtCol,fontFamily:NUM_FONT,fontSize:13.5,fontWeight:700,flexShrink:0}}>{isInc?"+":"−"}{fmt(displayAmt)}</span>
             </div>
           );
         };
@@ -158,7 +159,7 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
                       const sub=getSub(getCat((b.budgetTx.splits||[])[0]?.catId)?.id||"",b.baseSubId)||getCat((b.budgetTx.splits||[])[0]?.catId);
                       const subName=sub?.name||b.budgetTx.desc||"Budget";
                       const overBudget=(b.realAmt+b.concAmt)>b.budget;
-                      const effCol=b.isInc?T.pos:T.neg;
+                      const effCol=b.isInc?T.cell_inc:T.cell_exp;
                       const actual = b.realAmt+b.concAmt;
                       const openAmt = b.budget - actual;
                       return (
@@ -166,14 +167,14 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
                           {/* Zeile 1: Datum + Icon + Name | offen rechts */}
                           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
                             <span style={{color:T.txt2,fontSize:12,flexShrink:0,fontFamily:NUM_FONT,width:36}}>{fmtD(b.date)}</span>
-                            {Li(overBudget?"alert-triangle":"target",12,overBudget?T.neg:T.gold)}
-                            <span style={{flex:1,minWidth:0,color:overBudget?T.neg:T.gold,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{subName}</span>
+                            {Li(overBudget?"alert-triangle":"target",12,overBudget?T.neg:T.cell_exp)}
+                            <span style={{flex:1,minWidth:0,color:overBudget?T.neg:T.cell_exp,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{subName}</span>
                             {overBudget ? (
                               <span style={{color:T.neg,fontSize:11,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>um {fmt(actual-b.budget)} drüber</span>
                             ) : (
                               <span style={{display:"inline-flex",alignItems:"baseline",gap:5,flexShrink:0}}>
                                 <span style={{color:T.txt2,fontSize:11}}>offen:</span>
-                                <span style={{color:T.gold,fontSize:13,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(openAmt)}</span>
+                                <span style={{color:T.cell_exp,fontSize:13,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(openAmt)}</span>
                               </span>
                             )}
                           </div>
@@ -187,7 +188,7 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
                           </div>
                           {/* Trennstrich vor Einzelbuchungen */}
                           {(b.realTxs.length>0||b.concTxs.length>0)&&<div style={{borderTop:`1px solid rgba(255,255,255,0.08)`,margin:"2px 0 4px"}}/>}
-                          {[...b.realTxs.map(t=>({t,isConc:false})),...b.concTxs.map(t=>({t,isConc:true}))].sort((a,c)=>c.t.date.localeCompare(a.t.date)).map(({t,isConc})=>isConc?(<TxRow key={t.id} t={t} isInc={b.isInc} indent dimmed icon={t._seriesId?"repeat":"calendar"} iconCol={T.gold} subId={b.baseSubId}/>):(<TxRow key={t.id} t={t} isInc={b.isInc} indent icon="check-circle" iconCol={T.pos} subId={b.baseSubId}/>))}
+                          {[...b.realTxs.map(t=>({t,isConc:false})),...b.concTxs.map(t=>({t,isConc:true}))].sort((a,c)=>c.t.date.localeCompare(a.t.date)).map(({t,isConc})=>isConc?(<TxRow key={t.id} t={t} isInc={b.isInc} indent dimmed isPending icon={t._seriesId?"repeat":"calendar"} iconCol={b.isInc?T.cell_inc:T.cell_exp} subId={b.baseSubId}/>):(<TxRow key={t.id} t={t} isInc={b.isInc} indent icon="check-circle" iconCol={T.pos} subId={b.baseSubId}/>))}
                         </div>
                       );
                     }
@@ -255,7 +256,7 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
                           </div>
                         );
                       }
-                      return <TxRow key={idx} t={t} isInc={t._csvType==="income"} icon={t._seriesId?"repeat":"calendar"} iconCol={T.gold}/>;
+                      return <TxRow key={idx} t={t} isInc={t._csvType==="income"} isPending icon={t._seriesId?"repeat":"calendar"} iconCol={t._csvType==="income"?T.cell_inc:T.cell_exp}/>;
                     }
                     return <TxRow key={idx} t={item.data} isInc={item.data._csvType==="income"} icon="check-circle" iconCol={T.pos}/>;
                   })};
