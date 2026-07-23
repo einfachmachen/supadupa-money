@@ -828,6 +828,23 @@ function DashboardScreenV2() {
       _outAkt:   _calcOut(_lastDayS, true),
     }), [txs, cats, year, month, selAcc, budgets, _mitteAbg, _endeAbg, _lastDayS]);
 
+    // Reale (nicht-pending) Buchungen: Hellorange/kräftiges Grün, bold sobald
+    // ihre Monatshälfte abgeschlossen ist, sonst abgedunkelt/condensed (noch
+    // aktuell/nicht abgeschlossen) — ersetzt die alte %-Budget-Ampel für den
+    // Betrag selbst. Auf Komponenten-Ebene (nicht in einer der Render-IIFEs)
+    // definiert, damit sowohl die Kategorie-Karten als auch das separate
+    // Drilldown-Overlay weiter unten im Baum darauf zugreifen können.
+    const bookCol = (isInc, dateStr) => {
+      const base = isInc ? T.cond_pos : T.neg;
+      return isBookingAbgeschlossen(dateStr) ? base : darkenHex(base, 0.12);
+    };
+    // Für Aggregate ohne einzelnes Datum (Mitte-/Ende-Summen): abgeschlossen,
+    // wenn die jeweilige Monatshälfte (relativ zu heute) schon vorbei ist.
+    const bookColAbg = (isInc, abg) => {
+      const base = isInc ? T.cond_pos : T.neg;
+      return abg ? base : darkenHex(base, 0.12);
+    };
+
     // ── Prognose: Vormonatssaldo + Einnahmen - Ausgaben (Mitte/Ende) ──
     return (<>
       {/* Proaktiver Hinweis: nicht zugeordnete Bank-Konten — bewusst AUSSERHALB
@@ -1309,21 +1326,8 @@ function DashboardScreenV2() {
           const isLight = (isLightTheme());
           const cellBg = T.cat_bg ? "rgba(255,255,255,0.10)" : isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)";
 
-          // Reale (nicht-pending) Buchungen: Hellorange/kräftiges Grün, bold wenn
-          // ihre Monatshälfte abgeschlossen ist, sonst abgedunkelt/condensed (noch
-          // aktuell/nicht abgeschlossen) — ersetzt die alte %-Budget-Ampel für den
-          // Betrag selbst (die Ampel bleibt nur für den Fortschritts-Punkt/-Strich,
-          // s. trafficColor unten).
-          const bookCol = (isInc, dateStr) => {
-            const base = isInc ? T.cond_pos : T.neg;
-            return isBookingAbgeschlossen(dateStr) ? base : darkenHex(base, 0.12);
-          };
-          // Für Aggregate ohne einzelnes Datum (Mitte-/Ende-Summen): abgeschlossen,
-          // wenn die jeweilige Monatshälfte (relativ zu heute) schon vorbei ist.
-          const bookColAbg = (isInc, abg) => {
-            const base = isInc ? T.cond_pos : T.neg;
-            return abg ? base : darkenHex(base, 0.12);
-          };
+          // bookCol/bookColAbg: siehe Definition auf Komponenten-Ebene weiter oben
+          // (auch vom separaten Drilldown-Overlay unten im Baum genutzt).
 
           // Ampelfarbe (6-stufig wie in V1):
           //  ≤25%  hellgrün     ≤50%  grün       ≤75%  gelb
