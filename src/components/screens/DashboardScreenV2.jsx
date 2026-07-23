@@ -1368,7 +1368,7 @@ function DashboardScreenV2() {
                   padding: stripe!=null ? "5px 0 9px" : "5px 0",borderRadius:7,background:cellBg,
                   color:textCol,
                   fontSize:opts.size||20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
-                  opacity:opts.dim?0.55:0.9,overflow:"hidden",
+                  overflow:"hidden",
                   cursor:clickable?"pointer":"default"}}>
                 {val>0 ? fmt(val) : "—"}
                 {usedFrac!=null && (<>
