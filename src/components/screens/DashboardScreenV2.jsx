@@ -835,14 +835,14 @@ function DashboardScreenV2() {
     // definiert, damit sowohl die Kategorie-Karten als auch das separate
     // Drilldown-Overlay weiter unten im Baum darauf zugreifen können.
     const bookCol = (isInc, dateStr) => {
-      const base = isInc ? T.cond_pos : T.neg;
-      return isBookingAbgeschlossen(dateStr) ? base : darkenHex(base, 0.12);
+      if (isInc) return isBookingAbgeschlossen(dateStr) ? T.cond_pos : darkenHex(T.cond_pos, 0.12);
+      return isBookingAbgeschlossen(dateStr) ? T.neg : T.neg_aktuell;
     };
     // Für Aggregate ohne einzelnes Datum (Mitte-/Ende-Summen): abgeschlossen,
     // wenn die jeweilige Monatshälfte (relativ zu heute) schon vorbei ist.
     const bookColAbg = (isInc, abg) => {
-      const base = isInc ? T.cond_pos : T.neg;
-      return abg ? base : darkenHex(base, 0.12);
+      if (isInc) return abg ? T.cond_pos : darkenHex(T.cond_pos, 0.12);
+      return abg ? T.neg : T.neg_aktuell;
     };
 
     // ── Prognose: Vormonatssaldo + Einnahmen - Ausgaben (Mitte/Ende) ──
@@ -887,11 +887,15 @@ function DashboardScreenV2() {
           display:"flex",alignItems:"center",gap:16,fontSize:11,color:T.txt2}}>
           <span style={{display:"flex",alignItems:"center",gap:6}}>
             <span style={{width:16,height:16,borderRadius:"50%",background:T.neg,display:"inline-block",flexShrink:0}}/>
-            Hellorange ({T.neg})
+            Ausgaben abgeschlossen ({T.neg})
+          </span>
+          <span style={{display:"flex",alignItems:"center",gap:6}}>
+            <span style={{width:16,height:16,borderRadius:"50%",background:T.neg_aktuell,display:"inline-block",flexShrink:0}}/>
+            Ausgaben aktuell ({T.neg_aktuell})
           </span>
           <span style={{display:"flex",alignItems:"center",gap:6}}>
             <span style={{width:16,height:16,borderRadius:"50%",background:T.cell_exp,display:"inline-block",flexShrink:0}}/>
-            Amber-Gelb ({T.cell_exp})
+            VM ({T.cell_exp})
           </span>
         </div>
         {/* Duplikat-Warnung */}
