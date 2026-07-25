@@ -86,7 +86,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
           const over = rest!=null && rest < 0;
           return (
             <div key={tx.id}
-              style={{borderBottom:"1px solid rgba(255,200,0,0.1)",
+              style={{borderBottom:`1px solid ${T.vorm_bd}22`,
               background:T.surf3,borderRadius:6,marginBottom:1}}>
               <div onClick={()=>openEdit(tx)}
                 style={{display:"flex",alignItems:"center",gap:8,padding:"5px 6px",cursor:"pointer"}}>
@@ -113,7 +113,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
         }
         return (
           <div key={tx.id}
-            style={{borderBottom:"1px solid rgba(255,200,0,0.1)",
+            style={{borderBottom:`1px solid ${T.vorm_bd}22`,
             background:T.surf3,
             borderRadius:6,marginBottom:1,overflow:"hidden"}}>
             <div onClick={()=>{ if(isS){setExpandedId(isExpanded?null:tx.id);}else{openEdit(tx);} }}
