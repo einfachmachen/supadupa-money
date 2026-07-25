@@ -424,7 +424,7 @@ const THEMES = {
     on_accent:"#0D0D0D", disabled:"#1A1A1A",
     cell_inc:"#00C733",  cell_inc_bg:"#001A00", cell_inc_bd:"#005500", cell_exp:"#FFD24D", over:"#FF7EB6",
     tab_exp:"#1A0000",   tab_inc:"#001A00",    tab_pend:"#1A1400",
-    vorm_bg:"#1A1400",   vorm_bd:"#FFD70066",
+    vorm_bg:"#1A1400",   vorm_bd:"#FFD700",
     cf:"#00FF41",        mid:"#00CCFF",
     pal_inc_bg:"#001A00", pal_inc_bd:"#005500", pal_inc_hdr:"#00FF41", pal_inc_fld:"#002200", pal_inc_val:"#44FF66",
     pal_exp_bg:"#1A0000", pal_exp_bd:"#660000", pal_exp_fld:"#220000",
