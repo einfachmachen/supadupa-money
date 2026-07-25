@@ -1327,7 +1327,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
                   border:`1px solid ${T.blue}66`};
                 return (
                 <div style={{marginBottom:8}}>
-                  <div style={{color:T.txt2,fontSize:10,marginBottom:4}}>Änderung anwenden auf:</div>
+                  <div style={{color:T.txt2,fontSize:13,marginBottom:4}}>Änderung anwenden auf:</div>
                   {/* 4 Scope-Buttons */}
                   <div style={{display:"flex",gap:3,marginBottom:8}}>
                     {[["single","nur dieser"],["range","von … bis"],["from","ab dieser"],["all","alle"]].map(([v,l])=>(
@@ -1339,10 +1339,10 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
                         else if(v==="from"){setScopeFrom(d);}
                         else if(v==="range"){setScopeFrom(d);setScopeTo(d);}
                       }}
-                        style={{flex:1,padding:"7px 2px",borderRadius:8,border:"none",cursor:"pointer",
-                          fontFamily:"inherit",fontSize:10,fontWeight:editScope===v?700:400,
+                        style={{flex:1,padding:"8px 6px",borderRadius:8,border:"none",cursor:"pointer",
+                          fontFamily:"inherit",fontSize:14,fontWeight:editScope===v?700:400,
                           background:editScope===v?T.blue:"rgba(255,255,255,0.08)",
-                          color:editScope===v?"#fff":T.txt2}}>
+                          color:editScope===v?T.on_accent:T.txt2}}>
                         {l}
                       </button>
                     ))}
