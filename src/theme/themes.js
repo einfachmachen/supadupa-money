@@ -4,9 +4,9 @@ const THEMES = {
     bg:"#2C3035", surf:"#363B42", surf2:"#3D4349",
     bd:"rgba(200,210,220,0.15)", bds:"rgba(200,210,220,0.28)",
     txt:"#F0F2F4", txt2:"rgba(200,210,220,0.60)",
-    blue:"#AACC00", pos:"#AACC00", neg:"#00D9FF", gold:"#F5A623",
+    blue:"#AACC00", pos:"#AACC00", neg:"#00D9FF", gold:"#FFD700",
     lbl:"rgba(200,210,220,0.45)",  // Sekundärtext auf Hintergrund (bg)
-    vorm_bg:"#5A3A00", vorm_bd:"rgba(255,200,0,0.8)",  // Offene Vormerkungen Bar
+    vorm_bg:"#6B5D00", vorm_bd:"rgba(255,215,0,0.9)",  // Offene Vormerkungen Bar
     cf:"#F6821F",      // Cloudflare-Akzent
     mid:"#67E8F9",     // "Mitte"-Label Farbe
     on_accent:"#1A1E00", disabled:"#2a2a2a",
@@ -32,7 +32,7 @@ const THEMES = {
     blue:"#6B9900",  // Dunkleres Limegreen (leserlich auf hell)
     pos:"#6B9900",   // Einnahmen
     neg:"#0097A7",   // Etwas gedämpftes Rot
-    gold:"#C07800",  // Dunkleres Amber
+    gold:"#FFC107",  // Dunkleres Amber
     lbl:"rgba(60,80,40,0.42)",     // Sekundärtext auf Hintergrund (bg)
     vorm_bg:"#FFF3CC", vorm_bd:"rgba(180,130,0,0.6)",  // Offene Vormerkungen Bar
     cf:"#D4601A",      // Cloudflare-Akzent (dunkler für hell)
@@ -139,7 +139,7 @@ const THEMES = {
     bg:"#141414", surf:"#1F1F1F", surf2:"#2A2A2A",
     bd:"rgba(229,9,20,0.20)", bds:"rgba(229,9,20,0.40)",
     txt:"#FFFFFF", txt2:"rgba(200,200,200,0.55)",
-    blue:"#E50914", pos:"#46D369", neg:"#00D9FF", gold:"#F5A623",
+    blue:"#E50914", pos:"#46D369", neg:"#00D9FF", gold:"#FFD700",
     lbl:"rgba(200,200,200,0.45)",
     vorm_bg:"#2A0808", vorm_bd:"rgba(229,9,20,0.70)",
     cf:"#E50914", mid:"#46D369",
