@@ -952,10 +952,10 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
                 <div style={{display:"flex",gap:3,marginBottom:8}}>
                   {[[1,"mtl."],[3,"quartl."],[6,"halb."],[12,"jährl."]].map(([v,l])=>(
                     <button key={v} onClick={()=>setInterval_(v)}
-                      style={{flex:1,padding:"7px 2px",borderRadius:8,border:"none",
-                        cursor:"pointer",fontFamily:"inherit",fontSize:9,fontWeight:700,
+                      style={{flex:1,padding:"8px 6px",borderRadius:8,border:"none",
+                        cursor:"pointer",fontFamily:"inherit",fontSize:14,fontWeight:700,
                         background:interval_===v?T.blue:"rgba(255,255,255,0.08)",
-                        color:interval_===v?"#fff":T.txt2}}>
+                        color:interval_===v?T.on_accent:T.txt2}}>
                       {l}
                     </button>
                   ))}
@@ -1276,8 +1276,8 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
                 };
                 return (
                   <div style={{marginBottom:8,background:"rgba(0,0,0,0.15)",borderRadius:9,
-                    padding:"8px 10px",fontSize:10}}>
-                    <div style={{color:T.txt2,fontWeight:700,marginBottom:6}}>
+                    padding:"8px 10px",fontSize:13}}>
+                    <div style={{color:T.txt,fontWeight:700,marginBottom:6}}>
                       {total}× insgesamt
                     </div>
                     {sections.map((s,i)=>(
