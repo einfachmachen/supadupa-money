@@ -875,41 +875,21 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
                         </button>
                       )}
                     </div>
-                    <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:transferToAcc?6:0}}>
-                      {targets.map(tgt=>{
-                        const sel = transferToAcc===tgt.id;
-                        return (
-                          <button key={tgt.id} onClick={()=>{
-                            const newVal = sel?"":tgt.id;
-                            setTransferToAcc(newVal);
-                            // Umbuchung Giro→Tagesgeld bucht sofort → Buchung = heute
-                            // (kein "verursacht"-Versatz); ohne Umbuchung → nächster
-                            // Banktag. Nur beim Neuanlegen und ohne manuelle Eingabe.
-                            if(!isEdit && !startDateManual) {
-                              // verursacht immer heute; nur das Buchungsdatum unterscheidet sich
-                              setValueDate(today);
-                              setStartDate(newVal ? today : nextBankWorkday(today));
-                            }
-                            // Bei Konto-Wechsel: Zielkategorie zurücksetzen falls sie zum vorherigen Konto gehörte
-                            if(newVal !== transferToAcc) {
-                              setTransferToCat("");
-                              setTransferToSub("");
-                            }
-                            // Bei Edit einer Serie + neue Umbuchung hinzugefügt → Default-Scope auf "alle"
-                            if(newVal && isEdit && editVorm?._seriesId && editScope==="single") {
-                              setEditScope("all");
-                            }
-                          }}
-                            style={{flex:"1 1 80px",padding:"5px 8px",borderRadius:7,
-                              border:`1.5px solid ${sel?tgt.color:T.bd}`,
-                              background:sel?tgt.color+"22":"rgba(255,255,255,0.04)",
-                              color:sel?tgt.color:T.txt2,fontSize:11,fontWeight:600,cursor:"pointer",
-                              display:"flex",alignItems:"center",justifyContent:"center",gap:4,fontFamily:"inherit"}}>
-                            {Li(tgt.icon,11,sel?tgt.color:T.txt2)}
-                            {tgt.name}
-                          </button>
-                        );
-                      })}
+                    <div style={{marginBottom:transferToAcc?6:0}}>
+                      <AccountChips accounts={targets} value={transferToAcc} onChange={(newVal)=>{
+                        setTransferToAcc(newVal);
+                        if(!isEdit && !startDateManual) {
+                          setValueDate(today);
+                          setStartDate(newVal ? today : nextBankWorkday(today));
+                        }
+                        if(newVal !== transferToAcc) {
+                          setTransferToCat("");
+                          setTransferToSub("");
+                        }
+                        if(newVal && isEdit && editVorm?._seriesId && editScope==="single") {
+                          setEditScope("all");
+                        }
+                      }} S={{fs:20,radius:10,gap:10}}/>
                     </div>
                     {transferToAcc&&(<>
                       <div style={{color:T.txt2,fontSize:12,fontWeight:700,marginBottom:3}}>Zielkategorie auf Zielkonto</div>
