@@ -6,7 +6,7 @@ const THEMES = {
     txt:"#F0F2F4", txt2:"rgba(200,210,220,0.60)",
     blue:"#AACC00", pos:"#AACC00", neg:"#00D9FF", gold:"#FFD700",
     lbl:"rgba(200,210,220,0.45)",  // Sekundärtext auf Hintergrund (bg)
-    vorm_bg:"#6B5D00", vorm_bd:"#FFD700",  // Offene Vormerkungen Bar
+    vorm_bg:"#9B8B00", vorm_bd:"#FFD700",  // Offene Vormerkungen Bar
     cf:"#F6821F",      // Cloudflare-Akzent
     mid:"#67E8F9",     // "Mitte"-Label Farbe
     on_accent:"#1A1E00", disabled:"#2a2a2a",
@@ -57,7 +57,7 @@ const THEMES = {
     txt:"#F0F0F0", txt2:"rgba(220,200,160,0.55)",
     blue:"#FF9900", pos:"#67C15E", neg:"#00D9FF", gold:"#FF9900",
     lbl:"rgba(220,200,160,0.45)",
-    vorm_bg:"#2A1A00", vorm_bd:"#FFD700",
+    vorm_bg:"#6B5D00", vorm_bd:"#FFD700",
     cf:"#FF9900", mid:"#67C15E",
     on_accent:"#111111", disabled:"#333333",
     warn:"#FF9900", override:"#CC7700",
@@ -424,7 +424,7 @@ const THEMES = {
     on_accent:"#0D0D0D", disabled:"#1A1A1A",
     cell_inc:"#00C733",  cell_inc_bg:"#001A00", cell_inc_bd:"#005500", cell_exp:"#FFD24D", over:"#FF7EB6",
     tab_exp:"#1A0000",   tab_inc:"#001A00",    tab_pend:"#1A1400",
-    vorm_bg:"#1A1400",   vorm_bd:"#FFD700",
+    vorm_bg:"#6B5D00",   vorm_bd:"#FFD700",
     cf:"#00FF41",        mid:"#00CCFF",
     pal_inc_bg:"#001A00", pal_inc_bd:"#005500", pal_inc_hdr:"#00FF41", pal_inc_fld:"#002200", pal_inc_val:"#44FF66",
     pal_exp_bg:"#1A0000", pal_exp_bd:"#660000", pal_exp_fld:"#220000",
@@ -569,7 +569,7 @@ THEMES.kontrastdunkel = {
   cell_inc:"#4AAF6C", cell_inc_bg:"#06160C", cell_inc_bd:"#1E5A33", cell_exp:"#FFD24D", over:"#FF7EB6",
   tab_exp:"#3A0E0A", tab_inc:"#0C2A16", tab_pend:"#332300",
   err:"#FF6B5E", err_bg:"#3A0A0A",
-  vorm_bg:"#332300", vorm_bd:"#FFD700",
+  vorm_bg:"#6B5D00", vorm_bd:"#FFD700",
   pal_inc_bg:"#06160C", pal_inc_bd:"#1E5A33", pal_inc_hdr:"#3FD06A", pal_inc_fld:"#0A1F12", pal_inc_val:"#5FE08A",
   pal_exp_bg:"#200808", pal_exp_bd:"#5C1A14", pal_exp_fld:"#280A0A",
   pal_tg_bg:"#06121F", pal_tg_bd:"#1A3A55", pal_tg_hdr:"#5AB7FF", pal_tg_fld:"#0A1A2A", pal_tg_val:"#8FD0FF",
