@@ -34,7 +34,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
     });
   }, [pTxs, search]);
   return (
-    <div style={{background:T.vorm_bg||T.tab_pend,border:`2px solid ${T.vorm_bd||"rgba(255,200,0,0.8)"}`,borderRadius:16,margin:"4px 10px",padding:"7px 10px"}}>
+    <div style={{background:T.vorm_bg||T.tab_pend,border:`3px solid ${T.vorm_bd||T.gold}`,borderRadius:16,margin:"4px 10px",padding:"7px 10px"}}>
       <div onClick={noCollapse?undefined:()=>setCollapsed(v=>!v)}
         style={{display:"flex",alignItems:"center",gap:6,marginBottom:collapsed?0:6,cursor:noCollapse?"default":"pointer"}}>
         <span style={{color:T.gold,fontSize:14,fontWeight:700,display:"flex",alignItems:"center",gap:6,flex:1}}>
@@ -86,7 +86,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
           const over = rest!=null && rest < 0;
           return (
             <div key={tx.id}
-              style={{borderBottom:`1px solid ${T.vorm_bd}`,
+              style={{borderBottom:`1px solid ${T.vorm_bg}`,
               background:T.surf3,borderRadius:6,marginBottom:1}}>
               <div onClick={()=>openEdit(tx)}
                 style={{display:"flex",alignItems:"center",gap:8,padding:"5px 6px",cursor:"pointer"}}>
@@ -113,7 +113,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
         }
         return (
           <div key={tx.id}
-            style={{borderBottom:`1px solid ${T.vorm_bd}`,
+            style={{borderBottom:`1px solid ${T.vorm_bg}`,
             background:T.surf3,
             borderRadius:6,marginBottom:1,overflow:"hidden"}}>
             <div onClick={()=>{ if(isS){setExpandedId(isExpanded?null:tx.id);}else{openEdit(tx);} }}
