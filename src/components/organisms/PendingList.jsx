@@ -7,6 +7,7 @@ import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { budgetPlaceholderActive } from "../../utils/saldo.js";
 import { isBankPending } from "../../utils/vormMatch.js";
+import { isLightColor, readableOn } from "../../theme/amtPill.js";
 
 function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub, budgetOpenRest, initialCollapsed=true, noCollapse=false, onOpenMatching}) {
   const _pendOpenAmt = pendOpenAmt || (t=>t.totalAmount);
@@ -33,38 +34,45 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
       return b.date.localeCompare(a.date);
     });
   }, [pTxs, search]);
+  // Die Vormerkungs-Fläche ist je nach Theme hell (volles Gelb) oder dunkel.
+  // Kopfzeile, Icon und Suchfeld liegen direkt darauf und müssen deshalb ihre
+  // Farbe aus der Helligkeit der Fläche ableiten — sonst goldene Schrift auf Gelb.
+  const vBg    = T.vorm_bg||T.tab_pend;
+  const onVorm = readableOn(vBg, T.gold);          // Kopfzeile/Icon
+  const vLight = isLightColor(vBg);
+  const chipBg = vLight ? "rgba(0,0,0,0.13)" : "rgba(0,0,0,0.2)";
   return (
-    <div style={{background:T.vorm_bg||T.tab_pend,border:`3px solid ${T.vorm_bd||T.gold}`,borderRadius:16,margin:"4px 10px",padding:"7px 10px"}}>
+    <div style={{background:vBg,border:`3px solid ${T.vorm_bd||T.gold}`,borderRadius:16,margin:"4px 10px",padding:"7px 10px"}}>
       <div onClick={noCollapse?undefined:()=>setCollapsed(v=>!v)}
         style={{display:"flex",alignItems:"center",gap:6,marginBottom:collapsed?0:6,cursor:noCollapse?"default":"pointer"}}>
-        <span style={{color:T.gold,fontSize:14,fontWeight:700,display:"flex",alignItems:"center",gap:6,flex:1}}>
-          <div style={{width:30,height:30,borderRadius:9,background:`${T.gold}22`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            {Li("clock",15,T.gold)}
+        <span style={{color:onVorm,fontSize:14,fontWeight:700,display:"flex",alignItems:"center",gap:6,flex:1}}>
+          <div style={{width:30,height:30,borderRadius:9,background:vLight?"rgba(0,0,0,0.1)":`${T.gold}22`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+            {Li("clock",15,onVorm)}
           </div>
           Offene Vormerkungen ({pTxs.filter(t=>budgetPlaceholderActive(t)).length})
         </span>
-        {!noCollapse && Li(collapsed?"chevron-down":"chevron-up",12,T.gold)}
+        {!noCollapse && Li(collapsed?"chevron-down":"chevron-up",12,onVorm)}
         {onOpenMatching&&!collapsed&&(
           <button onClick={e=>{e.stopPropagation();onOpenMatching();}}
             title="Vormerkungen mit Buchungen verknüpfen"
-            style={{display:"flex",alignItems:"center",gap:4,background:"rgba(74,159,212,0.14)",
-              border:`1px solid ${T.blue}55`,borderRadius:7,padding:"3px 8px",cursor:"pointer",
-              color:T.blue,fontSize:10.5,fontWeight:700,fontFamily:"inherit",flexShrink:0}}>
-            {Li("git-merge",11,T.blue)} zuordnen
+            style={{display:"flex",alignItems:"center",gap:4,background:chipBg,
+              border:`1px solid ${vLight?onVorm:T.blue+"55"}`,borderRadius:7,padding:"3px 8px",cursor:"pointer",
+              color:vLight?onVorm:T.blue,fontSize:10.5,fontWeight:700,fontFamily:"inherit",flexShrink:0}}>
+            {Li("git-merge",11,vLight?onVorm:T.blue)} zuordnen
           </button>
         )}
-        <div style={{display:"flex",alignItems:"center",gap:4,background:"rgba(0,0,0,0.2)",borderRadius:7,padding:"3px 7px"}}>
-          {Li("search",11,T.txt2)}
+        <div style={{display:"flex",alignItems:"center",gap:4,background:chipBg,borderRadius:7,padding:"3px 7px"}}>
+          {Li("search",11,vLight?onVorm:T.txt2)}
           <input value={search} onChange={e=>setSearch(e.target.value)}
             placeholder="suchen…"
-            style={{background:"transparent",border:"none",color:T.txt,fontSize:11,outline:"none",width:80}}/>
+            style={{background:"transparent",border:"none",color:vLight?onVorm:T.txt,fontSize:11,outline:"none",width:80}}/>
           {search&&<button onClick={()=>setSearch("")}
-            style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",padding:0,fontSize:10}}>✕</button>}
+            style={{background:"none",border:"none",color:vLight?onVorm:T.txt2,cursor:"pointer",padding:0,fontSize:10}}>✕</button>}
         </div>
       </div>
       {!collapsed&&<>
       {filtered.length===0&&search&&(
-        <div style={{color:T.txt2,fontSize:11,textAlign:"center",padding:"8px 0"}}>Keine Treffer</div>
+        <div style={{color:vLight?onVorm:T.txt2,fontSize:11,textAlign:"center",padding:"8px 0"}}>Keine Treffer</div>
       )}
       {filtered.map(tx=>{
         const cat=getCat((tx.splits||[])[0]?.catId);
