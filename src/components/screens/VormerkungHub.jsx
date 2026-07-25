@@ -1227,7 +1227,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
               {/* 12. Vorschau (Wiederkehrend/Finanzierung) */}
               {typ!=="einmalig"&&(
                 <div style={{background:"rgba(0,0,0,0.2)",borderRadius:9,padding:"8px 10px",
-                  marginBottom:10,fontSize:10,color:T.txt2,lineHeight:1.6}}>
+                  marginBottom:10,fontSize:13,color:T.txt,lineHeight:1.6}}>
                   <span style={{color:T.pos,fontWeight:700}}>
                     {isEdit&&seriesCount
                       ? `${seriesCount} ${typ==="finanzierung"?"Rate":"Buchung"}${seriesCount!==1?"n":""} in der Serie`
