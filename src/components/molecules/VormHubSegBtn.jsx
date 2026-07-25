@@ -8,12 +8,12 @@ import { Li } from "../../utils/icons.jsx";
 function VormHubSegBtn({v,l,icon,cur,set,clearCount,clearEnd}) {
   return (
     <button onClick={()=>{set(v);clearCount();clearEnd();}}
-      style={{flex:1,padding:"7px 4px",borderRadius:8,border:"none",cursor:"pointer",
-        fontFamily:"inherit",fontSize:11,fontWeight:cur===v?700:400,
+      style={{flex:1,padding:"10px 6px",borderRadius:8,border:"none",cursor:"pointer",
+        fontFamily:"inherit",fontSize:14,fontWeight:cur===v?700:400,
         background:cur===v?T.gold:"transparent",
         color:cur===v?T.on_accent:T.txt2,transition:"all 0.15s",
         display:"flex",alignItems:"center",justifyContent:"center",gap:3}}>
-      {Li(icon,11,cur===v?T.on_accent:T.txt2)} {l}
+      {Li(icon,14,cur===v?T.on_accent:T.txt2)} {l}
     </button>
   );
 }

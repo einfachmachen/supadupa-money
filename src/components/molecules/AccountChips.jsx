@@ -34,7 +34,7 @@ function AccountChips({
     aspectRatio: "1", borderRadius: S.radius, padding: 4,
     background: selected ? color + "22" : "rgba(255,255,255,0.06)",
     border: `2px solid ${selected ? (color || T.blue) : T.bd}`,
-    color: selected ? T.on_accent : T.txt2,
+    color: selected ? T.txt : T.txt2,
     cursor: "pointer", fontFamily: "inherit", position: "relative",
     display: "flex", flexDirection: "column", alignItems: "center",
     justifyContent: "center", gap: 2, minWidth: 0, overflow: "hidden",
