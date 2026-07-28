@@ -11,7 +11,7 @@ import { SaldoPrognose } from "./SaldoPrognose.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { amtStyle } from "../../theme/amtPill.js";
-import { fmt, NUM_FONT, darkenHex } from "../../utils/format.js";
+import { fmt, NUM_FONT, darkenHex, lightenHex } from "../../utils/format.js";
 import { phaseStillReachable } from "../../utils/saldo.js";
 import { Li } from "../../utils/icons.jsx";
 import { ThemeSwitcherMini } from "../molecules/ThemeSwitcherMini.jsx";
@@ -117,6 +117,11 @@ function SaldoHeroV2({
     if (isInc) return abg ? T.cond_pos : darkenHex(T.cond_pos, 0.12);
     return abg ? T.cond_neg : T.neg_aktuell;
   };
+  // VM (Vormerkungen): Varianten der Akzentfarbe (T.blue — dieselbe Farbe wie
+  // aktueller Kontostand und "+"-Button) statt einer eigenen Amber/Lime-Farbe.
+  // Fälligkeitsdatum (Mitte=14., Ende=Monatsletzter) noch nicht erreicht →
+  // blasser; Datum erreicht → kräftiger als die reine Akzentfarbe.
+  const vmAccentCol = (abg) => abg ? darkenHex(T.blue, 0.15) : lightenHex(T.blue, 0.35);
 
   // Mini-Zelle für Detail-Werte (Out|In Paar)
   // cond_neg/cond_pos statt neg/pos als Default: manche Themes definieren "neg"
@@ -405,7 +410,8 @@ function SaldoHeroV2({
           {(pendInE>0||pendOutE>0) && (
             <DetailRow label="VM"
               mIn={pendInM} mOut={pendOutM} eIn={pendInE} eOut={pendOutE}
-              clrIn={T.cell_inc} clrOut={T.cell_exp}
+              clrInM={vmAccentCol(mitteAbgHero)} clrOutM={vmAccentCol(mitteAbgHero)}
+              clrInE={vmAccentCol(endeAbgHero)} clrOutE={vmAccentCol(endeAbgHero)}
               onTapIn={onDrillPendIn} onTapOut={onDrillPendOut}/>
           )}
           {(uInE>0||uOutE>0) && (

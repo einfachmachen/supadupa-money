@@ -68,4 +68,16 @@ const darkenHex = (hex, amt) => {
   return `rgb(${mix(r)},${mix(g)},${mix(b)})`;
 };
 
-export { fmt, pn, round2, sumAmounts, uid, dayOf, drillSort, NUM_FONT, darkenHex };
+// Mischt eine Hex-Farbe Richtung Weiß (amt: 0=unverändert … 1=weiß). Für
+// "blasser als die Akzentfarbe"-Varianten (z. B. VM, deren Fälligkeitsdatum
+// noch nicht erreicht ist).
+const lightenHex = (hex, amt) => {
+  const h = String(hex||"").replace("#","");
+  const f = h.length < 6 ? h.split("").map(c=>c+c).join("") : h;
+  if (!/^[0-9a-fA-F]{6}$/.test(f)) return hex;
+  const r = parseInt(f.slice(0,2),16), g = parseInt(f.slice(2,4),16), b = parseInt(f.slice(4,6),16);
+  const mix = c => Math.round(c + (255-c)*amt);
+  return `rgb(${mix(r)},${mix(g)},${mix(b)})`;
+};
+
+export { fmt, pn, round2, sumAmounts, uid, dayOf, drillSort, NUM_FONT, darkenHex, lightenHex };
