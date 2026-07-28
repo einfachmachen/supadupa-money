@@ -1123,10 +1123,16 @@ function DashboardScreenV2() {
                   justifyContent:"center",padding:"4px 6px",cursor:"pointer",
                   userSelect:"none",position:"relative",
                   opacity:isActive?1:0.7,
+                  // Rahmen (Breite/Position) IMMER reserviert, auch inaktiv nur
+                  // transparent — sonst wird die Karte beim Aktivieren um die
+                  // Randbreite höher, alle drei werden per flex-Stretch auf
+                  // diese Höhe gebracht und die ganze Zeile (samt allem
+                  // darunter) "springt" beim Umschalten minimal nach unten.
+                  border:"1.5px solid transparent",borderBottom:"none",
                   transition:"background 0.15s,border-color 0.15s",
                   ...(panel && isActive ? {
                     background:bg,
-                    border:`1.5px solid ${bg}`,borderBottom:"none",
+                    borderColor:bg,
                     borderRadius:"10px 10px 0 0",
                   } : null)}}>
                 {Li(icon, 28, iconCol)}
