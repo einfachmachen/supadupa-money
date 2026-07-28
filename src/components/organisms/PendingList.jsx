@@ -50,32 +50,20 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
   // "statisch", nicht an ein bestimmtes Fälligkeitsdatum gebunden).
   const paleAccent = lightenHex(T.blue, 0.35);
   return (
-    <div style={{background:vBg,border:`3px solid ${paleAccent}`,borderRadius:16,margin:"4px 10px",padding:"7px 10px"}}>
+    <div style={{background:vBg,border:`1.5px solid ${paleAccent}`,borderRadius:"0 0 16px 16px",margin:"0 10px 4px",padding:"7px 10px"}}>
       <div onClick={noCollapse?undefined:()=>setCollapsed(v=>!v)}
         style={{display:"flex",alignItems:"center",gap:6,marginBottom:collapsed?0:6,cursor:noCollapse?"default":"pointer"}}>
-        <span style={{color:onVorm,fontSize:14,fontWeight:700,display:"flex",alignItems:"center",gap:6,flex:1}}>
-          <div style={{width:30,height:30,borderRadius:9,background:vLight?"rgba(0,0,0,0.1)":`${T.gold}22`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            {Li("clock",15,onVorm)}
-          </div>
-          Offene Vormerkungen ({pTxs.filter(t=>budgetPlaceholderActive(t)).length})
+        <span style={{color:onVorm,fontSize:14,fontWeight:700,flexShrink:0}}>
+          offene VM
         </span>
         {!noCollapse && Li(collapsed?"chevron-down":"chevron-up",12,onVorm)}
-        {onOpenMatching&&!collapsed&&(
-          <button onClick={e=>{e.stopPropagation();onOpenMatching();}}
-            title="Vormerkungen mit Buchungen verknüpfen"
-            style={{display:"flex",alignItems:"center",gap:4,background:chipBg,
-              border:`1px solid ${vLight?onVorm:paleAccent+"55"}`,borderRadius:7,padding:"3px 8px",cursor:"pointer",
-              color:vLight?onVorm:paleAccent,fontSize:10.5,fontWeight:700,fontFamily:"inherit",flexShrink:0}}>
-            {Li("git-merge",11,vLight?onVorm:paleAccent)} zuordnen
-          </button>
-        )}
-        <div style={{display:"flex",alignItems:"center",gap:4,background:chipBg,borderRadius:7,padding:"3px 7px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:4,background:chipBg,borderRadius:7,padding:"3px 7px",flex:1}}>
           {Li("search",11,vLight?onVorm:T.txt2)}
           <input value={search} onChange={e=>setSearch(e.target.value)}
             placeholder="suchen…"
-            style={{background:"transparent",border:"none",color:vLight?onVorm:T.txt,fontSize:11,outline:"none",width:80}}/>
+            style={{background:"transparent",border:"none",color:vLight?onVorm:T.txt,fontSize:11,outline:"none",width:"100%"}}/>
           {search&&<button onClick={()=>setSearch("")}
-            style={{background:"none",border:"none",color:vLight?onVorm:T.txt2,cursor:"pointer",padding:0,fontSize:10}}>✕</button>}
+            style={{background:"none",border:"none",color:vLight?onVorm:T.txt2,cursor:"pointer",padding:0,fontSize:10,flexShrink:0}}>✕</button>}
         </div>
       </div>
       {!collapsed&&<>

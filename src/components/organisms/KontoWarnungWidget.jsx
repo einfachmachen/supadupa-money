@@ -5,7 +5,7 @@ import { MonatScreen } from "../screens/MonatScreen.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { MONTHS_S } from "../../utils/constants.js";
-import { fmt, pn, NUM_FONT } from "../../utils/format.js";
+import { fmt, pn, NUM_FONT, lightenHex } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
 function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=false}) {
@@ -25,9 +25,13 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
   if(!warnings.length) return null;
 
   const MONTHS_S=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
+  // Rand oben verbindet sich mit dem aktiven Symbol in der Icon-Zeile darüber
+  // (gleiche Akzentfarbe, kein Abstand) — macht sichtbar, welches Symbol aktiv ist.
+  const paleAccent = lightenHex(T.blue, 0.35);
 
   return (
-    <div style={{margin:"4px 10px"}}>
+    <div style={{margin:"0 10px 4px",borderTop:`1.5px solid ${paleAccent}`,
+      borderRadius:"0 0 10px 10px",paddingTop:4}}>
       {warnings.slice(0, showFolgemonate ? warnings.length : 1).map((w,i)=>{
         const mKey = `${w.year}-${w.month}`;
         const isExpanded = expandedMonths.has(mKey);

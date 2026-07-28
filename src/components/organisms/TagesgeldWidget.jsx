@@ -4,7 +4,7 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import { CatPicker } from "../molecules/CatPicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
-import { fmt, uid, NUM_FONT } from "../../utils/format.js";
+import { fmt, uid, NUM_FONT, lightenHex } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
 import { restMitte, restEnde, phaseStillReachable } from "../../utils/saldo.js";
@@ -458,9 +458,12 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     if(result) setResultOutdated(true);
   };
 
+  // Rand oben verbindet sich mit dem aktiven Symbol in der Icon-Zeile darüber
+  // (gleiche Akzentfarbe, kein Abstand) — macht sichtbar, welches Symbol aktiv ist.
+  const paleAccent = lightenHex(T.blue, 0.35);
   return (
-    <div id="sparplan-widget" style={{margin:"4px 10px",background:T.surf2,borderRadius:16,
-      padding:"9px 12px",border:`1px solid ${T.bd}`}}>
+    <div id="sparplan-widget" style={{margin:"0 10px 4px",background:T.surf2,borderRadius:"0 0 16px 16px",
+      padding:"9px 12px",border:`1px solid ${T.bd}`,borderTop:`1.5px solid ${paleAccent}`}}>
 
       {/* Header */}
       <div onClick={()=>setCollapsed(v=>!v)}

@@ -1106,12 +1106,21 @@ function DashboardScreenV2() {
           const togglePanel = (key) => setActivePanel(p => p===key ? null : key);
           const Card = ({panel, icon, badge, color, tourId, onClick}) => {
             const isActive = activePanel === panel;
+            // Aktives Panel: Rand des Icons verbindet sich mit dem Panel-Rand
+            // darunter (offener unterer Rand, abgerundete Oberkante) — so
+            // ist auf einen Blick klar, welches Symbol gerade geöffnet ist.
+            const tabAccent = lightenHex(T.blue, 0.35);
             return (
               <div onClick={onClick || (()=>togglePanel(panel))} data-tour={tourId}
                 style={{flex:1,display:"flex",alignItems:"center",
                   justifyContent:"center",padding:"4px 6px",cursor:"pointer",
                   userSelect:"none",position:"relative",
-                  opacity:isActive?1:0.7}}>
+                  opacity:isActive?1:0.7,
+                  ...(panel && isActive ? {
+                    background:`${T.blue}1a`,
+                    border:`1.5px solid ${tabAccent}`,borderBottom:"none",
+                    borderRadius:"10px 10px 0 0",
+                  } : null)}}>
                 {Li(icon, 28, color)}
                 {badge!=null && badge>0 && (
                   <div style={{position:"absolute",top:4,right:"calc(50% - 22px)",
