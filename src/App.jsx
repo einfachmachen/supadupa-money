@@ -1922,72 +1922,7 @@ Abbrechen = ${remoteName}-Stand laden`
     };
   }, [liquidityWarnings]);
 
-  // ── Automatische Sparplan-Anpassung: hält die Sparrate des LAUFENDEN
-  // Monats laufend auf dem jeweils sicheren Höchstwert — sowohl REDUZIEREND
-  // (unerwartete Mehrausgaben, z.B. Urlaub, drücken den Tagessaldo unter den
-  // Puffer) als auch ERHÖHEND (z.B. nach Gehaltseingang, oder wenn ein
-  // Budget wegfällt und dadurch weniger vom Tagessaldo reserviert wird).
-  // Beide Richtungen nutzen dieselbe Berechnung wie der "Neuberechnen"-Button
-  // für Monat 1 (computeMinTagessaldo, siehe utils/sparBerechnen.js — von
-  // dort auch von TagesgeldWidget genutzt) — nur der Rest der (oft viele
-  // Monate umfassenden) Serie bleibt unangetastet, die volle Neuberechnung
-  // bleibt eine bewusste, manuelle Aktion.
-  //
-  // Bewusst als useMemo mit DENSELBEN Abhängigkeiten wie liquidityWarnings
-  // (statt einer manuell gepflegten Liste "was sich geändert haben könnte",
-  // z.B. nur txs oder nur budgets) — der Tagessaldo hängt von txs, cats,
-  // accounts, Budgets UND startBalances ab; jede Eingrenzung darauf, WAS
-  // sich geändert hat, wäre nur so vollständig wie unsere Liste bekannter
-  // Ursachen. Stattdessen: bei jeder Änderung, die den prognostizierten
-  // Tagessaldo überhaupt beeinflussen kann, wird der sichere Höchstwert neu
-  // ermittelt — der nachgelagerte Effekt reagiert nur noch auf DESSEN
-  // Ergebnis, nicht auf die Rohdaten.
-  const currentMonthSparAdjust = useMemo(() => {
-    const today = new Date();
-    const y = today.getFullYear(), m = today.getMonth();
-    // Nur bei GENAU EINER eindeutigen Sparplan-Abgang-Buchung für diesen Monat
-    // auf Giro automatisch eingreifen — bei mehreren Plänen wäre nicht klar,
-    // welcher gemeint ist, dann lieber nichts automatisch anfassen.
-    const pad2 = n => String(n).padStart(2, "0");
-    const monthPfx = `${y}-${pad2(m + 1)}-`;
-    const candidates = txs.filter(t => t.pending && !t._linkedTo && t._seriesId
-      && t.accountId === "acc-giro" && (t.desc || "").startsWith("Sparen·")
-      && (t.date || "").startsWith(monthPfx));
-    if(candidates.length !== 1) return null;
-    const abgang = candidates[0];
-    const oldAmount = round2(Math.abs(abgang.totalAmount));
-    const { min: minTag } = computeMinTagessaldo(y, m, {}, "acc-giro", abgang.desc,
-      { txs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth, getProgEndeAccGlobal }, today);
-    if(minTag === null) return null;
-    const safeAmount = Math.max(0, Math.floor(minTag - pn(_giroPuffer)));
-    if(safeAmount === oldAmount) return null; // schon exakt der sichere Wert
-    const zugang = txs.find(t => t._linkedTo === abgang.id && t.pending);
-    return { abgangId: abgang.id, zugangId: zugang?.id || null, oldAmount, safeAmount,
-      monthLabel: `${MONTHS_S[m]} ${y}` };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [txs, cats, accounts, _giroPuffer, budgets, startBalances]);
-
   const [autoSparInfo, setAutoSparInfo] = useState(null);
-  useEffect(() => {
-    if(!currentMonthSparAdjust) return;
-    const { abgangId, zugangId, oldAmount, safeAmount, monthLabel } = currentMonthSparAdjust;
-    setTxs(prev => prev.map(t => {
-      if(t.id === abgangId) {
-        return { ...t, totalAmount: -safeAmount, splits: (t.splits||[]).map(s=>({...s, amount: -safeAmount})) };
-      }
-      if(zugangId && t.id === zugangId) {
-        return { ...t, totalAmount: safeAmount, splits: (t.splits||[]).map(s=>({...s, amount: safeAmount})) };
-      }
-      return t;
-    }));
-    setAutoSparInfo({ monthLabel, oldAmount, newAmount: safeAmount,
-      direction: safeAmount > oldAmount ? "up" : "down" });
-  }, [currentMonthSparAdjust]);
-  useEffect(() => {
-    if(!autoSparInfo) return;
-    const t = setTimeout(() => setAutoSparInfo(null), 8000);
-    return () => clearTimeout(t);
-  }, [autoSparInfo]);
 
   // ── Überfällige Vormerkungen: gesetztes Buchungsdatum bereits vergangen, aber
   // die tatsächliche (Bank-)Buchung ist bisher nicht eingetroffen — zählt im
@@ -2423,6 +2358,78 @@ Abbrechen = ${remoteName}-Stand laden`
     _progEndeAccCache.current[ck] = v;
     return v;
   };
+
+  // ── Automatische Sparplan-Anpassung: hält die Sparrate des LAUFENDEN
+  // Monats laufend auf dem jeweils sicheren Höchstwert — sowohl REDUZIEREND
+  // (unerwartete Mehrausgaben, z.B. Urlaub, drücken den Tagessaldo unter den
+  // Puffer) als auch ERHÖHEND (z.B. nach Gehaltseingang, oder wenn ein
+  // Budget wegfällt und dadurch weniger vom Tagessaldo reserviert wird).
+  // Beide Richtungen nutzen dieselbe Berechnung wie der "Neuberechnen"-Button
+  // für Monat 1 (computeMinTagessaldo, siehe utils/sparBerechnen.js — von
+  // dort auch von TagesgeldWidget genutzt) — nur der Rest der (oft viele
+  // Monate umfassenden) Serie bleibt unangetastet, die volle Neuberechnung
+  // bleibt eine bewusste, manuelle Aktion.
+  //
+  // Bewusst als useMemo mit DENSELBEN Abhängigkeiten wie liquidityWarnings
+  // (statt einer manuell gepflegten Liste "was sich geändert haben könnte",
+  // z.B. nur txs oder nur budgets) — der Tagessaldo hängt von txs, cats,
+  // accounts, Budgets UND startBalances ab; jede Eingrenzung darauf, WAS
+  // sich geändert hat, wäre nur so vollständig wie unsere Liste bekannter
+  // Ursachen. Stattdessen: bei jeder Änderung, die den prognostizierten
+  // Tagessaldo überhaupt beeinflussen kann, wird der sichere Höchstwert neu
+  // ermittelt — der nachgelagerte Effekt reagiert nur noch auf DESSEN
+  // Ergebnis, nicht auf die Rohdaten.
+  // WICHTIG (Platzierung): muss NACH der getProgEndeAccGlobal-Deklaration
+  // stehen, da computeMinTagessaldo sie referenziert — useMemo/useEffect
+  // laufen zwar erst nach der Definition, aber der useMemo-Callback wird
+  // SYNCHRON während des Renderns an dieser Stelle ausgeführt, würde also
+  // sonst (anders als ein useEffect) auf eine noch nicht initialisierte
+  // const zugreifen (TDZ-ReferenceError).
+  const currentMonthSparAdjust = useMemo(() => {
+    const today = new Date();
+    const y = today.getFullYear(), m = today.getMonth();
+    // Nur bei GENAU EINER eindeutigen Sparplan-Abgang-Buchung für diesen Monat
+    // auf Giro automatisch eingreifen — bei mehreren Plänen wäre nicht klar,
+    // welcher gemeint ist, dann lieber nichts automatisch anfassen.
+    const pad2 = n => String(n).padStart(2, "0");
+    const monthPfx = `${y}-${pad2(m + 1)}-`;
+    const candidates = txs.filter(t => t.pending && !t._linkedTo && t._seriesId
+      && t.accountId === "acc-giro" && (t.desc || "").startsWith("Sparen·")
+      && (t.date || "").startsWith(monthPfx));
+    if(candidates.length !== 1) return null;
+    const abgang = candidates[0];
+    const oldAmount = round2(Math.abs(abgang.totalAmount));
+    const { min: minTag } = computeMinTagessaldo(y, m, {}, "acc-giro", abgang.desc,
+      { txs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth, getProgEndeAccGlobal }, today);
+    if(minTag === null) return null;
+    const safeAmount = Math.max(0, Math.floor(minTag - pn(_giroPuffer)));
+    if(safeAmount === oldAmount) return null; // schon exakt der sichere Wert
+    const zugang = txs.find(t => t._linkedTo === abgang.id && t.pending);
+    return { abgangId: abgang.id, zugangId: zugang?.id || null, oldAmount, safeAmount,
+      monthLabel: `${MONTHS_S[m]} ${y}` };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [txs, cats, accounts, _giroPuffer, budgets, startBalances]);
+
+  useEffect(() => {
+    if(!currentMonthSparAdjust) return;
+    const { abgangId, zugangId, oldAmount, safeAmount, monthLabel } = currentMonthSparAdjust;
+    setTxs(prev => prev.map(t => {
+      if(t.id === abgangId) {
+        return { ...t, totalAmount: -safeAmount, splits: (t.splits||[]).map(s=>({...s, amount: -safeAmount})) };
+      }
+      if(zugangId && t.id === zugangId) {
+        return { ...t, totalAmount: safeAmount, splits: (t.splits||[]).map(s=>({...s, amount: safeAmount})) };
+      }
+      return t;
+    }));
+    setAutoSparInfo({ monthLabel, oldAmount, newAmount: safeAmount,
+      direction: safeAmount > oldAmount ? "up" : "down" });
+  }, [currentMonthSparAdjust]);
+  useEffect(() => {
+    if(!autoSparInfo) return;
+    const t = setTimeout(() => setAutoSparInfo(null), 8000);
+    return () => clearTimeout(t);
+  }, [autoSparInfo]);
 
   // ── Jahresplan value access ───────────────────────────────────────────────
   const getJV = (m,id,sub) => yearData[year]?.[m]?.[sub?id+"_"+sub:id] ?? "";
