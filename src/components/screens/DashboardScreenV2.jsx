@@ -1104,13 +1104,19 @@ function DashboardScreenV2() {
           const showRow = detailsOpen && (!isPastMonth || visiblePTxs.length>0 || !schnellstartDone);
           if(!showRow) return null;
           const togglePanel = (key) => setActivePanel(p => p===key ? null : key);
-          const Card = ({panel, icon, badge, color, tourId, onClick}) => {
+          const Card = ({panel, icon, badge, color, activeBg, activeBgSolid, tourId, onClick}) => {
             const isActive = activePanel === panel;
-            // Aktives Panel: Fläche hinter dem Icon bekommt die GLEICHE Farbe
-            // wie der Rand des Panels darunter (nicht nur ein blasser Tint) —
-            // erst dadurch ist die Verbindung Icon↔Panel wirklich zu sehen.
-            const tabAccent = lightenHex(T.blue, 0.35);
-            const iconCol = (panel && isActive) ? readableOn(tabAccent, color) : color;
+            // Aktives Panel: Fläche hinter dem Icon bekommt dieselbe Farbe wie
+            // die Fläche des Panels darunter (activeBg, pro Symbol übergeben,
+            // Standard = blasse Akzentfarbe) — erst dadurch ist die Verbindung
+            // Icon↔Panel wirklich zu sehen. Kontrast-Neuberechnung (readableOn)
+            // NUR bei voll deckenden Flächen (activeBgSolid) — bei transparent
+            // getönten Flächen (z.B. Warnungen, nur ~9% Deckkraft) bleibt der
+            // Hintergrund optisch weiterhin dunkel; readableOn würde die reine
+            // Basisfarbe ohne Alpha auswerten und ggf. fälschlich ein dunkles
+            // Icon auf dunklem Grund wählen.
+            const bg = activeBg || lightenHex(T.blue, 0.35);
+            const iconCol = (panel && isActive && activeBgSolid) ? readableOn(bg, color) : color;
             return (
               <div onClick={onClick || (()=>togglePanel(panel))} data-tour={tourId}
                 style={{flex:1,display:"flex",alignItems:"center",
@@ -1119,8 +1125,8 @@ function DashboardScreenV2() {
                   opacity:isActive?1:0.7,
                   transition:"background 0.15s,border-color 0.15s",
                   ...(panel && isActive ? {
-                    background:tabAccent,
-                    border:`1.5px solid ${tabAccent}`,borderBottom:"none",
+                    background:bg,
+                    border:`1.5px solid ${bg}`,borderBottom:"none",
                     borderRadius:"10px 10px 0 0",
                   } : null)}}>
                 {Li(icon, 28, iconCol)}
@@ -1152,9 +1158,13 @@ function DashboardScreenV2() {
                 onClick={()=>{setMainTab?.("struktur"); setActiveStructurTab?.("konten");}}/>}
               {!schnellstartDone && <Card icon="target" color={T.mid} tourId="row-budget-dash"
                 onClick={()=>setShowMobileKategorien?.(true)}/>}
-              {!isPastMonth && <Card panel="warnings"     icon="shield-check" badge={warnCount}   color={warnCount>0 ? T.warn_icon : T.pos} tourId="panel-warnings"/>}
-              {!isPastMonth && <Card panel="sparen"       icon="piggy-bank"   badge={null}        color={T.blue} tourId="panel-sparen"/>}
-              <Card panel="vormerkungen" icon="clock"        badge={visiblePTxs.length} color={lightenHex(T.blue, 0.35)}/>
+              {/* activeBg passend zur Füllfarbe des jeweiligen Panels darunter:
+                  Warnungen = Farbton der Warnbox-Köpfe, Sparen = neutrale
+                  Sparplan-Fläche, Vormerkungen = blasse Akzentfarbe (Panel
+                  selbst ist inzwischen ebenfalls in dieser Farbe). */}
+              {!isPastMonth && <Card panel="warnings"     icon="shield-check" badge={warnCount}   color={warnCount>0 ? T.warn_icon : T.pos} activeBg={`${T.neg}18`} tourId="panel-warnings"/>}
+              {!isPastMonth && <Card panel="sparen"       icon="piggy-bank"   badge={null}        color={T.blue} activeBg={T.surf2} activeBgSolid tourId="panel-sparen"/>}
+              <Card panel="vormerkungen" icon="clock"        badge={visiblePTxs.length} color={lightenHex(T.blue, 0.35)} activeBg={lightenHex(T.blue, 0.35)} activeBgSolid/>
             </div>
           );
         })()}

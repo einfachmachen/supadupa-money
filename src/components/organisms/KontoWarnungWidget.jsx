@@ -31,7 +31,7 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
 
   return (
     <div style={{margin:"0 10px 4px",borderTop:`1.5px solid ${paleAccent}`,
-      borderRadius:"0 0 10px 10px",paddingTop:4}}>
+      borderRadius:10,paddingTop:4}}>
       {warnings.slice(0, showFolgemonate ? warnings.length : 1).map((w,i)=>{
         const mKey = `${w.year}-${w.month}`;
         const isExpanded = expandedMonths.has(mKey);

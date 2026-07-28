@@ -462,7 +462,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   // (gleiche Akzentfarbe, kein Abstand) — macht sichtbar, welches Symbol aktiv ist.
   const paleAccent = lightenHex(T.blue, 0.35);
   return (
-    <div id="sparplan-widget" style={{margin:"0 10px 4px",background:T.surf2,borderRadius:"0 0 16px 16px",
+    <div id="sparplan-widget" style={{margin:"0 10px 4px",background:T.surf2,borderRadius:16,
       padding:"9px 12px",border:`1px solid ${T.bd}`,borderTop:`1.5px solid ${paleAccent}`}}>
 
       {/* Header */}
