@@ -36,12 +36,12 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
     });
   }, [pTxs, search]);
   // Die Vormerkungs-Fläche folgt jetzt der Akzentfarbe statt der alten
-  // Amber/Gold-Fläche (T.vorm_bg) — in dunklen Themes eine stark abgedunkelte
-  // Variante der Akzentfarbe (dezenter, farbiger "Tint" statt Gelb/Braun).
+  // Amber/Gold-Fläche (T.vorm_bg) — in dunklen Themes eine abgedunkelte, aber
+  // klar erkennbar farbige Variante der Akzentfarbe (0.82 wirkte fast schwarz).
   // Helle Themes behalten ihre bisherige (helle) Fläche unverändert bei.
   // Kopfzeile, Icon und Suchfeld leiten ihre Farbe aus der Helligkeit der
   // Fläche ab — sonst goldene Schrift auf hellem Grund.
-  const vBg    = isLightTheme() ? (T.vorm_bg||T.tab_pend) : darkenHex(T.blue, 0.82);
+  const vBg    = isLightTheme() ? (T.vorm_bg||T.tab_pend) : darkenHex(T.blue, 0.6);
   const onVorm = readableOn(vBg, T.gold);          // Kopfzeile/Icon
   const vLight = isLightColor(vBg);
   const chipBg = vLight ? "rgba(0,0,0,0.13)" : "rgba(0,0,0,0.2)";
