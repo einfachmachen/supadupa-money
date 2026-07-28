@@ -831,7 +831,7 @@ THEMES.magazin = {
   bg:"#12141A", surf:"#1A1D24", surf2:"#232730", surf3:"#0D0F13",
   bd:"rgba(235,220,195,0.13)", bds:"rgba(235,220,195,0.26)",
   txt:"#F4EFE5", txt2:"rgba(226,212,188,0.60)", lbl:"rgba(226,212,188,0.46)",
-  blue:"#E0975C",   // Kupfer-Akzent (Akzentfarbe der App)
+  blue:"#4DA6FF",   // Akzentfarbe (Kontostand/+Button) — klares Blau statt Kupfer
   pos:"#A3C585", neg:"#00D9FF", gold:"#D9B45B",
   on_accent:"#241304", disabled:"#2A2D34",
   warn:"#D9964A", override:"#A96A2A",
