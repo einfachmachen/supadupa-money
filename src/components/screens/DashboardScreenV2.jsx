@@ -20,7 +20,7 @@ import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { recordDeletedTxs } from "../../utils/txTombstones.js";
 import { txFingerprint, isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
-import { saldoAt, budgetPlaceholderActive, isBookingAbgeschlossen } from "../../utils/saldo.js";
+import { saldoAt, budgetPlaceholderActive } from "../../utils/saldo.js";
 import { pendingDebitDate } from "../../utils/date.js";
 import { fetchNewBankTx, listConnectedBanks } from "../../utils/enableBankingFetch.js";
 import { findUnmappedEbAccounts } from "../../utils/enableBankingStore.js";
@@ -832,20 +832,14 @@ function DashboardScreenV2() {
 
     // Reale (nicht-pending) Buchungen: Hellorange/kräftiges Grün, bold sobald
     // ihre Monatshälfte abgeschlossen ist, sonst abgedunkelt/condensed (noch
-    // aktuell/nicht abgeschlossen) — ersetzt die alte %-Budget-Ampel für den
-    // Betrag selbst. Auf Komponenten-Ebene (nicht in einer der Render-IIFEs)
-    // definiert, damit sowohl die Kategorie-Karten als auch das separate
-    // Drilldown-Overlay weiter unten im Baum darauf zugreifen können.
-    const bookCol = (isInc, dateStr) => {
-      if (isInc) return isBookingAbgeschlossen(dateStr) ? T.cond_pos : T.pos_aktuell;
-      return isBookingAbgeschlossen(dateStr) ? T.neg : T.neg_aktuell;
-    };
-    // Für Aggregate ohne einzelnes Datum (Mitte-/Ende-Summen): abgeschlossen,
-    // wenn die jeweilige Monatshälfte (relativ zu heute) schon vorbei ist.
-    const bookColAbg = (isInc, abg) => {
-      if (isInc) return abg ? T.cond_pos : T.pos_aktuell;
-      return abg ? T.neg : T.neg_aktuell;
-    };
+    // Eine REALE (nicht-pending) Buchung ist ihrer Natur nach immer
+    // abgeschlossen — sonst wäre sie gar nicht sichtbar, sondern noch eine
+    // Vormerkung. Kein Datumsbezug mehr: immer die kräftige Cyan-/Limegreen-
+    // Farbe. Auf Komponenten-Ebene definiert, damit sowohl die Kategorie-
+    // Karten als auch das separate Drilldown-Overlay weiter unten im Baum
+    // darauf zugreifen können.
+    const bookCol = (isInc) => isInc ? T.cond_pos : T.neg;
+    const bookColAbg = (isInc) => isInc ? T.cond_pos : T.neg;
 
     // ── Prognose: Vormonatssaldo + Einnahmen - Ausgaben (Mitte/Ende) ──
     return (<>

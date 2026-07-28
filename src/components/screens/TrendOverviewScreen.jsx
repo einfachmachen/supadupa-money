@@ -363,13 +363,14 @@ function TrendOverviewScreen() {
 
   const openYear = (year) => { setYear(year); setSubTab("mood"); };
   const activeMetric = METRICS.find(m => m.key === metric);
-  // "Aktuell/noch nicht abgeschlossen"-Anteil: bei Ausgaben/Einnahmen die
-  // festen, bewusst gewählten blasseren Cyan-/Limegreen-Töne; beim Endekonto-
-  // stand (blue, kein eigener fester Ton definiert) rechnerisch aufgehellt.
+  // Vorgemerkter (noch nicht realer) Anteil eines Jahres-Balkens: bei
+  // Ausgaben/Einnahmen dieselben blassen VM-Töne wie im Hero (Vormerkungen
+  // sind nie "abgeschlossen"); beim Endekontostand (blue, kein eigener fester
+  // Ton definiert) rechnerisch aufgehellt.
   const aktuellFillFor = () => {
     if (!activeMetric) return null;
-    if (activeMetric.key === "expense") return T.neg_aktuell;
-    if (activeMetric.key === "income") return T.pos_aktuell;
+    if (activeMetric.key === "expense") return T.neg_vm;
+    if (activeMetric.key === "income") return T.pos_vm;
     return lighten(activeMetric.color(null, T), 0.35);
   };
 

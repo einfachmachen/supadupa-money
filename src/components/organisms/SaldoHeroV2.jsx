@@ -110,15 +110,17 @@ function SaldoHeroV2({
   // blasser. Negativ bleibt die eigene Warnfarbe.
   const saldoCol = (v, abg) => v==null ? T.txt2 : v<0 ? T.warn_icon : (abg ? darkenHex(T.blue, 0.15) : lightenHex(T.blue, 0.35));
 
-  // Reale Buchungen (nicht Vormerkungen): Hellorange/kräftiges Grün, bold sobald
-  // die jeweilige Monatshälfte abgeschlossen ist, sonst abgedunkelt/condensed
-  // (Hälfte läuft noch).
+  // mitteAbgHero/endeAbgHero: nur noch für die Mitte/Ende-Prognose (saldoCol)
+  // gebraucht — eine reale Buchung ist immer abgeschlossen (s. bookColHero).
   const _lastDayHero = new Date(year, month+1, 0).getDate();
   const mitteAbgHero = !phaseStillReachable(year, month, 14, {});
   const endeAbgHero  = !phaseStillReachable(year, month, _lastDayHero, {});
-  const bookColHero  = (isInc, abg) => {
-    if (isInc) return abg ? T.cond_pos : T.pos_aktuell;
-    return abg ? T.cond_neg : T.neg_aktuell;
+  // Reale Buchungen (nicht Vormerkungen) sind ihrer Natur nach immer
+  // abgeschlossen — sonst wären sie noch eine Vormerkung. Immer die kräftige
+  // Cyan-/Limegreen-Farbe, kein Datumsbezug.
+  const bookColHero  = (isInc) => {
+    if (isInc) return T.cond_pos;
+    return T.cond_neg;
   };
 
   // Mini-Zelle für Detail-Werte (Out|In Paar)
@@ -402,8 +404,7 @@ function SaldoHeroV2({
         <div style={{marginTop:2,paddingTop:6,borderTop:`1px solid ${T.bd}`}}>
           <DetailRow label="Buch."
             mIn={buchInM} mOut={buchOutM} eIn={buchInE} eOut={buchOutE}
-            clrInM={bookColHero(true,mitteAbgHero)} clrOutM={bookColHero(false,mitteAbgHero)}
-            clrInE={bookColHero(true,endeAbgHero)} clrOutE={bookColHero(false,endeAbgHero)}
+            clrIn={bookColHero(true)} clrOut={bookColHero(false)}
             onTapIn={onDrillBuchIn} onTapOut={onDrillBuchOut}/>
           {(pendInE>0||pendOutE>0) && (
             <DetailRow label="VM"
