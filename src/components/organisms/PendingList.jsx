@@ -98,8 +98,8 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
           const over = rest!=null && rest < 0;
           return (
             <div key={tx.id}
-              style={{borderBottom:`1px solid ${T.vorm_bg}`,
-              background:T.surf3,borderRadius:6,marginBottom:1}}>
+              style={{border:`1px solid ${paleAccent}`,
+              background:T.surf3,borderRadius:6,marginBottom:4}}>
               <div onClick={()=>openEdit(tx)}
                 style={{display:"flex",alignItems:"center",gap:8,padding:"5px 6px",cursor:"pointer"}}>
                 <span>{Li("target",18,over?T.neg:T.cell_exp)}</span>
@@ -125,9 +125,9 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
         }
         return (
           <div key={tx.id}
-            style={{borderBottom:`1px solid ${T.vorm_bg}`,
+            style={{border:`1px solid ${paleAccent}`,
             background:T.surf3,
-            borderRadius:6,marginBottom:1,overflow:"hidden"}}>
+            borderRadius:6,marginBottom:4,overflow:"hidden"}}>
             <div onClick={()=>{ if(isS){setExpandedId(isExpanded?null:tx.id);}else{openEdit(tx);} }}
               style={{display:"flex",alignItems:"center",gap:8,padding:"5px 6px",cursor:"pointer"}}>
               <span>{(tx._budgetSubId?Li("target",18,T.gold):tx._seriesTyp==="finanzierung"?Li("credit-card",18,T.gold):tx._seriesId?Li("repeat",18,T.pos):Li("calendar",18,T.blue))}</span>
