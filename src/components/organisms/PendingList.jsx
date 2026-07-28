@@ -46,7 +46,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
   // "statisch", nicht an ein bestimmtes Fälligkeitsdatum gebunden).
   const paleAccent = lightenHex(T.blue, 0.35);
   return (
-    <div style={{background:vBg,border:`3px solid ${paleAccent}`,borderRadius:16,margin:"4px 10px",padding:"7px 10px"}}>
+    <div style={{background:vBg,border:"none" /* TEST: Rahmen testweise entfernt */,borderRadius:16,margin:"4px 10px",padding:"7px 10px"}}>
       <div onClick={noCollapse?undefined:()=>setCollapsed(v=>!v)}
         style={{display:"flex",alignItems:"center",gap:6,marginBottom:collapsed?0:6,cursor:noCollapse?"default":"pointer"}}>
         <span style={{color:onVorm,fontSize:14,fontWeight:700,display:"flex",alignItems:"center",gap:6,flex:1}}>
@@ -98,7 +98,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
           const over = rest!=null && rest < 0;
           return (
             <div key={tx.id}
-              style={{border:`1px solid ${paleAccent}`,
+              style={{border:"none" /* TEST: Rahmen testweise entfernt */,
               background:T.surf3,borderRadius:6,marginBottom:4}}>
               <div onClick={()=>openEdit(tx)}
                 style={{display:"flex",alignItems:"center",gap:8,padding:"5px 6px",cursor:"pointer"}}>
@@ -125,7 +125,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
         }
         return (
           <div key={tx.id}
-            style={{border:`1px solid ${paleAccent}`,
+            style={{border:"none" /* TEST: Rahmen testweise entfernt */,
             background:T.surf3,
             borderRadius:6,marginBottom:4,overflow:"hidden"}}>
             <div onClick={()=>{ if(isS){setExpandedId(isExpanded?null:tx.id);}else{openEdit(tx);} }}
