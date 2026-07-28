@@ -464,15 +464,14 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   // zusätzlicher andersfarbiger Rand hätte dort wie eine Trennlinie gewirkt.
   return (
     <div id="sparplan-widget" style={{margin:"0 10px 4px",background:T.surf2,borderRadius:16,
-      padding:"9px 12px",border:`1px solid ${T.bd}`}}>
+      padding:"9px 10px",border:`1px solid ${T.bd}`}}>
 
       {/* Header */}
       <div onClick={()=>setCollapsed(v=>!v)}
         style={{display:"flex",alignItems:"center",gap:8,marginBottom:collapsed?0:8,cursor:"pointer"}}>
         {/* Sparschwein-Symbol entfernt — die 3 Symbole in der Icon-Zeile oben
-            reichen als Kennzeichnung; leerer Platzhalter erhält die bisherige
-            Text-Einrückung. */}
-        <div style={{width:30,height:30,flexShrink:0}}/>
+            reichen als Kennzeichnung. Kein Platzhalter mehr: Text beginnt
+            jetzt bündig mit "offene VM" im Vormerkungen-Tab. */}
         <div style={{flex:1}}>
           <div style={{color:T.txt,fontSize:12,fontWeight:700}}>Sparen</div>
           <div style={{color:T.txt2,fontSize:9}}>Tagesgenaue Sparvorschläge</div>

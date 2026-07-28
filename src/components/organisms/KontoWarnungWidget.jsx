@@ -55,9 +55,8 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
                 display:"flex",alignItems:"center",gap:10,
                 cursor:hasMultiple?"pointer":"default"}}>
               {/* Warndreieck entfernt — die 3 Symbole in der Icon-Zeile oben
-                  reichen als Kennzeichnung; leerer Platzhalter erhält die
-                  bisherige Text-Einrückung. */}
-              <div style={{flexShrink:0,width:28,height:28}}/>
+                  reichen als Kennzeichnung. Kein Platzhalter mehr: Text
+                  beginnt jetzt bündig mit "offene VM" im Vormerkungen-Tab. */}
               <div style={{flex:1,minWidth:0}}>
                 <div style={{color:T.neg,fontSize:12,fontWeight:700,lineHeight:1.3}}>
                   {isFuture&&<span style={{color:T.gold,fontSize:10,marginRight:6}}>{MONTHS_S[w.month]} {w.year}</span>}
