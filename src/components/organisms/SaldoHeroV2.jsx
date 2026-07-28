@@ -11,7 +11,7 @@ import { SaldoPrognose } from "./SaldoPrognose.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { amtStyle } from "../../theme/amtPill.js";
-import { fmt, NUM_FONT } from "../../utils/format.js";
+import { fmt, NUM_FONT, darkenHex, lightenHex } from "../../utils/format.js";
 import { phaseStillReachable } from "../../utils/saldo.js";
 import { Li } from "../../utils/icons.jsx";
 import { ThemeSwitcherMini } from "../molecules/ThemeSwitcherMini.jsx";
@@ -105,8 +105,10 @@ function SaldoHeroV2({
   // Kontowahl, Auge) oben, großer Betrag links, Prognosen als Ticker-Leiste.
   // Alle anderen Themes rendern unverändert den bisherigen Aufbau.
   const isEditorial = T.hero_layout === "editorial";
-  // Mitte/Ende-Prognose behalten die Schwellwert-Ampel (<0 warn_icon · ≤500 warn · ≤1000 gold · sonst pos).
-  const saldoCol  = v => v==null?T.txt2:v<0?T.warn_icon:v<=500?T.cond_warn:v<=1000?T.cond_gold:T.cond_pos;
+  // Mitte/Ende-Prognose: Varianten der Akzentfarbe (dieselbe wie der aktuelle
+  // Kontostand) — kräftiger sobald das jeweilige Datum erreicht ist, sonst
+  // blasser. Negativ bleibt die eigene Warnfarbe.
+  const saldoCol = (v, abg) => v==null ? T.txt2 : v<0 ? T.warn_icon : (abg ? darkenHex(T.blue, 0.15) : lightenHex(T.blue, 0.35));
 
   // Reale Buchungen (nicht Vormerkungen): Hellorange/kräftiges Grün, bold sobald
   // die jeweilige Monatshälfte abgeschlossen ist, sonst abgedunkelt/condensed
@@ -266,7 +268,7 @@ function SaldoHeroV2({
               borderRadius:8,padding:"2px 8px 3px",marginLeft:-8,
               background: progDrill==="Mitte" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
             <span style={{color:T.mid||T.txt2,fontSize:9,fontWeight:700,letterSpacing:2,opacity:0.7}}>MITTE</span>
-            <span className="heroAmt" style={{color: saldoCol(prognoseMitte),
+            <span className="heroAmt" style={{color: saldoCol(prognoseMitte, mitteAbgHero),
               fontSize:19,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
               {prognoseMitte>=0?"":"−"}{fmtMoney(Math.abs(prognoseMitte||0))}
             </span>
@@ -277,7 +279,7 @@ function SaldoHeroV2({
               borderRadius:8,padding:"2px 8px 3px",
               background: progDrill==="Ende" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
             <span style={{color:T.gold||T.txt2,fontSize:9,fontWeight:700,letterSpacing:2,opacity:0.7}}>ENDE</span>
-            <span className="heroAmt" style={{color: saldoCol(prognoseEnde),
+            <span className="heroAmt" style={{color: saldoCol(prognoseEnde, endeAbgHero),
               fontSize:19,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
               {prognoseEnde>=0?"":"−"}{fmtMoney(Math.abs(prognoseEnde||0))}
             </span>
@@ -356,7 +358,7 @@ function SaldoHeroV2({
               background: progDrill==="Mitte" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
             <div style={{color:T.mid||T.txt2,fontSize:9,fontWeight:700,
               letterSpacing:2,opacity:0.7,marginBottom:2}}>MITTE</div>
-            <div className="heroAmt" style={{color: saldoCol(prognoseMitte),
+            <div className="heroAmt" style={{color: saldoCol(prognoseMitte, mitteAbgHero),
               fontSize:20,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
               ...(T.frame_border?{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}:{})}}>
               {prognoseMitte>=0?"":"−"}{fmtMoney(Math.abs(prognoseMitte||0))}
@@ -370,7 +372,7 @@ function SaldoHeroV2({
               background: progDrill==="Ende" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
             <div style={{color:T.gold||T.txt2,fontSize:9,fontWeight:700,
               letterSpacing:2,opacity:0.7,marginBottom:2}}>ENDE</div>
-            <div className="heroAmt" style={{color: saldoCol(prognoseEnde),
+            <div className="heroAmt" style={{color: saldoCol(prognoseEnde, endeAbgHero),
               fontSize:20,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
               ...(T.frame_border?{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}:{})}}>
               {prognoseEnde>=0?"":"−"}{fmtMoney(Math.abs(prognoseEnde||0))}
