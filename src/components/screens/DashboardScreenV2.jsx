@@ -1104,8 +1104,11 @@ function DashboardScreenV2() {
           const showRow = detailsOpen && (!isPastMonth || visiblePTxs.length>0 || !schnellstartDone);
           if(!showRow) return null;
           const togglePanel = (key) => setActivePanel(p => p===key ? null : key);
-          const Card = ({panel, icon, badge, color, activeBg, activeBgSolid, tourId, onClick}) => {
-            const isActive = activePanel === panel;
+          const Card = ({panel, icon, badge, color, activeBg, activeBgSolid, hasContent=true, tourId, onClick}) => {
+            // hasContent=false: das zugehörige Panel würde ohnehin nichts
+            // anzeigen (z.B. 0 Warnungen) — dann bleibt das Symbol optisch
+            // neutral statt als "aktiver Tab" ohne jeden Inhalt darunter.
+            const isActive = activePanel === panel && hasContent;
             // Aktives Panel: Fläche hinter dem Icon bekommt dieselbe Farbe wie
             // die Fläche des Panels darunter (activeBg, pro Symbol übergeben,
             // Standard = blasse Akzentfarbe) — erst dadurch ist die Verbindung
@@ -1168,9 +1171,9 @@ function DashboardScreenV2() {
                   Warnungen = Farbton der Warnbox-Köpfe, Sparen = neutrale
                   Sparplan-Fläche, Vormerkungen = blasse Akzentfarbe (Panel
                   selbst ist inzwischen ebenfalls in dieser Farbe). */}
-              {!isPastMonth && <Card panel="warnings"     icon="shield-check" badge={warnCount}   color={warnCount>0 ? T.warn_icon : T.pos} activeBg={`${T.neg}18`} tourId="panel-warnings"/>}
+              {!isPastMonth && <Card panel="warnings"     icon="shield-check" badge={warnCount}   color={warnCount>0 ? T.warn_icon : T.pos} activeBg={`${T.neg}18`} hasContent={warnCount>0} tourId="panel-warnings"/>}
               {!isPastMonth && <Card panel="sparen"       icon="piggy-bank"   badge={null}        color={T.blue} activeBg={T.surf2} activeBgSolid tourId="panel-sparen"/>}
-              <Card panel="vormerkungen" icon="clock"        badge={visiblePTxs.length} color={lightenHex(T.blue, 0.35)} activeBg={lightenHex(T.blue, 0.35)} activeBgSolid/>
+              <Card panel="vormerkungen" icon="clock"        badge={visiblePTxs.length} color={lightenHex(T.blue, 0.35)} activeBg={lightenHex(T.blue, 0.35)} activeBgSolid hasContent={visiblePTxs.length>0}/>
             </div>
           );
         })()}
