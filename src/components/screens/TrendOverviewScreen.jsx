@@ -238,11 +238,11 @@ function YearBarRows({ perYear, get, getPending, isProjected, color, aktuellFill
                     <rect x={x + bw * 0.22} y={yTop} width={barVisW} height={Math.max(1, yBot - yTop)} rx={2} fill={aktuellFill} />
                   ) : showSplit ? (
                     <>
-                      <rect x={x + bw * 0.22} y={ySplit} width={barVisW} height={Math.max(1, yBot - ySplit)} rx={2} fill={color} opacity={0.85} />
+                      <rect x={x + bw * 0.22} y={ySplit} width={barVisW} height={Math.max(1, yBot - ySplit)} rx={2} fill={color} />
                       <rect x={x + bw * 0.22} y={yTop} width={barVisW} height={Math.max(1, ySplit - yTop)} rx={2} fill={aktuellFill} />
                     </>
                   ) : (
-                    <rect x={x + bw * 0.22} y={yTop} width={barVisW} height={Math.max(1, yBot - yTop)} rx={2} fill={color} opacity={0.85} />
+                    <rect x={x + bw * 0.22} y={yTop} width={barVisW} height={Math.max(1, yBot - yTop)} rx={2} fill={color} />
                   )}
                   <text x={cx} y={v >= 0 ? yTop - 4 : yBot + 12} textAnchor="middle" fontSize={amtFs} fill={T.txt} fontWeight={700}>
                     {fmtK(v)}
@@ -293,7 +293,7 @@ function YearBarListHorizontal({ perYear, get, getPending, color, aktuellFill, o
               {maxNeg > 0 && <div style={{ position: "absolute", left: `${zeroPct}%`, top: 0, bottom: 0, width: 1, background: T.bd }} />}
               {showSplit ? (
                 <>
-                  <div style={{ position: "absolute", top: 0, bottom: 0, borderRadius: 2, background: color, opacity: 0.85,
+                  <div style={{ position: "absolute", top: 0, bottom: 0, borderRadius: 2, background: color,
                     left: v >= 0 ? `${zeroPct}%` : `${Math.max(0, zeroPct - pctActual)}%`,
                     width: `${pctActual}%` }} />
                   <div style={{ position: "absolute", top: 0, bottom: 0, borderRadius: 2, background: aktuellFill,
@@ -301,7 +301,7 @@ function YearBarListHorizontal({ perYear, get, getPending, color, aktuellFill, o
                     width: `${Math.max(0, pct - pctActual)}%` }} />
                 </>
               ) : (
-                <div style={{ position: "absolute", top: 0, bottom: 0, borderRadius: 2, background: color, opacity: 0.85,
+                <div style={{ position: "absolute", top: 0, bottom: 0, borderRadius: 2, background: color,
                   left: v >= 0 ? `${zeroPct}%` : `${Math.max(0, zeroPct - pct)}%`,
                   width: `${pct}%` }} />
               )}
