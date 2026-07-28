@@ -1539,7 +1539,7 @@ function MonatScreen() {
                       der hellen aktiven Fläche (siehe Verbrauchs-Pegel-Fix). */}
                   <div data-role="tx-connector" data-dot-tone={(daySaldo!==null?daySaldo:headSaldo!==null?headSaldo:dayNet)>=0?"pos":"neg"}
                     style={{flex:1,height:2,
-                    background:(daySaldo!==null?daySaldo:headSaldo!==null?headSaldo:dayNet)>=0?T.pos:T.cond_neg,
+                    background:(daySaldo!==null?daySaldo:headSaldo!==null?headSaldo:dayNet)>=0?T.pos:T.warn_bold,
                     opacity:0.85,borderRadius:1,minWidth:10,
                     transition:_reduceMotion?"none":"background .15s ease"}}/>
                   {headSaldo!==null ? (()=>{
@@ -1552,7 +1552,7 @@ function MonatScreen() {
                       {(hasReservierung||hasDayPend)&&(
                         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1,lineHeight:1.2}}>
                           {hasReservierung&&(
-                            <span data-role="tx-daydetail" style={{...amtStyle(dayIst>=0?"txt2":"neg",dayIst>=0?undefined:T.cond_neg),fontSize:11,fontFamily:NUM_FONT,fontWeight:600,whiteSpace:"nowrap",transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
+                            <span data-role="tx-daydetail" style={{...amtStyle(dayIst>=0?"txt2":"neg",dayIst>=0?undefined:T.warn_bold),fontSize:11,fontFamily:NUM_FONT,fontWeight:600,whiteSpace:"nowrap",transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                               ohne Budget {dayIst>=0?"":"−"}{fmt(Math.abs(dayIst))}
                             </span>
                           )}
@@ -1602,29 +1602,29 @@ function MonatScreen() {
                   return (
                     <div style={{
                       margin:"2px 0 3px",
-                      background:`${T.cond_neg}18`,
-                      border:`1px solid ${T.cond_neg}44`,
+                      background:`${T.warn_bold}18`,
+                      border:`1px solid ${T.warn_bold}44`,
                       borderRadius:8,
                       padding:"7px 10px",
                       display:"flex",alignItems:"center",gap:10,
                     }}>
                       <div style={{flexShrink:0,width:28,height:28,borderRadius:8,
-                        background:`${T.cond_neg}22`,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                        {Li("alert-triangle",14,T.cond_neg)}
+                        background:`${T.warn_bold}22`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                        {Li("alert-triangle",14,T.warn_bold)}
                       </div>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{color:T.cond_neg,fontSize:12,fontWeight:700,lineHeight:1.3}}>
+                        <div style={{color:T.warn_bold,fontSize:12,fontWeight:700,lineHeight:1.3}}>
                           {nurBudget ? "Nach Budget im Minus" : "Kontostand im Minus"}: −{fmt(w.deficit)} €
                         </div>
                         <div style={{color:T.txt2,fontSize:10,marginTop:2,lineHeight:1.4}}>
                           {w.nextPos
                             ? <>Fehlbetrag ausgleichen bis <span style={{color:T.gold,fontWeight:700}}>{nextLabel}</span>
                               {w.nextPos.name&&<span> ({w.nextPos.name})</span>}
-                              {" — mindestens "}<span style={{...amtStyle("neg",T.cond_neg),fontWeight:700,fontFamily:NUM_FONT}}>
+                              {" — mindestens "}<span style={{...amtStyle("neg",T.warn_bold),fontWeight:700,fontFamily:NUM_FONT}}>
                                 {fmt(w.deficit)} €
                               </span>{" einplanen"}</>
                             : <>Kein positiver Saldo-Tag im Monat gefunden — mindestens{" "}
-                              <span style={{...amtStyle("neg",T.cond_neg),fontWeight:700,fontFamily:NUM_FONT}}>
+                              <span style={{...amtStyle("neg",T.warn_bold),fontWeight:700,fontFamily:NUM_FONT}}>
                                 {fmt(w.deficit)} €
                               </span>{" fehlen"}</>
                           }

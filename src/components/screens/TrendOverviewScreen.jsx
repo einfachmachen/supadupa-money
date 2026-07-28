@@ -35,12 +35,15 @@ const METRICS = [
 // den "aktuell/noch nicht abgeschlossen"-Anteil der Balken: ein leicht
 // abgedunkelter Ton bleibt eindeutig als "dieselbe Farbe, nur gedämpfter"
 // erkennbar (vs. Ampelfarbe oder reiner Transparenz).
-function darken(hex, amt) {
+// Mischt eine Hex-Farbe Richtung Weiß — für den Endekontostand-Balken (blue),
+// für den es (anders als Cyan/Limegreen bei Ausgaben/Einnahmen) keinen eigenen
+// festen "aktuell"-Ton gibt.
+function lighten(hex, amt) {
   const h = String(hex||"").replace("#","");
   const f = h.length < 6 ? h.split("").map(c=>c+c).join("") : h;
   if (!/^[0-9a-fA-F]{6}$/.test(f)) return hex;
   const r = parseInt(f.slice(0,2),16), g = parseInt(f.slice(2,4),16), b = parseInt(f.slice(4,6),16);
-  const mix = c => Math.round(c * (1 - amt));
+  const mix = c => Math.round(c + (255-c)*amt);
   return `rgb(${mix(r)},${mix(g)},${mix(b)})`;
 }
 
@@ -360,6 +363,15 @@ function TrendOverviewScreen() {
 
   const openYear = (year) => { setYear(year); setSubTab("mood"); };
   const activeMetric = METRICS.find(m => m.key === metric);
+  // "Aktuell/noch nicht abgeschlossen"-Anteil: bei Ausgaben/Einnahmen die
+  // festen, bewusst gewählten blasseren Cyan-/Limegreen-Töne; beim Endekonto-
+  // stand (blue, kein eigener fester Ton definiert) rechnerisch aufgehellt.
+  const aktuellFillFor = () => {
+    if (!activeMetric) return null;
+    if (activeMetric.key === "expense") return T.neg_aktuell;
+    if (activeMetric.key === "income") return T.pos_aktuell;
+    return lighten(activeMetric.color(null, T), 0.35);
+  };
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, background: T.bg }}>
@@ -427,12 +439,12 @@ function TrendOverviewScreen() {
                       getPending={activeMetric.split ? (r => r[`${activeMetric.key}Pending`]) : null}
                       isProjected={activeMetric.key === "saldo" ? (r => r.year >= new Date().getFullYear()) : null}
                       color={activeMetric.color(null, T)}
-                      aktuellFill={activeMetric.key === "expense" ? T.neg_aktuell : darken(activeMetric.color(null, T), 0.12)}
+                      aktuellFill={aktuellFillFor()}
                       onSelectYear={openYear} />
                   : <YearBarListHorizontal perYear={perYear} get={r => r[activeMetric.key]}
                       getPending={activeMetric.split ? (r => r[`${activeMetric.key}Pending`]) : null}
                       color={activeMetric.color(null, T)}
-                      aktuellFill={activeMetric.key === "expense" ? T.neg_aktuell : darken(activeMetric.color(null, T), 0.12)}
+                      aktuellFill={aktuellFillFor()}
                       onSelectYear={openYear} />}
               </div>
               <div style={{ color: T.txt2, fontSize: 11, marginTop: 10, textAlign: "center" }}>

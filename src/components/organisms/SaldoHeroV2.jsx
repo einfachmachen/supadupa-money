@@ -70,12 +70,13 @@ function SaldoHeroV2({
     : getKumulierterSaldo(year, month, selAcc);
   const fmtMoney = v => v==null||v===undefined ? "—" : fmt(v);
   // Aktueller Kontostand (großer Wert): an die Akzentfarbe angeglichen.
-  // Negativ bleibt rot — ein Minus-Saldo soll nicht in der Markenfarbe
-  // "unsichtbar" werden.
+  // Negativ = eigene, kräftige Warnfarbe (Hellorange) — ein Minus-Saldo soll
+  // nicht in der Markenfarbe "unsichtbar" werden, und Cyan ist jetzt die
+  // Ausgabenfarbe, nicht mehr "negativ/Warnung".
   // Positiver Kontostand in der Akzentfarbe des +-Buttons (Terminal: pos,
-  // sonst blue/lime) — wirkt harmonischer. Negativ bleibt rot.
+  // sonst blue/lime) — wirkt harmonischer.
   const plusAccent = T.themeName==="terminal" ? T.pos : T.blue;
-  const heroColor = v => v==null?T.txt : v<0?T.cond_neg : plusAccent;
+  const heroColor = v => v==null?T.txt : v<0?T.warn_bold : plusAccent;
   // Der Deko-Rahmen der Kinder-Themes wird als eigene Overlay-Schicht ÜBER
   // dem gesamten Inhalt gemalt (siehe App.jsx) — der Hero muss also nicht
   // mehr extra Innenabstand reservieren, um den Rahmen freizuhalten.
@@ -104,8 +105,8 @@ function SaldoHeroV2({
   // Kontowahl, Auge) oben, großer Betrag links, Prognosen als Ticker-Leiste.
   // Alle anderen Themes rendern unverändert den bisherigen Aufbau.
   const isEditorial = T.hero_layout === "editorial";
-  // Mitte/Ende-Prognose behalten die Schwellwert-Ampel (<0 neg · ≤500 warn · ≤1000 gold · sonst pos).
-  const saldoCol  = v => v==null?T.txt2:v<0?T.cond_neg:v<=500?T.cond_warn:v<=1000?T.cond_gold:T.cond_pos;
+  // Mitte/Ende-Prognose behalten die Schwellwert-Ampel (<0 warn_bold · ≤500 warn · ≤1000 gold · sonst pos).
+  const saldoCol  = v => v==null?T.txt2:v<0?T.warn_bold:v<=500?T.cond_warn:v<=1000?T.cond_gold:T.cond_pos;
 
   // Reale Buchungen (nicht Vormerkungen): Hellorange/kräftiges Grün, bold sobald
   // die jeweilige Monatshälfte abgeschlossen ist, sonst abgedunkelt/condensed
@@ -114,7 +115,7 @@ function SaldoHeroV2({
   const mitteAbgHero = !phaseStillReachable(year, month, 14, {});
   const endeAbgHero  = !phaseStillReachable(year, month, _lastDayHero, {});
   const bookColHero  = (isInc, abg) => {
-    if (isInc) return abg ? T.cond_pos : darkenHex(T.cond_pos, 0.12);
+    if (isInc) return abg ? T.cond_pos : T.pos_aktuell;
     return abg ? T.cond_neg : T.neg_aktuell;
   };
   // VM (Vormerkungen): Varianten der Akzentfarbe (T.blue — dieselbe Farbe wie

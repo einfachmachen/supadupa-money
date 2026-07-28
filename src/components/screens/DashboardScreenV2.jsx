@@ -15,7 +15,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { amtStyle } from "../../theme/amtPill.js";
 import { groupBudgetPairs, budgetOpenRestFor } from "../../utils/budgets.js";
-import { dayOf, drillSort, fmt, pn, uid, NUM_FONT, darkenHex } from "../../utils/format.js";
+import { dayOf, drillSort, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { recordDeletedTxs } from "../../utils/txTombstones.js";
@@ -835,13 +835,13 @@ function DashboardScreenV2() {
     // definiert, damit sowohl die Kategorie-Karten als auch das separate
     // Drilldown-Overlay weiter unten im Baum darauf zugreifen können.
     const bookCol = (isInc, dateStr) => {
-      if (isInc) return isBookingAbgeschlossen(dateStr) ? T.cond_pos : darkenHex(T.cond_pos, 0.12);
+      if (isInc) return isBookingAbgeschlossen(dateStr) ? T.cond_pos : T.pos_aktuell;
       return isBookingAbgeschlossen(dateStr) ? T.neg : T.neg_aktuell;
     };
     // Für Aggregate ohne einzelnes Datum (Mitte-/Ende-Summen): abgeschlossen,
     // wenn die jeweilige Monatshälfte (relativ zu heute) schon vorbei ist.
     const bookColAbg = (isInc, abg) => {
-      if (isInc) return abg ? T.cond_pos : darkenHex(T.cond_pos, 0.12);
+      if (isInc) return abg ? T.cond_pos : T.pos_aktuell;
       return abg ? T.neg : T.neg_aktuell;
     };
 
@@ -884,14 +884,26 @@ function DashboardScreenV2() {
             entfernen. */}
         <div style={{margin:"6px 10px 0",padding:"8px 12px",borderRadius:12,
           background:"rgba(255,255,255,0.04)",border:`1px solid ${T.bd}`,
-          display:"flex",alignItems:"center",gap:16,fontSize:11,color:T.txt2}}>
+          display:"flex",alignItems:"center",flexWrap:"wrap",gap:12,fontSize:11,color:T.txt2}}>
           <span style={{display:"flex",alignItems:"center",gap:6}}>
             <span style={{width:16,height:16,borderRadius:"50%",background:T.neg,display:"inline-block",flexShrink:0}}/>
-            Ausgaben abgeschlossen ({T.neg})
+            Ausgaben ({T.neg})
           </span>
           <span style={{display:"flex",alignItems:"center",gap:6}}>
             <span style={{width:16,height:16,borderRadius:"50%",background:T.neg_aktuell,display:"inline-block",flexShrink:0}}/>
-            Ausgaben aktuell ({T.neg_aktuell})
+            Ausgaben blasser ({T.neg_aktuell})
+          </span>
+          <span style={{display:"flex",alignItems:"center",gap:6}}>
+            <span style={{width:16,height:16,borderRadius:"50%",background:T.cond_pos,display:"inline-block",flexShrink:0}}/>
+            Einnahmen ({T.cond_pos})
+          </span>
+          <span style={{display:"flex",alignItems:"center",gap:6}}>
+            <span style={{width:16,height:16,borderRadius:"50%",background:T.pos_aktuell,display:"inline-block",flexShrink:0}}/>
+            Einnahmen blasser ({T.pos_aktuell})
+          </span>
+          <span style={{display:"flex",alignItems:"center",gap:6}}>
+            <span style={{width:16,height:16,borderRadius:"50%",background:T.warn_bold,display:"inline-block",flexShrink:0}}/>
+            Warnfarbe ({T.warn_bold})
           </span>
           <span style={{display:"flex",alignItems:"center",gap:6}}>
             <span style={{width:16,height:16,borderRadius:"50%",background:T.cell_exp,display:"inline-block",flexShrink:0}}/>

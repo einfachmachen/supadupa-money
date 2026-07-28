@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { theme as T } from "../../theme/activeTheme.js";
-import { dayOf, fmt, pn, NUM_FONT } from "../../utils/format.js";
+import { dayOf, fmt, pn, NUM_FONT, lightenHex } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { budgetPlaceholderActive } from "../../utils/saldo.js";
@@ -41,8 +41,12 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
   const onVorm = readableOn(vBg, T.gold);          // Kopfzeile/Icon
   const vLight = isLightColor(vBg);
   const chipBg = vLight ? "rgba(0,0,0,0.13)" : "rgba(0,0,0,0.2)";
+  // Rahmen und Buttons rund um die Vormerkungen folgen jetzt der Akzentfarbe
+  // (statt Amber/Gold) — bewusst die BLASSERE Variante (Akzentfarbe ist hier
+  // "statisch", nicht an ein bestimmtes Fälligkeitsdatum gebunden).
+  const paleAccent = lightenHex(T.blue, 0.35);
   return (
-    <div style={{background:vBg,border:`3px solid ${T.vorm_bd||T.gold}`,borderRadius:16,margin:"4px 10px",padding:"7px 10px"}}>
+    <div style={{background:vBg,border:`3px solid ${paleAccent}`,borderRadius:16,margin:"4px 10px",padding:"7px 10px"}}>
       <div onClick={noCollapse?undefined:()=>setCollapsed(v=>!v)}
         style={{display:"flex",alignItems:"center",gap:6,marginBottom:collapsed?0:6,cursor:noCollapse?"default":"pointer"}}>
         <span style={{color:onVorm,fontSize:14,fontWeight:700,display:"flex",alignItems:"center",gap:6,flex:1}}>
@@ -56,9 +60,9 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
           <button onClick={e=>{e.stopPropagation();onOpenMatching();}}
             title="Vormerkungen mit Buchungen verknüpfen"
             style={{display:"flex",alignItems:"center",gap:4,background:chipBg,
-              border:`1px solid ${vLight?onVorm:T.blue+"55"}`,borderRadius:7,padding:"3px 8px",cursor:"pointer",
-              color:vLight?onVorm:T.blue,fontSize:10.5,fontWeight:700,fontFamily:"inherit",flexShrink:0}}>
-            {Li("git-merge",11,vLight?onVorm:T.blue)} zuordnen
+              border:`1px solid ${vLight?onVorm:paleAccent+"55"}`,borderRadius:7,padding:"3px 8px",cursor:"pointer",
+              color:vLight?onVorm:paleAccent,fontSize:10.5,fontWeight:700,fontFamily:"inherit",flexShrink:0}}>
+            {Li("git-merge",11,vLight?onVorm:paleAccent)} zuordnen
           </button>
         )}
         <div style={{display:"flex",alignItems:"center",gap:4,background:chipBg,borderRadius:7,padding:"3px 7px"}}>

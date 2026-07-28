@@ -3143,13 +3143,12 @@ Abbrechen = ${remoteName}-Stand laden`
         return (
           <div onClick={()=>{ setYear(s.yr); setMainTab("erfassen"); setSubTab("mood"); }}
             style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",
-              // Kräftiges, festes Rot statt T.neg — manche Themes definieren
-              // "neg" bewusst blass/pastellig (z.B. #FFA090, #FFC5C4) für den
-              // Einsatz als kleine Textfarbe auf grauem Grund; als VOLLFLÄCHIGER
-              // Banner-Hintergrund mit weißer Schrift wirkt dieselbe Farbe dann
-              // wie "Weiß auf Rosa" und ist kaum zu erkennen. Diese Warnung
-              // muss in jedem Theme gleich gut lesbar bleiben.
-              background:"#C0311A",color:"#fff",padding:"7px 12px",flexShrink:0,
+              // Kräftiges Hellorange (T.warn_bold) statt T.neg — neg ist jetzt
+              // die Ausgabenfarbe (Cyan), nicht mehr für Warnungen gedacht.
+              // warn_bold ist bewusst als eigener, immer kräftiger Ton definiert
+              // (nicht die evtl. blasse/pastellige neg/warn-Variante mancher
+              // Themes), damit diese Warnung überall gleich gut lesbar bleibt.
+              background:T.warn_bold,color:"#fff",padding:"7px 12px",flexShrink:0,
               boxShadow:"0 1px 6px rgba(0,0,0,0.3)"}}>
             {Li("alert-triangle",16,"#fff")}
             <div style={{flex:1,minWidth:0,lineHeight:1.25}}>

@@ -3,7 +3,7 @@
 import React, { useContext, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
-import { fmt, NUM_FONT, darkenHex } from "../../utils/format.js";
+import { fmt, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { isBookingAbgeschlossen } from "../../utils/saldo.js";
 
@@ -34,7 +34,7 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
                 display:"flex",alignItems:"center",justifyContent:"center",gap:3}}>
                 {label} {Li(drillOpen===label?"chevron-up":"chevron-down",8,col)}
               </div>
-              <div style={{color:saldo>=0?T.pos:T.neg,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>
+              <div style={{color:saldo>=0?T.pos:T.warn_bold,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>
                 {saldo>=0?"+":"−"}{fmt(Math.abs(saldo))} €
               </div>
             </>)}
@@ -65,12 +65,12 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
           const cat=getCat((t.splits||[])[0]?.catId);
           const splitAmt = subId ? (t.splits||[]).find(sp=>sp.subId===subId)?.amount : null;
           const displayAmt = splitAmt!=null && splitAmt!==0 ? Math.abs(splitAmt) : Math.abs(t.totalAmount);
-          // Reale Buchungen: Hellorange/kräftiges Grün, bold sobald ihre
-          // Monatshälfte abgeschlossen ist, sonst abgedunkelt (noch aktuell).
+          // Reale Buchungen: Cyan (Ausgaben)/Limegreen (Einnahmen), kräftig sobald
+          // ihre Monatshälfte abgeschlossen ist, sonst blasser (noch aktuell).
           const amtCol = isPending
             ? (isInc ? T.cell_inc : T.cell_exp)
             : isInc
-              ? (isBookingAbgeschlossen(t.date) ? T.cond_pos : darkenHex(T.cond_pos, 0.12))
+              ? (isBookingAbgeschlossen(t.date) ? T.cond_pos : T.pos_aktuell)
               : (isBookingAbgeschlossen(t.date) ? T.neg : T.neg_aktuell);
           return (
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:5,paddingLeft:indent?10:0,opacity:dimmed?0.65:1}}>
@@ -107,7 +107,7 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
                 const ext = label==="Mitte" ? saldoMitte : saldoEnde;
                 const sv = (ext!==null && ext!==undefined) ? ext : drill.saldo;
                 return sv!==null && sv!==undefined
-                  ? <span style={{color:sv>=0?T.pos:T.neg,fontFamily:NUM_FONT,fontWeight:700,fontSize:16}}>{sv>=0?"+":"−"}{fmt(Math.abs(sv))}</span>
+                  ? <span style={{color:sv>=0?T.pos:T.warn_bold,fontFamily:NUM_FONT,fontWeight:700,fontSize:16}}>{sv>=0?"+":"−"}{fmt(Math.abs(sv))}</span>
                   : null;
               })()}
             </div>
