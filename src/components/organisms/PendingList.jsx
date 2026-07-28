@@ -2,12 +2,13 @@
 
 import React, { useMemo, useState } from "react";
 import { theme as T } from "../../theme/activeTheme.js";
-import { dayOf, fmt, pn, NUM_FONT, lightenHex } from "../../utils/format.js";
+import { dayOf, fmt, pn, NUM_FONT, lightenHex, darkenHex } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { budgetPlaceholderActive } from "../../utils/saldo.js";
 import { isBankPending } from "../../utils/vormMatch.js";
 import { isLightColor, readableOn } from "../../theme/amtPill.js";
+import { isLightTheme } from "../../theme/activeTheme.js";
 
 function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub, budgetOpenRest, initialCollapsed=true, noCollapse=false, onOpenMatching}) {
   const _pendOpenAmt = pendOpenAmt || (t=>t.totalAmount);
@@ -34,19 +35,22 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
       return b.date.localeCompare(a.date);
     });
   }, [pTxs, search]);
-  // Die Vormerkungs-Fläche ist je nach Theme hell (volles Gelb) oder dunkel.
-  // Kopfzeile, Icon und Suchfeld liegen direkt darauf und müssen deshalb ihre
-  // Farbe aus der Helligkeit der Fläche ableiten — sonst goldene Schrift auf Gelb.
-  const vBg    = T.vorm_bg||T.tab_pend;
+  // Die Vormerkungs-Fläche folgt jetzt der Akzentfarbe statt der alten
+  // Amber/Gold-Fläche (T.vorm_bg) — in dunklen Themes eine stark abgedunkelte
+  // Variante der Akzentfarbe (dezenter, farbiger "Tint" statt Gelb/Braun).
+  // Helle Themes behalten ihre bisherige (helle) Fläche unverändert bei.
+  // Kopfzeile, Icon und Suchfeld leiten ihre Farbe aus der Helligkeit der
+  // Fläche ab — sonst goldene Schrift auf hellem Grund.
+  const vBg    = isLightTheme() ? (T.vorm_bg||T.tab_pend) : darkenHex(T.blue, 0.82);
   const onVorm = readableOn(vBg, T.gold);          // Kopfzeile/Icon
   const vLight = isLightColor(vBg);
   const chipBg = vLight ? "rgba(0,0,0,0.13)" : "rgba(0,0,0,0.2)";
-  // Rahmen und Buttons rund um die Vormerkungen folgen jetzt der Akzentfarbe
-  // (statt Amber/Gold) — bewusst die BLASSERE Variante (Akzentfarbe ist hier
+  // Rahmen und Buttons rund um die Vormerkungen folgen ebenfalls der
+  // Akzentfarbe — bewusst die BLASSERE Variante (Akzentfarbe ist hier
   // "statisch", nicht an ein bestimmtes Fälligkeitsdatum gebunden).
   const paleAccent = lightenHex(T.blue, 0.35);
   return (
-    <div style={{background:vBg,border:"none" /* TEST: Rahmen testweise entfernt */,borderRadius:16,margin:"4px 10px",padding:"7px 10px"}}>
+    <div style={{background:vBg,border:`3px solid ${paleAccent}`,borderRadius:16,margin:"4px 10px",padding:"7px 10px"}}>
       <div onClick={noCollapse?undefined:()=>setCollapsed(v=>!v)}
         style={{display:"flex",alignItems:"center",gap:6,marginBottom:collapsed?0:6,cursor:noCollapse?"default":"pointer"}}>
         <span style={{color:onVorm,fontSize:14,fontWeight:700,display:"flex",alignItems:"center",gap:6,flex:1}}>
@@ -98,7 +102,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
           const over = rest!=null && rest < 0;
           return (
             <div key={tx.id}
-              style={{border:"none" /* TEST: Rahmen testweise entfernt */,
+              style={{border:`1px solid ${paleAccent}`,
               background:T.surf3,borderRadius:6,marginBottom:4}}>
               <div onClick={()=>openEdit(tx)}
                 style={{display:"flex",alignItems:"center",gap:8,padding:"5px 6px",cursor:"pointer"}}>
@@ -125,7 +129,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
         }
         return (
           <div key={tx.id}
-            style={{border:"none" /* TEST: Rahmen testweise entfernt */,
+            style={{border:`1px solid ${paleAccent}`,
             background:T.surf3,
             borderRadius:6,marginBottom:4,overflow:"hidden"}}>
             <div onClick={()=>{ if(isS){setExpandedId(isExpanded?null:tx.id);}else{openEdit(tx);} }}
