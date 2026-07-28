@@ -34,7 +34,7 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
   const cardRadius = "0 10px 10px 10px";
 
   return (
-    <div style={{margin:"0 10px 4px",borderRadius:cardRadius,paddingTop:4}}>
+    <div style={{margin:"0 10px 4px",borderRadius:cardRadius}}>
       {warnings.slice(0, showFolgemonate ? warnings.length : 1).map((w,i)=>{
         const mKey = `${w.year}-${w.month}`;
         const isExpanded = expandedMonths.has(mKey);
@@ -44,8 +44,11 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
           const s=new Set(prev); s.has(mKey)?s.delete(mKey):s.add(mKey); return s;
         });
         return (
-          <div key={i} style={{margin:"2px 0 3px",borderRadius:8,overflow:"hidden",
-            border:`1px solid ${T.neg}44`}}>
+          // Erste Box ohne oberen Abstand (i===0): sonst entsteht genau die
+          // dünne, andersfarbige Lücke zum Tab darüber, die wie eine
+          // Trennlinie wirkt — der Tab berührt das Panel jetzt direkt.
+          <div key={i} style={{margin:`${i===0?0:2}px 0 3px`,borderRadius:i===0?"0 8px 8px 8px":8,overflow:"hidden",
+            border:`1px solid ${T.neg}44`,borderTop:i===0?"none":`1px solid ${T.neg}44`}}>
             {/* Monats-Header — immer sichtbar */}
             <div onClick={hasMultiple?toggleExpand:undefined}
               style={{background:`${T.neg}18`,padding:"7px 10px",
