@@ -469,10 +469,10 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
       {/* Header */}
       <div onClick={()=>setCollapsed(v=>!v)}
         style={{display:"flex",alignItems:"center",gap:8,marginBottom:collapsed?0:8,cursor:"pointer"}}>
-        <div style={{width:30,height:30,borderRadius:9,background:"rgba(74,159,212,0.15)",
-          display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-          {Li("piggy-bank",15,T.blue)}
-        </div>
+        {/* Sparschwein-Symbol entfernt — die 3 Symbole in der Icon-Zeile oben
+            reichen als Kennzeichnung; leerer Platzhalter erhält die bisherige
+            Text-Einrückung. */}
+        <div style={{width:30,height:30,flexShrink:0}}/>
         <div style={{flex:1}}>
           <div style={{color:T.txt,fontSize:12,fontWeight:700}}>Sparen</div>
           <div style={{color:T.txt2,fontSize:9}}>Tagesgenaue Sparvorschläge</div>

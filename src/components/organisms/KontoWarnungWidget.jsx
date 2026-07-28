@@ -54,10 +54,10 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
               style={{background:`${T.neg}18`,padding:"7px 10px",
                 display:"flex",alignItems:"center",gap:10,
                 cursor:hasMultiple?"pointer":"default"}}>
-              <div style={{flexShrink:0,width:28,height:28,borderRadius:8,
-                background:`${T.neg}22`,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                {Li("alert-triangle",14,T.neg)}
-              </div>
+              {/* Warndreieck entfernt — die 3 Symbole in der Icon-Zeile oben
+                  reichen als Kennzeichnung; leerer Platzhalter erhält die
+                  bisherige Text-Einrückung. */}
+              <div style={{flexShrink:0,width:28,height:28}}/>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{color:T.neg,fontSize:12,fontWeight:700,lineHeight:1.3}}>
                   {isFuture&&<span style={{color:T.gold,fontSize:10,marginRight:6}}>{MONTHS_S[w.month]} {w.year}</span>}
