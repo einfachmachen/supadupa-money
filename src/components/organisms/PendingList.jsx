@@ -47,8 +47,12 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
   const onVorm = readableOn(vBg, T.gold);          // Kopfzeile/Icon
   const vLight = isLightColor(vBg);
   const chipBg = vLight ? "rgba(0,0,0,0.13)" : "rgba(0,0,0,0.2)";
+  // Vormerkungen-Symbol ist immer das RECHTESTE der drei Icons — die rechte
+  // obere Ecke sitzt bündig unter dem Tab und bleibt eckig (nahtloser
+  // Übergang, keine Lücke); alle anderen Ecken sind rund.
+  const cardRadius = "16px 0 16px 16px";
   return (
-    <div style={{background:vBg,border:`1.5px solid ${paleAccent}`,borderRadius:16,margin:"0 10px 4px",padding:"7px 10px"}}>
+    <div style={{background:vBg,border:`1.5px solid ${paleAccent}`,borderRadius:cardRadius,margin:"0 10px 4px",padding:"7px 10px"}}>
       <div onClick={noCollapse?undefined:()=>setCollapsed(v=>!v)}
         style={{display:"flex",alignItems:"center",gap:6,marginBottom:collapsed?0:6,cursor:noCollapse?"default":"pointer"}}>
         <span style={{color:onVorm,fontSize:14,fontWeight:700,flexShrink:0}}>
