@@ -132,8 +132,6 @@ function DashboardScreenV2() {
     const [detailsOpenManual, setDetailsOpenManual] = useState(null);
     const detailsOpen = detailsOpenManual===null ? !schnellstartDone : detailsOpenManual;
     const setDetailsOpen = (v) => setDetailsOpenManual(typeof v==="function" ? v(detailsOpen) : v);
-    // TEMP-Diagnose-Panel (Farbpunkte): Code bleibt drin, Standard eingeklappt.
-    const [colorDiagOpen, setColorDiagOpen] = useState(false);
 
     // ── Bank-Abruf direkt im Dashboard (Pull-to-Refresh) ──
     // bankFetch: null | {status:"loading"|"done"|"error", reason?, message?, staged?, dupeItems?}
@@ -873,50 +871,6 @@ function DashboardScreenV2() {
         style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch"}}>
         {/* Pull-to-Refresh-Indikator wird unterhalb des fixierten Hero
             gerendert (zwischen Hero und erster Kategorie) — siehe unten. */}
-        {/* TEMP-Diagnose: Farbpunkte direkt aus dem aktiven Theme — sichtbar
-            OHNE Buchungen/Cloud-Zugang, damit sich ein Cache-/Deploy-Stand
-            geräteübergreifend prüfen lässt, ohne echte Daten zu brauchen.
-            Auf Wunsch dauerhaft im Code, aber standardmäßig eingeklappt. */}
-        <div style={{margin:"6px 10px 0",borderRadius:12,
-          background:"rgba(255,255,255,0.04)",border:`1px solid ${T.bd}`,overflow:"hidden"}}>
-          <div onClick={()=>setColorDiagOpen(v=>!v)}
-            style={{display:"flex",alignItems:"center",gap:6,padding:"6px 12px",cursor:"pointer",fontSize:11,color:T.txt2}}>
-            {Li(colorDiagOpen?"chevron-up":"chevron-down",12,T.txt2)}
-            Farb-Diagnose
-          </div>
-          {colorDiagOpen&&(
-            <div style={{display:"flex",alignItems:"center",flexWrap:"wrap",gap:12,fontSize:11,color:T.txt2,padding:"0 12px 8px"}}>
-              <span style={{display:"flex",alignItems:"center",gap:6}}>
-                <span style={{width:16,height:16,borderRadius:"50%",background:T.neg,display:"inline-block",flexShrink:0}}/>
-                Ausgaben ({T.neg})
-              </span>
-              <span style={{display:"flex",alignItems:"center",gap:6}}>
-                <span style={{width:16,height:16,borderRadius:"50%",background:T.neg_aktuell,display:"inline-block",flexShrink:0}}/>
-                Ausgaben blasser ({T.neg_aktuell})
-              </span>
-              <span style={{display:"flex",alignItems:"center",gap:6}}>
-                <span style={{width:16,height:16,borderRadius:"50%",background:T.cond_pos,display:"inline-block",flexShrink:0}}/>
-                Einnahmen ({T.cond_pos})
-              </span>
-              <span style={{display:"flex",alignItems:"center",gap:6}}>
-                <span style={{width:16,height:16,borderRadius:"50%",background:T.pos_aktuell,display:"inline-block",flexShrink:0}}/>
-                Einnahmen blasser ({T.pos_aktuell})
-              </span>
-              <span style={{display:"flex",alignItems:"center",gap:6}}>
-                <span style={{width:16,height:16,borderRadius:"50%",background:T.warn_bold,display:"inline-block",flexShrink:0}}/>
-                Warnfarbe Hintergrund ({T.warn_bold})
-              </span>
-              <span style={{display:"flex",alignItems:"center",gap:6}}>
-                <span style={{width:16,height:16,borderRadius:"50%",background:T.warn_icon,display:"inline-block",flexShrink:0}}/>
-                Warnfarbe Symbol ({T.warn_icon})
-              </span>
-              <span style={{display:"flex",alignItems:"center",gap:6}}>
-                <span style={{width:16,height:16,borderRadius:"50%",background:T.cell_exp,display:"inline-block",flexShrink:0}}/>
-                VM (Dashboard/Sonstige) ({T.cell_exp})
-              </span>
-            </div>
-          )}
-        </div>
         {/* Duplikat-Warnung */}
         {dupCount>0&&(
           <div style={{margin:"6px 10px",background:T.err_bg,border:`2px solid ${T.neg}`,borderRadius:12,padding:"10px 12px"}}>
