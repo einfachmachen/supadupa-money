@@ -15,7 +15,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { amtStyle } from "../../theme/amtPill.js";
 import { groupBudgetPairs, budgetOpenRestFor } from "../../utils/budgets.js";
-import { dayOf, drillSort, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
+import { dayOf, drillSort, fmt, pn, uid, NUM_FONT, lightenHex } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { recordDeletedTxs } from "../../utils/txTombstones.js";
@@ -1189,7 +1189,7 @@ function DashboardScreenV2() {
                 onClick={()=>setShowMobileKategorien?.(true)}/>}
               {!isPastMonth && <Card panel="warnings"     icon="shield-check" badge={warnCount}   color={warnCount>0 ? T.warn_icon : T.pos} tourId="panel-warnings"/>}
               {!isPastMonth && <Card panel="sparen"       icon="piggy-bank"   badge={null}        color={T.blue} tourId="panel-sparen"/>}
-              <Card panel="vormerkungen" icon="clock"        badge={visiblePTxs.length} color={T.blue}/>
+              <Card panel="vormerkungen" icon="clock"        badge={visiblePTxs.length} color={lightenHex(T.blue, 0.35)}/>
             </div>
           );
         })()}
