@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { theme as T } from "../../theme/activeTheme.js";
-import { dayOf, fmt, pn, NUM_FONT, lightenHex, darkenHex } from "../../utils/format.js";
+import { dayOf, fmt, pn, NUM_FONT, lightenHex } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { budgetPlaceholderActive } from "../../utils/saldo.js";
@@ -35,20 +35,18 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
       return b.date.localeCompare(a.date);
     });
   }, [pTxs, search]);
-  // Die Vormerkungs-Fläche folgt jetzt der Akzentfarbe statt der alten
-  // Amber/Gold-Fläche (T.vorm_bg) — in dunklen Themes eine abgedunkelte, aber
-  // klar erkennbar farbige Variante der Akzentfarbe (0.82 wirkte fast schwarz).
+  // Rahmen, Buttons UND die Fläche selbst folgen der Akzentfarbe — bewusst
+  // die BLASSE Variante (Akzentfarbe ist hier "statisch", nicht an ein
+  // bestimmtes Fälligkeitsdatum gebunden) — dieselbe Farbe wie die Fläche
+  // hinter dem aktiven Symbol in der Icon-Zeile darüber.
+  const paleAccent = lightenHex(T.blue, 0.35);
   // Helle Themes behalten ihre bisherige (helle) Fläche unverändert bei.
   // Kopfzeile, Icon und Suchfeld leiten ihre Farbe aus der Helligkeit der
   // Fläche ab — sonst goldene Schrift auf hellem Grund.
-  const vBg    = isLightTheme() ? (T.vorm_bg||T.tab_pend) : darkenHex(T.blue, 0.6);
+  const vBg    = isLightTheme() ? (T.vorm_bg||T.tab_pend) : paleAccent;
   const onVorm = readableOn(vBg, T.gold);          // Kopfzeile/Icon
   const vLight = isLightColor(vBg);
   const chipBg = vLight ? "rgba(0,0,0,0.13)" : "rgba(0,0,0,0.2)";
-  // Rahmen und Buttons rund um die Vormerkungen folgen ebenfalls der
-  // Akzentfarbe — bewusst die BLASSERE Variante (Akzentfarbe ist hier
-  // "statisch", nicht an ein bestimmtes Fälligkeitsdatum gebunden).
-  const paleAccent = lightenHex(T.blue, 0.35);
   return (
     <div style={{background:vBg,border:`1.5px solid ${paleAccent}`,borderRadius:"0 0 16px 16px",margin:"0 10px 4px",padding:"7px 10px"}}>
       <div onClick={noCollapse?undefined:()=>setCollapsed(v=>!v)}
