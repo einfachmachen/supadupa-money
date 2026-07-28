@@ -34,7 +34,7 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
                 display:"flex",alignItems:"center",justifyContent:"center",gap:3}}>
                 {label} {Li(drillOpen===label?"chevron-up":"chevron-down",8,col)}
               </div>
-              <div style={{color:saldo>=0?T.pos:T.warn_bold,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>
+              <div style={{color:saldo>=0?T.pos:T.warn_icon,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>
                 {saldo>=0?"+":"−"}{fmt(Math.abs(saldo))} €
               </div>
             </>)}
@@ -107,7 +107,7 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
                 const ext = label==="Mitte" ? saldoMitte : saldoEnde;
                 const sv = (ext!==null && ext!==undefined) ? ext : drill.saldo;
                 return sv!==null && sv!==undefined
-                  ? <span style={{color:sv>=0?T.pos:T.warn_bold,fontFamily:NUM_FONT,fontWeight:700,fontSize:16}}>{sv>=0?"+":"−"}{fmt(Math.abs(sv))}</span>
+                  ? <span style={{color:sv>=0?T.pos:T.warn_icon,fontFamily:NUM_FONT,fontWeight:700,fontSize:16}}>{sv>=0?"+":"−"}{fmt(Math.abs(sv))}</span>
                   : null;
               })()}
             </div>
