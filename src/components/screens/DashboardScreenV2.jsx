@@ -13,7 +13,7 @@ import { BankFetchPanel } from "../organisms/BankFetchPanel.jsx";
 import { TagesgeldWidget } from "../organisms/TagesgeldWidget.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
-import { amtStyle } from "../../theme/amtPill.js";
+import { amtStyle, readableOn, isLightColor } from "../../theme/amtPill.js";
 import { groupBudgetPairs, budgetOpenRestFor } from "../../utils/budgets.js";
 import { dayOf, drillSort, fmt, pn, uid, NUM_FONT, lightenHex } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
@@ -1106,30 +1106,38 @@ function DashboardScreenV2() {
           const togglePanel = (key) => setActivePanel(p => p===key ? null : key);
           const Card = ({panel, icon, badge, color, tourId, onClick}) => {
             const isActive = activePanel === panel;
-            // Aktives Panel: Rand des Icons verbindet sich mit dem Panel-Rand
-            // darunter (offener unterer Rand, abgerundete Oberkante) — so
-            // ist auf einen Blick klar, welches Symbol gerade geöffnet ist.
+            // Aktives Panel: Fläche hinter dem Icon bekommt die GLEICHE Farbe
+            // wie der Rand des Panels darunter (nicht nur ein blasser Tint) —
+            // erst dadurch ist die Verbindung Icon↔Panel wirklich zu sehen.
             const tabAccent = lightenHex(T.blue, 0.35);
+            const iconCol = (panel && isActive) ? readableOn(tabAccent, color) : color;
             return (
               <div onClick={onClick || (()=>togglePanel(panel))} data-tour={tourId}
                 style={{flex:1,display:"flex",alignItems:"center",
                   justifyContent:"center",padding:"4px 6px",cursor:"pointer",
                   userSelect:"none",position:"relative",
                   opacity:isActive?1:0.7,
+                  transition:"background 0.15s,border-color 0.15s",
                   ...(panel && isActive ? {
-                    background:`${T.blue}1a`,
+                    background:tabAccent,
                     border:`1.5px solid ${tabAccent}`,borderBottom:"none",
                     borderRadius:"10px 10px 0 0",
                   } : null)}}>
-                {Li(icon, 28, color)}
-                {badge!=null && badge>0 && (
-                  <div style={{position:"absolute",top:4,right:"calc(50% - 22px)",
-                    minWidth:16,height:16,borderRadius:8,padding:"0 4px",
-                    background:color,color:T.bg||"#000",fontSize:9,fontWeight:800,
-                    display:"flex",alignItems:"center",justifyContent:"center"}}>
-                    {badge}
-                  </div>
-                )}
+                {Li(icon, 28, iconCol)}
+                {badge!=null && badge>0 && (()=>{
+                  // Badge-Hintergrund muss auch gegen die aktive (kräftige)
+                  // Tab-Fläche lesbar bleiben, nicht nur gegen die Karte selbst.
+                  const badgeBg = (panel && isActive) ? iconCol : color;
+                  const badgeTxt = isLightColor(badgeBg) ? "#1A1E00" : "#fff";
+                  return (
+                    <div style={{position:"absolute",top:4,right:"calc(50% - 22px)",
+                      minWidth:16,height:16,borderRadius:8,padding:"0 4px",
+                      background:badgeBg,color:badgeTxt,fontSize:9,fontWeight:800,
+                      display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      {badge}
+                    </div>
+                  );
+                })()}
               </div>
             );
           };
