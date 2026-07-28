@@ -1187,9 +1187,9 @@ function DashboardScreenV2() {
                 onClick={()=>{setMainTab?.("struktur"); setActiveStructurTab?.("konten");}}/>}
               {!schnellstartDone && <Card icon="target" color={T.mid} tourId="row-budget-dash"
                 onClick={()=>setShowMobileKategorien?.(true)}/>}
-              {!isPastMonth && <Card panel="warnings"     icon="shield-check" badge={warnCount}   color={warnCount>0 ? T.neg : T.pos} tourId="panel-warnings"/>}
+              {!isPastMonth && <Card panel="warnings"     icon="shield-check" badge={warnCount}   color={warnCount>0 ? T.warn_icon : T.pos} tourId="panel-warnings"/>}
               {!isPastMonth && <Card panel="sparen"       icon="piggy-bank"   badge={null}        color={T.blue} tourId="panel-sparen"/>}
-              <Card panel="vormerkungen" icon="clock"        badge={visiblePTxs.length} color={T.gold}/>
+              <Card panel="vormerkungen" icon="clock"        badge={visiblePTxs.length} color={T.blue}/>
             </div>
           );
         })()}
