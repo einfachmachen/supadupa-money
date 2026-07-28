@@ -74,9 +74,10 @@ import { useLocalSaveDebounce } from "./hooks/useLocalSaveDebounce.js";
 import { useCloudCredentials } from "./hooks/useCloudCredentials.js";
 import { isoAddMonths, calcRecurringCount } from "./utils/date.js";
 import { anchorValue, anchorDay } from "./utils/anchors.js";
-import { pn, uid, sumAmounts, fmt } from "./utils/format.js";
+import { pn, uid, sumAmounts, fmt, round2 } from "./utils/format.js";
 import { MONTHS_S } from "./utils/constants.js";
 import { computeKontoWarnungen } from "./utils/kontoWarnungen.js";
+import { computeMinTagessaldo } from "./utils/sparBerechnen.js";
 import { Li } from "./utils/icons.jsx";
 import { makeYearData } from "./utils/yearData.js";
 import { isDuplCounterpart, buildTxIdMap } from "./utils/tx.js";
@@ -1921,6 +1922,62 @@ Abbrechen = ${remoteName}-Stand laden`
     };
   }, [liquidityWarnings]);
 
+  // ── Automatische Sparplan-Anpassung: reduziert NUR die Sparrate des
+  // LAUFENDEN Monats, statt bei jeder Pufferunterschreitung die komplette
+  // (oft viele Monate umfassende) Serie manuell neu berechnen zu müssen.
+  // Nutzer-Feedback: unerwartete Mehrausgaben im laufenden Monat (z.B. Urlaub)
+  // lösten sonst wiederholt dieselbe Warnung aus. Reduzieren kann nie schaden
+  // (weniger Abgang vom Giro verbessert jeden Folgetag) — deshalb genügt hier,
+  // ohne Lookahead auf Folgemonate, exakt dieselbe Tiefst-Saldo-Berechnung wie
+  // beim "Neuberechnen"-Button für Monat 1 (computeMinTagessaldo, siehe
+  // utils/sparBerechnen.js — von dort auch von TagesgeldWidget genutzt).
+  const [autoSparInfo, setAutoSparInfo] = useState(null);
+  useEffect(() => {
+    const today = new Date();
+    const y = today.getFullYear(), m = today.getMonth();
+    const w = liquidityWarnings.find(w => w.year === y && w.month === m);
+    if(!w) return;
+    // Nur bei GENAU EINER eindeutigen Sparplan-Abgang-Buchung für diesen Monat
+    // auf Giro automatisch eingreifen — bei mehreren Plänen wäre nicht klar,
+    // welcher gemeint ist, dann lieber die normale Warnung stehen lassen.
+    const pad2 = n => String(n).padStart(2, "0");
+    const monthPfx = `${y}-${pad2(m + 1)}-`;
+    const candidates = txs.filter(t => t.pending && !t._linkedTo && t._seriesId
+      && t.accountId === "acc-giro" && (t.desc || "").startsWith("Sparen·")
+      && (t.date || "").startsWith(monthPfx));
+    if(candidates.length !== 1) return;
+    const abgang = candidates[0];
+    const oldAmount = round2(Math.abs(abgang.totalAmount));
+    if(oldAmount <= 0) return;
+    const { min: minTag } = computeMinTagessaldo(y, m, {}, "acc-giro", abgang.desc,
+      { txs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth, getProgEndeAccGlobal }, today);
+    if(minTag === null) return;
+    const safeAmount = Math.max(0, Math.floor(minTag - pn(_giroPuffer)));
+    if(safeAmount >= oldAmount) return; // Rate ist bereits sicher — nichts zu tun
+    const zugang = txs.find(t => t._linkedTo === abgang.id && t.pending);
+    setTxs(prev => {
+      if(safeAmount <= 0) {
+        return prev.filter(t => t.id !== abgang.id && (!zugang || t.id !== zugang.id));
+      }
+      return prev.map(t => {
+        if(t.id === abgang.id) {
+          return { ...t, totalAmount: -safeAmount, splits: (t.splits||[]).map(s=>({...s, amount: -safeAmount})) };
+        }
+        if(zugang && t.id === zugang.id) {
+          return { ...t, totalAmount: safeAmount, splits: (t.splits||[]).map(s=>({...s, amount: safeAmount})) };
+        }
+        return t;
+      });
+    });
+    setAutoSparInfo({ monthLabel: `${MONTHS_S[m]} ${y}`, oldAmount, newAmount: safeAmount });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liquidityWarnings, txs]);
+  useEffect(() => {
+    if(!autoSparInfo) return;
+    const t = setTimeout(() => setAutoSparInfo(null), 8000);
+    return () => clearTimeout(t);
+  }, [autoSparInfo]);
+
   // ── Überfällige Vormerkungen: gesetztes Buchungsdatum bereits vergangen, aber
   // die tatsächliche (Bank-)Buchung ist bisher nicht eingetroffen — zählt im
   // Saldo schon mit, kann aber real abweichen. Eigener Banner analog zur
@@ -3132,6 +3189,26 @@ Abbrechen = ${remoteName}-Stand laden`
 
       {/* Global edit popup */}
       <ErrorBoundary name="EditPopup"><EditPopup/></ErrorBoundary>
+
+      {/* ── Info: Sparrate automatisch angepasst — ruhiger Hinweis statt einer
+          wiederkehrenden Warnung, verschwindet nach 8s von selbst oder per Tap. */}
+      {autoSparInfo && (
+        <div onClick={()=>setAutoSparInfo(null)}
+          style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",
+            background:T.blue,color:T.on_accent||"#fff",padding:"7px 12px",flexShrink:0,
+            boxShadow:"0 1px 6px rgba(0,0,0,0.3)"}}>
+          {Li("info",16,T.on_accent||"#fff")}
+          <div style={{flex:1,minWidth:0,lineHeight:1.25}}>
+            <div style={{fontSize:12.5,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+              Sparrate {autoSparInfo.monthLabel} automatisch angepasst
+            </div>
+            <div style={{fontSize:11,opacity:0.92,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+              {fmt(autoSparInfo.oldAmount)} € → {fmt(autoSparInfo.newAmount)} € · Puffer bleibt gewahrt
+            </div>
+          </div>
+          {Li("x",16,T.on_accent||"#fff")}
+        </div>
+      )}
 
       {/* ── Schieflage-Warnung: schlanker, antippbarer Balken ganz oben (alle Screens) ──
           Erscheint, solange die Vorschau in den nächsten 12 Monaten kippt — NICHT

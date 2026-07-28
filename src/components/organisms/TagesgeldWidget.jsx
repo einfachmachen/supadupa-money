@@ -7,10 +7,9 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
-import { restMitte, restEnde, phaseStillReachable } from "../../utils/saldo.js";
-import { isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
 import { planLegDecisions } from "../../utils/sparPlanSeries.js";
 import { getSparWatermark, noteSparWatermark } from "../../utils/sparWatermarks.js";
+import { computeMinTagessaldo, computeSafeZusaetzlich } from "../../utils/sparBerechnen.js";
 
 function TagesgeldWidget({year, month, initialCollapsed=true}) {
   const {  getKumulierterSaldo, txs, setTxs, cats, accounts, setAccounts, getAcc, budgets, getCat, getBudgetForMonth, selAcc, getProgEndeAccGlobal, resetProgEndeCache, sparOpenRequest } = useContext(AppCtx);
@@ -139,7 +138,11 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
 
   if(!isCurr) return null;
 
-  // Tagesgenauen Minimalsaldo eines Monats berechnen
+  // Tagesgenauen Minimalsaldo eines Monats berechnen — Kernrechnung ausgelagert
+  // nach utils/sparBerechnen.js (computeMinTagessaldo), damit dieselbe Logik
+  // auch außerhalb des Widgets nutzbar ist (siehe App.jsx: automatische
+  // Anpassung der laufenden Monatsrate bei Pufferunterschreitung). Hier nur
+  // noch Cache + Standardkonto-Fallback (selAcc) obendrauf.
   // excludeSparDesc: wenn gesetzt, werden Sparplan-Buchungen mit diesem desc ignoriert
   // (für Neuberechnung eines bestehenden Sparplans)
   const getMinTagessaldo = (y, m, virtualSpar={}, accId, excludeSparDesc=null) => {
@@ -147,117 +150,8 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     const effSelAcc = accId !== undefined ? accId : selAcc;
     const key = (Object.keys(virtualSpar).length===0 && !excludeSparDesc) ? `${y}-${m}-${effSelAcc||"all"}` : null;
     if(key && key in minTagCache.current) return minTagCache.current[key];
-    const prevY=m===0?y-1:y, prevM=m===0?11:m-1;
-    // Konsistent mit saldoAt/Hero: vergangener Vormonat → echter Endsaldo
-    // via getKumulierterSaldo (ohne Vormerkungen). Sonst würden offene
-    // Vormerkungen aus dem Vormonat den Basissaldo verschieben.
-    const _tbReal = new Date();
-    const _prevIsPast = prevY < _tbReal.getFullYear()
-      || (prevY === _tbReal.getFullYear() && prevM < _tbReal.getMonth());
-    // Basis = Vormonats-Endsaldo. Vergangener Vormonat → echter Endstand
-    // (getKumulierterSaldo, ohne Vormerkungen); aktueller/künftiger Vormonat →
-    // zentrale Prognose getProgEndeAccGlobal (= saldoEnde). Global (kein Konto)
-    // spiegelt denselben Aufbau mit accId=undefined (Summe aller Konten).
-    // Früher: lokale getProgEndeW-Reimplementierung — Äquivalenz/Divergenzen
-    // belegt in tests/prognose_equivalence.test.js.
-    const baseSaldo = effSelAcc
-      ? (_prevIsPast
-          ? (getKumulierterSaldo(prevY, prevM, effSelAcc) ?? getProgEndeAccGlobal(prevY, prevM, effSelAcc))
-          : (getProgEndeAccGlobal(prevY, prevM, effSelAcc) ?? getKumulierterSaldo(prevY, prevM, effSelAcc)))
-      : (_prevIsPast
-          ? getKumulierterSaldo(prevY, prevM)
-          : getProgEndeAccGlobal(prevY, prevM));
-    if(baseSaldo===null||baseSaldo===undefined) return {min:null, saldoEnde:null};
-    // Wenn wir einen alten Plan ignorieren, müssen wir baseSaldo um die alten Sparraten der Vormonate korrigieren
-    let baseSaldoEff = baseSaldo;
-    if(excludeSparDesc) {
-      // Alle alten Sparplan-Abgänge VOR diesem Monat zurückrechnen
-      const oldSparBefore = txs.filter(t=>{
-        if(!t.pending||t._linkedTo) return false;
-        if(t.desc!==excludeSparDesc) return false;
-        const isAcc = !effSelAcc || t.accountId===effSelAcc || (!t.accountId && effSelAcc==="acc-giro");
-        if(!isAcc) return false;
-        const d=new Date(t.date);
-        const idx = d.getFullYear()*12 + d.getMonth();
-        const targetIdx = y*12 + m;
-        return idx < targetIdx;
-      });
-      // Sparplan-Abgänge sind negativ — beim Ignorieren wird der Saldo höher
-      const correction = oldSparBefore.reduce((s,t)=>s+Math.abs(t.totalAmount),0);
-      baseSaldoEff = baseSaldo + correction;
-    }
-    const lastDay = new Date(y,m+1,0).getDate();
-    const pad2 = n=>String(n).padStart(2,"0");
-    const pfx = `${y}-${pad2(m+1)}-`;
-    const isAccTx = t => !effSelAcc || t.accountId===effSelAcc || (!t.accountId && effSelAcc==="acc-giro");
-    // Konsistent mit ist()/saldoAt: _linkedTo Sparen-Transfers BLEIBEN drin,
-    // CSV-Duplikate raus. _budgetSubId wird in den späteren Filtern abgezogen.
-    const _txsById = buildTxIdMap(txs || []);
-    const mTxs = txs.filter(t=>{
-      if(isDuplCounterpart(t, _txsById)) return false;
-      // Alte Sparplan-Buchungen ignorieren wenn excludeSparDesc gesetzt
-      if(excludeSparDesc && t.pending && t.desc===excludeSparDesc) return false;
-      const d=new Date(t.date);
-      return d.getFullYear()===y && d.getMonth()===m && isAccTx(t);
-    });
-    const signed = t => {
-      const ct=t._csvType||(()=>{const s=(t.splits||[]).filter(sp=>sp.catId);if(s.length>0){const c=getCat(s[0].catId);if(c)return(c.type==="income"||c.type==="tagesgeld")?"income":"expense";}return t.totalAmount>=0?"income":"expense";})();
-      return ct==="income"?+Math.abs(t.totalAmount):-Math.abs(t.totalAmount);
-    };
-    // Offene Budgets "nach Budget" konsistent mit saldo.js: RestMitte (Tag
-    // 1..14) bzw. RestEnde (Tag 15..letzter). Budgets liegen nur auf Giro.
-    const _saldoCtx = { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth };
-    const istGiroView = !effSelAcc || effSelAcc === "acc-giro";
-    // Reservierung nur solange die Phase noch verbrauchbar ist.
-    const obMitte = (istGiroView && phaseStillReachable(y, m, 14, _saldoCtx))      ? restMitte(y, m, _saldoCtx) : 0;
-    const obEnde  = (istGiroView && phaseStillReachable(y, m, lastDay, _saldoCtx)) ? restEnde(y, m, _saldoCtx)  : 0;
-    // Reservierung gilt durchgehend für ihren Geltungszeitraum (nicht nur am
-    // 14./letzten Tag), nur für heutige/zukünftige Tage. So bleibt der für den
-    // Sparplan geprüfte Tiefst-Saldo der "Tagessaldo nach Budget" — der Sweep
-    // schöpft also nie Geld ab, das noch fürs Budget reserviert ist.
-    const isFutureDay = (d) => {
-      const tb=_tbReal, tY=tb.getFullYear(), tM=tb.getMonth(), tD=tb.getDate();
-      if(y > tY) return true;
-      if(y < tY) return false;
-      if(m > tM) return true;
-      if(m < tM) return false;
-      return d >= tD;
-    };
-    const saldoAt = (dayStr) => {
-      const dayNum=parseInt(dayStr.split("-")[2]);
-      const real=mTxs.filter(t=>!t.pending&&!t._budgetSubId&&t.date<=dayStr).reduce((s,t)=>s+signed(t),0);
-      const pend=mTxs.filter(t=>t.pending&&!t._budgetSubId&&t.date<=dayStr).reduce((s,t)=>s+signed(t),0);
-      // Virtuelle Sparraten aus aktuellem Berechnungslauf einbeziehen
-      const virt=Object.entries(virtualSpar).filter(([d])=>d<=dayStr).reduce((s,[,v])=>s+v,0);
-      const bd = !isFutureDay(dayNum) ? 0
-               : (dayNum >= 15 ? -obEnde : -obMitte);
-      return baseSaldoEff+real+pend+virt+bd;
-    };
-    // Alle Tage mit Buchungen prüfen + synthetische Budget-Checkpoints am 14. und Monatsletzt
-    // Im AKTUELLEN Monat dürfen vergangene Tage (vor heute) NICHT in die Tiefst-Saldo-Suche
-    // einfließen — sie sind bereits geschehen und durch den heutigen Ist-Saldo abgegolten.
-    // Sonst zieht z.B. ein negativer Saldo am Monatsanfang (vor Gehaltseingang) das Minimum
-    // dauerhaft nach unten, obwohl das Gehalt längst da ist und der Saldo „ab heute" deutlich
-    // höher liegt.
-    const tbReal = _tbReal;
-    const isCurrentMonth = (y === tbReal.getFullYear() && m === tbReal.getMonth());
-    const firstRelevantDay = isCurrentMonth ? tbReal.getDate() : 1;
-    const firstRelevantStr = `${pfx}${pad2(firstRelevantDay)}`;
-    const daysWithTxs=new Set();
-    mTxs.forEach(t=>{ if(t.date>=firstRelevantStr) daysWithTxs.add(t.date); });
-    // Checkpoints an den Phasengrenzen: 14. (Ende Mitte-Phase), 15. (Start
-    // Ende-Reservierung) und Monatsletzter — damit der Tiefst-Saldo den Sprung
-    // der Reservierung am 14.→15. erfasst.
-    [`${pfx}14`,`${pfx}15`,`${pfx}${pad2(lastDay)}`].forEach(d=>{ if(d>=firstRelevantStr) daysWithTxs.add(d); });
-    daysWithTxs.add(firstRelevantStr); // garantierter Checkpoint „heute" bzw. Monatsanfang
-    const allDays=[...daysWithTxs].sort();
-    let minVal=null;
-    allDays.forEach(ds=>{
-      const s=saldoAt(ds);
-      if(minVal===null||s<minVal) minVal=s;
-    });
-    const saldoEnde=saldoAt(`${pfx}${pad2(lastDay)}`);
-    const result2 = {min:minVal, saldoEnde};
+    const result2 = computeMinTagessaldo(y, m, virtualSpar, effSelAcc, excludeSparDesc,
+      { txs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth, getProgEndeAccGlobal });
     if(key) minTagCache.current[key] = result2;
     return result2;
   };
