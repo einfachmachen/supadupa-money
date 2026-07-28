@@ -1,4 +1,4 @@
-// build: 1785260508130
+// build: 1785262162693
 // Service Worker — "network-first" für Seiten-Navigationen, damit IMMER die
 // frische index.html geladen wird (verhindert den alten Ladebildschirm aus dem
 // Cache). Offline gibt es einen Fallback auf die zuletzt gesehene Version.
