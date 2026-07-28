@@ -143,7 +143,7 @@ const MIN_PER_ROW = 3;
 // Anteil INNERHALB eines Jahres (nur einen einzigen Stichtags-Betrag) —
 // dort markiert stattdessen "isProjected" das GANZE Jahr als Prognose
 // (aktuelles + zukünftige Jahre), analog hell dargestellt.
-function YearBarRows({ perYear, get, getPending, isProjected, color, onSelectYear }) {
+function YearBarRows({ perYear, get, getPending, isProjected, color, aktuellFill, onSelectYear }) {
   const containerRef = useRef(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -232,11 +232,11 @@ function YearBarRows({ perYear, get, getPending, isProjected, color, onSelectYea
                 <g key={r.year} onClick={() => onSelectYear(r.year)} style={{ cursor: "pointer" }}>
                   <rect x={x} y={0} width={bw} height={rowH} fill="transparent" />
                   {projected ? (
-                    <rect x={x + bw * 0.22} y={yTop} width={barVisW} height={Math.max(1, yBot - yTop)} rx={2} fill={darken(color, 0.12)} />
+                    <rect x={x + bw * 0.22} y={yTop} width={barVisW} height={Math.max(1, yBot - yTop)} rx={2} fill={aktuellFill} />
                   ) : showSplit ? (
                     <>
                       <rect x={x + bw * 0.22} y={ySplit} width={barVisW} height={Math.max(1, yBot - ySplit)} rx={2} fill={color} opacity={0.85} />
-                      <rect x={x + bw * 0.22} y={yTop} width={barVisW} height={Math.max(1, ySplit - yTop)} rx={2} fill={darken(color, 0.12)} />
+                      <rect x={x + bw * 0.22} y={yTop} width={barVisW} height={Math.max(1, ySplit - yTop)} rx={2} fill={aktuellFill} />
                     </>
                   ) : (
                     <rect x={x + bw * 0.22} y={yTop} width={barVisW} height={Math.max(1, yBot - yTop)} rx={2} fill={color} opacity={0.85} />
@@ -262,7 +262,7 @@ function YearBarRows({ perYear, get, getPending, isProjected, color, onSelectYea
 // Stapel-Ansicht, da nur eine schmale Zeile statt eines ganzen Balkens
 // gebraucht wird — dafür scrollbar statt auf einen Blick. Vorgemerkter
 // Anteil auch hier heller, an den gebuchten Anteil angehängt.
-function YearBarListHorizontal({ perYear, get, getPending, color, onSelectYear }) {
+function YearBarListHorizontal({ perYear, get, getPending, color, aktuellFill, onSelectYear }) {
   const vals = perYear.map(get);
   const maxPos = Math.max(0, ...vals);
   const maxNeg = Math.max(0, ...vals.map(v => Math.max(0, -v)));
@@ -293,7 +293,7 @@ function YearBarListHorizontal({ perYear, get, getPending, color, onSelectYear }
                   <div style={{ position: "absolute", top: 0, bottom: 0, borderRadius: 2, background: color, opacity: 0.85,
                     left: v >= 0 ? `${zeroPct}%` : `${Math.max(0, zeroPct - pctActual)}%`,
                     width: `${pctActual}%` }} />
-                  <div style={{ position: "absolute", top: 0, bottom: 0, borderRadius: 2, background: darken(color, 0.12),
+                  <div style={{ position: "absolute", top: 0, bottom: 0, borderRadius: 2, background: aktuellFill,
                     left: v >= 0 ? `${zeroPct + pctActual}%` : `${Math.max(0, zeroPct - pct)}%`,
                     width: `${Math.max(0, pct - pctActual)}%` }} />
                 </>
@@ -426,10 +426,14 @@ function TrendOverviewScreen() {
                   ? <YearBarRows perYear={perYear} get={r => r[activeMetric.key]}
                       getPending={activeMetric.split ? (r => r[`${activeMetric.key}Pending`]) : null}
                       isProjected={activeMetric.key === "saldo" ? (r => r.year >= new Date().getFullYear()) : null}
-                      color={activeMetric.color(null, T)} onSelectYear={openYear} />
+                      color={activeMetric.color(null, T)}
+                      aktuellFill={activeMetric.key === "expense" ? T.neg_aktuell : darken(activeMetric.color(null, T), 0.12)}
+                      onSelectYear={openYear} />
                   : <YearBarListHorizontal perYear={perYear} get={r => r[activeMetric.key]}
                       getPending={activeMetric.split ? (r => r[`${activeMetric.key}Pending`]) : null}
-                      color={activeMetric.color(null, T)} onSelectYear={openYear} />}
+                      color={activeMetric.color(null, T)}
+                      aktuellFill={activeMetric.key === "expense" ? T.neg_aktuell : darken(activeMetric.color(null, T), 0.12)}
+                      onSelectYear={openYear} />}
               </div>
               <div style={{ color: T.txt2, fontSize: 11, marginTop: 10, textAlign: "center" }}>
                 {layout === "vertical" ? "Balken" : "Zeile"} antippen → Money Mood für dieses Jahr
