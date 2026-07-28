@@ -1925,16 +1925,24 @@ Abbrechen = ${remoteName}-Stand laden`
   // ── Automatische Sparplan-Anpassung: hält die Sparrate des LAUFENDEN
   // Monats laufend auf dem jeweils sicheren Höchstwert — sowohl REDUZIEREND
   // (unerwartete Mehrausgaben, z.B. Urlaub, drücken den Tagessaldo unter den
-  // Puffer) als auch ERHÖHEND (z.B. nach Gehaltseingang ist wieder mehr
-  // Spielraum da). Beide Richtungen nutzen dieselbe Berechnung wie der
-  // "Neuberechnen"-Button für Monat 1 (computeMinTagessaldo, siehe
-  // utils/sparBerechnen.js — von dort auch von TagesgeldWidget genutzt) —
-  // nur der Rest der (oft viele Monate umfassenden) Serie bleibt unangetastet,
-  // die volle Neuberechnung bleibt eine bewusste, manuelle Aktion.
-  // Wichtig: die Buchung wird nie gelöscht, auch nicht bei Sparrate 0 — sonst
-  // gäbe es später nichts mehr, das sich automatisch wieder erhöhen ließe.
-  const [autoSparInfo, setAutoSparInfo] = useState(null);
-  useEffect(() => {
+  // Puffer) als auch ERHÖHEND (z.B. nach Gehaltseingang, oder wenn ein
+  // Budget wegfällt und dadurch weniger vom Tagessaldo reserviert wird).
+  // Beide Richtungen nutzen dieselbe Berechnung wie der "Neuberechnen"-Button
+  // für Monat 1 (computeMinTagessaldo, siehe utils/sparBerechnen.js — von
+  // dort auch von TagesgeldWidget genutzt) — nur der Rest der (oft viele
+  // Monate umfassenden) Serie bleibt unangetastet, die volle Neuberechnung
+  // bleibt eine bewusste, manuelle Aktion.
+  //
+  // Bewusst als useMemo mit DENSELBEN Abhängigkeiten wie liquidityWarnings
+  // (statt einer manuell gepflegten Liste "was sich geändert haben könnte",
+  // z.B. nur txs oder nur budgets) — der Tagessaldo hängt von txs, cats,
+  // accounts, Budgets UND startBalances ab; jede Eingrenzung darauf, WAS
+  // sich geändert hat, wäre nur so vollständig wie unsere Liste bekannter
+  // Ursachen. Stattdessen: bei jeder Änderung, die den prognostizierten
+  // Tagessaldo überhaupt beeinflussen kann, wird der sichere Höchstwert neu
+  // ermittelt — der nachgelagerte Effekt reagiert nur noch auf DESSEN
+  // Ergebnis, nicht auf die Rohdaten.
+  const currentMonthSparAdjust = useMemo(() => {
     const today = new Date();
     const y = today.getFullYear(), m = today.getMonth();
     // Nur bei GENAU EINER eindeutigen Sparplan-Abgang-Buchung für diesen Monat
@@ -1945,28 +1953,36 @@ Abbrechen = ${remoteName}-Stand laden`
     const candidates = txs.filter(t => t.pending && !t._linkedTo && t._seriesId
       && t.accountId === "acc-giro" && (t.desc || "").startsWith("Sparen·")
       && (t.date || "").startsWith(monthPfx));
-    if(candidates.length !== 1) return;
+    if(candidates.length !== 1) return null;
     const abgang = candidates[0];
     const oldAmount = round2(Math.abs(abgang.totalAmount));
     const { min: minTag } = computeMinTagessaldo(y, m, {}, "acc-giro", abgang.desc,
       { txs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth, getProgEndeAccGlobal }, today);
-    if(minTag === null) return;
+    if(minTag === null) return null;
     const safeAmount = Math.max(0, Math.floor(minTag - pn(_giroPuffer)));
-    if(safeAmount === oldAmount) return; // schon exakt der sichere Wert — nichts zu tun
+    if(safeAmount === oldAmount) return null; // schon exakt der sichere Wert
     const zugang = txs.find(t => t._linkedTo === abgang.id && t.pending);
+    return { abgangId: abgang.id, zugangId: zugang?.id || null, oldAmount, safeAmount,
+      monthLabel: `${MONTHS_S[m]} ${y}` };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [txs, cats, accounts, _giroPuffer, budgets, startBalances]);
+
+  const [autoSparInfo, setAutoSparInfo] = useState(null);
+  useEffect(() => {
+    if(!currentMonthSparAdjust) return;
+    const { abgangId, zugangId, oldAmount, safeAmount, monthLabel } = currentMonthSparAdjust;
     setTxs(prev => prev.map(t => {
-      if(t.id === abgang.id) {
+      if(t.id === abgangId) {
         return { ...t, totalAmount: -safeAmount, splits: (t.splits||[]).map(s=>({...s, amount: -safeAmount})) };
       }
-      if(zugang && t.id === zugang.id) {
+      if(zugangId && t.id === zugangId) {
         return { ...t, totalAmount: safeAmount, splits: (t.splits||[]).map(s=>({...s, amount: safeAmount})) };
       }
       return t;
     }));
-    setAutoSparInfo({ monthLabel: `${MONTHS_S[m]} ${y}`, oldAmount, newAmount: safeAmount,
+    setAutoSparInfo({ monthLabel, oldAmount, newAmount: safeAmount,
       direction: safeAmount > oldAmount ? "up" : "down" });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [txs]);
+  }, [currentMonthSparAdjust]);
   useEffect(() => {
     if(!autoSparInfo) return;
     const t = setTimeout(() => setAutoSparInfo(null), 8000);
