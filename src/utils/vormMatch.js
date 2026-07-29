@@ -7,9 +7,10 @@
 // werden. Das hier übernimmt die eindeutigen Fälle automatisch, konservativ
 // nach demselben Prinzip wie das bestehende PayPal-Matching (paypalMatch.js):
 // nur EINDEUTIGE Treffer (exakter Betrag, gleiches Konto, enges Datums-
-// fenster, jeweils einziger Kandidat auf beiden Seiten) werden automatisch
-// verknüpft. Mehrdeutige Fälle bleiben bewusst dem manuellen Matching
-// überlassen, um Fehlverknüpfungen bei den Finanzdaten zu vermeiden.
+// fenster — die echte Buchung darf nur am Datum der Vormerkung oder DANACH
+// liegen, nie davor — jeweils einziger Kandidat auf beiden Seiten) werden
+// automatisch verknüpft. Mehrdeutige Fälle bleiben bewusst dem manuellen
+// Matching überlassen, um Fehlverknüpfungen bei den Finanzdaten zu vermeiden.
 
 import { uid } from "./format.js";
 
@@ -116,8 +117,11 @@ export function autoMatchVormerkungen(txs) {
       if (acctOf(p) !== acctOf(r)) return;
       if (cents(p) !== cents(r)) return;
       if (isIncomeOf(p) !== isIncomeOf(r)) return;
-      const diffDays = Math.abs((new Date(r.date).getTime() - new Date(p.date).getTime()) / DAY);
-      if (diffDays > MAX_DAYS) return;
+      // Die echte Buchung bestätigt die Vormerkung — sie kann also nur an
+      // deren Datum oder DANACH eintreffen, nie davor (eine ältere Buchung
+      // mit zufällig demselben Betrag ist etwas anderes, kein Treffer).
+      const diffDays = (new Date(r.date).getTime() - new Date(p.date).getTime()) / DAY;
+      if (diffDays < 0 || diffDays > MAX_DAYS) return;
       pairs.push({ pendId: p.id, realId: r.id, diffDays });
     });
   });

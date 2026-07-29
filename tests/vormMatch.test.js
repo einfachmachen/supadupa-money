@@ -53,6 +53,19 @@ describe("autoMatchVormerkungen", () => {
     expect(linkedCount).toBe(0);
   });
 
+  // Regression (echter Nutzer-Bericht): eine heute erstellte/übernommene
+  // Vormerkung wurde automatisch mit einer 7 Tage ÄLTEREN echten Buchung
+  // verknüpft, obwohl die echte Buchung eine Vormerkung nur bestätigen kann,
+  // wenn sie an deren Datum oder danach eintrifft — eine bereits vergangene
+  // Buchung mit zufällig demselben Betrag ist etwas anderes, kein Treffer.
+  it("verknüpft NICHT mit einer bereits ÄLTEREN echten Buchung, selbst innerhalb des Datumsfensters", () => {
+    const { linkedCount } = autoMatchVormerkungen([
+      pend({ date:"2026-07-08" }),
+      real({ date:"2026-07-01" }), // 7 Tage vor der Vormerkung
+    ]);
+    expect(linkedCount).toBe(0);
+  });
+
   it("lässt Budget-Platzhalter (_budgetSubId) unangetastet", () => {
     const { linkedCount } = autoMatchVormerkungen([pend({ _budgetSubId:"budget-1" }), real()]);
     expect(linkedCount).toBe(0);
