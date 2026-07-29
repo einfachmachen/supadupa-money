@@ -11,6 +11,7 @@ import { PendingList } from "../organisms/PendingList.jsx";
 import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
 import { BankFetchPanel } from "../organisms/BankFetchPanel.jsx";
 import { TagesgeldWidget } from "../organisms/TagesgeldWidget.jsx";
+import { AutoMatchReview } from "../organisms/AutoMatchReview.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { amtStyle, readableOn, isLightColor } from "../../theme/amtPill.js";
@@ -138,7 +139,10 @@ function DashboardScreenV2() {
     const [bankFetch, setBankFetch] = useState(null);
     // Kurzer Hinweis, welche Vormerkungen nach einem Bank-Abruf automatisch
     // zugeordnet wurden — zum schnellen Gegenchecken (siehe autoMatchVormerkungen).
+    // Bleibt stehen, bis er manuell geschlossen wird (kein Auto-Timeout mehr) —
+    // sonst ist er weg, bevor man ihn zum Prüfen antippen konnte.
     const [matchToast, setMatchToast] = useState(null);
+    const [showMatchReview, setShowMatchReview] = useState(false);
     // Proaktiver Hinweis auf nicht zugeordnete Bank-Konten — rein lokaler
     // Check (kein Bank-API-Aufruf), damit das SOFORT beim Öffnen des
     // Dashboards auffällt und nicht erst beim nächsten aktiven Abruf.
@@ -218,10 +222,7 @@ function DashboardScreenV2() {
         // Offene Vormerkungen automatisch mit neu übernommenen echten
         // Buchungen verknüpfen, wenn eindeutig (siehe CsvImportScreen).
         const { txs: next, matched } = autoMatchVormerkungen(sorted);
-        if (matched.length) {
-          setMatchToast(matched);
-          setTimeout(() => setMatchToast(null), 8000);
-        }
+        if (matched.length) setMatchToast(matched);
         return next;
       });
       setBankFetch(null);
@@ -1029,29 +1030,49 @@ function DashboardScreenV2() {
         {/* Kurzer Hinweis nach dem Übernehmen: welche offenen Vormerkungen
             wurden automatisch mit den neuen Buchungen verknüpft — zum
             Gegenchecken, da das Matching rein auf Konto+Betrag+Datum beruht
-            (siehe autoMatchVormerkungen), nicht auf dem Verwendungszweck. */}
-        {matchToast && (
-          <div style={{margin:"8px 16px",padding:"10px 14px",borderRadius:11,
-            background:"rgba(34,197,94,0.10)",border:`1px solid ${T.pos}44`,
-            display:"flex",gap:10,alignItems:"flex-start"}}>
-            {Li("link",16,T.pos)}
-            <div style={{flex:1}}>
-              <div style={{color:T.pos,fontSize:13,fontWeight:700,marginBottom:2}}>
-                {matchToast.length===1 ? "1 Vormerkung automatisch zugeordnet" : `${matchToast.length} Vormerkungen automatisch zugeordnet`}
+            (siehe autoMatchVormerkungen), nicht auf dem Verwendungszweck.
+            Antippen öffnet die Prüfliste (AutoMatchReview) mit der
+            Möglichkeit, einzelne Treffer wieder zu lösen. activeMatches
+            filtert bereits (dort) gelöste Verknüpfungen laufend heraus —
+            sind alle gelöst, verschwindet der Hinweis von selbst. */}
+        {(()=>{
+          const activeMatches = matchToast ? matchToast.filter(m => {
+            const pend = txs.find(t=>t.id===m.pendId);
+            const real = txs.find(t=>t.id===m.realId);
+            return pend && real && pend._linkedTo === real.id;
+          }) : [];
+          if(!activeMatches.length) return null;
+          return (<>
+            <div onClick={()=>setShowMatchReview(true)}
+              style={{margin:"8px 16px",padding:"10px 14px",borderRadius:11,cursor:"pointer",
+              background:"rgba(34,197,94,0.10)",border:`1px solid ${T.pos}44`,
+              display:"flex",gap:10,alignItems:"flex-start"}}>
+              {Li("link",16,T.pos)}
+              <div style={{flex:1}}>
+                <div style={{color:T.pos,fontSize:13,fontWeight:700,marginBottom:2}}>
+                  {activeMatches.length===1 ? "1 Vormerkung automatisch zugeordnet" : `${activeMatches.length} Vormerkungen automatisch zugeordnet`}
+                </div>
+                <div style={{color:T.txt2,fontSize:12,lineHeight:1.6}}>
+                  {activeMatches.map(m => {
+                    const [y,mo,d] = (m.date||"").split("-");
+                    return `${m.desc||"(ohne Bezeichnung)"} · ${fmt(Math.abs(m.totalAmount||0))} € · ${d}.${mo}.${y}`;
+                  }).join(" — ")}
+                </div>
+                <div style={{color:T.pos,fontSize:10,marginTop:4,fontWeight:700}}>
+                  Antippen zum Prüfen/Lösen
+                </div>
               </div>
-              <div style={{color:T.txt2,fontSize:12,lineHeight:1.6}}>
-                {matchToast.map(m => {
-                  const [y,mo,d] = (m.date||"").split("-");
-                  return `${m.desc||"(ohne Bezeichnung)"} · ${fmt(Math.abs(m.totalAmount||0))} € · ${d}.${mo}.${y}`;
-                }).join(" — ")}
-              </div>
+              <button onClick={(e)=>{e.stopPropagation();setMatchToast(null);}}
+                style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",padding:2}}>
+                {Li("x",14,T.txt2)}
+              </button>
             </div>
-            <button onClick={()=>setMatchToast(null)}
-              style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",padding:2}}>
-              {Li("x",14,T.txt2)}
-            </button>
-          </div>
-        )}
+            {showMatchReview && (
+              <AutoMatchReview matches={activeMatches} txs={txs} setTxs={setTxs}
+                onClose={()=>setShowMatchReview(false)}/>
+            )}
+          </>);
+        })()}
 
         {/* Schalter: Umbuchungen (interne Transfers) + Erstattungen aus den
             Ein-/Ausgaben ausblenden — zeigt die tatsächlichen Flüsse. */}

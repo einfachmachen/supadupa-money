@@ -50,11 +50,39 @@ export function linkPendingToReal(txs, pendId, realId) {
     if (tx.id === realId) return {
       ...tx,
       splits: newSplits,
+      // Ursprüngliche Splits sichern (falls noch nicht durch eine frühere
+      // Verknüpfung gesichert) — damit sich eine spätere Verknüpfung wieder
+      // sauber lösen lässt (siehe unlinkPendingFromReal), statt die von der
+      // Vormerkung übernommene Kategorie für immer stehen zu lassen.
+      _splitsBeforeLink: tx._splitsBeforeLink || tx.splits || [],
       linkedIds: (tx.linkedIds || []).includes(pendId) ? (tx.linkedIds || []) : [...(tx.linkedIds || []), pendId],
       note: combinedNote,
       _amtMismatch: amtMismatch ? { pendId, pendAmt: pendTotal, realAmt: real.totalAmount } : undefined,
     };
     if (tx.id === pendId) return { ...tx, pending: false, _linkedTo: realId, accountId: real.accountId };
+    return tx;
+  });
+}
+
+// Löst eine zuvor über linkPendingToReal (manuell oder automatisch)
+// hergestellte Verknüpfung wieder — die Vormerkung wird wieder offen
+// (pending), die echte Buchung verliert die Verknüpfung und bekommt bei der
+// letzten gelösten Verknüpfung ihre ursprünglichen Splits zurück (siehe
+// _splitsBeforeLink oben). Identische Logik wie das bestehende "Alle
+// entknüpfen" in EditPopup.jsx, hier für den Review einzelner automatischer
+// Treffer (siehe AutoMatchReview.jsx).
+export function unlinkPendingFromReal(txs, pendId, realId) {
+  return txs.map(tx => {
+    if (tx.id === realId) {
+      const newLinkedIds = (tx.linkedIds || []).filter(id => id !== pendId);
+      const isLastUnlink = newLinkedIds.length === 0;
+      if (isLastUnlink && tx._splitsBeforeLink) {
+        const { _splitsBeforeLink, ...rest } = tx;
+        return { ...rest, linkedIds: newLinkedIds, splits: _splitsBeforeLink };
+      }
+      return { ...tx, linkedIds: newLinkedIds };
+    }
+    if (tx.id === pendId) return { ...tx, pending: true, _linkedTo: null };
     return tx;
   });
 }

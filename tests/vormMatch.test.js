@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { autoMatchVormerkungen, linkPendingToReal, linkPendingToPending, isBankPending } from "../src/utils/vormMatch.js";
+import { autoMatchVormerkungen, linkPendingToReal, linkPendingToPending, isBankPending, unlinkPendingFromReal } from "../src/utils/vormMatch.js";
 import { getVormLinkCandidates, isVormAmountMatch, VormVerknuepfenPanel } from "../src/components/organisms/VormVerknuepfenPanel.jsx";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -76,6 +76,45 @@ describe("autoMatchVormerkungen", () => {
     const r = txs.find(t=>t.id==="real-1");
     expect(r._amtMismatch).toBeTruthy();
     expect(r._amtMismatch.realAmt).toBe(3.10);
+  });
+
+  it("linkPendingToReal sichert die ursprünglichen Splits der echten Buchung (_splitsBeforeLink)", () => {
+    const originalSplits = [{ id:"orig1", catId:"cat-sonstiges", subId:"", amount:2.98 }];
+    const txs = linkPendingToReal([pend(), real({ splits: originalSplits })], "pend-1", "real-1");
+    const r = txs.find(t=>t.id==="real-1");
+    expect(r._splitsBeforeLink).toEqual(originalSplits);
+    expect(r.splits[0].catId).toBe("cat-essen"); // übernommen von der Vormerkung
+  });
+});
+
+// Regression (Nutzer-Wunsch): eine automatische Verknüpfung soll sich im
+// Nachhinein wieder prüfen und bei Bedarf lösen lassen (AutoMatchReview),
+// statt dafür erst die betroffene echte Buchung manuell suchen und öffnen zu
+// müssen. unlinkPendingFromReal macht dieselbe Verknüpfung rückgängig, die
+// linkPendingToReal (manuell wie automatisch) hergestellt hat.
+describe("unlinkPendingFromReal", () => {
+  it("macht eine Verknüpfung rückgängig: Vormerkung wieder offen, echte Buchung bekommt Original-Splits zurück", () => {
+    const originalSplits = [{ id:"orig1", catId:"cat-sonstiges", subId:"", amount:2.98 }];
+    const linked = linkPendingToReal([pend(), real({ splits: originalSplits })], "pend-1", "real-1");
+    const txs = unlinkPendingFromReal(linked, "pend-1", "real-1");
+    const p = txs.find(t=>t.id==="pend-1");
+    const r = txs.find(t=>t.id==="real-1");
+    expect(p.pending).toBe(true);
+    expect(p._linkedTo).toBeFalsy();
+    expect(r.linkedIds||[]).not.toContain("pend-1");
+    expect(r.splits).toEqual(originalSplits); // ursprüngliche Kategorie wiederhergestellt
+    expect(r._splitsBeforeLink).toBeUndefined();
+  });
+
+  it("entfernt nur die betroffene Vormerkung aus linkedIds, wenn mehrere verknüpft sind", () => {
+    const otherPend = pend({ id:"pend-2" });
+    let txs = linkPendingToReal([pend(), otherPend, real()], "pend-1", "real-1");
+    txs = linkPendingToReal(txs, "pend-2", "real-1");
+    txs = unlinkPendingFromReal(txs, "pend-1", "real-1");
+    const r = txs.find(t=>t.id==="real-1");
+    expect(r.linkedIds).toContain("pend-2");
+    expect(r.linkedIds).not.toContain("pend-1");
+    expect(r._splitsBeforeLink).toBeTruthy(); // noch nicht die letzte Verknüpfung — nicht restauriert
   });
 });
 
