@@ -76,8 +76,9 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
         const cat=getCat((tx.splits||[])[0]?.catId);
         const day=dayOf(tx.date);
         const isIncome = txType(tx)==="income"||(tx._csvType==="income");
-        // Vormerkungs-Farbschema: Einnahmen = Hellgrün (cell_inc), Ausgaben = Amber-Gelb (cell_exp)
-        const col = isIncome ? T.cell_inc : T.cell_exp;
+        // Vormerkungs-Farbschema: dieselbe Logik wie die VM-Zeile im Hero
+        // (SaldoHeroV2) — VM ist immer blass, unabhängig vom Fälligkeitsdatum.
+        const col = isIncome ? T.pos_vm : T.neg_vm;
         const isS = (tx.splits||[]).length>1;
         const isExpanded = expandedId===tx.id;
         // Budget-Platzhalter: nur noch das offene Restbudget zeigen.
@@ -96,7 +97,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
               background:T.surf3,borderRadius:6,marginBottom:4}}>
               <div onClick={()=>openEdit(tx)}
                 style={{display:"flex",alignItems:"center",gap:8,padding:"5px 6px",cursor:"pointer"}}>
-                <span>{Li("target",18,over?T.neg:T.cell_exp)}</span>
+                <span>{Li("target",18,over?T.warn_icon:T.neg_vm)}</span>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{color:T.txt,fontSize:14,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>
                   <div style={{color:T.txt2,fontSize:11}}>{isMitte?"Restbudget bis 14.":"Restbudget bis Monatsende"}</div>
@@ -105,11 +106,14 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
                 {rest==null ? (
                   <span style={{color:T.txt2,fontSize:15,fontFamily:NUM_FONT,flexShrink:0}}>—</span>
                 ) : over ? (
-                  <span style={{color:T.neg,fontSize:15,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>{fmt(Math.abs(rest))} drüber</span>
+                  // Budget überschritten: Hellorange wie bei negativem Kontostand
+                  // (T.warn_icon), nicht mehr die Ausgaben-Farbe (T.neg/Cyan) —
+                  // das ist eine Warnung, keine normale Ausgaben-Vormerkung.
+                  <span style={{color:T.warn_icon,fontSize:15,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>{fmt(Math.abs(rest))} drüber</span>
                 ) : (
                   <span style={{display:"inline-flex",alignItems:"baseline",gap:4,flexShrink:0}}>
                     <span style={{color:T.txt2,fontSize:10}}>offen:</span>
-                    <span style={{color:T.cell_exp,fontSize:15,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(rest)}</span>
+                    <span style={{color:T.neg_vm,fontSize:15,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(rest)}</span>
                   </span>
                 )}
                 <span style={{color:T.txt2,flexShrink:0}}>{Li("chevron-right",14)}</span>
