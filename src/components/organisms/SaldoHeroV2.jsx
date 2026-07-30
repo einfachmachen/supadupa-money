@@ -125,7 +125,7 @@ function SaldoHeroV2({
 
   // Nachkommastellen klein & um 90° nach links (gegen den Uhrzeigersinn)
   // gedreht statt ",XX" in normaler Größe — braucht dadurch nur noch etwa die
-  // Breite einer einzelnen Ziffer (Nutzer-Wunsch, für die Buch./VM-Beträge).
+  // Breite einer einzelnen Ziffer (Nutzer-Wunsch, für Buch./VM/unkat.-Beträge).
   // Rotation dreht Breite/Höhe: bei kleinerer Schrift wird die ROTIERTE Breite
   // (= ursprüngliche Zeilenhöhe) entsprechend schmal.
   const RotatedCents = ({v}) => {
@@ -450,7 +450,7 @@ function SaldoHeroV2({
             <DetailRow label="unkat."
               mIn={uInM} mOut={uOutM} eIn={uInE} eOut={uOutE}
               clrIn={T.gold} clrOut={T.gold}
-              onTapIn={onDrillUncatIn} onTapOut={onDrillUncatOut}/>
+              onTapIn={onDrillUncatIn} onTapOut={onDrillUncatOut} rotatedCents fullBleed/>
           )}
           {showScrollFocusToggle && (
             <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8,paddingTop:8,borderTop:`1px solid ${T.bd}`}}>
