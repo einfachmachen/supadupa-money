@@ -93,18 +93,15 @@ function SaldoHeroV2({
   const framePad = 20 - frameBorderWidth;
   const amtFontSize = 44;
   const eyeBoxSize = 30;
-  // eyeZoneWidth zurück auf 56 (nur das Auge) — das "?"-Symbol NICHT mehr in
-  // diese Zone gequetscht (das hatte sideReserve mitverbreitert und dem
-  // Betrag echte Breite weggenommen → Abschneiden bei größeren Beträgen).
-  // Sitzt stattdessen wie der Theme-Umschalter absolut positioniert
-  // (top-rechts statt top-links) und kostet dadurch GAR KEINE Breite.
-  //
-  // KEIN symmetrischer linker Platzhalter mehr (früher: sideReserve,
-  // exakt so breit wie eyeZoneWidth, rein zur optischen Zentrierung des
-  // Betrags) — der kostete real Breite, die bei großen Kontoständen zum
-  // Abschneiden (inkl. verschlucktem €-Zeichen) führte (Nutzer-Feedback).
-  // Der Betrag darf jetzt die volle Breite bis zur Augen-Zone nutzen,
-  // auch wenn er dadurch nicht mehr exakt mittig steht.
+  // eyeZoneWidth: reservierte Obergrenze für Betrag + Auge zusammen (siehe
+  // Zeile 1 unten) — das Auge selbst hängt dort NICHT mehr in einer fest
+  // reservierten, symmetrischen Zone, sondern als absolut positioniertes
+  // Geschwister direkt am rechten Rand des Betrags. Dadurch bleibt der
+  // Kontostand IMMER exakt zentriert (Nutzer-Wunsch), und das Auge rückt
+  // automatisch weiter nach rechts, je breiter der Betrag wird — eyeZoneWidth
+  // wirkt nur noch als Sicherheitsmarge (maxWidth des Betrags), damit bei
+  // extrem wenig Platz der Betrag per Ellipsis kürzt, statt das Auge aus dem
+  // sichtbaren Bereich zu drücken.
   const eyeZoneWidth = 56;
   // Editorial-Layout (Theme-Token hero_layout): linksbündige Schlagzeilen-
   // Anordnung statt zentriert — Kicker-Zeile (Theme-Umschalter, Label,
@@ -328,10 +325,14 @@ function SaldoHeroV2({
         </div>
         </div>
       </>) : (<div data-tour="hero-balance">
-      {/* Zeile 1: aktueller Kontostand groß & zentriert. Tippen auf den Betrag
-          wechselt durch die Konten. Direkt rechts daneben — vertikal zentriert —
-          das Augensymbol (unscharf ↔ sichtbar). Der Kontoname sitzt klein/
-          zentriert in der MITTE/ENDE-Zeile. */}
+      {/* Zeile 1: aktueller Kontostand groß & IMMER zentriert. Tippen auf den
+          Betrag wechselt durch die Konten. Das Auge hängt als absolut
+          positioniertes Geschwister direkt am rechten Rand des Betrags (statt
+          in einer fest reservierten, symmetrischen Zone) — dadurch bleibt der
+          Betrag unabhängig von seiner Breite exakt mittig, und das Auge rückt
+          automatisch mit, je breiter der Betrag wird (Nutzer-Wunsch: Auge
+          "dynamisch weiter nach rechts", Kontostand "in jedem Fall zentriert").
+          Der Kontoname sitzt klein/zentriert in der MITTE/ENDE-Zeile. */}
       <div style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center",
         userSelect:"none",
         // Kinder-Themes: kappt den Weichzeichner-"Glow" des ausgeblendeten
@@ -340,30 +341,35 @@ function SaldoHeroV2({
         // Theme-Umschalter sitzt in einer eigenen Geschwister-Box), daher
         // unbedenklich zu clippen.
         ...(T.frame_border ? {overflow:"hidden"} : {})}}>
-        <span onClick={allAccIds.length>1?cycleAcc:undefined} className="heroAmt heroBalance"
-          style={{
-            color: heroColor(saldo),
-            "--bal-col": heroColor(saldo),
-            fontSize:amtFontSize,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
-            letterSpacing:-1,lineHeight:1.15,whiteSpace:"nowrap",
-            WebkitTextStroke:"0.8px currentColor",
-            cursor:allAccIds.length>1?"pointer":"default",
-            minWidth:0, flexGrow:0, flexShrink:1, flexBasis:"auto",
-            // overflow/textOverflow bleiben ein Notnagel für den Fall, dass
-            // wirklich kein Platz mehr da ist (z.B. extrem kleines Gerät) —
-            // ausgelöst rein durch die Flex-Verteilung, ohne feste maxWidth.
-            overflow:"hidden", textOverflow:"ellipsis",
-          }}>
-          {saldo>=0?"":"−"}{fmtMoney(Math.abs(saldo||0))}&nbsp;€
-        </span>
-        {/* Auge: sitzt in einer eigenen Zone (eyeZoneWidth) und wird DARIN
-            zentriert — mittig zwischen Betrag-Ende und Seitenrand, statt
-            direkt am Betrag zu kleben (verhindert Vertipper: Konto
-            wechseln statt Betrag aus-/einblenden). Gilt für alle Themes. */}
-        <div style={{width:eyeZoneWidth, flexShrink:0, flexGrow:0,
-          display:"flex", alignItems:"center", justifyContent:"center"}}>
+        {/* Wrapper: sizt sich exakt auf die Breite des Betrags (inline-block
+            als Flex-Item) — dadurch zentriert justifyContent:"center" oben
+            NUR den Betrag, das absolut positionierte Auge zählt nicht mit.
+            maxWidth reserviert die Augen-Zone als Obergrenze, damit der
+            Betrag bei extrem wenig Platz weiterhin per Ellipsis kürzt statt
+            das Auge aus dem sichtbaren Bereich zu drücken. */}
+        <div style={{position:"relative", display:"inline-block", maxWidth:`calc(100% - ${eyeZoneWidth}px)`}}>
+          <span onClick={allAccIds.length>1?cycleAcc:undefined} className="heroAmt heroBalance"
+            style={{
+              color: heroColor(saldo),
+              "--bal-col": heroColor(saldo),
+              fontSize:amtFontSize,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
+              letterSpacing:-1,lineHeight:1.15,whiteSpace:"nowrap",
+              WebkitTextStroke:"0.8px currentColor",
+              cursor:allAccIds.length>1?"pointer":"default",
+              display:"inline-block", maxWidth:"100%", verticalAlign:"top",
+              // overflow/textOverflow bleiben ein Notnagel für den Fall, dass
+              // wirklich kein Platz mehr da ist (z.B. extrem kleines Gerät).
+              overflow:"hidden", textOverflow:"ellipsis",
+            }}>
+            {saldo>=0?"":"−"}{fmtMoney(Math.abs(saldo||0))}&nbsp;€
+          </span>
+          {/* Auge: direkt am (dynamischen) rechten Rand des Betrags-Wrappers,
+              vertikal zentriert. Kein fester Abstand zum Seitenrand mehr —
+              er rückt automatisch mit, je breiter der Betrag wird. */}
           <span onClick={toggleEye} title="Beträge ein-/ausblenden"
-            style={{cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,
+            style={{position:"absolute", left:"100%", top:"50%",
+              transform:"translateY(-50%)", marginLeft:12,
+              cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,
               display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
             {Li(eyeIcon,23,eyeCol)}
           </span>
