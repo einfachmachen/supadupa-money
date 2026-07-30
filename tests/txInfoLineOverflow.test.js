@@ -57,6 +57,16 @@ function submitSearch(container, term) {
   });
 }
 
+// Der Verwendungszweck (Titel + Kategorie-Zeile, beides <ExpandableLine>) ist
+// im Suchmodus standardmäßig zugeklappt (Nutzer-Feedback: eine tabellarische
+// Datum|Betrag-Liste, Details nur bei Bedarf) — für diese Tests, die genau
+// das Überlauf-/Klick-Verhalten von <ExpandableLine> selbst prüfen, muss die
+// Zeile zuerst über den neuen Detail-Chevron aufgeklappt werden.
+function expandDetails(container) {
+  const toggle = container.querySelector('[data-role="tx-details-toggle"]');
+  act(() => { toggle.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+}
+
 function stubOverflow() {
   Object.defineProperty(Element.prototype, "scrollWidth", { configurable:true, get(){ return 300; } });
   Object.defineProperty(Element.prototype, "clientWidth", { configurable:true, get(){ return 100; } });
@@ -71,6 +81,7 @@ describe("ExpandableLine — Ausklapp-Pfeil nur bei Überlauf, blockiert nie den
   it("zeigt keinen Pfeil, wenn die Zeile nicht überläuft", () => {
     const { container, root } = renderMonat({ txs: TXS });
     submitSearch(container, "Amazon");
+    expandDetails(container);
     const lines = container.querySelectorAll("[data-expandable-line]");
     expect(lines.length).toBeGreaterThan(0);
     lines.forEach(line => expect(line.children.length).toBe(1)); // nur der innere Container
@@ -82,6 +93,7 @@ describe("ExpandableLine — Ausklapp-Pfeil nur bei Überlauf, blockiert nie den
     stubOverflow();
     const { container, root } = renderMonat({ txs: TXS });
     submitSearch(container, "Amazon");
+    expandDetails(container);
     const lines = container.querySelectorAll("[data-expandable-line]");
     expect(lines.length).toBeGreaterThanOrEqual(2); // Titel + Kategorie-Zeile
     lines.forEach(line => expect(line.children.length).toBe(2)); // innerer Container + Pfeil
@@ -94,6 +106,7 @@ describe("ExpandableLine — Ausklapp-Pfeil nur bei Überlauf, blockiert nie den
     const openEdit = vi.fn();
     const { container, root } = renderMonat({ txs: TXS, openEdit });
     submitSearch(container, "Amazon");
+    expandDetails(container);
     const chevron = container.querySelector("[data-expandable-line] > span");
     expect(chevron).toBeTruthy();
     act(() => { chevron.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
@@ -107,6 +120,7 @@ describe("ExpandableLine — Ausklapp-Pfeil nur bei Überlauf, blockiert nie den
     const openEdit = vi.fn();
     const { container, root } = renderMonat({ txs: TXS, openEdit });
     submitSearch(container, "Amazon");
+    expandDetails(container);
     const textPart = container.querySelector("[data-expandable-line] > div");
     expect(textPart).toBeTruthy();
     act(() => { textPart.dispatchEvent(new MouseEvent("click", { bubbles: true })); });

@@ -181,16 +181,16 @@ function MonatScreen() {
     const onSearchSubmit = React.useCallback((v)=>{ setSearch(v); setSelected(new Set()); }, []);
     const onSearchClear  = React.useCallback(()=>{ setSearch(""); setSelected(new Set()); }, []);
     const [selected, setSelected] = useState(new Set());
-    // Suchergebnisse: der Tagessaldo (Verbindungslinie + große Zahl im
-    // Tages-Header) lenkt dort stark von den eigentlichen Treffer-Beträgen
-    // ab (Nutzer-Feedback) — im Suchmodus deshalb standardmäßig zugeklappt,
-    // aber pro Tag oder komplett auf einmal wieder aufklappbar. Außerhalb
-    // der Suche unverändert immer sichtbar (dort nicht störend, da es dort
-    // ohnehin nur ein bis zwei Tage mit Buchungen pro Ansicht sind).
-    const [expandedSearchDates, setExpandedSearchDates] = useState(new Set());
-    const toggleSearchDateDetails = (date) => setExpandedSearchDates(prev => {
+    // Suchergebnisse: gewünscht ist eine tabellarische Liste (Datum | Betrag),
+    // der Verwendungszweck (Beschreibung/Kategorie/Tags) ist Detail und
+    // standardmäßig zugeklappt — einzeln je Buchung oder komplett auf einmal
+    // wieder aufklappbar (Nutzer-Feedback). Der Tagessaldo lenkt dort ab und
+    // wird im Suchmodus deshalb IMMER ausgeblendet (kein Toggle nötig).
+    // Außerhalb der Suche bleibt beides unverändert wie gehabt.
+    const [expandedSearchTx, setExpandedSearchTx] = useState(new Set());
+    const toggleSearchTxDetails = (txId) => setExpandedSearchTx(prev => {
       const next = new Set(prev);
-      next.has(date) ? next.delete(date) : next.add(date);
+      next.has(txId) ? next.delete(txId) : next.add(txId);
       return next;
     });
     const [bulkCat,  setBulkCat]  = useState({catId:"",subId:""});
@@ -1433,13 +1433,13 @@ function MonatScreen() {
                 color:T.blue,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>
               {Li(allSel?"check-square":"square",12,T.blue)} Alle ({mTxs.length})
             </button>
-            {/* Tagessaldo-Details (Verbindungslinie + große Zahl je Tag) sind
-                im Suchmodus standardmäßig zugeklappt — hier alle auf einmal
-                ein-/ausklappbar, einzeln über den Chevron je Tageszeile. */}
-            {inSearchMode&&dates.length>0&&(()=>{
-              const allExpanded = dates.every(d=>expandedSearchDates.has(d));
+            {/* Verwendungszweck (Beschreibung/Kategorie/Tags) ist im Suchmodus
+                standardmäßig zugeklappt — hier alle Treffer auf einmal
+                ein-/ausklappbar, einzeln über den Chevron je Buchungszeile. */}
+            {inSearchMode&&mTxs.length>0&&(()=>{
+              const allExpanded = mTxs.every(t=>expandedSearchTx.has(t.id));
               return (
-                <button onClick={()=>setExpandedSearchDates(allExpanded?new Set():new Set(dates))}
+                <button onClick={()=>setExpandedSearchTx(allExpanded?new Set():new Set(mTxs.map(t=>t.id)))}
                   style={{background:allExpanded?"rgba(74,159,212,0.3)":"rgba(255,255,255,0.08)",
                     border:`1px solid ${T.blue}`,borderRadius:8,padding:"4px 8px",
                     color:T.blue,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>
@@ -1559,18 +1559,12 @@ function MonatScreen() {
                     <span style={{color:T.txt2,fontSize:10}}>{dayName(date)}</span>
                     {dayOf(date)<=14&&<span style={{color:T.mid,fontSize:9,fontWeight:700,
                       background:"rgba(103,232,249,0.1)",borderRadius:5,padding:"1px 5px"}}>Mitte</span>}
-                    {/* Im Suchmodus: Tagessaldo-Details standardmäßig zugeklappt
-                        (lenkte stark von den Treffer-Beträgen ab, Nutzer-
-                        Feedback) — hier einzeln je Tag wieder aufklappbar. */}
-                    {inSearchMode&&(
-                      <span onClick={()=>toggleSearchDateDetails(date)}
-                        title={expandedSearchDates.has(date)?"Tagessaldo ausblenden":"Tagessaldo einblenden"}
-                        style={{cursor:"pointer",display:"inline-flex",alignItems:"center",opacity:0.6}}>
-                        {Li(expandedSearchDates.has(date)?"chevron-up":"chevron-down",13,T.txt2)}
-                      </span>
-                    )}
                   </div>
-                  {(!inSearchMode||expandedSearchDates.has(date))&&(<>
+                  {/* Tagessaldo lenkt in der Suche von den Treffer-Beträgen ab
+                      (Nutzer-Feedback) — dort immer ausgeblendet, kein Toggle
+                      (anders als der Verwendungszweck unten ist das reine
+                      Kontext-Info ohne Suchbezug, kein "Detail" der Buchung). */}
+                  {!inSearchMode&&(<>
                   {/* Verbindungs-Linie in grün (positiver) / rot (negativer Ist-Saldo).
                       data-role/-tone: dieselbe Farbe wird per `background`
                       (nicht `color`) gesetzt — die Fokus-Regel für Text greift
@@ -1731,7 +1725,19 @@ function MonatScreen() {
                             </div>
                           </div>
                           {txIconPickM===tx.id&&(<IconPickerDialog selectedIcon={involvedCats[0]?.icon||"help-circle"} selectedColor={involvedCats[0]?.color||T.txt2} onSelect={ic=>{if(involvedCats[0])setCats(p=>p.map(c=>c.id===involvedCats[0].id?{...c,icon:ic}:c));setTxIconPickM(null);}} onClose={()=>setTxIconPickM(null)}/>)}
+                          {/* Suchmodus: Verwendungszweck (Beschreibung/Kategorie/
+                              Tags) standardmäßig zugeklappt — lieber eine kompakte
+                              Datum|Betrag-Liste, Details je Buchung oder komplett
+                              per Chevron/"Details"-Button aufklappbar (Nutzer-
+                              Feedback). Außerhalb der Suche unverändert immer offen. */}
+                          {inSearchMode&&(
+                            <span data-role="tx-details-toggle" onClick={()=>toggleSearchTxDetails(tx.id)}
+                              style={{cursor:"pointer",flexShrink:0,marginRight:4,opacity:0.6,display:"inline-flex"}}>
+                              {Li(expandedSearchTx.has(tx.id)?"chevron-up":"chevron-down",13,T.txt2)}
+                            </span>
+                          )}
                           <div onClick={()=>openEdit(tx)} style={{flex:1,minWidth:0,marginRight:6,cursor:"pointer"}}>
+                            {(!inSearchMode||expandedSearchTx.has(tx.id)) ? (<>
                             <ExpandableLine data-role="tx-desc" style={{color:T.txt,fontSize:13,fontWeight:700,transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                               {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.gold)}</span>}
                             </ExpandableLine>
@@ -1750,6 +1756,12 @@ function MonatScreen() {
                                 </span>
                               ))}
                             </ExpandableLine>
+                            </>) : (
+                              // Zugeklappt: der GESAMTE Verwendungszweck ist "Detail"
+                              // (Nutzer-Feedback) — hier bewusst nichts anzeigen,
+                              // nur Datum (im Tages-Header) und Betrag bleiben sichtbar.
+                              <div data-role="tx-desc"/>
+                            )}
                           </div>
                           <div data-role="tx-amtblock" style={{textAlign:"right",flexShrink:0,marginRight:8,transition:_reduceMotion?"none":"flex-basis .3s cubic-bezier(0.16, 1, 0.3, 1), margin .3s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                             <div data-role="tx-amtbar" style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:8,
@@ -2016,8 +2028,18 @@ function MonatScreen() {
                               }}
                               onClose={()=>setTxIconPickM(null)}/>
                           )}
+                          {/* Suchmodus: Verwendungszweck standardmäßig zugeklappt
+                              (Nutzer-Feedback) — siehe Kommentar bei den
+                              Einnahmen-Zeilen weiter oben, gleiches Prinzip. */}
+                          {inSearchMode&&(
+                            <span data-role="tx-details-toggle" onClick={()=>toggleSearchTxDetails(tx.id)}
+                              style={{cursor:"pointer",flexShrink:0,marginRight:4,opacity:0.6,display:"inline-flex"}}>
+                              {Li(expandedSearchTx.has(tx.id)?"chevron-up":"chevron-down",13,T.txt2)}
+                            </span>
+                          )}
                           {/* Text — Klick öffnet Edit */}
                           <div onClick={()=>openEdit(tx)} style={{flex:1,minWidth:0,marginRight:6,cursor:"pointer"}}>
+                            {(!inSearchMode||expandedSearchTx.has(tx.id)) ? (<>
                             <ExpandableLine data-role="tx-desc" style={{color:T.txt,fontSize:13,fontWeight:700,transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                               {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.gold)}</span>}
                             </ExpandableLine>
@@ -2052,6 +2074,9 @@ function MonatScreen() {
                               </span>
                             ))}
                             </ExpandableLine>
+                            </>) : (
+                              <div data-role="tx-desc"/>
+                            )}
                           </div>
                           {/* Amount */}
                           <div data-role="tx-amtblock" style={{textAlign:"right",flexShrink:0,marginRight:8,transition:_reduceMotion?"none":"flex-basis .3s cubic-bezier(0.16, 1, 0.3, 1), margin .3s cubic-bezier(0.16, 1, 0.3, 1)"}}>

@@ -110,6 +110,10 @@ describe("MonatScreen — Suche mit Zeitraum & Summe (statt eigener Suche&Summe-
     const txsWithTag = TXS.map(t => t.id==="t3" ? { ...t, tags:["reise"] } : t);
     const { container, root } = renderMonat({ txs: txsWithTag });
     submitSearch(container, "Amazon");
+    // Verwendungszweck (inkl. Tags) ist im Suchmodus standardmäßig zugeklappt
+    // (Nutzer-Feedback) — über den "Details"-Sammel-Button aufklappen.
+    const detailsBtn = [...container.querySelectorAll("button")].find(b => b.textContent.includes("Details"));
+    act(() => { detailsBtn.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
     expect(container.textContent).toContain("#reise");
     act(() => { root.unmount(); });
     container.remove();
