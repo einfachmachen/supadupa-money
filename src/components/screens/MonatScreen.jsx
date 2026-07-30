@@ -985,12 +985,14 @@ function MonatScreen() {
     if(!inSearchMode && budgetDetailsEnde.items.length  && !byDate[endeIso])  byDate[endeIso]=[];
     const dates   = Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
     const fmtD    = iso=>{ const[,,d]=iso.split("-"); return `${d}.`; };
-    // "Tag. Monat" (z.B. "17. Sep") — bei Suche/Mehr-Monats-Ansicht nötig, damit
-    // erkennbar bleibt, aus welchem Monat ein Tag stammt, aber wie in der
-    // Giro-Ansicht so kompakt wie möglich (kein Jahr, Monat als Kurzname statt
-    // zweistelliger Zahl).
+    // "Tag. Monat Jahr" (z.B. "17. Sep 2024") — bei Suche/Mehr-Monats-Ansicht
+    // nötig, damit erkennbar bleibt, aus welchem Monat EIN Tag stammt; das
+    // Jahr zusätzlich, weil gerade eine Suche über eine wiederkehrende Serie
+    // typischerweise mehrere Jahre umfasst und "17. Sep" allein dann nicht
+    // mehr eindeutig ist (Nutzer-Feedback). Monat als Kurzname statt
+    // zweistelliger Zahl, damit es trotzdem kompakt bleibt.
     const MONTHS_SHORT_HDR = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
-    const fmtDFull = iso=>{ const[,m,d]=iso.split("-"); return `${d}. ${MONTHS_SHORT_HDR[parseInt(m,10)-1]}`; };
+    const fmtDFull = iso=>{ const[y,m,d]=iso.split("-"); return `${d}. ${MONTHS_SHORT_HDR[parseInt(m,10)-1]} ${y}`; };
     const showFullDate = inSearchMode || range.from !== range.to;
     const dayName = iso=>["So","Mo","Di","Mi","Do","Fr","Sa"][new Date(iso).getDay()];
 
