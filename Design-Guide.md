@@ -165,9 +165,10 @@ Niemals Farben hart kodieren — immer `T.*` aus dem aktiven Theme.
 | `T.txt`, `T.txt2`, `T.lbl` | Text primär / sekundär / tertiär |
 | `T.bd`, `T.bds` | Border schwach / stärker |
 | `T.pos` | Einnahmen / positiv (Default: Lime `#AACC00`) |
-| `T.cell_inc` | **Hellgrün** — Einnahmen-Vormerkung |
-| `T.gold` | **Gold** — Ausgaben-Vormerkung / Budget / Warnakzent (`#F5A623`) |
-| `T.neg` | Ausgaben / negativ (`#EA4025`) |
+| `T.cell_inc` | **Blasses Lime** (= `pos_vm`) — Einnahmen-Vormerkung |
+| `T.cell_exp` | **Blasses Cyan** (= `neg_vm`) — Ausgaben-Vormerkung |
+| `T.gold` | **Gold** — Budget / Warnakzent / Finanzierung (`#F5A623`) |
+| `T.neg` | Ausgaben / negativ |
 | `T.blue` | Primär-Akzent (im Default-Theme = Lime, **nicht** wörtlich blau); auch Farbe des „+"-Buttons & Kontostands |
 | `T.cf` | Cloudflare-Akzent (Sync-UI) |
 | `T.mid` | „Mitte"-Label-Farbe |
@@ -219,9 +220,9 @@ die **Farbe** kommuniziert Richtung und Art:
 | Farbe | Token | Bedeutung |
 |---|---|---|
 | Grün | `T.pos` | reale **Einnahme** |
-| Hellgrün | `T.cell_inc` | **Einnahmen**-Vormerkung |
-| Gold | `T.gold` | **Ausgaben**-Vormerkung |
-| Rot | `T.neg` | reale **Ausgabe** |
+| Blasses Lime | `T.cell_inc` (= `pos_vm`) | **Einnahmen**-Vormerkung |
+| Blasses Cyan | `T.cell_exp` (= `neg_vm`) | **Ausgaben**-Vormerkung |
+| Rot/Cyan | `T.neg` | reale **Ausgabe** (Farbe je nach Farbkonzept-Version des Themes) |
 
 ### 4.5 Betrags-Sichtbarkeit (`amtMode`) — das Augensymbol
 `amtMode` (Context) steuert global per CSS-Klassen auf dem Wurzel-Container:

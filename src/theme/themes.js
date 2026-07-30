@@ -861,14 +861,8 @@ function getTheme(name) {
   if (!t.disabled)    t.disabled    = "#2a2a2a";
   if (!t.warn)        t.warn        = "#F59E0B";
   if (!t.override)    t.override    = "#B45309";
-  if (!t.cell_inc)    t.cell_inc    = "#C8E645";
   if (!t.cell_inc_bg) t.cell_inc_bg = "#0F1A00";
   if (!t.cell_inc_bd) t.cell_inc_bd = "#4A6600";
-  // cell_exp: Bold-Farbe für Ausgabe-Vormerkungen (Pendant zu cell_inc für
-  // Einnahme-Vormerkungen) — nur die 16 dunklen Themes definieren sie fest
-  // (#FFD24D Amber-Gelb); alle anderen fallen auf "gold" zurück (bisheriges
-  // Verhalten vor der Einführung dieses eigenen Tokens).
-  if (!t.cell_exp)    t.cell_exp    = t.gold;
   // over: Ersatzfarbe für massive Budgetüberschreitung (Ampel-Top-Stufen) —
   // ersetzt in den 16 dunklen Themes das kräftige Rot (dort schlecht lesbar/
   // störend, Nutzer-Feedback) durch ein helles Rosa. Alle anderen Themes
@@ -898,6 +892,15 @@ function getTheme(name) {
   if (!t.pos_aktuell) t.pos_aktuell = t.cond_pos;
   // pos_vm: Pendant zu neg_vm für Einnahmen-Vormerkungen.
   if (!t.pos_vm) t.pos_vm = t.pos_aktuell;
+  // cell_inc/cell_exp: Farbe für Budget-Vormerkungen (Einnahme-/Ausgabe-Seite)
+  // in den Detail-Übersichten (Kategorie-Drilldown, Monat, SaldoPrognose,
+  // Jahr, PendingList) — folgen jetzt einheitlich dem neuen Farbkonzept
+  // (blasses Lime/Cyan wie neg_vm/pos_vm) statt der alten, uneinheitlichen
+  // Amber-/Oliv-Töne. Bewusst UNBEDINGT überschrieben (nicht nur als
+  // Fallback), da vorher fast jedes Theme einen eigenen Amber-Wert fest
+  // definierte (Nutzer-Feedback).
+  t.cell_inc = t.pos_vm;
+  t.cell_exp = t.neg_vm;
   // warn_bold: feste, kräftige Warnfarbe (Hellorange) für Warnbanner und
   // negative Kontostände — bewusst getrennt von neg (jetzt Cyan/Ausgabenfarbe).
   if (!t.warn_bold) t.warn_bold = t.warn;
