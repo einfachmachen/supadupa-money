@@ -307,7 +307,7 @@ function YearBarListHorizontal({ perYear, get, getPending, color, aktuellFill, o
               )}
             </div>
             <div style={{ width: 78, flexShrink: 0, textAlign: "right", color: T.txt, fontSize: 11, fontWeight: 700, fontFamily: NUM_FONT }}>
-              {fmt(v)}
+              {v < 0 ? "−" : ""}{fmt(v)}
             </div>
           </button>
         );
