@@ -123,36 +123,53 @@ function SaldoHeroV2({
     return T.cond_neg;
   };
 
+  // Nachkommastellen klein & um 90° nach links (gegen den Uhrzeigersinn)
+  // gedreht statt ",XX" in normaler Größe — braucht dadurch nur noch etwa die
+  // Breite einer einzelnen Ziffer (Nutzer-Wunsch, für die Buch./VM-Beträge).
+  // Rotation dreht Breite/Höhe: bei kleinerer Schrift wird die ROTIERTE Breite
+  // (= ursprüngliche Zeilenhöhe) entsprechend schmal.
+  const RotatedCents = ({v}) => {
+    const s = fmt(v); // z.B. "3.109,42"
+    const i = s.lastIndexOf(",");
+    if (i === -1) return s;
+    return (<>
+      {s.slice(0, i)}
+      <span style={{display:"inline-block",fontSize:"0.5em",lineHeight:1,
+        transform:"rotate(-90deg)",transformOrigin:"center",verticalAlign:"middle"}}>
+        {s.slice(i + 1)}
+      </span>
+    </>);
+  };
   // Mini-Zelle für Detail-Werte (Out|In Paar)
   // cond_neg/cond_pos statt neg/pos als Default: manche Themes definieren "neg"
   // bewusst blass/pastellig (WCAG-Kontrast für kleine Textfarbe auf grauem
   // Grund) — als 20px-Betrag hier wirkt das dann wie Rosa statt Rot
   // (Nutzer-Feedback, betraf konkret die unbeschriftete "Buch."-Zeile; VM/
   // unkat. hatten schon eine eigene, kräftige clrOut/clrIn-Farbe).
-  const HalfCell = ({vIn, vOut, clrIn, clrOut, isMitte, onTapIn, onTapOut}) => (
+  const HalfCell = ({vIn, vOut, clrIn, clrOut, isMitte, onTapIn, onTapOut, rotatedCents}) => (
     <div style={{flex:1,display:"flex",alignItems:"baseline"}}>
       <div style={{flex:1,textAlign:"center",cursor:vOut>0&&onTapOut?"pointer":"default",padding:"2px 0"}}
         onClick={vOut>0&&onTapOut?()=>onTapOut(isMitte):undefined}>
         {vOut>0
-          ? <span style={{...amtStyle("neg",clrOut||T.cond_neg),fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>{fmt(vOut)}</span>
+          ? <span style={{...amtStyle("neg",clrOut||T.cond_neg),fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>{rotatedCents?<RotatedCents v={vOut}/>:fmt(vOut)}</span>
           : <span style={{color:T.txt2,fontSize:20}}>—</span>}
       </div>
       <div style={{flex:1,textAlign:"center",cursor:vIn>0&&onTapIn?"pointer":"default",padding:"2px 0"}}
         onClick={vIn>0&&onTapIn?()=>onTapIn(isMitte):undefined}>
         {vIn>0
-          ? <span style={{...amtStyle("pos",clrIn||T.cond_pos),fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>{fmt(vIn)}</span>
+          ? <span style={{...amtStyle("pos",clrIn||T.cond_pos),fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>{rotatedCents?<RotatedCents v={vIn}/>:fmt(vIn)}</span>
           : <span style={{color:T.txt2,fontSize:20}}>—</span>}
       </div>
     </div>
   );
-  const DetailRow = ({label, mIn, mOut, eIn, eOut, clrIn, clrOut, clrInM, clrOutM, clrInE, clrOutE, onTapIn, onTapOut}) => (
+  const DetailRow = ({label, mIn, mOut, eIn, eOut, clrIn, clrOut, clrInM, clrOutM, clrInE, clrOutE, onTapIn, onTapOut, rotatedCents}) => (
     <div style={{display:"flex",alignItems:"center",marginBottom:4}}>
       <HalfCell vIn={mIn} vOut={mOut} clrIn={clrInM??clrIn} clrOut={clrOutM??clrOut}
-        isMitte={true} onTapIn={onTapIn} onTapOut={onTapOut}/>
+        isMitte={true} onTapIn={onTapIn} onTapOut={onTapOut} rotatedCents={rotatedCents}/>
       <div style={{width:44,flexShrink:0,textAlign:"center",
         color:T.txt2,fontSize:10,fontWeight:600,letterSpacing:0.3}}>{label}</div>
       <HalfCell vIn={eIn} vOut={eOut} clrIn={clrInE??clrIn} clrOut={clrOutE??clrOut}
-        isMitte={false} onTapIn={onTapIn} onTapOut={onTapOut}/>
+        isMitte={false} onTapIn={onTapIn} onTapOut={onTapOut} rotatedCents={rotatedCents}/>
     </div>
   );
 
@@ -405,12 +422,12 @@ function SaldoHeroV2({
           <DetailRow label="Buch."
             mIn={buchInM} mOut={buchOutM} eIn={buchInE} eOut={buchOutE}
             clrIn={bookColHero(true)} clrOut={bookColHero(false)}
-            onTapIn={onDrillBuchIn} onTapOut={onDrillBuchOut}/>
+            onTapIn={onDrillBuchIn} onTapOut={onDrillBuchOut} rotatedCents/>
           {(pendInE>0||pendOutE>0) && (
             <DetailRow label="VM"
               mIn={pendInM} mOut={pendOutM} eIn={pendInE} eOut={pendOutE}
               clrIn={T.pos_vm} clrOut={T.neg_vm}
-              onTapIn={onDrillPendIn} onTapOut={onDrillPendOut}/>
+              onTapIn={onDrillPendIn} onTapOut={onDrillPendOut} rotatedCents/>
           )}
           {(uInE>0||uOutE>0) && (
             <DetailRow label="unkat."
