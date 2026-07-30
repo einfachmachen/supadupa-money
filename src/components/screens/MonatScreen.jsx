@@ -1548,7 +1548,6 @@ function MonatScreen() {
                     <div onClick={()=>toggleSearchTxDetails(tx.id)}
                       style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",cursor:"pointer",
                         borderTop: idx>0 ? `1px solid ${T.bd}` : "none"}}>
-                      <span style={{width:6,height:6,borderRadius:"50%",flexShrink:0,background:cat?.color||T.txt2}}/>
                       <span style={{fontSize:12,color:T.txt,fontWeight:600,flexShrink:0}}>{fmtDFull(tx.date)}</span>
                       <span style={{flex:1}}/>
                       <span data-role="tx-amt" style={{...amtStyle(isExp?"neg":"pos",pal.val),
