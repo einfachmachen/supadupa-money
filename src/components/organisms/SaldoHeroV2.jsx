@@ -98,8 +98,14 @@ function SaldoHeroV2({
   // Betrag echte Breite weggenommen → Abschneiden bei größeren Beträgen).
   // Sitzt stattdessen wie der Theme-Umschalter absolut positioniert
   // (top-rechts statt top-links) und kostet dadurch GAR KEINE Breite.
+  //
+  // KEIN symmetrischer linker Platzhalter mehr (früher: sideReserve,
+  // exakt so breit wie eyeZoneWidth, rein zur optischen Zentrierung des
+  // Betrags) — der kostete real Breite, die bei großen Kontoständen zum
+  // Abschneiden (inkl. verschlucktem €-Zeichen) führte (Nutzer-Feedback).
+  // Der Betrag darf jetzt die volle Breite bis zur Augen-Zone nutzen,
+  // auch wenn er dadurch nicht mehr exakt mittig steht.
   const eyeZoneWidth = 56;
-  const sideReserve = eyeZoneWidth;
   // Editorial-Layout (Theme-Token hero_layout): linksbündige Schlagzeilen-
   // Anordnung statt zentriert — Kicker-Zeile (Theme-Umschalter, Label,
   // Kontowahl, Auge) oben, großer Betrag links, Prognosen als Ticker-Leiste.
@@ -161,27 +167,26 @@ function SaldoHeroV2({
         : <span style={{color:T.txt2,fontSize:20}}>—</span>}
     </div>
   );
-  // Die Zeile zieht per Negativ-Margin etwas über den Hero-Innenabstand
-  // (framePad) hinaus — aber bewusst NICHT bis auf 0, ein kleiner Rand bleibt
-  // (Nutzer-Wunsch: "ein wenig mehr seitlicher Rand"). justifyContent:
-  // space-between verteilt die 5 Elemente (Out/In je Mitte+Ende + Label)
-  // gleichmäßig über die volle Breite — die äußersten beiden (Out-Mitte,
-  // In-Ende) landen dadurch IMMER an derselben Stelle (ganz links/rechts),
-  // unabhängig vom Inhalt, was die Flucht zwischen Zeilen sicherstellt.
-  const DetailRow = ({label, mIn, mOut, eIn, eOut, clrIn, clrOut, clrInM, clrOutM, clrInE, clrOutE, onTapIn, onTapOut, rotatedCents}) => {
-    const sideBleed = Math.max(0, framePad - 8);
-    return (
-    <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",
-      margin:`0 -${sideBleed}px 4px`}}>
+  // WICHTIG: DetailRow rendert NUR die 5 Zellen (kein eigener Flex-Container
+  // pro Zeile) — sie werden direkt als Kinder in EIN gemeinsames CSS-Grid
+  // (siehe unten, DetailGrid) eingehängt. Grund: mit einem separaten
+  // justifyContent:"space-between" PRO Zeile hätte jede Zeile ihre Lücken
+  // aus der SUMME ihres eigenen Inhalts berechnet — bei Buch. (überall echte
+  // Beträge) anders als bei VM/unkat. (teils "—"), wodurch die Spalten
+  // zwischen den Zeilen nicht mehr übereinanderstanden (Nutzer-Feedback:
+  // "das ging daneben"). Ein gemeinsames Grid mit denselben Spalten für
+  // ALLE Zeilen behebt das — jede Spalte ist so breit wie ihr breitester
+  // Inhalt über alle drei Zeilen hinweg, exakt gleich in jeder Zeile.
+  const DetailRow = ({label, mIn, mOut, eIn, eOut, clrIn, clrOut, clrInM, clrOutM, clrInE, clrOutE, onTapIn, onTapOut, rotatedCents}) => (
+    <>
       <AmtSlot v={mOut} kind="neg" clr={clrOutM??clrOut} isMitte={true} onTap={onTapOut} rotatedCents={rotatedCents}/>
       <AmtSlot v={mIn} kind="pos" clr={clrInM??clrIn} isMitte={true} onTap={onTapIn} rotatedCents={rotatedCents}/>
-      <div style={{flexShrink:0,padding:"0 6px",textAlign:"center",
+      <div style={{padding:"0 6px",textAlign:"center",
         color:T.txt2,fontSize:10,fontWeight:600,letterSpacing:0.3}}>{label}</div>
       <AmtSlot v={eOut} kind="neg" clr={clrOutE??clrOut} isMitte={false} onTap={onTapOut} rotatedCents={rotatedCents}/>
       <AmtSlot v={eIn} kind="pos" clr={clrInE??clrIn} isMitte={false} onTap={onTapIn} rotatedCents={rotatedCents}/>
-    </div>
-    );
-  };
+    </>
+  );
 
   // Konto-Pille + Dropdown-Menü — gemeinsame Render-Funktion für beide
   // Hero-Layouts (Standard: mittig in der MITTE/ENDE-Zeile, angehoben auf
@@ -335,11 +340,6 @@ function SaldoHeroV2({
         // Theme-Umschalter sitzt in einer eigenen Geschwister-Box), daher
         // unbedenklich zu clippen.
         ...(T.frame_border ? {overflow:"hidden"} : {})}}>
-        {/* Linker Platzhalter — exakt so breit wie das Augen-Symbol rechts
-            (inkl. dessen Randabstand). Hält den Betrag optisch zentriert.
-            Das Auge ist ein normales Flex-Geschwister statt absolut
-            positioniert, kann den Betrag also strukturell nie überlappen. */}
-        <div style={{width:sideReserve, flexShrink:0, flexGrow:0}}/>
         <span onClick={allAccIds.length>1?cycleAcc:undefined} className="heroAmt heroBalance"
           style={{
             color: heroColor(saldo),
@@ -429,22 +429,35 @@ function SaldoHeroV2({
           und der Monatsbezug fehlt. */}
       {detailsOpen && !hideDetailRows && (
         <div style={{marginTop:2,paddingTop:6,borderTop:`1px solid ${T.bd}`}}>
-          <DetailRow label="Buch."
-            mIn={buchInM} mOut={buchOutM} eIn={buchInE} eOut={buchOutE}
-            clrIn={bookColHero(true)} clrOut={bookColHero(false)}
-            onTapIn={onDrillBuchIn} onTapOut={onDrillBuchOut} rotatedCents/>
-          {(pendInE>0||pendOutE>0) && (
-            <DetailRow label="VM"
-              mIn={pendInM} mOut={pendOutM} eIn={pendInE} eOut={pendOutE}
-              clrIn={T.pos_vm} clrOut={T.neg_vm}
-              onTapIn={onDrillPendIn} onTapOut={onDrillPendOut} rotatedCents/>
-          )}
-          {(uInE>0||uOutE>0) && (
-            <DetailRow label="unkat."
-              mIn={uInM} mOut={uOutM} eIn={uInE} eOut={uOutE}
-              clrIn={T.gold} clrOut={T.gold}
-              onTapIn={onDrillUncatIn} onTapOut={onDrillUncatOut} rotatedCents/>
-          )}
+          {/* Gemeinsames Grid für Buch./VM/unkat.: dieselben 5 Spalten
+              (Out-Mitte/In-Mitte/Label/Out-Ende/In-Ende) in JEDER Zeile,
+              damit Beträge (und der "—"-Platzhalter) über alle drei Zeilen
+              hinweg exakt übereinanderstehen (Nutzer-Feedback). Spalten sind
+              inhaltsbreit (max-content) statt starr — kleine Beträge dürfen
+              näher zusammenrücken, nur breitere brauchen automatisch mehr
+              Platz. justifyContent verteilt den Rest gleichmäßig, ein
+              kleiner Bleed über framePad hinaus lässt etwas Seitenrand übrig
+              (Nutzer-Wunsch: "ein wenig mehr seitlicher Rand"). */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(5, max-content)",
+            justifyContent:"space-between",justifyItems:"center",alignItems:"baseline",rowGap:4,
+            margin:`0 -${Math.max(0, framePad - 8)}px`}}>
+            <DetailRow label="Buch."
+              mIn={buchInM} mOut={buchOutM} eIn={buchInE} eOut={buchOutE}
+              clrIn={bookColHero(true)} clrOut={bookColHero(false)}
+              onTapIn={onDrillBuchIn} onTapOut={onDrillBuchOut} rotatedCents/>
+            {(pendInE>0||pendOutE>0) && (
+              <DetailRow label="VM"
+                mIn={pendInM} mOut={pendOutM} eIn={pendInE} eOut={pendOutE}
+                clrIn={T.pos_vm} clrOut={T.neg_vm}
+                onTapIn={onDrillPendIn} onTapOut={onDrillPendOut} rotatedCents/>
+            )}
+            {(uInE>0||uOutE>0) && (
+              <DetailRow label="unkat."
+                mIn={uInM} mOut={uOutM} eIn={uInE} eOut={uOutE}
+                clrIn={T.gold} clrOut={T.gold}
+                onTapIn={onDrillUncatIn} onTapOut={onDrillUncatOut} rotatedCents/>
+            )}
+          </div>
           {showScrollFocusToggle && (
             <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8,paddingTop:8,borderTop:`1px solid ${T.bd}`}}>
               <span style={{flex:1,color:T.txt2,fontSize:11.5}}>Scroll-Vergrößerung (Zeile wächst/dockt an)</span>
