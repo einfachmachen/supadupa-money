@@ -113,3 +113,59 @@ describe("schieflagePreview — Live-Vorwarnung vor dem Speichern", () => {
     expect(r.count).toBeGreaterThanOrEqual(1);
   });
 });
+
+// Regression (Nutzer-Feedback): würde die automatische Sparraten-Anpassung
+// (computeSafeCurrentMonthAmount) die durch den Entwurf ausgelöste Schieflage
+// vollständig vermeiden, soll ein Zusatz-Hinweis erscheinen ("Durch
+// Reduzierung ... von X € auf Y € wird die Schieflage vermieden"). Ist die
+// Schieflage NICHT (vollständig) durch eine Reduzierung vermeidbar, bleibt es
+// bei der normalen Warnung ohne diesen Zusatz.
+describe("schieflagePreview — sparAdjust (automatische Sparraten-Anpassung)", () => {
+  const nowM = monthsAhead(0);
+  const sparAbgang = (amount) => ({
+    id: "spar-abgang", accountId: "acc-giro", date: isoDay(nowM, 28), totalAmount: -amount,
+    pending: true, _csvType: "expense", desc: "Sparen·Tagesgeld", _seriesId: "s1",
+    splits: [{ id: "sp1", catId: "", subId: "", amount: -amount }],
+  });
+  const ctxWithAnchor = (existing) => ({
+    txs: existing, cats: [], accounts: [{ id: "acc-giro", minPuffer: 100 }],
+    getKumulierterSaldo: () => 1000, getCat: () => null, getBudgetForMonth: () => 0,
+    budgets: {}, puffer: 100,
+  });
+
+  it("schlägt eine Sparraten-Reduzierung vor, die die Schieflage vollständig vermeidet", () => {
+    const m = monthsAhead(3);
+    // Bestehend: nur die laufende Sparplan-Buchung (269 €) — für sich genommen
+    // kein Engpass. Entwurf: eine 700 €-Ausgabe 3 Monate später löst den
+    // Engpass aus (1000 − 269 − 700 = 31 → 69 € unter Puffer 100 €).
+    const draft = [pendingTx("d1", isoDay(m, 15), 700, "expense")];
+    const r = schieflagePreview({ ...ctxWithAnchor([sparAbgang(269)]), draftTxs: draft });
+    expect(r.hasImpact).toBe(true);
+    expect(r.isNew).toBe(true);
+    expect(r.sparAdjust).not.toBeNull();
+    expect(r.sparAdjust.oldAmount).toBe(269);
+    expect(r.sparAdjust.safeAmount).toBe(200); // 269 − 69 = 200
+    expect(r.sparAdjust.year).toBe(nowM.getFullYear());
+    expect(r.sparAdjust.month).toBe(nowM.getMonth());
+  });
+
+  it("schlägt NICHTS vor, wenn selbst eine Reduzierung auf 0 die Schieflage nicht vollständig vermeidet", () => {
+    const m = monthsAhead(3);
+    // Entwurf so groß, dass selbst eine Sparrate von 0 € nicht ausreicht
+    // (1000 − 0 − 5000 liegt weit unter dem Puffer).
+    const draft = [pendingTx("d1", isoDay(m, 15), 5000, "expense")];
+    const r = schieflagePreview({ ...ctxWithAnchor([sparAbgang(269)]), draftTxs: draft });
+    expect(r.hasImpact).toBe(true);
+    expect(r.sparAdjust).toBeNull();
+  });
+
+  it("schlägt NICHTS vor, wenn keine eindeutige Sparplan-Buchung im laufenden Monat existiert", () => {
+    const m = monthsAhead(3);
+    // Ohne Sparplan-Buchung muss der Entwurf allein schon unter den Puffer
+    // drücken (1000 − 950 = 50 → 50 € unter Puffer 100 €).
+    const draft = [pendingTx("d1", isoDay(m, 15), 950, "expense")];
+    const r = schieflagePreview({ ...ctxWithAnchor([]), draftTxs: draft }); // keine Sparplan-Buchung
+    expect(r.hasImpact).toBe(true);
+    expect(r.sparAdjust).toBeNull();
+  });
+});

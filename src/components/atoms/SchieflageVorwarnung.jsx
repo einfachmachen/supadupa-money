@@ -70,6 +70,16 @@ export function SchieflageVorwarnung({ draftTxs, kind = "vormerkung", style }) {
           <b style={{ color: T.gold }}>{fmt(res.deficit)} €</b> unter deinen Puffer ({fmt(res.buffer)} €).
           {res.count > 1 ? ` Betroffen: ${res.count} Monate.` : ""}
         </div>
+        {res.sparAdjust && (
+          <div style={{ fontSize: 13, color: T.txt, marginTop: 4 }}>
+            {Li("arrow-down", 13, T.pos)}{" "}
+            Durch Reduzierung der Tagesgeld-Sparrate im{" "}
+            {MONTHS_S[res.sparAdjust.month]} {res.sparAdjust.year} von{" "}
+            <b>{fmt(res.sparAdjust.oldAmount)} €</b> auf{" "}
+            <b style={{ color: T.pos }}>{fmt(res.sparAdjust.safeAmount)} €</b>{" "}
+            wird die Schieflage vermieden.
+          </div>
+        )}
         <div style={{ fontSize: 11.5, color: T.txt2, marginTop: 3 }}>
           Du kannst trotzdem speichern — dies ist nur ein Hinweis.
         </div>
