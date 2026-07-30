@@ -190,7 +190,7 @@ function SaldoHeroV2({
   // OHNE eigene Spaltenbreite — bleibt dadurch garantiert immer exakt mittig
   // UND ist schmal genug, um selbst bei vollen Zahlen nicht mehr zu
   // überlappen (siehe midGap oben, der dafür zusätzlich Platz schafft).
-  const DetailRow = ({icon, iconColor, title, mIn, mOut, eIn, eOut, clrIn, clrOut, clrInM, clrOutM, clrInE, clrOutE, onTapIn, onTapOut, rotatedCents}) => (
+  const DetailRow = ({icon, iconText, iconColor, title, mIn, mOut, eIn, eOut, clrIn, clrOut, clrInM, clrOutM, clrInE, clrOutE, onTapIn, onTapOut, rotatedCents}) => (
     <div style={{display:"flex",gap:midGap,padding:"0 1px",position:"relative",alignItems:"baseline",marginBottom:4}}>
       <HalfCell vOut={mOut} vIn={mIn} clrOut={clrOutM??clrOut} clrIn={clrInM??clrIn}
         isMitte={true} onTapOut={onTapOut} onTapIn={onTapIn} rotatedCents={rotatedCents}/>
@@ -200,9 +200,15 @@ function SaldoHeroV2({
         display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none"}}>
         {/* pointerEvents nur auf dem Symbol selbst (nicht dem ganzen Overlay,
             das sonst Klicks auf die Beträge dahinter blockieren würde) —
-            damit der Titel-Tooltip beim Hover funktioniert. */}
+            damit der Titel-Tooltip beim Hover funktioniert. Größer & in
+            T.txt (statt vorher T.txt2/klein) für bessere Unterscheidbarkeit
+            (Nutzer-Feedback). iconText: für Symbole ohne kreisloses Lucide-
+            Äquivalent (kein "nur Fragezeichen" ohne Kreis/Badge verfügbar) —
+            einfach als Text gerendert statt als Icon. */}
         <span title={title} style={{display:"inline-flex",pointerEvents:"auto"}}>
-          {Li(icon,14,iconColor||T.txt2)}
+          {iconText
+            ? <span style={{fontSize:19,fontWeight:800,lineHeight:1,color:iconColor||T.txt}}>{iconText}</span>
+            : Li(icon,19,iconColor||T.txt)}
         </span>
       </div>
     </div>
@@ -458,7 +464,7 @@ function SaldoHeroV2({
           und der Monatsbezug fehlt. */}
       {detailsOpen && !hideDetailRows && (
         <div style={{marginTop:2,paddingTop:6,borderTop:`1px solid ${T.bd}`}}>
-          <DetailRow icon="check-circle" title="Gebucht"
+          <DetailRow icon="check" title="Gebucht"
             mIn={buchInM} mOut={buchOutM} eIn={buchInE} eOut={buchOutE}
             clrIn={bookColHero(true)} clrOut={bookColHero(false)}
             onTapIn={onDrillBuchIn} onTapOut={onDrillBuchOut} rotatedCents/>
@@ -469,7 +475,7 @@ function SaldoHeroV2({
               onTapIn={onDrillPendIn} onTapOut={onDrillPendOut} rotatedCents/>
           )}
           {(uInE>0||uOutE>0) && (
-            <DetailRow icon="help-circle" title="Unkategorisiert"
+            <DetailRow iconText="?" title="Unkategorisiert"
               mIn={uInM} mOut={uOutM} eIn={uInE} eOut={uOutE}
               clrIn={T.gold} clrOut={T.gold}
               onTapIn={onDrillUncatIn} onTapOut={onDrillUncatOut} rotatedCents/>
