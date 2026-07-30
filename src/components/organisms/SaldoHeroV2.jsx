@@ -146,47 +146,46 @@ function SaldoHeroV2({
   // Grund) — als 20px-Betrag hier wirkt das dann wie Rosa statt Rot
   // (Nutzer-Feedback, betraf konkret die unbeschriftete "Buch."-Zeile; VM/
   // unkat. hatten schon eine eigene, kräftige clrOut/clrIn-Farbe).
-  // edgeAlign ("left"/"right"): richtet die ÄUSSERSTE Zelle einer Hälfte (Out
-  // links in der Mitte-Hälfte bzw. In rechts in der Ende-Hälfte) am wahren
-  // Zeilenrand statt zentriert aus — sonst bliebe trotz voller Randbreite
-  // (siehe fullBleed in DetailRow) durch die Zentrierung Luft zum Rand
-  // übrig. Die jeweils INNERE Zelle (neben dem Label) bleibt zentriert.
-  const HalfCell = ({vIn, vOut, clrIn, clrOut, isMitte, onTapIn, onTapOut, rotatedCents, edgeAlign}) => {
-    const outAlign = edgeAlign==="left" ? "left" : "center";
-    const inAlign = edgeAlign==="right" ? "right" : "center";
-    return (
+  // tight: Out-Zelle links, In-Zelle rechts ausgerichtet (statt zentriert) —
+  // gilt in BEIDEN Hälften gleich, wirkt dadurch automatisch doppelt:
+  // die äußerste Zelle (Out-Mitte, In-Ende) rückt an den wahren Zeilenrand
+  // (siehe fullBleed in DetailRow), die innere Zelle (In-Mitte, Out-Ende)
+  // rückt dicht ans Label heran, statt mittig mit Luft davor/danach zu
+  // stehen (Nutzer-Wunsch: Abstand vor/nach Buch./VM./unkat. reduzieren).
+  // Der Platzhalter-Strich "—" bleibt davon ausgenommen und immer zentriert
+  // (Nutzer-Feedback: er soll unter den echten Beträgen der Nachbarzeilen
+  // stehen, nicht an den Rand/ans Label rutschen, wo gar kein Betrag ist).
+  const HalfCell = ({vIn, vOut, clrIn, clrOut, isMitte, onTapIn, onTapOut, rotatedCents, tight}) => (
     <div style={{flex:1,display:"flex",alignItems:"baseline"}}>
-      <div style={{flex:1,textAlign:outAlign,cursor:vOut>0&&onTapOut?"pointer":"default",padding:"2px 0"}}
+      <div style={{flex:1,textAlign:tight&&vOut>0?"left":"center",cursor:vOut>0&&onTapOut?"pointer":"default",padding:"2px 0"}}
         onClick={vOut>0&&onTapOut?()=>onTapOut(isMitte):undefined}>
         {vOut>0
           ? <span style={{...amtStyle("neg",clrOut||T.cond_neg),fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>{rotatedCents?<RotatedCents v={vOut}/>:fmt(vOut)}</span>
           : <span style={{color:T.txt2,fontSize:20}}>—</span>}
       </div>
-      <div style={{flex:1,textAlign:inAlign,cursor:vIn>0&&onTapIn?"pointer":"default",padding:"2px 0"}}
+      <div style={{flex:1,textAlign:tight&&vIn>0?"right":"center",cursor:vIn>0&&onTapIn?"pointer":"default",padding:"2px 0"}}
         onClick={vIn>0&&onTapIn?()=>onTapIn(isMitte):undefined}>
         {vIn>0
           ? <span style={{...amtStyle("pos",clrIn||T.cond_pos),fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>{rotatedCents?<RotatedCents v={vIn}/>:fmt(vIn)}</span>
           : <span style={{color:T.txt2,fontSize:20}}>—</span>}
       </div>
     </div>
-    );
-  };
+  );
   // fullBleed: zieht die Zeile per Negativ-Margin über den Hero-Innenabstand
-  // (framePad) hinaus bis fast an den echten Kartenrand — kombiniert mit
-  // edgeAlign oben, damit die äußersten Beträge diesen Platz auch wirklich
-  // ausfüllen statt nur zentriert näher am Rand zu stehen (Nutzer-Wunsch:
-  // "jedes Pixel zählt").
+  // (framePad) hinaus bis fast an den echten Kartenrand, UND schmälert das
+  // Label selbst auf seine tatsächliche Textbreite (statt fester 44px) —
+  // kombiniert mit tight oben, damit die Beträge diesen Platz auch wirklich
+  // ausfüllen statt nur zentriert Luft zu lassen (Nutzer-Wunsch: "jedes
+  // Pixel zählt").
   const DetailRow = ({label, mIn, mOut, eIn, eOut, clrIn, clrOut, clrInM, clrOutM, clrInE, clrOutE, onTapIn, onTapOut, rotatedCents, fullBleed}) => (
     <div style={{display:"flex",alignItems:"center",
       ...(fullBleed ? {margin:`0 -${framePad}px 4px`,padding:"0 3px"} : {marginBottom:4})}}>
       <HalfCell vIn={mIn} vOut={mOut} clrIn={clrInM??clrIn} clrOut={clrOutM??clrOut}
-        isMitte={true} onTapIn={onTapIn} onTapOut={onTapOut} rotatedCents={rotatedCents}
-        edgeAlign={fullBleed?"left":undefined}/>
-      <div style={{width:44,flexShrink:0,textAlign:"center",
+        isMitte={true} onTapIn={onTapIn} onTapOut={onTapOut} rotatedCents={rotatedCents} tight={fullBleed}/>
+      <div style={{width:fullBleed?36:44,flexShrink:0,textAlign:"center",
         color:T.txt2,fontSize:10,fontWeight:600,letterSpacing:0.3}}>{label}</div>
       <HalfCell vIn={eIn} vOut={eOut} clrIn={clrInE??clrIn} clrOut={clrOutE??clrOut}
-        isMitte={false} onTapIn={onTapIn} onTapOut={onTapOut} rotatedCents={rotatedCents}
-        edgeAlign={fullBleed?"right":undefined}/>
+        isMitte={false} onTapIn={onTapIn} onTapOut={onTapOut} rotatedCents={rotatedCents} tight={fullBleed}/>
     </div>
   );
 
