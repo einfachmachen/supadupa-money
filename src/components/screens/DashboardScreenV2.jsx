@@ -1445,6 +1445,11 @@ function DashboardScreenV2() {
             const _endeW    = showEnde ? fmtShort(ende).length*9.2 : 0;
             const _reserveR = Math.round(_endeW + 10 + _mitW/2);
             const mitLeft   = `min(2px + (100% - 3px) * ${_mfr}, 100% - ${_reserveR}px)`;
+            // Prognose-Farbe (Mitte/Ende): folgt dem Farbkonzept der App
+            // (Einnahmen=Grün, Ausgaben=Cyan) statt eigener Amber/Blau-Töne —
+            // Ende = volle Deckkraft (verlässlichere Prognose), Mitte =
+            // gedämpfter (vorläufigere Zwischenmarke), derselbe Farbton.
+            const fcColor = isInc ? (T.pos||T.txt2) : (T.neg||T.txt2);
             const dot = (key, leftCalc, size, bg, opacity=1) => (
               <div key={key} style={{position:"absolute",left:leftCalc,top:6-size/2,
                 width:size,height:size,borderRadius:"50%",background:bg,opacity,
@@ -1457,15 +1462,15 @@ function DashboardScreenV2() {
                 {/* Grundlinie 0→Ende */}
                 <div style={{position:"absolute",left:2,right:1,top:5.25,height:1.5,background:T.bd}}/>
                 {/* Mitte-Punkt (klein) — zentriert über dem Mitte-Wert */}
-                {showMitte && dot("m", mitLeft, 4, T.mid||T.txt2, 0.6)}
+                {showMitte && dot("m", mitLeft, 4, fcColor, 0.55)}
                 {/* inkl. Vormerkungen genutzt (grauer Punkt) */}
                 {hasVM && dot("v", at(usedPct), 6, T.txt2, 0.7)}
                 {/* aktuelles Gesamt (Ampelfarben-Punkt) */}
                 {dot("a", at(istPct), 8, actClr)}
                 {/* Mitte-Wert */}
-                {showMitte && <span style={{position:"absolute",left:mitLeft,top:10,transform:"translateX(-50%)",color:T.mid||T.txt2,fontSize:16,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(mitte)}</span>}
+                {showMitte && <span style={{position:"absolute",left:mitLeft,top:10,transform:"translateX(-50%)",color:fcColor,opacity:0.7,fontSize:16,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(mitte)}</span>}
                 {/* Ende-Wert rechts */}
-                {showEnde && <span style={{position:"absolute",right:0,top:10,color:(isInc?T.cell_inc:T.cell_exp)||T.txt2,fontSize:16,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(ende)}</span>}
+                {showEnde && <span style={{position:"absolute",right:0,top:10,color:fcColor,fontSize:16,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(ende)}</span>}
               </div>
             );
           };
