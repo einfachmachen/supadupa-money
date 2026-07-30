@@ -1455,14 +1455,22 @@ function DashboardScreenV2() {
                 width:size,height:size,borderRadius:"50%",background:bg,opacity,
                 transform:"translateX(-50%)"}}/>
             );
+            // Mitte-Marker als senkrechter Strich statt Punkt — verdeutlicht die
+            // Trennung zwischen 1. und 2. Monatshälfte auf der Grundlinie besser
+            // als ein Kreis (Nutzer-Feedback).
+            const tick = (key, leftCalc, w, h, bg, opacity=1) => (
+              <div key={key} style={{position:"absolute",left:leftCalc,top:6-h/2,
+                width:w,height:h,background:bg,opacity,
+                transform:"translateX(-50%)"}}/>
+            );
             return (
               <div onClick={e=>{e.stopPropagation(); if(ende>0) onOpen();}}
                 style={{position:"relative",height:(showMitte||showEnde)?30:14,marginTop:1,marginLeft:indent,cursor:ende>0?"pointer":"default",
                   fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
                 {/* Grundlinie 0→Ende */}
                 <div style={{position:"absolute",left:2,right:1,top:5.25,height:1.5,background:T.bd}}/>
-                {/* Mitte-Punkt (klein) — zentriert über dem Mitte-Wert */}
-                {showMitte && dot("m", mitLeft, 4, fcColor, 0.55)}
+                {/* Mitte-Strich — zentriert über dem Mitte-Wert */}
+                {showMitte && tick("m", mitLeft, 2, 10, fcColor, 0.55)}
                 {/* inkl. Vormerkungen genutzt (grauer Punkt) */}
                 {hasVM && dot("v", at(usedPct), 6, T.txt2, 0.7)}
                 {/* aktuelles Gesamt (Ampelfarben-Punkt) */}
