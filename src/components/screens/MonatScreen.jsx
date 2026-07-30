@@ -181,6 +181,18 @@ function MonatScreen() {
     const onSearchSubmit = React.useCallback((v)=>{ setSearch(v); setSelected(new Set()); }, []);
     const onSearchClear  = React.useCallback(()=>{ setSearch(""); setSelected(new Set()); }, []);
     const [selected, setSelected] = useState(new Set());
+    // Suchergebnisse: der Tagessaldo (Verbindungslinie + große Zahl im
+    // Tages-Header) lenkt dort stark von den eigentlichen Treffer-Beträgen
+    // ab (Nutzer-Feedback) — im Suchmodus deshalb standardmäßig zugeklappt,
+    // aber pro Tag oder komplett auf einmal wieder aufklappbar. Außerhalb
+    // der Suche unverändert immer sichtbar (dort nicht störend, da es dort
+    // ohnehin nur ein bis zwei Tage mit Buchungen pro Ansicht sind).
+    const [expandedSearchDates, setExpandedSearchDates] = useState(new Set());
+    const toggleSearchDateDetails = (date) => setExpandedSearchDates(prev => {
+      const next = new Set(prev);
+      next.has(date) ? next.delete(date) : next.add(date);
+      return next;
+    });
     const [bulkCat,  setBulkCat]  = useState({catId:"",subId:""});
     // Bulk-Zuordnung: statt einer Kategorie können ausgewählten Buchungen auch
     // Tags zugewiesen werden (typunabhängig, im Gegensatz zur Kategorie).
@@ -1421,6 +1433,20 @@ function MonatScreen() {
                 color:T.blue,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>
               {Li(allSel?"check-square":"square",12,T.blue)} Alle ({mTxs.length})
             </button>
+            {/* Tagessaldo-Details (Verbindungslinie + große Zahl je Tag) sind
+                im Suchmodus standardmäßig zugeklappt — hier alle auf einmal
+                ein-/ausklappbar, einzeln über den Chevron je Tageszeile. */}
+            {inSearchMode&&dates.length>0&&(()=>{
+              const allExpanded = dates.every(d=>expandedSearchDates.has(d));
+              return (
+                <button onClick={()=>setExpandedSearchDates(allExpanded?new Set():new Set(dates))}
+                  style={{background:allExpanded?"rgba(74,159,212,0.3)":"rgba(255,255,255,0.08)",
+                    border:`1px solid ${T.blue}`,borderRadius:8,padding:"4px 8px",
+                    color:T.blue,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>
+                  {Li(allExpanded?"chevron-up":"chevron-down",12,T.blue)} Details
+                </button>
+              );
+            })()}
             {/* Ausgaben/Einnahmen-Summe der Treffer — einzige Summenanzeige
                 (vorher zusätzlich als eigene Zeile darüber, das war doppelt). */}
             {inSearchMode&&(()=>{
@@ -1533,7 +1559,18 @@ function MonatScreen() {
                     <span style={{color:T.txt2,fontSize:10}}>{dayName(date)}</span>
                     {dayOf(date)<=14&&<span style={{color:T.mid,fontSize:9,fontWeight:700,
                       background:"rgba(103,232,249,0.1)",borderRadius:5,padding:"1px 5px"}}>Mitte</span>}
+                    {/* Im Suchmodus: Tagessaldo-Details standardmäßig zugeklappt
+                        (lenkte stark von den Treffer-Beträgen ab, Nutzer-
+                        Feedback) — hier einzeln je Tag wieder aufklappbar. */}
+                    {inSearchMode&&(
+                      <span onClick={()=>toggleSearchDateDetails(date)}
+                        title={expandedSearchDates.has(date)?"Tagessaldo ausblenden":"Tagessaldo einblenden"}
+                        style={{cursor:"pointer",display:"inline-flex",alignItems:"center",opacity:0.6}}>
+                        {Li(expandedSearchDates.has(date)?"chevron-up":"chevron-down",13,T.txt2)}
+                      </span>
+                    )}
                   </div>
+                  {(!inSearchMode||expandedSearchDates.has(date))&&(<>
                   {/* Verbindungs-Linie in grün (positiver) / rot (negativer Ist-Saldo).
                       data-role/-tone: dieselbe Farbe wird per `background`
                       (nicht `color`) gesetzt — die Fokus-Regel für Text greift
@@ -1587,6 +1624,7 @@ function MonatScreen() {
                       {dayNet>=0?"":"−"}{fmt(Math.abs(dayNet))}
                     </span>
                   )}
+                  </>)}
                 </div>
                 </div>
                 {/* ── Minus-Warnung ── */}
