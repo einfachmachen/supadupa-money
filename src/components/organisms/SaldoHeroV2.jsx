@@ -93,6 +93,15 @@ function SaldoHeroV2({
   const framePad = 20 - frameBorderWidth;
   const amtFontSize = 44;
   const eyeBoxSize = 30;
+  // midGap: Lücke zwischen MITTE- und ENDE-Hälfte — von BEIDEN Zeilen genutzt
+  // (Prognose MITTE|ENDE und den Buch./VM/unkat.-Detailzeilen darunter,
+  // dieselbe flex:1+flex:1-Struktur), damit sie weiterhin exakt fluchten.
+  // Größer als früher (war 6px): schiebt MITTE samt Prognose M etwas nach
+  // links und ENDE samt Prognose E etwas nach rechts, damit die mittigen
+  // Overlays (Kontoname/Chevron bzw. die kleinen Symbol-Labels der
+  // Detailzeilen) genug Platz haben und nicht mehr die Beträge verdecken
+  // (Nutzer-Feedback: "Buch., VM und unkat. verdecken die Beträge").
+  const midGap = 32;
   // eyeZoneWidth: reservierte Obergrenze für Betrag + Auge zusammen (siehe
   // Zeile 1 unten) — das Auge selbst hängt dort NICHT mehr in einer fest
   // reservierten, symmetrischen Zone, sondern als absolut positioniertes
@@ -174,22 +183,27 @@ function SaldoHeroV2({
     </div>
   );
   // DetailRow: bewusst dieselbe flex:1 + flex:1-Struktur (gleicher gap/
-  // padding) wie die Prognose-Zeile (MITTE|ENDE) darüber — dadurch fluchten
-  // Buch./VM./unkat. exakt unter MITTE bzw. ENDE (Nutzer-Wunsch). Das Label
-  // sitzt — wie Kontoname/Ausklapp-Chevron dort — als zentriertes Overlay
-  // OHNE eigene Spaltenbreite, bleibt dadurch garantiert immer exakt mittig,
-  // unabhängig vom Zahlenumfang links/rechts (Nutzer-Wunsch: "Buch./VM/
-  // unkat. sollten immer zentriert sein").
-  const DetailRow = ({label, mIn, mOut, eIn, eOut, clrIn, clrOut, clrInM, clrOutM, clrInE, clrOutE, onTapIn, onTapOut, rotatedCents}) => (
-    <div style={{display:"flex",gap:6,padding:"0 1px",position:"relative",alignItems:"baseline",marginBottom:4}}>
+  // padding, midGap) wie die Prognose-Zeile (MITTE|ENDE) darüber — dadurch
+  // fluchten Buch./VM./unkat. exakt unter MITTE bzw. ENDE (Nutzer-Wunsch).
+  // Statt eines Text-Labels (verdeckte bei breiten Beträgen deren Ziffern,
+  // Nutzer-Feedback) sitzt jetzt ein kleines SYMBOL als zentriertes Overlay
+  // OHNE eigene Spaltenbreite — bleibt dadurch garantiert immer exakt mittig
+  // UND ist schmal genug, um selbst bei vollen Zahlen nicht mehr zu
+  // überlappen (siehe midGap oben, der dafür zusätzlich Platz schafft).
+  const DetailRow = ({icon, iconColor, title, mIn, mOut, eIn, eOut, clrIn, clrOut, clrInM, clrOutM, clrInE, clrOutE, onTapIn, onTapOut, rotatedCents}) => (
+    <div style={{display:"flex",gap:midGap,padding:"0 1px",position:"relative",alignItems:"baseline",marginBottom:4}}>
       <HalfCell vOut={mOut} vIn={mIn} clrOut={clrOutM??clrOut} clrIn={clrInM??clrIn}
         isMitte={true} onTapOut={onTapOut} onTapIn={onTapIn} rotatedCents={rotatedCents}/>
       <HalfCell vOut={eOut} vIn={eIn} clrOut={clrOutE??clrOut} clrIn={clrInE??clrIn}
         isMitte={false} onTapOut={onTapOut} onTapIn={onTapIn} rotatedCents={rotatedCents}/>
       <div style={{position:"absolute",left:0,right:0,top:0,bottom:0,
         display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none"}}>
-        <span style={{fontSize:10,fontWeight:600,letterSpacing:0.3,color:T.txt2,
-          background:T.surf2||T.surf||"rgba(0,0,0,0.35)",borderRadius:4,padding:"1px 6px"}}>{label}</span>
+        {/* pointerEvents nur auf dem Symbol selbst (nicht dem ganzen Overlay,
+            das sonst Klicks auf die Beträge dahinter blockieren würde) —
+            damit der Titel-Tooltip beim Hover funktioniert. */}
+        <span title={title} style={{display:"inline-flex",pointerEvents:"auto"}}>
+          {Li(icon,14,iconColor||T.txt2)}
+        </span>
       </div>
     </div>
   );
@@ -391,7 +405,7 @@ function SaldoHeroV2({
           Werte bekommen eine harte Breiten-Deckelung (maxWidth/overflow/
           ellipsis) — rein defensiv, unabhängig vom Deko-Rahmen (der läuft
           jetzt als Overlay über allem, siehe App.jsx). */}
-      <div style={{display:"flex",gap:6,marginTop:2,padding:"0 1px",
+      <div style={{display:"flex",gap:midGap,marginTop:2,padding:"0 1px",
         alignItems:"stretch",position:"relative"}}>
         {/* Mitte-Spalte — Klickfläche nur um den Text (inline-block), damit sie
             nicht bis zum mittigen Ausklapp-Chevron reicht. Spaltenbreite, Text-
@@ -444,18 +458,18 @@ function SaldoHeroV2({
           und der Monatsbezug fehlt. */}
       {detailsOpen && !hideDetailRows && (
         <div style={{marginTop:2,paddingTop:6,borderTop:`1px solid ${T.bd}`}}>
-          <DetailRow label="Buch."
+          <DetailRow icon="check-circle" title="Gebucht"
             mIn={buchInM} mOut={buchOutM} eIn={buchInE} eOut={buchOutE}
             clrIn={bookColHero(true)} clrOut={bookColHero(false)}
             onTapIn={onDrillBuchIn} onTapOut={onDrillBuchOut} rotatedCents/>
           {(pendInE>0||pendOutE>0) && (
-            <DetailRow label="VM"
+            <DetailRow icon="clock" title="Vorgemerkt"
               mIn={pendInM} mOut={pendOutM} eIn={pendInE} eOut={pendOutE}
               clrIn={T.pos_vm} clrOut={T.neg_vm}
               onTapIn={onDrillPendIn} onTapOut={onDrillPendOut} rotatedCents/>
           )}
           {(uInE>0||uOutE>0) && (
-            <DetailRow label="unkat."
+            <DetailRow icon="help-circle" title="Unkategorisiert"
               mIn={uInM} mOut={uOutM} eIn={uInE} eOut={uOutE}
               clrIn={T.gold} clrOut={T.gold}
               onTapIn={onDrillUncatIn} onTapOut={onDrillUncatOut} rotatedCents/>
