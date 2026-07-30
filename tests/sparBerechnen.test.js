@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeMinTagessaldo } from "../src/utils/sparBerechnen.js";
+import { computeMinTagessaldo, computeSafeCurrentMonthAmount } from "../src/utils/sparBerechnen.js";
 
 // Minimaler Kontext: keine Budgets, keine Kategorien nötig für diese Fälle.
 function buildCtx({ txs, giroAnchorPrevMonth }) {
@@ -85,5 +85,92 @@ describe("computeMinTagessaldo — automatische Sparraten-Anpassung", () => {
     const { min } = computeMinTagessaldo(2026, 6, {}, "acc-giro", "Sparen·Test", ctx, today);
     const safeAmount = Math.max(0, Math.floor(min - puffer));
     expect(safeAmount).toBeGreaterThanOrEqual(500); // alte Rate bleibt sicher, keine Änderung
+  });
+});
+
+// Regression (Nutzer-Bericht): ein Liquiditäts-Engpass in einem FERNEN
+// Folgemonat (z.B. 9 Monate später) ließe sich sofort vermeiden, indem die
+// Sparrate des LAUFENDEN Monats entsprechend reduziert wird — die
+// Sparbuchung eines Monatsletzten wirkt sich als fester Betrag auf JEDEN
+// Folgemonat aus. Die einfache "nur den laufenden Monat selbst prüfen"-
+// Logik hatte das übersehen, weil der laufende Monat für sich allein
+// genügend Spielraum hatte (Engpass lag ausschließlich am fernen
+// Folgemonat).
+describe("computeSafeCurrentMonthAmount — Engpass in fernem Folgemonat vermeiden", () => {
+  const today = new Date("2026-07-30");
+  const puffer = 100;
+
+  // Kontext OHNE getProgEndeAccGlobal: erzwingt den saldoEnde-Fallback in
+  // computeMinTagessaldo, der auch mit dem hypothetisch veränderten Betrag
+  // der laufenden Monats-Buchung korrekt rechnet (siehe computeMinTagessaldo-
+  // Kommentar zu getProgEndeAccGlobal).
+  function buildCtxNoCache({ txs, giroAnchorPrevMonth }) {
+    return {
+      txs,
+      cats: [],
+      accounts: [{ id: "acc-giro", name: "Giro" }],
+      getKumulierterSaldo: () => giroAnchorPrevMonth,
+      getCat: () => null,
+      getBudgetForMonth: () => 0,
+      // KEIN getProgEndeAccGlobal — bewusst.
+    };
+  }
+
+  it("reduziert die laufende Sparrate genau so weit, dass ein Engpass 2 Monate später vermieden wird", () => {
+    const txs = [
+      // Juli: nur die Sparplan-Buchung, sonst nichts — für sich allein hat
+      // Juli reichlich Spielraum (Anker 1000, Puffer 100 → bis zu 900 möglich).
+      { id: "spar-abgang", accountId: "acc-giro", date: "2026-07-31", totalAmount: -269, pending: true, _csvType: "expense",
+        desc: "Sparen·Tagesgeld", _seriesId: "s1", splits: [{ id: "sp1", catId: "", subId: "", amount: -269 }] },
+      // August: keine Buchungen.
+      // September: eine große, bereits bestehende Ausgabe von 700 € am 15. —
+      // das ist der eigentliche Auslöser des fernen Engpasses.
+      { id: "e-sep", accountId: "acc-giro", date: "2026-09-15", totalAmount: -700, pending: true, _csvType: "expense", splits: [] },
+    ];
+    const ctx = buildCtxNoCache({ txs, giroAnchorPrevMonth: 1000 });
+
+    const safeAmount = computeSafeCurrentMonthAmount({
+      y: 2026, m: 6, puffer, abgangId: "spar-abgang", abgangDesc: "Sparen·Tagesgeld",
+      ctx, today, horizonMonths: 3,
+    });
+
+    // 1000 (Anker) − 269 (Sparrate) − 700 (Septemberausgabe) = 31 → 69 € unter
+    // Puffer (100). Die Sparrate muss um genau diese 69 € sinken: 269 − 69 = 200.
+    expect(safeAmount).toBe(200);
+  });
+
+  it("bleibt stabil, wenn der Folgemonats-Engpass bereits behoben ist (keine Oszillation)", () => {
+    // Dieselbe Situation, aber die Sparrate ist bereits auf den zuvor
+    // ermittelten sicheren Wert (200) gesetzt — ein erneuter Durchlauf darf
+    // NICHT wieder auf 269 erhöhen (das würde den Engpass sofort wieder
+    // aufreißen und zwischen 200 und 269 hin- und herpendeln).
+    const txs = [
+      { id: "spar-abgang", accountId: "acc-giro", date: "2026-07-31", totalAmount: -200, pending: true, _csvType: "expense",
+        desc: "Sparen·Tagesgeld", _seriesId: "s1", splits: [{ id: "sp1", catId: "", subId: "", amount: -200 }] },
+      { id: "e-sep", accountId: "acc-giro", date: "2026-09-15", totalAmount: -700, pending: true, _csvType: "expense", splits: [] },
+    ];
+    const ctx = buildCtxNoCache({ txs, giroAnchorPrevMonth: 1000 });
+
+    const safeAmount = computeSafeCurrentMonthAmount({
+      y: 2026, m: 6, puffer, abgangId: "spar-abgang", abgangDesc: "Sparen·Tagesgeld",
+      ctx, today, horizonMonths: 3,
+    });
+
+    expect(safeAmount).toBe(200); // bleibt bei 200, keine Rückkehr zu 269
+  });
+
+  it("lässt die Sparrate unverändert, wenn kein Folgemonat betroffen ist", () => {
+    const txs = [
+      { id: "spar-abgang", accountId: "acc-giro", date: "2026-07-31", totalAmount: -269, pending: true, _csvType: "expense",
+        desc: "Sparen·Tagesgeld", _seriesId: "s1", splits: [{ id: "sp1", catId: "", subId: "", amount: -269 }] },
+    ];
+    const ctx = buildCtxNoCache({ txs, giroAnchorPrevMonth: 1000 });
+
+    const safeAmount = computeSafeCurrentMonthAmount({
+      y: 2026, m: 6, puffer, abgangId: "spar-abgang", abgangDesc: "Sparen·Tagesgeld",
+      ctx, today, horizonMonths: 3,
+    });
+
+    expect(safeAmount).toBe(900); // eigener Spielraum in Juli: 1000 − 100 Puffer
   });
 });

@@ -3,22 +3,33 @@
 // genutzte Logik auch außerhalb des Widgets aufgerufen werden kann (siehe
 // App.jsx: automatische Anpassung der LAUFENDEN Monatsrate bei
 // Pufferunterschreitung, ohne die ganze Serie neu zu berechnen).
-import { restMitte, restEnde, phaseStillReachable } from "./saldo.js";
+import { restMitte, restEnde, phaseStillReachable, saldoEnde as saldoEndeUtil } from "./saldo.js";
 import { isDuplCounterpart, buildTxIdMap } from "./tx.js";
 
-// ctx: { txs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth, getProgEndeAccGlobal }
+// ctx: { txs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth, getProgEndeAccGlobal? }
+// getProgEndeAccGlobal ist OPTIONAL: die reale App übergibt den gecachten
+// App.jsx-Wrapper (schnell, aber an die ECHTEN txs gebunden — closure, nicht
+// parametrisiert). Fehlt er, wird ersatzweise direkt saldoEnde() aus
+// utils/saldo.js mit dem übergebenen ctx.txs berechnet — das ist zwingend
+// nötig, sobald ctx.txs ein HYPOTHETISCHER Buchungsstand ist (siehe
+// computeSafeCurrentMonthAmount unten), da der App.jsx-Wrapper die echten
+// txs aus seinem eigenen Closure liest und einen hypothetischen Stand sonst
+// schlicht ignorieren würde.
 export function computeMinTagessaldo(y, m, virtualSpar = {}, accId, excludeSparDesc = null, ctx, today = new Date()) {
   const { txs = [], cats = [], accounts = [], getKumulierterSaldo, getCat, getBudgetForMonth, getProgEndeAccGlobal } = ctx;
+  const progEnde = (py, pm, pAcc) => getProgEndeAccGlobal
+    ? getProgEndeAccGlobal(py, pm, pAcc)
+    : saldoEndeUtil(py, pm, pAcc ?? null, { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth });
   const effSelAcc = accId;
   const prevY = m === 0 ? y - 1 : y, prevM = m === 0 ? 11 : m - 1;
   const _prevIsPast = prevY < today.getFullYear() || (prevY === today.getFullYear() && prevM < today.getMonth());
   const baseSaldo = effSelAcc
     ? (_prevIsPast
-        ? (getKumulierterSaldo(prevY, prevM, effSelAcc) ?? getProgEndeAccGlobal(prevY, prevM, effSelAcc))
-        : (getProgEndeAccGlobal(prevY, prevM, effSelAcc) ?? getKumulierterSaldo(prevY, prevM, effSelAcc)))
+        ? (getKumulierterSaldo(prevY, prevM, effSelAcc) ?? progEnde(prevY, prevM, effSelAcc))
+        : (progEnde(prevY, prevM, effSelAcc) ?? getKumulierterSaldo(prevY, prevM, effSelAcc)))
     : (_prevIsPast
         ? getKumulierterSaldo(prevY, prevM)
-        : getProgEndeAccGlobal(prevY, prevM));
+        : progEnde(prevY, prevM));
   if (baseSaldo === null || baseSaldo === undefined) return { min: null, saldoEnde: null };
   let baseSaldoEff = baseSaldo;
   if (excludeSparDesc) {
@@ -90,4 +101,47 @@ export function computeMinTagessaldo(y, m, virtualSpar = {}, accId, excludeSparD
   });
   const saldoEnde = saldoAt(`${pfx}${pad2(lastDay)}`);
   return { min: minVal, saldoEnde };
+}
+
+// Sichere Sparrate für den LAUFENDEN Monat, die zusätzlich sicherstellt, dass
+// auch kein Folgemonat (innerhalb horizonMonths) unter den Puffer fällt —
+// nicht nur der laufende Monat selbst. Eine Buchung, die am Monatsletzten
+// vom Giro aufs Tagesgeld geht, wirkt sich als fester Betrag auf JEDEN
+// Folgemonat aus (weniger Abgang jetzt = überall danach entsprechend mehr
+// Spielraum) — deshalb genügt eine Vorwärts-Simulation mit dem jeweils
+// bereits bestehenden (unveränderten) Betrag aller Folgemonate.
+//
+// WICHTIG: bewusst eine SIMULATION (mit hypothetisch verändertem Betrag der
+// laufenden Monats-Buchung), nicht eine reaktive Prüfung auf aktuell
+// gemeldete Warnungen — sonst würde das Beheben eines Folgemonats-Engpasses
+// die Warnung zum Verschwinden bringen, woraufhin die Rate im nächsten
+// Durchlauf sofort wieder erhöht würde und der Engpass erneut aufträte
+// (Oszillation). Die Simulation bleibt dagegen stabil, weil sie nicht von
+// zwischenzeitlich verschwundenen Warnungen abhängt.
+//
+// ctx OHNE getProgEndeAccGlobal übergeben (siehe computeMinTagessaldo oben)
+// — sonst würde der reale App.jsx-Cache die echten statt der hier
+// simulierten (testTxs) Buchungen für die Folgemonate zugrunde legen.
+export function computeSafeCurrentMonthAmount({ y, m, puffer, abgangId, abgangDesc, ctx, today = new Date(), horizonMonths = 24 }) {
+  const { min: minTagOwn } = computeMinTagessaldo(y, m, {}, "acc-giro", abgangDesc, ctx, today);
+  if (minTagOwn === null) return null;
+  const ownMax = Math.floor(Math.max(0, minTagOwn - puffer));
+
+  const isSafeWithAmount = (x) => {
+    const testTxs = ctx.txs.map(t => t.id === abgangId ? { ...t, totalAmount: -x } : t);
+    const testCtx = { ...ctx, txs: testTxs, getProgEndeAccGlobal: undefined };
+    for (let i = 1; i <= horizonMonths; i++) {
+      const nm = (m + i) % 12, ny = y + Math.floor((m + i) / 12);
+      const { min } = computeMinTagessaldo(ny, nm, {}, "acc-giro", null, testCtx, today);
+      if (min !== null && min < puffer) return false;
+    }
+    return true;
+  };
+
+  let lo = 0, hi = ownMax;
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi + 1) / 2);
+    if (isSafeWithAmount(mid)) lo = mid; else hi = mid - 1;
+  }
+  return lo;
 }

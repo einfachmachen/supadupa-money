@@ -9,7 +9,7 @@ import { Li } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
 import { planLegDecisions } from "../../utils/sparPlanSeries.js";
 import { getSparWatermark, noteSparWatermark } from "../../utils/sparWatermarks.js";
-import { computeMinTagessaldo, computeSafeZusaetzlich } from "../../utils/sparBerechnen.js";
+import { computeMinTagessaldo } from "../../utils/sparBerechnen.js";
 
 function TagesgeldWidget({year, month, initialCollapsed=true}) {
   const {  getKumulierterSaldo, txs, setTxs, cats, accounts, setAccounts, getAcc, budgets, getCat, getBudgetForMonth, selAcc, getProgEndeAccGlobal, resetProgEndeCache, sparOpenRequest } = useContext(AppCtx);

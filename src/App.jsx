@@ -77,7 +77,7 @@ import { anchorValue, anchorDay } from "./utils/anchors.js";
 import { pn, uid, sumAmounts, fmt, round2 } from "./utils/format.js";
 import { MONTHS_S } from "./utils/constants.js";
 import { computeKontoWarnungen } from "./utils/kontoWarnungen.js";
-import { computeMinTagessaldo } from "./utils/sparBerechnen.js";
+import { computeSafeCurrentMonthAmount } from "./utils/sparBerechnen.js";
 import { Li } from "./utils/icons.jsx";
 import { makeYearData } from "./utils/yearData.js";
 import { isDuplCounterpart, buildTxIdMap } from "./utils/tx.js";
@@ -2364,11 +2364,13 @@ Abbrechen = ${remoteName}-Stand laden`
   // (unerwartete Mehrausgaben, z.B. Urlaub, drücken den Tagessaldo unter den
   // Puffer) als auch ERHÖHEND (z.B. nach Gehaltseingang, oder wenn ein
   // Budget wegfällt und dadurch weniger vom Tagessaldo reserviert wird).
-  // Beide Richtungen nutzen dieselbe Berechnung wie der "Neuberechnen"-Button
-  // für Monat 1 (computeMinTagessaldo, siehe utils/sparBerechnen.js — von
-  // dort auch von TagesgeldWidget genutzt) — nur der Rest der (oft viele
-  // Monate umfassenden) Serie bleibt unangetastet, die volle Neuberechnung
-  // bleibt eine bewusste, manuelle Aktion.
+  // Prüft dabei nicht nur den laufenden Monat, sondern simuliert auch die
+  // nächsten 24 Folgemonate (computeSafeCurrentMonthAmount, siehe
+  // utils/sparBerechnen.js) — eine zu hohe laufende Rate kann sonst einen
+  // Engpass in einem fernen Folgemonat verursachen, den nur eine Reduzierung
+  // DIESES Monats vermeiden kann (die Sparbuchung eines Folgemonats bleibt
+  // dabei unverändert, die volle Neuberechnung der ganzen Serie bleibt eine
+  // bewusste, manuelle Aktion).
   //
   // Bewusst als useMemo mit DENSELBEN Abhängigkeiten wie liquidityWarnings
   // (statt einer manuell gepflegten Liste "was sich geändert haben könnte",
@@ -2380,11 +2382,11 @@ Abbrechen = ${remoteName}-Stand laden`
   // ermittelt — der nachgelagerte Effekt reagiert nur noch auf DESSEN
   // Ergebnis, nicht auf die Rohdaten.
   // WICHTIG (Platzierung): muss NACH der getProgEndeAccGlobal-Deklaration
-  // stehen, da computeMinTagessaldo sie referenziert — useMemo/useEffect
-  // laufen zwar erst nach der Definition, aber der useMemo-Callback wird
-  // SYNCHRON während des Renderns an dieser Stelle ausgeführt, würde also
-  // sonst (anders als ein useEffect) auf eine noch nicht initialisierte
-  // const zugreifen (TDZ-ReferenceError).
+  // stehen, da computeSafeCurrentMonthAmount sie referenziert — useMemo/
+  // useEffect laufen zwar erst nach der Definition, aber der useMemo-Callback
+  // wird SYNCHRON während des Renderns an dieser Stelle ausgeführt, würde
+  // also sonst (anders als ein useEffect) auf eine noch nicht initialisierte
+  // const zugreifen (TDZ-ReferenceError — siehe Commit aabd03c).
   const currentMonthSparAdjust = useMemo(() => {
     const today = new Date();
     const y = today.getFullYear(), m = today.getMonth();
@@ -2399,10 +2401,16 @@ Abbrechen = ${remoteName}-Stand laden`
     if(candidates.length !== 1) return null;
     const abgang = candidates[0];
     const oldAmount = round2(Math.abs(abgang.totalAmount));
-    const { min: minTag } = computeMinTagessaldo(y, m, {}, "acc-giro", abgang.desc,
-      { txs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth, getProgEndeAccGlobal }, today);
-    if(minTag === null) return null;
-    const safeAmount = Math.max(0, Math.floor(minTag - pn(_giroPuffer)));
+    // Prüft nicht nur den laufenden Monat selbst, sondern simuliert auch die
+    // nächsten 24 Folgemonate — eine bereits bestehende, zu hohe Sparrate für
+    // den laufenden Monat kann sonst einen Engpass in einem fernen Folgemonat
+    // verursachen (siehe computeSafeCurrentMonthAmount), den die Warnung zwar
+    // sofort meldet, den aber nur eine Reduzierung DIESES Monats vermeiden kann.
+    const safeAmount = computeSafeCurrentMonthAmount({
+      y, m, puffer: pn(_giroPuffer), abgangId: abgang.id, abgangDesc: abgang.desc,
+      ctx: { txs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth, getProgEndeAccGlobal }, today,
+    });
+    if(safeAmount === null) return null;
     if(safeAmount === oldAmount) return null; // schon exakt der sichere Wert
     const zugang = txs.find(t => t._linkedTo === abgang.id && t.pending);
     return { abgangId: abgang.id, zugangId: zugang?.id || null, oldAmount, safeAmount,
