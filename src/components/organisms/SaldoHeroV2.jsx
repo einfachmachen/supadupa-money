@@ -140,54 +140,48 @@ function SaldoHeroV2({
       </span>
     </>);
   };
-  // Mini-Zelle für Detail-Werte (Out|In Paar)
+  // Ein einzelner Betrags-Slot (Out oder In). Bewusst OHNE flex:1/textAlign-
+  // Zwang: die Breite ergibt sich rein aus dem Inhalt, sodass kleine Beträge
+  // näher zusammenrücken dürfen und nur große/breite Beträge automatisch mehr
+  // Platz beanspruchen (Nutzer-Wunsch). Der Platzhalter-Strich "—" nutzt
+  // dieselbe Zelle wie ein echter Betrag — dadurch bleibt er IMMER exakt an
+  // derselben Stelle wie ein Betrag in der Nachbarzeile (Nutzer-Feedback:
+  // vorher brach die Flucht, weil echte Beträge rand-/labelbündig standen,
+  // der Strich aber zentriert war).
   // cond_neg/cond_pos statt neg/pos als Default: manche Themes definieren "neg"
   // bewusst blass/pastellig (WCAG-Kontrast für kleine Textfarbe auf grauem
   // Grund) — als 20px-Betrag hier wirkt das dann wie Rosa statt Rot
   // (Nutzer-Feedback, betraf konkret die unbeschriftete "Buch."-Zeile; VM/
   // unkat. hatten schon eine eigene, kräftige clrOut/clrIn-Farbe).
-  // tight: Out-Zelle links, In-Zelle rechts ausgerichtet (statt zentriert) —
-  // gilt in BEIDEN Hälften gleich, wirkt dadurch automatisch doppelt:
-  // die äußerste Zelle (Out-Mitte, In-Ende) rückt an den wahren Zeilenrand
-  // (siehe fullBleed in DetailRow), die innere Zelle (In-Mitte, Out-Ende)
-  // rückt dicht ans Label heran, statt mittig mit Luft davor/danach zu
-  // stehen (Nutzer-Wunsch: Abstand vor/nach Buch./VM./unkat. reduzieren).
-  // Der Platzhalter-Strich "—" bleibt davon ausgenommen und immer zentriert
-  // (Nutzer-Feedback: er soll unter den echten Beträgen der Nachbarzeilen
-  // stehen, nicht an den Rand/ans Label rutschen, wo gar kein Betrag ist).
-  const HalfCell = ({vIn, vOut, clrIn, clrOut, isMitte, onTapIn, onTapOut, rotatedCents, tight}) => (
-    <div style={{flex:1,display:"flex",alignItems:"baseline"}}>
-      <div style={{flex:1,textAlign:tight&&vOut>0?"left":"center",cursor:vOut>0&&onTapOut?"pointer":"default",padding:"2px 0"}}
-        onClick={vOut>0&&onTapOut?()=>onTapOut(isMitte):undefined}>
-        {vOut>0
-          ? <span style={{...amtStyle("neg",clrOut||T.cond_neg),fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>{rotatedCents?<RotatedCents v={vOut}/>:fmt(vOut)}</span>
-          : <span style={{color:T.txt2,fontSize:20}}>—</span>}
-      </div>
-      <div style={{flex:1,textAlign:tight&&vIn>0?"right":"center",cursor:vIn>0&&onTapIn?"pointer":"default",padding:"2px 0"}}
-        onClick={vIn>0&&onTapIn?()=>onTapIn(isMitte):undefined}>
-        {vIn>0
-          ? <span style={{...amtStyle("pos",clrIn||T.cond_pos),fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>{rotatedCents?<RotatedCents v={vIn}/>:fmt(vIn)}</span>
-          : <span style={{color:T.txt2,fontSize:20}}>—</span>}
-      </div>
+  const AmtSlot = ({v, kind, clr, isMitte, onTap, rotatedCents}) => (
+    <div style={{cursor:v>0&&onTap?"pointer":"default",padding:"2px 0"}}
+      onClick={v>0&&onTap?()=>onTap(isMitte):undefined}>
+      {v>0
+        ? <span style={{...amtStyle(kind,clr||(kind==="pos"?T.cond_pos:T.cond_neg)),fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>{rotatedCents?<RotatedCents v={v}/>:fmt(v)}</span>
+        : <span style={{color:T.txt2,fontSize:20}}>—</span>}
     </div>
   );
-  // fullBleed: zieht die Zeile per Negativ-Margin über den Hero-Innenabstand
-  // (framePad) hinaus bis fast an den echten Kartenrand, UND schmälert das
-  // Label selbst auf seine tatsächliche Textbreite (statt fester 44px) —
-  // kombiniert mit tight oben, damit die Beträge diesen Platz auch wirklich
-  // ausfüllen statt nur zentriert Luft zu lassen (Nutzer-Wunsch: "jedes
-  // Pixel zählt").
-  const DetailRow = ({label, mIn, mOut, eIn, eOut, clrIn, clrOut, clrInM, clrOutM, clrInE, clrOutE, onTapIn, onTapOut, rotatedCents, fullBleed}) => (
-    <div style={{display:"flex",alignItems:"center",
-      ...(fullBleed ? {margin:`0 -${framePad}px 4px`,padding:"0 3px"} : {marginBottom:4})}}>
-      <HalfCell vIn={mIn} vOut={mOut} clrIn={clrInM??clrIn} clrOut={clrOutM??clrOut}
-        isMitte={true} onTapIn={onTapIn} onTapOut={onTapOut} rotatedCents={rotatedCents} tight={fullBleed}/>
-      <div style={{width:fullBleed?36:44,flexShrink:0,textAlign:"center",
+  // Die Zeile zieht per Negativ-Margin etwas über den Hero-Innenabstand
+  // (framePad) hinaus — aber bewusst NICHT bis auf 0, ein kleiner Rand bleibt
+  // (Nutzer-Wunsch: "ein wenig mehr seitlicher Rand"). justifyContent:
+  // space-between verteilt die 5 Elemente (Out/In je Mitte+Ende + Label)
+  // gleichmäßig über die volle Breite — die äußersten beiden (Out-Mitte,
+  // In-Ende) landen dadurch IMMER an derselben Stelle (ganz links/rechts),
+  // unabhängig vom Inhalt, was die Flucht zwischen Zeilen sicherstellt.
+  const DetailRow = ({label, mIn, mOut, eIn, eOut, clrIn, clrOut, clrInM, clrOutM, clrInE, clrOutE, onTapIn, onTapOut, rotatedCents}) => {
+    const sideBleed = Math.max(0, framePad - 8);
+    return (
+    <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",
+      margin:`0 -${sideBleed}px 4px`}}>
+      <AmtSlot v={mOut} kind="neg" clr={clrOutM??clrOut} isMitte={true} onTap={onTapOut} rotatedCents={rotatedCents}/>
+      <AmtSlot v={mIn} kind="pos" clr={clrInM??clrIn} isMitte={true} onTap={onTapIn} rotatedCents={rotatedCents}/>
+      <div style={{flexShrink:0,padding:"0 6px",textAlign:"center",
         color:T.txt2,fontSize:10,fontWeight:600,letterSpacing:0.3}}>{label}</div>
-      <HalfCell vIn={eIn} vOut={eOut} clrIn={clrInE??clrIn} clrOut={clrOutE??clrOut}
-        isMitte={false} onTapIn={onTapIn} onTapOut={onTapOut} rotatedCents={rotatedCents} tight={fullBleed}/>
+      <AmtSlot v={eOut} kind="neg" clr={clrOutE??clrOut} isMitte={false} onTap={onTapOut} rotatedCents={rotatedCents}/>
+      <AmtSlot v={eIn} kind="pos" clr={clrInE??clrIn} isMitte={false} onTap={onTapIn} rotatedCents={rotatedCents}/>
     </div>
-  );
+    );
+  };
 
   // Konto-Pille + Dropdown-Menü — gemeinsame Render-Funktion für beide
   // Hero-Layouts (Standard: mittig in der MITTE/ENDE-Zeile, angehoben auf
@@ -438,18 +432,18 @@ function SaldoHeroV2({
           <DetailRow label="Buch."
             mIn={buchInM} mOut={buchOutM} eIn={buchInE} eOut={buchOutE}
             clrIn={bookColHero(true)} clrOut={bookColHero(false)}
-            onTapIn={onDrillBuchIn} onTapOut={onDrillBuchOut} rotatedCents fullBleed/>
+            onTapIn={onDrillBuchIn} onTapOut={onDrillBuchOut} rotatedCents/>
           {(pendInE>0||pendOutE>0) && (
             <DetailRow label="VM"
               mIn={pendInM} mOut={pendOutM} eIn={pendInE} eOut={pendOutE}
               clrIn={T.pos_vm} clrOut={T.neg_vm}
-              onTapIn={onDrillPendIn} onTapOut={onDrillPendOut} rotatedCents fullBleed/>
+              onTapIn={onDrillPendIn} onTapOut={onDrillPendOut} rotatedCents/>
           )}
           {(uInE>0||uOutE>0) && (
             <DetailRow label="unkat."
               mIn={uInM} mOut={uOutM} eIn={uInE} eOut={uOutE}
               clrIn={T.gold} clrOut={T.gold}
-              onTapIn={onDrillUncatIn} onTapOut={onDrillUncatOut} rotatedCents fullBleed/>
+              onTapIn={onDrillUncatIn} onTapOut={onDrillUncatOut} rotatedCents/>
           )}
           {showScrollFocusToggle && (
             <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8,paddingTop:8,borderTop:`1px solid ${T.bd}`}}>
