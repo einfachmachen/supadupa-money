@@ -1525,7 +1525,69 @@ function MonatScreen() {
               <div style={{marginBottom:10,opacity:0.4}}>{Li("inbox",36,T.txt2,1)}</div>
               <div style={{fontSize:13}}>{inSearchMode ? `Keine Treffer für „${search.trim()}"` : `Keine Buchungen im ${MONTHS_F[month]}`}</div>
             </div>
-          : dates.map(date=>{
+          : inSearchMode ? (
+            // Suchergebnisse: kompakte Datum|Betrag-Liste in EINEM
+            // durchgehenden Bereich statt separater Tages-Karten (Rahmen/
+            // Abstand/große Icons je Tag) — das verschwendete im Suchmodus
+            // extrem viel Platz (Nutzer-Feedback). Verwendungszweck ist der
+            // "Detail"-Teil, standardmäßig zugeklappt, per Chevron oder dem
+            // "Details"-Sammel-Button (Bulk-Leiste) je Zeile/komplett auf.
+            <div style={{margin:"10px 8px 0",border:`1px solid ${T.bd}`,borderRadius:12,
+              background:T.surf||"rgba(255,255,255,0.03)",overflow:"hidden"}}>
+              {[...mTxs].sort((a,b)=>b.date.localeCompare(a.date)).map((tx,idx)=>{
+                const cat = getCat((tx.splits||[])[0]?.catId);
+                const sub0 = getSub((tx.splits||[])[0]?.catId, (tx.splits||[])[0]?.subId);
+                const type = txType(tx);
+                const isExp = type!=="income";
+                const pal = tx.pending
+                  ? (type==="income" ? {val:T.cell_inc} : {val:T.cell_exp})
+                  : PAL[type]||PAL.expense;
+                const expanded = expandedSearchTx.has(tx.id);
+                return (
+                  <div key={tx.id}>
+                    <div onClick={()=>toggleSearchTxDetails(tx.id)}
+                      style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",cursor:"pointer",
+                        borderTop: idx>0 ? `1px solid ${T.bd}` : "none"}}>
+                      <span style={{width:6,height:6,borderRadius:"50%",flexShrink:0,background:cat?.color||T.txt2}}/>
+                      <span style={{fontSize:12,color:T.txt,fontWeight:600,flexShrink:0}}>{fmtDFull(tx.date)}</span>
+                      <span style={{flex:1}}/>
+                      <span data-role="tx-amt" style={{...amtStyle(isExp?"neg":"pos",pal.val),
+                        fontSize:15,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",whiteSpace:"nowrap"}}>
+                        {isExp?"−":""}{fmt(Math.abs(tx.totalAmount))}
+                      </span>
+                      <span data-role="tx-details-toggle" style={{display:"inline-flex",opacity:0.6,flexShrink:0}}>
+                        {Li(expanded?"chevron-up":"chevron-down",13,T.txt2)}
+                      </span>
+                    </div>
+                    {expanded&&(
+                      <div onClick={()=>openEdit(tx)} style={{padding:"0 10px 8px 22px",cursor:"pointer"}}>
+                        <ExpandableLine data-role="tx-desc" style={{fontSize:13,fontWeight:700,color:T.txt}}>
+                          {tx.desc||cat?.name||"Buchung"}
+                          {tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.gold)}</span>}
+                        </ExpandableLine>
+                        <ExpandableLine data-role="tx-subline" style={{fontSize:10,color:cat?.color||T.txt2,fontWeight:600,marginTop:1}}>
+                          {tx.pending && (_isOverduePending(tx)
+                            ? <span style={{color:T.gold,fontWeight:800,display:"inline-flex",alignItems:"center",gap:2}}
+                                title="Buchungsdatum bereits vergangen, aber noch nicht als tatsächliche Buchung eingetroffen">
+                                {Li("alert-triangle",9,T.gold)}Vorgemerkt · überfällig ·{" "}
+                              </span>
+                            : "Vorgemerkt · ")}{sub0?.name||cat?.name||""}
+                          {tx.accountId&&tx.accountId!=="acc-giro"&&(()=>{const a=getAcc(tx.accountId);return a?(
+                            <span style={{background:a.color+"22",color:a.color,borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>{Li(a.icon,9,a.color)} {a.name}</span>
+                          ):null;})()}
+                          {(tx.tags||[]).map(t=>(
+                            <span key={t} style={{background:`${T.blue}1a`,color:T.blue,borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>
+                              #{t}
+                            </span>
+                          ))}
+                        </ExpandableLine>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : dates.map(date=>{
             const dayTxs = [...byDate[date]].sort((a,b)=>{
               const aInc = txType(a)==="income" ? 0 : 1;
               const bInc = txType(b)==="income" ? 0 : 1;
@@ -1560,11 +1622,6 @@ function MonatScreen() {
                     {dayOf(date)<=14&&<span style={{color:T.mid,fontSize:9,fontWeight:700,
                       background:"rgba(103,232,249,0.1)",borderRadius:5,padding:"1px 5px"}}>Mitte</span>}
                   </div>
-                  {/* Tagessaldo lenkt in der Suche von den Treffer-Beträgen ab
-                      (Nutzer-Feedback) — dort immer ausgeblendet, kein Toggle
-                      (anders als der Verwendungszweck unten ist das reine
-                      Kontext-Info ohne Suchbezug, kein "Detail" der Buchung). */}
-                  {!inSearchMode&&(<>
                   {/* Verbindungs-Linie in grün (positiver) / rot (negativer Ist-Saldo).
                       data-role/-tone: dieselbe Farbe wird per `background`
                       (nicht `color`) gesetzt — die Fokus-Regel für Text greift
@@ -1618,7 +1675,6 @@ function MonatScreen() {
                       {dayNet>=0?"":"−"}{fmt(Math.abs(dayNet))}
                     </span>
                   )}
-                  </>)}
                 </div>
                 </div>
                 {/* ── Minus-Warnung ── */}
@@ -1725,19 +1781,7 @@ function MonatScreen() {
                             </div>
                           </div>
                           {txIconPickM===tx.id&&(<IconPickerDialog selectedIcon={involvedCats[0]?.icon||"help-circle"} selectedColor={involvedCats[0]?.color||T.txt2} onSelect={ic=>{if(involvedCats[0])setCats(p=>p.map(c=>c.id===involvedCats[0].id?{...c,icon:ic}:c));setTxIconPickM(null);}} onClose={()=>setTxIconPickM(null)}/>)}
-                          {/* Suchmodus: Verwendungszweck (Beschreibung/Kategorie/
-                              Tags) standardmäßig zugeklappt — lieber eine kompakte
-                              Datum|Betrag-Liste, Details je Buchung oder komplett
-                              per Chevron/"Details"-Button aufklappbar (Nutzer-
-                              Feedback). Außerhalb der Suche unverändert immer offen. */}
-                          {inSearchMode&&(
-                            <span data-role="tx-details-toggle" onClick={()=>toggleSearchTxDetails(tx.id)}
-                              style={{cursor:"pointer",flexShrink:0,marginRight:4,opacity:0.6,display:"inline-flex"}}>
-                              {Li(expandedSearchTx.has(tx.id)?"chevron-up":"chevron-down",13,T.txt2)}
-                            </span>
-                          )}
                           <div onClick={()=>openEdit(tx)} style={{flex:1,minWidth:0,marginRight:6,cursor:"pointer"}}>
-                            {(!inSearchMode||expandedSearchTx.has(tx.id)) ? (<>
                             <ExpandableLine data-role="tx-desc" style={{color:T.txt,fontSize:13,fontWeight:700,transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                               {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.gold)}</span>}
                             </ExpandableLine>
@@ -1756,12 +1800,6 @@ function MonatScreen() {
                                 </span>
                               ))}
                             </ExpandableLine>
-                            </>) : (
-                              // Zugeklappt: der GESAMTE Verwendungszweck ist "Detail"
-                              // (Nutzer-Feedback) — hier bewusst nichts anzeigen,
-                              // nur Datum (im Tages-Header) und Betrag bleiben sichtbar.
-                              <div data-role="tx-desc"/>
-                            )}
                           </div>
                           <div data-role="tx-amtblock" style={{textAlign:"right",flexShrink:0,marginRight:8,transition:_reduceMotion?"none":"flex-basis .3s cubic-bezier(0.16, 1, 0.3, 1), margin .3s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                             <div data-role="tx-amtbar" style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:8,
@@ -2028,18 +2066,8 @@ function MonatScreen() {
                               }}
                               onClose={()=>setTxIconPickM(null)}/>
                           )}
-                          {/* Suchmodus: Verwendungszweck standardmäßig zugeklappt
-                              (Nutzer-Feedback) — siehe Kommentar bei den
-                              Einnahmen-Zeilen weiter oben, gleiches Prinzip. */}
-                          {inSearchMode&&(
-                            <span data-role="tx-details-toggle" onClick={()=>toggleSearchTxDetails(tx.id)}
-                              style={{cursor:"pointer",flexShrink:0,marginRight:4,opacity:0.6,display:"inline-flex"}}>
-                              {Li(expandedSearchTx.has(tx.id)?"chevron-up":"chevron-down",13,T.txt2)}
-                            </span>
-                          )}
                           {/* Text — Klick öffnet Edit */}
                           <div onClick={()=>openEdit(tx)} style={{flex:1,minWidth:0,marginRight:6,cursor:"pointer"}}>
-                            {(!inSearchMode||expandedSearchTx.has(tx.id)) ? (<>
                             <ExpandableLine data-role="tx-desc" style={{color:T.txt,fontSize:13,fontWeight:700,transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                               {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.gold)}</span>}
                             </ExpandableLine>
@@ -2074,9 +2102,6 @@ function MonatScreen() {
                               </span>
                             ))}
                             </ExpandableLine>
-                            </>) : (
-                              <div data-role="tx-desc"/>
-                            )}
                           </div>
                           {/* Amount */}
                           <div data-role="tx-amtblock" style={{textAlign:"right",flexShrink:0,marginRight:8,transition:_reduceMotion?"none":"flex-basis .3s cubic-bezier(0.16, 1, 0.3, 1), margin .3s cubic-bezier(0.16, 1, 0.3, 1)"}}>
