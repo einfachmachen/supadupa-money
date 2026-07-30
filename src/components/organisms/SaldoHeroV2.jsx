@@ -171,13 +171,13 @@ function SaldoHeroV2({
       <div style={{flex:1,textAlign:"center",cursor:vOut>0&&onTapOut?"pointer":"default",padding:"2px 0"}}
         onClick={vOut>0&&onTapOut?()=>onTapOut(isMitte):undefined}>
         {vOut>0
-          ? <span style={{...amtStyle("neg",clrOut||T.cond_neg),fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,whiteSpace:"nowrap",...(rotatedCents?{display:"inline-flex",alignItems:"baseline"}:{})}}>{rotatedCents?<RotatedCents v={vOut}/>:fmt(vOut)}</span>
+          ? <span style={{...amtStyle("neg",clrOut||T.cond_neg),fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,whiteSpace:"nowrap",...(rotatedCents?{display:"inline-flex",alignItems:"center"}:{})}}>{rotatedCents?<RotatedCents v={vOut}/>:fmt(vOut)}</span>
           : <span style={{color:T.txt2,fontSize:20}}>—</span>}
       </div>
       <div style={{flex:1,textAlign:"center",cursor:vIn>0&&onTapIn?"pointer":"default",padding:"2px 0"}}
         onClick={vIn>0&&onTapIn?()=>onTapIn(isMitte):undefined}>
         {vIn>0
-          ? <span style={{...amtStyle("pos",clrIn||T.cond_pos),fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,whiteSpace:"nowrap",...(rotatedCents?{display:"inline-flex",alignItems:"baseline"}:{})}}>{rotatedCents?<RotatedCents v={vIn}/>:fmt(vIn)}</span>
+          ? <span style={{...amtStyle("pos",clrIn||T.cond_pos),fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,whiteSpace:"nowrap",...(rotatedCents?{display:"inline-flex",alignItems:"center"}:{})}}>{rotatedCents?<RotatedCents v={vIn}/>:fmt(vIn)}</span>
           : <span style={{color:T.txt2,fontSize:20}}>—</span>}
       </div>
     </div>
