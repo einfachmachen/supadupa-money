@@ -127,11 +127,23 @@ function saldoAnchor(year, month, accId, ctx) {
   return v;
 }
 
+// ── Optionaler Index (ctx._txsByMonth): Map "year-month" → Teilmenge von
+// ctx.txs. Rein additive Optimierung — ohne Index (Standardfall für alle
+// bestehenden Aufrufer) verhalten sich ist()/istForSub()/collectBudgets()
+// exakt wie zuvor (voller Scan von ctx.txs). Notwendig, seit Aufrufer wie
+// computeSafeCurrentMonthAmount sehr viele Monate abfragen (mehrjährige
+// Finanzierungen/Vormerkungen) — ohne Index würde JEDE Monatsabfrage JEDE
+// Buchung erneut komplett durchsuchen (siehe sparBerechnen.js).
+function monthPool(ctx, year, month) {
+  if(ctx._txsByMonth) return ctx._txsByMonth.get(`${year}-${month}`) || [];
+  return ctx.txs;
+}
+
 // ── Ist-Bewegungen: Summe der realen + vorgemerkten Buchungen ─────────
 // auf accId im Zeitraum [Monatsanfang..day], mit Vorzeichen
 function ist(year, month, day, accId, ctx) {
   let sum = 0;
-  ctx.txs.forEach(t => {
+  monthPool(ctx, year, month).forEach(t => {
     if(isDuplCounterpart(t, ctx._txsById)) return;
     if(t._budgetSubId) return;
     if(!isOnAccount(t, accId)) return;
@@ -170,7 +182,7 @@ function collectBudgets(year, month, ctx) {
   const result = {};
 
   // Quelle 1: _budgetSubId-Platzhalter
-  ctx.txs.forEach(t => {
+  monthPool(ctx, year, month).forEach(t => {
     if(!t.pending || !t._budgetSubId) return;
     if(t.date.slice(0,7) !== monthStr) return;
     const acc = t.accountId || "acc-giro";
@@ -218,7 +230,7 @@ function collectBudgets(year, month, ctx) {
 // Nur auf acc-giro (Budgets gibt's nur dort), inkl. Vormerkungen
 function istForSub(year, month, fromDay, toDay, baseSubId, ctx) {
   let sum = 0;
-  ctx.txs.forEach(t => {
+  monthPool(ctx, year, month).forEach(t => {
     if(t._budgetSubId) return; // Budget-Platzhalter selbst nicht zählen
     if(isDuplCounterpart(t, ctx._txsById)) return;
     const acc = t.accountId || "acc-giro";

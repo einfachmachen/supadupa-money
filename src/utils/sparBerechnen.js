@@ -29,7 +29,8 @@ export function computeMinTagessaldo(y, m, virtualSpar = {}, accId, excludeSparD
   // mehrere Monate hinweg wiederverwendet wird (der Fall in der Schleife
   // dort), bleibt der Cache erhalten.
   if (!getProgEndeAccGlobal && !ctx._saldoUtilCtx) {
-    ctx._saldoUtilCtx = { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth, _restCache: ctx._restCache };
+    ctx._saldoUtilCtx = { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth,
+      _restCache: ctx._restCache, _txsById: ctx._txsById, _txsByMonth: ctx._txsByMonth };
   }
   const progEnde = (py, pm, pAcc) => getProgEndeAccGlobal
     ? getProgEndeAccGlobal(py, pm, pAcc)
@@ -64,8 +65,13 @@ export function computeMinTagessaldo(y, m, virtualSpar = {}, accId, excludeSparD
   const pad2 = n => String(n).padStart(2, "0");
   const pfx = `${y}-${pad2(m + 1)}-`;
   const isAccTx = t => !effSelAcc || t.accountId === effSelAcc || (!t.accountId && effSelAcc === "acc-giro");
-  const _txsById = buildTxIdMap(txs || []);
-  const mTxs = txs.filter(t => {
+  // ctx._txsById/ctx._txsByMonth (optional): computeSafeCurrentMonthAmount
+  // baut diese Indizes einmalig VOR der Kandidaten-Schleife, statt hier bei
+  // JEDEM der ~12 Kandidaten × bis zu mehreren hundert Monate (mehrjährige
+  // Finanzierung) erneut komplett über alle Buchungen zu scannen.
+  const _txsById = ctx._txsById || buildTxIdMap(txs || []);
+  const _monthPool = ctx._txsByMonth ? (ctx._txsByMonth.get(`${y}-${m}`) || []) : txs;
+  const mTxs = _monthPool.filter(t => {
     if (isDuplCounterpart(t, _txsById)) return false;
     if (excludeSparDesc && t.pending && t.desc === excludeSparDesc) return false;
     const d = new Date(t.date);
@@ -79,7 +85,8 @@ export function computeMinTagessaldo(y, m, virtualSpar = {}, accId, excludeSparD
     })();
     return ct === "income" ? +Math.abs(t.totalAmount) : -Math.abs(t.totalAmount);
   };
-  const _saldoCtx = { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth, _restCache: ctx._restCache };
+  const _saldoCtx = { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth,
+    _restCache: ctx._restCache, _txsById: ctx._txsById, _txsByMonth: ctx._txsByMonth };
   const istGiroView = !effSelAcc || effSelAcc === "acc-giro";
   const obMitte = (istGiroView && phaseStillReachable(y, m, 14, _saldoCtx)) ? restMitte(y, m, _saldoCtx) : 0;
   const obEnde = (istGiroView && phaseStillReachable(y, m, lastDay, _saldoCtx)) ? restEnde(y, m, _saldoCtx) : 0;
@@ -136,7 +143,39 @@ export function computeMinTagessaldo(y, m, virtualSpar = {}, accId, excludeSparD
 // ctx OHNE getProgEndeAccGlobal übergeben (siehe computeMinTagessaldo oben)
 // — sonst würde der reale App.jsx-Cache die echten statt der hier
 // simulierten (testTxs) Buchungen für die Folgemonate zugrunde legen.
-export function computeSafeCurrentMonthAmount({ y, m, puffer, abgangId, abgangDesc, ctx, today = new Date(), horizonMonths = 24 }) {
+// Ermittelt, wie viele Monate ab (y, m) noch eine vorgemerkte Buchung
+// existiert — z.B. eine mehrjährige Finanzierung mit monatlicher Rate.
+// Ohne expliziten horizonMonths-Wert wird GENAU so weit simuliert, wie
+// tatsächlich Vormerkungen reichen ("alle Jahre", nicht nur ein fester
+// Zeitraum) — analog zu computeKontoWarnungen (dieselbe Anforderung).
+function furthestPendingMonthOffset(txs, y, m) {
+  const baseIdx = y * 12 + m;
+  let maxOffset = 0;
+  (txs || []).forEach(t => {
+    if (!t.pending) return;
+    const d = new Date(t.date);
+    const offset = (d.getFullYear() * 12 + d.getMonth()) - baseIdx;
+    if (offset > maxOffset) maxOffset = offset;
+  });
+  return maxOffset;
+}
+
+// Bucketed Index Jahr-Monat → Teilmenge von txs (siehe utils/saldo.js:
+// monthPool). Ohne diesen Index würde JEDE Monatsabfrage (bis zu mehrere
+// hundert bei einer langlaufenden Finanzierung) über ALLE Buchungen
+// scannen — mit ihm nur einmal pro Kandidat.
+function buildTxsByMonth(txs) {
+  const map = new Map();
+  (txs || []).forEach(t => {
+    const d = new Date(t.date);
+    const key = `${d.getFullYear()}-${d.getMonth()}`;
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(t);
+  });
+  return map;
+}
+
+export function computeSafeCurrentMonthAmount({ y, m, puffer, abgangId, abgangDesc, ctx, today = new Date(), horizonMonths }) {
   // Cache für RestMitte/RestEnde (Budget-Reservierungen je Monat), über ALLE
   // Kandidaten der binären Suche HINWEG geteilt: anders als der Anker-Cache
   // (saldoAnchor) hängen diese Werte nur von den ANDEREN, budget-getaggten
@@ -146,6 +185,11 @@ export function computeSafeCurrentMonthAmount({ y, m, puffer, abgangId, abgangDe
   // was bei horizonMonths=24 zu spürbaren Verzögerungen führte (Browser-
   // Warnung wegen eines "langsamen Skripts").
   const restCache = {};
+  // _linkedTo-Partner-Lookup (buildTxIdMap) hängt nur von IDs/accountId ab,
+  // nie vom simulierten Betrag — einmalig bauen und über alle Kandidaten
+  // hinweg teilen statt bei jedem computeMinTagessaldo-Aufruf neu.
+  const txsById = buildTxIdMap(ctx.txs || []);
+  const effHorizon = horizonMonths ?? furthestPendingMonthOffset(ctx.txs, y, m);
 
   // Eigene, flache Kopie für diesen einen Aufruf — computeMinTagessaldo
   // hängt im Fallback-Pfad einen Cache (_saldoUtilCtx) an das übergebene
@@ -153,14 +197,16 @@ export function computeSafeCurrentMonthAmount({ y, m, puffer, abgangId, abgangDe
   // unten per Spread (`{...ctx}`) gebauten testCtx-Objekte diesen (an die
   // ECHTEN txs gebundenen) Cache mit-erben und für jeden Simulations-
   // Kandidaten fälschlich denselben, veralteten Stand zurückliefern.
-  const { min: minTagOwn } = computeMinTagessaldo(y, m, {}, "acc-giro", abgangDesc, { ...ctx, _restCache: restCache }, today);
+  const ownCtx = { ...ctx, _restCache: restCache, _txsById: txsById, _txsByMonth: buildTxsByMonth(ctx.txs) };
+  const { min: minTagOwn } = computeMinTagessaldo(y, m, {}, "acc-giro", abgangDesc, ownCtx, today);
   if (minTagOwn === null) return null;
   const ownMax = Math.floor(Math.max(0, minTagOwn - puffer));
 
   const isSafeWithAmount = (x) => {
     const testTxs = ctx.txs.map(t => t.id === abgangId ? { ...t, totalAmount: -x } : t);
-    const testCtx = { ...ctx, txs: testTxs, getProgEndeAccGlobal: undefined, _restCache: restCache };
-    for (let i = 1; i <= horizonMonths; i++) {
+    const testCtx = { ...ctx, txs: testTxs, getProgEndeAccGlobal: undefined,
+      _restCache: restCache, _txsById: txsById, _txsByMonth: buildTxsByMonth(testTxs) };
+    for (let i = 1; i <= effHorizon; i++) {
       const nm = (m + i) % 12, ny = y + Math.floor((m + i) / 12);
       const { min } = computeMinTagessaldo(ny, nm, {}, "acc-giro", null, testCtx, today);
       if (min !== null && min < puffer) return false;

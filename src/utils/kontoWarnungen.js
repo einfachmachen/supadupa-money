@@ -12,25 +12,28 @@
 
 import { pn } from "./format.js";
 import { restMitte, restEnde, phaseStillReachable, saldoAnchor } from "./saldo.js";
-import { isDuplCounterpart, buildTxIdMap } from "./tx.js";
+import { buildTxIdMap } from "./tx.js";
 
 export function computeKontoWarnungen({
   txs = [], cats = [], accounts = [],
   getKumulierterSaldo, getCat, getBudgetForMonth, budgets,
-  puffer = 0, maxMonths = 24,
+  puffer = 0, maxMonths = Infinity,
 } = {}) {
   // OPTIMIERUNG: Indices einmalig vorberechnen
   const txsByMonthGiro = new Map();   // Map<"y-m", txs[]> Giro ohne _linkedTo
+  const txsByMonthAll = new Map();    // Map<"y-m", txs[]> ALLE Konten (für saldo.js: ist()/istForSub()/collectBudgets())
   const txsBySubId = new Map();       // Map<subId, txs[]>
   const budgetTxByKey = new Map();    // Map<"subId|y-m", tx> Budget-Platzhalter
   const subIdsWithBudgetEver = new Set();
   txs.forEach(t=>{
+    const d0=new Date(t.date);
+    const k0=`${d0.getFullYear()}-${d0.getMonth()}`;
+    if(!txsByMonthAll.has(k0)) txsByMonthAll.set(k0, []);
+    txsByMonthAll.get(k0).push(t);
     const isGiro = t.accountId==="acc-giro" || !t.accountId;
     if(!t._linkedTo && isGiro) {
-      const d=new Date(t.date);
-      const k=`${d.getFullYear()}-${d.getMonth()}`;
-      if(!txsByMonthGiro.has(k)) txsByMonthGiro.set(k, []);
-      txsByMonthGiro.get(k).push(t);
+      if(!txsByMonthGiro.has(k0)) txsByMonthGiro.set(k0, []);
+      txsByMonthGiro.get(k0).push(t);
       (t.splits||[]).forEach(sp=>{
         if(sp.subId) {
           if(!txsBySubId.has(sp.subId)) txsBySubId.set(sp.subId, []);
@@ -40,8 +43,7 @@ export function computeKontoWarnungen({
     }
     if(t.pending && t._budgetSubId) {
       subIdsWithBudgetEver.add(t._budgetSubId);
-      const d=new Date(t.date);
-      const k=`${t._budgetSubId}|${d.getFullYear()}-${d.getMonth()}`;
+      const k=`${t._budgetSubId}|${k0}`;
       budgetTxByKey.set(k, t);
     }
   });
@@ -60,8 +62,14 @@ export function computeKontoWarnungen({
   const allMonths = [...monthSet.values()]
     .sort((a,b)=>a[0]*12+a[1]-(b[0]*12+b[1]))
     .slice(0, maxMonths);
-  const _saldoCtx = { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth };
+  // _restCache/_txsByMonth: dieselbe, über ALLE Monate hinweg geteilte
+  // Optimierung wie in sparBerechnen.js (siehe dort) — ohne sie würde
+  // restMitte/restEnde (collectBudgets/istForSub) bei vielen Monaten (z.B.
+  // eine mehrjährige Finanzierung) jedes Mal komplett neu über alle
+  // Buchungen scannen.
   const _txsById = buildTxIdMap(txs || []);
+  const _saldoCtx = { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth,
+    _restCache: {}, _txsById, _txsByMonth: txsByMonthAll };
   const _tbReal2 = new Date();
   const _curY = _tbReal2.getFullYear(), _curMo = _tbReal2.getMonth(), _curDay = _tbReal2.getDate();
   const _signedAmount = (t) => {
@@ -77,15 +85,11 @@ export function computeKontoWarnungen({
     const pad2 = n=>String(n).padStart(2,"0");
     const pfx = `${y}-${pad2(m+1)}-`;
     const mTxs = txsByMonthGiro.get(`${y}-${m}`) || [];
-    // KONSISTENZ MIT HERO/MONAT: gleicher ist()-Filter wie saldoAt
-    const monthTxs = (txs||[]).filter(t=>{
-      if(t._budgetSubId) return false;
-      if(isDuplCounterpart(t, _txsById)) return false;
-      const acc = t.accountId || "acc-giro";
-      if(acc !== "acc-giro") return false;
-      const d = new Date(t.date);
-      return d.getFullYear()===y && d.getMonth()===m;
-    }).sort((a,b)=>a.date.localeCompare(b.date));
+    // KONSISTENZ MIT HERO/MONAT: gleicher ist()-Filter wie saldoAt.
+    // mTxs (txsByMonthGiro) ist bereits exakt diese Teilmenge: Giro-Konto
+    // (isGiro) UND ohne _linkedTo — isDuplCounterpart ist für !_linkedTo
+    // immer false (siehe tx.js), der volle txs-Scan ist daher unnötig.
+    const monthTxs = mTxs.filter(t=>!t._budgetSubId).sort((a,b)=>a.date.localeCompare(b.date));
     const isFutureDay = (d) => {
       if(y > _curY) return true;
       if(y < _curY) return false;
