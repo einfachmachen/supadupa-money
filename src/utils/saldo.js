@@ -156,6 +156,16 @@ function ist(year, month, day, accId, ctx) {
 //      Notwendig, weil die App bei Mitte=0 + scope=single keinen Platzhalter
 //      anlegt, das Budget aber trotzdem im budgets-Objekt registriert ist.
 function collectBudgets(year, month, ctx) {
+  // Optionaler Cache (ctx._restCache): collectBudgets/istForSub hängen NUR
+  // von den budget-getaggten Buchungen ab, nie von einer einzelnen,
+  // simulierten Sparplan-Buchung — computeSafeCurrentMonthAmount ruft
+  // restMitte/restEnde für DIESELBEN Monate über viele Kandidaten der
+  // binären Suche hinweg mit stets denselben Budget-Daten auf. Ohne Cache
+  // wird hier bei jedem Kandidaten neu über alle Buchungen gescannt (siehe
+  // restMitte/restEnde unten).
+  const cache = ctx._restCache;
+  const key = cache ? `${year}-${month}-budgets` : null;
+  if(key && cache[key]) return cache[key];
   const monthStr = `${year}-${String(month+1).padStart(2,"0")}`;
   const result = {};
 
@@ -200,6 +210,7 @@ function collectBudgets(year, month, ctx) {
     b.mitte = round2(b.mitte); b.ende = round2(b.ende);
     b.gesamt = round2(b.mitte + b.ende);
   });
+  if(key) cache[key] = result;
   return result;
 }
 
@@ -243,6 +254,9 @@ function istForSub(year, month, fromDay, toDay, baseSubId, ctx) {
 //     Ref_K = BudgetMitte_K  (falls Mitte-Anteil > 0)  sonst BudgetGesamt_K
 //     RestMitte = Σ_K max(0, Ref_K − Ist1bis14_K)
 function restMitte(year, month, ctx) {
+  const cache = ctx._restCache;
+  const key = cache ? `${year}-${month}-mitte` : null;
+  if(key && key in cache) return cache[key];
   const budgets = collectBudgets(year, month, ctx);
   let rest = 0;
   Object.entries(budgets).forEach(([subId, b]) => {
@@ -251,13 +265,18 @@ function restMitte(year, month, ctx) {
     const istK = istForSub(year, month, 1, 14, subId, ctx);
     rest += Math.max(0, ref - istK);
   });
-  return round2(rest);
+  const result = round2(rest);
+  if(key) cache[key] = result;
+  return result;
 }
 
 // ── RestEnde: mit dynamischem Roll-Over ───────────────────────────────
 //   Budget_H2_K = max(0, BudgetEnde_K − Ist1bis14_K)
 //   Rest_K = max(0, Budget_H2_K − Ist15bisLetzter_K)
 function restEnde(year, month, ctx) {
+  const cache = ctx._restCache;
+  const key = cache ? `${year}-${month}-ende` : null;
+  if(key && key in cache) return cache[key];
   const budgets = collectBudgets(year, month, ctx);
   const lastDay = new Date(year, month+1, 0).getDate();
   let rest = 0;
@@ -268,7 +287,9 @@ function restEnde(year, month, ctx) {
     const budgetH2 = Math.max(0, b.gesamt - ist1bis14);
     rest += Math.max(0, budgetH2 - ist15bisLetzter);
   });
-  return round2(rest);
+  const result = round2(rest);
+  if(key) cache[key] = result;
+  return result;
 }
 
 // ── Sollte am gefragten Tag der Budget-Abzug greifen? ─────────────────

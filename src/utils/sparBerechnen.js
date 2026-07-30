@@ -17,9 +17,23 @@ import { isDuplCounterpart, buildTxIdMap } from "./tx.js";
 // schlicht ignorieren würde.
 export function computeMinTagessaldo(y, m, virtualSpar = {}, accId, excludeSparDesc = null, ctx, today = new Date()) {
   const { txs = [], cats = [], accounts = [], getKumulierterSaldo, getCat, getBudgetForMonth, getProgEndeAccGlobal } = ctx;
+  // Für den Fallback EINEN Sub-Kontext auf ctx SELBST zwischenspeichern (statt
+  // bei jedem Aufruf neu zu bauen) — saldoEnde()/saldoAnchor() cachen intern
+  // rekursive Zwischenergebnisse auf genau diesem Objekt (ctx._anchorCache in
+  // utils/saldo.js). Ein frisches Objekt pro Aufruf würde diesen Cache nie
+  // treffen lassen: beim monatsweisen Vorwärts-Scannen über viele Monate
+  // (siehe computeSafeCurrentMonthAmount) rechnet sich sonst JEDER Monat
+  // erneut rekursiv bis zum Anker zurück — quadratische statt lineare
+  // Laufzeit (führte zu einer echten Warnung des Browsers wegen eines
+  // "langsamen Skripts" bei horizonMonths=24). Solange derselbe ctx über
+  // mehrere Monate hinweg wiederverwendet wird (der Fall in der Schleife
+  // dort), bleibt der Cache erhalten.
+  if (!getProgEndeAccGlobal && !ctx._saldoUtilCtx) {
+    ctx._saldoUtilCtx = { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth, _restCache: ctx._restCache };
+  }
   const progEnde = (py, pm, pAcc) => getProgEndeAccGlobal
     ? getProgEndeAccGlobal(py, pm, pAcc)
-    : saldoEndeUtil(py, pm, pAcc ?? null, { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth });
+    : saldoEndeUtil(py, pm, pAcc ?? null, ctx._saldoUtilCtx);
   const effSelAcc = accId;
   const prevY = m === 0 ? y - 1 : y, prevM = m === 0 ? 11 : m - 1;
   const _prevIsPast = prevY < today.getFullYear() || (prevY === today.getFullYear() && prevM < today.getMonth());
@@ -65,7 +79,7 @@ export function computeMinTagessaldo(y, m, virtualSpar = {}, accId, excludeSparD
     })();
     return ct === "income" ? +Math.abs(t.totalAmount) : -Math.abs(t.totalAmount);
   };
-  const _saldoCtx = { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth };
+  const _saldoCtx = { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth, _restCache: ctx._restCache };
   const istGiroView = !effSelAcc || effSelAcc === "acc-giro";
   const obMitte = (istGiroView && phaseStillReachable(y, m, 14, _saldoCtx)) ? restMitte(y, m, _saldoCtx) : 0;
   const obEnde = (istGiroView && phaseStillReachable(y, m, lastDay, _saldoCtx)) ? restEnde(y, m, _saldoCtx) : 0;
@@ -123,13 +137,29 @@ export function computeMinTagessaldo(y, m, virtualSpar = {}, accId, excludeSparD
 // — sonst würde der reale App.jsx-Cache die echten statt der hier
 // simulierten (testTxs) Buchungen für die Folgemonate zugrunde legen.
 export function computeSafeCurrentMonthAmount({ y, m, puffer, abgangId, abgangDesc, ctx, today = new Date(), horizonMonths = 24 }) {
-  const { min: minTagOwn } = computeMinTagessaldo(y, m, {}, "acc-giro", abgangDesc, ctx, today);
+  // Cache für RestMitte/RestEnde (Budget-Reservierungen je Monat), über ALLE
+  // Kandidaten der binären Suche HINWEG geteilt: anders als der Anker-Cache
+  // (saldoAnchor) hängen diese Werte nur von den ANDEREN, budget-getaggten
+  // Buchungen ab — nie vom hier simulierten Sparplan-Betrag selbst. Ohne
+  // diesen Cache scannt jeder der ~12 Kandidaten alle Monate erneut von
+  // Grund auf (siehe utils/saldo.js: collectBudgets/restMitte/restEnde),
+  // was bei horizonMonths=24 zu spürbaren Verzögerungen führte (Browser-
+  // Warnung wegen eines "langsamen Skripts").
+  const restCache = {};
+
+  // Eigene, flache Kopie für diesen einen Aufruf — computeMinTagessaldo
+  // hängt im Fallback-Pfad einen Cache (_saldoUtilCtx) an das übergebene
+  // ctx-Objekt. Würde hier das Original-ctx mutiert, würden alle weiter
+  // unten per Spread (`{...ctx}`) gebauten testCtx-Objekte diesen (an die
+  // ECHTEN txs gebundenen) Cache mit-erben und für jeden Simulations-
+  // Kandidaten fälschlich denselben, veralteten Stand zurückliefern.
+  const { min: minTagOwn } = computeMinTagessaldo(y, m, {}, "acc-giro", abgangDesc, { ...ctx, _restCache: restCache }, today);
   if (minTagOwn === null) return null;
   const ownMax = Math.floor(Math.max(0, minTagOwn - puffer));
 
   const isSafeWithAmount = (x) => {
     const testTxs = ctx.txs.map(t => t.id === abgangId ? { ...t, totalAmount: -x } : t);
-    const testCtx = { ...ctx, txs: testTxs, getProgEndeAccGlobal: undefined };
+    const testCtx = { ...ctx, txs: testTxs, getProgEndeAccGlobal: undefined, _restCache: restCache };
     for (let i = 1; i <= horizonMonths; i++) {
       const nm = (m + i) % 12, ny = y + Math.floor((m + i) / 12);
       const { min } = computeMinTagessaldo(ny, nm, {}, "acc-giro", null, testCtx, today);
