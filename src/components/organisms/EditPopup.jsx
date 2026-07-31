@@ -394,7 +394,14 @@ function EditPopup() {
               <input type="date" value={editTx.date||""} onChange={e=>setEditTx(p=>({...p,date:e.target.value}))}
                 style={{width:"100%",minWidth:0,height:44,background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bds}`,
                   borderRadius:11,padding:"0 10px",color:T.txt,fontSize:14,outline:"none",
-                  boxSizing:"border-box",colorScheme:(isLightTheme())?"light":"dark"}}/>
+                  boxSizing:"border-box",colorScheme:(isLightTheme())?"light":"dark",
+                  // Ohne appearance:none rendert iOS Safari sein eigenes natives
+                  // Datums-Steuerelement mit eigener (breiterer) Innenlayout-Logik,
+                  // die width/padding ignoriert — dadurch überlappte das Feld
+                  // sichtbar den Betrag daneben (Nutzer-Feedback, reales iPhone).
+                  // Gleicher Fix wie in MobileVormerkenModal (dort seit Langem im
+                  // Einsatz).
+                  WebkitAppearance:"none",appearance:"none"}}/>
             </div>
             {!editTx._budgetSubId&&(
             <div style={{flex:1,minWidth:0}}>
