@@ -1722,20 +1722,33 @@ function DashboardScreenV2() {
                     </span>
                   )}
                 </div>
-                {dashDrillTotal!=null&&(
-                  <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",flexShrink:0}}>
-                    <div style={{color:dashDrill.isIncome?T.pos:T.neg,fontWeight:800,fontSize:26,
-                      fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",lineHeight:1.1}}>
-                      {fmt(dashDrillTotal)}
+                {dashDrillTotal!=null&&(()=>{
+                  // Statt einer nackten Gesamtzahl: Aufschlüsselung wie im Hero
+                  // (Buch./VM/unkat.) mit je eigenem Symbol + Anzahl.
+                  const list = dashDrill.cat
+                    ? txs.filter(t=>{const d=new Date(t.date);return d.getFullYear()===year&&d.getMonth()===month&&(t.splits||[]).some(sp=>sp.catId===dashDrill.cat.id);})
+                    : dashDrillList;
+                  const buchCount = list.filter(t=>!t.pending).length;
+                  const vmCount = list.filter(t=>t.pending).length;
+                  const unkatCount = list.filter(t=>(t.splits||[]).length===0||(t.splits||[]).every(s=>!s.catId)).length;
+                  const countStyle = {display:"inline-flex",alignItems:"center",gap:2,
+                    color:"#fff",fontSize:12,fontWeight:700,fontFamily:NUM_FONT};
+                  return (
+                    <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",flexShrink:0}}>
+                      <div style={{color:dashDrill.isIncome?T.pos:T.neg,fontWeight:800,fontSize:26,
+                        fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",lineHeight:1.1}}>
+                        {fmt(dashDrillTotal)}
+                      </div>
+                      <div style={{display:"flex",gap:8,marginTop:3}}>
+                        <span title="Gebucht" style={countStyle}>{Li("check",12,"#fff")}{buchCount}</span>
+                        <span title="Vorgemerkt" style={countStyle}>{Li("clock",12,"#fff")}{vmCount}</span>
+                        <span title="Unkategorisiert" style={countStyle}>
+                          <span style={{fontSize:12,fontWeight:800,lineHeight:1}}>?</span>{unkatCount}
+                        </span>
+                      </div>
                     </div>
-                    <div style={{color:"#fff",fontWeight:700,fontSize:13,fontFamily:NUM_FONT}}>
-                      {dashDrill.cat ? (()=>{
-                        const live = txs.filter(t=>{const d=new Date(t.date);return d.getFullYear()===year&&d.getMonth()===month&&(t.splits||[]).some(sp=>sp.catId===dashDrill.cat.id);});
-                        return live.length;
-                      })() : dashDrillList.length}
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
               {/* Suchfeld */}
               <div style={{padding:"8px 14px",borderTop:`1px solid ${T.bd}`,flexShrink:0,
