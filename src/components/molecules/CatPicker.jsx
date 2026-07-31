@@ -9,7 +9,7 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, pn, uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
-function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAmount=0, onSplit=null, filterType=null, openUp=false, accountId=null, noMargin=false, triggerStyle}) {
+function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAmount=0, onSplit=null, filterType=null, openUp=false, accountId=null, noMargin=false, triggerStyle, wrapLabel=false}) {
   const { cats, groups, accounts, setCats, setGroups, quickBtns, setQuickBtns } = useContext(AppCtx);
   const [step,    setStep]    = useState(0);  // 0=Gruppe 1=Kat 2=Unterkat
   const [selGrp,  setSelGrp]  = useState(null);
@@ -137,13 +137,16 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
           style={{flex:1,padding:"5px 10px",borderRadius:10,
             border:`1px solid ${open||curCat?T.blue:T.bds}`,
             background:"rgba(255,255,255,0.06)",color:curCat?T.txt:T.txt2,
-            fontSize:12,cursor:"pointer",display:"flex",alignItems:"center",
+            fontSize:12,cursor:"pointer",display:"flex",
+            alignItems:wrapLabel?"flex-start":"center",
             justifyContent:"space-between",gap:6,minWidth:0,...triggerStyle}}>
-          <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+          <span style={wrapLabel
+            ? {flex:1,minWidth:0,whiteSpace:"normal",wordBreak:"break-word",lineHeight:1.35}
+            : {overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
             {curCat&&<span style={{marginRight:4,display:"inline-flex",alignItems:"center"}}>{Li(curCat.icon,13,curCat.color||T.txt2)}</span>}
             {label}
           </span>
-          <span style={{color:T.txt2,fontSize:10,flexShrink:0}}>{Li(open?"chevron-up":"chevron-down",11,T.txt2)}</span>
+          <span style={{color:T.txt2,fontSize:10,flexShrink:0,...(wrapLabel?{marginTop:2}:{})}}>{Li(open?"chevron-up":"chevron-down",11,T.txt2)}</span>
         </button>
         {/* Split-Button */}
         {onSplit&&curCat&&(

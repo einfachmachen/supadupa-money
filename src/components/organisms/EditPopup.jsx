@@ -389,15 +389,15 @@ function EditPopup() {
             </div>
           )}
           <div style={{display:"flex",gap:10,marginBottom:12,alignItems:"flex-start"}}>
-            <div style={{flex:1}}>
+            <div style={{flex:1,minWidth:0}}>
               <div style={{color:T.txt2,fontSize:11,marginBottom:2}}>Datum</div>
               <input type="date" value={editTx.date||""} onChange={e=>setEditTx(p=>({...p,date:e.target.value}))}
-                style={{width:"100%",height:44,background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bds}`,
+                style={{width:"100%",minWidth:0,height:44,background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bds}`,
                   borderRadius:11,padding:"0 10px",color:T.txt,fontSize:14,outline:"none",
                   boxSizing:"border-box",colorScheme:(isLightTheme())?"light":"dark"}}/>
             </div>
             {!editTx._budgetSubId&&(
-            <div style={{flex:1}}>
+            <div style={{flex:1,minWidth:0}}>
               <div style={{color:T.txt2,fontSize:11,marginBottom:2}}>Betrag (€)</div>
               {editTx._readOnlyAmount&&(
                 <div style={{background:"rgba(74,159,212,0.08)",border:`1px solid ${T.blue}44`,
@@ -409,7 +409,7 @@ function EditPopup() {
               <input value={editTx.totalAmount}
                 readOnly={!!editTx._readOnlyAmount}
                 onChange={e=>!editTx._readOnlyAmount&&setEditTx(p=>({...p,totalAmount:e.target.value,splits:(p.splits||[]).length===1?p.splits.map(sp=>({...sp,amount:e.target.value})):p.splits}))}
-                style={{opacity:editTx._readOnlyAmount?0.5:1,width:"100%",height:44,background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bds}`,
+                style={{opacity:editTx._readOnlyAmount?0.5:1,width:"100%",minWidth:0,height:44,background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bds}`,
                   borderRadius:11,padding:"0 10px",color:T.txt,fontSize:14,fontWeight:700,
                   fontFamily:NUM_FONT,textAlign:"right",outline:"none",boxSizing:"border-box"}}
                 inputMode="decimal" placeholder="0,00"/>
@@ -480,7 +480,14 @@ function EditPopup() {
             };
 
             return (
-              <div key={sp.id} style={{background:"rgba(255,255,255,0.04)",borderRadius:11,padding:"10px 12px",marginBottom:8,border:`1px solid ${T.bd}`}}>
+              // Eigene Karte (Hintergrund/Rahmen) nur bei mehreren Splits — sie
+              // gruppiert dann sichtbar mehrere Kategorie-Zeilen. Bei nur einer
+              // Kategorie wäre das ein zweiter Rahmen um den (selbst schon
+              // umrandeten) CatPicker (Nutzer-Feedback) und verschiebt zudem den
+              // Kategorienamen gegenüber "Als Vormerkung" nach rechts.
+              <div key={sp.id} style={isMulti
+                ? {background:"rgba(255,255,255,0.04)",borderRadius:11,padding:"10px 12px",marginBottom:8,border:`1px solid ${T.bd}`}
+                : {marginBottom:8}}>
                 {/* Split-Link-Badge: zeigt verknüpfte Vormerkung */}
                 {linkedPend&&(editTx.splits||[]).length>1&&(
                   <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,
@@ -522,6 +529,9 @@ function EditPopup() {
                       // umgeht und das Kategorie-Feld sonst kleiner/niedriger wirkt
                       // als Beschreibung/Notiz daneben.
                       triggerStyle={{fontSize:16}}
+                      // Lange Kategorie-/Unterkategorie-Namen umbrechen statt mit
+                      // "…" abzuschneiden (Nutzer-Feedback).
+                      wrapLabel
                     />
                   </div>
                 </div>
