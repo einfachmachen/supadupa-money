@@ -133,7 +133,7 @@ export function linkPendingToPending(txs, manualId, bankId) {
 export function autoMatchVormerkungen(txs) {
   const pendings = txs.filter(t => t.pending && !t._budgetSubId);
   const reals = txs.filter(t => !t.pending && !t._linkedTo);
-  if (!pendings.length || !reals.length) return { txs, linkedCount: 0 };
+  if (!pendings.length || !reals.length) return { txs, linkedCount: 0, matched: [] };
 
   const acctOf = t => t.accountId || "acc-giro";
   const cents = t => Math.round(Math.abs(t.totalAmount || 0) * 100);

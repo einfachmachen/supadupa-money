@@ -71,6 +71,18 @@ describe("autoMatchVormerkungen", () => {
     expect(linkedCount).toBe(0);
   });
 
+  // Regression: CsvImportScreen/DashboardScreenV2 destructuren "matched" aus
+  // dem Rückgabewert und lesen sofort matched.length (siehe setMatchedVorm/
+  // setMatchToast) — fehlte "matched" im Kurzschluss-Rückgabewert (keine
+  // Vormerkungen ODER keine echten Buchungen vorhanden, z. B. beim allerersten
+  // CSV-Import in ein frisches Konto), crashte das mit "Cannot read
+  // properties of undefined (reading 'length')" (roter Fehlerbildschirm).
+  it("liefert immer ein matched-Array, auch im Kurzschluss ohne Vormerkungen/Buchungen", () => {
+    expect(autoMatchVormerkungen([real()]).matched).toEqual([]); // keine Vormerkungen
+    expect(autoMatchVormerkungen([pend()]).matched).toEqual([]); // keine echten Buchungen
+    expect(autoMatchVormerkungen([]).matched).toEqual([]);
+  });
+
   it("linkPendingToReal übernimmt Splits der Vormerkung und markiert Betragsabweichung", () => {
     const txs = linkPendingToReal([pend(), real({ totalAmount:3.10 })], "pend-1", "real-1");
     const r = txs.find(t=>t.id==="real-1");
