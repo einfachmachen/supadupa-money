@@ -1543,18 +1543,14 @@ function DashboardScreenV2() {
                   .concat(_catTxMaps.pendByCat.get(cat.id)||[]);
 
                 // Oeffnet direkt die Buchungsliste (kein Sub-Modal) fuer einen Zeitraum
-                // Ohne lbl (Mitte/Ende bleiben Text) ist das ein "Typ"-Drill: statt
-                // eines Textzusatzes ("aktuell"/"aktuell + Vormerkungen") zeigt der
-                // Header dafür Abhaken-/Uhr-Symbol wie im Hero (dashDrill.showType) —
-                // nur Abhaken bei realOnly (reine Ist-Buchungen), sonst beide.
                 const openCatDrill = (maxDay, lbl, val, realOnly) => {
                   setDashDrill({ kind:"cat", catId:cat.id, mitte:maxDay===14, realOnly, isIncome,
-                    cat:null, label:`${cat.name}${lbl?` — ${lbl}`:""}`, showType:!lbl, _subDrillNoBudget:true });
+                    cat:null, label:`${cat.name}${lbl?` — ${lbl}`:""}`, _subDrillNoBudget:true });
                   setDashSearch("");
                 };
                 const openSubInlineDrill = (sub, subTxs, maxDay, lbl, val, realOnly) => {
                   setDashDrill({ kind:"cat", catId:cat.id, subId:sub.id, mitte:maxDay===14, realOnly, isIncome,
-                    cat:null, label:`${cat.name} / ${sub.name}${lbl?` — ${lbl}`:""}`, showType:!lbl, _subDrillNoBudget:true });
+                    cat:null, label:`${cat.name} / ${sub.name}${lbl?` — ${lbl}`:""}`, _subDrillNoBudget:true });
                   setDashSearch("");
                 };
 
@@ -1696,10 +1692,10 @@ function DashboardScreenV2() {
                 border:"none",boxShadow:"0 8px 40px rgba(0,0,0,0.7)"}}>
               {/* Header — kein eigener Schließen-Button mehr (Zurück-Pfeil UND Tap auf
                   den abgedunkelten Hintergrund schließen bereits). Titel bricht um
-                  (statt "…" abzuschneiden) und steht direkt neben dem Pfeil; "aktuell"
-                  bzw. "aktuell + Vormerkungen" im Titel ist durch Abhaken-/Uhr-Symbol
-                  (weiß, wie im Hero) ersetzt, s. dashDrill.showType. Betrag oben rechts,
-                  Anzahl (nur Zahl, weiß) darunter — kompakt statt eigener Unterzeile. */}
+                  (statt "…" abzuschneiden) und steht direkt neben dem Pfeil, nutzt die
+                  volle Breite (kein Abhaken-/Uhr-Symbol mehr daneben — die Aufschlüsselung
+                  steht schon unter dem Betrag, s.u.). Betrag oben rechts, Buch./VM/unkat.
+                  mit je eigenem Symbol darunter — kompakt statt eigener Unterzeile. */}
               <div style={{display:"flex",alignItems:"flex-start",gap:6,
                 padding:"calc(8px + env(safe-area-inset-top, 0px) + var(--sync-badge-space, 0px)) 10px 6px",flexShrink:0}}>
                 {/* Zurueck-Pfeil links (spaeter auch per + bedienbar) */}
@@ -1714,13 +1710,6 @@ function DashboardScreenV2() {
                 <div style={{flex:1,minWidth:0,color:dashDrill.cat ? T.blue : dashDrill.isIncome ? T.pos : T.neg,
                   fontSize:19,fontWeight:700,whiteSpace:"normal",wordBreak:"break-word",lineHeight:1.18}}>
                   {dashDrill.label||dashDrill.cat?.name}
-                  {dashDrill.showType&&(
-                    <span title={dashDrill.realOnly?"Gebucht":"Gebucht + Vorgemerkt"}
-                      style={{display:"inline-flex",alignItems:"center",gap:3,marginLeft:6,verticalAlign:"middle"}}>
-                      {Li("check",16,"#fff")}
-                      {!dashDrill.realOnly&&Li("clock",16,"#fff")}
-                    </span>
-                  )}
                 </div>
                 {dashDrillTotal!=null&&(()=>{
                   // Statt einer nackten Gesamtzahl: Aufschlüsselung wie im Hero
