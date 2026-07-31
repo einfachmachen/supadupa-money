@@ -149,13 +149,15 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
           </span>
           <span style={{color:T.txt2,fontSize:10,flexShrink:0,...(wrapLabel?{marginTop:2}:{})}}>{Li(open?"chevron-up":"chevron-down",11,T.txt2)}</span>
         </button>
-        {/* Split-Button */}
+        {/* Split-Button — eindeutiges "Split"-Symbol (Pfad gabelt sich) statt
+            des mehrdeutigen ⇌-Zeichens (wirkte eher wie "tauschen"). */}
         {onSplit&&curCat&&(
           <button onClick={()=>{setOpen(true);initSplit();}}
-            title="Splitbuchung"
+            title="Buchung splitten"
             style={{background:"rgba(74,159,212,0.15)",border:`1px solid ${T.blue}44`,
-              borderRadius:10,padding:"0 10px",color:T.blue,fontSize:13,cursor:"pointer",flexShrink:0}}>
-            ⇌
+              borderRadius:10,padding:"0 10px",color:T.blue,cursor:"pointer",flexShrink:0,
+              display:"flex",alignItems:"center",justifyContent:"center"}}>
+            {Li("split",15,T.blue)}
           </button>
         )}
       </div>
@@ -166,7 +168,7 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
           damit klar ist, was gerade aufgeteilt wird. */}
       {splitMode&&onSplit&&(
         <div style={{position:"fixed",inset:0,background:T.bg,zIndex:220,display:"flex",flexDirection:"column"}}>
-          <MobileHeader title="Splitbuchung" onBack={close}/>
+          <MobileHeader title="Buchung splitten" onBack={close}/>
           <div style={{flex:1,overflowY:"auto",overflowX:"hidden",touchAction:"pan-y",padding:"16px 18px",boxSizing:"border-box",WebkitOverflowScrolling:"touch"}}>
             <div style={{background:"rgba(255,255,255,0.04)",border:`1px solid ${T.bd}`,
               borderRadius:11,padding:"10px 12px",marginBottom:16}}>
