@@ -99,7 +99,7 @@ function EditPopup() {
           <div style={{width:36,height:4,borderRadius:2,background:T.blue+"44",margin:"0 auto 16px"}}/>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
             <div style={{color:T.blue,fontSize:16,fontWeight:700}}>
-              {editTx.pending ? "vormerkung bearbeiten" : "buchung bearbeiten"}
+              {editTx.pending ? "Vormerkung bearbeiten" : "Buchung bearbeiten"}
             </div>
             <button onClick={()=>setEditTx(null)} style={{background:"rgba(255,255,255,0.07)",border:"none",color:"#888",borderRadius:8,width:28,height:28,cursor:"pointer",fontSize:13}}>{Li("x",13)}</button>
           </div>
