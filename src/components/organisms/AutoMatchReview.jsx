@@ -13,7 +13,7 @@ import { unlinkPendingFromReal } from "../../utils/vormMatch.js";
 // (das Matching prüft nur Konto/Betrag/Datum, nicht den Verwendungszweck) —
 // nicht passende Verknüpfungen lassen sich hier direkt wieder lösen, statt
 // dafür erst die betroffene Buchung manuell suchen und öffnen zu müssen.
-function AutoMatchReview({ matches, txs, setTxs, onClose }) {
+function AutoMatchReview({ matches, txs, setTxs, getAcc, onClose }) {
   // Nur noch tatsächlich verlinkte Paare zeigen — kann sich durch
   // zwischenzeitliches Lösen (hier oder anderswo) verändert haben.
   const rows = matches
@@ -38,8 +38,19 @@ function AutoMatchReview({ matches, txs, setTxs, onClose }) {
         Nicht passende Verknüpfungen hier lösen.
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {rows.map(({ m, pend, real }) => (
+        {rows.map(({ m, pend, real }) => {
+          // Beide Seiten einer Verknüpfung liegen laut autoMatchVormerkungen
+          // immer auf demselben Konto — EIN Konto-Label pro Zeile reicht, um
+          // z. B. bei einer Umbuchung (zwei Beine: Quell- und Zielkonto) die
+          // beiden sonst identisch aussehenden Zeilen unterscheidbar zu machen.
+          const accName = getAcc ? getAcc(real.accountId || pend.accountId)?.name : null;
+          return (
           <div key={m.pendId} style={{ background: T.surf3, borderRadius: 11, padding: "10px 12px" }}>
+            {accName && (
+              <div style={{ color: T.txt2, fontSize: 9, fontWeight: 700, textTransform: "uppercase", marginBottom: 6 }}>
+                Konto: <span style={{ color: T.txt }}>{accName}</span>
+              </div>
+            )}
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ color: T.txt2, fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>Vormerkung</div>
@@ -68,7 +79,8 @@ function AutoMatchReview({ matches, txs, setTxs, onClose }) {
               {Li("unlink", 12, T.neg)} Verknüpfung lösen
             </button>
           </div>
-        ))}
+          );
+        })}
       </div>
       <button onClick={onClose}
         style={{ marginTop: 14, width: "100%", padding: "9px", borderRadius: 10, border: "none",

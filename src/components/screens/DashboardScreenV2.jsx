@@ -1068,7 +1068,7 @@ function DashboardScreenV2() {
               </button>
             </div>
             {showMatchReview && (
-              <AutoMatchReview matches={activeMatches} txs={txs} setTxs={setTxs}
+              <AutoMatchReview matches={activeMatches} txs={txs} setTxs={setTxs} getAcc={getAcc}
                 onClose={()=>setShowMatchReview(false)}/>
             )}
           </>);
