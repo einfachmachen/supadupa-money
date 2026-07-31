@@ -5,6 +5,7 @@ import { CatPicker } from "../molecules/CatPicker.jsx";
 import { AccountChips } from "../molecules/AccountChips.jsx";
 import { VerknuepfenPanel } from "./VerknuepfenPanel.jsx";
 import { TagInput } from "../atoms/TagInput.jsx";
+import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
@@ -14,6 +15,13 @@ import { Li } from "../../utils/icons.jsx";
 import { isFuelSelection, checkOdometerPlausibility } from "../../utils/fuel.js";
 import { getAllTags } from "../../utils/search.js";
 import { recordDeletedTxs } from "../../utils/txTombstones.js";
+
+// Lässt ein <textarea> mit dem Inhalt mitwachsen (Beschreibung/Notiz), statt
+// den Text bei fester Zeilenzahl abzuschneiden oder horizontal wegscrollen zu
+// lassen. Als Ref-Callback UND im onChange aufgerufen: Ref sorgt für die
+// korrekte Starthöhe beim Öffnen (auch bei langem Bestandstext), onChange
+// hält sie während der Eingabe nach.
+const autoGrow = (el) => { if(el) { el.style.height = "auto"; el.style.height = el.scrollHeight + "px"; } };
 
 function EditPopup() {
   const { cats,setCats,groups,setGroups,txs,setTxs,accounts,setAccounts,
@@ -91,18 +99,11 @@ function EditPopup() {
       setShowNewVehicle(true);
     };
     return (
-      <div onClick={()=>setEditTx(null)}
-        style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",backdropFilter:"blur(8px)",zIndex:80,display:"flex",alignItems:"center",justifyContent:"center"}}>
-        <div onClick={e=>e.stopPropagation()}
-          style={{background:T.surf,borderRadius:20,padding:"20px 18px",width:"100%",maxWidth:480,
-            border:`1px solid ${T.bds}`,boxShadow:"0 8px 40px rgba(0,0,0,0.5),0 0 0 1px rgba(170,204,0,0.08)",maxHeight:"85vh",overflowY:"auto"}}>
-          <div style={{width:36,height:4,borderRadius:2,background:T.blue+"44",margin:"0 auto 16px"}}/>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-            <div style={{color:T.blue,fontSize:16,fontWeight:700}}>
-              {editTx.pending ? "Vormerkung bearbeiten" : "Buchung bearbeiten"}
-            </div>
-            <button onClick={()=>setEditTx(null)} style={{background:"rgba(255,255,255,0.07)",border:"none",color:"#888",borderRadius:8,width:28,height:28,cursor:"pointer",fontSize:13}}>{Li("x",13)}</button>
-          </div>
+      <div style={{position:"fixed",inset:0,background:T.bg,zIndex:80,display:"flex",flexDirection:"column"}}>
+        <MobileHeader
+          title={editTx.pending ? "Vormerkung bearbeiten" : "Buchung bearbeiten"}
+          onBack={()=>setEditTx(null)}/>
+        <div style={{flex:1,overflowY:"auto",padding:"16px 18px",boxSizing:"border-box",WebkitOverflowScrolling:"touch"}}>
           {/* Verknüpfte Vormerkung — Info-Box für echte Buchungen */}
           {!editTx.pending&&(editTx.linkedIds||[]).length>0&&(()=>{
             const linkedPends = (editTx.linkedIds||[])
@@ -313,12 +314,15 @@ function EditPopup() {
               </div>
             </div>
           )}
-          {/* Beschreibung */}
+          {/* Beschreibung — wächst mit dem Inhalt statt abzuschneiden (Nutzer-Feedback) */}
           <div style={{color:T.txt2,fontSize:11,marginBottom:2}}>Beschreibung</div>
-          <input value={editTx.desc} onChange={e=>setEditTx(p=>({...p,desc:e.target.value}))}
-            placeholder="z. B. Gehalt, Miete …"
+          <textarea ref={autoGrow} value={editTx.desc}
+            onChange={e=>{autoGrow(e.target);setEditTx(p=>({...p,desc:e.target.value}));}}
+            placeholder="z. B. Gehalt, Miete …" rows={1}
             style={{width:"100%",background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bds}`,
-              borderRadius:11,padding:"6px 10px",color:T.txt,fontSize:14,outline:"none",boxSizing:"border-box",marginBottom:8}}/>
+              borderRadius:11,padding:"6px 10px",color:T.txt,fontSize:14,outline:"none",
+              boxSizing:"border-box",marginBottom:8,resize:"none",overflow:"hidden",
+              fontFamily:"inherit",lineHeight:1.4}}/>
           {/* Verursachungsdatum (nur bei Vormerkungen) */}
           {editTx.pending&&!editTx._budgetSubId&&(
             <div style={{marginBottom:8}}>
@@ -344,12 +348,13 @@ function EditPopup() {
           <div style={{color:T.txt2,fontSize:11,marginBottom:2,display:"flex",alignItems:"center",gap:4}}>
             {Li("sticky-note",11,T.gold)} Notiz
           </div>
-          <textarea value={editTx.note||""} onChange={e=>setEditTx(p=>({...p,note:e.target.value}))}
+          <textarea ref={autoGrow} value={editTx.note||""}
+            onChange={e=>{autoGrow(e.target);setEditTx(p=>({...p,note:e.target.value}));}}
             placeholder="Eigene Bemerkung zur Buchung…"
-            rows={2}
+            rows={1}
             style={{width:"100%",background:"rgba(255,255,255,0.04)",border:`1px solid ${editTx.note?T.gold+"66":T.bd}`,
               borderRadius:11,padding:"6px 10px",color:T.txt,fontSize:13,outline:"none",
-              boxSizing:"border-box",marginBottom:12,resize:"vertical",fontFamily:"inherit",
+              boxSizing:"border-box",marginBottom:12,resize:"none",overflow:"hidden",fontFamily:"inherit",
               lineHeight:1.5}}/>
           {/* Tags — quer über Kategorien hinweg durchsuchbar (z.B. "#aida"), s. utils/search.js */}
           <div style={{color:T.txt2,fontSize:11,marginBottom:2,display:"flex",alignItems:"center",gap:4}}>
@@ -383,13 +388,13 @@ function EditPopup() {
               </div>
             </div>
           )}
-          <div style={{display:"flex",gap:10,marginBottom:12}}>
+          <div style={{display:"flex",gap:10,marginBottom:12,alignItems:"flex-start"}}>
             <div style={{flex:1}}>
               <div style={{color:T.txt2,fontSize:11,marginBottom:2}}>Datum</div>
               <input type="date" value={editTx.date||""} onChange={e=>setEditTx(p=>({...p,date:e.target.value}))}
-                style={{width:"100%",background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bds}`,
-                  borderRadius:11,padding:"11px 10px",color:T.txt,fontSize:13,outline:"none",
-                  boxSizing:"border-box",colorScheme:"dark"}}/>
+                style={{width:"100%",height:44,background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bds}`,
+                  borderRadius:11,padding:"0 10px",color:T.txt,fontSize:14,outline:"none",
+                  boxSizing:"border-box",colorScheme:(isLightTheme())?"light":"dark"}}/>
             </div>
             {!editTx._budgetSubId&&(
             <div style={{flex:1}}>
@@ -404,8 +409,8 @@ function EditPopup() {
               <input value={editTx.totalAmount}
                 readOnly={!!editTx._readOnlyAmount}
                 onChange={e=>!editTx._readOnlyAmount&&setEditTx(p=>({...p,totalAmount:e.target.value,splits:(p.splits||[]).length===1?p.splits.map(sp=>({...sp,amount:e.target.value})):p.splits}))}
-                style={{opacity:editTx._readOnlyAmount?0.5:1,width:"100%",background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bds}`,
-                  borderRadius:11,padding:"6px 10px",color:T.txt,fontSize:14,fontWeight:700,
+                style={{opacity:editTx._readOnlyAmount?0.5:1,width:"100%",height:44,background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bds}`,
+                  borderRadius:11,padding:"0 10px",color:T.txt,fontSize:14,fontWeight:700,
                   fontFamily:NUM_FONT,textAlign:"right",outline:"none",boxSizing:"border-box"}}
                 inputMode="decimal" placeholder="0,00"/>
             </div>)}
@@ -512,6 +517,11 @@ function EditPopup() {
                         // 3. Vorzeichen des Betrags
                         return pn(editTx.totalAmount)<0?"expense":"income";
                       })()}
+                      // Größer wie im Buchungsabruf (BankFetchPanel) — dort dieselbe
+                      // Angleichung, da 16px auch den iOS-Zoom-Trigger auf <input>
+                      // umgeht und das Kategorie-Feld sonst kleiner/niedriger wirkt
+                      // als Beschreibung/Notiz daneben.
+                      triggerStyle={{fontSize:16}}
                     />
                   </div>
                 </div>
