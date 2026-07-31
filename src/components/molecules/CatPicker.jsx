@@ -166,7 +166,7 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
           damit klar ist, was gerade aufgeteilt wird. */}
       {splitMode&&onSplit&&(
         <div style={{position:"fixed",inset:0,background:T.bg,zIndex:220,display:"flex",flexDirection:"column"}}>
-          <MobileHeader title="Splitbuchung" onBack={()=>setSplitMode(false)}/>
+          <MobileHeader title="Splitbuchung" onBack={close}/>
           <div style={{flex:1,overflowY:"auto",overflowX:"hidden",touchAction:"pan-y",padding:"16px 18px",boxSizing:"border-box",WebkitOverflowScrolling:"touch"}}>
             <div style={{background:"rgba(255,255,255,0.04)",border:`1px solid ${T.bd}`,
               borderRadius:11,padding:"10px 12px",marginBottom:16}}>
