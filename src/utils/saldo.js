@@ -356,8 +356,12 @@ function phaseStillReachable(year, month, phaseEndDay, ctx) {
 // Phase gilt bereits) und der Platzhalter soll nirgends mehr auftauchen — weder
 // in den Offenen Vormerkungen (inkl. Badge), noch in Monat oder Buchungen.
 // Nicht-Budget-Buchungen liefern immer true (bleiben unberührt).
+// Manuell vorzeitig freigegeben (_releasedEarly, siehe EditPopup „Jetzt
+// freigeben"): genau wie bei einer abgelaufenen Phase soll der Platzhalter
+// nirgends mehr auftauchen — nur die tatsächlich vorgemerkten Buchungen bleiben.
 function budgetPlaceholderActive(tx, ctx = {}) {
   if(!tx || !tx._budgetSubId) return true;
+  if(tx._releasedEarly) return false;
   const [y, mo] = tx.date.split("-").map(Number); // mo: 1-basiert
   const isMitte = tx._budgetSubId.endsWith("_mitte");
   const phaseEndDay = isMitte ? 14 : new Date(y, mo, 0).getDate();

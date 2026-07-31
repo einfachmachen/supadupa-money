@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { saldoAt, saldoIst, saldoMitte, saldoEnde, saldoAnchor, restMitte, restEnde, collectBudgets } from "../src/utils/saldo.js";
+import { saldoAt, saldoIst, saldoMitte, saldoEnde, saldoAnchor, restMitte, restEnde, collectBudgets, budgetPlaceholderActive } from "../src/utils/saldo.js";
 
 // ── Test-Fixture ─────────────────────────────────────────────────────
 function buildCtx(overrides = {}) {
@@ -262,6 +262,13 @@ describe("saldoAt — Excel-Logik (User-Spec)", () => {
       });
       const b = collectBudgets(2026, 4, ctx);
       expect(b["s-essen"].gesamt).toBe(0);
+    });
+
+    it("budgetPlaceholderActive: freigegebener Platzhalter verschwindet wie bei abgelaufener Phase", () => {
+      const tx = { _budgetSubId: "s-essen", date: "2026-05-31", _releasedEarly: true };
+      expect(budgetPlaceholderActive(tx, { today: new Date("2026-05-05") })).toBe(false);
+      // Ohne die Freigabe wäre die Phase am 5.5. noch erreichbar (also aktiv)
+      expect(budgetPlaceholderActive({ ...tx, _releasedEarly: false }, { today: new Date("2026-05-05") })).toBe(true);
     });
   });
 

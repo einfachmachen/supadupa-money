@@ -692,41 +692,23 @@ function EditPopup() {
             <div style={{background:(isLightTheme())?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)",borderRadius:11,padding:"6px 10px",marginBottom:8,border:`1px solid ${T.gold}33`}}>
               <div style={{color:T.gold,fontSize:11,fontWeight:700,marginBottom:6,display:"flex",alignItems:"center",gap:5}}>
                 {Li("target",11,T.gold)} Budget-Platzhalter
-                <div style={{marginLeft:"auto",display:"flex",gap:6}}>
-                  <div onClick={()=>{
-                    const released = !editTx._releasedEarly;
-                    setTxs(p=>p.map(t=>t.id===editTx.id?{...t,_releasedEarly:released}:t));
-                    setEditTx(p=>({...p,_releasedEarly:released}));
-                  }}
-                    style={{background:editTx._releasedEarly?"rgba(170,204,0,0.12)":"rgba(245,166,35,0.12)",
-                      border:`1px solid ${editTx._releasedEarly?T.pos:T.gold}55`,
-                      color:editTx._releasedEarly?T.pos:T.gold,borderRadius:6,padding:"2px 8px",fontSize:10,cursor:"pointer",
-                      display:"flex",alignItems:"center",gap:3,fontFamily:"inherit",fontWeight:700}}>
-                    {editTx._releasedEarly ? <>{Li("check",9,T.pos)} Freigegeben</> : <>{Li("unlock",9,T.gold)} Jetzt freigeben</>}
-                  </div>
-                  <div onClick={()=>{
-                    const sid = editTx._seriesId;
-                    const bid = editTx._budgetSubId;
-                    if(!window.confirm("Budget-Bindung für alle Zahlungen dieser Serie lösen?\nDie Vormerkungen bleiben erhalten, sind dann aber keine Budget-Platzhalter mehr.")) return;
-                    setTxs(p=>p.map(t=>{
-                      if(sid ? t._seriesId===sid : t._budgetSubId===bid&&t.pending) {
-                        const u = {...t, _budgetSubId:undefined}; delete u._budgetSubId; return u;
-                      }
-                      return t;
-                    }));
-                    setEditTx(p=>{const u={...p,_budgetSubId:undefined}; delete u._budgetSubId; return u;});
-                  }}
-                    style={{background:"rgba(234,64,37,0.12)",border:`1px solid ${T.neg}33`,
-                      color:T.neg,borderRadius:6,padding:"2px 8px",fontSize:10,cursor:"pointer",
-                      display:"flex",alignItems:"center",gap:3,fontFamily:"inherit",fontWeight:700}}>
-                    {Li("unlink",9,T.neg)} Lösen
-                  </div>
+                <div onClick={()=>{
+                  const released = !editTx._releasedEarly;
+                  if(released&&!window.confirm("Rest-Vormerkung für diesen Monat jetzt freigeben?\nSie verschwindet aus den Vormerkungen, die Reservierung wird sofort aufgehoben.")) return;
+                  setTxs(p=>p.map(t=>t.id===editTx.id?{...t,_releasedEarly:released}:t));
+                  setEditTx(p=>({...p,_releasedEarly:released}));
+                }}
+                  style={{marginLeft:"auto",background:editTx._releasedEarly?"rgba(170,204,0,0.12)":"rgba(245,166,35,0.12)",
+                    border:`1px solid ${editTx._releasedEarly?T.pos:T.gold}55`,
+                    color:editTx._releasedEarly?T.pos:T.gold,borderRadius:6,padding:"2px 8px",fontSize:10,cursor:"pointer",
+                    display:"flex",alignItems:"center",gap:3,fontFamily:"inherit",fontWeight:700}}>
+                  {editTx._releasedEarly ? <>{Li("check",9,T.pos)} Freigegeben</> : <>{Li("unlock",9,T.gold)} Jetzt freigeben</>}
                 </div>
               </div>
               <div style={{color:T.txt2,fontSize:9,lineHeight:1.4,marginBottom:6,marginTop:-2}}>
-                „Jetzt freigeben" hebt die Reservierung für DIESEN Monat vorzeitig auf (z. B. am
-                Monatsletzten, wenn ohnehin nichts mehr gebucht wird) — Saldo &amp; Sparrate berücksichtigen
-                das sofort. „Lösen" entfernt die Budget-Bindung dauerhaft.
+                Hebt die Reservierung für DIESEN Monat vorzeitig auf (z. B. am Monatsletzten, wenn
+                ohnehin nichts mehr gebucht wird) — die Vormerkung verschwindet dann aus den
+                Vormerkungen, Saldo &amp; Sparrate berücksichtigen das sofort.
               </div>
               {hasPair ? (
                 <>
