@@ -180,6 +180,13 @@ function collectBudgets(year, month, ctx) {
   if(key && cache[key]) return cache[key];
   const monthStr = `${year}-${String(month+1).padStart(2,"0")}`;
   const result = {};
+  // Kategorien, deren Rest-Vormerkung manuell vorzeitig freigegeben wurde
+  // (_releasedEarly, siehe EditPopup „Jetzt freigeben"). Die Freigabe gilt
+  // für die GESAMTE Kategorie im Monat (Mitte+Ende zusammen) — unabhängig
+  // davon, an welchem der beiden Platzhalter (Mitte oder Ende) sie gesetzt
+  // wurde, da restEnde() ungenutztes Mitte-Budget ohnehin in die 2. Hälfte
+  // rollt (dynamisches Roll-Over) und ein halbes Freigeben sonst wirkungslos wäre.
+  const releasedSubIds = new Set();
 
   // Quelle 1: _budgetSubId-Platzhalter
   monthPool(ctx, year, month).forEach(t => {
@@ -190,6 +197,7 @@ function collectBudgets(year, month, ctx) {
     const isMitteP = t._budgetSubId.endsWith("_mitte");
     const baseSubId = isMitteP ? t._budgetSubId.slice(0,-6) : t._budgetSubId;
     if(!result[baseSubId]) result[baseSubId] = { mitte: 0, ende: 0 };
+    if(t._releasedEarly) releasedSubIds.add(baseSubId);
     const amt = Math.abs(pn(t.totalAmount) || 0);
     if(isMitteP) result[baseSubId].mitte += amt;
     else         result[baseSubId].ende  += amt;
@@ -218,7 +226,8 @@ function collectBudgets(year, month, ctx) {
   }
 
   // Gesamt = mitte + ende (cent-genau, falls mehrere Platzhalter akkumuliert wurden)
-  Object.values(result).forEach(b => {
+  Object.entries(result).forEach(([subId, b]) => {
+    if(releasedSubIds.has(subId)) { b.mitte = 0; b.ende = 0; }
     b.mitte = round2(b.mitte); b.ende = round2(b.ende);
     b.gesamt = round2(b.mitte + b.ende);
   });

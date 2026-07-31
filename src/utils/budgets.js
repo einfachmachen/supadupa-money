@@ -76,13 +76,20 @@ const budgetOpenRestFor = (tx, txs, txsById, year, month) => {
   const isMitte = tx._budgetSubId.endsWith("_mitte");
   const baseSubId = isMitte ? tx._budgetSubId.slice(0,-6) : tx._budgetSubId;
   const lastDay = new Date(year, month+1, 0).getDate();
+  const monthPfx = `${year}-${String(month+1).padStart(2,"0")}`;
+  const mitteTx = isMitte ? tx : (txs||[]).find(t=>t.pending && t._budgetSubId===baseSubId+"_mitte" && (t.date||"").startsWith(monthPfx));
+  const endeTx  = isMitte ? (txs||[]).find(t=>t.pending && t._budgetSubId===baseSubId && (t.date||"").startsWith(monthPfx)) : tx;
+  // Manuell vorzeitig freigegeben (siehe EditPopup „Jetzt freigeben") — betrifft
+  // die GESAMTE Kategorie im Monat, unabhängig davon, an welchem der beiden
+  // Platzhalter (Mitte/Ende) die Freigabe gesetzt wurde. Konsistent mit
+  // saldo.js collectBudgets (dynamisches Roll-Over rollt ungenutztes Mitte
+  // ohnehin in die 2. Hälfte).
+  if(mitteTx?._releasedEarly || endeTx?._releasedEarly) return 0;
   if(isMitte) {
     const mitteBudget = Math.abs(pn(tx.totalAmount)||0);
     return mitteBudget - istForSubInList(txs, txsById, year, month, baseSubId, 1, 14);
   }
   // Ende-Platzhalter: Gesamtbudget = dieser + evtl. Mitte-Platzhalter desselben Subs
-  const monthPfx = `${year}-${String(month+1).padStart(2,"0")}`;
-  const mitteTx = (txs||[]).find(t=>t.pending && t._budgetSubId===baseSubId+"_mitte" && (t.date||"").startsWith(monthPfx));
   const gesamt = Math.abs(pn(tx.totalAmount)||0) + (mitteTx ? Math.abs(pn(mitteTx.totalAmount)||0) : 0);
   return gesamt - istForSubInList(txs, txsById, year, month, baseSubId, 1, lastDay);
 };

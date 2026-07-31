@@ -64,4 +64,10 @@ describe("budgetOpenRestFor", () => {
     const { txs, txsById } = fixture();
     expect(budgetOpenRestFor(txs.find(t => t.id === "r1"), txs, txsById, 2026, 4)).toBe(null);
   });
+
+  it("manuell freigegeben (_releasedEarly) → Rest 0, unabhängig vom Ist", () => {
+    const { txs, txsById } = fixture();
+    const ende = { ...txs.find(t => t.id === "e"), _releasedEarly: true };
+    expect(budgetOpenRestFor(ende, txs, txsById, 2026, 4)).toBe(0);
+  });
 });

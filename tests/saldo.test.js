@@ -215,6 +215,56 @@ describe("saldoAt — Excel-Logik (User-Spec)", () => {
     });
   });
 
+  describe("Manuelle Freigabe (_releasedEarly): Rest-Vormerkung vor dem Monatswechsel entfernen", () => {
+    it("Ende-Platzhalter mit _releasedEarly trägt nicht zu RestEnde bei (Rest wird 0)", () => {
+      const ctx = buildCtx({
+        anchors: { "acc-giro": { "2026-3": 1000 } },
+        today: new Date("2026-05-31"),
+        txs: [
+          { id: "t1", accountId: "acc-giro", date: "2026-05-10", totalAmount: -30, _csvType: "expense",
+            splits: [{ catId: "c-essen", subId: "s-essen", amount: -30 }] },
+          { id: "t2", accountId: "acc-giro", date: "2026-05-20", totalAmount: -40, _csvType: "expense",
+            splits: [{ catId: "c-essen", subId: "s-essen", amount: -40 }] },
+          ...budgetPlaceholders(2026, 4, "s-essen", 100, 200).map(t =>
+            t.id === "b-s-essen-ende" ? { ...t, _releasedEarly: true } : t),
+        ],
+      });
+      // Ohne Freigabe wäre RestEnde = 230 (siehe Phase 4 „voller Polster"-Test).
+      // Mit _releasedEarly trägt diese Sub-Kategorie 0 zur Reservierung bei.
+      expect(restEnde(2026, 4, ctx)).toBe(0);
+      expect(saldoAt(2026, 4, 31, "acc-giro", ctx)).toBe(1000 - 30 - 40);
+    });
+
+    it("Freigabe am Mitte-Platzhalter hebt auch RestEnde auf (Freigabe gilt für die ganze Kategorie im Monat)", () => {
+      // Ohne diese Kopplung würde eine Freigabe am Mitte-Platzhalter wirkungslos
+      // bleiben, weil restEnde() ungenutztes Mitte-Budget per Roll-Over ohnehin
+      // in die 2. Hälfte übernimmt (Budget_H2 = Gesamt − Ist1bis14).
+      const ctx = buildCtx({
+        anchors: { "acc-giro": { "2026-3": 1000 } },
+        today: new Date("2026-05-05"),
+        txs: [
+          ...budgetPlaceholders(2026, 4, "s-essen", 100, 200).map(t =>
+            t.id === "b-s-essen-mitte" ? { ...t, _releasedEarly: true } : t),
+        ],
+      });
+      expect(restMitte(2026, 4, ctx)).toBe(0);
+      expect(restEnde(2026, 4, ctx)).toBe(0);
+    });
+
+    it("collectBudgets liefert für freigegebene Platzhalter 0 statt des Fallback-Werts aus getBudgetForMonth", () => {
+      const ctx = buildCtx({
+        today: new Date("2026-05-31"),
+        budgets: { "s-essen": { amount: 999 } }, // Fallback-Quelle 2 — darf NICHT greifen
+        txs: [
+          { id: "be", accountId: "acc-giro", pending: true, _budgetSubId: "s-essen", _releasedEarly: true,
+            date: "2026-05-31", totalAmount: -200, splits: [{ catId: "c-essen", subId: "s-essen", amount: -200 }] },
+        ],
+      });
+      const b = collectBudgets(2026, 4, ctx);
+      expect(b["s-essen"].gesamt).toBe(0);
+    });
+  });
+
   describe("Zukunftsmonat: Reservierung verfällt nicht am Kalenderwechsel", () => {
     it("Reiner Zukunftsmonat: 13.→14.→15. springt nicht zurück, Anker trägt Ende weiter", () => {
       // Heute = 5. Mai, Juni = reiner Zukunftsmonat.
