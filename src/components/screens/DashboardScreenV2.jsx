@@ -1543,14 +1543,17 @@ function DashboardScreenV2() {
                   .concat(_catTxMaps.pendByCat.get(cat.id)||[]);
 
                 // Oeffnet direkt die Buchungsliste (kein Sub-Modal) fuer einen Zeitraum
-                const openCatDrill = (maxDay, lbl, val, realOnly) => {
+                // showVm: dieser Drill mischt Gebucht + Vorgemerkt (statt eines
+                // Textzusatzes "aktuell + Vormerkungen" im Titel zeigt der Header
+                // dafür die Abhaken-/Uhr-Symbole wie im Hero, s. dashDrill.showVm.
+                const openCatDrill = (maxDay, lbl, val, realOnly, showVm) => {
                   setDashDrill({ kind:"cat", catId:cat.id, mitte:maxDay===14, realOnly, isIncome,
-                    cat:null, label:`${cat.name} — ${lbl}`, _subDrillNoBudget:true });
+                    cat:null, label:`${cat.name}${lbl?` — ${lbl}`:""}`, showVm, _subDrillNoBudget:true });
                   setDashSearch("");
                 };
-                const openSubInlineDrill = (sub, subTxs, maxDay, lbl, val, realOnly) => {
+                const openSubInlineDrill = (sub, subTxs, maxDay, lbl, val, realOnly, showVm) => {
                   setDashDrill({ kind:"cat", catId:cat.id, subId:sub.id, mitte:maxDay===14, realOnly, isIncome,
-                    cat:null, label:`${cat.name} / ${sub.name} — ${lbl}`, _subDrillNoBudget:true });
+                    cat:null, label:`${cat.name} / ${sub.name}${lbl?` — ${lbl}`:""}`, showVm, _subDrillNoBudget:true });
                   setDashSearch("");
                 };
 
@@ -1590,7 +1593,7 @@ function DashboardScreenV2() {
                       </div>
                       {/* Rechts immer das aktuelle Gesamt (gebucht, IST). Klick öffnet
                           die Buchungen inkl. Vormerkungen. */}
-                      <div onClick={e=>{e.stopPropagation(); if(iAkt>0||iEnde>0) openCatDrill(lastDay,"aktuell + Vormerkungen",iAkt,false);}}
+                      <div onClick={e=>{e.stopPropagation(); if(iAkt>0||iEnde>0) openCatDrill(lastDay,null,iAkt,false,true);}}
                         style={{color:headColor,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
                           flexShrink:0, cursor:(iAkt>0||iEnde>0)?"pointer":"default"}}>
                         {fmtShort(iAkt)}
@@ -1601,7 +1604,7 @@ function DashboardScreenV2() {
                     {isExpanded && renderPegel({
                       akt:iAkt, used:istEnde, mitte:iMitte, ende:iEnde,
                       budget:budgetEnde, isInc:isIncome, indent:38,
-                      onOpen:()=>openCatDrill(lastDay,"aktuell + Vormerkungen",iAkt,false),
+                      onOpen:()=>openCatDrill(lastDay,null,iAkt,false,true),
                     })}
                     {/* Inline-Unterkategorien (gleiches 2-Zeilen-Format wie die Hauptzeile) */}
                     {isExpanded && (cat.subs||[]).map(sub => {
@@ -1661,7 +1664,7 @@ function DashboardScreenV2() {
                           {subViewMode==="pegel" ? renderPegel({
                             akt:sAkt, used:_istAll, mitte:sMitte, ende:sEnde,
                             budget:subBudget, isInc:isIncome, indent:21,
-                            onOpen:()=>openSubInlineDrill(sub,subTxs,lastDay,"aktuell + Vormerkungen",sAkt,false),
+                            onOpen:()=>openSubInlineDrill(sub,subTxs,lastDay,null,sAkt,false,true),
                           }) : (
                           <div style={{display:"flex",gap:6}}>
                             {valuePill(sMitte, sBudMitte, isIncome,
@@ -1690,7 +1693,11 @@ function DashboardScreenV2() {
               style={{background:T.bg,borderRadius:0,width:"100%",maxWidth:560,
                 height:"100dvh",maxHeight:"100dvh",display:"flex",flexDirection:"column",
                 border:"none",boxShadow:"0 8px 40px rgba(0,0,0,0.7)"}}>
-              {/* Header */}
+              {/* Header — kein eigener Schließen-Button mehr (Zurück-Pfeil UND Tap auf
+                  den abgedunkelten Hintergrund schließen bereits) — der Platz kommt
+                  stattdessen dem Betrag zugute. Titel bricht um (statt "…"
+                  abzuschneiden) und steht direkt neben dem Pfeil; der Betrag nutzt
+                  die volle Zeilenhöhe daneben. */}
               <div style={{display:"flex",alignItems:"center",gap:8,
                 padding:"calc(12px + env(safe-area-inset-top, 0px) + var(--sync-badge-space, 0px)) 12px 8px",flexShrink:0}}>
                 {/* Zurueck-Pfeil links (spaeter auch per + bedienbar) */}
@@ -1704,21 +1711,28 @@ function DashboardScreenV2() {
                 </div>}
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{color:dashDrill.cat ? T.blue : dashDrill.isIncome ? T.pos : T.neg,
-                    fontSize:19,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{dashDrill.label||dashDrill.cat?.name}</div>
-                  <div style={{color:T.txt2,fontSize:13,display:"flex",gap:8,alignItems:"center"}}>
+                    fontSize:19,fontWeight:700,whiteSpace:"normal",wordBreak:"break-word",lineHeight:1.25}}>{dashDrill.label||dashDrill.cat?.name}</div>
+                  <div style={{color:T.txt2,fontSize:13,display:"flex",gap:6,alignItems:"center"}}>
+                    {/* Mischt Gebucht + Vorgemerkt: Abhaken-/Uhr-Symbol wie im Hero
+                        statt des Textzusatzes "aktuell + Vormerkungen" im Titel. */}
+                    {dashDrill.showVm&&(
+                      <span title="Gebucht + Vorgemerkt" style={{display:"inline-flex",alignItems:"center",gap:3,flexShrink:0}}>
+                        {Li("check",12,T.txt2)}{Li("clock",12,T.txt2)}
+                      </span>
+                    )}
                     {dashDrill.cat ? (()=>{
                       const live = txs.filter(t=>{const d=new Date(t.date);return d.getFullYear()===year&&d.getMonth()===month&&(t.splits||[]).some(sp=>sp.catId===dashDrill.cat.id);});
                       return <span>{live.length} Buchung{live.length!==1?"en":""}</span>;
                     })() : <span>{dashDrillList.length} Buchung{dashDrillList.length!==1?"en":""}</span>}
-                    {dashDrillTotal!=null&&<span style={{color:dashDrill.isIncome?T.pos:T.neg,fontWeight:700,fontSize:15}}>
-                      {fmt(dashDrillTotal)}
-                    </span>}
                   </div>
                 </div>
-                <button onClick={()=>setDashDrill(null)}
-                  style={{background:"rgba(255,255,255,0.08)",border:"none",color:T.txt,
-                    borderRadius:10,width:36,height:36,cursor:"pointer",flexShrink:0,
-                    display:"flex",alignItems:"center",justifyContent:"center"}}>{Li("x",16)}</button>
+                {dashDrillTotal!=null&&(
+                  <div style={{color:dashDrill.isIncome?T.pos:T.neg,fontWeight:800,fontSize:26,
+                    fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",flexShrink:0,
+                    display:"flex",alignItems:"center",alignSelf:"stretch"}}>
+                    {fmt(dashDrillTotal)}
+                  </div>
+                )}
               </div>
               {/* Suchfeld */}
               <div style={{padding:"8px 14px",borderTop:`1px solid ${T.bd}`,flexShrink:0,
