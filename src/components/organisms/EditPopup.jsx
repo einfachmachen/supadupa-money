@@ -99,7 +99,12 @@ function EditPopup() {
       setShowNewVehicle(true);
     };
     return (
-      <div style={{position:"fixed",inset:0,background:T.bg,zIndex:80,display:"flex",flexDirection:"column"}}>
+      <div style={{position:"fixed",inset:0,background:T.bg,zIndex:80,display:"flex",flexDirection:"column",
+        // Eigene Compositing-Ebene erzwingen (iOS Safari rendert sonst beim
+        // Entfernen einer darüberliegenden Vollbild-Ebene — z. B. dem
+        // Splitbuchung-Screen — kurzzeitig einen alten/versetzten Frame
+        // dieses Screens, sichtbar als schmaler "Geister"-Streifen links).
+        WebkitBackfaceVisibility:"hidden",WebkitTransform:"translateZ(0)",transform:"translateZ(0)"}}>
         <MobileHeader
           title={editTx.pending ? "Vormerkung bearbeiten" : "Buchung bearbeiten"}
           onBack={()=>setEditTx(null)}/>
