@@ -515,6 +515,8 @@ function EditPopup() {
                       value={sp.catId+"|"+sp.subId}
                       onChange={(catId,subId)=>{ updEditSplit(sp.id,"catId",catId); updEditSplit(sp.id,"subId",subId); }}
                       totalAmount={pn(editTx.totalAmount)}
+                      date={editTx.date}
+                      desc={editTx.desc}
                       onSplit={(newSplits)=>setEditTx(p=>({...p,splits:newSplits.map(s=>({...s,id:s.id||uid()}))}))}
                       filterType={(()=>{
                         // 1. _csvType hat Vorrang (aus CSV-Import)

@@ -4,12 +4,13 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import { QuickBtnsBar } from "./QuickBtnsBar.jsx";
 import { QuickBtnsBarWithColor } from "./QuickBtnsBarWithColor.jsx";
 import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
+import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
-import { fmt, pn, uid } from "../../utils/format.js";
+import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
-function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAmount=0, onSplit=null, filterType=null, openUp=false, accountId=null, noMargin=false, triggerStyle, wrapLabel=false}) {
+function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAmount=0, onSplit=null, date=null, desc=null, filterType=null, openUp=false, accountId=null, noMargin=false, triggerStyle, wrapLabel=false}) {
   const { cats, groups, accounts, setCats, setGroups, quickBtns, setQuickBtns } = useContext(AppCtx);
   const [step,    setStep]    = useState(0);  // 0=Gruppe 1=Kat 2=Unterkat
   const [selGrp,  setSelGrp]  = useState(null);
@@ -159,8 +160,77 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
         )}
       </div>
 
+      {/* Splitbuchung — eigener Vollbild-Screen (Zurück-Pfeil + Titel wie die
+          übrigen Dialoge), statt im schmalen Dropdown-Panel gequetscht zu
+          werden. Zeigt Datum/Betrag/Beschreibung der Original-Buchung oben,
+          damit klar ist, was gerade aufgeteilt wird. */}
+      {splitMode&&onSplit&&(
+        <div style={{position:"fixed",inset:0,background:T.bg,zIndex:220,display:"flex",flexDirection:"column"}}>
+          <MobileHeader title="Splitbuchung" onBack={()=>setSplitMode(false)}/>
+          <div style={{flex:1,overflowY:"auto",padding:"16px 18px",boxSizing:"border-box"}}>
+            <div style={{background:"rgba(255,255,255,0.04)",border:`1px solid ${T.bd}`,
+              borderRadius:11,padding:"10px 12px",marginBottom:16}}>
+              <div style={{color:T.txt,fontSize:15,fontWeight:600,marginBottom:6,
+                overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                {desc || "(ohne Bezeichnung)"}
+              </div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline"}}>
+                <span style={{color:T.txt2,fontSize:12}}>
+                  {date ? date.split("-").reverse().join(".") : ""}
+                </span>
+                <span style={{color:T.txt,fontSize:16,fontWeight:700,fontFamily:NUM_FONT}}>
+                  {fmt(Math.abs(totalAmount))} €
+                </span>
+              </div>
+            </div>
+            {splits.map((sp,si)=>(
+              <div key={sp.id} style={{background:"rgba(255,255,255,0.04)",borderRadius:11,
+                padding:"10px 12px",marginBottom:8,border:`1px solid ${T.bd}`}}>
+                <div style={{display:"flex",gap:6,marginBottom:8,alignItems:"center"}}>
+                  <span style={{color:T.txt2,fontSize:11,width:16}}>{si+1}.</span>
+                  <input value={sp.amount} onChange={e=>setSplits(p=>p.map(s=>s.id===sp.id?{...s,amount:e.target.value}:s))}
+                    placeholder="Betrag" inputMode="decimal"
+                    style={{flex:1,background:"rgba(255,255,255,0.07)",border:`1px solid ${T.bds}`,
+                      borderRadius:9,padding:"6px 10px",color:T.txt,fontSize:14,fontFamily:NUM_FONT,
+                      textAlign:"right",outline:"none"}}/>
+                  {splits.length>1&&(
+                    <button onClick={()=>setSplits(p=>p.filter(s=>s.id!==sp.id))}
+                      style={{background:"none",border:"none",color:T.neg,cursor:"pointer",fontSize:16,flexShrink:0}}>{Li("x",15)}</button>
+                  )}
+                </div>
+                <CatPicker value={sp.catId+"|"+sp.subId}
+                  onChange={(catId,subId)=>setSplits(p=>p.map(s=>s.id===sp.id?{...s,catId,subId}:s))}
+                  placeholder="Kategorie…" noMargin
+                  triggerStyle={{fontSize:16}} wrapLabel/>
+              </div>
+            ))}
+            <button onClick={()=>setSplits(p=>[...p,{id:uid(),catId:"",subId:"",amount:""}])}
+              style={{width:"100%",padding:"9px",borderRadius:10,border:`1px dashed ${T.bds}`,
+                background:"transparent",color:T.blue,fontSize:13,cursor:"pointer",marginBottom:10}}>
+              + Weiterer Split
+            </button>
+            {totalAmount>0&&(
+              <div style={{textAlign:"right",fontSize:12,marginBottom:8,
+                color:Math.abs(splitDiff)<0.01?T.pos:T.neg}}>
+                {(()=>{const d=Math.round(splitDiff*100)/100; return Math.abs(d)<0.01?"✓ Stimmt überein":"⚠ Differenz: "+fmt(Math.abs(d));})()}
+              </div>
+            )}
+            <button onClick={()=>{ onSplit(splits); close(); }}
+              disabled={splits.some(s=>!s.catId)||splits.length<2}
+              style={{width:"100%",padding:"11px",borderRadius:11,border:"none",
+                background:splits.every(s=>s.catId)&&splits.length>=2
+                  ?T.blue:T.disabled,
+                color:"#fff",fontSize:14,fontWeight:700,
+                cursor:splits.every(s=>s.catId)?"pointer":"default",
+                opacity:splits.every(s=>s.catId)?1:0.4}}>
+              Split übernehmen ✓
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Panel */}
-      {open&&(
+      {open&&!splitMode&&(
         <div onClick={e=>e.stopPropagation()}
           style={{position:"fixed",
             ...(panelPos.up
@@ -170,66 +240,8 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
             background:T.surf2,borderRadius:14,border:`1px solid ${T.bds}`,
             boxShadow:"0 8px 32px rgba(0,0,0,0.6)",padding:10,maxHeight:320,overflowY:"auto"}}>
 
-          {/* ── SPLIT MODE ── */}
-          {splitMode&&onSplit&&(
-            <div>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                <span style={{color:T.blue,fontSize:12,fontWeight:700,flex:1}}><span style={{display:"flex",alignItems:"center",gap:4}}>{Li("arrow-left-right",12)}Splitbuchung</span></span>
-                <button onClick={()=>setSplitMode(false)}
-                  style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",fontSize:12}}>{Li("x",13)}</button>
-              </div>
-              {splits.map((sp,si)=>{
-                const sc=cats.find(c=>c.id===sp.catId);
-                const ss=sc?.subs?.find(s=>s.id===sp.subId);
-                return (
-                  <div key={sp.id} style={{background:"rgba(255,255,255,0.04)",borderRadius:10,
-                    padding:"6px 8px",marginBottom:6,border:`1px solid ${T.bd}`}}>
-                    <div style={{display:"flex",gap:6,marginBottom:6,alignItems:"center"}}>
-                      <span style={{color:T.txt2,fontSize:10,width:16}}>{si+1}.</span>
-                      <input value={sp.amount} onChange={e=>setSplits(p=>p.map(s=>s.id===sp.id?{...s,amount:e.target.value}:s))}
-                        placeholder="Betrag" inputMode="decimal"
-                        style={{width:80,background:"rgba(255,255,255,0.07)",border:`1px solid ${T.bds}`,
-                          borderRadius:7,padding:"4px 8px",color:T.txt,fontSize:12,outline:"none"}}/>
-                      <span style={{color:T.txt2,fontSize:11,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                        {ss?`${sc.name}/${ss.name}`:sc?sc.name:"kategorie wählen"}
-                      </span>
-                      {splits.length>1&&(
-                        <button onClick={()=>setSplits(p=>p.filter(s=>s.id!==sp.id))}
-                          style={{background:"none",border:"none",color:T.neg,cursor:"pointer",fontSize:14,flexShrink:0}}>{Li("x",13)}</button>
-                      )}
-                    </div>
-                    <CatPicker value={sp.catId+"|"+sp.subId}
-                      onChange={(catId,subId)=>setSplits(p=>p.map(s=>s.id===sp.id?{...s,catId,subId}:s))}
-                      placeholder="Kategorie…"/>
-                  </div>
-                );
-              })}
-              <button onClick={()=>setSplits(p=>[...p,{id:uid(),catId:"",subId:"",amount:""}])}
-                style={{width:"100%",padding:"6px",borderRadius:8,border:`1px dashed ${T.bds}`,
-                  background:"transparent",color:T.blue,fontSize:12,cursor:"pointer",marginBottom:8}}>
-                + Weiterer Split
-              </button>
-              {totalAmount>0&&(
-                <div style={{textAlign:"right",fontSize:11,marginBottom:6,
-                  color:Math.abs(splitDiff)<0.01?T.pos:T.neg}}>
-                  {(()=>{const d=Math.round(splitDiff*100)/100; return Math.abs(d)<0.01?"✓ Stimmt überein":"⚠ Differenz: "+fmt(Math.abs(d));})()}
-                </div>
-              )}
-              <button onClick={()=>{ onSplit(splits); close(); }}
-                disabled={splits.some(s=>!s.catId)||splits.length<2}
-                style={{width:"100%",padding:"9px",borderRadius:10,border:"none",
-                  background:splits.every(s=>s.catId)&&splits.length>=2
-                    ?T.blue:T.disabled,
-                  color:"#fff",fontSize:13,fontWeight:700,
-                  cursor:splits.every(s=>s.catId)?"pointer":"default",
-                  opacity:splits.every(s=>s.catId)?1:0.4}}>
-                Split übernehmen ✓
-              </button>
-            </div>
-          )}
-
           {/* ── NEU ANLEGEN FORM ── */}
-          {!splitMode&&newMode&&(
+          {newMode&&(
             <div>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
                 <button onClick={()=>{setNewMode(null);setNewName("");}}
@@ -279,7 +291,7 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
           )}
 
           {/* ── NORMAL NAVIGATION ── */}
-          {!splitMode&&!newMode&&(
+          {!newMode&&(
             <>
               {/* Breadcrumb */}
               {step>0&&(
