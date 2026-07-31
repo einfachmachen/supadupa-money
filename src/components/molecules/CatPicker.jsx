@@ -165,13 +165,9 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
           werden. Zeigt Datum/Betrag/Beschreibung der Original-Buchung oben,
           damit klar ist, was gerade aufgeteilt wird. */}
       {splitMode&&onSplit&&(
-        <div style={{position:"fixed",inset:0,background:T.bg,zIndex:220,display:"flex",flexDirection:"column",
-          // Eigene Compositing-Ebene erzwingen — verhindert einen kurzzeitigen
-          // "Geister"-Frame des darunterliegenden Screens (EditPopup) beim
-          // Schließen dieser Vollbild-Ebene auf iOS Safari.
-          WebkitBackfaceVisibility:"hidden",WebkitTransform:"translateZ(0)",transform:"translateZ(0)"}}>
+        <div style={{position:"fixed",inset:0,background:T.bg,zIndex:220,display:"flex",flexDirection:"column"}}>
           <MobileHeader title="Splitbuchung" onBack={()=>setSplitMode(false)}/>
-          <div style={{flex:1,overflowY:"auto",padding:"16px 18px",boxSizing:"border-box"}}>
+          <div style={{flex:1,overflowY:"auto",overflowX:"hidden",touchAction:"pan-y",padding:"16px 18px",boxSizing:"border-box",WebkitOverflowScrolling:"touch"}}>
             <div style={{background:"rgba(255,255,255,0.04)",border:`1px solid ${T.bd}`,
               borderRadius:11,padding:"10px 12px",marginBottom:16}}>
               <div style={{color:T.txt,fontSize:15,fontWeight:600,marginBottom:6,
