@@ -29,7 +29,16 @@ export function computeMinTagessaldo(y, m, virtualSpar = {}, accId, excludeSparD
   // mehrere Monate hinweg wiederverwendet wird (der Fall in der Schleife
   // dort), bleibt der Cache erhalten.
   if (!getProgEndeAccGlobal && !ctx._saldoUtilCtx) {
+    // `today` MUSS mit: saldoAnchor() in utils/saldo.js entscheidet daran, ob
+    // der Vormonat vergangen ist (dann echter Saldo über getKumulierterSaldo)
+    // oder aktuell/künftig (dann rekursiv aus den Buchungen). Fehlt es, fällt
+    // saldoAnchor auf `new Date()` zurück und hält bei einem injizierten
+    // Stichtag den falschen Monat für vergangen — die Rekursion wird
+    // abgeschnitten und ein hypothetischer Buchungsstand (siehe
+    // computeSafeCurrentMonthAmount) wirkt sich nicht mehr auf die Folgemonate
+    // aus. Genau daran scheiterte die Absicherung gegen ferne Engpässe.
     ctx._saldoUtilCtx = { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth,
+      today,
       _restCache: ctx._restCache, _txsById: ctx._txsById, _txsByMonth: ctx._txsByMonth };
   }
   const progEnde = (py, pm, pAcc) => getProgEndeAccGlobal
