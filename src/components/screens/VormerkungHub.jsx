@@ -736,7 +736,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
           </button>
           <div style={{flex:1}}>
             <div style={{color:T.txt,fontSize:mobileMode?24:15,fontWeight:700}}>
-              {isEdit ? "vormerkung bearbeiten" : "wiederkehrende anlegen"}
+              {isEdit ? "Vormerkung bearbeiten" : "wiederkehrende anlegen"}
             </div>
             <div style={{color:T.txt2,fontSize:mobileMode?16:10}}>
               {isEdit

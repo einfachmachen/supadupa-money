@@ -710,17 +710,48 @@ function DashboardScreenV2() {
     };
     const dashDrillList  = dashDrill ? resolveDrillList(dashDrill) : [];
     const dashDrillTotal = dashDrill ? resolveDrillTotal(dashDrill, dashDrillList) : null;
+    // Buch./VM/unkat.-Zählung EINMAL zentral berechnen (statt separat im
+    // Kopf-Betrag) — wird jetzt auch gebraucht, um bei Kategorie-Drilldowns
+    // (kind:"cat", grundsätzlich gemischt) zu erkennen, ob de facto nur EIN
+    // Typ Buchungen enthält (z.B. eine Finanzierung, die komplett noch
+    // vorgemerkt ist) und dann genauso zu behandeln wie einen "echten"
+    // Buch./VM/unkat.-Drilldown.
+    const dashDrillCounts = dashDrill ? (() => {
+      const list = dashDrill.cat
+        ? txs.filter(t=>{const d=new Date(t.date);return d.getFullYear()===year&&d.getMonth()===month&&(t.splits||[]).some(sp=>sp.catId===dashDrill.cat.id);})
+        : dashDrillList;
+      return {
+        buch:  list.filter(t=>!t.pending).length,
+        vm:    list.filter(t=>t.pending).length,
+        unkat: list.filter(t=>(t.splits||[]).length===0||(t.splits||[]).every(s=>!s.catId)).length,
+      };
+    })() : null;
+    // Welches Segment (Buch./VM/unkat.) ist "aktiv" — bestimmt sowohl die
+    // Titel-/Betragsfarbe als auch, welches Symbol unten weiß bleibt (Rest
+    // ausgegraut). Bei den expliziten Typ-Drilldowns (Hero-Zeilen) steht das
+    // sofort fest; bei Kategorie-Drilldowns nur, wenn de facto genau ein Typ
+    // Einträge hat — sonst (wirklich gemischt) bleibt alles neutral/weiß.
+    const dashDrillActiveSeg = (dd, counts) => {
+      if(!dd) return null;
+      if(dd.kind==="in"     ||dd.kind==="out")      return "buch";
+      if(dd.kind==="pendIn" ||dd.kind==="pendOut")  return "vm";
+      if(dd.kind==="uncatIn"||dd.kind==="uncatOut") return "unkat";
+      if(!counts) return null;
+      const nonZero = ["buch","vm","unkat"].filter(k=>counts[k]>0);
+      return nonZero.length===1 ? nonZero[0] : null;
+    };
     // Titel- und Betragsfarbe im Drilldown-Kopf folgen derselben Farblogik wie
     // die Buch./VM/unkat.-Zeilen im Hero (Nutzer-Wunsch, für leichtere
     // Zuordnung: welche Zeile habe ich angetippt?) — statt bisher überall nur
     // schlicht Grün/Rot nach Einnahme/Ausgabe.
-    const dashDrillColor = (dd) => {
+    const dashDrillColor = (dd, seg) => {
       if(!dd) return T.txt;
-      if(dd.kind==="uncatIn"||dd.kind==="uncatOut") return T.gold;
-      if(dd.kind==="pendIn" ||dd.kind==="pendOut")  return dd.isIncome ? T.pos_vm : T.neg_vm;
-      if(dd.kind==="in"     ||dd.kind==="out")      return dd.isIncome ? T.cond_pos : T.cond_neg;
+      if(seg==="unkat") return T.gold;
+      if(seg==="vm")    return dd.isIncome ? T.pos_vm : T.neg_vm;
+      if(seg==="buch")  return dd.isIncome ? T.cond_pos : T.cond_neg;
       return dd.cat ? T.blue : (dd.isIncome ? T.pos : T.neg);
     };
+    const dashDrillSeg = dashDrill ? dashDrillActiveSeg(dashDrill, dashDrillCounts) : null;
     // Sicherheitsnetz: sollte je ein Drilldown OHNE Deskriptor (kind/cat) offen
     // sein, beim Monatswechsel schließen, damit keine veralteten Buchungen stehen
     // bleiben. Alle aktuellen Drilldowns sind reaktiv (kind) und wandern mit.
@@ -1719,41 +1750,30 @@ function DashboardScreenV2() {
                   display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                   {Li(dashDrill.cat.icon,16,dashDrill.cat.color||T.txt2)}
                 </div>}
-                <div style={{flex:1,minWidth:0,color:dashDrillColor(dashDrill),
+                <div style={{flex:1,minWidth:0,color:dashDrillColor(dashDrill,dashDrillSeg),
                   fontSize:19,fontWeight:700,whiteSpace:"normal",wordBreak:"break-word",lineHeight:1.18}}>
                   {dashDrill.label||dashDrill.cat?.name}
                 </div>
                 {dashDrillTotal!=null&&(()=>{
-                  // Statt einer nackten Gesamtzahl: Aufschlüsselung wie im Hero
-                  // (Buch./VM/unkat.) mit je eigenem Symbol + Anzahl.
-                  const list = dashDrill.cat
-                    ? txs.filter(t=>{const d=new Date(t.date);return d.getFullYear()===year&&d.getMonth()===month&&(t.splits||[]).some(sp=>sp.catId===dashDrill.cat.id);})
-                    : dashDrillList;
-                  const buchCount = list.filter(t=>!t.pending).length;
-                  const vmCount = list.filter(t=>t.pending).length;
-                  const unkatCount = list.filter(t=>(t.splits||[]).length===0||(t.splits||[]).every(s=>!s.catId)).length;
-                  // Nur das gerade angetippte Segment (Buch./VM/unkat.) weiß
-                  // hervorheben, die anderen beiden ausgrauen — bei Kategorie-
-                  // Drilldowns (gemischt, kein einzelner Typ) bleiben alle drei
-                  // neutral/weiß wie bisher.
-                  const activeSeg = dashDrill.kind==="in"||dashDrill.kind==="out" ? "buch"
-                    : dashDrill.kind==="pendIn"||dashDrill.kind==="pendOut" ? "vm"
-                    : dashDrill.kind==="uncatIn"||dashDrill.kind==="uncatOut" ? "unkat"
-                    : null;
-                  const segColor = (seg) => (activeSeg===null||activeSeg===seg) ? "#fff" : T.txt2;
+                  // Nur das gerade "aktive" Segment (Buch./VM/unkat., s.
+                  // dashDrillActiveSeg oben) weiß hervorheben, die anderen
+                  // beiden ausgrauen — bei wirklich gemischten Kategorie-
+                  // Drilldowns (kein einzelner Typ überwiegt) bleiben alle
+                  // drei neutral/weiß.
+                  const segColor = (seg) => (dashDrillSeg===null||dashDrillSeg===seg) ? "#fff" : T.txt2;
                   const countStyle = (seg) => ({display:"inline-flex",alignItems:"center",gap:2,
                     color:segColor(seg),fontSize:12,fontWeight:700,fontFamily:NUM_FONT});
                   return (
                     <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",flexShrink:0}}>
-                      <div style={{color:dashDrillColor(dashDrill),fontWeight:800,fontSize:26,
+                      <div style={{color:dashDrillColor(dashDrill,dashDrillSeg),fontWeight:800,fontSize:26,
                         fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",lineHeight:1.1}}>
                         {fmt(dashDrillTotal)}
                       </div>
                       <div style={{display:"flex",gap:8,marginTop:3}}>
-                        <span title="Gebucht" style={countStyle("buch")}>{Li("check",12,segColor("buch"))}{buchCount}</span>
-                        <span title="Vorgemerkt" style={countStyle("vm")}>{Li("clock",12,segColor("vm"))}{vmCount}</span>
+                        <span title="Gebucht" style={countStyle("buch")}>{Li("check",12,segColor("buch"))}{dashDrillCounts.buch}</span>
+                        <span title="Vorgemerkt" style={countStyle("vm")}>{Li("clock",12,segColor("vm"))}{dashDrillCounts.vm}</span>
                         <span title="Unkategorisiert" style={countStyle("unkat")}>
-                          <span style={{fontSize:12,fontWeight:800,lineHeight:1}}>?</span>{unkatCount}
+                          <span style={{fontSize:12,fontWeight:800,lineHeight:1}}>?</span>{dashDrillCounts.unkat}
                         </span>
                       </div>
                     </div>
@@ -2168,10 +2188,23 @@ function DashboardScreenV2() {
                                 {tx._seriesTyp==="finanzierung"?"Finanzierung":tx._seriesId?"wiederkehrend":"vorgemerkt"}
                               </span>
                             ))}
-                            {tx._seriesId&&tx._seriesTotal>1&&tx._seriesIdx&&tx._seriesTyp==="finanzierung"&&<span style={{color:T.txt,fontSize:11,fontWeight:700,
-                              background:"rgba(245,166,35,0.24)",border:`1px solid ${T.gold}66`,borderRadius:4,padding:"1px 6px"}}>
-                              {tx._seriesIdx} / {tx._seriesTotal}
-                            </span>}
+                            {tx._seriesId&&tx._seriesTyp==="finanzierung"&&(()=>{
+                              // Live aus txs zählen statt der auf der Buchung
+                              // zwischengespeicherten _seriesIdx/_seriesTotal —
+                              // die veralten, sobald die Serie nachträglich
+                              // geändert wird (z.B. Ratenanzahl angepasst), das
+                              // "vormerkung bearbeiten"-Dialog zählt schon live.
+                              const seriesTxs = txs.filter(t=>t._seriesId===tx._seriesId).sort((a,b)=>a.date.localeCompare(b.date));
+                              const liveTotal = seriesTxs.length;
+                              if(liveTotal<=1) return null;
+                              const liveIdx = seriesTxs.findIndex(t=>t.id===tx.id)+1;
+                              return (
+                                <span style={{color:T.txt,fontSize:11,fontWeight:700,
+                                  background:"rgba(245,166,35,0.24)",border:`1px solid ${T.gold}66`,borderRadius:4,padding:"1px 6px"}}>
+                                  {liveIdx} / {liveTotal}
+                                </span>
+                              );
+                            })()}
                             <LinkBadges tx={tx}/>
                             {/* Flexibler Topf: Buchung belastet nicht die eigene Kategorie */}
                             {tx._potSubId&&<span style={{background:"rgba(245,166,35,0.24)",border:`1px solid ${T.gold}66`,color:T.txt,
