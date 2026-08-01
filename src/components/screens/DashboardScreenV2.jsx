@@ -710,6 +710,17 @@ function DashboardScreenV2() {
     };
     const dashDrillList  = dashDrill ? resolveDrillList(dashDrill) : [];
     const dashDrillTotal = dashDrill ? resolveDrillTotal(dashDrill, dashDrillList) : null;
+    // Titel- und Betragsfarbe im Drilldown-Kopf folgen derselben Farblogik wie
+    // die Buch./VM/unkat.-Zeilen im Hero (Nutzer-Wunsch, für leichtere
+    // Zuordnung: welche Zeile habe ich angetippt?) — statt bisher überall nur
+    // schlicht Grün/Rot nach Einnahme/Ausgabe.
+    const dashDrillColor = (dd) => {
+      if(!dd) return T.txt;
+      if(dd.kind==="uncatIn"||dd.kind==="uncatOut") return T.gold;
+      if(dd.kind==="pendIn" ||dd.kind==="pendOut")  return dd.isIncome ? T.pos_vm : T.neg_vm;
+      if(dd.kind==="in"     ||dd.kind==="out")      return dd.isIncome ? T.cond_pos : T.cond_neg;
+      return dd.cat ? T.blue : (dd.isIncome ? T.pos : T.neg);
+    };
     // Sicherheitsnetz: sollte je ein Drilldown OHNE Deskriptor (kind/cat) offen
     // sein, beim Monatswechsel schließen, damit keine veralteten Buchungen stehen
     // bleiben. Alle aktuellen Drilldowns sind reaktiv (kind) und wandern mit.
@@ -1708,7 +1719,7 @@ function DashboardScreenV2() {
                   display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                   {Li(dashDrill.cat.icon,16,dashDrill.cat.color||T.txt2)}
                 </div>}
-                <div style={{flex:1,minWidth:0,color:dashDrill.cat ? T.blue : dashDrill.isIncome ? T.pos : T.neg,
+                <div style={{flex:1,minWidth:0,color:dashDrillColor(dashDrill),
                   fontSize:19,fontWeight:700,whiteSpace:"normal",wordBreak:"break-word",lineHeight:1.18}}>
                   {dashDrill.label||dashDrill.cat?.name}
                 </div>
@@ -1721,18 +1732,27 @@ function DashboardScreenV2() {
                   const buchCount = list.filter(t=>!t.pending).length;
                   const vmCount = list.filter(t=>t.pending).length;
                   const unkatCount = list.filter(t=>(t.splits||[]).length===0||(t.splits||[]).every(s=>!s.catId)).length;
-                  const countStyle = {display:"inline-flex",alignItems:"center",gap:2,
-                    color:"#fff",fontSize:12,fontWeight:700,fontFamily:NUM_FONT};
+                  // Nur das gerade angetippte Segment (Buch./VM/unkat.) weiß
+                  // hervorheben, die anderen beiden ausgrauen — bei Kategorie-
+                  // Drilldowns (gemischt, kein einzelner Typ) bleiben alle drei
+                  // neutral/weiß wie bisher.
+                  const activeSeg = dashDrill.kind==="in"||dashDrill.kind==="out" ? "buch"
+                    : dashDrill.kind==="pendIn"||dashDrill.kind==="pendOut" ? "vm"
+                    : dashDrill.kind==="uncatIn"||dashDrill.kind==="uncatOut" ? "unkat"
+                    : null;
+                  const segColor = (seg) => (activeSeg===null||activeSeg===seg) ? "#fff" : T.txt2;
+                  const countStyle = (seg) => ({display:"inline-flex",alignItems:"center",gap:2,
+                    color:segColor(seg),fontSize:12,fontWeight:700,fontFamily:NUM_FONT});
                   return (
                     <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",flexShrink:0}}>
-                      <div style={{color:dashDrill.isIncome?T.pos:T.neg,fontWeight:800,fontSize:26,
+                      <div style={{color:dashDrillColor(dashDrill),fontWeight:800,fontSize:26,
                         fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",lineHeight:1.1}}>
                         {fmt(dashDrillTotal)}
                       </div>
                       <div style={{display:"flex",gap:8,marginTop:3}}>
-                        <span title="Gebucht" style={countStyle}>{Li("check",12,"#fff")}{buchCount}</span>
-                        <span title="Vorgemerkt" style={countStyle}>{Li("clock",12,"#fff")}{vmCount}</span>
-                        <span title="Unkategorisiert" style={countStyle}>
+                        <span title="Gebucht" style={countStyle("buch")}>{Li("check",12,segColor("buch"))}{buchCount}</span>
+                        <span title="Vorgemerkt" style={countStyle("vm")}>{Li("clock",12,segColor("vm"))}{vmCount}</span>
+                        <span title="Unkategorisiert" style={countStyle("unkat")}>
                           <span style={{fontSize:12,fontWeight:800,lineHeight:1}}>?</span>{unkatCount}
                         </span>
                       </div>
