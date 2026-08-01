@@ -813,6 +813,14 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                 : ""}
               Engster Tag {kurzDat(sweep.engpassTag)}: danach bleiben {fmt(Math.round(sweep.restNachSweep))} € auf dem Giro.
             </div>
+            {/* Ehrliche Einordnung: der Wert ist eine Vorschau, keine Zusage.
+                Werden nach dem Gehaltseingang noch Budget-Vormerkungen
+                freigegeben, steigt der verfügbare Betrag teils deutlich. */}
+            <div style={{color:T.txt2,fontSize:8,marginTop:3,lineHeight:1.5,fontStyle:"italic"}}>
+              Vorschau — endgültig steht der Betrag erst am Monatsletzten fest.
+              Freigegebene Budget-Vormerkungen können ihn bis dahin noch deutlich
+              erhöhen. Am Stichtag selbst rechnet das Banner auf der Startseite neu.
+            </div>
             {/* Vormerken ersetzt die normale Rate des Zinsmonats durch den
                 Hin-Betrag und legt die Rückbuchung an — bewusst auf Knopfdruck
                 statt automatisch, weil es den Saldoverlauf verändert. */}
