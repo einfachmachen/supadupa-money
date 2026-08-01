@@ -1,0 +1,28 @@
+name = "license-worker"
+main = "license-worker.js"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+# KV-Namespace für Lizenzcodes
+[[kv_namespaces]]
+binding = "LICENSE_KV"
+id = "YOUR_KV_NAMESPACE_ID"
+# Preview Namespace für Entwicklung (optional):
+# preview_id = "YOUR_PREVIEW_KV_NAMESPACE_ID"
+
+# Environment Variables und Secrets
+[env.production]
+kv_namespaces = [
+  { binding = "LICENSE_KV", id = "YOUR_KV_NAMESPACE_ID" }
+]
+
+[env.development]
+kv_namespaces = [
+  { binding = "LICENSE_KV", id = "YOUR_PREVIEW_KV_NAMESPACE_ID" }
+]
+
+# LICENSE_SECRET wird via CLI gesetzt:
+#   wrangler secret put LICENSE_SECRET
+# oder
+#   wrangler secret put LICENSE_SECRET --env production
+#   wrangler secret put LICENSE_SECRET --env development
