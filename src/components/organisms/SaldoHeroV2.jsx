@@ -6,7 +6,7 @@
 // kontrolliert übergeben (im Dashboard steuert er zusätzlich die Kategorie-
 // Pillen); der Prognose-Drilldown (progDrill) ist intern.
 
-import React, { useContext, useState } from "react";
+import React, { useContext, useLayoutEffect, useRef, useState } from "react";
 import { SaldoPrognose } from "./SaldoPrognose.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
@@ -30,6 +30,14 @@ function SaldoHeroV2({
   const { selAcc, setSelAcc, accounts, getKumulierterSaldo, txs, getCat, getSub, amtMode, setAmtMode, setShowGuidedTour, debugFlags, setDebugFlag } = useContext(AppCtx);
   const [progDrill, setProgDrill] = useState(null);
   const [accMenuOpen, setAccMenuOpen] = useState(false);
+  // Auge exakt mittig zwischen Betrag-Ende und rechtem Bildschirmrand (Nutzer-
+  // Wunsch, mehrfach nachgeschärft): das lässt sich nicht mit festen Prozent-/
+  // px-Werten lösen, da sowohl die Zeilenbreite (Gerät) als auch die Betrag-
+  // Breite (Ziffernanzahl) variieren — daher hier per ResizeObserver gemessen
+  // statt rein per CSS.
+  const amtRowRef  = useRef(null);
+  const amtWrapRef = useRef(null);
+  const [eyeGap, setEyeGap] = useState(12);
   // "?"-Symbol öffnet die interaktive, hervorhebende Tour (GuidedFeatureTour)
   // direkt am konkreten Feature (Spotlight), immer im normalen (nicht Kids-)
   // Modus — den Kids-Modus schaltet man bei Bedarf über das Teddy-Symbol IN
@@ -112,6 +120,27 @@ function SaldoHeroV2({
   // extrem wenig Platz der Betrag per Ellipsis kürzt, statt das Auge aus dem
   // sichtbaren Bereich zu drücken.
   const eyeZoneWidth = 56;
+  // Misst Zeilenbreite (amtRowRef) und tatsächliche Betrag-Breite (amtWrapRef)
+  // und setzt den Abstand Betrag→Auge so, dass das Auge exakt in der Mitte
+  // des verbleibenden Rests bis zum rechten Zeilenende sitzt — statt eines
+  // festen Abstands direkt hinter dem Betrag. Läuft bei jeder Breitenänderung
+  // (Fenstergröße, aber auch Betrag-Ziffernanzahl) automatisch neu.
+  useLayoutEffect(() => {
+    const row = amtRowRef.current, wrap = amtWrapRef.current;
+    if(!row || !wrap) return;
+    const recompute = () => {
+      // row.clientWidth - wrap.offsetWidth ist der Leerraum auf BEIDEN Seiten
+      // zusammen (der Betrag ist zentriert) — durch 2 also der Platz NUR
+      // rechts vom Betrag; davon nochmal die Hälfte, damit das Auge exakt
+      // mittig in diesem rechten Rest sitzt.
+      const sideGap = (row.clientWidth - wrap.offsetWidth) / 2;
+      setEyeGap(Math.max(8, sideGap/2 - eyeBoxSize/2));
+    };
+    recompute();
+    const ro = new ResizeObserver(recompute);
+    ro.observe(row); ro.observe(wrap);
+    return () => ro.disconnect();
+  }, []);
   // Editorial-Layout (Theme-Token hero_layout): linksbündige Schlagzeilen-
   // Anordnung statt zentriert — Kicker-Zeile (Theme-Umschalter, Label,
   // Kontowahl, Auge) oben, großer Betrag links, Prognosen als Ticker-Leiste.
@@ -362,7 +391,7 @@ function SaldoHeroV2({
           automatisch mit, je breiter der Betrag wird (Nutzer-Wunsch: Auge
           "dynamisch weiter nach rechts", Kontostand "in jedem Fall zentriert").
           Der Kontoname sitzt klein/zentriert in der MITTE/ENDE-Zeile. */}
-      <div style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center",
+      <div ref={amtRowRef} style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center",
         userSelect:"none",
         // Kinder-Themes: kappt den Weichzeichner-"Glow" des ausgeblendeten
         // Kontostands (filter:blur) exakt an dieser Zeile, statt ihn frei bis
@@ -376,7 +405,7 @@ function SaldoHeroV2({
             maxWidth reserviert die Augen-Zone als Obergrenze, damit der
             Betrag bei extrem wenig Platz weiterhin per Ellipsis kürzt statt
             das Auge aus dem sichtbaren Bereich zu drücken. */}
-        <div style={{position:"relative", display:"inline-block", maxWidth:`calc(100% - ${eyeZoneWidth}px)`}}>
+        <div ref={amtWrapRef} style={{position:"relative", display:"inline-block", maxWidth:`calc(100% - ${eyeZoneWidth}px)`}}>
           <span onClick={allAccIds.length>1?cycleAcc:undefined} className="heroAmt heroBalance"
             style={{
               color: heroColor(saldo),
@@ -392,12 +421,12 @@ function SaldoHeroV2({
             }}>
             {saldo>=0?"":"−"}{fmtMoney(Math.abs(saldo||0))}&nbsp;€
           </span>
-          {/* Auge: direkt am (dynamischen) rechten Rand des Betrags-Wrappers,
-              vertikal zentriert. Kein fester Abstand zum Seitenrand mehr —
-              er rückt automatisch mit, je breiter der Betrag wird. */}
+          {/* Auge: sitzt exakt mittig im Rest-Platz zwischen Betrag-Ende und
+              rechtem Zeilenrand (eyeGap, gemessen — siehe useLayoutEffect
+              oben), nicht mehr mit festem Abstand direkt hinter dem Betrag. */}
           <span onClick={toggleEye} title="Beträge ein-/ausblenden"
             style={{position:"absolute", left:"100%", top:"50%",
-              transform:"translateY(-50%)", marginLeft:12,
+              transform:"translateY(-50%)", marginLeft:eyeGap,
               cursor:"pointer",userSelect:"none",width:eyeBoxSize,height:eyeBoxSize,
               display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
             {Li(eyeIcon,23,eyeCol)}
