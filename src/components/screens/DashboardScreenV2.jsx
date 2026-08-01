@@ -979,13 +979,15 @@ function DashboardScreenV2() {
               const uInM2v   = _sum(_uInM2),    uOutM2v  = _sum(_uOutM2);
               const uInEv    = _sum(_uIn),       uOutEv   = _sum(_uOut);
 
-              // Drill-Handler analog V1
-              const drillBuchIn  = (isMitte)=>{setDashDrill({kind:"in",      isMitte,label:"Einnahmen"+(isMitte?" bis 14.":""),       isIncome:true, cat:null});setDashSearch("");};
-              const drillBuchOut = (isMitte)=>{setDashDrill({kind:"out",     isMitte,label:"Ausgaben" +(isMitte?" bis 14.":""),       isIncome:false,cat:null});setDashSearch("");};
-              const drillPendIn  = (isMitte)=>{setDashDrill({kind:"pendIn",  isMitte,label:"Einnahmen \u2013 VM"+(isMitte?" bis 14.":""),isIncome:true, cat:null,isPending:true});setDashSearch("");};
-              const drillPendOut = (isMitte)=>{setDashDrill({kind:"pendOut", isMitte,label:"Ausgaben \u2013 VM" +(isMitte?" bis 14.":""),isIncome:false,cat:null,isPending:true});setDashSearch("");};
-              const drillUncatIn = (isMitte)=>{setDashDrill({kind:"uncatIn", isMitte,label:"Einnahmen \u2013 unkat."+(isMitte?" bis 14.":""),isIncome:true, cat:null});setDashSearch("");};
-              const drillUncatOut= (isMitte)=>{setDashDrill({kind:"uncatOut",isMitte,label:"Ausgaben \u2013 unkat." +(isMitte?" bis 14.":""),isIncome:false,cat:null});setDashSearch("");};
+              // Drill-Handler analog V1 \u2014 Titel bewusst ohne "\u2013 VM"/"\u2013 unkat."-
+              // Zusatz (wie schon bei den reinen Buchungen): die Symbole samt
+              // Anzahl unter dem Betrag zeigen den Typ bereits eindeutig.
+              const drillBuchIn  = (isMitte)=>{setDashDrill({kind:"in",      isMitte,label:"Einnahmen"+(isMitte?" bis 14.":""),isIncome:true, cat:null});setDashSearch("");};
+              const drillBuchOut = (isMitte)=>{setDashDrill({kind:"out",     isMitte,label:"Ausgaben" +(isMitte?" bis 14.":""),isIncome:false,cat:null});setDashSearch("");};
+              const drillPendIn  = (isMitte)=>{setDashDrill({kind:"pendIn",  isMitte,label:"Einnahmen"+(isMitte?" bis 14.":""),isIncome:true, cat:null,isPending:true});setDashSearch("");};
+              const drillPendOut = (isMitte)=>{setDashDrill({kind:"pendOut", isMitte,label:"Ausgaben" +(isMitte?" bis 14.":""),isIncome:false,cat:null,isPending:true});setDashSearch("");};
+              const drillUncatIn = (isMitte)=>{setDashDrill({kind:"uncatIn", isMitte,label:"Einnahmen"+(isMitte?" bis 14.":""),isIncome:true, cat:null});setDashSearch("");};
+              const drillUncatOut= (isMitte)=>{setDashDrill({kind:"uncatOut",isMitte,label:"Ausgaben" +(isMitte?" bis 14.":""),isIncome:false,cat:null});setDashSearch("");};
 
               return (
                 <SaldoHeroV2 year={year} month={month}
