@@ -551,17 +551,29 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
           n = affectedIds.size;
         }
 
+        // Unveränderte Raten DERSELBEN Serie vor/nach dem bearbeiteten Bereich
+        // — bestimmen, WO die neu erzeugten Raten in der Nummerierung
+        // weiterzählen. Ohne das startete "ab dieser"/"von…bis" die Zählung
+        // lokal wieder bei 1 mit einer nur lokalen Gesamtzahl (z.B. "2/22"
+        // statt fortlaufend "16/36" — Nutzer-Bericht: Anzeige "macht keinen
+        // Sinn", ändert sich bei jeder Bearbeitung willkürlich).
+        const beforeCount = editScope==="all" ? 0 : seriesTxs.filter(t=>t.date<rangeFrom).length;
+        const afterCount  = editScope==="range" ? seriesTxs.filter(t=>t.date>rangeTo).length : 0;
+        const grandTotal  = editScope==="all" ? n : beforeCount + n + afterCount;
+        const oldTotal    = seriesTxs.length;
+
         const newGenTxs = [];
         for(let i=0; i<n; i++){
           const date = isoAddMonths(refStart, i*interval_, lastOfMonth);
           const isFirst=i===0, isLast=i===n-1;
           const txAmt = (isFirst&&firstAmt2!=null)?firstAmt2:(isLast&&lastAmt2!=null)?lastAmt2:amt;
           const txSplits = catId?[{id:uid(),catId,subId:subId||"",amount:txAmt}]:newSplits;
+          const seriesIdx = beforeCount+i+1;
           const tx = {
             id:uid(), date, desc:desc.trim(), totalAmount:txAmt, pending:true,
             accountId, _csvType:csvType, splits:txSplits, note:note||"", tags,
             repeatMonths:interval_, _seriesId:seriesId,
-            _seriesIdx:i+1, _seriesTotal:n,
+            _seriesIdx:seriesIdx, _seriesTotal:grandTotal,
             ...(lastOfMonth?{_lastOfMonth:true}:{_lastOfMonth:undefined}),
             ...(typ==="finanzierung"?{_seriesTyp:"finanzierung"}:{_seriesTyp:undefined}),
           };
@@ -576,7 +588,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
               accountId: transferToAcc, _csvType:"income",
               repeatMonths:interval_, splits:linkedSplits, note:note||"", tags,
               _linkedTo: tx.id,
-              _seriesId: seriesId+"_in", _seriesIdx:i+1, _seriesTotal:n,
+              _seriesId: seriesId+"_in", _seriesIdx:seriesIdx, _seriesTotal:grandTotal,
               ...(lastOfMonth?{_lastOfMonth:true}:{}),
             });
           }
@@ -585,7 +597,19 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
         const affectedLinkedIds = new Set(
           txs.filter(t=>t._linkedTo && affectedIds.has(t._linkedTo)).map(t=>t.id)
         );
-        const keepTxs2 = keepTxs.filter(t=>!affectedLinkedIds.has(t.id));
+        // Unveränderte Raten derselben Serie (vor/nach dem Bereich) auf die
+        // neue Gesamtzahl nachziehen — "davor" behält seinen Index, "danach"
+        // rückt um die Differenz zur alten Gesamtzahl weiter, damit die
+        // Nummerierung über die ganze Serie durchgehend konsistent bleibt.
+        const totalDelta = grandTotal - oldTotal;
+        const keepTxs2 = keepTxs
+          .map(t=>{
+            if(t._seriesId!==seriesId || t._exSeriesId) return t;
+            if(t.date<rangeFrom) return {...t, _seriesTotal:grandTotal};
+            if(t.date>rangeTo)   return {...t, _seriesIdx:(t._seriesIdx||0)+totalDelta, _seriesTotal:grandTotal};
+            return t;
+          })
+          .filter(t=>!affectedLinkedIds.has(t.id));
         setTxs([...keepTxs2, ...newGenTxs]);
       }
       setSaved(true); setTimeout(()=>{ setSaved(false); onClose(); },1000);

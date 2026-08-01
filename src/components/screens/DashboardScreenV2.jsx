@@ -1759,10 +1759,15 @@ function DashboardScreenV2() {
                   // dashDrillActiveSeg oben) weiß hervorheben, die anderen
                   // beiden ausgrauen — bei wirklich gemischten Kategorie-
                   // Drilldowns (kein einzelner Typ überwiegt) bleiben alle
-                  // drei neutral/weiß.
-                  const segColor = (seg) => (dashDrillSeg===null||dashDrillSeg===seg) ? "#fff" : T.txt2;
+                  // drei neutral/weiß. Dimmen per OPACITY (nicht per Farbwert
+                  // T.txt2) — dieselbe Technik wie beim unbewaffneten Zustand
+                  // der Bottom-Nav-Icons (App.jsx, opacity:0.35): funktioniert
+                  // garantiert sichtbar unabhängig vom Theme, während ein
+                  // Farbwechsel auf T.txt2 in manchen Themes kaum Kontrast zu
+                  // Weiß hat (Nutzer-Feedback: Unterschied nicht erkennbar).
+                  const segOpacity = (seg) => (dashDrillSeg===null||dashDrillSeg===seg) ? 1 : 0.35;
                   const countStyle = (seg) => ({display:"inline-flex",alignItems:"center",gap:2,
-                    color:segColor(seg),fontSize:12,fontWeight:700,fontFamily:NUM_FONT});
+                    color:"#fff",opacity:segOpacity(seg),fontSize:12,fontWeight:700,fontFamily:NUM_FONT});
                   return (
                     <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",flexShrink:0}}>
                       <div style={{color:dashDrillColor(dashDrill,dashDrillSeg),fontWeight:800,fontSize:26,
@@ -1770,8 +1775,8 @@ function DashboardScreenV2() {
                         {fmt(dashDrillTotal)}
                       </div>
                       <div style={{display:"flex",gap:8,marginTop:3}}>
-                        <span title="Gebucht" style={countStyle("buch")}>{Li("check",12,segColor("buch"))}{dashDrillCounts.buch}</span>
-                        <span title="Vorgemerkt" style={countStyle("vm")}>{Li("clock",12,segColor("vm"))}{dashDrillCounts.vm}</span>
+                        <span title="Gebucht" style={countStyle("buch")}>{Li("check",12,"#fff")}{dashDrillCounts.buch}</span>
+                        <span title="Vorgemerkt" style={countStyle("vm")}>{Li("clock",12,"#fff")}{dashDrillCounts.vm}</span>
                         <span title="Unkategorisiert" style={countStyle("unkat")}>
                           <span style={{fontSize:12,fontWeight:800,lineHeight:1}}>?</span>{dashDrillCounts.unkat}
                         </span>
