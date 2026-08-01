@@ -11,7 +11,7 @@ import { planLegDecisions } from "../../utils/sparPlanSeries.js";
 import { getSparWatermark, noteSparWatermark } from "../../utils/sparWatermarks.js";
 import { computeMinTagessaldo, computeTagessaldoAt } from "../../utils/sparBerechnen.js";
 import { DEFAULT_ZINS_MONATE, parseZinsMonate, serializeZinsMonate,
-  zinsTermine, sweepFenster, computeSweep } from "../../utils/zinsSweep.js";
+  monatsLetzter, sweepFenster, computeSweep } from "../../utils/zinsSweep.js";
 
 function TagesgeldWidget({year, month, initialCollapsed=true}) {
   const {  getKumulierterSaldo, txs, setTxs, cats, accounts, setAccounts, getAcc, budgets, getCat, getBudgetForMonth, selAcc, getProgEndeAccGlobal, resetProgEndeCache, sparOpenRequest } = useContext(AppCtx);
@@ -76,10 +76,11 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   const [sparTgtSubId, setSparTgtSubId] = useState(()=>kvStore.getItem("mbt_spar_tgt_subid")||"");
 
   // ── Zins-Sweep („Mega-Sparrate") — rein informativ ────────────────────
-  // Eigener, standardmäßig eingeklappter Abschnitt: an welchen Stichtagen das
-  // Tagesgeld Zinsen gutschreibt und wie viel man dafür kurzfristig
-  // hinüberschieben kann, ohne am nächsten Banktag in Schieflage zu geraten.
-  const [zinsCollapsed, setZinsCollapsed] = useState(true);
+  // Zeigt als zusätzliche Tabellenspalte, wie viel zum Zinsstichtag kurzfristig
+  // aufs Tagesgeld geschoben werden kann, ohne am nächsten Banktag in
+  // Schieflage zu geraten. Welche Zeile ihre Details ausklappt (Monatsschlüssel
+  // y*12+m) bzw. null = keine.
+  const [sweepOffen, setSweepOffen] = useState(null);
   const [zinsMonate, setZinsMonateState] = useState(
     ()=>parseZinsMonate(kvStore.getItem("mbt_zins_monate")) ?? DEFAULT_ZINS_MONATE);
   const setZinsMonate = (arr) => {
@@ -97,7 +98,11 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
 
   // ── Caches — müssen vor jedem return stehen (React Hook-Regel) ────────
   const minTagCache = React.useRef({});
-  React.useEffect(()=>{ minTagCache.current = {}; }, [txs, selAcc]);
+  // Zins-Sweep je Zinstermin. Ohne diesen Cache würde die Tabelle bei einem
+  // langen Vorschauzeitraum (Dirk: 77 Monate → ~26 Quartalstermine à ~3 Tage)
+  // bei JEDEM Render rund 80 Tagessalden neu durchrechnen.
+  const sweepCache = React.useRef({key:null, map:new Map()});
+  React.useEffect(()=>{ minTagCache.current = {}; sweepCache.current = {key:null, map:new Map()}; }, [txs, selAcc]);
   const [progress, setProgress] = useState(0);
 
   // Auto-Recompute beim ersten Öffnen des Panels (oder nach Dropdown-Auswahl),
@@ -173,16 +178,6 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     return result2;
   };
 
-  // ── Zins-Sweep: Tagessaldo für einen BELIEBIGEN Tag ───────────────────
-  // Das Sweep-Fenster läuft vom Monatsletzten bis zum nächsten Banktag und
-  // überschreitet damit regelmäßig die Monatsgrenze — getMinTagessaldo liefert
-  // dagegen nur das Minimum EINES Monats. computeTagessaldoAt nutzt intern
-  // exakt dieselbe Rechnung (siehe utils/sparBerechnen.js), damit Sweep und
-  // Sparplan garantiert nicht auseinanderlaufen.
-  // Rechnet immer auf dem Giro, unabhängig von selAcc.
-  const giroSaldoAt = (iso) => computeTagessaldoAt(iso, "acc-giro",
-    { txs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth, getProgEndeAccGlobal });
-
   // Die im Sparplan für den Monat des Zinstermins vorgesehene Rate. Quelle ist
   // die tatsächlich angelegte Vormerkung — sie steckt im Tagessaldo bereits
   // drin und wird hier nur ausgewiesen, um die reale Gesamtüberweisung
@@ -193,6 +188,36 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     const tx = txs.find(t => t.pending && !t._linkedTo && t.desc===desc
       && t.accountId==="acc-giro" && String(t.date).startsWith(pfx));
     return tx ? Math.abs(tx.totalAmount) : 0;
+  };
+
+  // ── Zins-Sweep für alle Zinstermine der Vorschau ──────────────────────
+  // Liefert eine Map monatsSchlüssel (y*12+m) → Sweep-Ergebnis, damit die
+  // Tabelle pro Zeile nur noch nachschlagen muss.
+  //
+  // Der ctx wird EINMAL gebaut und über alle Termine geteilt: computeMin-
+  // Tagessaldo legt darauf seine internen Caches ab (_restCache für die
+  // Budget-Reservierungen, _txsById für den Duplikat-Lookup). Ein frisches
+  // ctx-Objekt pro Aufruf würde jeden dieser Caches wirkungslos machen.
+  const sweepMap = () => {
+    const monateKey = serializeZinsMonate(zinsMonate);
+    const key = `${monateKey}|${puffer}|${sparPlanName}|${result?result.length:0}`;
+    if(sweepCache.current.key === key) return sweepCache.current.map;
+    const map = new Map();
+    if(zinsMonate.length && result && result.length) {
+      const ctx = { txs, cats, accounts, getKumulierterSaldo, getCat,
+        getBudgetForMonth, getProgEndeAccGlobal, _restCache:{} };
+      result.forEach(({y,m})=>{
+        if(!zinsMonate.includes(m)) return;
+        const termin = monatsLetzter(y, m);
+        const f = sweepFenster(termin);
+        const salden = f.tage.map(d=>({date:d, saldo:computeTagessaldoAt(d, "acc-giro", ctx)}));
+        const rate = sparrateImMonat(termin);
+        const r = computeSweep({salden, puffer, normaleSparrate:rate});
+        if(r) map.set(y*12+m, {...r, termin, bis:f.bis});
+      });
+    }
+    sweepCache.current = {key, map};
+    return map;
   };
 
   // Extrahierte Aktualisierungs-Logik — nutzbar von Button UND autoAnpassen
@@ -363,6 +388,21 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
       showToast(`✓ Automatisch angepasst: ${anzahl} Raten · ${diffStr}`);
     }, "acc-giro"); // Immer Giro für Sparplan-Berechnung
   };
+  // ── Ableitungen für die Zins-Sweep-Spalte ─────────────────────────────
+  const sweepAktiv = zinsMonate.length > 0;
+  const sweeps = sweepAktiv ? sweepMap() : new Map();
+  const zielKontoName = accounts.find(a=>a.id===sparAccId)?.name || "Tagesgeld";
+  const WOCHENTAGE = ["So","Mo","Di","Mi","Do","Fr","Sa"];
+  const kurzDat = (iso) => {
+    const [y,m,d] = String(iso).split("-").map(Number);
+    const p2 = n=>String(n).padStart(2,"0");
+    return `${p2(d)}.${p2(m)}.${String(y).slice(2)}`;
+  };
+  const wochentag = (iso) => {
+    const [y,m,d] = String(iso).split("-").map(Number);
+    return WOCHENTAGE[new Date(y,m-1,d).getDay()];
+  };
+
   const maxTransfer = result?.[0]?.zusaetzlich ?? null;
   const col = maxTransfer===null?T.txt2:maxTransfer<=0?T.txt2:maxTransfer<500?T.warn:T.pos;
 
@@ -482,23 +522,45 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
               );
             })()}
           </div>
+          {/* „min. Saldo" + „bis" teilen sich eine Zeile — die frühere
+              Einzelzeile „oder Anzahl Monate" ist entfallen: das Enddatum ist
+              die Bezugsgröße, die Monatszahl war nur eine zweite Schreibweise
+              desselben Werts. Der so gewonnene Platz trägt jetzt das
+              Zinstermin-Raster. */}
           <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <span style={{color:T.txt2,fontSize:10,flex:1}}>Mindest-Puffer (€)</span>
+            <span style={{color:T.txt2,fontSize:10,flexShrink:0}}>min. Saldo</span>
             <input type="number" value={puffer}
               onChange={e=>{const v=parseInt(e.target.value)||0;setPuffer(v);if(result) setResultOutdated(true);}}
-              style={{...FIELD,width:80,textAlign:"right"}}/>
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <span style={{color:T.txt2,fontSize:10,flex:1}}>Vorschau bis (Enddatum)</span>
+              style={{...FIELD,width:66,textAlign:"right"}}/>
+            <span style={{color:T.txt2,fontSize:10,flexShrink:0,marginLeft:"auto"}}>bis</span>
             <input type="date" min={monateToEndDate(1)} value={monateToEndDate(monate)}
               onChange={e=>{const n=endDateToMonate(e.target.value);if(n) setMonatePersist(n);}}
-              style={{...FIELD,width:140,textAlign:"right",colorScheme:"dark"}}/>
+              style={{...FIELD,width:132,textAlign:"right",colorScheme:"dark"}}/>
           </div>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <span style={{color:T.txt2,fontSize:10,flex:1}}>oder Anzahl Monate</span>
-            <input type="number" min="1" max={SPAR_MAX_MONATE} value={monate}
-              onChange={e=>{const v=Math.max(1,Math.min(SPAR_MAX_MONATE,parseInt(e.target.value)||3));setMonatePersist(v);}}
-              style={{...FIELD,width:80,textAlign:"right"}}/>
+          {/* Zinstermine — steuern zugleich die Sweep-Spalte in der Tabelle:
+              kein Monat gewählt = keine Spalte. */}
+          {/* Blitz-Symbol statt des Wortes „Zinstermine": nur so bleibt genug
+              Breite für lesbare Monatskürzel. Mit einem Buchstaben wären
+              Jan/Jun/Jul nicht unterscheidbar. */}
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <span title="Zinstermine — jeweils Monatsletzter" style={{flexShrink:0,display:"flex"}}>
+              {Li("zap",12,sweepAktiv?T.gold:T.txt2)}
+            </span>
+            <div style={{flex:1,display:"grid",gridTemplateColumns:"repeat(12,1fr)",gap:2}}>
+              {MONTHS_G.map((nm,mi)=>{
+                const on = zinsMonate.includes(mi);
+                return (
+                  <div key={mi} onClick={()=>toggleZinsMonat(mi)} title={`Zinstermin ${nm} — Monatsletzter`}
+                    style={{textAlign:"center",padding:"4px 0",borderRadius:5,cursor:"pointer",
+                      background:on?"rgba(212,175,55,0.18)":"rgba(255,255,255,0.03)",
+                      border:`1px solid ${on?T.gold+"66":T.bd}`,
+                      color:on?T.gold:T.txt2,fontSize:8,fontWeight:on?700:500,
+                      userSelect:"none",overflow:"hidden",whiteSpace:"nowrap"}}>
+                    {nm}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
 
@@ -581,55 +643,15 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
           </div>
         </div>
 
-        {/* Ergebnis-Tabelle */}
+        {/* Ergebnis-Tabelle — mit optionaler Zins-Sweep-Spalte. Die Spalte
+            erscheint, sobald mindestens ein Zinsmonat gewählt ist; kein Monat
+            gewählt = Spalte aus. */}
         {!result&&(
           <div style={{textAlign:"center",color:T.txt2,fontSize:10,padding:"8px 0"}}>
             Klicke „Neuberechnen" um den Sparplan zu ermitteln
           </div>
         )}
         {result&&result.length>0&&(<>
-          <div style={{display:"flex",flexDirection:"column",gap:2}}>
-            <div style={{display:"flex",padding:"0 8px",marginBottom:2}}>
-              <div style={{width:44,flexShrink:0}}/>
-              <div style={{flex:1,textAlign:"right",color:T.txt2,fontSize:8}}>Tiefst-Saldo*</div>
-              <div style={{flex:1,textAlign:"right",color:T.txt2,fontSize:8}}>nach Sparen</div>
-              <div style={{flex:1,textAlign:"right",color:T.txt2,fontSize:8}}>+ Monat</div>
-              <div style={{flex:1,textAlign:"right",color:T.txt2,fontSize:8,fontWeight:700}}>∑ gespart</div>
-            </div>
-            {result.map(({y,m,minTag,minNach,zusaetzlich,kumuliert},i)=>{
-              const zusCol=zusaetzlich>0?zusaetzlich<500?T.warn:T.pos:T.txt2;
-              const isCurM=i===0;
-              const kritisch=minNach!==null&&minNach<puffer;
-              return (
-                <div key={i} style={{display:"flex",alignItems:"center",
-                  padding:"3px 8px",borderRadius:7,
-                  background:isCurM?"rgba(74,159,212,0.08)":"rgba(255,255,255,0.02)",
-                  border:kritisch?`1px solid ${T.neg}44`:"1px solid transparent"}}>
-                  <div style={{width:44,flexShrink:0}}>
-                    <span style={{color:isCurM?T.blue:T.txt,fontSize:10,fontWeight:700}}>{MONTHS_G[m]}</span>
-                    <span style={{color:T.txt2,fontSize:8,marginLeft:3}}>{String(y).slice(2)}</span>
-                  </div>
-                  <div style={{flex:1,textAlign:"right",color:minTag===null?T.txt2:minTag<puffer?T.neg:T.txt2,fontSize:9,fontFamily:NUM_FONT}}>
-                    {minTag!==null?(minTag>=0?"+":"−")+fmt(Math.abs(minTag)):"—"}
-                  </div>
-                  <div style={{flex:1,textAlign:"right",fontSize:9,fontFamily:NUM_FONT,fontWeight:700,
-                    color:minNach===null?T.txt2:minNach<puffer?T.neg:T.pos}}>
-                    {minNach!==null?(minNach>=0?"+":"−")+fmt(Math.abs(minNach)):"—"}
-                    {kritisch&&<span style={{color:T.neg,fontSize:7}}> ⚠</span>}
-                  </div>
-                  <div style={{flex:1,textAlign:"right",color:zusCol,fontSize:10,fontWeight:700,fontFamily:NUM_FONT}}>
-                    {zusaetzlich>0?"+"+fmt(zusaetzlich):"—"}
-                  </div>
-                  <div style={{flex:1,textAlign:"right",color:kumuliert>0?T.pos:T.txt2,fontSize:11,fontWeight:800,fontFamily:NUM_FONT}}>
-                    {kumuliert>0?fmt(kumuliert):"—"}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <div style={{textAlign:"right",color:T.txt2,fontSize:8,marginTop:4}}>
-            * Tiefst-Saldo nach Abzug bereits eingeplanterSparraten · Sparen = Tiefst-Saldo − {fmt(puffer)} € Puffer
-          </div>
           {/* Kategorie + Konto + Anlegen */}
           <div style={{marginTop:8,background:"rgba(0,0,0,0.15)",borderRadius:10,padding:"10px 12px",
             display:"flex",flexDirection:"column",gap:8}}>
@@ -746,141 +768,96 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
               </div>
             </div>
           </div>
+          <div style={{display:"flex",flexDirection:"column",gap:2}}>
+            <div style={{display:"flex",padding:"0 8px",marginBottom:2}}>
+              <div style={{width:44,flexShrink:0}}/>
+              <div style={{flex:1,textAlign:"right",color:T.txt2,fontSize:8}}>Tiefst-Saldo*</div>
+              <div style={{flex:1,textAlign:"right",color:T.txt2,fontSize:8}}>nach Sparen</div>
+              <div style={{flex:1,textAlign:"right",color:T.txt2,fontSize:8}}>+ Monat</div>
+              <div style={{flex:1,textAlign:"right",color:T.txt2,fontSize:8,fontWeight:700}}>∑ gespart</div>
+              {sweepAktiv&&<div style={{flex:1,textAlign:"right",color:T.gold,fontSize:8,fontWeight:700}}>⚡ Sweep</div>}
+            </div>
+            {result.map(({y,m,minTag,minNach,zusaetzlich,kumuliert},i)=>{
+              const zusCol=zusaetzlich>0?zusaetzlich<500?T.warn:T.pos:T.txt2;
+              const isCurM=i===0;
+              const kritisch=minNach!==null&&minNach<puffer;
+              const mKey=y*12+m;
+              const sw=sweepAktiv?sweeps.get(mKey):null;
+              const offen=sweepOffen===mKey;
+              return (
+                <React.Fragment key={i}>
+                <div onClick={sw?()=>setSweepOffen(offen?null:mKey):undefined}
+                  style={{display:"flex",alignItems:"center",
+                  padding:"3px 8px",borderRadius:7,cursor:sw?"pointer":"default",
+                  background:isCurM?"rgba(74,159,212,0.08)":"rgba(255,255,255,0.02)",
+                  border:kritisch?`1px solid ${T.neg}44`:"1px solid transparent"}}>
+                  <div style={{width:44,flexShrink:0}}>
+                    <span style={{color:isCurM?T.blue:T.txt,fontSize:10,fontWeight:700}}>{MONTHS_G[m]}</span>
+                    <span style={{color:T.txt2,fontSize:8,marginLeft:3}}>{String(y).slice(2)}</span>
+                  </div>
+                  <div style={{flex:1,textAlign:"right",color:minTag===null?T.txt2:minTag<puffer?T.neg:T.txt2,fontSize:9,fontFamily:NUM_FONT}}>
+                    {minTag!==null?(minTag>=0?"+":"−")+fmt(Math.abs(minTag)):"—"}
+                  </div>
+                  <div style={{flex:1,textAlign:"right",fontSize:9,fontFamily:NUM_FONT,fontWeight:700,
+                    color:minNach===null?T.txt2:minNach<puffer?T.neg:T.pos}}>
+                    {minNach!==null?(minNach>=0?"+":"−")+fmt(Math.abs(minNach)):"—"}
+                    {kritisch&&<span style={{color:T.neg,fontSize:7}}> ⚠</span>}
+                  </div>
+                  <div style={{flex:1,textAlign:"right",color:zusCol,fontSize:10,fontWeight:700,fontFamily:NUM_FONT}}>
+                    {zusaetzlich>0?"+"+fmt(zusaetzlich):"—"}
+                  </div>
+                  <div style={{flex:1,textAlign:"right",color:kumuliert>0?T.pos:T.txt2,fontSize:11,fontWeight:800,fontFamily:NUM_FONT}}>
+                    {kumuliert>0?fmt(kumuliert):"—"}
+                  </div>
+                  {sweepAktiv&&<div style={{flex:1,textAlign:"right",fontSize:10,fontWeight:700,
+                    fontFamily:NUM_FONT,color:sw&&sw.hin>0?T.gold:T.txt2}}>
+                    {sw&&sw.hin>0?fmt(sw.hin):"—"}
+                    {sw&&sw.hin>0&&<span style={{fontSize:7,marginLeft:2}}>{offen?"▴":"▾"}</span>}
+                  </div>}
+                </div>
+                {sw&&offen&&(
+                  <div style={{margin:"1px 8px 3px",padding:"7px 9px",borderRadius:7,
+                    background:"rgba(212,175,55,0.07)",border:`1px solid ${T.gold}44`}}>
+                    {sw.hin>0?(<>
+                      <div style={{display:"flex",justifyContent:"space-between",gap:8}}>
+                        <span style={{color:T.txt2,fontSize:9}}>am {kurzDat(sw.termin)} aufs {zielKontoName}</span>
+                        <span style={{color:T.gold,fontSize:11,fontWeight:800,fontFamily:NUM_FONT}}>{fmt(sw.hin)} €</span>
+                      </div>
+                      <div style={{display:"flex",justifyContent:"space-between",gap:8,marginTop:2}}>
+                        <span style={{color:T.txt2,fontSize:9}}>zurück aufs Giro am {kurzDat(sw.bis)} ({wochentag(sw.bis)})</span>
+                        <span style={{color:T.blue,fontSize:11,fontWeight:800,fontFamily:NUM_FONT}}>{fmt(sw.zurueck)} €</span>
+                      </div>
+                      <div style={{display:"flex",justifyContent:"space-between",gap:8,marginTop:3,
+                        paddingTop:3,borderTop:`1px solid ${T.bd}`}}>
+                        <span style={{color:T.txt2,fontSize:9}}>bleibt gespart</span>
+                        <span style={{color:sw.bleibt>0?T.pos:T.txt2,fontSize:10,fontWeight:700,fontFamily:NUM_FONT}}>
+                          {sw.bleibt>0?fmt(sw.bleibt)+" €":"—"}
+                        </span>
+                      </div>
+                      <div style={{color:T.txt2,fontSize:8,marginTop:4,lineHeight:1.5}}>
+                        {sw.bleibt>0&&<>Ersetzt die normale Sparrate von {fmt(sw.bleibt)} € — die steckt
+                          schon im Hin-Betrag, also nicht zusätzlich überweisen.<br/></>}
+                        Engster Tag {kurzDat(sw.engpassTag)}: danach bleiben {fmt(Math.round(sw.restNachSweep))} € auf dem Giro.
+                        Nur ein Vorschlag — es wird keine Vormerkung angelegt.
+                      </div>
+                    </>):(
+                      <div style={{color:T.txt2,fontSize:9}}>
+                        Kein Spielraum — am {kurzDat(sw.engpassTag)} liegt der Giro-Saldo schon
+                        bei {fmt(Math.round(sw.minSaldo))} € (min. Saldo {fmt(puffer)} €).
+                      </div>
+                    )}
+                  </div>
+                )}
+                </React.Fragment>
+              );
+            })}
+          </div>
+          <div style={{textAlign:"right",color:T.txt2,fontSize:8,marginTop:4}}>
+            * Tiefst-Saldo nach Abzug bereits eingeplanter Sparraten · Sparen = Tiefst-Saldo − {fmt(puffer)} € Puffer
+            {sweepAktiv&&<><br/>⚡ Sweep = Betrag zum Zinsstichtag, antippen für Details</>}
+          </div>
         </>)}
 
-        {/* ── Zins-Sweep („Mega-Sparrate") — rein informativ ──────────────
-            Legt KEINE Vormerkungen an. Zeigt nur, wie viel man zum Zinstermin
-            kurzfristig aufs Tagesgeld schieben kann, um den maximalen Zins
-            mitzunehmen, ohne am nächsten Banktag in Schieflage zu geraten. */}
-        <div style={{marginTop:8,background:"rgba(0,0,0,0.15)",borderRadius:10,
-          padding:"10px 12px"}}>
-          <div onClick={()=>setZinsCollapsed(v=>!v)}
-            style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}}>
-            <div style={{width:24,height:24,borderRadius:7,background:"rgba(212,175,55,0.15)",
-              display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              {Li("zap",13,T.gold)}
-            </div>
-            <div style={{flex:1}}>
-              <div style={{color:T.txt,fontSize:11,fontWeight:700}}>Zins-Sweep</div>
-              <div style={{color:T.txt2,fontSize:9}}>Maximaler Betrag zum Zinsstichtag</div>
-            </div>
-            {Li(zinsCollapsed?"chevron-down":"chevron-up",12,T.txt2)}
-          </div>
-
-          {!zinsCollapsed&&<div style={{marginTop:10}}>
-            {/* Zinstermine wählen — Monatsletzter des jeweiligen Monats */}
-            <div style={{color:T.txt2,fontSize:9,marginBottom:5}}>
-              Zinstermine (jeweils Monatsletzter)
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:4,marginBottom:10}}>
-              {MONTHS_G.map((nm,mi)=>{
-                const on = zinsMonate.includes(mi);
-                return (
-                  <div key={mi} onClick={()=>toggleZinsMonat(mi)}
-                    style={{textAlign:"center",padding:"5px 0",borderRadius:7,cursor:"pointer",
-                      background:on?"rgba(212,175,55,0.18)":"rgba(255,255,255,0.03)",
-                      border:`1px solid ${on?T.gold+"66":T.bd}`,
-                      color:on?T.gold:T.txt2,fontSize:10,fontWeight:on?700:500,
-                      userSelect:"none"}}>
-                    {nm}
-                  </div>
-                );
-              })}
-            </div>
-
-            {(()=>{
-              if(!zinsMonate.length) return (
-                <div style={{textAlign:"center",color:T.txt2,fontSize:10,padding:"6px 0"}}>
-                  Mindestens einen Zinsmonat wählen
-                </div>
-              );
-              const pad2 = n=>String(n).padStart(2,"0");
-              const heute = new Date();
-              const heuteIso = `${heute.getFullYear()}-${pad2(heute.getMonth()+1)}-${pad2(heute.getDate())}`;
-              const WD = ["So","Mo","Di","Mi","Do","Fr","Sa"];
-              const kurz = (iso) => {
-                const [y,m,d] = iso.split("-").map(Number);
-                return `${pad2(d)}.${pad2(m)}.${String(y).slice(2)}`;
-              };
-              const wtag = (iso) => {
-                const [y,m,d] = iso.split("-").map(Number);
-                return WD[new Date(y,m-1,d).getDay()];
-              };
-              // Zielkonto beim Namen nennen, wenn im Sparplan eines gewählt ist.
-              const zielName = accounts.find(a=>a.id===sparAccId)?.name || "Tagesgeld";
-              const termine = zinsTermine(heuteIso, 3, zinsMonate);
-              if(!termine.length) return null;
-              return termine.map((termin, ti) => {
-                const f = sweepFenster(termin);
-                const salden = f.tage.map(d=>({date:d, saldo:giroSaldoAt(d)}));
-                const rate = sparrateImMonat(termin);
-                const r = computeSweep({salden, puffer, normaleSparrate:rate});
-                const erste = ti===0;
-                if(!r) return (
-                  <div key={termin} style={{color:T.txt2,fontSize:10,padding:"6px 0"}}>
-                    {kurz(termin)} — Saldo nicht ermittelbar
-                  </div>
-                );
-                const leer = r.sweep<=0;
-                return (
-                  <div key={termin} style={{marginBottom:ti<termine.length-1?6:0,
-                    background:erste?"rgba(212,175,55,0.07)":"rgba(255,255,255,0.02)",
-                    borderRadius:9,padding:"8px 10px",
-                    border:`1px solid ${erste?T.gold+"44":"transparent"}`}}>
-                    <div style={{display:"flex",alignItems:"baseline",gap:6,marginBottom:6}}>
-                      <span style={{color:erste?T.gold:T.txt,fontSize:11,fontWeight:700,
-                        fontFamily:NUM_FONT}}>{kurz(termin)}</span>
-                      <span style={{color:T.txt2,fontSize:9}}>{wtag(termin)}</span>
-                      {erste&&<span style={{color:T.txt2,fontSize:8,marginLeft:"auto"}}>nächster Termin</span>}
-                    </div>
-                    {leer ? (
-                      <div style={{color:T.txt2,fontSize:9}}>
-                        Kein Spielraum — der Giro-Saldo liegt am {kurz(r.engpassTag)} schon
-                        bei {fmt(Math.round(r.minSaldo))} € (Puffer {fmt(puffer)} €).
-                      </div>
-                    ) : (<>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:8}}>
-                        <span style={{color:T.txt2,fontSize:10}}>
-                          aufs {zielName}
-                        </span>
-                        <span style={{color:T.pos,fontSize:15,fontWeight:800,fontFamily:NUM_FONT}}>
-                          {fmt(r.hin)} €
-                        </span>
-                      </div>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:8,marginTop:3}}>
-                        <span style={{color:T.txt2,fontSize:10}}>
-                          zurück aufs Giro am {kurz(f.bis)} <span style={{fontSize:9}}>({wtag(f.bis)})</span>
-                        </span>
-                        <span style={{color:T.blue,fontSize:15,fontWeight:800,fontFamily:NUM_FONT}}>
-                          {fmt(r.zurueck)} €
-                        </span>
-                      </div>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:8,
-                        marginTop:5,paddingTop:5,borderTop:`1px solid ${T.bd}`}}>
-                        <span style={{color:T.txt2,fontSize:10}}>bleibt gespart</span>
-                        <span style={{color:r.bleibt>0?T.pos:T.txt2,fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>
-                          {r.bleibt>0?fmt(r.bleibt)+" €":"—"}
-                        </span>
-                      </div>
-                      <div style={{color:T.txt2,fontSize:8,marginTop:5,lineHeight:1.5}}>
-                        {r.bleibt>0 && <>Ersetzt die normale Sparrate von {fmt(r.bleibt)} € — die
-                          steckt schon im Hin-Betrag, also nicht zusätzlich überweisen.<br/></>}
-                        Engster Tag {kurz(r.engpassTag)} ({wtag(r.engpassTag)}): danach bleiben
-                        {" "}{fmt(Math.round(r.restNachSweep))} € auf dem Giro.
-                      </div>
-                    </>)}
-                  </div>
-                );
-              });
-            })()}
-
-            <div style={{color:T.txt2,fontSize:8,marginTop:6,lineHeight:1.5}}>
-              Nur ein Vorschlag — es werden keine Vormerkungen angelegt. Gerechnet wird
-              tagesgenau über das Fenster vom Stichtag bis zum nächsten Banktag
-              (inklusive), damit die Belastungen am Monatsersten gedeckt bleiben.
-            </div>
-          </div>}
-        </div>
       </>}
     </div>
   );
