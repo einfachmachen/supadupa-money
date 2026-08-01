@@ -97,6 +97,29 @@ export function sweepFenster(terminIso) {
 //
 // Damit ist `zurueck` per Konstruktion um die normale Sparrate reduziert:
 // regelmäßig sparen UND die maximalen Zinsen mitnehmen.
+// Marker auf den erzeugten Buchungen:
+//   _sweepHin   – die Sparplan-Rate dieses Monats wurde auf den Hin-Betrag
+//                 angehoben (sie ENTHÄLT die normale Rate)
+//   _sweepBasis – die ursprüngliche, normale Rate (zum Zurückrechnen)
+//   _sweepId    – gehört zur Rückbuchung am nächsten Banktag
+export const SWEEP_RUECK_DESC = (planName) => `Sweep-Rück·${planName || "Plan"}`;
+
+// Buchungsbestand für die Sweep-Rechnung normalisieren.
+//
+// Ohne das würde sich der Sweep selbst ins Knie schießen: Sind die Buchungen
+// einmal gesetzt, ist der Hin-Betrag im Tagessaldo schon abgezogen und die
+// Rückbuchung schon gutgeschrieben — eine erneute Rechnung käme auf einen
+// ganz anderen (zu kleinen) Betrag. Deshalb vor jeder Rechnung: Rückbuchungen
+// raus, angehobene Raten auf ihren ursprünglichen Wert zurücksetzen.
+// Analog zu excludeSparDesc in computeMinTagessaldo.
+export function ohneSweepBuchungen(txs) {
+  return (txs || []).filter(t => !t._sweepId).map(t => {
+    if (!t._sweepHin) return t;
+    const basis = Math.abs(t._sweepBasis || 0);
+    return { ...t, totalAmount: t.totalAmount < 0 ? -basis : basis };
+  });
+}
+
 export function computeSweep({ salden, puffer = 0, normaleSparrate = 0 }) {
   const werte = (salden || []).filter(
     (s) => s && s.saldo !== null && s.saldo !== undefined && Number.isFinite(s.saldo)

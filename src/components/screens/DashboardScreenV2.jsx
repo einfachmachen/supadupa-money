@@ -7,6 +7,7 @@ import { CategoryChart } from "../molecules/CategoryChart.jsx";
 import { BudgetEditorModal } from "../organisms/BudgetEditorModal.jsx";
 import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
 import { KontoWarnungWidget } from "../organisms/KontoWarnungWidget.jsx";
+import { SweepRueckBanner } from "../organisms/SweepRueckBanner.jsx";
 import { PendingList } from "../organisms/PendingList.jsx";
 import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
 import { BankFetchPanel } from "../organisms/BankFetchPanel.jsx";
@@ -1241,6 +1242,11 @@ function DashboardScreenV2() {
             </div>
           );
         })()}
+
+        {/* Fällige Sweep-Rücküberweisung — steht ÜBER den Panel-Reitern, damit
+            sie auch dann auffällt, wenn gerade ein anderes Panel offen ist.
+            Sie zu vergessen ist der einzige Weg, wie der Zins-Sweep schiefgeht. */}
+        {!isPastMonth && <SweepRueckBanner/>}
 
         {/* Warnungen-Widget: immer gemountet, damit der Badge-Zähler aktuell bleibt */}
         {!isPastMonth && (

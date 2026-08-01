@@ -12,7 +12,8 @@ import { getSparWatermark, noteSparWatermark } from "../../utils/sparWatermarks.
 import { buildTxIdMap } from "../../utils/tx.js";
 import { computeMinTagessaldo, computeTagessaldoAt, buildTxsByMonth } from "../../utils/sparBerechnen.js";
 import { DEFAULT_ZINS_MONATE, parseZinsMonate, serializeZinsMonate,
-  zinsTermine, sweepFenster, computeSweep } from "../../utils/zinsSweep.js";
+  zinsTermine, sweepFenster, computeSweep, ohneSweepBuchungen,
+  SWEEP_RUECK_DESC } from "../../utils/zinsSweep.js";
 
 function TagesgeldWidget({year, month, initialCollapsed=true}) {
   const {  getKumulierterSaldo, txs, setTxs, cats, accounts, setAccounts, getAcc, budgets, getCat, getBudgetForMonth, selAcc, getProgEndeAccGlobal, resetProgEndeCache, sparOpenRequest } = useContext(AppCtx);
@@ -133,9 +134,14 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     let abgebrochen = false;
     const id = requestAnimationFrame(() => {
       if(abgebrochen) return;
-      const ctx = { txs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth,
-        getProgEndeAccGlobal, _restCache:{},
-        _txsById: buildTxIdMap(txs||[]), _txsByMonth: buildTxsByMonth(txs||[]) };
+      // Auf dem NORMALISIERTEN Bestand rechnen: bereits gesetzte Sweep-
+      // Buchungen müssen raus, sonst schrumpft der Betrag bei jedem Durchlauf.
+      // getProgEndeAccGlobal bleibt hier bewusst weg — der App-Cache hängt an
+      // den echten txs und würde den normalisierten Stand ignorieren.
+      const reineTxs = ohneSweepBuchungen(txs);
+      const ctx = { txs:reineTxs, cats, accounts, getKumulierterSaldo, getCat,
+        getBudgetForMonth, _restCache:{},
+        _txsById: buildTxIdMap(reineTxs), _txsByMonth: buildTxsByMonth(reineTxs) };
       const f = sweepFenster(termin);
       const salden = f.tage.map(d => ({date:d, saldo:computeTagessaldoAt(d, "acc-giro", ctx)}));
       // Die im Sparplan für diesen Monat vorgesehene Rate steckt im Tagessaldo
@@ -143,7 +149,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
       // und die davon abgeleitete Rückbuchung zu zeigen.
       const desc = buildSparDesc(sparPlanName);
       const pfx = termin.slice(0,8); // "YYYY-MM-"
-      const rateTx = txs.find(t => t.pending && !t._linkedTo && t.desc===desc
+      const rateTx = reineTxs.find(t => t.pending && !t._linkedTo && t.desc===desc
         && t.accountId==="acc-giro" && String(t.date).startsWith(pfx));
       const r = computeSweep({ salden, puffer,
         normaleSparrate: rateTx ? Math.abs(rateTx.totalAmount) : 0 });
@@ -227,6 +233,73 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
       { txs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth, getProgEndeAccGlobal });
     if(key) minTagCache.current[key] = result2;
     return result2;
+  };
+
+  // ── Sweep-Vormerkungen setzen / zurücknehmen ─────────────────────────
+  // Gewählte Modellierung (Rückfrage an Dirk): Der Sweep ERSETZT im Zinsmonat
+  // die normale Sparrate, statt zusätzlich zu ihr zu laufen. Der Hin-Betrag
+  // enthält sie ja. Das entspricht genau der EINEN Überweisung, die an der
+  // Bank tatsächlich stattfindet — nur so findet das Auto-Matching die echte
+  // Kontobewegung später wieder.
+  //
+  //   Zinstermin      Giro → Tagesgeld   hin      (angehobene Sparplan-Rate)
+  //   nächster Banktag Tagesgeld → Giro  zurück   (= hin − normale Rate)
+  //
+  // Die angehobene Rate merkt sich in _sweepBasis ihren ursprünglichen Wert,
+  // damit ohneSweepBuchungen() sie jederzeit zurückrechnen kann.
+  const sweepGesetzt = () => txs.some(t => t.pending && t._sweepId);
+
+  const sweepVormerken = () => {
+    if(!sweep || sweep.hin<=0) { showToast("Kein Sweep-Betrag ermittelt."); return; }
+    if(!sparAccId) { showToast("Bitte zuerst ein Zugang-Konto wählen."); return; }
+    const desc = buildSparDesc(sparPlanName);
+    const pfx = sweep.termin.slice(0,8);
+    const sweepId = "sweep-"+uid();
+    const rueckDesc = SWEEP_RUECK_DESC(sparPlanName);
+    setTxs(prev => {
+      // 1) Alte Sweep-Buchungen zurücknehmen (nur offene)
+      let next = prev.filter(t => !(t.pending && t._sweepId));
+      next = next.map(t => t._sweepHin
+        ? (()=>{ const b=Math.abs(t._sweepBasis||0); const {_sweepHin,_sweepBasis,...rest}=t;
+                 return {...rest, totalAmount: t.totalAmount<0 ? -b : b}; })()
+        : t);
+      // 2) Sparplan-Rate des Zinsmonats auf den Hin-Betrag anheben (beide Beine)
+      next = next.map(t => {
+        if(!t.pending || t.desc!==desc || !String(t.date).startsWith(pfx)) return t;
+        const basis = Math.abs(t.totalAmount);
+        const betrag = t.totalAmount<0 ? -sweep.hin : sweep.hin;
+        return {...t, totalAmount:betrag, _sweepHin:true, _sweepBasis:basis,
+          splits:(t.splits||[]).length===1
+            ? [{...t.splits[0], amount:betrag}] : t.splits};
+      });
+      // 3) Rückbuchung am nächsten Banktag (Tagesgeld → Giro)
+      const ab = {
+        id:"pend-"+uid(), date:sweep.bis, desc:rueckDesc,
+        totalAmount:-sweep.zurueck, pending:true, _csvType:"expense",
+        accountId:sparAccId, _sweepId:sweepId,
+        splits:[{id:uid(),catId:"",subId:"",amount:-sweep.zurueck}],
+      };
+      const zu = {
+        id:"pend-"+uid(), date:sweep.bis, desc:rueckDesc,
+        totalAmount:sweep.zurueck, pending:true, _csvType:"income",
+        accountId:"acc-giro", _linkedTo:ab.id, _sweepId:sweepId,
+        splits:[{id:uid(),catId:"",subId:"",amount:sweep.zurueck}],
+      };
+      return [...next, ab, zu];
+    });
+    showToast(`✓ ${fmt(sweep.hin)} € vorgemerkt · ${fmt(sweep.zurueck)} € zurück am ${sweep.bis.slice(8,10)}.${sweep.bis.slice(5,7)}.`);
+  };
+
+  const sweepZuruecknehmen = () => {
+    setTxs(prev => {
+      let next = prev.filter(t => !(t.pending && t._sweepId));
+      next = next.map(t => t._sweepHin
+        ? (()=>{ const b=Math.abs(t._sweepBasis||0); const {_sweepHin,_sweepBasis,...rest}=t;
+                 return {...rest, totalAmount: t.totalAmount<0 ? -b : b}; })()
+        : t);
+      return next;
+    });
+    showToast("Sweep-Vormerkungen zurückgenommen.");
   };
 
   // Extrahierte Aktualisierungs-Logik — nutzbar von Button UND autoAnpassen
@@ -739,6 +812,28 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                 ? `Enthält die normale Sparrate von ${fmt(sweep.bleibt)} € — die bleibt auf dem ${zielKontoName} und wird nicht zusätzlich überwiesen. `
                 : ""}
               Engster Tag {kurzDat(sweep.engpassTag)}: danach bleiben {fmt(Math.round(sweep.restNachSweep))} € auf dem Giro.
+            </div>
+            {/* Vormerken ersetzt die normale Rate des Zinsmonats durch den
+                Hin-Betrag und legt die Rückbuchung an — bewusst auf Knopfdruck
+                statt automatisch, weil es den Saldoverlauf verändert. */}
+            <div style={{display:"flex",justifyContent:"flex-end",marginTop:6}}>
+              {sweepGesetzt() ? (
+                <button onClick={sweepZuruecknehmen}
+                  style={{padding:"6px 12px",borderRadius:9,border:`1px solid ${T.bd}`,
+                    background:"transparent",color:T.txt2,fontSize:11,fontWeight:700,
+                    cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
+                  {Li("check-circle",13,T.pos)} vorgemerkt — zurücknehmen
+                </button>
+              ) : (
+                <button onClick={sweepVormerken} disabled={!sparAccId}
+                  style={{padding:"6px 12px",borderRadius:9,border:"none",
+                    background:sparAccId?T.gold:"rgba(255,255,255,0.1)",
+                    color:sparAccId?"#000":T.txt2,fontSize:11,fontWeight:700,
+                    cursor:sparAccId?"pointer":"default",
+                    display:"flex",alignItems:"center",gap:6}}>
+                  {Li("plus-circle",13,sparAccId?"#000":T.txt2)} vormerken
+                </button>
+              )}
             </div>
           </div>
         )}

@@ -9,6 +9,8 @@ import {
   zinsTermine,
   sweepFenster,
   computeSweep,
+  ohneSweepBuchungen,
+  SWEEP_RUECK_DESC,
 } from "../src/utils/zinsSweep.js";
 
 describe("zinsSweep — Stichtage", () => {
@@ -145,5 +147,48 @@ describe("zinsSweep — Betragsformel", () => {
     });
     expect(r.sweep).toBe(0);
     expect(r.zurueck).toBe(0);
+  });
+});
+
+describe("zinsSweep — Buchungsbestand normalisieren", () => {
+  // Sind die Sweep-Buchungen einmal gesetzt, darf eine erneute Rechnung nicht
+  // auf sie hereinfallen — sonst schrumpft der Betrag bei jedem Durchlauf.
+  const txs = [
+    { id: "a", date: "2026-09-30", totalAmount: -3400, _sweepHin: true, _sweepBasis: 584 },
+    { id: "b", date: "2026-09-30", totalAmount: 3400, _sweepHin: true, _sweepBasis: 584 },
+    { id: "c", date: "2026-10-01", totalAmount: -2816, _sweepId: "s1" },
+    { id: "d", date: "2026-10-01", totalAmount: 2816, _sweepId: "s1" },
+    { id: "e", date: "2026-10-01", totalAmount: -1200 },
+  ];
+
+  it("entfernt die Rückbuchungen komplett", () => {
+    const rein = ohneSweepBuchungen(txs);
+    expect(rein.map(t => t.id)).toEqual(["a", "b", "e"]);
+  });
+
+  it("setzt angehobene Raten auf die ursprüngliche normale Rate zurück", () => {
+    const rein = ohneSweepBuchungen(txs);
+    expect(rein.find(t => t.id === "a").totalAmount).toBe(-584); // Vorzeichen bleibt
+    expect(rein.find(t => t.id === "b").totalAmount).toBe(584);
+  });
+
+  it("lässt unbeteiligte Buchungen unangetastet", () => {
+    const rein = ohneSweepBuchungen(txs);
+    expect(rein.find(t => t.id === "e")).toEqual(txs[4]);
+  });
+
+  it("ist idempotent — zweimal angewendet ändert sich nichts mehr", () => {
+    const einmal = ohneSweepBuchungen(txs);
+    expect(ohneSweepBuchungen(einmal)).toEqual(einmal);
+  });
+
+  it("verkraftet eine leere oder fehlende Liste", () => {
+    expect(ohneSweepBuchungen([])).toEqual([]);
+    expect(ohneSweepBuchungen(null)).toEqual([]);
+  });
+
+  it("SWEEP_RUECK_DESC hängt am Plannamen", () => {
+    expect(SWEEP_RUECK_DESC("Tagesgeld")).toBe("Sweep-Rück·Tagesgeld");
+    expect(SWEEP_RUECK_DESC("")).toBe("Sweep-Rück·Plan");
   });
 });
