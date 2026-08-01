@@ -35,15 +35,21 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   // sind gleich hoch. Die Höhe MUSS gesetzt sein (statt sie aus dem Padding
   // entstehen zu lassen) — <input type="date"> und <select> bringen je nach
   // Browser eigene Innenabstände mit und wären sonst unterschiedlich hoch.
-  const LBL_W = 62, KTO_W = 44, FELD_H = 34;
+  const LBL_W = 62, KTO_W = 56, FELD_H = 34;
   const FIELD = {background:T.surf2, border:`1px solid ${T.bd}`, borderRadius:10,
     padding:"0 8px", height:FELD_H, fontSize:16, color:T.txt, fontFamily:"inherit",
     outline:"none", boxSizing:"border-box"};
   const LBL = {color:T.txt2, fontSize:10};
   const ZENTRIERT = {display:"flex", alignItems:"center", justifyContent:"center", padding:0};
-  // Auch der CatPicker-Auslöser folgt derselben Höhe, sonst tanzen die beiden
-  // Kategorie-Zeilen aus der Reihe.
-  const TRIGGER = {fontSize:16, height:FELD_H, boxSizing:"border-box"};
+  // Der CatPicker-Auslöser bringt eigene Werte mit (padding 5/10, Radius 10,
+  // hellerer Overlay-Hintergrund) — ohne Angleich wirken die beiden
+  // Kategorie-Zeilen flacher und anders eingefärbt als die übrigen Felder.
+  // Den Rahmen lässt der Picker bewusst selbst: er färbt ihn blau, sobald eine
+  // Kategorie gewählt ist — ein nützlicher Hinweis, den ein Überschreiben
+  // schlucken würde. Zusätzlich noMargin, sonst hängt unter jedem Picker ein
+  // marginBottom von 8px und die Zeilenabstände wären ungleich.
+  const TRIGGER = {fontSize:16, height:FELD_H, padding:"0 8px", borderRadius:10,
+    background:T.surf2, boxSizing:"border-box"};
 
   // Mindest-Puffer aus acc-giro.minPuffer (Quelle der Wahrheit)
   const giroAcc = accounts.find(a=>a.id==="acc-giro");
@@ -567,7 +573,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
               placeholder="— unkategorisiert —"
               filterType="expense"
               accountId="acc-giro"
-              triggerStyle={TRIGGER}
+              triggerStyle={TRIGGER} noMargin
             />
           </div>
 
@@ -610,7 +616,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
               placeholder={sparAccId?"— unkategorisiert —":"— erst Konto wählen —"}
               filterType="income"
               accountId={sparAccId||null}
-              triggerStyle={TRIGGER}
+              triggerStyle={TRIGGER} noMargin
             />
           </div>
 
@@ -629,10 +635,11 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
             if(!existingDescs.length) return <span/>;
             const currentMatches = existingDescs.includes(buildSparDesc(sparPlanName));
             return (
-              <span title={currentMatches?"Plan geladen — anderen wählen":"gespeicherten Plan laden"}
+              <span title={currentMatches?"anderen gespeicherten Plan laden":"gespeicherten Plan laden"}
                 style={{...FIELD,...ZENTRIERT,position:"relative",cursor:"pointer",
+                  fontSize:10,fontWeight:700,color:currentMatches?T.pos:T.txt2,
                   border:`1px solid ${currentMatches?T.pos:T.bd}`}}>
-                {Li(currentMatches?"check-circle":"list",16,currentMatches?T.pos:T.txt2)}
+                laden
                 <select value=""
                   onChange={e=>{
                     if(!e.target.value) return;
@@ -663,18 +670,15 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
             // so das Ende sichtbar, statt unbemerkt rechts abgeschnitten zu sein.
             style={{...FIELD,minWidth:0,textAlign:"right"}}/>
 
-          {/* Zeile 4 + 5 — Mindestsaldo und Vorschau-Enddatum. Bewusst zwei
-              Zeilen: nebeneinander stünde das Datumsfeld an einer anderen
-              Stelle als die Felder darüber. */}
+          {/* Eine Zeile für beides: der Mindestsaldo ist schmal und passt in
+              die Symbolspalte, das Enddatum bleibt in der Feldspalte und damit
+              auf der Flucht mit allen anderen Feldern. */}
           <span style={LBL}>min. Saldo</span>
-          <span/>
-          <input type="number" value={puffer}
+          <input type="number" value={puffer} title="Mindest-Saldo, der auf dem Giro bleiben muss"
             onChange={e=>{const v=parseInt(e.target.value)||0;setPuffer(v);if(result) setResultOutdated(true);}}
-            style={{...FIELD,minWidth:0,textAlign:"right"}}/>
-
-          <span style={LBL}>bis</span>
-          <span/>
+            style={{...FIELD,minWidth:0,padding:"0 4px",textAlign:"center"}}/>
           <input type="date" min={monateToEndDate(1)} value={monateToEndDate(monate)}
+            title="Vorschau bis zu diesem Datum"
             onChange={e=>{const n=endDateToMonate(e.target.value);if(n) setMonatePersist(n);}}
             style={{...FIELD,minWidth:0,textAlign:"right",colorScheme:"dark"}}/>
 
@@ -822,7 +826,18 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
             {/* Vormerken ersetzt die normale Rate des Zinsmonats durch den
                 Hin-Betrag und legt die Rückbuchung an — bewusst auf Knopfdruck
                 statt automatisch, weil es den Saldoverlauf verändert. */}
-            <div style={{display:"flex",justifyContent:"flex-end",marginTop:6}}>
+            {/* Der Hinweis auf die Monate ist wichtig: die Vormerkungen fallen
+                auf den Zinstermin und den Folgetag, liegen also in KÜNFTIGEN
+                Monaten. Im laufenden Monat ist nach dem Vormerken deshalb
+                nichts zu sehen — ohne diesen Satz wirkt es, als sei nichts
+                passiert. */}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+              gap:8,marginTop:6}}>
+              <div style={{color:T.txt2,fontSize:8,lineHeight:1.5,flex:1,minWidth:0}}>
+                {sweepGesetzt()
+                  ? `Vormerkungen liegen am ${kurzDat(sweep.termin)} und ${kurzDat(sweep.bis)} — also in einem künftigen Monat, nicht im laufenden.`
+                  : `Legt Vormerkungen zum ${kurzDat(sweep.termin)} und ${kurzDat(sweep.bis)} an.`}
+              </div>
               {sweepGesetzt() ? (
                 <button onClick={sweepZuruecknehmen}
                   style={{padding:"6px 12px",borderRadius:9,border:`1px solid ${T.bd}`,
