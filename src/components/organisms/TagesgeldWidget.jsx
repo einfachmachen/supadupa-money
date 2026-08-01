@@ -30,12 +30,20 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   // !important}, siehe themes.css) ohnehin auf 16px erzwungen; ein kleinerer
   // Wert hier wäre wirkungslos. Damit das feste "Giro"-<span> (davon NICHT
   // betroffen) optisch dazu passt, bekommt es hier bewusst denselben Wert.
-  // Einheitliche Label- und Konto-Spaltenbreite: nur so beginnen die Felder
-  // aller Zeilen (Abgang/Zugang/Planname/min. Saldo) an derselben Stelle.
-  const LBL_W = 62, KTO_W = 44;
+  // Einheitliche Spaltenbreiten und Feldhöhe für die Konfig-Karte: nur mit
+  // festen Werten beginnen die Felder aller Zeilen an derselben Stelle und
+  // sind gleich hoch. Die Höhe MUSS gesetzt sein (statt sie aus dem Padding
+  // entstehen zu lassen) — <input type="date"> und <select> bringen je nach
+  // Browser eigene Innenabstände mit und wären sonst unterschiedlich hoch.
+  const LBL_W = 62, KTO_W = 44, FELD_H = 34;
   const FIELD = {background:T.surf2, border:`1px solid ${T.bd}`, borderRadius:10,
-    padding:"5px 8px", fontSize:16, color:T.txt, fontFamily:"inherit", outline:"none",
-    boxSizing:"border-box"};
+    padding:"0 8px", height:FELD_H, fontSize:16, color:T.txt, fontFamily:"inherit",
+    outline:"none", boxSizing:"border-box"};
+  const LBL = {color:T.txt2, fontSize:10};
+  const ZENTRIERT = {display:"flex", alignItems:"center", justifyContent:"center", padding:0};
+  // Auch der CatPicker-Auslöser folgt derselben Höhe, sonst tanzen die beiden
+  // Kategorie-Zeilen aus der Reihe.
+  const TRIGGER = {fontSize:16, height:FELD_H, boxSizing:"border-box"};
 
   // Mindest-Puffer aus acc-giro.minPuffer (Quelle der Wahrheit)
   const giroAcc = accounts.find(a=>a.id==="acc-giro");
@@ -533,157 +541,148 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
       )}
 
       {!collapsed&&<>
-        {/* Gleicher dunkler Karten-Hintergrund wie "Sofort-Betrag" und
-            "Vormerkungsserie anlegen" weiter unten — sonst liegen die Felder
-            direkt auf der (gleichfarbigen) Widget-Fläche und sind praktisch
-            nicht mehr als Felder erkennbar (Nutzer-Feedback). */}
-        <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:8,
+        {/* Konfig-Karte als echtes RASTER statt einzelner Flex-Zeilen: nur so
+            beginnen die Felder aller Zeilen an derselben Stelle — und zwar
+            auch die jeweils daneben. Spalten:
+              1) Label            2) Konto-Symbol (nur Abgang/Zugang)
+              3) Hauptfeld        4) Zweitfeld (klappt zusammen, wenn leer)
+            Alle Felder sind gleich hoch (FELD_H), alle Zeilenabstände gleich
+            (rowGap) — vorher ergaben sich beide aus dem jeweiligen Inhalt und
+            wirkten dadurch unruhig. */}
+        <div style={{display:"grid",gridTemplateColumns:`${LBL_W}px ${KTO_W}px minmax(0,1fr)`,
+          columnGap:6,rowGap:6,alignItems:"center",marginBottom:8,
           background:"rgba(0,0,0,0.15)",borderRadius:10,padding:"10px 12px"}}>
-            {/* Zeile 1 — Abgang: immer Giro (Konto fix), expense-Kategorie auf Giro.
-                Konto als Symbol statt als Name — der gewonnene Platz geht an
-                die Kategorie-Auswahl, die ihn deutlich nötiger hat. */}
-            <div style={{display:"flex",alignItems:"center",gap:6}}>
-              <span style={{color:T.txt2,fontSize:10,width:LBL_W,flexShrink:0}}>Abgang</span>
-              <span title={giroAcc?.name||"Giro"}
-                style={{...FIELD,width:KTO_W,flexShrink:0,display:"flex",alignItems:"center",
-                  justifyContent:"center",padding:"5px 0"}}>
-                {Li(giroAcc?.icon||"credit-card",17,giroAcc?.color||T.txt2)}
+
+          {/* Zeile 1 — Abgang: Konto fix Giro, expense-Kategorie auf Giro.
+              Konto als Symbol statt als Name; der gewonnene Platz geht an die
+              Kategorie-Auswahl, die ihn deutlich nötiger hat. */}
+          <span style={LBL}>Abgang</span>
+          <span title={giroAcc?.name||"Giro"} style={{...FIELD,...ZENTRIERT}}>
+            {Li(giroAcc?.icon||"credit-card",17,giroAcc?.color||T.txt2)}
+          </span>
+          <div style={{minWidth:0}}>
+            <CatPicker
+              value={sparCatId+"|"+sparSubId}
+              onChange={(cId,sId)=>{setSparCatId(cId);setSparSubId(sId);kvStore.setItem("mbt_spar_catid",cId);kvStore.setItem("mbt_spar_subid",sId);}}
+              placeholder="— unkategorisiert —"
+              filterType="expense"
+              accountId="acc-giro"
+              triggerStyle={TRIGGER}
+            />
+          </div>
+
+          {/* Zeile 2 — Zugang: Konto wählen, dann income-Kategorie des Kontos.
+              Das <select> liegt unsichtbar über dem Symbol, damit die native
+              Auswahlliste erhalten bleibt. */}
+          <span style={LBL}>Zugang</span>
+          {(()=>{
+            const zAcc = accounts.find(a=>a.id===sparAccId);
+            return (
+              <span title={zAcc?.name||"kein Konto"}
+                style={{...FIELD,...ZENTRIERT,position:"relative",cursor:"pointer"}}>
+                {zAcc ? Li(zAcc.icon||"landmark",17,zAcc.color||T.txt2)
+                      : <span style={{color:T.txt2,fontSize:11}}>—</span>}
+                <select value={sparAccId}
+                  onChange={e=>{
+                    const v = e.target.value;
+                    setSparAccId(v); kvStore.setItem("mbt_spar_accid",v);
+                    // Konto-Wechsel verwirft die bisherige Zugang-Kategorie (gehört zum alten Konto)
+                    if(v !== sparAccId) {
+                      setSparTgtCatId(""); kvStore.setItem("mbt_spar_tgt_catid","");
+                      setSparTgtSubId(""); kvStore.setItem("mbt_spar_tgt_subid","");
+                    }
+                  }}
+                  style={{position:"absolute",inset:0,width:"100%",height:"100%",
+                    opacity:0,cursor:"pointer",border:"none"}}>
+                  <option value="">— kein Konto —</option>
+                  {accounts.filter(a=>a.id!=="acc-giro").map(a=>(
+                    <option key={a.id} value={a.id}>{a.name}</option>
+                  ))}
+                </select>
               </span>
-              <div style={{flex:1,minWidth:0}}>
-                <CatPicker
-                  value={sparCatId+"|"+sparSubId}
-                  onChange={(cId,sId)=>{setSparCatId(cId);setSparSubId(sId);kvStore.setItem("mbt_spar_catid",cId);kvStore.setItem("mbt_spar_subid",sId);}}
-                  placeholder="— unkategorisiert —"
-                  filterType="expense"
-                  accountId="acc-giro"
-                  // 16px passend zum daneben erzwungenen 16px des "Giro"-Felds
-                  // (FIELD) — sonst wirkt die Zeile in der Schriftgröße uneinheitlich.
-                  triggerStyle={{fontSize:16}}
-                />
-              </div>
-            </div>
-            {/* Zeile 2 — Zugang: Konto wählen, dann income-Kategorie dieses Kontos */}
-            <div style={{display:"flex",alignItems:"center",gap:6}}>
-              <span style={{color:T.txt2,fontSize:10,width:LBL_W,flexShrink:0}}>Zugang</span>
-              {/* Ebenfalls nur das Konto-Symbol. Das <select> liegt unsichtbar
-                  darüber, damit die native Auswahlliste erhalten bleibt. */}
-              {(()=>{
-                const zAcc = accounts.find(a=>a.id===sparAccId);
-                return (
-                  <span title={zAcc?.name||"kein Konto"}
-                    style={{...FIELD,width:KTO_W,flexShrink:0,position:"relative",display:"flex",
-                      alignItems:"center",justifyContent:"center",padding:"5px 0",cursor:"pointer"}}>
-                    {zAcc ? Li(zAcc.icon||"landmark",17,zAcc.color||T.txt2)
-                          : <span style={{color:T.txt2,fontSize:11}}>—</span>}
-                    <select value={sparAccId}
-                      onChange={e=>{
-                        const v = e.target.value;
-                        setSparAccId(v); kvStore.setItem("mbt_spar_accid",v);
-                        // Konto-Wechsel verwirft die bisherige Zugang-Kategorie (gehört zum alten Konto)
-                        if(v !== sparAccId) {
-                          setSparTgtCatId(""); kvStore.setItem("mbt_spar_tgt_catid","");
-                          setSparTgtSubId(""); kvStore.setItem("mbt_spar_tgt_subid","");
-                        }
-                      }}
-                      style={{position:"absolute",inset:0,width:"100%",height:"100%",
-                        opacity:0,cursor:"pointer",border:"none"}}>
-                      <option value="">— kein Konto —</option>
-                      {accounts.filter(a=>a.id!=="acc-giro").map(a=>(
-                        <option key={a.id} value={a.id}>{a.name}</option>
-                      ))}
-                    </select>
-                  </span>
-                );
-              })()}
-              <div style={{flex:1,minWidth:0,opacity:sparAccId?1:0.4,pointerEvents:sparAccId?"auto":"none"}}>
-                <CatPicker
-                  value={sparTgtCatId+"|"+sparTgtSubId}
-                  onChange={(cId,sId)=>{setSparTgtCatId(cId);setSparTgtSubId(sId);kvStore.setItem("mbt_spar_tgt_catid",cId);kvStore.setItem("mbt_spar_tgt_subid",sId);}}
-                  placeholder={sparAccId?"— unkategorisiert —":"— erst Konto wählen —"}
-                  filterType="income"
-                  accountId={sparAccId||null}
-                  // 16px passend zum erzwungenen 16px des Zugang-<select> daneben.
-                  triggerStyle={{fontSize:16}}
-                />
-              </div>
-            </div>
-          {/* Planname + bestehende Pläne */}
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <span style={{color:T.txt2,fontSize:10,width:LBL_W,flexShrink:0}}>Planname</span>
-            <input ref={planNameInputRef} value={sparPlanName}
-              onChange={e=>{setSparPlanName(e.target.value);kvStore.setItem("mbt_spar_planname",e.target.value);}}
-              placeholder="z.B. Sparplan 1"
-              // rechtsbündig: bei einem langen (z.B. geladenen) Plannamen bleibt so
-              // das Ende sichtbar, statt unbemerkt rechts abgeschnitten zu sein.
-              style={{...FIELD,flex:1,minWidth:0,textAlign:"right"}}/>
-            {(()=>{
-              // Dropdown mit bestehenden Plänen
-              const existingDescs = [...new Set(
-                txs.filter(t=>t.pending&&!t._linkedTo&&t._seriesId&&t.accountId==="acc-giro"&&(t.desc||"").startsWith("Sparen·"))
-                .map(t=>t.desc)
-              )];
-              if(!existingDescs.length) return null;
-              // Aktueller Plan-Match-Status
-              const currentDesc = buildSparDesc(sparPlanName);
-              const currentMatches = existingDescs.includes(currentDesc);
-              return (
-                <>
+            );
+          })()}
+          <div style={{minWidth:0,
+            opacity:sparAccId?1:0.4,pointerEvents:sparAccId?"auto":"none"}}>
+            <CatPicker
+              value={sparTgtCatId+"|"+sparTgtSubId}
+              onChange={(cId,sId)=>{setSparTgtCatId(cId);setSparTgtSubId(sId);kvStore.setItem("mbt_spar_tgt_catid",cId);kvStore.setItem("mbt_spar_tgt_subid",sId);}}
+              placeholder={sparAccId?"— unkategorisiert —":"— erst Konto wählen —"}
+              filterType="income"
+              accountId={sparAccId||null}
+              triggerStyle={TRIGGER}
+            />
+          </div>
+
+          {/* Zeile 3 — Planname + Auswahl bestehender Pläne */}
+          <span style={LBL}>Planname</span>
+          {/* Plan-Auswahl als Symbol in derselben Spalte wie die Konten —
+              vorher stand sie als Zweitfeld RECHTS neben dem Plannamen und
+              begann damit an einer anderen Stelle als alle übrigen Felder.
+              Das <select> liegt wieder unsichtbar darüber. Grün + Haken =
+              der eingetippte Name entspricht einem gespeicherten Plan. */}
+          {(()=>{
+            const existingDescs = [...new Set(
+              txs.filter(t=>t.pending&&!t._linkedTo&&t._seriesId&&t.accountId==="acc-giro"&&(t.desc||"").startsWith("Sparen·"))
+              .map(t=>t.desc)
+            )];
+            if(!existingDescs.length) return <span/>;
+            const currentMatches = existingDescs.includes(buildSparDesc(sparPlanName));
+            return (
+              <span title={currentMatches?"Plan geladen — anderen wählen":"gespeicherten Plan laden"}
+                style={{...FIELD,...ZENTRIERT,position:"relative",cursor:"pointer",
+                  border:`1px solid ${currentMatches?T.pos:T.bd}`}}>
+                {Li(currentMatches?"check-circle":"list",16,currentMatches?T.pos:T.txt2)}
                 <select value=""
                   onChange={e=>{
                     if(!e.target.value) return;
                     const name = e.target.value.replace(/^Sparen·/,"");
                     setSparPlanName(name);
                     kvStore.setItem("mbt_spar_planname", name);
-                    // Vorhandenes Vorschau-Ergebnis verwerfen und Auto-Recompute neu scharf machen,
-                    // damit die Tabelle für den neu ausgewählten Plan automatisch befüllt wird.
+                    // Vorschau-Ergebnis verwerfen und Auto-Recompute neu scharf
+                    // machen, damit die Tabelle für den neuen Plan befüllt wird.
                     setResult(null);
                     didAutoLoadRef.current = false;
                     e.target.value = "";
                     scrollPlanNameToEnd();
                   }}
-                  style={{...FIELD,border:`1px solid ${currentMatches?T.pos:T.bd}`,
-                    color:T.txt2,padding:"4px 6px",cursor:"pointer",
-                    // Feste Breite statt natürlicher Größe: Browser bemessen die
-                    // geschlossene Box eines <select> oft an der BREITESTEN <option>
-                    // (hier: der längste Plan-Name), nicht am sichtbaren Label
-                    // ("✓ geladen"/"⋯ laden") — ohne feste Breite würde ein langer
-                    // Plan-Name das Element aufblähen und das Planname-Feld daneben
-                    // verdrängen. flexShrink:0, damit die feste Breite nicht ihrerseits
-                    // vom Flex-Layout unterschritten (und der Text abgeschnitten) wird.
-                    // 112px, da der Text bei den erzwungenen 16px (s.o.) breiter
-                    // ausfällt als bei den ursprünglich angenommenen 10px.
-                    width:112,flexShrink:0,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
-                  <option value="">{currentMatches?"✓ geladen":"⋯ laden"}</option>
+                  style={{position:"absolute",inset:0,width:"100%",height:"100%",
+                    opacity:0,cursor:"pointer",border:"none"}}>
+                  <option value="">— Plan wählen —</option>
                   {existingDescs.map(d=>(
                     <option key={d} value={d}>{d.replace(/^Sparen·/,"")}</option>
                   ))}
                 </select>
-                </>
-              );
-            })()}
-          </div>
-          {/* „min. Saldo" + „bis" teilen sich eine Zeile — die frühere
-              Einzelzeile „oder Anzahl Monate" ist entfallen: das Enddatum ist
-              die Bezugsgröße, die Monatszahl war nur eine zweite Schreibweise
-              desselben Werts. Der so gewonnene Platz trägt jetzt das
-              Zinstermin-Raster. */}
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <span style={{color:T.txt2,fontSize:10,width:LBL_W,flexShrink:0}}>min. Saldo</span>
-            <input type="number" value={puffer}
-              onChange={e=>{const v=parseInt(e.target.value)||0;setPuffer(v);if(result) setResultOutdated(true);}}
-              style={{...FIELD,width:66,textAlign:"right"}}/>
-            <span style={{color:T.txt2,fontSize:10,flexShrink:0,marginLeft:"auto"}}>bis</span>
-            <input type="date" min={monateToEndDate(1)} value={monateToEndDate(monate)}
-              onChange={e=>{const n=endDateToMonate(e.target.value);if(n) setMonatePersist(n);}}
-              style={{...FIELD,width:132,textAlign:"right",colorScheme:"dark"}}/>
-          </div>
-          {/* Zinstermine — steuern zugleich die Sweep-Spalte in der Tabelle:
-              kein Monat gewählt = keine Spalte. */}
+              </span>
+            );
+          })()}
+          <input ref={planNameInputRef} value={sparPlanName}
+            onChange={e=>{setSparPlanName(e.target.value);kvStore.setItem("mbt_spar_planname",e.target.value);}}
+            placeholder="z.B. Sparplan 1"
+            // rechtsbündig: bei einem langen (z.B. geladenen) Plannamen bleibt
+            // so das Ende sichtbar, statt unbemerkt rechts abgeschnitten zu sein.
+            style={{...FIELD,minWidth:0,textAlign:"right"}}/>
+
+          {/* Zeile 4 + 5 — Mindestsaldo und Vorschau-Enddatum. Bewusst zwei
+              Zeilen: nebeneinander stünde das Datumsfeld an einer anderen
+              Stelle als die Felder darüber. */}
+          <span style={LBL}>min. Saldo</span>
+          <span/>
+          <input type="number" value={puffer}
+            onChange={e=>{const v=parseInt(e.target.value)||0;setPuffer(v);if(result) setResultOutdated(true);}}
+            style={{...FIELD,minWidth:0,textAlign:"right"}}/>
+
+          <span style={LBL}>bis</span>
+          <span/>
+          <input type="date" min={monateToEndDate(1)} value={monateToEndDate(monate)}
+            onChange={e=>{const n=endDateToMonate(e.target.value);if(n) setMonatePersist(n);}}
+            style={{...FIELD,minWidth:0,textAlign:"right",colorScheme:"dark"}}/>
+
           {/* Zinstermine in ZWEI Reihen à 6 Monaten über die volle Breite —
               12 Felder nebeneinander ließen pro Monat nur ~20px, zum Antippen
               und Lesen zu wenig. Statt eines Symbols ein Erklärsatz: ohne ihn
               war nicht erkennbar, wofür die Felder überhaupt da sind. */}
-          <div style={{marginTop:2}}>
+          <div style={{gridColumn:"1 / -1",marginTop:2}}>
             <div style={{color:T.txt2,fontSize:9,marginBottom:5,lineHeight:1.5}}>
               In welchen Monaten schreibt das Tagesgeld Zinsen gut? Zum
               Monatsletzten dieser Monate wird die Mega-Sparrate ermittelt.
@@ -705,7 +704,6 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
             </div>
           </div>
         </div>
-
         {/* Sofort-Betrag + Neuberechnen-Button, darunter die Mega-Sparrate */}
         <div style={{background:"rgba(0,0,0,0.15)",borderRadius:10,padding:"10px 12px",
           marginBottom:6}}>
