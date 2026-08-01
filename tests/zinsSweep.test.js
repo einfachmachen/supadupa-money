@@ -1,6 +1,6 @@
 // Testet die reine Rechenlogik des Zins-Sweeps ("Mega-Sparrate") aus
 // src/utils/zinsSweep.js — Stichtage, Rückholfenster und Betragsformel.
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import {
   DEFAULT_ZINS_MONATE,
   monatsLetzter,
@@ -11,6 +11,7 @@ import {
   computeSweep,
   ohneSweepBuchungen,
   SWEEP_RUECK_DESC,
+  sweepZustandAnwenden,
 } from "../src/utils/zinsSweep.js";
 
 describe("zinsSweep — Stichtage", () => {
@@ -190,5 +191,80 @@ describe("zinsSweep — Buchungsbestand normalisieren", () => {
   it("SWEEP_RUECK_DESC hängt am Plannamen", () => {
     expect(SWEEP_RUECK_DESC("Tagesgeld")).toBe("Sweep-Rück·Tagesgeld");
     expect(SWEEP_RUECK_DESC("")).toBe("Sweep-Rück·Plan");
+  });
+});
+
+describe("zinsSweep — Soll-Ist-Abgleich (Automatik)", () => {
+  let n;
+  const mkId = () => `id${++n}`;
+  const basisTxs = () => ([
+    { id: "ab", date: "2026-09-30", desc: "Sparen·TG", totalAmount: -584, pending: true,
+      accountId: "acc-giro", _seriesId: "s", splits: [{ id: "s1", catId: "", subId: "", amount: -584 }] },
+    { id: "zu", date: "2026-09-30", desc: "Sparen·TG", totalAmount: 584, pending: true,
+      accountId: "acc-tg", _linkedTo: "ab", _seriesId: "s-tgt", splits: [{ id: "s2", catId: "", subId: "", amount: 584 }] },
+    { id: "x", date: "2026-10-01", desc: "Miete", totalAmount: -1200, pending: true, accountId: "acc-giro" },
+  ]);
+  const ziel = { abgangId: "ab", zugangId: "zu", hin: 3400, zurueck: 2816, basis: 584,
+    ruecktag: "2026-10-01", zielKontoId: "acc-tg", planName: "TG", mkId };
+  beforeEach(() => { n = 0; });
+
+  it("hebt beide Beine der Rate an und legt die Rückbuchung an", () => {
+    const next = sweepZustandAnwenden(basisTxs(), ziel);
+    const ab = next.find(t => t.id === "ab"), zu = next.find(t => t.id === "zu");
+    expect(ab.totalAmount).toBe(-3400);
+    expect(ab._sweepHin).toBe(true);
+    expect(ab._sweepBasis).toBe(584);
+    expect(ab.splits[0].amount).toBe(-3400);      // Split zieht mit
+    expect(zu.totalAmount).toBe(3400);
+    const rueck = next.filter(t => t._sweepId);
+    expect(rueck).toHaveLength(2);
+    expect(rueck.find(t => t.accountId === "acc-tg").totalAmount).toBe(-2816);
+    expect(rueck.find(t => t.accountId === "acc-giro").totalAmount).toBe(2816);
+    expect(rueck.every(t => t.date === "2026-10-01" && t.pending)).toBe(true);
+  });
+
+  it("KERNFALL Idempotenz: ein zweiter Lauf meldet null — sonst liefe die Automatik im Kreis", () => {
+    const einmal = sweepZustandAnwenden(basisTxs(), ziel);
+    expect(sweepZustandAnwenden(einmal, ziel)).toBeNull();
+  });
+
+  it("passt an, wenn sich der Betrag im Monatsverlauf erhöht", () => {
+    const einmal = sweepZustandAnwenden(basisTxs(), ziel);
+    const hoeher = { ...ziel, hin: 4000, zurueck: 3416 };
+    const zweimal = sweepZustandAnwenden(einmal, hoeher);
+    expect(zweimal).not.toBeNull();
+    expect(zweimal.find(t => t.id === "ab").totalAmount).toBe(-4000);
+    const rueck = zweimal.filter(t => t._sweepId);
+    expect(rueck).toHaveLength(2);                       // kein Zuwachs an Paaren
+    expect(Math.abs(rueck[0].totalAmount)).toBe(3416);
+  });
+
+  it("baut alles zurück, sobald kein Sweep mehr möglich ist", () => {
+    const einmal = sweepZustandAnwenden(basisTxs(), ziel);
+    const aus = sweepZustandAnwenden(einmal, { ...ziel, hin: 0, zurueck: 0 });
+    expect(aus.filter(t => t._sweepId)).toHaveLength(0);
+    const ab = aus.find(t => t.id === "ab");
+    expect(ab.totalAmount).toBe(-584);                   // ursprüngliche Rate
+    expect(ab._sweepHin).toBeUndefined();
+    expect(ab._sweepBasis).toBeUndefined();
+    expect(ab.splits[0].amount).toBe(-584);
+    // und der Rückbau ist seinerseits idempotent
+    expect(sweepZustandAnwenden(aus, { ...ziel, hin: 0, zurueck: 0 })).toBeNull();
+  });
+
+  it("meldet null, wenn ohne Sweep gar nichts zu tun ist", () => {
+    expect(sweepZustandAnwenden(basisTxs(), { ...ziel, hin: 0, zurueck: 0 })).toBeNull();
+  });
+
+  it("meldet null, wenn die Rate gar nicht (mehr) existiert", () => {
+    expect(sweepZustandAnwenden(basisTxs(), { ...ziel, abgangId: "weg" })).toBeNull();
+  });
+
+  it("erneuert die Rückbuchung, wenn sich ihr Termin verschiebt", () => {
+    const einmal = sweepZustandAnwenden(basisTxs(), ziel);
+    const anderesDatum = { ...ziel, ruecktag: "2026-10-05" };
+    const zweimal = sweepZustandAnwenden(einmal, anderesDatum);
+    expect(zweimal).not.toBeNull();
+    expect(zweimal.filter(t => t._sweepId).every(t => t.date === "2026-10-05")).toBe(true);
   });
 });

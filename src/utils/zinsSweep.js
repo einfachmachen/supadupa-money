@@ -139,3 +139,83 @@ export function computeSweep({ salden, puffer = 0, normaleSparrate = 0 }) {
     restNachSweep: eng.saldo - sweep, // liegt per Definition ≥ puffer
   };
 }
+
+// ── Soll-Ist-Abgleich der Sweep-Buchungen ────────────────────────────────
+//
+// Kernstück der Automatik. Bekommt den aktuellen Buchungsbestand und den
+// gewünschten Zielzustand und liefert:
+//   null            – Ist entspricht bereits dem Soll, NICHTS tun
+//   Array<tx>       – der neue Bestand
+//
+// Das `null` ist nicht bloß eine Optimierung, sondern die Abbruchbedingung:
+// die Automatik läuft auf Änderungen von txs und ändert txs selbst. Ohne ein
+// belastbares „passt schon" schriebe sie sich endlos im Kreis. Deshalb wird
+// der Ist-Zustand exakt (Betrag, Datum, Anzahl der Beine) gegen das Soll
+// geprüft, nicht bloß „gibt es überhaupt Sweep-Buchungen".
+//
+// ziel:
+//   abgangId/zugangId – die beiden Beine der Sparplan-Rate des Zinsmonats
+//   hin               – Gesamtbetrag am Stichtag (enthält die normale Rate)
+//   zurueck           – Rückbuchung am nächsten Banktag (= hin − basis)
+//   basis             – die normale Sparrate (für ohneSweepBuchungen gemerkt)
+//   ruecktag          – Datum der Rückbuchung
+//   zielKontoId       – Tagesgeld-Konto
+//   planName, mkId    – Beschreibung bzw. ID-Erzeuger
+export function sweepZustandAnwenden(txs, ziel) {
+  const { abgangId, zugangId, hin = 0, zurueck = 0, basis = 0,
+    ruecktag, zielKontoId, planName, mkId } = ziel || {};
+  const liste = txs || [];
+  const abgang = liste.find(t => t.id === abgangId);
+  if (!abgang) return null;
+
+  const sollAktiv = hin > 0 && zurueck > 0 && !!ruecktag && !!zielKontoId;
+  const alteRueck = liste.filter(t => t.pending && t._sweepId);
+
+  // Ist-Zustand exakt gegen das Soll prüfen
+  const hinPasst = sollAktiv
+    ? (!!abgang._sweepHin && Math.abs(abgang.totalAmount) === hin
+       && Math.abs(abgang._sweepBasis || 0) === basis)
+    : !abgang._sweepHin;
+  const rueckPasst = sollAktiv
+    ? (alteRueck.length === 2
+       && alteRueck.every(t => t.date === ruecktag && Math.abs(t.totalAmount) === zurueck))
+    : alteRueck.length === 0;
+  if (hinPasst && rueckPasst) return null;
+
+  // 1) Alten Zustand zurückbauen — immer vollständig, danach neu aufbauen.
+  //    Das ist einfacher und sicherer als ein Teil-Update: der Zielzustand
+  //    hängt nur vom Soll ab, nie davon, was vorher dastand.
+  let next = liste.filter(t => !(t.pending && t._sweepId));
+  next = next.map(t => {
+    if (!t._sweepHin) return t;
+    const b = Math.abs(t._sweepBasis || 0);
+    const { _sweepHin, _sweepBasis, ...rest } = t;
+    const betrag = t.totalAmount < 0 ? -b : b;
+    return { ...rest, totalAmount: betrag,
+      splits: (t.splits || []).length === 1
+        ? [{ ...t.splits[0], amount: betrag }] : t.splits };
+  });
+  if (!sollAktiv) return next;
+
+  // 2) Rate des Zinsmonats auf den Hin-Betrag anheben (beide Beine)
+  next = next.map(t => {
+    if (t.id !== abgangId && t.id !== zugangId) return t;
+    const betrag = t.totalAmount < 0 ? -hin : hin;
+    return { ...t, totalAmount: betrag, _sweepHin: true, _sweepBasis: basis,
+      splits: (t.splits || []).length === 1
+        ? [{ ...t.splits[0], amount: betrag }] : t.splits };
+  });
+
+  // 3) Rückbuchung am nächsten Banktag anlegen (Tagesgeld → Giro)
+  const sweepId = "sweep-" + mkId();
+  const desc = SWEEP_RUECK_DESC(planName);
+  const ab = { id: "pend-" + mkId(), date: ruecktag, desc,
+    totalAmount: -zurueck, pending: true, _csvType: "expense",
+    accountId: zielKontoId, _sweepId: sweepId,
+    splits: [{ id: mkId(), catId: "", subId: "", amount: -zurueck }] };
+  const zu = { id: "pend-" + mkId(), date: ruecktag, desc,
+    totalAmount: zurueck, pending: true, _csvType: "income",
+    accountId: "acc-giro", _linkedTo: ab.id, _sweepId: sweepId,
+    splits: [{ id: mkId(), catId: "", subId: "", amount: zurueck }] };
+  return [...next, ab, zu];
+}

@@ -77,7 +77,9 @@ import { anchorValue, anchorDay } from "./utils/anchors.js";
 import { pn, uid, sumAmounts, fmt, round2 } from "./utils/format.js";
 import { MONTHS_S } from "./utils/constants.js";
 import { computeKontoWarnungen } from "./utils/kontoWarnungen.js";
-import { computeSafeCurrentMonthAmount } from "./utils/sparBerechnen.js";
+import { computeSafeCurrentMonthAmount, computeTagessaldoAt, buildTxsByMonth } from "./utils/sparBerechnen.js";
+import { DEFAULT_ZINS_MONATE, parseZinsMonate, monatsLetzter, sweepFenster,
+  computeSweep, ohneSweepBuchungen, sweepZustandAnwenden } from "./utils/zinsSweep.js";
 import { Li } from "./utils/icons.jsx";
 import { makeYearData } from "./utils/yearData.js";
 import { isDuplCounterpart, buildTxIdMap } from "./utils/tx.js";
@@ -2395,17 +2397,16 @@ Abbrechen = ${remoteName}-Stand laden`
     // welcher gemeint ist, dann lieber nichts automatisch anfassen.
     const pad2 = n => String(n).padStart(2, "0");
     const monthPfx = `${y}-${pad2(m + 1)}-`;
-    const candidates = txs.filter(t => t.pending && !t._linkedTo && t._seriesId
+    // AUF DEM NORMALISIERTEN BESTAND rechnen: eine bereits für den Zins-Sweep
+    // angehobene Rate wird auf ihren ursprünglichen Wert zurückgesetzt und die
+    // Rückbuchung ausgeblendet. Sonst sähe diese Automatik den Mega-Betrag als
+    // „aktuelle Rate", verglichen mit dem sicheren Wert — und schriebe ihn
+    // jedes Mal zurück, während der Sweep ihn wieder anhebt.
+    const reineTxs = ohneSweepBuchungen(txs);
+    const candidates = reineTxs.filter(t => t.pending && !t._linkedTo && t._seriesId
       && t.accountId === "acc-giro" && (t.desc || "").startsWith("Sparen·")
       && (t.date || "").startsWith(monthPfx));
     if(candidates.length !== 1) return null;
-    // Eine für den Zins-Sweep angehobene Rate (_sweepHin) NICHT anfassen: sie
-    // enthält bewusst den Mega-Betrag, der am nächsten Banktag größtenteils
-    // zurückfließt. Diese Automatik kennt nur die dauerhaft sichere Rate und
-    // würde die Anhebung sonst kommentarlos wieder auf sie zurückschreiben —
-    // der vorgemerkte Sweep verschwände unbemerkt. Solange der Sweep gesetzt
-    // ist, bleibt die Rate dieses Monats also, wie sie ist.
-    if(candidates[0]._sweepHin) return null;
     const abgang = candidates[0];
     const oldAmount = round2(Math.abs(abgang.totalAmount));
     // Prüft nicht nur den laufenden Monat selbst, sondern simuliert auch die
@@ -2415,30 +2416,79 @@ Abbrechen = ${remoteName}-Stand laden`
     // sofort meldet, den aber nur eine Reduzierung DIESES Monats vermeiden kann.
     const safeAmount = computeSafeCurrentMonthAmount({
       y, m, puffer: pn(_giroPuffer), abgangId: abgang.id, abgangDesc: abgang.desc,
-      ctx: { txs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth, getProgEndeAccGlobal }, today,
+      ctx: { txs: reineTxs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth }, today,
     });
     if(safeAmount === null) return null;
-    if(safeAmount === oldAmount) return null; // schon exakt der sichere Wert
-    const zugang = txs.find(t => t._linkedTo === abgang.id && t.pending);
+    const zugang = reineTxs.find(t => t._linkedTo === abgang.id && t.pending);
+
+    // ── Zins-Sweep: fällt der Monatsletzte auf einen Zinstermin, geht am
+    // Stichtag mehr aufs Tagesgeld, als dauerhaft entbehrlich ist — der
+    // Überhang kommt am nächsten Banktag zurück. Beide Größen gehören
+    // zusammen: die normale Rate ergibt sich aus der 24-Monats-Sicht oben,
+    // der Überhang aus dem Zwei-Tage-Fenster. Deshalb hier gemeinsam, statt
+    // als zweite Automatik, die um dieselbe Buchung konkurriert.
+    const zinsMonate = parseZinsMonate(kvStore.getItem("mbt_zins_monate")) ?? DEFAULT_ZINS_MONATE;
+    let sweepZiel = null;
+    if(zinsMonate.includes(m) && zugang) {
+      const termin = monatsLetzter(y, m);
+      // Simulation MIT der neuen sicheren Rate — sonst berechnete sich der
+      // Überhang auf einem Saldo, den es gleich nicht mehr gibt.
+      const simTxs = reineTxs.map(t => {
+        if(t.id === abgang.id) return { ...t, totalAmount: -safeAmount };
+        if(t.id === zugang.id) return { ...t, totalAmount: safeAmount };
+        return t;
+      });
+      const sctx = { txs: simTxs, cats, accounts, getKumulierterSaldo, getCat,
+        getBudgetForMonth, _restCache: {},
+        _txsById: buildTxIdMap(simTxs), _txsByMonth: buildTxsByMonth(simTxs) };
+      const f = sweepFenster(termin);
+      const salden = f.tage.map(d => ({ date: d, saldo: computeTagessaldoAt(d, "acc-giro", sctx, today) }));
+      const r = computeSweep({ salden, puffer: pn(_giroPuffer), normaleSparrate: safeAmount });
+      if(r && r.zurueck > 0) {
+        sweepZiel = { abgangId: abgang.id, zugangId: zugang.id, hin: r.hin,
+          zurueck: r.zurueck, basis: safeAmount, ruecktag: f.bis,
+          zielKontoId: zugang.accountId, planName: (abgang.desc||"").replace(/^Sparen·/, "") };
+      }
+    }
+    if(!sweepZiel) {
+      // Kein Zinsmonat: nur die normale Rate pflegen — und einen ggf. noch
+      // stehenden Sweep zurückbauen (Zinsmonate abgewählt, Termin vorbei).
+      sweepZiel = { abgangId: abgang.id, zugangId: zugang?.id || null, hin: 0,
+        zurueck: 0, basis: 0, ruecktag: null, zielKontoId: null, planName: "" };
+    }
+    if(safeAmount === oldAmount && !sweepZustandAnwenden(txs, {...sweepZiel, mkId: () => "probe"}))
+      return null; // Rate stimmt UND Sweep-Zustand stimmt → nichts zu tun
     return { abgangId: abgang.id, zugangId: zugang?.id || null, oldAmount, safeAmount,
-      monthLabel: `${MONTHS_S[m]} ${y}` };
+      sweepZiel, monthLabel: `${MONTHS_S[m]} ${y}` };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [txs, cats, accounts, _giroPuffer, budgets, startBalances]);
 
   useEffect(() => {
     if(!currentMonthSparAdjust) return;
-    const { abgangId, zugangId, oldAmount, safeAmount, monthLabel } = currentMonthSparAdjust;
-    setTxs(prev => prev.map(t => {
-      if(t.id === abgangId) {
-        return { ...t, totalAmount: -safeAmount, splits: (t.splits||[]).map(s=>({...s, amount: -safeAmount})) };
-      }
-      if(zugangId && t.id === zugangId) {
-        return { ...t, totalAmount: safeAmount, splits: (t.splits||[]).map(s=>({...s, amount: safeAmount})) };
-      }
-      return t;
-    }));
-    setAutoSparInfo({ monthLabel, oldAmount, newAmount: safeAmount,
-      direction: safeAmount > oldAmount ? "up" : "down" });
+    const { abgangId, zugangId, oldAmount, safeAmount, sweepZiel, monthLabel } = currentMonthSparAdjust;
+    setTxs(prev => {
+      // 1) Normale Rate auf den sicheren Wert setzen (Sweep-Marker fallen dabei
+      //    weg — Schritt 2 setzt sie passend neu).
+      let next = prev.map(t => {
+        if(t.id === abgangId) {
+          const { _sweepHin, _sweepBasis, ...rest } = t;
+          return { ...rest, totalAmount: -safeAmount, splits: (t.splits||[]).map(s=>({...s, amount: -safeAmount})) };
+        }
+        if(zugangId && t.id === zugangId) {
+          const { _sweepHin, _sweepBasis, ...rest } = t;
+          return { ...rest, totalAmount: safeAmount, splits: (t.splits||[]).map(s=>({...s, amount: safeAmount})) };
+        }
+        return t;
+      });
+      // 2) Sweep-Zustand abgleichen. Liefert null, wenn er bereits passt —
+      //    genau das beendet den Kreislauf (siehe utils/zinsSweep.js).
+      const mitSweep = sweepZustandAnwenden(next, { ...sweepZiel, mkId: uid });
+      return mitSweep || next;
+    });
+    if(safeAmount !== oldAmount) {
+      setAutoSparInfo({ monthLabel, oldAmount, newAmount: safeAmount,
+        direction: safeAmount > oldAmount ? "up" : "down" });
+    }
   }, [currentMonthSparAdjust]);
   useEffect(() => {
     if(!autoSparInfo) return;
