@@ -705,7 +705,6 @@ function DashboardScreenV2() {
           : Math.abs(t.totalAmount||0);
         return list.filter(t=>!(t.pending&&t._budgetSubId)).reduce((s,t)=>s+amt(t),0);
       }
-      if(dd.kind.startsWith("uncat")) return null;
       return dd.isPending ? list.reduce((s,t)=>s+pendVmAmt(t),0)
         : list.reduce((s,t)=>s+Math.abs(t.totalAmount||0),0);
     };
