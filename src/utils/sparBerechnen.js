@@ -183,7 +183,7 @@ function furthestPendingMonthOffset(txs, y, m) {
 // monthPool). Ohne diesen Index würde JEDE Monatsabfrage (bis zu mehrere
 // hundert bei einer langlaufenden Finanzierung) über ALLE Buchungen
 // scannen — mit ihm nur einmal pro Kandidat.
-function buildTxsByMonth(txs) {
+export function buildTxsByMonth(txs) {
   const map = new Map();
   (txs || []).forEach(t => {
     const d = new Date(t.date);
