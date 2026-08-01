@@ -2399,6 +2399,13 @@ Abbrechen = ${remoteName}-Stand laden`
       && t.accountId === "acc-giro" && (t.desc || "").startsWith("Sparen·")
       && (t.date || "").startsWith(monthPfx));
     if(candidates.length !== 1) return null;
+    // Eine für den Zins-Sweep angehobene Rate (_sweepHin) NICHT anfassen: sie
+    // enthält bewusst den Mega-Betrag, der am nächsten Banktag größtenteils
+    // zurückfließt. Diese Automatik kennt nur die dauerhaft sichere Rate und
+    // würde die Anhebung sonst kommentarlos wieder auf sie zurückschreiben —
+    // der vorgemerkte Sweep verschwände unbemerkt. Solange der Sweep gesetzt
+    // ist, bleibt die Rate dieses Monats also, wie sie ist.
+    if(candidates[0]._sweepHin) return null;
     const abgang = candidates[0];
     const oldAmount = round2(Math.abs(abgang.totalAmount));
     // Prüft nicht nur den laufenden Monat selbst, sondern simuliert auch die
