@@ -121,7 +121,26 @@ export function computeMinTagessaldo(y, m, virtualSpar = {}, accId, excludeSparD
     if (minVal === null || s < minVal) minVal = s;
   });
   const saldoEnde = saldoAt(`${pfx}${pad2(lastDay)}`);
-  return { min: minVal, saldoEnde };
+  // saldoAt wird mit zurückgegeben, damit Aufrufer den Saldo eines EINZELNEN
+  // Tages abfragen können, ohne die Basis-/Budget-/Vorzeichen-Logik ein
+  // zweites Mal nachzubauen (siehe computeTagessaldoAt).
+  return { min: minVal, saldoEnde, saldoAt };
+}
+
+// Taggenauer Saldo für EINEN konkreten Tag (ISO "YYYY-MM-DD"). Dünne Hülle um
+// computeMinTagessaldo, damit garantiert dieselbe Logik greift: Basissaldo des
+// Vormonats, CSV-Duplikatfilter, Vorzeichen aus Kategorie/_csvType und die
+// Budget-Reservierung (RestMitte/RestEnde).
+//
+// Nötig für den Zins-Sweep (utils/zinsSweep.js): dessen Fenster läuft vom
+// Monatsletzten bis zum nächsten Banktag und überschreitet damit regelmäßig
+// die Monatsgrenze — computeMinTagessaldo liefert dagegen nur das Minimum
+// EINES Monats.
+export function computeTagessaldoAt(iso, accId, ctx, today = new Date()) {
+  const [y, mo] = String(iso).split("-").map(Number);
+  if (!y || !mo) return null;
+  const r = computeMinTagessaldo(y, mo - 1, {}, accId, null, ctx, today);
+  return r && typeof r.saldoAt === "function" ? r.saldoAt(iso) : null;
 }
 
 // Sichere Sparrate für den LAUFENDEN Monat, die zusätzlich sicherstellt, dass
