@@ -2443,7 +2443,8 @@ Abbrechen = ${remoteName}-Stand laden`
         _txsById: buildTxIdMap(simTxs), _txsByMonth: buildTxsByMonth(simTxs) };
       const f = sweepFenster(termin);
       const salden = f.tage.map(d => ({ date: d, saldo: computeTagessaldoAt(d, "acc-giro", sctx, today) }));
-      const r = computeSweep({ salden, puffer: pn(_giroPuffer), normaleSparrate: safeAmount });
+      const r = computeSweep({ salden, puffer: pn(_giroPuffer), normaleSparrate: safeAmount,
+        sofortRueck: kvStore.getItem("mbt_zins_sofortrueck") === "1" });
       if(r && r.zurueck > 0) {
         sweepZiel = { abgangId: abgang.id, zugangId: zugang.id, hin: r.hin,
           zurueck: r.zurueck, basis: safeAmount, ruecktag: f.bis,

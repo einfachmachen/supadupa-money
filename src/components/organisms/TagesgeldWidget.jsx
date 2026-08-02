@@ -108,6 +108,15 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   };
   const toggleZinsMonat = (m) =>
     setZinsMonate(zinsMonate.includes(m) ? zinsMonate.filter(x=>x!==m) : [...zinsMonate, m]);
+  // Rechnet damit, dass die Rückbuchung am Rückbuchungstag selbst erfolgt und
+  // hausintern sofort gutgeschrieben wird. Standardmäßig AUS: der höhere
+  // Betrag setzt voraus, dass an genau diesem Tag zurücküberwiesen wird.
+  const [sofortRueck, setSofortRueckState] = useState(
+    ()=>kvStore.getItem("mbt_zins_sofortrueck")==="1");
+  const setSofortRueck = (v) => {
+    setSofortRueckState(v);
+    kvStore.setItem("mbt_zins_sofortrueck", v?"1":"0");
+  };
 
   const [toast, setToast] = useState("");
   const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(""),3000); };
@@ -143,7 +152,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     const heuteIso = `${heute.getFullYear()}-${p2(heute.getMonth()+1)}-${p2(heute.getDate())}`;
     const termin = zinsTermine(heuteIso, 1, zinsMonate)[0];
     if(!termin) { setSweep(null); return; }
-    const key = `${termin}|${puffer}|${sparPlanName}`;
+    const key = `${termin}|${puffer}|${sparPlanName}|${sofortRueck?1:0}`;
     if(sweepCache.current.key === key) { setSweep(sweepCache.current.wert); return; }
     let abgebrochen = false;
     const id = requestAnimationFrame(() => {
@@ -165,7 +174,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
       const pfx = termin.slice(0,8); // "YYYY-MM-"
       const rateTx = reineTxs.find(t => t.pending && !t._linkedTo && t.desc===desc
         && t.accountId==="acc-giro" && String(t.date).startsWith(pfx));
-      const r = computeSweep({ salden, puffer,
+      const r = computeSweep({ salden, puffer, sofortRueck,
         normaleSparrate: rateTx ? Math.abs(rateTx.totalAmount) : 0 });
       if(abgebrochen) return;
       const wert = r ? {...r, termin, bis:f.bis} : null;
@@ -173,7 +182,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
       setSweep(wert);
     });
     return () => { abgebrochen = true; cancelAnimationFrame(id); };
-  }, [collapsed, sweepAktiv, zinsMonate, puffer, sparPlanName, txs]);
+  }, [collapsed, sweepAktiv, zinsMonate, puffer, sparPlanName, txs, sofortRueck]);
 
 
   // Auto-Recompute beim ersten Öffnen des Panels (oder nach Dropdown-Auswahl),

@@ -120,10 +120,27 @@ export function ohneSweepBuchungen(txs) {
   });
 }
 
-export function computeSweep({ salden, puffer = 0, normaleSparrate = 0 }) {
-  const werte = (salden || []).filter(
+// sofortRueck: Rechnet damit, dass die Rückbuchung AM Rückbuchungstag selbst
+// erfolgt und hausintern sofort gutgeschrieben wird (Dirks Beobachtung für
+// DKB Giro ↔ DKB Tagesgeld). Dann zählt an diesem Tag nur der Tagesschluss:
+//
+//   Giro − hin − Belastungen + zurück ≥ Puffer
+//
+// und weil zurück = hin − normale Rate ist, kürzt sich `hin` heraus — der
+// Rückbuchungstag begrenzt den Sweep also gar nicht mehr. Übrig bleibt die
+// Grenze am Stichtag selbst. Deshalb fällt genau der LETZTE Fenstertag aus
+// der Minimum-Suche, nicht das ganze Fenster: liegen zwischen Stichtag und
+// Rückbuchung noch Tage (31.12. → 04.01.), ist das Geld dort weiterhin weg
+// und keine Rückbuchung gleicht etwas aus.
+//
+// Der Preis dafür ist eine echte Verhaltensänderung: Ohne die Rückbuchung an
+// genau diesem Tag steht das Konto tatsächlich im Minus. Deshalb standardmäßig
+// aus (siehe TagesgeldWidget: mbt_zins_sofortrueck).
+export function computeSweep({ salden, puffer = 0, normaleSparrate = 0, sofortRueck = false }) {
+  let werte = (salden || []).filter(
     (s) => s && s.saldo !== null && s.saldo !== undefined && Number.isFinite(s.saldo)
   );
+  if (sofortRueck && werte.length > 1) werte = werte.slice(0, -1);
   if (!werte.length) return null;
   let eng = werte[0];
   for (const s of werte) if (s.saldo < eng.saldo) eng = s;

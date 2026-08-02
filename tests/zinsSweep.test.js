@@ -268,3 +268,53 @@ describe("zinsSweep — Soll-Ist-Abgleich (Automatik)", () => {
     expect(zweimal.filter(t => t._sweepId).every(t => t.date === "2026-10-05")).toBe(true);
   });
 });
+
+describe("zinsSweep — Sofort-Rückbuchung am selben Tag", () => {
+  // Hausinterne Umbuchungen werden sofort gutgeschrieben, externe Belastungen
+  // ändern den Saldo erst am nächsten Banktag. Wird die Überziehung am selben
+  // Tag durch die Rückbuchung ausgeglichen, fallen keine Dispo-Zinsen an —
+  // dann begrenzt der Rückbuchungstag den Sweep nicht mehr.
+  const salden = [
+    { date: "2026-09-30", saldo: 1800 },
+    { date: "2026-10-01", saldo: 600 },  // Miete am Ersten
+  ];
+
+  it("ohne Schalter begrenzt der Rückbuchungstag (bisheriges Verhalten)", () => {
+    const r = computeSweep({ salden, puffer: 100, normaleSparrate: 400 });
+    expect(r.sweep).toBe(500);
+    expect(r.hin).toBe(900);
+  });
+
+  it("mit Schalter zählt nur noch der Stichtag — deutlich mehr möglich", () => {
+    const r = computeSweep({ salden, puffer: 100, normaleSparrate: 400, sofortRueck: true });
+    expect(r.sweep).toBe(1700);          // 1800 − 100
+    expect(r.hin).toBe(2100);
+    expect(r.zurueck).toBe(1700);
+    expect(r.engpassTag).toBe("2026-09-30");
+    // Gegenprobe: Tagesschluss am 01.10. bleibt trotz zwischenzeitlichem Minus
+    // über dem Puffer — 600 − 1700 + 1700 … also Saldo 600 minus Sweep plus
+    // Rückbuchung = unverändert 600.
+    expect(600 - r.sweep + r.zurueck).toBe(600);
+  });
+
+  it("Tage ZWISCHEN Stichtag und Rückbuchung begrenzen weiterhin", () => {
+    // 31.12. → Rückbuchung erst am 04.01.; am 1.–3.1. ist das Geld weiterhin
+    // weg und keine Rückbuchung gleicht etwas aus.
+    const lang = [
+      { date: "2026-12-31", saldo: 5000 },
+      { date: "2027-01-01", saldo: 5000 },
+      { date: "2027-01-02", saldo: 900 },   // Engpass mitten im Fenster
+      { date: "2027-01-03", saldo: 900 },
+      { date: "2027-01-04", saldo: 300 },   // Rückbuchungstag — zählt nicht
+    ];
+    const r = computeSweep({ salden: lang, puffer: 100, normaleSparrate: 0, sofortRueck: true });
+    expect(r.sweep).toBe(800);             // 900 − 100, nicht 300 − 100
+    expect(r.engpassTag).toBe("2027-01-02");
+  });
+
+  it("bei nur einem Fenstertag bleibt dieser erhalten", () => {
+    const r = computeSweep({ salden: [{ date: "2026-09-30", saldo: 1800 }],
+      puffer: 100, sofortRueck: true });
+    expect(r.sweep).toBe(1700);
+  });
+});

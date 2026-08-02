@@ -70,6 +70,7 @@ function SweepBanner() {
       const rateTx = reineTxs.find((t) => t.pending && !t._linkedTo && t.desc === desc
         && t.accountId === "acc-giro" && String(t.date).startsWith(monatsPfx));
       const r = computeSweep({ salden, puffer,
+        sofortRueck: kvStore.getItem("mbt_zins_sofortrueck") === "1",
         normaleSparrate: rateTx ? Math.abs(rateTx.totalAmount) : 0 });
       if (abgebrochen) return;
       setLiveSweep(r ? { ...r, bis: f.bis } : null);
