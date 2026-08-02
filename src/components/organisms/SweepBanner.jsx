@@ -131,11 +131,14 @@ function SweepBanner() {
   if (!rueckFaellig && rueckOffen && (liquidityWarnings || []).length) {
     const quelle = (txs || []).find((q) => q.id === rueckOffen._linkedTo);
     const quellKonto = accounts.find((a) => a.id === (quelle && quelle.accountId));
-    return box(T.neg, "alert-triangle", "Rücküberweisung nötig",
-      `${fmt(Math.abs(rueckOffen.totalAmount))} € müssen am ${kurzDat(rueckOffen.date)} von `
-      + `${quellKonto ? quellKonto.name : "Tagesgeld"} zurück aufs Giro — sonst bleibt der `
-      + `gemeldete Engpass bestehen.`,
-      Math.abs(rueckOffen.totalAmount));
+    // Bewusst als ERKLÄRUNG formuliert: die Handlungsaufforderung steht
+    // bereits als oberster Balken auf allen Screens (siehe App.jsx). Hier
+    // unter dem Hero geht es darum, den gemeldeten Engpass einzuordnen.
+    return box(T.gold, "info", "Engpass ist eingeplant",
+      `Er entsteht durch die Mega-Sparrate und löst sich auf, sobald am `
+      + `${kurzDat(rueckOffen.date)} ${fmt(Math.abs(rueckOffen.totalAmount))} € von `
+      + `${quellKonto ? quellKonto.name : "Tagesgeld"} zurück aufs Giro gehen.`,
+      null);
   }
 
   if (rueckFaellig) {

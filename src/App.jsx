@@ -3298,6 +3298,51 @@ Abbrechen = ${remoteName}-Stand laden`
           Erscheint, solange die Vorschau in den nächsten 12 Monaten kippt — NICHT
           ausblendbar; verschwindet erst, wenn das Problem behoben ist. Tippen öffnet
           Money Mood (Details). */}
+      {/* ── Fällige Sweep-Rücküberweisung: oberster Balken, noch VOR der
+          Liquiditätswarnung. Bewusst hier und nicht nur unter dem Hero: Dieser
+          Balken ist auf ALLEN Screens sichtbar, und die Rückbuchung zu
+          vergessen ist der einzige Weg, wie der Zins-Sweep schiefgeht — mit
+          eingeschalteter Sofort-Rückbuchung steht das Konto sonst real im
+          Minus. Die Liquiditätswarnung darunter erklärt dann den Zusammenhang;
+          hier oben steht nur, was zu TUN ist. ── */}
+      {(()=>{
+        const p2 = n => String(n).padStart(2,"0");
+        const heute = new Date();
+        const heuteIso = `${heute.getFullYear()}-${p2(heute.getMonth()+1)}-${p2(heute.getDate())}`;
+        const offen = (txs||[])
+          .filter(t => t.pending && t._sweepId && t.accountId==="acc-giro" && t.totalAmount>0)
+          .sort((a,b)=>String(a.date).localeCompare(String(b.date)))[0];
+        if(!offen) return null;
+        const faellig = String(offen.date) <= heuteIso;
+        const ueberfaellig = String(offen.date) < heuteIso;
+        // Vor dem Termin nur zeigen, wenn ohnehin ein Engpass gemeldet wird —
+        // sonst wäre es wochenlang ein Daueralarm ohne Handlungsbedarf.
+        if(!faellig && !strainWarning) return null;
+        const gegen = (txs||[]).find(q => q.id === offen._linkedTo);
+        const vonKonto = accounts.find(a => a.id === (gegen && gegen.accountId));
+        const dat = String(offen.date).split("-").reverse().join(".");
+        return (
+          <div onClick={navigateToSparen}
+            style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",
+              background: ueberfaellig ? "#B3261E" : T.warn_bold, color:"#fff",
+              padding:"7px 12px",flexShrink:0,boxShadow:"0 1px 6px rgba(0,0,0,0.3)"}}>
+            {Li("arrow-left-right",16,"#fff")}
+            <div style={{flex:1,minWidth:0,lineHeight:1.25}}>
+              <div style={{fontSize:12.5,fontWeight:700,overflow:"hidden",
+                textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                {fmt(Math.abs(offen.totalAmount))} € zurück aufs Giro
+                {ueberfaellig ? " — überfällig!" : ""}
+              </div>
+              <div style={{fontSize:11,opacity:0.92,overflow:"hidden",
+                textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                von {vonKonto ? vonKonto.name : "Tagesgeld"} · {faellig ? "seit" : "am"} {dat} · tippen
+              </div>
+            </div>
+            {Li("chevron-right",18,"#fff")}
+          </div>
+        );
+      })()}
+
       {strainWarning && (()=>{
         const w = strainWarning, s = w.soonest;
         const label = `${MONTHS_S[s.mi]} ${s.yr}`;
