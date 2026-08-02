@@ -434,6 +434,9 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   // Ob die Automatik die Buchungen bereits gesetzt hat — das passiert erst,
   // wenn der Zinsmonat der laufende ist (siehe App.jsx).
   const sweepGesetzt = () => txs.some(t => t.pending && t._sweepId);
+  // In der Tabelle stehen fast nur glatte Euro-Beträge — die ",00" kosten dort
+  // nur Breite. Nachkommastellen bleiben, sobald sie etwas aussagen.
+  const fmtK = (v) => { const s = fmt(v); return s.endsWith(",00") ? s.slice(0,-3) : s; };
   const zielKontoName = accounts.find(a=>a.id===sparAccId)?.name || "Tagesgeld";
   const WOCHENTAGE = ["So","Mo","Di","Mi","Do","Fr","Sa"];
   const kurzDat = (iso) => {
@@ -870,12 +873,12 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
             );
           })()}
           <div style={{display:"flex",flexDirection:"column",gap:2,marginTop:8}}>
-            <div style={{display:"flex",padding:"0 8px",marginBottom:2}}>
-              <div style={{width:44,flexShrink:0}}/>
-              <div style={{flex:1,textAlign:"right",color:T.txt2,fontSize:8}}>Tiefst-Saldo*</div>
-              <div style={{flex:1,textAlign:"right",color:T.txt2,fontSize:8}}>nach Sparen</div>
-              <div style={{flex:1,textAlign:"right",color:T.txt2,fontSize:8}}>+ Monat</div>
-              <div style={{flex:1,textAlign:"right",color:T.txt2,fontSize:8,fontWeight:700}}>∑ gespart</div>
+            <div style={{display:"flex",padding:"0 6px",marginBottom:3}}>
+              <div style={{width:38,flexShrink:0}}/>
+              <div style={{flex:1,textAlign:"right",color:T.txt,fontSize:11}}>Tiefst-Saldo*</div>
+              <div style={{flex:1,textAlign:"right",color:T.txt,fontSize:11}}>nach Sparen</div>
+              <div style={{flex:1,textAlign:"right",color:T.txt,fontSize:11}}>+ Monat</div>
+              <div style={{flex:1,textAlign:"right",color:T.txt,fontSize:11,fontWeight:700}}>∑ gespart</div>
             </div>
             {result.map(({y,m,minTag,minNach,zusaetzlich,kumuliert},i)=>{
               const zusCol=zusaetzlich>0?zusaetzlich<500?T.warn:T.pos:T.txt2;
@@ -883,32 +886,32 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
               const kritisch=minNach!==null&&minNach<puffer;
               return (
                 <div key={i} style={{display:"flex",alignItems:"center",
-                  padding:"3px 8px",borderRadius:7,
+                  padding:"3px 6px",borderRadius:7,
                   background:isCurM?"rgba(74,159,212,0.08)":"rgba(255,255,255,0.02)",
                   border:kritisch?`1px solid ${T.neg}44`:"1px solid transparent"}}>
-                  <div style={{width:44,flexShrink:0}}>
-                    <span style={{color:isCurM?T.blue:T.txt,fontSize:10,fontWeight:700}}>{MONTHS_G[m]}</span>
-                    <span style={{color:T.txt2,fontSize:8,marginLeft:3}}>{String(y).slice(2)}</span>
+                  <div style={{width:38,flexShrink:0}}>
+                    <span style={{color:isCurM?T.blue:T.txt,fontSize:12,fontWeight:700}}>{MONTHS_G[m]}</span>
+                    <span style={{color:T.txt,fontSize:10,marginLeft:2}}>{String(y).slice(2)}</span>
                   </div>
-                  <div style={{flex:1,textAlign:"right",color:minTag===null?T.txt2:minTag<puffer?T.neg:T.txt2,fontSize:9,fontFamily:NUM_FONT}}>
-                    {minTag!==null?(minTag>=0?"+":"−")+fmt(Math.abs(minTag)):"—"}
+                  <div style={{flex:1,textAlign:"right",color:minTag===null?T.txt:minTag<puffer?T.neg:T.txt,fontSize:12,fontFamily:NUM_FONT}}>
+                    {minTag!==null?(minTag>=0?"+":"−")+fmtK(Math.abs(minTag)):"—"}
                   </div>
-                  <div style={{flex:1,textAlign:"right",fontSize:9,fontFamily:NUM_FONT,fontWeight:700,
-                    color:minNach===null?T.txt2:minNach<puffer?T.neg:T.pos}}>
-                    {minNach!==null?(minNach>=0?"+":"−")+fmt(Math.abs(minNach)):"—"}
+                  <div style={{flex:1,textAlign:"right",fontSize:12,fontFamily:NUM_FONT,fontWeight:700,
+                    color:minNach===null?T.txt:minNach<puffer?T.neg:T.pos}}>
+                    {minNach!==null?(minNach>=0?"+":"−")+fmtK(Math.abs(minNach)):"—"}
                     {kritisch&&<span style={{color:T.neg,fontSize:7}}> ⚠</span>}
                   </div>
-                  <div style={{flex:1,textAlign:"right",color:zusCol,fontSize:10,fontWeight:700,fontFamily:NUM_FONT}}>
-                    {zusaetzlich>0?"+"+fmt(zusaetzlich):"—"}
+                  <div style={{flex:1,textAlign:"right",color:zusCol,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>
+                    {zusaetzlich>0?"+"+fmtK(zusaetzlich):"—"}
                   </div>
-                  <div style={{flex:1,textAlign:"right",color:kumuliert>0?T.pos:T.txt2,fontSize:11,fontWeight:800,fontFamily:NUM_FONT}}>
-                    {kumuliert>0?fmt(kumuliert):"—"}
+                  <div style={{flex:1,textAlign:"right",color:kumuliert>0?T.pos:T.txt,fontSize:12,fontWeight:800,fontFamily:NUM_FONT}}>
+                    {kumuliert>0?fmtK(kumuliert):"—"}
                   </div>
                 </div>
               );
             })}
           </div>
-          <div style={{textAlign:"right",color:T.txt,fontSize:8,marginTop:4}}>
+          <div style={{textAlign:"right",color:T.txt,fontSize:11,marginTop:5,lineHeight:1.45}}>
             * Tiefst-Saldo nach Abzug bereits eingeplanter Sparraten · Sparen = Tiefst-Saldo − {fmt(puffer)} € Puffer
           </div>
         </>)}
