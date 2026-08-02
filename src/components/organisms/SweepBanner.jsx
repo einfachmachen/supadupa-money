@@ -35,7 +35,7 @@ const kurzDat = (iso) => {
 
 function SweepBanner() {
   const { txs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth,
-    navigateToSparen } = useContext(AppCtx);
+    navigateToSparen, liquidityWarnings } = useContext(AppCtx);
 
   const heute = new Date();
   const heuteIso = `${heute.getFullYear()}-${pad2(heute.getMonth() + 1)}-${pad2(heute.getDate())}`;
@@ -92,8 +92,8 @@ function SweepBanner() {
         padding: "9px 11px", display: "flex", alignItems: "center", gap: 10 }}>
       <div style={{ flexShrink: 0, display: "flex" }}>{Li(icon, 17, farbe)}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ color: farbe, fontSize: 11, fontWeight: 700 }}>{titel}</div>
-        <div style={{ color: T.txt2, fontSize: 9, lineHeight: 1.5 }}>{zeile}</div>
+        <div style={{ color: farbe, fontSize: 12, fontWeight: 700 }}>{titel}</div>
+        <div style={{ color: T.txt, fontSize: 11, lineHeight: 1.45 }}>{zeile}</div>
       </div>
       {betrag !== null && betrag !== undefined && (
         <div style={{ flexShrink: 0, color: farbe, fontSize: 15, fontWeight: 800,
@@ -116,6 +116,26 @@ function SweepBanner() {
     // Kein Spielraum (oder noch am Rechnen): trotzdem an den Tag erinnern.
     return box(T.gold, "zap", "Heute ist Zinstermin",
       liveSweep ? "Aktuell kein Spielraum über dem min. Saldo." : "Betrag wird ermittelt …", null);
+  }
+
+  // ── Zustand 3: Engpass, den die noch offene Rückbuchung deckt ────────
+  // Der Sweep drückt den Giro-Saldo bewusst bis an den Puffer (mit
+  // Sofort-Rückbuchung sogar darunter) — die Liquiditätswarnung schlägt
+  // dadurch zwangsläufig an. Für sich genommen ist sie richtig, aber ohne
+  // Zusammenhang: der Engpass ist eingeplant und wird durch die Rückbuchung
+  // aufgelöst. Deshalb hier VOR der allgemeinen Warnung der konkrete Betrag,
+  // der vom Tagesgeld zurück MUSS.
+  const rueckOffen = (txs || [])
+    .filter((t) => t.pending && t._sweepId && t.accountId === "acc-giro" && t.totalAmount > 0)
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)))[0];
+  if (!rueckFaellig && rueckOffen && (liquidityWarnings || []).length) {
+    const quelle = (txs || []).find((q) => q.id === rueckOffen._linkedTo);
+    const quellKonto = accounts.find((a) => a.id === (quelle && quelle.accountId));
+    return box(T.neg, "alert-triangle", "Rücküberweisung nötig",
+      `${fmt(Math.abs(rueckOffen.totalAmount))} € müssen am ${kurzDat(rueckOffen.date)} von `
+      + `${quellKonto ? quellKonto.name : "Tagesgeld"} zurück aufs Giro — sonst bleibt der `
+      + `gemeldete Engpass bestehen.`,
+      Math.abs(rueckOffen.totalAmount));
   }
 
   if (rueckFaellig) {

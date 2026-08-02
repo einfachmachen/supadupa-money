@@ -42,7 +42,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   // Beschriftungen und Erklärtexte in T.txt statt T.txt2: auf der dunklen
   // Karte (rgba(0,0,0,0.15) über T.surf2) war das gedämpfte Grau kaum noch
   // lesbar (Nutzer-Feedback).
-  const LBL = {color:T.txt, fontSize:10};
+  const LBL = {color:T.txt, fontSize:12};
   const ZENTRIERT = {display:"flex", alignItems:"center", justifyContent:"center", padding:0};
   // Der CatPicker-Auslöser bringt eigene Werte mit (padding 5/10, Radius 10,
   // hellerer Overlay-Hintergrund) — ohne Angleich wirken die beiden
@@ -635,7 +635,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
               und Lesen zu wenig. Statt eines Symbols ein Erklärsatz: ohne ihn
               war nicht erkennbar, wofür die Felder überhaupt da sind. */}
           <div style={{gridColumn:"1 / -1",marginTop:2}}>
-            <div style={{color:T.txt,fontSize:9,marginBottom:5,lineHeight:1.5}}>
+            <div style={{color:T.txt,fontSize:12,marginBottom:6,lineHeight:1.45}}>
               In welchen Monaten schreibt das Tagesgeld Zinsen gut? Zum
               Monatsletzten dieser Monate wird die Mega-Sparrate ermittelt.
             </div>
@@ -661,7 +661,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
               <span style={{flexShrink:0,marginTop:1}}>
                 {Li(sofortRueck?"check-circle":"square",14,sofortRueck?T.gold:T.txt)}
               </span>
-              <span style={{color:T.txt,fontSize:9,lineHeight:1.55}}>
+              <span style={{color:T.txt,fontSize:12,lineHeight:1.45}}>
                 Rückbuchung am selben Tag — hausintern sofort gutgeschrieben.
                 Erlaubt einen deutlich höheren Betrag, weil eine Unterdeckung am
                 Rückbuchungstag noch am selben Tag ausgeglichen wird.
@@ -686,7 +686,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                 ? "Ein bestehender Sparplan schöpft bereits alles bis auf den Puffer ab."
                 : `Ø ${fmt(Math.round(durchschnitt))} €/Monat — zu wenig für einen sinnvollen Sparplan (Schwelle: ${fmt(puffer)} €/Monat).`;
               return (<>
-                <div style={{color:T.txt,fontSize:9,marginBottom:4}}>
+                <div style={{color:T.txt,fontSize:12,marginBottom:4}}>
                   Heute sicher sparen (Monat 1):
                 </div>
                 <div style={{color:col,fontSize:26,fontWeight:800,fontFamily:NUM_FONT,letterSpacing:-0.5}}>
@@ -757,7 +757,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
         {sweepAktiv&&sweep&&sweep.hin>0&&(
           <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${T.bd}`}}>
             <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:8}}>
-              <div style={{color:T.txt,fontSize:9}}>
+              <div style={{color:T.txt,fontSize:12}}>
                 Mega-Sparrate zum {kurzDat(sweep.termin)} <span style={{color:T.gold}}>(Zinstermin)</span>
               </div>
               <div style={{color:T.gold,fontSize:20,fontWeight:800,fontFamily:NUM_FONT,letterSpacing:-0.5}}>
@@ -765,14 +765,14 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
               </div>
             </div>
             <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:8,marginTop:3}}>
-              <div style={{color:T.txt,fontSize:9}}>
+              <div style={{color:T.txt,fontSize:12}}>
                 zurück aufs Giro am {kurzDat(sweep.bis)} ({wochentag(sweep.bis)})
               </div>
               <div style={{color:T.blue,fontSize:13,fontWeight:800,fontFamily:NUM_FONT}}>
                 {fmt(sweep.zurueck)} €
               </div>
             </div>
-            <div style={{color:T.txt,fontSize:8,marginTop:4,lineHeight:1.5}}>
+            <div style={{color:T.txt,fontSize:12,marginTop:5,lineHeight:1.45}}>
               {sweep.bleibt>0
                 ? `Enthält die normale Sparrate von ${fmt(sweep.bleibt)} € — die bleibt auf dem ${zielKontoName} und wird nicht zusätzlich überwiesen. `
                 : ""}
@@ -781,7 +781,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
             {/* Ehrliche Einordnung: der Wert ist eine Vorschau, keine Zusage.
                 Werden nach dem Gehaltseingang noch Budget-Vormerkungen
                 freigegeben, steigt der verfügbare Betrag teils deutlich. */}
-            <div style={{color:T.txt,fontSize:8,marginTop:3,lineHeight:1.5,fontStyle:"italic"}}>
+            <div style={{color:T.txt,fontSize:12,marginTop:5,lineHeight:1.45,fontStyle:"italic"}}>
               Vorschau — endgültig steht der Betrag erst am Monatsletzten fest.
               Freigegebene Budget-Vormerkungen können ihn bis dahin noch deutlich
               erhöhen. Am Stichtag selbst rechnet das Banner auf der Startseite neu.
@@ -793,7 +793,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                 currentMonthSparAdjust) — aber erst, wenn der Zinsmonat der
                 LAUFENDE ist. Vorher ist das hier reine Vorschau; ohne diesen
                 Hinweis würde man vergeblich nach Buchungen suchen. */}
-            <div style={{color:T.txt,fontSize:8,marginTop:5,lineHeight:1.5}}>
+            <div style={{color:T.txt,fontSize:12,marginTop:5,lineHeight:1.45}}>
               {sweepGesetzt()
                 ? `Vorgemerkt: ${fmt(sweep.hin)} € am ${kurzDat(sweep.termin)}, ${fmt(sweep.zurueck)} € zurück am ${kurzDat(sweep.bis)}. Die Beträge werden bis zum Stichtag automatisch nachgeführt.`
                 : `Vormerkungen entstehen automatisch, sobald ${MONTHS_G[Number(sweep.termin.slice(5,7))-1]} der laufende Monat ist — dann mit dem bis dahin gültigen Betrag.`}

@@ -4002,8 +4002,12 @@ Abbrechen = ${remoteName}-Stand laden`
                 background:"transparent"}}>
                 {Li(t.icon,22,T.txt2,1.5)}
               </div>
+              {/* T.txt statt T.txt2: die Beschriftung der inaktiven Reiter
+                  war auf dem dunklen Balken kaum lesbar. Das Icon darüber
+                  bleibt gedämpft (opacity 0.35) — daran erkennt man weiterhin,
+                  welcher Reiter aktiv ist. */}
               <span style={{fontSize:11,fontWeight:600,
-                color:T.txt2,whiteSpace:"nowrap"}}>{t.label}</span>
+                color:T.txt,whiteSpace:"nowrap"}}>{t.label}</span>
             </div>
           );
         };
