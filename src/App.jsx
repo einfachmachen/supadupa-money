@@ -1941,10 +1941,23 @@ Abbrechen = ${remoteName}-Stand laden`
       .filter(t => t.pending && t._sweepId && t.accountId==="acc-giro" && t.totalAmount>0)
       .sort((a,b)=>String(a.date).localeCompare(String(b.date)))[0];
     if(!rueck) return false;
-    const [ry, rm] = String(rueck.date).split("-").map(Number);
+    // Betroffen sein können BEIDE Monate des Sweep-Fensters: der Stichtag
+    // (dort geht der Hin-Betrag ab) und der Rückbuchungstag. Mit
+    // eingeschalteter Sofort-Rückbuchung ist sogar der Stichtag der engste
+    // Tag — die erste Fassung prüfte nur den Rückbuchungsmonat und ließ den
+    // Balken deshalb weiter stehen.
+    const hin = (txs||[]).find(t => t.pending && t._sweepHin && t.accountId==="acc-giro");
+    const monate = new Set();
+    [rueck.date, hin && hin.date].forEach(d => {
+      if(!d) return;
+      const [y, m] = String(d).split("-").map(Number);
+      if(y && m) monate.add(y*12 + (m-1));
+    });
     const s = strainWarning.soonest;
-    if(s.yr !== ry || s.mi !== rm-1) return false;
-    return s.deficit <= Math.abs(rueck.totalAmount);
+    if(!monate.has(s.yr*12 + s.mi)) return false;
+    // +1 EUR Toleranz: deficit ist gerundet (Math.round), der Rückbuchungs-
+    // betrag abgerundet — ohne Spielraum kippt der Vergleich am Cent.
+    return s.deficit <= Math.abs(rueck.totalAmount) + 1;
   }, [strainWarning, txs]);
 
 
