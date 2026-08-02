@@ -1924,6 +1924,30 @@ Abbrechen = ${remoteName}-Stand laden`
     };
   }, [liquidityWarnings]);
 
+  // Ist der gemeldete Engpass allein durch den geplanten Zins-Sweep verursacht?
+  // Dann ist er kein Alarm, sondern Absicht: die Rückbuchung gleicht ihn aus,
+  // und der oberste Balken sagt bereits, was zu tun ist. Zwei orangefarbene
+  // Warnbalken übereinander stumpfen dagegen ab — genau die Wirkung, die der
+  // Engpass-Balken bei einer ECHTEN Schieflage braucht.
+  //
+  // Bewusst eng gefasst, damit nichts Ungeplantes verschluckt wird:
+  //   • genau EIN betroffener Monat (count===1) — jeder weitere Monat geht
+  //     über das Sweep-Fenster hinaus und bleibt gemeldet
+  //   • dieser Monat ist der Monat der Rückbuchung
+  //   • die Unterdeckung ist nicht größer als der Rückbuchungsbetrag
+  const strainDurchSweep = useMemo(()=>{
+    if(!strainWarning || strainWarning.count !== 1) return false;
+    const rueck = (txs||[])
+      .filter(t => t.pending && t._sweepId && t.accountId==="acc-giro" && t.totalAmount>0)
+      .sort((a,b)=>String(a.date).localeCompare(String(b.date)))[0];
+    if(!rueck) return false;
+    const [ry, rm] = String(rueck.date).split("-").map(Number);
+    const s = strainWarning.soonest;
+    if(s.yr !== ry || s.mi !== rm-1) return false;
+    return s.deficit <= Math.abs(rueck.totalAmount);
+  }, [strainWarning, txs]);
+
+
   const [autoSparInfo, setAutoSparInfo] = useState(null);
 
   // ── Überfällige Vormerkungen: gesetztes Buchungsdatum bereits vergangen, aber
@@ -3343,7 +3367,7 @@ Abbrechen = ${remoteName}-Stand laden`
         );
       })()}
 
-      {strainWarning && (()=>{
+      {strainWarning && !strainDurchSweep && (()=>{
         const w = strainWarning, s = w.soonest;
         const label = `${MONTHS_S[s.mi]} ${s.yr}`;
         return (
