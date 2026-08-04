@@ -6,7 +6,7 @@ import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { VormHubSegBtn } from "../molecules/VormHubSegBtn.jsx";
 import { AccountChips } from "../molecules/AccountChips.jsx";
 import { MobileNewAccOverlay } from "../molecules/MobileNewAccOverlay.jsx";
-import { ListPickerDialog } from "../molecules/ListPickerDialog.jsx";
+import { MobileCatStep } from "../molecules/MobileCatStep.jsx";
 import { VormVerknuepfenPanel } from "../organisms/VormVerknuepfenPanel.jsx";
 import { RecurringDetectionScreen } from "./RecurringDetectionScreen.jsx";
 import { TagInput } from "../atoms/TagInput.jsx";
@@ -115,9 +115,8 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
   // "Umbuchung"-Knopf hat noch kein Zielkonto, ist aber schon aktiv.
   const [umbuchung, setUmbuchung] = useState(!!(_existingLinkInit?.accountId));
   const [showNewAcc, setShowNewAcc] = useState(false);
-  // Offene Kategorie-Auswahl: "quelle" | "quelleSub" | "ziel" | "zielSub".
-  // Statt der nativen Auswahl (Zeilenhoehe vom System vorgegeben, nur eine
-  // Handvoll Eintraege im Bild) ein eigener Dialog, s. ListPickerDialog.
+  // Offene Kategorie-Auswahl: "quelle" | "ziel" (jeweils Haupt- UND
+  // Unterkategorie in einem Schritt, s. MobileCatStep weiter unten).
   const [katPicker, setKatPicker] = useState(null);
   const [transferToCat, setTransferToCat] = useState(_existingLinkSplit?.catId || "");
   const [transferToSub, setTransferToSub] = useState(_existingLinkSplit?.subId || "");
@@ -800,6 +799,14 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
   // Blick nicht mehr, was zusammengehoert (Nutzer-Wunsch).
   const TRENNER = {height:1, background:T.bd, margin:`${S.gap}px 0`};
 
+  // Grundstile fuer MobileCatStep — identisch zum "neue Vormerkung"-Dialog,
+  // damit die Kategorie-Auswahl dort und hier dieselbe ist.
+  const btnBase = {width:"100%", padding:`${S.padL}px`, borderRadius:S.radius,
+    border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:S.fs,
+    fontWeight:700, display:"flex", alignItems:"center",
+    justifyContent:"flex-start", gap:10, textAlign:"left"};
+  const btnCenter = {...btnBase, justifyContent:"center"};
+
   // Auslöser-Feld für die Kategorie-Auswahl: sieht aus wie die Eingabefelder
   // daneben, öffnet aber den eigenen Auswahl-Dialog. --btn-fs, weil sonst die
   // 18px-Regel für Knöpfe in .mobile-modal greift (s. themes.css).
@@ -820,27 +827,38 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
   // Vollbild-Dialog tritt an die Stelle dieses Dialogs und kehrt danach mit dem
   // frisch angelegten Konto zurueck (dessen Zustand bleibt erhalten, weil nur
   // die Ausgabe ersetzt wird, nicht die Komponente).
+  // Kategorie-Auswahl: derselbe zweistufige Schritt wie im "neue
+  // Vormerkung"-Dialog (MobileCatStep — Kategorie, dann Unterkategorie, mit
+  // Symbolen und "neue Kategorie anlegen"), hier nur in einen Vollbild-Rahmen
+  // gesetzt statt inline in einem Assistenten. Er liefert Haupt- und
+  // Unterkategorie in einem Zug; die beiden Felder im Formular zeigen das
+  // Ergebnis, ein Tap auf eines von beiden oeffnet denselben Schritt.
   if(katPicker) {
-    const zu = () => setKatPicker(null);
-    if(katPicker==="quelle") return (
-      <ListPickerDialog title={umbuchung ? "Quellkategorie" : "Kategorie"}
-        options={catOpts} value={catId} emptyLabel="keine"
-        onSelect={(id)=>{ setCatId(id); setSubId(""); zu(); }} onClose={zu}/>
-    );
-    if(katPicker==="quelleSub") return (
-      <ListPickerDialog title="Unterkategorie"
-        options={subOpts} value={subId} emptyLabel="keine"
-        onSelect={(id)=>{ setSubId(id); zu(); }} onClose={zu}/>
-    );
-    if(katPicker==="ziel") return (
-      <ListPickerDialog title="Zielkategorie"
-        options={tgtCats} value={transferToCat} emptyLabel="keine"
-        onSelect={(id)=>{ setTransferToCat(id); setTransferToSub(""); zu(); }} onClose={zu}/>
-    );
+    const zielSeite = katPicker==="ziel";
     return (
-      <ListPickerDialog title="Unterkategorie"
-        options={tgtSubs} value={transferToSub} emptyLabel="keine"
-        onSelect={(id)=>{ setTransferToSub(id); zu(); }} onClose={zu}/>
+      <div className="mobile-modal"
+        style={{position:"fixed",inset:0,background:T.bg,zIndex:320,
+          display:"flex",flexDirection:"column","--mob-fs":S.fs+"px"}}>
+        <MobileHeader title={zielSeite ? "Zielkategorie"
+            : (umbuchung ? "Quellkategorie" : "Kategorie")}
+          onBack={()=>setKatPicker(null)}/>
+        <div style={{flex:1,overflowY:"auto",overflowX:"hidden",
+          WebkitOverflowScrolling:"touch",background:T.surf2,padding:S.padL,
+          paddingBottom:"calc(40px + env(safe-area-inset-bottom, 0px))"}}>
+          <MobileCatStep
+            key={zielSeite ? "ziel" : "quelle"}
+            csvType={zielSeite ? "income" : csvType}
+            catId={zielSeite ? transferToCat : catId}
+            subId={zielSeite ? transferToSub : subId}
+            accountId={zielSeite ? transferToAcc : accountId}
+            onSelect={(c, sub)=>{
+              if(zielSeite) { setTransferToCat(c); setTransferToSub(sub||""); }
+              else { setCatId(c); setSubId(sub||""); }
+              setKatPicker(null);
+            }}
+            S={S} btnBase={btnBase} btnCenter={btnCenter}/>
+        </div>
+      </div>
     );
   }
 
@@ -1082,7 +1100,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                   umbuchung ? "Quellkategorie" : "Kategorie",
                   ()=>setKatPicker("quelle"))}
                 {katFeld(subOpts.find(o=>o.id===subId)?.name, "Unterkategorie",
-                  ()=>setKatPicker("quelleSub"), !catId || !subOpts.length)}
+                  ()=>setKatPicker("quelle"), !catId || !subOpts.length)}
               </div>
 
               {/* 9a. Tank-Erfassung (nur bei Kategorie "Tanken") */}
@@ -1209,7 +1227,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                   {katFeld(tgtCats.find(c=>c.id===transferToCat)?.name, "Zielkategorie",
                     ()=>setKatPicker("ziel"))}
                   {katFeld(tgtSubs.find(o=>o.id===transferToSub)?.name, "Unterkategorie",
-                    ()=>setKatPicker("zielSub"), !tgtSubs.length)}
+                    ()=>setKatPicker("ziel"), !tgtSubs.length)}
                 </div>
                 <div style={{color:T.txt,fontSize:S.fs-8,marginBottom:S.gap,fontStyle:"italic"}}>
                   autom. verknüpfte Eingangs-Vormerkung auf Zielkonto anlegen
