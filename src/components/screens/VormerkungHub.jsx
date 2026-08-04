@@ -2,6 +2,7 @@
 
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { VormHubSecToggle } from "../molecules/VormHubSecToggle.jsx";
+import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { VormHubSegBtn } from "../molecules/VormHubSegBtn.jsx";
 import { AccountChips } from "../molecules/AccountChips.jsx";
 import { MobileNewAccOverlay } from "../molecules/MobileNewAccOverlay.jsx";
@@ -796,32 +797,20 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
         "--mob-fs": S.fs+"px"}}>
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
 
-        {/* Header */}
-        <div style={{padding:"12px 16px",
-          borderBottom:`1px solid ${T.bd}`,background:T.surf,
-          display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
-          <button onClick={onClose} aria-label="Zurück"
-            style={{background:"rgba(255,255,255,0.08)",border:"none",
-            color:T.txt2,width:44,height:44,
-            borderRadius:11,cursor:"pointer",fontSize:20,
-            display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            ←
-          </button>
-          <div style={{flex:1}}>
-            <div style={{color:T.txt,fontSize:24,fontWeight:700}}>
-              {isEdit ? "Vormerkung bearbeiten" : "wiederkehrende anlegen"}
-            </div>
-            {/* Unterzeile nur, wenn sie etwas sagt, das die Schnellwahl darunter
-                NICHT schon zeigt: Anzahl und Intervall einer Serie. "einmalige
-                Vormerkung" und die Aufzaehlung der Typen beim Anlegen waren
-                genau diese Wiederholung (Nutzer-Hinweis). */}
-            {isEdit && editVorm._seriesId && (
-              <div style={{color:T.txt2,fontSize:16}}>
-                {`${typ==="finanzierung"?"Finanzierung":"Serie"} · ${txs.filter(t=>t._seriesId===editVorm._seriesId).length} Buchungen · Intervall: ${interval_===1?"monatlich":interval_===3?"quartalsweise":interval_===12?"jährlich":interval_+"M"}`}
-              </div>
-            )}
-          </div>
-        </div>
+        {/* Gemeinsame Kopfzeile statt einer eigenen. Sie reserviert
+            env(safe-area-inset-top) — die selbstgebaute tat das nicht, weshalb
+            der Titel auf Geraeten mit Notch (iPhone 13 mini) darunter lag.
+            Dieser Dialog war der letzte Vollbild-Screen mit eigener Kopfzeile;
+            alle anderen benutzen MobileHeader laengst. Nebenbei sitzt der
+            Zurueck-Pfeil damit ueberall auf demselben Fleck.
+            Unterzeile nur, wenn sie etwas sagt, das die Schnellwahl darunter
+            NICHT schon zeigt: Anzahl und Intervall einer Serie. */}
+        <MobileHeader
+          title={isEdit ? "Vormerkung bearbeiten" : "wiederkehrende anlegen"}
+          subtitle={isEdit && editVorm._seriesId
+            ? `${typ==="finanzierung"?"Finanzierung":"Serie"} · ${txs.filter(t=>t._seriesId===editVorm._seriesId).length} Buchungen · Intervall: ${interval_===1?"monatlich":interval_===3?"quartalsweise":interval_===12?"jährlich":interval_+"M"}`
+            : null}
+          onBack={onClose}/>
 
         {/* Die Speichern-Schaltflaeche scrollt mit (kein fixer Fussbereich) — der
             Abstand unten haelt sie nur von der Home-Anzeige frei und gibt bei
