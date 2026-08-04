@@ -675,7 +675,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
 
       {/* ── Schritt 3: Details ── */}
       {step===3&&<>
-        {header("details","Beschreibung & Notiz",3,()=>setStep(2))}
+        {header("Details","Beschreibung & Notiz",3,()=>setStep(2))}
         <div style={{flex:1,padding:S.padL,paddingBottom:140,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
 
           {/* Beschreibung */}
