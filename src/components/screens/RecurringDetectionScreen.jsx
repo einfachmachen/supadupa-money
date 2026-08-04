@@ -332,7 +332,14 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
   return (
     <div style={wrapStyle}>
       {/* Header */}
-      <div style={{background:T.surf,borderBottom:`1px solid ${T.bds}`,padding:"12px 16px",
+      {/* Eigene, kompakte Kopfzeile statt MobileHeader: Titel und Unterzeile
+          tragen hier den Fortschritt ("Schritt 1/2 — Absender (12 gefunden)"),
+          der in der gemeinsamen Kopfzeile bei 26px Titel abgeschnitten wuerde.
+          Was gefehlt hat, ist nur der Notch-Abstand — env(safe-area-inset-top)
+          wie in MobileHeader, sonst liegt der Titel auf Geraeten mit Notch
+          unter der Statusleiste. */}
+      <div style={{background:T.surf,borderBottom:`1px solid ${T.bds}`,
+        padding:"calc(12px + env(safe-area-inset-top, 0px)) 16px 12px",
         display:"flex",alignItems:"center",gap:12,flexShrink:0}}>
         <button onClick={()=>{
           if(tab==="vormerkung"){

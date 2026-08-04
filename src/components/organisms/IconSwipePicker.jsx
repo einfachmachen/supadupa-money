@@ -8,6 +8,7 @@
 // auf. Die Blätter-Position wird persistiert, damit man später weitermachen kann.
 
 import React, { useContext, useMemo, useRef, useState } from "react";
+import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { createPortal } from "react-dom";
 import { SafeIcon } from "../atoms/SafeIcon.jsx";
 import { AppCtx } from "../../state/AppContext.js";
@@ -95,25 +96,15 @@ function IconSwipePicker({ onClose }) {
     // "Konten", statt nur den Swipe-Picker zu schließen.
     <div onClick={e=>e.stopPropagation()} style={{position:"fixed",inset:0,background:T.bg,zIndex:999999,
       display:"flex",flexDirection:"column"}}>
-      {/* Header */}
-      <div style={{display:"flex",alignItems:"center",gap:10,padding:"14px 16px",
-        borderBottom:`1px solid ${T.bd}`,flexShrink:0}}>
-        <button onClick={onClose} aria-label="Schließen"
-          style={{background:"rgba(255,255,255,0.08)",border:"none",color:T.txt2,
-            width:40,height:40,borderRadius:12,cursor:"pointer",fontSize:18,
-            display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,padding:0}}>
-          ✕
-        </button>
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{color:T.txt,fontSize:18,fontWeight:700}}>Icon-Favoriten</div>
-          <div style={{color:T.txt2,fontSize:12}}>
-            {total ? `${safeIdx+1} / ${total} · antippen = Favorit` : ""}
-          </div>
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:5,color:T.gold,fontWeight:700,fontSize:14,flexShrink:0}}>
+      {/* Gemeinsame Kopfzeile — sie reserviert env(safe-area-inset-top), die
+          selbstgebaute tat das nicht und der Titel lag auf Geraeten mit Notch
+          darunter. Der Favoriten-Zaehler rechts bleibt ueber die right-Prop. */}
+      <MobileHeader title="Icon-Favoriten"
+        subtitle={total ? `${safeIdx+1} / ${total} · antippen = Favorit` : null}
+        onClose={onClose}
+        right={<div style={{display:"flex",alignItems:"center",gap:5,color:T.gold,fontWeight:700,fontSize:14}}>
           {Li("star",15,T.gold)} {favIcons.length}
-        </div>
-      </div>
+        </div>}/>
 
       {/* Karten-Bühne */}
       <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:24,position:"relative",overflow:"hidden"}}>
