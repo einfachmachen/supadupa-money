@@ -17,12 +17,12 @@ function VormHubSegBtn({v,l,icon,cur,set,clearCount,clearEnd}) {
   const aktiv = cur===v;
   return (
     <button onClick={()=>{set(v);clearCount();clearEnd();}}
-      style={{flex:1,minWidth:0,padding:"10px 6px",borderRadius:8,border:"none",cursor:"pointer",
-        fontFamily:"inherit",fontSize:14,fontWeight:aktiv?700:400,
+      style={{flex:1,minWidth:0,padding:"14px 6px",borderRadius:14,border:"none",cursor:"pointer",
+        fontFamily:"inherit",fontSize:20,fontWeight:aktiv?700:400,
         background:aktiv?T.gold:"transparent",
         color:aktiv?T.on_accent:T.txt2,transition:"all 0.15s",
         display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-      <span style={{display:"flex",flexShrink:0}}>{Li(icon,14,aktiv?T.on_accent:T.txt2)}</span>
+      <span style={{display:"flex",flexShrink:0}}>{Li(icon,18,aktiv?T.on_accent:T.txt2)}</span>
       <span className={aktiv?undefined:"vh-seg-label-inactive"}
         style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{l}</span>
     </button>
