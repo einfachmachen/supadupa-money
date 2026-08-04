@@ -241,6 +241,11 @@
   input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
   .mobile-modal input { font-size: var(--mob-fs) !important; }
   .mobile-modal input[type="date"] { font-size: var(--mob-fs) !important; }
+  /* select gehoerte hier von Anfang an dazu — ohne diese Zeile blieben
+     Auswahllisten in Vollbild-Dialogen bei den 16px der Zoom-Sperre oben,
+     waehrend die Textfelder daneben laengst --mob-fs benutzten. Genau das
+     liess Kategorie/Unterkategorie kleiner aussehen als Betrag. */
+  .mobile-modal select { font-size: var(--mob-fs) !important; }
   /* Mobile mode — alle Texte und Buttons größer */
   /* iOS Safari Fix + nav-bottom-Überlappung:
      Die nav-bottom (Home/Monat/Jahr-Buttons) ist position:fixed bottom:0,
@@ -265,7 +270,10 @@
     padding-bottom: 57px !important;
     box-sizing: border-box;
   }
-  .mobile-modal button { min-height: 48px; font-size: 18px !important; }
+  /* 18px als Vorgabe, aber ueberschreibbar: Dialoge mit eigener Groessen-
+     skala setzen --btn-fs am Knopf. Ohne das schlug diese Regel per
+     !important jede Inline-Groesse (Typ-Schnellwahl, Speichern …). */
+  .mobile-modal button { min-height: 48px; font-size: var(--btn-fs, 18px) !important; }
   .mobile-modal label, .mobile-modal span, .mobile-modal div { font-size: inherit; }
   .mobile-modal textarea { font-size: var(--mob-fs) !important; line-height: 1.5 !important; }
   @keyframes pulse {

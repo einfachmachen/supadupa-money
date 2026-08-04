@@ -18,7 +18,7 @@ function VormHubSegBtn({v,l,icon,cur,set,clearCount,clearEnd}) {
   return (
     <button onClick={()=>{set(v);clearCount();clearEnd();}}
       style={{flex:1,minWidth:0,padding:"14px 6px",borderRadius:14,border:"none",cursor:"pointer",
-        fontFamily:"inherit",fontSize:20,fontWeight:aktiv?700:400,
+        fontFamily:"inherit",fontSize:20,"--btn-fs":"20px",fontWeight:aktiv?700:400,
         background:aktiv?T.gold:"transparent",
         color:aktiv?T.on_accent:T.txt2,transition:"all 0.15s",
         display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>

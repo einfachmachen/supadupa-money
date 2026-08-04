@@ -789,7 +789,11 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
     // die uebrigen Vollbild-Screens: Kopfzeile steht, nur der Inhalt scrollt.
     <div className="mobile-modal"
       style={{position:"fixed",inset:0,background:T.bg,zIndex:300,
-        display:"flex",flexDirection:"column"}}>
+        display:"flex",flexDirection:"column",
+        // Ohne diese Variable greift fuer Eingabefelder in .mobile-modal ein
+        // ungueltiges var(--mob-fs) und die Felder fallen auf die geerbten
+        // 18px zurueck — unabhaengig davon, was inline gesetzt ist.
+        "--mob-fs": S.fs+"px"}}>
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
 
         {/* Header */}
@@ -920,7 +924,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                       }
                     }}
                       style={{minWidth:0,padding:`${S.padL}px ${S.pad}px`,borderRadius:S.radius,
-                        cursor:"pointer",fontSize:S.fs-4,fontWeight:700,
+                        cursor:"pointer",fontSize:S.fs-4,"--btn-fs":(S.fs-4)+"px",fontWeight:700,
                         border:`2px solid ${active?col:T.bd}`,
                         background:active?col+"22":(isLightTheme())?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.06)",
                         color:active?col:T.txt2,fontFamily:"inherit",transition:"all 0.15s",
@@ -1027,7 +1031,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                         <div key={v.id} style={{display:"inline-flex",alignItems:"center",gap:3}}>
                           <button onClick={()=>setFuelVehicleId(v.id)}
                             style={{padding:"5px 10px",borderRadius:8,cursor:"pointer",fontFamily:"inherit",
-                              fontSize:S.fs-10,fontWeight:600,display:"inline-flex",alignItems:"center",gap:5,
+                              fontSize:S.fs-10,"--btn-fs":(S.fs-10)+"px",fontWeight:600,display:"inline-flex",alignItems:"center",gap:5,
                               border:`1.5px solid ${on?T.gold:T.bd}`,
                               background:on?T.gold+"22":"rgba(255,255,255,0.04)",
                               color:on?T.gold:T.txt2}}>
@@ -1048,7 +1052,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                     {!showNewVehicle && (
                       <button onClick={()=>{setEditingVehicleId(null);setNewVehicleName("");setNewVehiclePlate("");setShowNewVehicle(true);}}
                         style={{padding:"5px 10px",borderRadius:8,cursor:"pointer",fontFamily:"inherit",
-                          fontSize:S.fs-10,fontWeight:600,display:"inline-flex",alignItems:"center",gap:5,
+                          fontSize:S.fs-10,"--btn-fs":(S.fs-10)+"px",fontWeight:600,display:"inline-flex",alignItems:"center",gap:5,
                           border:`1.5px dashed ${T.bd}`,background:"transparent",color:T.txt2}}>
                         {Li("plus",16,T.txt2)} neues Fahrzeug
                       </button>
@@ -1067,13 +1071,13 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                       <div style={{display:"flex",gap:6}}>
                         <button onClick={()=>{setShowNewVehicle(false);setEditingVehicleId(null);setNewVehicleName("");setNewVehiclePlate("");}}
                           style={{flex:1,padding:"6px 12px",borderRadius:9,border:`1.5px solid ${T.bd}`,
-                            background:"transparent",color:T.txt2,fontFamily:"inherit",fontSize:S.fs-10,
+                            background:"transparent",color:T.txt2,fontFamily:"inherit",fontSize:S.fs-10,"--btn-fs":(S.fs-10)+"px",
                             fontWeight:700,cursor:"pointer"}}>
                           Abbrechen
                         </button>
                         <button onClick={saveVehicle}
                           style={{flex:1,padding:"6px 12px",borderRadius:9,border:"none",
-                            background:T.gold,color:"#000",fontFamily:"inherit",fontSize:S.fs-10,
+                            background:T.gold,color:"#000",fontFamily:"inherit",fontSize:S.fs-10,"--btn-fs":(S.fs-10)+"px",
                             fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
                           {Li("check",16,"#000")} {editingVehicleId?"Speichern":"Anlegen"}
                         </button>
@@ -1120,7 +1124,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                       </span>
                       <button onClick={()=>setAmount(fuelComputedTotal.toFixed(2).replace(".",","))}
                         style={{padding:"4px 10px",borderRadius:7,border:"none",
-                          background:T.blue,color:"#fff",fontFamily:"inherit",fontSize:S.fs-10,
+                          background:T.blue,color:"#fff",fontFamily:"inherit",fontSize:S.fs-10,"--btn-fs":(S.fs-10)+"px",
                           fontWeight:700,cursor:"pointer"}}>
                         Betrag übernehmen
                       </button>
@@ -1161,7 +1165,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                   {[[1,"mtl."],[3,"quartl."],[6,"halb."],[12,"jährl."]].map(([v,l])=>(
                     <button key={v} onClick={()=>setInterval_(v)}
                       style={{flex:1,minWidth:0,padding:`${S.pad}px ${S.pad/2}px`,borderRadius:S.radius,border:"none",
-                        cursor:"pointer",fontFamily:"inherit",fontSize:S.fs-8,fontWeight:700,
+                        cursor:"pointer",fontFamily:"inherit",fontSize:S.fs-8,"--btn-fs":(S.fs-8)+"px",fontWeight:700,
                         background:interval_===v?T.blue:"rgba(255,255,255,0.08)",
                         color:interval_===v?T.on_accent:T.txt2}}>
                       {l}
@@ -1420,7 +1424,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                         else if(v==="range"){setScopeFrom(d);setScopeTo(d);}
                       }}
                         style={{flex:1,minWidth:0,padding:`${S.pad}px ${S.pad/2}px`,borderRadius:S.radius,border:"none",cursor:"pointer",
-                          fontFamily:"inherit",fontSize:S.fs-6,fontWeight:editScope===v?700:400,
+                          fontFamily:"inherit",fontSize:S.fs-6,"--btn-fs":(S.fs-6)+"px",fontWeight:editScope===v?700:400,
                           background:editScope===v?T.blue:"rgba(255,255,255,0.08)",
                           color:editScope===v?T.on_accent:T.txt2}}>
                         {l}
@@ -1507,7 +1511,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                               setShowExForm(true);
                             }} style={{background:"rgba(255,255,255,0.08)",border:"none",
                               color:T.txt2,borderRadius:7,padding:"4px 8px",
-                              fontSize:S.fs-6,cursor:"pointer",fontFamily:"inherit"}}>
+                              fontSize:S.fs-6,"--btn-fs":(S.fs-6)+"px",cursor:"pointer",fontFamily:"inherit"}}>
                               {Li("edit-2",16,T.txt2)} Bearb.
                             </button>
                             <button onClick={()=>{
@@ -1515,7 +1519,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                                 handleDeleteException(ex.id,"all","");
                             }} style={{background:`${T.neg}11`,border:"none",
                               color:T.neg,borderRadius:7,padding:"4px 8px",
-                              fontSize:S.fs-6,cursor:"pointer",fontFamily:"inherit"}}>
+                              fontSize:S.fs-6,"--btn-fs":(S.fs-6)+"px",cursor:"pointer",fontFamily:"inherit"}}>
                               {Li("trash-2",16,T.neg)}
                             </button>
                           </div>
@@ -1540,7 +1544,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                     }} style={{width:"100%",padding:"7px 10px",borderRadius:9,
                       border:`1px dashed ${T.gold}66`,
                       background:"rgba(245,166,35,0.06)",
-                      color:T.gold,fontSize:S.fs-10,fontWeight:700,
+                      color:T.gold,fontSize:S.fs-10,"--btn-fs":(S.fs-10)+"px",fontWeight:700,
                       cursor:"pointer",fontFamily:"inherit",
                       display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
                       {Li("plus-circle",16,T.gold)} Eingebettete Ausnahme-Serie
@@ -1576,7 +1580,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                         {[[1,"monatlich"],[3,"quartalsw."],[12,"jährlich"]].map(([v,l])=>(
                           <button key={v} onClick={()=>setExInterval(v)}
                             style={{flex:1,padding:"6px 2px",borderRadius:8,border:"none",
-                              cursor:"pointer",fontFamily:"inherit",fontSize:S.fs-10,fontWeight:700,
+                              cursor:"pointer",fontFamily:"inherit",fontSize:S.fs-10,"--btn-fs":(S.fs-10)+"px",fontWeight:700,
                               background:exInterval===v?T.gold:"rgba(255,255,255,0.08)",
                               color:exInterval===v?T.on_accent:T.txt2}}>
                             {l}
@@ -1621,14 +1625,14 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                       <div style={{display:"flex",gap:6}}>
                         <button onClick={handleSaveException}
                           style={{flex:1,padding:"8px",borderRadius:9,border:"none",
-                            background:T.gold,color:T.on_accent,fontSize:S.fs-10,
+                            background:T.gold,color:T.on_accent,fontSize:S.fs-10,"--btn-fs":(S.fs-10)+"px",
                             fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                           {Li("check",16,T.on_accent)} {exEditId?"Aktualisieren":"Einfügen"}
                         </button>
                         <button onClick={()=>{setShowExForm(false);setExEditId(null);}}
                           style={{padding:"8px 12px",borderRadius:9,
                             border:`1px solid ${T.bd}`,background:"transparent",
-                            color:T.txt2,fontSize:S.fs-10,cursor:"pointer",fontFamily:"inherit"}}>
+                            color:T.txt2,fontSize:S.fs-10,"--btn-fs":(S.fs-10)+"px",cursor:"pointer",fontFamily:"inherit"}}>
                           {Li("x",16,T.txt2)}
                         </button>
                       </div>
@@ -1654,7 +1658,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                 <button onClick={handleSave}
                   style={{flex:1,minWidth:0,padding:`${S.padL}px`,borderRadius:S.radius,border:"none",
                     background:saved?T.pos:T.gold,color:saved?"#fff":T.on_accent,
-                    fontSize:S.fs-6,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+                    fontSize:S.fs-6,"--btn-fs":(S.fs-6)+"px",fontWeight:700,cursor:"pointer",fontFamily:"inherit",
                     display:"flex",alignItems:"center",justifyContent:"center",gap:6,
                     transition:"background 0.2s"}}>
                   {saved?<>{Li("check",20,"#fff")} Gespeichert!</>:
@@ -1666,7 +1670,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                 {isEdit&&(
                   <button onClick={handleDelete}
                     style={{padding:`${S.padL}px ${S.padL}px`,borderRadius:S.radius,border:`1px solid ${T.neg}44`,
-                      background:`${T.neg}11`,color:T.neg,fontSize:S.fs-6,cursor:"pointer",fontFamily:"inherit",
+                      background:`${T.neg}11`,color:T.neg,fontSize:S.fs-6,"--btn-fs":(S.fs-6)+"px",cursor:"pointer",fontFamily:"inherit",
                       display:"flex",alignItems:"center",justifyContent:"center"}}>
                     {Li("trash-2",20,T.neg)}
                   </button>
