@@ -8,10 +8,16 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
-function MobileCatStep({csvType, catId, subId, accountId, onSelect, S, btnBase, btnCenter}) {
+// startSub: direkt bei der Unterkategorie der bereits gewaehlten Kategorie
+// beginnen, statt bei der Kategorie-Liste. Gedacht fuer Formulare, die Haupt-
+// und Unterkategorie als zwei Felder zeigen — wer auf das Unterkategorie-Feld
+// tippt, will nicht erst die Hauptkategorie erneut bestaetigen. Ueber "‹ zurueck"
+// im Unterschritt kommt man weiterhin zur Kategorie-Liste.
+function MobileCatStep({csvType, catId, subId, accountId, onSelect, S, btnBase, btnCenter, startSub=false}) {
   const { cats, setCats, groups, setGroups, accounts } = useContext(AppCtx);
-  const [catStep,  setCatStep]  = React.useState("cat");
-  const [selCat,   setSelCat]   = React.useState(null);
+  const _startCat = startSub && catId ? cats.find(c=>c.id===catId) : null;
+  const [catStep,  setCatStep]  = React.useState(_startCat ? "sub" : "cat");
+  const [selCat,   setSelCat]   = React.useState(_startCat || null);
   const [newMode,  setNewMode]  = React.useState(null);
   const [newName,  setNewName]  = React.useState("");
   const [newType,  setNewType]  = React.useState(csvType==="income"?"income":"expense");

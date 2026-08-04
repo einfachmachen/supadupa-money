@@ -115,8 +115,8 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
   // "Umbuchung"-Knopf hat noch kein Zielkonto, ist aber schon aktiv.
   const [umbuchung, setUmbuchung] = useState(!!(_existingLinkInit?.accountId));
   const [showNewAcc, setShowNewAcc] = useState(false);
-  // Offene Kategorie-Auswahl: "quelle" | "ziel" (jeweils Haupt- UND
-  // Unterkategorie in einem Schritt, s. MobileCatStep weiter unten).
+  // Offene Kategorie-Auswahl: "quelle" | "quelleSub" | "ziel" | "zielSub".
+  // Die "…Sub"-Varianten steigen direkt beim Unterschritt ein (s. unten).
   const [katPicker, setKatPicker] = useState(null);
   const [transferToCat, setTransferToCat] = useState(_existingLinkSplit?.catId || "");
   const [transferToSub, setTransferToSub] = useState(_existingLinkSplit?.subId || "");
@@ -834,19 +834,25 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
   // Unterkategorie in einem Zug; die beiden Felder im Formular zeigen das
   // Ergebnis, ein Tap auf eines von beiden oeffnet denselben Schritt.
   if(katPicker) {
-    const zielSeite = katPicker==="ziel";
+    const zielSeite = katPicker.startsWith("ziel");
+    // Tap auf das Unterkategorie-Feld steigt direkt beim Unterschritt ein —
+    // die Hauptkategorie steht ja schon fest. Ueber "‹ zurueck" dort kommt man
+    // trotzdem an die Kategorie-Liste.
+    const beiUnter = katPicker.endsWith("Sub");
     return (
       <div className="mobile-modal"
         style={{position:"fixed",inset:0,background:T.bg,zIndex:320,
           display:"flex",flexDirection:"column","--mob-fs":S.fs+"px"}}>
-        <MobileHeader title={zielSeite ? "Zielkategorie"
+        <MobileHeader title={beiUnter ? "Unterkategorie"
+            : zielSeite ? "Zielkategorie"
             : (umbuchung ? "Quellkategorie" : "Kategorie")}
           onBack={()=>setKatPicker(null)}/>
         <div style={{flex:1,overflowY:"auto",overflowX:"hidden",
           WebkitOverflowScrolling:"touch",background:T.surf2,padding:S.padL,
           paddingBottom:"calc(40px + env(safe-area-inset-bottom, 0px))"}}>
           <MobileCatStep
-            key={zielSeite ? "ziel" : "quelle"}
+            key={katPicker}
+            startSub={beiUnter}
             csvType={zielSeite ? "income" : csvType}
             catId={zielSeite ? transferToCat : catId}
             subId={zielSeite ? transferToSub : subId}
@@ -1100,7 +1106,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                   umbuchung ? "Quellkategorie" : "Kategorie",
                   ()=>setKatPicker("quelle"))}
                 {katFeld(subOpts.find(o=>o.id===subId)?.name, "Unterkategorie",
-                  ()=>setKatPicker("quelle"), !catId || !subOpts.length)}
+                  ()=>setKatPicker("quelleSub"), !catId || !subOpts.length)}
               </div>
 
               {/* 9a. Tank-Erfassung (nur bei Kategorie "Tanken") */}
@@ -1227,7 +1233,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                   {katFeld(tgtCats.find(c=>c.id===transferToCat)?.name, "Zielkategorie",
                     ()=>setKatPicker("ziel"))}
                   {katFeld(tgtSubs.find(o=>o.id===transferToSub)?.name, "Unterkategorie",
-                    ()=>setKatPicker("ziel"), !tgtSubs.length)}
+                    ()=>setKatPicker("zielSub"), !tgtSubs.length)}
                 </div>
                 <div style={{color:T.txt,fontSize:S.fs-8,marginBottom:S.gap,fontStyle:"italic"}}>
                   autom. verknüpfte Eingangs-Vormerkung auf Zielkonto anlegen
