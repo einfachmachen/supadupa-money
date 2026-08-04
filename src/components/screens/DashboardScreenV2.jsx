@@ -26,7 +26,7 @@ import { saldoAt, budgetPlaceholderActive } from "../../utils/saldo.js";
 import { pendingDebitDate } from "../../utils/date.js";
 import { fetchNewBankTx, listConnectedBanks } from "../../utils/enableBankingFetch.js";
 import { findUnmappedEbAccounts } from "../../utils/enableBankingStore.js";
-import { autoMatchVormerkungen } from "../../utils/vormMatch.js";
+import { autoMatchVormerkungen, buildLinkedPendIds } from "../../utils/vormMatch.js";
 
 function DashboardScreenV2() {
   const { cats,setCats,groups,setGroups,txs,setTxs,accounts,setAccounts,
@@ -558,13 +558,7 @@ function DashboardScreenV2() {
     // Buchung eine Vormerkung "zugewiesen" wurde (echte Buchung trägt _linkedTo),
     // sollte die Vormerkung nicht mehr in der Liste auftauchen.
     const _dashTxIdMap = _txsById; // identische Map ist oben bereits memoisiert
-    const _dashLinkedPendIds = useMemo(()=>{
-      const s = new Set();
-      (txs||[]).forEach(t => {
-        if(!t.pending && t._linkedTo) s.add(t._linkedTo);
-      });
-      return s;
-    }, [txs]);
+    const _dashLinkedPendIds = useMemo(()=>buildLinkedPendIds(txs), [txs]);
     const _filterDetailByAccD = (det, sa) => {
       if(!det) return det;
       const accMatchOrAny = (t) => !sa || (t.accountId || "acc-giro") === sa;

@@ -17,6 +17,7 @@ import { dayOf, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch, getAllTags } from "../../utils/search.js";
 import { isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
+import { buildLinkedPendIds } from "../../utils/vormMatch.js";
 import { budgetOpenRestFor } from "../../utils/budgets.js";
 import { saldoAt, saldoIst, saldoMitte, saldoEnde, phaseStillReachable, budgetPlaceholderActive } from "../../utils/saldo.js";
 
@@ -762,11 +763,9 @@ function MonatScreen() {
     // Budgets liegen auf acc-giro: bei Tagesgeld werden sie ausgefiltert.
     const _txIdMap = buildTxIdMap(txs);
     // Vormerkungs-IDs, denen bereits eine echte Buchung (mit _linkedTo darauf)
-    // zugeordnet wurde — werden in den Drilldown-Listen ausgefiltert.
-    const _linkedPendIds = new Set();
-    (txs||[]).forEach(t => {
-      if(!t.pending && t._linkedTo) _linkedPendIds.add(t._linkedTo);
-    });
+    // zugeordnet wurde — werden in den Drilldown-Listen ausgefiltert
+    // (Ausnahmen s. buildLinkedPendIds).
+    const _linkedPendIds = buildLinkedPendIds(txs);
     const _filterDetailByAcc = (det, sa) => {
       if(!det) return det;
       const accMatchOrAny = (t) => !sa || (t.accountId || "acc-giro") === sa;

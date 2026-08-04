@@ -118,6 +118,10 @@ export function linkPendingToPending(txs, manualId, bankId) {
     if (tx.id === bankId) return {
       ...tx,
       splits: newSplits,
+      // Wie in linkPendingToReal: Original-Splits sichern, damit sich die
+      // Verknüpfung später wieder sauber lösen lässt (unlinkPendingFromReal
+      // bzw. "Alle entknüpfen" im EditPopup).
+      _splitsBeforeLink: tx._splitsBeforeLink || tx.splits || [],
       linkedIds: (tx.linkedIds || []).includes(manualId) ? (tx.linkedIds || []) : [...(tx.linkedIds || []), manualId],
       note: combinedNote,
       _amtMismatch: amtMismatch ? { pendId: manualId, pendAmt: manualTotal, realAmt: bank.totalAmount } : undefined,
@@ -125,6 +129,32 @@ export function linkPendingToPending(txs, manualId, bankId) {
     if (tx.id === manualId) return { ...tx, pending: false, _linkedTo: bankId, accountId: bank.accountId };
     return tx;
   });
+}
+
+// IDs, die in den Prognose-Drilldown-Listen (concTxs/unbudgetedPend)
+// ausgeblendet werden müssen, weil ihnen bereits eine Vormerkung zugeordnet
+// wurde und sie sonst doppelt erscheinen.
+//
+// Grundfall: eine Buchung trägt `_linkedTo` auf ihr Gegenstück → das
+// Gegenstück ist der überlebende Eintrag … ABER NICHT beim Verschmelzen
+// zweier Vormerkungen (linkPendingToPending): dort ist die Bank-Vormerkung
+// gerade der EINZIGE noch sichtbare Eintrag (die manuelle wurde auf
+// pending:false gesetzt und fällt als Duplikat-Gegenstück ohnehin raus).
+// Würde man sie hier zusätzlich ausblenden, verschwände der Betrag komplett
+// aus Prognose Mitte/Ende — obwohl die Saldo-Rechnung ihn korrekt enthält.
+// Erkennbar ist dieser Fall daran, dass die Gegenseite noch pending ist UND
+// die absorbierte Vormerkung in ihren `linkedIds` führt.
+export function buildLinkedPendIds(txs) {
+  const byId = new Map();
+  (txs || []).forEach(t => byId.set(t.id, t));
+  const s = new Set();
+  (txs || []).forEach(t => {
+    if (t.pending || !t._linkedTo) return;
+    const partner = byId.get(t._linkedTo);
+    if (partner && partner.pending && (partner.linkedIds || []).includes(t.id)) return;
+    s.add(t._linkedTo);
+  });
+  return s;
 }
 
 // Sucht eindeutige Vormerkung↔echte-Buchung-Paare und verknüpft sie.

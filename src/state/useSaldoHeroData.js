@@ -8,6 +8,7 @@ import { AppCtx } from "./AppContext.js";
 import { isDuplCounterpart, buildTxIdMap } from "../utils/tx.js";
 import { budgetOpenRestFor } from "../utils/budgets.js";
 import { saldoAt, budgetPlaceholderActive } from "../utils/saldo.js";
+import { buildLinkedPendIds } from "../utils/vormMatch.js";
 
 export function useSaldoHeroData(year, month) {
   const {
@@ -22,11 +23,7 @@ export function useSaldoHeroData(year, month) {
   const _detailBase = (sa) => saldoAt(year, month, 0, sa, _saldoCtx);
 
   // ── Prognose-Detail (Drilldown) konto-gefiltert, wie in der Monatsansicht ──
-  const _linkedPendIds = useMemo(() => {
-    const s = new Set();
-    (txs || []).forEach(t => { if (!t.pending && t._linkedTo) s.add(t._linkedTo); });
-    return s;
-  }, [txs]);
+  const _linkedPendIds = useMemo(() => buildLinkedPendIds(txs), [txs]);
   const _filterDetailByAcc = (det, sa) => {
     if (!det) return det;
     const accMatchOrAny = (t) => !sa || (t.accountId || "acc-giro") === sa;

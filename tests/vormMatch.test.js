@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { autoMatchVormerkungen, linkPendingToReal, linkPendingToPending, isBankPending, unlinkPendingFromReal } from "../src/utils/vormMatch.js";
+import { autoMatchVormerkungen, linkPendingToReal, linkPendingToPending, isBankPending, unlinkPendingFromReal, buildLinkedPendIds } from "../src/utils/vormMatch.js";
 import { getVormLinkCandidates, isVormAmountMatch, VormVerknuepfenPanel } from "../src/components/organisms/VormVerknuepfenPanel.jsx";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -206,6 +206,33 @@ describe("linkPendingToPending — manuelle Vormerkung mit Bank-vorgemerkter Zei
     expect(isBankPending(manual())).toBe(false);
   });
 
+  // Regression (echter Nutzer-Bericht): Nach dem Zuordnen einer selbst
+  // angelegten Vormerkung ("audible") zur abgerufenen Bank-Vormerkung war der
+  // Betrag komplett aus Prognose Mitte/Ende verschwunden — die Saldo-Rechnung
+  // enthielt ihn korrekt (Tagessaldo am 14./Letzten stimmte), nur die
+  // Drilldown-Listen ließen ihn weg: der Filter blendete BEIDE Zeilen aus, die
+  // manuelle als Duplikat-Gegenstück und die Bank-Zeile als _linkedTo-Ziel.
+  it("blendet die absorbierende Bank-Vormerkung NICHT aus (sonst fehlt der Betrag in Prognose M/E)", () => {
+    const txs = linkPendingToPending([manual(), bankPending()], "pend-manual", "pend-bank");
+    const hide = buildLinkedPendIds(txs);
+    expect(hide.has("pend-bank")).toBe(false);
+  });
+
+  it("bewahrt die Original-Splits der Bank-Zeile, damit sich das Verschmelzen lösen lässt", () => {
+    const bank = bankPending({ splits:[{id:"b1",catId:"cat-sonst",subId:"",amount:2.98}] });
+    const txs = linkPendingToPending([manual(), bank], "pend-manual", "pend-bank");
+    const b = txs.find(t=>t.id==="pend-bank");
+    expect(b._splitsBeforeLink).toEqual(bank.splits);
+    // Gleiche Mechanik wie bei Vormerkung↔echte Buchung: Lösen stellt her.
+    const back = unlinkPendingFromReal(txs, "pend-manual", "pend-bank");
+    const b2 = back.find(t=>t.id==="pend-bank");
+    const m2 = back.find(t=>t.id==="pend-manual");
+    expect(b2.splits).toEqual(bank.splits);
+    expect(b2.linkedIds).toEqual([]);
+    expect(m2.pending).toBe(true);
+    expect(m2._linkedTo).toBe(null);
+    expect(buildLinkedPendIds(back).size).toBe(0);
+  });
   // Regression (echter Nutzer-Bericht): von der manuellen Vormerkung aus ließ
   // sich die Bank-Zeile verknüpfen — umgekehrt, von der Bank-vorgemerkten
   // Zeile aus bearbeitet, wurde die manuelle Vormerkung aber NICHT als
@@ -277,5 +304,22 @@ describe("VormVerknuepfenPanel — Betrags-Matching bei Vorzeichen-Asymmetrie", 
     const txs = [...others, absoluteReal()];
     const candidates = getVormLinkCandidates(txs, signedPend);
     expect(candidates[0].id).toBe("real-1");
+  });
+});
+
+// Filter für die Prognose-Drilldown-Listen (concTxs/unbudgetedPend) — wird
+// identisch von MonatScreen, DashboardScreenV2 und useSaldoHeroData benutzt.
+describe("buildLinkedPendIds", () => {
+  it("blendet die Buchung aus, auf die eine Ex-Vormerkung per _linkedTo zeigt", () => {
+    const txs = linkPendingToReal([pend(), real()], "pend-1", "real-1");
+    // Die echte Buchung ist der überlebende Eintrag und darf in den
+    // VM-Listen nicht zusätzlich auftauchen.
+    expect(buildLinkedPendIds(txs).has("real-1")).toBe(true);
+  });
+
+  it("ignoriert Transfer-Paare, bei denen beide Seiten noch vorgemerkt sind", () => {
+    const ab = { id:"t-ab", pending:true, accountId:"acc-giro", totalAmount:-500, date:"2026-07-31" };
+    const zu = { id:"t-zu", pending:true, accountId:"acc-tg", totalAmount:500, date:"2026-07-31", _linkedTo:"t-ab" };
+    expect(buildLinkedPendIds([ab, zu]).size).toBe(0);
   });
 });

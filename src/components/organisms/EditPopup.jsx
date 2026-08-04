@@ -104,8 +104,14 @@ function EditPopup() {
           title={editTx.pending ? "Vormerkung bearbeiten" : "Buchung bearbeiten"}
           onBack={()=>setEditTx(null)}/>
         <div style={{flex:1,overflowY:"auto",overflowX:"hidden",touchAction:"pan-y",padding:"16px 18px",boxSizing:"border-box",WebkitOverflowScrolling:"touch"}}>
-          {/* Verknüpfte Vormerkung — Info-Box für echte Buchungen */}
-          {!editTx.pending&&(editTx.linkedIds||[]).length>0&&(()=>{
+          {/* Verknüpfte Vormerkung — Info-Box mit "Alle entknüpfen".
+              Auch für eine noch PENDING Buchung: eine Bank-Vormerkung, die eine
+              manuell angelegte Vormerkung absorbiert hat (linkPendingToPending),
+              trägt deren ID in linkedIds und ist danach der einzige Einstieg zum
+              Lösen — die absorbierte Vormerkung selbst ist nicht mehr sichtbar.
+              Transfer-Gegenstücke sind davon nicht betroffen: die verweisen über
+              _linkedTo aufeinander, nicht über linkedIds. */}
+          {(editTx.linkedIds||[]).length>0&&(()=>{
             const linkedPends = (editTx.linkedIds||[])
               .map(id=>txs.find(t=>t.id===id))
               .filter(t=>t); // alle verknüpften, egal ob noch pending oder bereits abgebucht
@@ -147,8 +153,10 @@ function EditPopup() {
                         ? new Set(seriesTxs.map(t=>t.id))
                         : new Set([pend.id]);
                       setTxs(p=>p.map(t=>{
-                        // Echte Buchungen: linkedIds bereinigen, Splits restaurieren
-                        if(!t.pending && (t.linkedIds||[]).some(id=>seriesPendIds.has(id))) {
+                        // Aufnehmende Buchung: linkedIds bereinigen, Splits
+                        // restaurieren. Das kann auch eine noch pending
+                        // Bank-Vormerkung sein (s. linkPendingToPending).
+                        if((t.linkedIds||[]).some(id=>seriesPendIds.has(id))) {
                           const newLinkedIds = (t.linkedIds||[]).filter(x=>!seriesPendIds.has(x));
                           const isLastUnlink = newLinkedIds.length===0;
                           if(isLastUnlink && t._splitsBeforeLink) {
