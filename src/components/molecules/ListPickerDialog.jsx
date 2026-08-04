@@ -3,9 +3,9 @@
 // Ersatz für <select> dort, wo die native iOS-Auswahl stört: deren Zeilenhöhe,
 // Schrift und Abstände legt das System fest, sie lassen sich nicht anpassen.
 // Bei langen Kategorielisten steht dadurch nur eine Handvoll Einträge im Bild
-// (Nutzer-Hinweis). Hier stattdessen bewusst enge Zeilen (6px Innenabstand,
-// 16px Schrift) mit deutlichen Trennlinien: so passen etwa doppelt so viele
-// Einträge auf den Schirm, ohne dass die Liste unruhig wirkt.
+// (Nutzer-Hinweis). Hier stattdessen enge Zeilen (6px Innenabstand) mit
+// deutlichen Trennlinien: so passen deutlich mehr Einträge auf den Schirm,
+// ohne dass die Schrift kleiner werden muss.
 //
 // Props:
 //   title       – Überschrift des Dialogs
@@ -37,24 +37,30 @@ function ListPickerDialog({ title, options = [], value, emptyLabel = null, onSel
         {zeilen.map((o, i) => {
           const gewaehlt = (o.id || "") === (value || "");
           return (
-            <div key={o.id || `__leer-${i}`} onClick={() => onSelect(o.id)}
-              style={{ display: "flex", alignItems: "center", gap: 10,
-                padding: "6px 16px", cursor: "pointer",
-                // Trennlinie zwischen den Zeilen, nicht unter der letzten.
-                // T.bds statt T.bd: bei so engen Zeilen ist die schwaechere
-                // Linie kaum noch auszumachen, sie soll aber gerade hier die
-                // Zeilen auseinanderhalten.
-                borderBottom: i < zeilen.length - 1 ? `1px solid ${T.bds}` : "none",
-                background: gewaehlt ? `${T.blue}1f` : "transparent",
-                WebkitTapHighlightColor: "transparent" }}>
-              <span style={{ width: 16, flexShrink: 0, display: "flex" }}>
-                {gewaehlt ? Li("check", 16, T.blue) : null}
-              </span>
-              <span style={{ flex: 1, minWidth: 0, color: o.id ? T.txt : T.txt2,
-                fontSize: 16, fontWeight: gewaehlt ? 700 : 500, lineHeight: 1.2 }}>
-                {o.name}
-              </span>
-            </div>
+            <React.Fragment key={o.id || `__leer-${i}`}>
+              <div onClick={() => onSelect(o.id)}
+                style={{ display: "flex", alignItems: "center", gap: 10,
+                  padding: "6px 16px", cursor: "pointer",
+                  background: gewaehlt ? `${T.blue}1f` : "transparent",
+                  WebkitTapHighlightColor: "transparent" }}>
+                <span style={{ width: 18, flexShrink: 0, display: "flex" }}>
+                  {gewaehlt ? Li("check", 18, T.blue) : null}
+                </span>
+                <span style={{ flex: 1, minWidth: 0, color: o.id ? T.txt : T.txt2,
+                  fontSize: 18, fontWeight: gewaehlt ? 700 : 500, lineHeight: 1.2 }}>
+                  {o.name}
+                </span>
+              </div>
+              {/* Trennlinie als 1px hohe FLÄCHE, nicht als border: im
+                  Randlos-Modus setzt eine globale Regel jede Rahmenfarbe auf
+                  transparent (.no-borders * in themes.css) — die Linien waren
+                  dort deshalb unsichtbar. Ein Hintergrund ist davon nicht
+                  betroffen und die Trennung bleibt in beiden Modi erhalten;
+                  sie gehört hier zur Lesbarkeit, nicht zur Dekoration. */}
+              {i < zeilen.length - 1 && (
+                <div style={{ height: 1, background: T.bds, flexShrink: 0 }}/>
+              )}
+            </React.Fragment>
           );
         })}
       </div>
