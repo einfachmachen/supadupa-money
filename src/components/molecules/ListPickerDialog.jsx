@@ -3,8 +3,9 @@
 // Ersatz für <select> dort, wo die native iOS-Auswahl stört: deren Zeilenhöhe,
 // Schrift und Abstände legt das System fest, sie lassen sich nicht anpassen.
 // Bei langen Kategorielisten steht dadurch nur eine Handvoll Einträge im Bild
-// (Nutzer-Hinweis). Hier stattdessen kompakte Zeilen mit Trennlinien, sodass
-// deutlich mehr auf einmal sichtbar ist.
+// (Nutzer-Hinweis). Hier stattdessen bewusst enge Zeilen (6px Innenabstand,
+// 16px Schrift) mit deutlichen Trennlinien: so passen etwa doppelt so viele
+// Einträge auf den Schirm, ohne dass die Liste unruhig wirkt.
 //
 // Props:
 //   title       – Überschrift des Dialogs
@@ -38,16 +39,19 @@ function ListPickerDialog({ title, options = [], value, emptyLabel = null, onSel
           return (
             <div key={o.id || `__leer-${i}`} onClick={() => onSelect(o.id)}
               style={{ display: "flex", alignItems: "center", gap: 10,
-                padding: "11px 16px", cursor: "pointer",
+                padding: "6px 16px", cursor: "pointer",
                 // Trennlinie zwischen den Zeilen, nicht unter der letzten.
-                borderBottom: i < zeilen.length - 1 ? `1px solid ${T.bd}` : "none",
+                // T.bds statt T.bd: bei so engen Zeilen ist die schwaechere
+                // Linie kaum noch auszumachen, sie soll aber gerade hier die
+                // Zeilen auseinanderhalten.
+                borderBottom: i < zeilen.length - 1 ? `1px solid ${T.bds}` : "none",
                 background: gewaehlt ? `${T.blue}1f` : "transparent",
                 WebkitTapHighlightColor: "transparent" }}>
-              <span style={{ width: 18, flexShrink: 0, display: "flex" }}>
-                {gewaehlt ? Li("check", 18, T.blue) : null}
+              <span style={{ width: 16, flexShrink: 0, display: "flex" }}>
+                {gewaehlt ? Li("check", 16, T.blue) : null}
               </span>
               <span style={{ flex: 1, minWidth: 0, color: o.id ? T.txt : T.txt2,
-                fontSize: 18, fontWeight: gewaehlt ? 700 : 500, lineHeight: 1.25 }}>
+                fontSize: 16, fontWeight: gewaehlt ? 700 : 500, lineHeight: 1.2 }}>
                 {o.name}
               </span>
             </div>
