@@ -4066,18 +4066,26 @@ Abbrechen = ${remoteName}-Stand laden`
 
         const navTab = (t) => {
           const isActive = activeNavTab===t.id;
-          // Vergrößerter + Button: die 4 Tabs verlieren ihr Label, werden deutlich
-          // größer und füllen die Bottom-Bar gleichmäßig aus.
+          // Vergrößerter + Button: die 4 Tabs sind tappbar und heben sich ab —
+          // volle Deckkraft, groesseres Symbol, aktiver Reiter hinterlegt.
+          // Die Beschriftung steht auch hier unter dem Symbol (Nutzer-Wunsch):
+          // ohne sie musste man die Reiter genau in dem Moment aus dem Symbol
+          // erraten, in dem sie ueberhaupt erst bedienbar werden. Die Leiste ist
+          // 57px hoch (abzueglich 5px unten), deshalb ruecken Kachel und
+          // Abstaende zusammen, statt das Symbol auf 33px zu belassen.
           if(plusArretiert) {
             return (
               <div key={t.id} onClick={()=>onTap(t)}
-                style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",
-                  cursor:"pointer",padding:"4px 0",minWidth:0,WebkitTapHighlightColor:"transparent"}}>
-                <div style={{width:56,height:48,borderRadius:15,
+                style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",
+                  justifyContent:"center",gap:1,cursor:"pointer",padding:"2px 0",
+                  minWidth:0,WebkitTapHighlightColor:"transparent"}}>
+                <div style={{width:52,height:30,borderRadius:11,
                   display:"flex",alignItems:"center",justifyContent:"center",
                   background:isActive?"rgba(74,159,212,0.18)":"transparent",transition:"all 0.2s"}}>
-                  {Li(t.icon,33,isActive?T.blue:T.txt2,isActive?2.6:2)}
+                  {Li(t.icon,26,isActive?T.blue:T.txt2,isActive?2.6:2)}
                 </div>
+                <span style={{fontSize:11,fontWeight:isActive?700:600,
+                  color:isActive?T.blue:T.txt,whiteSpace:"nowrap"}}>{t.label}</span>
               </div>
             );
           }
