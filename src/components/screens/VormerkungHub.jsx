@@ -4,6 +4,7 @@ import React, { useContext, useEffect, useMemo, useState } from "react";
 import { VormHubSecToggle } from "../molecules/VormHubSecToggle.jsx";
 import { VormHubSegBtn } from "../molecules/VormHubSegBtn.jsx";
 import { AccountChips } from "../molecules/AccountChips.jsx";
+import { MobileNewAccOverlay } from "../molecules/MobileNewAccOverlay.jsx";
 import { VormVerknuepfenPanel } from "../organisms/VormVerknuepfenPanel.jsx";
 import { RecurringDetectionScreen } from "./RecurringDetectionScreen.jsx";
 import { TagInput } from "../atoms/TagInput.jsx";
@@ -50,7 +51,6 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
     : "einmalig";
 
   // Sektionen — im Edit-Modus direkt Neu-Erstellen aufklappen
-  const [secNeu,        setSecNeu]        = useState(true);
   const [secErkennen,   setSecErkennen]   = useState(false);
   const [secKategorien, setSecKategorien] = useState(false);
 
@@ -109,6 +109,10 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
   })();
   const _existingLinkSplit = (_existingLinkInit?.splits||[])[0];
   const [transferToAcc, setTransferToAcc] = useState(_existingLinkInit?.accountId || "");
+  // Umbuchungs-Modus als eigener Zustand: ein frisch angetippter
+  // "Umbuchung"-Knopf hat noch kein Zielkonto, ist aber schon aktiv.
+  const [umbuchung, setUmbuchung] = useState(!!(_existingLinkInit?.accountId));
+  const [showNewAcc, setShowNewAcc] = useState(false);
   const [transferToCat, setTransferToCat] = useState(_existingLinkSplit?.catId || "");
   const [transferToSub, setTransferToSub] = useState(_existingLinkSplit?.subId || "");
   const [note,      setNote]      = useState(editVorm?.note||"");
@@ -735,6 +739,31 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
         return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`;})()
     : null;
 
+  // Groessen wie im "neue Vormerkung"-Dialog (MobileVormerkenModal), damit
+  // beide Dialoge sich gleich anfuehlen — dort ist die Bedienung auf
+  // Daumenbreite ausgelegt, hier waren Felder und Schrift halb so gross.
+  const S = {fs:26, pad:10, padL:14, radius:16, gap:14};
+  const INPUT_H = S.fs + S.padL*2;
+  const INP_GROSS = {boxSizing:"border-box", width:"100%", height:INPUT_H,
+    padding:`0 ${S.padL}px`, borderRadius:S.radius, color:T.txt, fontSize:S.fs,
+    fontFamily:"inherit", outline:"none", border:`2px solid ${T.bd}`,
+    background:(isLightTheme())?"rgba(0,0,0,0.05)":"rgba(255,255,255,0.06)",
+    WebkitAppearance:"none", appearance:"none"};
+  // Feldbeschriftungen in Textfarbe statt Grau — grau auf dunkelgrauem Grund
+  // war kaum lesbar (Nutzer-Hinweis, gilt in der ganzen App).
+  const LBL = {color:T.txt, fontSize:14, fontWeight:600, marginBottom:6};
+
+  // Neues Konto anlegen — gleicher Weg wie im "neue Vormerkung"-Dialog: der
+  // Vollbild-Dialog tritt an die Stelle dieses Dialogs und kehrt danach mit dem
+  // frisch angelegten Konto zurueck (dessen Zustand bleibt erhalten, weil nur
+  // die Ausgabe ersetzt wird, nicht die Komponente).
+  if(showNewAcc) return (
+    <MobileNewAccOverlay S={S} onClose={(newId)=>{
+      setShowNewAcc(false);
+      if(newId) setAccountId(newId);
+    }}/>
+  );
+
   return (
     // Vollbild. Vorher hing das an einem Prop, dessen Setter in App.jsx nie
     // aufgerufen wurde — es war also immer false und jeder bekam das
@@ -780,11 +809,21 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
         <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",background:T.surf2,
           paddingBottom:"calc(40px + env(safe-area-inset-bottom, 0px))"}}>
 
-          {/* NEU ERSTELLEN */}
-          <VormHubSecToggle label="neue Vormerkung erstellen" icon="plus-circle"
-            active={secNeu} onToggle={()=>setSecNeu(v=>!v)} accent={T.gold}/>
+          {/* Typ ganz oben, direkt unter dem Titel — er entscheidet, welche
+              Felder darunter ueberhaupt erscheinen (Intervall, Anzahl, Raten).
+              Der fruehere Schiebeschalter "neue Vormerkung erstellen" davor ist
+              entfallen: das Formular ist der Zweck des Dialogs, nicht ein
+              aufklappbarer Abschnitt darin. */}
+          <div style={{padding:"12px 14px 0"}}>
+            <div style={{display:"flex",gap:3,background:"rgba(0,0,0,0.2)",
+              borderRadius:10,padding:3}}>
+              <VormHubSegBtn v="einmalig"      l="einmalig" icon="calendar"    cur={typ} set={setTyp} clearCount={()=>setCount("")} clearEnd={()=>setEndDate("")}/>
+              <VormHubSegBtn v="wiederkehrend" l="Serie"    icon="repeat"      cur={typ} set={setTyp} clearCount={()=>setCount("")} clearEnd={()=>setEndDate("")}/>
+              <VormHubSegBtn v="finanzierung"  l="Raten"    icon="credit-card" cur={typ} set={setTyp} clearCount={()=>setCount("")} clearEnd={()=>setEndDate("")}/>
+            </div>
+          </div>
 
-          {secNeu&&(
+          {(
             <div style={{padding:"12px 14px",borderBottom:`1px solid ${T.bd}`}}>
 
               {/* Abweichende Beträge nur für Finanzierung */}
@@ -831,44 +870,72 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                 </div>
               )}
 
-              {/* Segmented Control */}
-              <div style={{display:"flex",gap:3,background:"rgba(0,0,0,0.2)",
-                borderRadius:10,padding:3,marginBottom:12}}>
-                {/* Kurze Beschriftungen, damit alle drei nebeneinander passen.
-                    "Serie" benutzt die App auch in der Unterzeile beim Bearbeiten
-                    einer wiederkehrenden Vormerkung, "Raten" trifft die
-                    Finanzierung ohne das lange Wort. */}
-                <VormHubSegBtn v="einmalig"      l="einmalig" icon="calendar"    cur={typ} set={setTyp} clearCount={()=>setCount("")} clearEnd={()=>setEndDate("")}/>
-                <VormHubSegBtn v="wiederkehrend" l="Serie"    icon="repeat"      cur={typ} set={setTyp} clearCount={()=>setCount("")} clearEnd={()=>setEndDate("")}/>
-                <VormHubSegBtn v="finanzierung"  l="Raten"    icon="credit-card" cur={typ} set={setTyp} clearCount={()=>setCount("")} clearEnd={()=>setEndDate("")}/>
-              </div>
-
-              {/* 1. Ausgabe / Einnahme */}
-              <div style={{display:"flex",gap:4,marginBottom:8}}>
-                {[["expense","− Ausgabe",T.cond_neg],["income","+ Einnahme",T.cond_pos]].map(([val,label,col])=>{
-                  const active = csvType===val;
+              {/* 1. Ausgabe / Einnahme / Umbuchung — dieselbe Dreier-Zeile wie im
+                  "neue Vormerkung"-Dialog. Die Umbuchung stand hier vorher als
+                  eigener Kasten weiter unten ("Umbuchung auf eigenes Konto
+                  (optional)"), obwohl sie eine dritte Art von Buchung ist und
+                  keine Zusatzeinstellung zu einer Ausgabe. */}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:S.gap/2,marginBottom:S.gap}}>
+                {[["expense","Ausgabe",T.cond_neg,false],
+                  ["income","Einnahme",T.cond_pos,false],
+                  ["transfer","Umbuchung",T.blue,true]].map(([val,label,col,istUmb])=>{
+                  const active = istUmb ? umbuchung : (!umbuchung && csvType===val);
+                  // Ohne zweites Konto gibt es kein Ziel — der Knopf wuerde die
+                  // Buchung dann still als normale Ausgabe speichern.
+                  const gesperrt = istUmb && accounts.length<2;
                   return (
-                    <button key={val} onClick={()=>{setCsvType(val);setCatId("");setSubId("");}}
-                      style={{flex:1,padding:"8px",borderRadius:10,cursor:"pointer",fontSize:13,fontWeight:700,
+                    <button key={val} disabled={gesperrt} onClick={()=>{
+                      if(gesperrt) return;
+                      if(istUmb) {
+                        // Umbuchung geht immer vom gewaehlten Konto ab; das
+                        // Gegenstueck auf dem Zielkonto legt das Speichern an.
+                        setUmbuchung(true); setCsvType("expense");
+                        setCatId(""); setSubId("");
+                        if(!transferToAcc || transferToAcc===accountId) {
+                          const anderes = (accounts||[]).find(a=>a.id!==accountId);
+                          if(anderes) setTransferToAcc(anderes.id);
+                        }
+                        if(!isEdit && !startDateManual) { setStartDate(today); setValueDate(today); }
+                      } else {
+                        setUmbuchung(false);
+                        setTransferToAcc(""); setTransferToCat(""); setTransferToSub("");
+                        setCsvType(val); setCatId(""); setSubId("");
+                        if(!isEdit && !startDateManual) { setStartDate(nextBankWorkday(today)); setValueDate(today); }
+                      }
+                    }}
+                      style={{minWidth:0,padding:`${S.padL}px ${S.pad}px`,borderRadius:S.radius,
+                        cursor:"pointer",fontSize:S.fs-8,fontWeight:700,
                         border:`2px solid ${active?col:T.bd}`,
-                        background:active?col:(isLightTheme())?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.04)",
-                        color:active?"#fff":T.txt2,fontFamily:"inherit",transition:"all 0.15s"}}>
+                        background:active?col+"22":(isLightTheme())?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.06)",
+                        color:active?col:T.txt2,fontFamily:"inherit",transition:"all 0.15s",
+                        opacity:gesperrt?0.4:1,cursor:gesperrt?"default":"pointer",
+                        overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                       {label}
                     </button>
                   );
                 })}
               </div>
 
-              {/* 2. Zahlungsart */}
+              {/* 2. Konto — bei Umbuchung die Quelle. Gleiche Kachelgroesse wie
+                  im "neue Vormerkung"-Dialog, inklusive "+ Konto"-Kachel. */}
               {accounts.length>0&&<>
-                <div style={{color:T.txt2,fontSize:13,marginBottom:3}}>Zahlungsart</div>
-                <div style={{marginBottom:8}}>
-                  <AccountChips accounts={accounts} value={accountId} onChange={setAccountId}/>
+                <div style={LBL}>{umbuchung ? "Quelle" : "Zahlungsart"}</div>
+                <div style={{marginBottom:S.gap}}>
+                  <AccountChips accounts={accounts} value={accountId} S={S}
+                    onChange={(id)=>{
+                      setAccountId(id);
+                      if(umbuchung && transferToAcc===id) {
+                        const anderes = (accounts||[]).find(a=>a.id!==id);
+                        setTransferToAcc(anderes?.id || "");
+                      }
+                    }}
+                    onAddAccount={()=>setShowNewAcc(true)} addLabel="Konto"/>
                 </div>
               </>}
 
-              {/* 2b. Umbuchung: Zielkonto + Zielkategorie (nur für Ausgaben) */}
-              {csvType==="expense" && accounts.length>1 && (()=>{
+              {/* 2b. Umbuchung: Zielkonto + Zielkategorie — nur noch sichtbar,
+                  wenn oben "Umbuchung" gewaehlt ist. */}
+              {umbuchung && accounts.length>1 && (()=>{
                 const targets = accounts.filter(a=>a.id!==accountId);
                 // Zielkategorien: alle Income-Behavior-Kategorien strikt nach Zielkonto filtern.
                 // "Income-Behavior" = Gruppen-Behavior "income" ODER c.type==="income"/"tagesgeld" (Legacy).
@@ -890,25 +957,18 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                 const tgtSubs = curTgtCat?.subs||[];
                 const umbBlue = "#4A9FD4";
                 return (
-                  <div style={{marginBottom:8,padding:"8px 10px",
-                    background:"rgba(74,159,212,0.06)",border:`1px solid ${transferToAcc?umbBlue:T.bd}`,
-                    borderRadius:10}}>
-                    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
-                      {Li("arrow-right-left",12,umbBlue)}
-                      <span style={{color:T.txt2,fontSize:13,fontWeight:700}}>Umbuchung auf eigenes Konto (optional)</span>
-                      {transferToAcc&&(
-                        <button onClick={()=>{
-                          setTransferToAcc("");setTransferToCat("");setTransferToSub("");
-                          // Keine Umbuchung mehr → Buchung wieder auf nächsten Banktag
-                          if(!isEdit && !startDateManual) { setStartDate(nextBankWorkday(today)); setValueDate(today); }
-                        }}
-                          style={{marginLeft:"auto",background:"none",border:"none",color:T.txt2,cursor:"pointer",fontSize:13,padding:"2px 6px",fontFamily:"inherit"}}>
-                          Entfernen
-                        </button>
-                      )}
+                  <>
+                    {/* "Ziel" statt eines eigenen Kastens mit Ueberschrift — die
+                        Umbuchung ist oben schon als Art gewaehlt, hier fehlt nur
+                        noch wohin. Kachelgroesse und minCols wie im "neue
+                        Umbuchung"-Dialog, damit Quelle und Ziel gleich breit
+                        stehen. */}
+                    <div style={{...LBL,display:"flex",alignItems:"center",gap:6}}>
+                      {Li("arrow-down",14,umbBlue)} Ziel
                     </div>
-                    <div style={{marginBottom:transferToAcc?6:0}}>
-                      <AccountChips accounts={targets} value={transferToAcc} onChange={(newVal)=>{
+                    <div style={{marginBottom:S.gap}}>
+                      <AccountChips accounts={targets} value={transferToAcc}
+                        S={S} minCols={(accounts||[]).length + 1} onChange={(newVal)=>{
                         setTransferToAcc(newVal);
                         if(!isEdit && !startDateManual) {
                           setValueDate(today);
@@ -921,10 +981,10 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                         if(newVal && isEdit && editVorm?._seriesId && editScope==="single") {
                           setEditScope("all");
                         }
-                      }} S={{fs:20,radius:10,gap:10}}/>
+                      }}/>
                     </div>
                     {transferToAcc&&(<>
-                      <div style={{color:T.txt2,fontSize:12,fontWeight:700,marginBottom:3}}>Zielkategorie auf Zielkonto</div>
+                      <div style={LBL}>Zielkategorie auf Zielkonto</div>
                       <div style={{display:"flex",gap:5}}>
                         <select value={transferToCat}
                           onChange={e=>{setTransferToCat(e.target.value);setTransferToSub("");}}
@@ -942,25 +1002,28 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                           {tgtSubs.map(s=>(<option key={s.id} value={s.id}>{s.name}</option>))}
                         </select>
                       </div>
-                      <div style={{color:T.txt2,fontSize:12,marginTop:4,fontStyle:"italic"}}>
+                      <div style={{color:T.txt,fontSize:13,marginTop:6,marginBottom:S.gap,fontStyle:"italic"}}>
                         Beim Speichern wird automatisch eine verknüpfte Eingangs-Vormerkung auf dem Zielkonto angelegt.
                       </div>
                     </>)}
-                  </div>
+                  </>
                 );
               })()}
 
-              {/* 3. Betrag */}
-              <div style={{color:T.txt2,fontSize:13,marginBottom:3}}>
+              {/* 3. Betrag — Schriftgroesse wie im "neue Vormerkung"-Dialog.
+                  Rechtsbuendig in der Geldschrift, wie dort. */}
+              <div style={LBL}>
                 {typ==="finanzierung"&&customFirstLast ? "Regelmäßiger Betrag (€)" : "Betrag (€)"}
               </div>
               <input value={amount} onChange={e=>setAmount(e.target.value)}
                 placeholder="0,00" inputMode="decimal"
-                style={{...INP,marginBottom:8,width:"100%",boxSizing:"border-box"}}/>
+                style={{...INP_GROSS,marginBottom:S.gap,fontWeight:700,
+                  fontFamily:NUM_FONT,textAlign:"right",
+                  border:`2px solid ${amount?T.blue:T.bd}`}}/>
 
               {/* 4. Intervall (Wiederkehrend/Finanzierung) */}
               {typ!=="einmalig"&&<>
-                <div style={{color:T.txt2,fontSize:13,marginBottom:3}}>Intervall</div>
+                <div style={LBL}>Intervall</div>
                 <div style={{display:"flex",gap:3,marginBottom:8}}>
                   {[[1,"mtl."],[3,"quartl."],[6,"halb."],[12,"jährl."]].map(([v,l])=>(
                     <button key={v} onClick={()=>setInterval_(v)}
@@ -1007,7 +1070,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
               {/* 6. Anzahl / Enddatum (Wiederkehrend/Finanzierung) */}
               {typ!=="einmalig"&&<div style={{display:"flex",gap:6,marginBottom:8}}>
                 <div style={{flex:1}}>
-                  <div style={{color:T.txt2,fontSize:13,marginBottom:3}}>
+                  <div style={LBL}>
                     {typ==="finanzierung"?"Anzahl Raten":"Anzahl (leer = 7 Jahre)"}
                   </div>
                   <input value={count} onChange={e=>{setCount(e.target.value);if(e.target.value)setEndDate("");}}
@@ -1016,7 +1079,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                     style={{...INP,marginBottom:0,width:"100%",boxSizing:"border-box"}}/>
                 </div>
                 <div style={{flex:1}}>
-                  <div style={{color:T.txt2,fontSize:13,marginBottom:3}}>oder Enddatum</div>
+                  <div style={LBL}>oder Enddatum</div>
                   {endDate?(
                     <div style={{display:"flex",gap:2,alignItems:"center"}}>
                       <input type="date" value={endDate}
@@ -1043,39 +1106,39 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
 
               {/* 7+8. verursacht + Buchung am / Startdatum nebeneinander */}
               <div style={{display:"flex",gap:6,marginBottom:8}}>
-                <div style={{flex:1}}>
-                  <div style={{color:T.txt2,fontSize:13,marginBottom:3,display:"flex",alignItems:"center",gap:4}}>
-                    {Li("calendar",10,T.txt2)} verursacht
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{...LBL,display:"flex",alignItems:"center",gap:4}}>
+                    {Li("calendar",13,T.txt)} verursacht
                   </div>
                   <div style={{display:"flex",gap:2,alignItems:"center"}}>
                     <input type="date" value={valueDate} onChange={e=>{setValueDate(e.target.value);setStartDateManual(true);}}
-                      style={{...INP,marginBottom:0,flex:1,
+                      style={{...INP_GROSS,marginBottom:0,flex:1,minWidth:0,
                         colorScheme:(isLightTheme())?"light":"dark"}}/>
                     {valueDate&&<button onClick={()=>setValueDate("")}
                       style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",padding:"4px",flexShrink:0}}>
-                      {Li("x",11)}
+                      {Li("x",13)}
                     </button>}
                   </div>
                 </div>
-                <div style={{flex:1}}>
-                  <div style={{color:T.txt2,fontSize:13,marginBottom:3}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={LBL}>
                     {typ==="einmalig"?"Banktag":"Startdatum"}
                   </div>
                   <input type="date" value={startDate} onChange={e=>{setStartDate(e.target.value);setStartDateManual(true);}}
-                    style={{...INP,marginBottom:0,width:"100%",boxSizing:"border-box",
+                    style={{...INP_GROSS,marginBottom:0,
                       colorScheme:(isLightTheme())?"light":"dark"}}/>
                 </div>
               </div>
 
               {/* 9. Kategorie */}
-              <div style={{color:T.txt2,fontSize:13,marginBottom:3}}>Kategorie (optional)</div>
+              <div style={LBL}>Kategorie (optional)</div>
               <select value={catId} onChange={e=>{setCatId(e.target.value);setSubId("");}}
                 style={{...INP,marginBottom:8,width:"100%",boxSizing:"border-box"}}>
                 <option value="">— keine —</option>
                 {catOpts.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
               {catId&&subOpts.length>0&&<>
-                <div style={{color:T.txt2,fontSize:13,marginBottom:3}}>Unterkategorie</div>
+                <div style={LBL}>Unterkategorie</div>
                 <select value={subId} onChange={e=>setSubId(e.target.value)}
                   style={{...INP,marginBottom:8,width:"100%",boxSizing:"border-box"}}>
                   <option value="">— keine —</option>
@@ -1152,21 +1215,21 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                   )}
                   <div style={{display:"flex",gap:8,marginBottom:fuelComputedTotal!=null?8:0}}>
                     <div style={{flex:1}}>
-                      <div style={{color:T.txt2,fontSize:13,marginBottom:3}}>Liter</div>
+                      <div style={LBL}>Liter</div>
                       <input value={fuelLiters} onChange={e=>setFuelLiters(e.target.value.replace(/[^0-9,.]/g,""))}
                         style={{...INP,marginBottom:0,width:"100%",boxSizing:"border-box",
                           fontFamily:NUM_FONT,textAlign:"right"}}
                         inputMode="decimal" placeholder="0,00"/>
                     </div>
                     <div style={{flex:1}}>
-                      <div style={{color:T.txt2,fontSize:13,marginBottom:3}}>€/Liter</div>
+                      <div style={LBL}>€/Liter</div>
                       <input value={fuelPricePerL} onChange={e=>setFuelPricePerL(e.target.value.replace(/[^0-9,.]/g,""))}
                         style={{...INP,marginBottom:0,width:"100%",boxSizing:"border-box",
                           fontFamily:NUM_FONT,textAlign:"right"}}
                         inputMode="decimal" placeholder="0,000"/>
                     </div>
                     <div style={{flex:1}}>
-                      <div style={{color:T.txt2,fontSize:13,marginBottom:3}}>km-Stand</div>
+                      <div style={LBL}>km-Stand</div>
                       <input value={odometer} onChange={e=>setOdometer(e.target.value.replace(/[^0-9]/g,""))}
                         style={{...INP,marginBottom:0,width:"100%",boxSizing:"border-box",
                           fontFamily:NUM_FONT,textAlign:"right",
@@ -1200,7 +1263,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
               )}
 
               {/* 10. Beschreibung + Notiz zusammen */}
-              <div style={{color:T.txt2,fontSize:13,marginBottom:3}}>Beschreibung</div>
+              <div style={LBL}>Beschreibung</div>
               <input value={desc} onChange={e=>setDesc(e.target.value)}
                 placeholder="z.B. Miete, Gehalt, Kfz-Steuer…"
                 style={{...INP,marginBottom:4,width:"100%",boxSizing:"border-box"}}/>
@@ -1222,13 +1285,13 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
               {customFirstLast&&typ==="finanzierung"&&(
                 <div style={{display:"flex",gap:6,marginBottom:8}}>
                   <div style={{flex:1}}>
-                    <div style={{color:T.txt2,fontSize:13,marginBottom:3}}>Startbetrag (1. Buchung)</div>
+                    <div style={LBL}>Startbetrag (1. Buchung)</div>
                     <input value={firstAmount} onChange={e=>setFirstAmount(e.target.value.replace(/[^0-9,\.]/g,""))}
                       placeholder={amount||"0,00"} inputMode="decimal"
                       style={{...INP,marginBottom:0,width:"100%",boxSizing:"border-box",border:`1px solid ${T.blue}66`}}/>
                   </div>
                   <div style={{flex:1}}>
-                    <div style={{color:T.txt2,fontSize:13,marginBottom:3}}>Endbetrag (letzte Buchung)</div>
+                    <div style={LBL}>Endbetrag (letzte Buchung)</div>
                     <input value={lastAmount} onChange={e=>setLastAmount(e.target.value.replace(/[^0-9,\.]/g,""))}
                       placeholder={amount||"0,00"} inputMode="decimal"
                       style={{...INP,marginBottom:0,width:"100%",boxSizing:"border-box",border:`1px solid ${T.blue}66`}}/>
@@ -1368,13 +1431,13 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                   {editScope==="range"&&(
                     <div style={{display:"flex",gap:8,alignItems:"center"}}>
                       <div style={{flex:1}}>
-                        <div style={{color:T.txt2,fontSize:13,marginBottom:3}}>Von</div>
+                        <div style={LBL}>Von</div>
                         <input type="date" value={scopeFrom}
                           onChange={e=>{setScopeFrom(e.target.value);setFromDateManual(true);}}
                           style={inpStyle}/>
                       </div>
                       <div style={{flex:1}}>
-                        <div style={{color:T.txt2,fontSize:13,marginBottom:3}}>Bis</div>
+                        <div style={LBL}>Bis</div>
                         <input type="date" value={scopeTo}
                           onChange={e=>{setScopeTo(e.target.value);setFromDateManual(true);}}
                           style={inpStyle}/>
@@ -1383,7 +1446,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                   )}
                   {editScope==="from"&&(
                     <div>
-                      <div style={{color:T.txt2,fontSize:13,marginBottom:3}}>Ab diesem Datum:</div>
+                      <div style={LBL}>Ab diesem Datum:</div>
                       <input type="date" value={scopeFrom}
                         onChange={e=>{setScopeFrom(e.target.value);setFromDateManual(true);}}
                         style={inpStyle}/>
@@ -1490,20 +1553,20 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                       </div>
 
                       {/* Betrag */}
-                      <div style={{color:T.txt2,fontSize:13,marginBottom:3}}>Betrag für Ausnahme-Monate</div>
+                      <div style={LBL}>Betrag für Ausnahme-Monate</div>
                       <input value={exAmount} onChange={e=>setExAmount(e.target.value.replace(/[^0-9,.]/g,""))}
                         placeholder="z.B. 4172,58" inputMode="decimal"
                         style={{...INP,marginBottom:8,width:"100%",boxSizing:"border-box"}}/>
 
                       {/* Startdatum */}
-                      <div style={{color:T.txt2,fontSize:13,marginBottom:3}}>Erster Ausnahme-Monat</div>
+                      <div style={LBL}>Erster Ausnahme-Monat</div>
                       <input type="date" value={exStartDate}
                         onChange={e=>setExStartDate(e.target.value)}
                         style={{...INP,marginBottom:8,width:"100%",boxSizing:"border-box",
                           colorScheme:(isLightTheme())?"light":"dark"}}/>
 
                       {/* Rhythmus */}
-                      <div style={{color:T.txt2,fontSize:13,marginBottom:3}}>Rhythmus</div>
+                      <div style={LBL}>Rhythmus</div>
                       <div style={{display:"flex",gap:3,marginBottom:8}}>
                         {[[1,"monatlich"],[3,"quartalsw."],[12,"jährlich"]].map(([v,l])=>(
                           <button key={v} onClick={()=>setExInterval(v)}
@@ -1517,7 +1580,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                       </div>
 
                       {/* Anzahl */}
-                      <div style={{color:T.txt2,fontSize:13,marginBottom:3}}>Anzahl (leer = alle passenden)</div>
+                      <div style={LBL}>Anzahl (leer = alle passenden)</div>
                       <input value={exCount} onChange={e=>setExCount(e.target.value.replace(/[^0-9]/g,""))}
                         placeholder={`z.B. ${Math.ceil(81/exInterval)}`} inputMode="numeric"
                         style={{...INP,marginBottom:8,width:"100%",boxSizing:"border-box"}}/>
@@ -1570,7 +1633,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
               )}
 
               {/* Notiz */}
-              <div style={{color:T.txt2,fontSize:13,marginBottom:3}}>Notiz (optional)</div>
+              <div style={LBL}>Notiz (optional)</div>
               <textarea value={note} onChange={e=>setNote(e.target.value)}
                 placeholder="Notiz…" rows={2}
                 style={{...INP,resize:"none",fontFamily:"inherit",lineHeight:1.4,
