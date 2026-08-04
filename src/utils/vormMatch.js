@@ -71,6 +71,31 @@ function mergeNote(pend, target) {
   return [eigeneNotiz, cleanTargetNote].filter(Boolean).join(" · ");
 }
 
+// Alle Verknüpfungen einer Buchung — auch die mehrstufigen.
+//
+// Typischer Ablauf: eigene Vormerkung anlegen → beim Bank-Abruf taucht
+// dieselbe Zahlung als Bank-Vormerkung auf, beide werden verknüpft → Tage
+// später bucht die Bank endgültig, die Bank-Vormerkung wird mit der Buchung
+// verknüpft. An der Buchung hängt dann direkt nur die Bank-Vormerkung, die
+// eigene erst über sie. Im Bearbeiten-Dialog sollen beide stehen — je mit
+// eigenem "Alle entknüpfen", damit sich jede Stufe einzeln lösen lässt.
+// Reihenfolge: erst die direkt verknüpften, dann die dahinterliegenden.
+export function linkChain(tx, findById) {
+  const out = [];
+  const gesehen = new Set([tx && tx.id]);
+  const queue = [...((tx && tx.linkedIds) || [])];
+  while (queue.length) {
+    const id = queue.shift();
+    if (gesehen.has(id)) continue;   // schützt zugleich vor Zyklen
+    gesehen.add(id);
+    const t = findById(id);
+    if (!t) continue;
+    out.push(t);
+    (t.linkedIds || []).forEach(nid => queue.push(nid));
+  }
+  return out;
+}
+
 // Bereinigung beim Laden: Bis dahin verknüpfte Buchungen tragen die
 // Beschreibung ihrer Vormerkung noch als "Vormerkung: …"-Teil in der Notiz.
 // Ohne das hier bliebe das Notizfeld bei allen Bestandsbuchungen belegt, denn

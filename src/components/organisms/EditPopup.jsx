@@ -12,7 +12,7 @@ import { INP } from "../../theme/palette.js";
 import { isoAddMonths } from "../../utils/date.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
-import { badgeLinkTarget } from "../../utils/vormMatch.js";
+import { linkChain, hasBankOrigin } from "../../utils/vormMatch.js";
 import { isFuelSelection, checkOdometerPlausibility } from "../../utils/fuel.js";
 import { getAllTags } from "../../utils/search.js";
 import { recordDeletedTxs } from "../../utils/txTombstones.js";
@@ -105,42 +105,38 @@ function EditPopup() {
           title={editTx.pending ? "Vormerkung bearbeiten" : "Buchung bearbeiten"}
           onBack={()=>setEditTx(null)}/>
         <div style={{flex:1,overflowY:"auto",overflowX:"hidden",touchAction:"pan-y",padding:"16px 18px",boxSizing:"border-box",WebkitOverflowScrolling:"touch"}}>
-          {/* Verknüpfte Vormerkung — Info-Box mit "Alle entknüpfen".
-              Auch für eine noch PENDING Buchung: eine Bank-Vormerkung, die eine
-              manuell angelegte Vormerkung absorbiert hat (linkPendingToPending),
-              trägt deren ID in linkedIds und ist danach der einzige Einstieg zum
-              Lösen — die absorbierte Vormerkung selbst ist nicht mehr sichtbar.
+          {/* Verknüpfungen der Buchung — je eine Box mit eigenem "Alle
+              entknüpfen", damit sich jede Stufe einzeln lösen lässt.
+              Gezeigt wird die ganze KETTE (linkChain), nicht nur was direkt an
+              der Buchung hängt: eigene Vormerkung → Bank-Vormerkung → Buchung
+              ist der Normalfall, und die eigene Vormerkung hängt darin nur
+              mittelbar an der Buchung. Auch für eine noch PENDING Buchung: eine
+              Bank-Vormerkung, die eine eigene Vormerkung absorbiert hat, ist
+              danach der einzige Einstieg zum Lösen.
               Transfer-Gegenstücke sind davon nicht betroffen: die verweisen über
               _linkedTo aufeinander, nicht über linkedIds. */}
           {(editTx.linkedIds||[]).length>0&&(()=>{
-            const linkedPends = (editTx.linkedIds||[])
-              .map(id=>txs.find(t=>t.id===id))
-              .filter(t=>t); // alle verknüpften, egal ob noch pending oder bereits abgebucht
+            const linkedPends = linkChain(editTx, id=>txs.find(t=>t.id===id));
             if(linkedPends.length===0) return null;
+            const kettenIds = new Set([editTx.id, ...linkedPends.map(t=>t.id)]);
             return linkedPends.map(pend=>{
-              // Angezeigt wird die EIGENE Vormerkung — hängt an der Buchung nur
-              // die Vorabmeldung der Bank und an dieser wiederum die selbst
-              // angelegte Vormerkung, wird letztere gezeigt (identisch zu den
-              // Badges in den Listen, s. badgeLinkTarget). Sonst stand hier der
-              // Text der Buchung ein zweites Mal, während die Liste daneben die
-              // eigene Vormerkung nannte.
-              // Gelöst wird dagegen immer die Verknüpfung, die tatsächlich an
-              // dieser Buchung hängt (pend) — die eigene Vormerkung bleibt an
-              // der Bank-Zeile, die dadurch wieder als Vormerkung auftaucht.
-              const zeig = badgeLinkTarget(pend.id, id=>txs.find(t=>t.id===id)) || pend;
               // PayPal-Legs (Erstattung/Kauf/Auszahlung) werden über linkedIds an
               // die Giro-Buchung gehängt — sie sind KEINE Vormerkung. Eine echte
-              // verknüpfte Vormerkung trägt _linkedTo===dieser Buchung (oder ist
+              // verknüpfte Vormerkung haengt an einem Glied dieser Kette (oder ist
               // noch pending); alles andere ist ein PayPal-/Import-Leg. Zusätzlich
               // greifen explizite PayPal-Marker (Konto/Bezug, Erstattung).
-              const isVormerkung = pend._linkedTo===editTx.id || !!pend.pending;
+              const isVormerkung = kettenIds.has(pend._linkedTo) || !!pend.pending;
               const isPayPalLink = /paypal/i.test(pend._kontoRaw||"") || /paypal/i.test(pend.desc||"")
                 || !!pend._isRefund || !!pend._refundOf || !!pend._legSourceFps || !isVormerkung;
-              const linkLabel = isPayPalLink ? "PayPal-Verknüpfung" : "Verknüpfte Vormerkung";
-              const seriesTxs = zeig._seriesId
-                ? txs.filter(t=>t._seriesId===zeig._seriesId).sort((a,b)=>a.date.localeCompare(b.date))
+              // Die Vorabmeldung der Bank benennen, damit auf einen Blick klar
+              // ist, welche der beiden Boxen die selbst angelegte Vormerkung ist
+              // (deren Text ist sonst dem der Buchung zum Verwechseln ähnlich).
+              const linkLabel = isPayPalLink ? "PayPal-Verknüpfung"
+                : hasBankOrigin(pend) ? "Bank-Vormerkung" : "Eigene Vormerkung";
+              const seriesTxs = pend._seriesId
+                ? txs.filter(t=>t._seriesId===pend._seriesId).sort((a,b)=>a.date.localeCompare(b.date))
                 : [];
-              const thisIdx = seriesTxs.findIndex(t=>t.id===zeig.id);
+              const thisIdx = seriesTxs.findIndex(t=>t.id===pend.id);
               const total = seriesTxs.length;
               const totalAmt = seriesTxs.reduce((s,t)=>s+t.totalAmount,0);
               const paid = seriesTxs.filter(t=>!t.pending&&t._linkedTo).length;
@@ -154,7 +150,7 @@ function EditPopup() {
                   <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
                     {Li("link",12,T.blue)}
                     <span style={{color:T.blue,fontSize:11,fontWeight:700}}>{linkLabel}</span>
-                    {total>1&&zeig._seriesIdx&&zeig._seriesTyp==="finanzierung"&&<span style={{color:T.gold,fontSize:10,background:(isLightTheme())?"rgba(192,120,0,0.15)":"rgba(245,166,35,0.12)",
+                    {total>1&&pend._seriesIdx&&pend._seriesTyp==="finanzierung"&&<span style={{color:T.gold,fontSize:10,background:(isLightTheme())?"rgba(192,120,0,0.15)":"rgba(245,166,35,0.12)",
                       borderRadius:4,padding:"1px 6px",fontWeight:700,marginLeft:"auto"}}>
                       {Li("repeat",9,T.gold)} Zahlung {thisIdx+1} von {total}
                     </span>}
@@ -196,8 +192,8 @@ function EditPopup() {
                     </button>
                   </div>
                   {/* Beschreibung + Notiz */}
-                  {zeig.desc&&<div style={{color:T.txt,fontSize:12,fontWeight:600,marginBottom:2}}>{zeig.desc}</div>}
-                  {zeig.note&&<div style={{color:T.txt2,fontSize:11,marginBottom:6}}>{zeig.note}</div>}
+                  {pend.desc&&<div style={{color:T.txt,fontSize:12,fontWeight:600,marginBottom:2}}>{pend.desc}</div>}
+                  {pend.note&&<div style={{color:T.txt2,fontSize:11,marginBottom:6}}>{pend.note}</div>}
 
                 </div>
               );

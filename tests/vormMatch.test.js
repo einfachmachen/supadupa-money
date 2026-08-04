@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { autoMatchVormerkungen, linkPendingToReal, linkPendingToPending, isBankPending, unlinkPendingFromReal, buildLinkedPendIds, badgeLinkTarget, stripVormNotes } from "../src/utils/vormMatch.js";
+import { autoMatchVormerkungen, linkPendingToReal, linkPendingToPending, isBankPending, unlinkPendingFromReal, buildLinkedPendIds, badgeLinkTarget, stripVormNotes, linkChain } from "../src/utils/vormMatch.js";
 import { getVormLinkCandidates, isVormAmountMatch, VormVerknuepfenPanel } from "../src/components/organisms/VormVerknuepfenPanel.jsx";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -404,5 +404,53 @@ describe("Notiz beim Verknüpfen", () => {
     expect(out[2]).toBe(list[2]);
     // idempotent: ein zweiter Lauf aendert nichts mehr
     expect(stripVormNotes(out)[0]).toBe(out[0]);
+  });
+});
+
+// Nutzer-Ziel: eigene Vormerkung anlegen → beim Bank-Abruf mit der
+// Bank-Vormerkung verknüpfen → bucht die Bank endgültig, wird alles
+// miteinander verknüpft. Im Bearbeiten-Dialog der Buchung sollen dann BEIDE
+// Verknüpfungen stehen (Bank-Vormerkung und eigene Vormerkung), jede mit
+// eigenem "Alle entknüpfen". An der Buchung selbst hängt aber nur die
+// Bank-Vormerkung — die eigene erst über sie.
+describe("linkChain", () => {
+  const find = (list) => (id) => list.find(t => t.id === id);
+  const eigene = { id:"pend-manual", pending:true, date:"2026-08-01", totalAmount:-139.87,
+    desc:"Berufsunfähigkeitsversicherung", note:"", accountId:"acc-giro", splits:[] };
+  const bank = { id:"pend-bank", pending:true, _bankPending:true, date:"2026-08-03",
+    totalAmount:-139.87, desc:"Alte Leipziger Lebensversicherung", note:"",
+    accountId:"acc-giro", splits:[] };
+  const buchung = { id:"real-1", pending:false, date:"2026-08-03", totalAmount:-139.87,
+    desc:"Alte Leipziger Lebensversicherung", note:"", accountId:"acc-giro", splits:[] };
+
+  const volleKette = () => {
+    let list = linkPendingToPending([eigene, bank, buchung], "pend-manual", "pend-bank");
+    return linkPendingToReal(list, "pend-bank", "real-1");
+  };
+
+  it("liefert beide Stufen an der Buchung — Bank-Vormerkung und eigene Vormerkung", () => {
+    const list = volleKette();
+    const kette = linkChain(list.find(t=>t.id==="real-1"), find(list));
+    expect(kette.map(t=>t.id)).toEqual(["pend-bank", "pend-manual"]);
+  });
+
+  it("löst nur die angeklickte Stufe: die eigene Vormerkung bleibt an der Bank-Zeile", () => {
+    const list = unlinkPendingFromReal(volleKette(), "pend-bank", "real-1");
+    const b = list.find(t=>t.id==="pend-bank");
+    expect(b.pending).toBe(true);            // wieder offene Vormerkung
+    expect(b.linkedIds).toContain("pend-manual");
+    expect(list.find(t=>t.id==="real-1").linkedIds).toEqual([]);
+  });
+
+  it("bleibt bei einem Zyklus stehen, statt endlos zu laufen", () => {
+    const a = { id:"a", linkedIds:["b"] };
+    const b = { id:"b", linkedIds:["a"] };
+    expect(linkChain(a, find([a, b])).map(t=>t.id)).toEqual(["b"]);
+  });
+
+  it("überspringt verwaiste Verweise auf geloeschte Buchungen", () => {
+    const a = { id:"a", linkedIds:["weg", "b"] };
+    const b = { id:"b" };
+    expect(linkChain(a, find([a, b])).map(t=>t.id)).toEqual(["b"]);
   });
 });
