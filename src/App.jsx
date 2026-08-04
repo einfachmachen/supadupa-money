@@ -4099,15 +4099,19 @@ Abbrechen = ${remoteName}-Stand laden`
               style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",
                 justifyContent:"center",gap:2,cursor:"default",padding:"6px 0px 4px",minWidth:0,
                 WebkitTapHighlightColor:"transparent"}}>
-              <div style={{width:44,height:32,borderRadius:12,opacity:0.35,
+              {/* Symbole in Textfarbe und voll deckend — vorher grau (T.txt2)
+                  und zusaetzlich auf 35% abgeblendet, was sie auf dem dunklen
+                  Balken kaum erkennbar machte. Dass die Reiter hier noch nicht
+                  tappbar sind, zeigt weiterhin der Vergleich zum vergroesserten
+                  Zustand: dort sind die Symbole groesser und der aktive Reiter
+                  ist hinterlegt und blau beschriftet. */}
+              <div style={{width:44,height:32,borderRadius:12,
                 display:"flex",alignItems:"center",justifyContent:"center",
                 background:"transparent"}}>
-                {Li(t.icon,22,T.txt2,1.5)}
+                {Li(t.icon,22,T.txt,1.5)}
               </div>
               {/* T.txt statt T.txt2: die Beschriftung der inaktiven Reiter
-                  war auf dem dunklen Balken kaum lesbar. Das Icon darüber
-                  bleibt gedämpft (opacity 0.35) — daran erkennt man weiterhin,
-                  welcher Reiter aktiv ist. */}
+                  war auf dem dunklen Balken kaum lesbar. */}
               <span style={{fontSize:11,fontWeight:600,
                 color:T.txt,whiteSpace:"nowrap"}}>{t.label}</span>
             </div>
