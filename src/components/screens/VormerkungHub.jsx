@@ -756,6 +756,26 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
   });
   const tgtSubs = (tgtCats.find(c=>c.id===transferToCat)?.subs) || [];
 
+  // Zusammenfassung fuer die Unterzeile der Kopfzeile.
+  const intervallWort = interval_===1 ? "monatlich" : interval_===3 ? "quartalsweise"
+    : interval_===6 ? "halbjährlich" : interval_===12 ? "jährlich" : interval_+"M";
+  const kopfzeile = (()=>{
+    if(typ==="einmalig") {
+      if(!startDate) return null;
+      const [jy,jm,jd] = String(startDate).split("-");
+      return `am ${jd}.${jm}.${jy}`;
+    }
+    const art = typ==="finanzierung" ? "Finanzierung" : "Serie";
+    // Beim Bearbeiten einer bestehenden Serie ist die Anzahl bekannt; beim
+    // Anlegen steht sie noch nicht fest, dann nur das Intervall.
+    const anzahl = isEdit && editVorm?._seriesId
+      ? txs.filter(t=>t._seriesId===editVorm._seriesId).length
+      : null;
+    return anzahl!=null
+      ? `${art} · ${anzahl} Buchungen · Intervall: ${intervallWort}`
+      : `${art} · Intervall: ${intervallWort}`;
+  })();
+
   // Groessen wie im "neue Vormerkung"-Dialog (MobileVormerkenModal), damit
   // beide Dialoge sich gleich anfuehlen — dort ist die Bedienung auf
   // Daumenbreite ausgelegt, hier waren Felder und Schrift halb so gross.
@@ -803,13 +823,15 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
             Dieser Dialog war der letzte Vollbild-Screen mit eigener Kopfzeile;
             alle anderen benutzen MobileHeader laengst. Nebenbei sitzt der
             Zurueck-Pfeil damit ueberall auf demselben Fleck.
-            Unterzeile nur, wenn sie etwas sagt, das die Schnellwahl darunter
-            NICHT schon zeigt: Anzahl und Intervall einer Serie. */}
+            Unterzeile: die knappe Zusammenfassung dessen, was gespeichert wird.
+            Sie wiederholt nicht die Schnellwahl darueber ("einmalige
+            Vormerkung" war genau das), sondern nennt die Fakten, die sonst
+            erst weiter unten im Formular stehen — bei einer Serie Anzahl und
+            Intervall, bei einer einmaligen Vormerkung ihr Datum. Damit hat
+            jeder der drei Typen eine Unterzeile statt nur zwei davon. */}
         <MobileHeader
           title={isEdit ? "Vormerkung bearbeiten" : "wiederkehrende anlegen"}
-          subtitle={isEdit && editVorm._seriesId
-            ? `${typ==="finanzierung"?"Finanzierung":"Serie"} · ${txs.filter(t=>t._seriesId===editVorm._seriesId).length} Buchungen · Intervall: ${interval_===1?"monatlich":interval_===3?"quartalsweise":interval_===12?"jährlich":interval_+"M"}`
-            : null}
+          subtitle={kopfzeile}
           onBack={onClose}/>
 
         {/* Die Speichern-Schaltflaeche scrollt mit (kein fixer Fussbereich) — der
