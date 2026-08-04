@@ -1001,21 +1001,27 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                   fontFamily:NUM_FONT,textAlign:"right",
                   border:`2px solid ${amount?T.blue:T.bd}`}}/>
 
-              {/* 9. Quell-/Zielkategorie */}
-              <div style={LBL}>{umbuchung ? "Quellkategorie" : "Kategorie (optional)"}</div>
-              <select value={catId} onChange={e=>{setCatId(e.target.value);setSubId("");}}
-                style={{...INP_GROSS,marginBottom:8,width:"100%",boxSizing:"border-box"}}>
-                <option value="">— keine —</option>
-                {catOpts.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              {catId&&subOpts.length>0&&<>
-                <div style={LBL}>Unterkategorie</div>
-                <select value={subId} onChange={e=>setSubId(e.target.value)}
-                  style={{...INP_GROSS,marginBottom:8,width:"100%",boxSizing:"border-box"}}>
-                  <option value="">— keine —</option>
+              {/* 9. Kategorien — ohne Ueberschriften, je Zeile Haupt- und
+                  Unterkategorie nebeneinander. Statt der Beschriftungen benennt
+                  die leere Auswahl das Feld ("— Quellkategorie —"), damit auch
+                  ein noch nicht gefuelltes Feld sagt, worum es geht. Die Zeilen
+                  sprechen fuer sich: oben die Quelle, darunter das Ziel.
+                  Die Unterkategorie steht immer da (gesperrt, wenn es keine
+                  gibt) — sonst huepfte die Zeile beim Kategoriewechsel um. */}
+              <div style={{display:"flex",gap:6,marginBottom:8}}>
+                <select value={catId} onChange={e=>{setCatId(e.target.value);setSubId("");}}
+                  style={{...INP_GROSS,flex:1,minWidth:0,marginBottom:0}}>
+                  <option value="">{umbuchung ? "— Quellkategorie —" : "— Kategorie —"}</option>
+                  {catOpts.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+                <select value={subId} disabled={!catId || !subOpts.length}
+                  onChange={e=>setSubId(e.target.value)}
+                  style={{...INP_GROSS,flex:1,minWidth:0,marginBottom:0,
+                    opacity:(catId && subOpts.length)?1:0.5}}>
+                  <option value="">— Unterkategorie —</option>
                   {subOpts.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
-              </>}
+              </div>
 
               {/* 9a. Tank-Erfassung (nur bei Kategorie "Tanken") */}
               {_showFuelFields&&(
@@ -1137,12 +1143,11 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                   Quellkategorie: beide beschreiben, wo die Buchung verbucht wird,
                   nur auf verschiedenen Konten. */}
               {umbuchung && transferToAcc && (<>
-                <div style={LBL}>Zielkategorie</div>
                 <div style={{display:"flex",gap:6,marginBottom:8}}>
                   <select value={transferToCat}
                     onChange={e=>{setTransferToCat(e.target.value);setTransferToSub("");}}
                     style={{...INP_GROSS,flex:1,minWidth:0,marginBottom:0}}>
-                    <option value="">— Hauptkategorie —</option>
+                    <option value="">— Zielkategorie —</option>
                     {tgtCats.map(c=>(<option key={c.id} value={c.id}>{c.name}</option>))}
                   </select>
                   <select value={transferToSub} disabled={!tgtSubs.length}
