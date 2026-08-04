@@ -24,7 +24,31 @@ const MAX_DAYS = 10;
 // manuell angelegten Vormerkung — ihr Vorhandensein ist daher ein zuverlässiger
 // Rückfall, ohne dass alte, bereits gespeicherte Buchungen migriert werden müssten.
 export function isBankPending(tx) {
-  return !!(tx && tx.pending && (tx._bankPending || tx._ebRef || tx._fp || tx._csvSource));
+  return !!(tx && tx.pending) && hasBankOrigin(tx);
+}
+
+// Wie isBankPending, aber ohne die pending-Bedingung: stammt die Zeile
+// überhaupt aus einem Abruf/Import? Bleibt auch dann wahr, wenn sie inzwischen
+// mit der endgültigen Buchung verknüpft und damit auf pending:false gesetzt
+// wurde — genau das braucht die Badge-Anzeige (s. badgeLinkTarget).
+export function hasBankOrigin(tx) {
+  return !!(tx && (tx._bankPending || tx._ebRef || tx._fp || tx._csvSource));
+}
+
+// Welche verknüpfte Zeile gehört als "🔗"-Badge an eine Buchung?
+//
+// Interessant ist immer die SELBST ANGELEGTE Vormerkung — sie zeigt, was man
+// geplant hatte. Die Vorab-Meldung derselben Zahlung durch die Bank (PDNG) ist
+// dagegen keine Zusatzinformation: gleicher Betrag, praktisch gleicher Text,
+// in der Liste liest sie sich wie eine Dublette der Buchung selbst. Solche
+// Bank-Zeilen werden hier übersprungen; hat eine von ihnen zuvor eine manuelle
+// Vormerkung absorbiert (linkPendingToPending), tritt diese an ihre Stelle —
+// sonst gäbe es gar kein Badge mehr für die eigene Planung.
+export function badgeLinkTarget(linkedId, findById) {
+  const lt = findById(linkedId);
+  if (!lt) return null;
+  if (!hasBankOrigin(lt)) return lt;
+  return (lt.linkedIds || []).map(findById).find(t => t && !hasBankOrigin(t)) || null;
 }
 
 // Führt die eigentliche Verknüpfung durch — identische Feld-Logik wie

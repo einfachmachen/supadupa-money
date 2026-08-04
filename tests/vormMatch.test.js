@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { autoMatchVormerkungen, linkPendingToReal, linkPendingToPending, isBankPending, unlinkPendingFromReal, buildLinkedPendIds } from "../src/utils/vormMatch.js";
+import { autoMatchVormerkungen, linkPendingToReal, linkPendingToPending, isBankPending, unlinkPendingFromReal, buildLinkedPendIds, badgeLinkTarget } from "../src/utils/vormMatch.js";
 import { getVormLinkCandidates, isVormAmountMatch, VormVerknuepfenPanel } from "../src/components/organisms/VormVerknuepfenPanel.jsx";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -321,5 +321,41 @@ describe("buildLinkedPendIds", () => {
     const ab = { id:"t-ab", pending:true, accountId:"acc-giro", totalAmount:-500, date:"2026-07-31" };
     const zu = { id:"t-zu", pending:true, accountId:"acc-tg", totalAmount:500, date:"2026-07-31", _linkedTo:"t-ab" };
     expect(buildLinkedPendIds([ab, zu]).size).toBe(0);
+  });
+});
+
+// Regression (echter Nutzer-Bericht mit Screenshot): Nach dem Bank-Abruf stand
+// unter JEDER gebuchten Ausgabe ein "🔗"-Badge mit praktisch demselben Text und
+// Betrag — die Vorab-Meldung (PDNG) derselben Zahlung, die autoMatch korrekt
+// mit der endgültigen Buchung verknüpft hatte. Das liest sich wie eine
+// Dublette und trägt keine Information: interessant ist nur die SELBST
+// angelegte Vormerkung.
+describe("badgeLinkTarget", () => {
+  const find = (list) => (id) => list.find(t => t.id === id);
+  const bankRow = (over={}) => ({ id:"pend-bank", pending:false, _bankPending:true,
+    desc:"Audible Gmbh audible.de/r DE · 2026-08-02T22:27", totalAmount:-9.95, ...over });
+
+  it("zeigt kein Badge für die Bank-Vorabmeldung derselben Buchung", () => {
+    const list = [bankRow({ _linkedTo:"real-1" }), real({ linkedIds:["pend-bank"] })];
+    expect(badgeLinkTarget("pend-bank", find(list))).toBe(null);
+  });
+
+  it("zeigt stattdessen die eigene Vormerkung, die die Bank-Zeile absorbiert hat", () => {
+    const eigene = { id:"pend-manual", pending:false, desc:"audible August 26",
+      totalAmount:-9.95, _linkedTo:"pend-bank" };
+    const list = [eigene, bankRow({ _linkedTo:"real-1", linkedIds:["pend-manual"] }),
+      real({ linkedIds:["pend-bank"] })];
+    expect(badgeLinkTarget("pend-bank", find(list)).id).toBe("pend-manual");
+  });
+
+  it("lässt eine direkt verknüpfte eigene Vormerkung unverändert", () => {
+    const list = [pend({ pending:false, _linkedTo:"real-1" }), real({ linkedIds:["pend-1"] })];
+    expect(badgeLinkTarget("pend-1", find(list)).id).toBe("pend-1");
+  });
+
+  it("erkennt Bank-Herkunft auch bei Altdaten ohne _bankPending (nur _fp/_csvSource)", () => {
+    const legacy = { id:"pend-legacy", pending:false, _fp:"fp-x", _csvSource:"Enable Banking",
+      desc:"WEMAG AG", totalAmount:-71.00, _linkedTo:"real-1" };
+    expect(badgeLinkTarget("pend-legacy", find([legacy]))).toBe(null);
   });
 });

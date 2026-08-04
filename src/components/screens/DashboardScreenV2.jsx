@@ -26,7 +26,7 @@ import { saldoAt, budgetPlaceholderActive } from "../../utils/saldo.js";
 import { pendingDebitDate } from "../../utils/date.js";
 import { fetchNewBankTx, listConnectedBanks } from "../../utils/enableBankingFetch.js";
 import { findUnmappedEbAccounts } from "../../utils/enableBankingStore.js";
-import { autoMatchVormerkungen, buildLinkedPendIds } from "../../utils/vormMatch.js";
+import { autoMatchVormerkungen, buildLinkedPendIds, badgeLinkTarget } from "../../utils/vormMatch.js";
 
 function DashboardScreenV2() {
   const { cats,setCats,groups,setGroups,txs,setTxs,accounts,setAccounts,
@@ -99,7 +99,10 @@ function DashboardScreenV2() {
     // nachjustieren zu müssen.
     const LinkBadges = ({tx}) => {
       const linkBadges = (tx.linkedIds||[]).map(lid=>{
-        const lt=txs.find(t=>t.id===lid);
+        // Nicht die Bank-Vorabmeldung derselben Zahlung anzeigen, sondern die
+        // eigene Vormerkung dahinter (s. badgeLinkTarget) — sonst steht die
+        // Buchung praktisch zweimal untereinander.
+        const lt=badgeLinkTarget(lid, id=>txs.find(t=>t.id===id));
         if(!lt||lt.pending) return null;
         const sTotal = lt._seriesTotal;
         const sIdx = lt._seriesIdx;

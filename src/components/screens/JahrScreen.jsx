@@ -10,6 +10,7 @@ import { BASE_ROWS, CUR_YEAR, MONTHS_F, MONTHS_S } from "../../utils/constants.j
 import { drillSort, fmt, pn, sumAmounts, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { saldoAt, saldoMitte, saldoEnde } from "../../utils/saldo.js";
+import { badgeLinkTarget } from "../../utils/vormMatch.js";
 import { YearSectionHeader } from "../molecules/YearSectionHeader.jsx";
 
 function JahrScreen({forceSingle=false}) {
@@ -648,7 +649,8 @@ function JahrScreen({forceSingle=false}) {
                               {sub?.name||cat?.name||"unkategorisiert"}
                             </span>
                             {(tx.linkedIds||[]).map(lid=>{
-                              const lt=txs.find(t=>t.id===lid);
+                              // s. DashboardScreenV2.LinkBadges / badgeLinkTarget
+                              const lt=badgeLinkTarget(lid, id=>txs.find(t=>t.id===id));
                               if(!lt||lt.pending) return null;
                               const sTotal=lt._seriesTotal; const sIdx=lt._seriesIdx;
                               return (
