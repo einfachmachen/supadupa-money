@@ -270,6 +270,36 @@ export default function SupaDupaMoney() {
   // Plus-Button: arretiert (höhere Position + 1,5× Größe) ja/nein
   // NICHT persistiert — beim App-Start immer false (Bottom-Bar-Position)
   const [plusArretiert, setPlusArretiert] = useState(false);
+  // ── Hinweise rund um den + Knopf ──────────────────────────────────────
+  // Im kleinen Zustand sind die vier Reiter daneben nur Anzeige — antippen
+  // bewirkt nichts. Genau dort entsteht die Verwirrung, deshalb zwei kleine
+  // Hilfen: eine Antwort im Moment des Scheiterns und eine Einladung vorab.
+  //
+  // 1) navHinweis: erscheint, wenn jemand im kleinen Zustand einen Reiter
+  //    antippt, und laeuft nach wenigen Sekunden von selbst aus.
+  const [navHinweis, setNavHinweis] = useState(false);
+  // 2) plusEinladung: sanftes Pulsieren am kleinen Knopf fuer alle, die ihn
+  //    noch nie benutzt haben. Endet dauerhaft mit der ersten Benutzung und
+  //    innerhalb einer Sitzung nach wenigen Sekunden — es soll einladen, nicht
+  //    dauerhaft blinken.
+  const [plusEinladung, setPlusEinladung] = useState(()=>kvStore.getItem("mbt_plus_benutzt")!=="1");
+  useEffect(()=>{
+    if(!navHinweis) return;
+    const id = setTimeout(()=>setNavHinweis(false), 2800);
+    return ()=>clearTimeout(id);
+  }, [navHinweis]);
+  useEffect(()=>{
+    if(!plusEinladung) return;
+    const id = setTimeout(()=>setPlusEinladung(false), 9000);
+    return ()=>clearTimeout(id);
+  }, [plusEinladung]);
+  useEffect(()=>{
+    // Erste Vergroesserung = der Knopf ist verstanden.
+    if(!plusArretiert) return;
+    setPlusEinladung(false);
+    setNavHinweis(false);
+    if(kvStore.getItem("mbt_plus_benutzt")!=="1") kvStore.setItem("mbt_plus_benutzt","1");
+  }, [plusArretiert]);
   // True, solange der Money-Mood/Trend-Drilldown offen ist. Dort wird der + Button
   // vergrößert angezeigt und ist frei vertikal verschiebbar (drillBtnY); Links/
   // Rechts-Wisch schaltet weiter das Jahr. Standard-Y bei jedem Öffnen.
@@ -3937,8 +3967,11 @@ Abbrechen = ${remoteName}-Stand laden`
                   onPointerMove={onPointerMove}
                   onPointerUp={onPointerUp}
                   onPointerCancel={onPointerCancel}
+                  className={(!plusArretiert && (plusEinladung || navHinweis)) ? "plus-einladung" : undefined}
                   style={{
                     ...plusBtnShell(SIZE),
+                    // Farbe des Pulsierens folgt dem Knopf selbst (s. base.css).
+                    "--plus-glow": isFlat ? fg : "rgba(170,204,0,0.55)",
                     // Flache Themes: Kontrastrahmen (in Textfarbe) definiert die
                     // Form, da der Schatten per CSS entfernt wird. Sonst dezenter
                     // Rahmen in Nav-Farbe + Schatten wie gehabt. Sobald goldReady:
@@ -4094,10 +4127,12 @@ Abbrechen = ${remoteName}-Stand laden`
           // sichtbar werden sie erst nach Doppel-Tap auf den + Button
           // (plusArretiert). Die Beschriftung bleibt hier jedoch klar sichtbar,
           // nur die Symbole sind blass (Hinweis auf den noch inaktiven Zustand).
+          // Antippen navigiert weiterhin NICHT — es beantwortet nur die Frage,
+          // warum nichts passiert (Hinweis + Pulsieren des + Knopfes).
           return (
-            <div key={t.id}
+            <div key={t.id} onClick={()=>setNavHinweis(true)}
               style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",
-                justifyContent:"center",gap:2,cursor:"default",padding:"6px 0px 4px",minWidth:0,
+                justifyContent:"center",gap:2,cursor:"pointer",padding:"6px 0px 4px",minWidth:0,
                 WebkitTapHighlightColor:"transparent"}}>
               {/* Symbole in Textfarbe und voll deckend — vorher grau (T.txt2)
                   und zusaetzlich auf 35% abgeblendet, was sie auf dem dunklen
@@ -4137,6 +4172,22 @@ Abbrechen = ${remoteName}-Stand laden`
           </div>
         );
       })()}
+
+      {/* Antwort im Moment des Scheiterns: erscheint nur, wenn jemand im
+          kleinen Zustand einen Reiter antippt und nichts passiert. Sitzt ueber
+          der Leiste, faengt keine Tipps ab (pointerEvents:none) und
+          verschwindet nach knapp drei Sekunden von selbst. */}
+      {navHinweis && !plusArretiert && (
+        <div style={{position:"fixed",left:0,right:0,zIndex:9998,pointerEvents:"none",
+          bottom:"calc(66px + env(safe-area-inset-bottom, 0px))",
+          display:"flex",justifyContent:"center",padding:"0 16px"}}>
+          <div style={{background:T.surf2,border:`1px solid ${T.bds}`,borderRadius:13,
+            padding:"9px 15px",color:T.txt,fontSize:13,fontWeight:600,textAlign:"center",
+            boxShadow:"0 6px 22px rgba(0,0,0,0.45)",maxWidth:"92%"}}>
+            Erst den + Knopf antippen — dann sind die Reiter aktiv.
+          </div>
+        </div>
+      )}
 
       {/* ── MOBILE UI TEST ──
           ErrorBoundary UM Suspense (nicht nur Suspense allein): schlägt einer

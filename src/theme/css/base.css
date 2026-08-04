@@ -76,3 +76,22 @@
 @media (max-width: 359px) {
   .vh-seg-label-inactive { display: none; }
 }
+
+/* Einladung am kleinen + Knopf: ein weicher Ring, der nach aussen auslaeuft.
+   Die vier Reiter daneben sind erst bedienbar, wenn der Knopf vergroessert
+   ist — ohne Hinweis ist das nicht zu erraten. Bewusst als box-shadow und
+   nicht als transform: der Knopf wird ueber transform positioniert und
+   skaliert, eine Animation darauf wuerde mit den Gesten kollidieren.
+   Endet mit der ersten Benutzung des Knopfes (s. mbt_plus_benutzt). */
+@keyframes plusEinladung {
+  0%   { box-shadow: 0 0 0 0   var(--plus-glow, rgba(170,204,0,0.55)); }
+  70%  { box-shadow: 0 0 0 16px rgba(0,0,0,0); }
+  100% { box-shadow: 0 0 0 0   rgba(0,0,0,0); }
+}
+.plus-einladung { animation: plusEinladung 1.9s ease-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  /* Statt zu pulsieren nur ein ruhiger Ring — die Einladung bleibt sichtbar,
+     ohne Bewegung. */
+  .plus-einladung { animation: none;
+    box-shadow: 0 0 0 6px var(--plus-glow, rgba(170,204,0,0.55)); }
+}
