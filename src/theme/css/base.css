@@ -82,7 +82,8 @@
    ist — ohne Hinweis ist das nicht zu erraten. Bewusst als box-shadow und
    nicht als transform: der Knopf wird ueber transform positioniert und
    skaliert, eine Animation darauf wuerde mit den Gesten kollidieren.
-   Endet mit der ersten Benutzung des Knopfes (s. mbt_plus_benutzt). */
+   Laeuft bei jedem App-Start kurz an und endet, sobald der Knopf
+   vergroessert wird. */
 @keyframes plusEinladung {
   0%   { box-shadow: 0 0 0 0   var(--plus-glow, rgba(170,204,0,0.55)); }
   70%  { box-shadow: 0 0 0 16px rgba(0,0,0,0); }

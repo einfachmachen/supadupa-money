@@ -278,11 +278,12 @@ export default function SupaDupaMoney() {
   // 1) navHinweis: erscheint, wenn jemand im kleinen Zustand einen Reiter
   //    antippt, und laeuft nach wenigen Sekunden von selbst aus.
   const [navHinweis, setNavHinweis] = useState(false);
-  // 2) plusEinladung: sanftes Pulsieren am kleinen Knopf fuer alle, die ihn
-  //    noch nie benutzt haben. Endet dauerhaft mit der ersten Benutzung und
-  //    innerhalb einer Sitzung nach wenigen Sekunden — es soll einladen, nicht
-  //    dauerhaft blinken.
-  const [plusEinladung, setPlusEinladung] = useState(()=>kvStore.getItem("mbt_plus_benutzt")!=="1");
+  // 2) plusEinladung: sanftes Pulsieren am kleinen Knopf bei jedem App-Start.
+  //    Bewusst nicht nur beim ersten Mal — die Geste wird selten gebraucht und
+  //    ist nach ein paar Tagen Pause wieder vergessen. Endet, sobald der Knopf
+  //    vergroessert wird, und sonst nach wenigen Sekunden von selbst: es soll
+  //    einladen, nicht dauerhaft blinken.
+  const [plusEinladung, setPlusEinladung] = useState(true);
   useEffect(()=>{
     if(!navHinweis) return;
     const id = setTimeout(()=>setNavHinweis(false), 2800);
@@ -294,11 +295,10 @@ export default function SupaDupaMoney() {
     return ()=>clearTimeout(id);
   }, [plusEinladung]);
   useEffect(()=>{
-    // Erste Vergroesserung = der Knopf ist verstanden.
+    // Vergroessert = der Knopf ist verstanden, Hinweise koennen weg.
     if(!plusArretiert) return;
     setPlusEinladung(false);
     setNavHinweis(false);
-    if(kvStore.getItem("mbt_plus_benutzt")!=="1") kvStore.setItem("mbt_plus_benutzt","1");
   }, [plusArretiert]);
   // True, solange der Money-Mood/Trend-Drilldown offen ist. Dort wird der + Button
   // vergrößert angezeigt und ist frei vertikal verschiebbar (drillBtnY); Links/
@@ -4184,7 +4184,7 @@ Abbrechen = ${remoteName}-Stand laden`
           <div style={{background:T.surf2,border:`1px solid ${T.bds}`,borderRadius:13,
             padding:"9px 15px",color:T.txt,fontSize:13,fontWeight:600,textAlign:"center",
             boxShadow:"0 6px 22px rgba(0,0,0,0.45)",maxWidth:"92%"}}>
-            Erst den + Knopf antippen — dann sind die Reiter aktiv.
+            Der Knopf in der Mitte entsperrt die Reiter.
           </div>
         </div>
       )}
