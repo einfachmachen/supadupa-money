@@ -762,11 +762,15 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
             <div style={{color:T.txt,fontSize:24,fontWeight:700}}>
               {isEdit ? "Vormerkung bearbeiten" : "wiederkehrende anlegen"}
             </div>
-            <div style={{color:T.txt2,fontSize:16}}>
-              {isEdit
-                ? (editVorm._seriesId ? `${typ==="finanzierung"?"Finanzierung":"Serie"} · ${txs.filter(t=>t._seriesId===editVorm._seriesId).length} Buchungen · Intervall: ${interval_===1?"monatlich":interval_===3?"quartalsweise":interval_===12?"jährlich":interval_+"M"}` : "einmalige Vormerkung")
-                : "Einmalig · Wiederkehrend · Finanzierung · Erkennen"}
-            </div>
+            {/* Unterzeile nur, wenn sie etwas sagt, das die Schnellwahl darunter
+                NICHT schon zeigt: Anzahl und Intervall einer Serie. "einmalige
+                Vormerkung" und die Aufzaehlung der Typen beim Anlegen waren
+                genau diese Wiederholung (Nutzer-Hinweis). */}
+            {isEdit && editVorm._seriesId && (
+              <div style={{color:T.txt2,fontSize:16}}>
+                {`${typ==="finanzierung"?"Finanzierung":"Serie"} · ${txs.filter(t=>t._seriesId===editVorm._seriesId).length} Buchungen · Intervall: ${interval_===1?"monatlich":interval_===3?"quartalsweise":interval_===12?"jährlich":interval_+"M"}`}
+              </div>
+            )}
           </div>
         </div>
 
@@ -830,9 +834,13 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
               {/* Segmented Control */}
               <div style={{display:"flex",gap:3,background:"rgba(0,0,0,0.2)",
                 borderRadius:10,padding:3,marginBottom:12}}>
-                <VormHubSegBtn v="einmalig"      l="Einmalig"      icon="calendar"     cur={typ} set={setTyp} clearCount={()=>setCount("")} clearEnd={()=>setEndDate("")}/>
-                <VormHubSegBtn v="wiederkehrend" l="wiederkehrend" icon="repeat"        cur={typ} set={setTyp} clearCount={()=>setCount("")} clearEnd={()=>setEndDate("")}/>
-                <VormHubSegBtn v="finanzierung"  l="Finanzierung"  icon="credit-card"   cur={typ} set={setTyp} clearCount={()=>setCount("")} clearEnd={()=>setEndDate("")}/>
+                {/* Kurze Beschriftungen, damit alle drei nebeneinander passen.
+                    "Serie" benutzt die App auch in der Unterzeile beim Bearbeiten
+                    einer wiederkehrenden Vormerkung, "Raten" trifft die
+                    Finanzierung ohne das lange Wort. */}
+                <VormHubSegBtn v="einmalig"      l="einmalig" icon="calendar"    cur={typ} set={setTyp} clearCount={()=>setCount("")} clearEnd={()=>setEndDate("")}/>
+                <VormHubSegBtn v="wiederkehrend" l="Serie"    icon="repeat"      cur={typ} set={setTyp} clearCount={()=>setCount("")} clearEnd={()=>setEndDate("")}/>
+                <VormHubSegBtn v="finanzierung"  l="Raten"    icon="credit-card" cur={typ} set={setTyp} clearCount={()=>setCount("")} clearEnd={()=>setEndDate("")}/>
               </div>
 
               {/* 1. Ausgabe / Einnahme */}
