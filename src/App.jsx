@@ -4183,7 +4183,7 @@ Abbrechen = ${remoteName}-Stand laden`
         onBack={()=>{setShowFuelAnalysis(false);setPlusArretiert(true);}}/>}
       {showMatching&&<MatchingScreen onClose={()=>{setShowMatching(false);setPlusArretiert(false);}}
         onBack={()=>{setShowMatching(false);reopenMobilePicker("main");}}/>}
-      {showVormHub&&<VormerkungHub onClose={()=>{setShowVormHub(false);setEditVormTx(null);setPlusArretiert(false);}} editVorm={editVormTx} mobileMode={mobileMode}/>}
+      {showVormHub&&<VormerkungHub onClose={()=>{setShowVormHub(false);setEditVormTx(null);setPlusArretiert(false);}} editVorm={editVormTx}/>}
       {showRecurring&&<RecurringDetectionScreen onClose={()=>{setShowRecurring(false);setPlusArretiert(false);}}/>}
       {showKategorisieren&&<RecurringDetectionScreen initialTab="kategorisieren" onClose={()=>{setShowKategorisieren(false);setPlusArretiert(false);}}/>}
       </Suspense>

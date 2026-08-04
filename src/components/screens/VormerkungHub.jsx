@@ -18,7 +18,7 @@ import { Li } from "../../utils/icons.jsx";
 import { isFuelSelection, checkOdometerPlausibility } from "../../utils/fuel.js";
 import { recordDeletedTxs } from "../../utils/txTombstones.js";
 
-function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}) {
+function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
   const { cats, groups, txs, setTxs, accounts, vehicles, setVehicles, year, month, getCat, getSub, setMasterOverride } = useContext(AppCtx);
   // „+"-Button übernimmt: Tipp = Fertig/Schließen, Wisch ↓ = schließen.
   useEffect(() => {
@@ -736,45 +736,45 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null, mobileMode=false}
     : null;
 
   return (
-    <div onClick={mobileMode?null:onClose}
-      className={mobileMode?"mobile-modal":""}
-      style={mobileMode
-        ? {position:"fixed",inset:0,background:T.bg,zIndex:300,display:"flex",flexDirection:"column"}
-        : {position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",
-            backdropFilter:"blur(8px)",zIndex:15,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-      <div onClick={e=>e.stopPropagation()} style={mobileMode
-        ? {flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}
-        : {background:T.surf2,borderRadius:"24px 24px 0 0",
-            width:"100%",maxWidth:520,maxHeight:"92vh",display:"flex",flexDirection:"column",
-            border:`1px solid ${T.bds}`,boxShadow:"0 -8px 40px rgba(0,0,0,0.6)"}}>
+    // Vollbild. Vorher hing das an einem Prop, dessen Setter in App.jsx nie
+    // aufgerufen wurde — es war also immer false und jeder bekam das
+    // Slide-up-Blatt (92vh, oben abgerundet). Hier werden Betrag, Datum und
+    // Beschreibung eingegeben, bei Serien zusaetzlich Intervall und Laufzeit;
+    // die Tastatur schob davon die Haelfte aus dem Bild. Gleiches Geruest wie
+    // die uebrigen Vollbild-Screens: Kopfzeile steht, nur der Inhalt scrollt.
+    <div className="mobile-modal"
+      style={{position:"fixed",inset:0,background:T.bg,zIndex:300,
+        display:"flex",flexDirection:"column"}}>
+      <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
 
         {/* Header */}
-        <div style={{padding:mobileMode?"12px 16px":"14px 16px 10px",
-          borderBottom:`1px solid ${T.bd}`,background:mobileMode?T.surf:"transparent",
+        <div style={{padding:"12px 16px",
+          borderBottom:`1px solid ${T.bd}`,background:T.surf,
           display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
-          <button onClick={onClose} style={{background:"rgba(255,255,255,0.08)",border:"none",
-            color:T.txt2,width:mobileMode?44:34,height:mobileMode?44:34,
-            borderRadius:11,cursor:"pointer",fontSize:mobileMode?20:16,
+          <button onClick={onClose} aria-label="Zurück"
+            style={{background:"rgba(255,255,255,0.08)",border:"none",
+            color:T.txt2,width:44,height:44,
+            borderRadius:11,cursor:"pointer",fontSize:20,
             display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
             ←
           </button>
           <div style={{flex:1}}>
-            <div style={{color:T.txt,fontSize:mobileMode?24:15,fontWeight:700}}>
+            <div style={{color:T.txt,fontSize:24,fontWeight:700}}>
               {isEdit ? "Vormerkung bearbeiten" : "wiederkehrende anlegen"}
             </div>
-            <div style={{color:T.txt2,fontSize:mobileMode?16:10}}>
+            <div style={{color:T.txt2,fontSize:16}}>
               {isEdit
                 ? (editVorm._seriesId ? `${typ==="finanzierung"?"Finanzierung":"Serie"} · ${txs.filter(t=>t._seriesId===editVorm._seriesId).length} Buchungen · Intervall: ${interval_===1?"monatlich":interval_===3?"quartalsweise":interval_===12?"jährlich":interval_+"M"}` : "einmalige Vormerkung")
                 : "Einmalig · Wiederkehrend · Finanzierung · Erkennen"}
             </div>
           </div>
-          {!mobileMode&&<button onClick={onClose} style={{background:"rgba(255,255,255,0.07)",border:"none",
-            color:T.txt2,borderRadius:9,width:30,height:30,cursor:"pointer"}}>
-            {Li("x",14)}
-          </button>}
         </div>
 
-        <div style={{flex:1,overflowY:"auto",background:mobileMode?T.surf2:"transparent",paddingBottom:mobileMode?140:0}}>
+        {/* Die Speichern-Schaltflaeche scrollt mit (kein fixer Fussbereich) — der
+            Abstand unten haelt sie nur von der Home-Anzeige frei und gibt bei
+            offener Tastatur Platz, das letzte Feld nach oben zu scrollen. */}
+        <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",background:T.surf2,
+          paddingBottom:"calc(40px + env(safe-area-inset-bottom, 0px))"}}>
 
           {/* NEU ERSTELLEN */}
           <VormHubSecToggle label="neue Vormerkung erstellen" icon="plus-circle"
