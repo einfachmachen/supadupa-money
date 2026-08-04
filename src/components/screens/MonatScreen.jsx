@@ -168,7 +168,6 @@ function MonatScreen() {
     const [filt,     setFilt]     = useState("all");
     const [heroDetailsOpen, setHeroDetailsOpen] = useState(false);
     const [showAllCats, setShowAllCats] = useState(false);
-    const [activeCatTxId, setActiveCatTxId] = useState(null);
     const pendingCatsRef = useRef({});
     const [txIconPickM, setTxIconPickM] = useState(null);
     const [search,   setSearch]   = useState("");      // abgeschickte Suche (filtert)
@@ -1799,7 +1798,11 @@ function MonatScreen() {
                               ))}
                             </ExpandableLine>
                           </div>
-                          <div data-role="tx-amtblock" style={{textAlign:"right",flexShrink:0,marginRight:8,transition:_reduceMotion?"none":"flex-basis .3s cubic-bezier(0.16, 1, 0.3, 1), margin .3s cubic-bezier(0.16, 1, 0.3, 1)"}}>
+                          {/* Der Betrag ist das auffaelligste Element der Zeile und
+                              damit das, was man zum Oeffnen antippt — er lag aber
+                              ausserhalb des Klickbereichs (der deckte nur die
+                              Beschreibung links ab), sodass hier nichts passierte. */}
+                          <div data-role="tx-amtblock" onClick={()=>openEdit(tx)} style={{textAlign:"right",flexShrink:0,marginRight:8,cursor:"pointer",transition:_reduceMotion?"none":"flex-basis .3s cubic-bezier(0.16, 1, 0.3, 1), margin .3s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                             <div data-role="tx-amtbar" style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:8,
                               transition:_reduceMotion?"none":"background .15s ease, padding .3s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease"}}>
                               <span data-role="tx-amt-label" style={{display:"none",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.03em"}}>Betrag</span>
@@ -2102,7 +2105,11 @@ function MonatScreen() {
                             </ExpandableLine>
                           </div>
                           {/* Amount */}
-                          <div data-role="tx-amtblock" style={{textAlign:"right",flexShrink:0,marginRight:8,transition:_reduceMotion?"none":"flex-basis .3s cubic-bezier(0.16, 1, 0.3, 1), margin .3s cubic-bezier(0.16, 1, 0.3, 1)"}}>
+                          {/* Der Betrag ist das auffaelligste Element der Zeile und
+                              damit das, was man zum Oeffnen antippt — er lag aber
+                              ausserhalb des Klickbereichs (der deckte nur die
+                              Beschreibung links ab), sodass hier nichts passierte. */}
+                          <div data-role="tx-amtblock" onClick={()=>openEdit(tx)} style={{textAlign:"right",flexShrink:0,marginRight:8,cursor:"pointer",transition:_reduceMotion?"none":"flex-basis .3s cubic-bezier(0.16, 1, 0.3, 1), margin .3s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                             <div data-role="tx-amtbar" style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:8,
                               transition:_reduceMotion?"none":"background .15s ease, padding .3s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease"}}>
                               <span data-role="tx-amt-label" style={{display:"none",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.03em"}}>Betrag</span>
@@ -2271,41 +2278,6 @@ function MonatScreen() {
       }
 
       {/* Kategorie-Zuweisung Modal */}
-      {activeCatTxId&&(()=>{
-        const tx = txs.find(t=>t.id===activeCatTxId);
-        if(!tx) return null;
-        const type = txType(tx);
-        return (
-          <div onClick={()=>setActiveCatTxId(null)}
-            style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",
-              backdropFilter:"blur(8px)",zIndex:200,
-              display:"flex",alignItems:"flex-start",justifyContent:"center",paddingTop:60}}>
-            <div onClick={e=>e.stopPropagation()}
-              style={{background:T.surf2,borderRadius:"0 0 20px 20px",width:"100%",
-                maxWidth:480,padding:"16px",maxHeight:"70vh",overflowY:"auto",
-                border:`1px solid ${T.bd}`}}>
-              <div style={{color:T.txt,fontSize:13,fontWeight:700,marginBottom:4}}>{tx.desc}</div>
-              <div style={{color:T.txt2,fontSize:11,marginBottom:12}}>Kategorie zuweisen</div>
-              <CatPicker
-                value={(()=>{
-                  const pc = pendingCatsRef.current[activeCatTxId];
-                  const catId = pc?.catId||(tx.splits||[])[0]?.catId||"";
-                  const subId = pc?.subId||(tx.splits||[])[0]?.subId||"";
-                  return catId+"|"+subId;
-                })()}
-                filterType={type==="income"?"income":"expense"}
-                onChange={(catId,subId)=>{
-                  setTxs(p=>p.map(t=>t.id===activeCatTxId?{...t,
-                    splits:[{id:(t.splits||[])[0]?.id||uid(),catId,subId,amount:t.totalAmount}]
-                  }:t));
-                  setActiveCatTxId(null);
-                }}
-                placeholder="— Kategorie wählen —"
-              />
-            </div>
-          </div>
-        );
-      })()}
     </>);
 
 }

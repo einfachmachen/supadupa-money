@@ -5,6 +5,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { THEMES, getTheme } from "../../theme/themes.js";
 import { Li } from "../../utils/icons.jsx";
+import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { kvStore } from "../../utils/kvStore.js";
 
 function CustomThemeEditor() {
@@ -257,24 +258,19 @@ function CustomThemeEditor() {
         </div>
       )}
 
-      {/* Full-screen editor modal */}
+      {/* Theme-Editor als Vollbild-Screen.
+          Er ist inhaltlich ein eigener Screen — vier Live-Vorschauen plus die
+          komplette Farbliste. In einer zentrierten Karte (vorher 520 breit,
+          92vh hoch) blieb davon auf dem Telefon ein schmaler Schlitz mit
+          Innen-Scroll uebrig. Gleiches Geruest wie die uebrigen Vollbild-
+          Screens: inset:0 + MobileHeader mit Zurueck-Pfeil + Flex-Spalte,
+          damit Kopfzeile steht und nur der Inhalt scrollt. */}
       {open && (
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",backdropFilter:"blur(12px)",
-          zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"}}>
-          <div style={{background:T.surf,borderRadius:20,width:"100%",maxWidth:520,
-            maxHeight:"92vh",display:"flex",flexDirection:"column",
-            border:`1px solid ${T.bds}`,boxShadow:"0 20px 60px rgba(0,0,0,0.7)"}}>
-
-            {/* Modal header */}
-            <div style={{padding:"16px 18px 12px",borderBottom:`1px solid ${T.bd}`,
-              display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
-              <div style={{color:T.txt,fontSize:15,fontWeight:700,display:"flex",alignItems:"center",gap:8}}>
-                {Li("sliders",15,T.blue)} Theme-Editor
-              </div>
-              <button onClick={()=>setOpen(false)}
-                style={{background:`rgba(255,255,255,0.08)`,border:"none",color:T.txt2,
-                  borderRadius:8,width:30,height:30,cursor:"pointer",fontSize:16,fontFamily:"inherit"}}>×</button>
-            </div>
+        <div style={{position:"fixed",inset:0,background:T.bg,zIndex:200,
+          display:"flex",flexDirection:"column"}}>
+          <MobileHeader title="Theme-Editor" icon="sliders" iconColor={T.blue}
+            onBack={()=>setOpen(false)}/>
+          <div style={{flex:1,minHeight:0,display:"flex",flexDirection:"column"}}>
 
             {/* Live mini previews — 4 panels, sticky above scroll */}
             <div style={{padding:"14px 18px 0",flexShrink:0}}>

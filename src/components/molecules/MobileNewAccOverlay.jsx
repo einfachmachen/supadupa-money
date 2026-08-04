@@ -7,6 +7,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
+import { MobileHeader } from "../atoms/MobileHeader.jsx";
 
 function MobileNewAccOverlay({onClose, S}) {
   const { accounts, setAccounts } = useContext(AppCtx);
@@ -21,14 +22,17 @@ function MobileNewAccOverlay({onClose, S}) {
     fontSize:S.fs,fontFamily:"inherit",outline:"none",
     border:`2px solid ${T.blue}`,marginBottom:S.gap};
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",
-      backdropFilter:"blur(8px)",zIndex:400,
-      display:"flex",flexDirection:"column",justifyContent:"flex-end"}}>
-      <div style={{background:T.surf2,borderRadius:"20px 20px 0 0",
-        padding:S.padL,border:`1px solid ${T.bd}`,maxHeight:"80vh",overflowY:"auto"}}>
-        <div style={{color:T.txt,fontSize:S.fs+2,fontWeight:700,marginBottom:S.gap}}>
-          neues Konto / Zahlungsmittel
-        </div>
+    // Vollbild statt Slide-up-Karte: hier wird getippt (Name, Verzoegerung) —
+    // in einem 80vh-Blatt schiebt die Tastatur die Eingabefelder und die
+    // Anlegen-Schaltflaeche aus dem Bild. Zurueck-Pfeil oben links wie ueberall
+    // sonst; das Overlay geht aus bereits vollflaechigen Modals auf, deshalb
+    // bleibt zIndex 400 ueber ihnen.
+    <div style={{position:"fixed",inset:0,background:T.bg,zIndex:400,
+      display:"flex",flexDirection:"column"}}>
+      <MobileHeader title="Neues Konto" subtitle="Konto oder Zahlungsmittel"
+        icon="landmark" iconColor={T.blue} onBack={()=>onClose(null)}/>
+      <div style={{flex:1,minHeight:0,overflowY:"auto",WebkitOverflowScrolling:"touch",
+        padding:S.padL}}>
         <input value={name} onChange={e=>setName(e.target.value)}
           placeholder="Name (z.B. Giro, Bar, PayPal)" autoFocus style={inp}/>
         <div style={{color:T.txt2,fontSize:S.fs-4,marginBottom:6,fontWeight:600}}>Farbe</div>
@@ -66,12 +70,6 @@ function MobileNewAccOverlay({onClose, S}) {
             color:name.trim()?"#fff":T.txt2,fontSize:S.fs,fontWeight:700,
             cursor:"pointer",fontFamily:"inherit"}}>
             ✓ Anlegen
-          </button>
-          <button onClick={()=>onClose(null)}
-            style={{padding:`${S.padL}px ${S.padL}px`,borderRadius:S.radius,
-              border:`1.5px solid ${T.bd}`,background:"transparent",
-              color:T.txt2,fontSize:S.fs,cursor:"pointer",fontFamily:"inherit"}}>
-            ✕
           </button>
         </div>
       </div>
