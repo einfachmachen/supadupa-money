@@ -763,7 +763,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
     if(typ==="einmalig") {
       if(!startDate) return null;
       const [jy,jm,jd] = String(startDate).split("-");
-      return `am ${jd}.${jm}.${jy}`;
+      return `Vormerkung für ${jd}.${jm}.${jy}`;
     }
     const art = typ==="finanzierung" ? "Finanzierung" : "Serie";
     // Beim Bearbeiten einer bestehenden Serie ist die Anzahl bekannt; beim
