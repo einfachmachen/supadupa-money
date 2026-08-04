@@ -48,7 +48,12 @@ function MobileHeader({ title, subtitle, icon, iconColor, onBack, onClose, title
   const iCol = iconColor || T.blue;
   return (
     <div style={{background:T.surf, borderBottom:`1px solid ${T.bd}`,
-      padding:`calc(${H_PAD_V}px + ${safeAreaTop ? "env(safe-area-inset-top, 0px)" : "0px"}) ${H_PAD_H}px ${H_PAD_V}px`,
+      // Oben nur so viel Luft, wie die Notch wirklich braucht: die
+      // Statusleisten-Aussparung ist auf grossen Geraeten schon ~50px hoch,
+      // und volle 12px obendrauf schoben den Titel unnoetig weit nach unten
+      // (Nutzer-Hinweis). Auf Geraeten ohne Aussparung (env = 0) bleiben es
+      // die vollen 12px, sonst waere der Titel dort zu dicht am Rand.
+      padding:`${safeAreaTop ? `max(${H_PAD_V}px, calc(env(safe-area-inset-top, 0px) + 2px))` : `${H_PAD_V}px`} ${H_PAD_H}px ${H_PAD_V}px`,
       display:"flex", alignItems:"center", gap:12, flexShrink:0}}>
       <button onClick={handler} aria-label={isBack ? "Zurück" : "Schließen"}
         style={{background:"rgba(255,255,255,0.08)", border:"none", color:T.txt2,

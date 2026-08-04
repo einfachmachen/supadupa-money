@@ -789,6 +789,11 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
   // Feldbeschriftungen in Textfarbe statt Grau — grau auf dunkelgrauem Grund
   // war kaum lesbar (Nutzer-Hinweis, gilt in der ganzen App).
   const LBL = {color:T.txt, fontSize:S.fs-4, fontWeight:600, marginBottom:6};
+  // Duenne graue Linie zwischen den Abschnitten des Formulars. Ohne sie
+  // stehen Konten, Betrag, Kategorien, Serien-Einstellungen und Termine als
+  // eine einzige lange Folge da — mit den grossen Feldern sieht man auf einen
+  // Blick nicht mehr, was zusammengehoert (Nutzer-Wunsch).
+  const TRENNER = {height:1, background:T.bd, margin:`${S.gap}px 0`};
 
   // Neues Konto anlegen — gleicher Weg wie im "neue Vormerkung"-Dialog: der
   // Vollbild-Dialog tritt an die Stelle dieses Dialogs und kehrt danach mit dem
@@ -837,7 +842,13 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
         {/* Die Speichern-Schaltflaeche scrollt mit (kein fixer Fussbereich) — der
             Abstand unten haelt sie nur von der Home-Anzeige frei und gibt bei
             offener Tastatur Platz, das letzte Feld nach oben zu scrollen. */}
-        <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",background:T.surf2,
+        {/* overflowX:hidden — ohne das liess sich der ganze Dialog seitlich
+            verschieben, sobald irgendeine Zeile ein paar Pixel breiter war als
+            der Bildschirm (grosse Schrift, lange Kategorienamen). Der Inhalt
+            ist auf die Breite ausgelegt, also soll er auch nur senkrecht
+            scrollen. */}
+        <div style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch",
+          background:T.surf2,maxWidth:"100%",
           paddingBottom:"calc(40px + env(safe-area-inset-bottom, 0px))"}}>
 
           {/* Typ ganz oben, direkt unter dem Titel — er entscheidet, welche
@@ -1000,6 +1011,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                 );
               })()}
 
+              <div style={TRENNER}/>
               {/* 3. Betrag — Schriftgroesse wie im "neue Vormerkung"-Dialog.
                   Rechtsbuendig in der Geldschrift, wie dort. */}
               <div style={LBL}>
@@ -1012,6 +1024,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                   fontFamily:NUM_FONT,textAlign:"right",
                   border:`2px solid ${amount?T.blue:T.bd}`}}/>
 
+              <div style={TRENNER}/>
               {/* 9. Kategorien — ohne Ueberschriften, je Zeile Haupt- und
                   Unterkategorie nebeneinander. Statt der Beschriftungen benennt
                   die leere Auswahl das Feld ("— Quellkategorie —"), damit auch
@@ -1019,17 +1032,17 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                   sprechen fuer sich: oben die Quelle, darunter das Ziel.
                   Die Unterkategorie steht immer da (gesperrt, wenn es keine
                   gibt) — sonst huepfte die Zeile beim Kategoriewechsel um. */}
-              <div style={{display:"flex",gap:6,marginBottom:8}}>
+              <div style={{display:"flex",gap:6,marginBottom:6}}>
                 <select value={catId} onChange={e=>{setCatId(e.target.value);setSubId("");}}
                   style={{...INP_GROSS,flex:1,minWidth:0,marginBottom:0}}>
-                  <option value="">{umbuchung ? "— Quellkategorie —" : "— Kategorie —"}</option>
+                  <option value="">{umbuchung ? "Quellkategorie" : "Kategorie"}</option>
                   {catOpts.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
                 <select value={subId} disabled={!catId || !subOpts.length}
                   onChange={e=>setSubId(e.target.value)}
                   style={{...INP_GROSS,flex:1,minWidth:0,marginBottom:0,
                     opacity:(catId && subOpts.length)?1:0.5}}>
-                  <option value="">— Unterkategorie —</option>
+                  <option value="">Unterkategorie</option>
                   {subOpts.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
@@ -1158,14 +1171,14 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                   <select value={transferToCat}
                     onChange={e=>{setTransferToCat(e.target.value);setTransferToSub("");}}
                     style={{...INP_GROSS,flex:1,minWidth:0,marginBottom:0}}>
-                    <option value="">— Zielkategorie —</option>
+                    <option value="">Zielkategorie</option>
                     {tgtCats.map(c=>(<option key={c.id} value={c.id}>{c.name}</option>))}
                   </select>
                   <select value={transferToSub} disabled={!tgtSubs.length}
                     onChange={e=>setTransferToSub(e.target.value)}
                     style={{...INP_GROSS,flex:1,minWidth:0,marginBottom:0,
                       opacity:tgtSubs.length?1:0.5}}>
-                    <option value="">— Unterkategorie —</option>
+                    <option value="">Unterkategorie</option>
                     {tgtSubs.map(s=>(<option key={s.id} value={s.id}>{s.name}</option>))}
                   </select>
                 </div>
@@ -1176,6 +1189,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
 
               {/* 4. Intervall (Wiederkehrend/Finanzierung) */}
               {typ!=="einmalig"&&<>
+                <div style={TRENNER}/>
                 <div style={LBL}>Intervall</div>
                 <div style={{display:"flex",gap:3,marginBottom:8}}>
                   {[[1,"mtl."],[3,"quartl."],[6,"halb."],[12,"jährl."]].map(([v,l])=>(
@@ -1261,6 +1275,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                 </div>
               </>}
 
+              <div style={TRENNER}/>
               {/* 7+8. verursacht + Buchung am / Startdatum nebeneinander */}
               <div style={{display:"flex",gap:6,marginBottom:8}}>
                 <div style={{flex:1,minWidth:0}}>
@@ -1287,6 +1302,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                 </div>
               </div>
 
+              <div style={TRENNER}/>
               {/* 10. Beschreibung + Notiz zusammen */}
               <div style={LBL}>Beschreibung</div>
               <input value={desc} onChange={e=>setDesc(e.target.value)}
