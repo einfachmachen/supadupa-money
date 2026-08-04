@@ -6,6 +6,7 @@ import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { VormHubSegBtn } from "../molecules/VormHubSegBtn.jsx";
 import { AccountChips } from "../molecules/AccountChips.jsx";
 import { MobileNewAccOverlay } from "../molecules/MobileNewAccOverlay.jsx";
+import { ListPickerDialog } from "../molecules/ListPickerDialog.jsx";
 import { VormVerknuepfenPanel } from "../organisms/VormVerknuepfenPanel.jsx";
 import { RecurringDetectionScreen } from "./RecurringDetectionScreen.jsx";
 import { TagInput } from "../atoms/TagInput.jsx";
@@ -114,6 +115,10 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
   // "Umbuchung"-Knopf hat noch kein Zielkonto, ist aber schon aktiv.
   const [umbuchung, setUmbuchung] = useState(!!(_existingLinkInit?.accountId));
   const [showNewAcc, setShowNewAcc] = useState(false);
+  // Offene Kategorie-Auswahl: "quelle" | "quelleSub" | "ziel" | "zielSub".
+  // Statt der nativen Auswahl (Zeilenhoehe vom System vorgegeben, nur eine
+  // Handvoll Eintraege im Bild) ein eigener Dialog, s. ListPickerDialog.
+  const [katPicker, setKatPicker] = useState(null);
   const [transferToCat, setTransferToCat] = useState(_existingLinkSplit?.catId || "");
   const [transferToSub, setTransferToSub] = useState(_existingLinkSplit?.subId || "");
   const [note,      setNote]      = useState(editVorm?.note||"");
@@ -795,10 +800,50 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
   // Blick nicht mehr, was zusammengehoert (Nutzer-Wunsch).
   const TRENNER = {height:1, background:T.bd, margin:`${S.gap}px 0`};
 
+  // Auslöser-Feld für die Kategorie-Auswahl: sieht aus wie die Eingabefelder
+  // daneben, öffnet aber den eigenen Auswahl-Dialog. --btn-fs, weil sonst die
+  // 18px-Regel für Knöpfe in .mobile-modal greift (s. themes.css).
+  const katFeld = (wert, platzhalter, onOpen, gesperrt=false) => (
+    <button onClick={()=>{ if(!gesperrt) onOpen(); }} disabled={gesperrt}
+      style={{...INP_GROSS, flex:1, minWidth:0, marginBottom:0,
+        "--btn-fs":S.fs+"px", opacity:gesperrt?0.5:1,
+        cursor:gesperrt?"default":"pointer", textAlign:"left",
+        color:wert?T.txt:T.txt2, display:"flex", alignItems:"center",
+        overflow:"hidden", whiteSpace:"nowrap", textOverflow:"ellipsis"}}>
+      <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+        {wert || platzhalter}
+      </span>
+    </button>
+  );
+
   // Neues Konto anlegen — gleicher Weg wie im "neue Vormerkung"-Dialog: der
   // Vollbild-Dialog tritt an die Stelle dieses Dialogs und kehrt danach mit dem
   // frisch angelegten Konto zurueck (dessen Zustand bleibt erhalten, weil nur
   // die Ausgabe ersetzt wird, nicht die Komponente).
+  if(katPicker) {
+    const zu = () => setKatPicker(null);
+    if(katPicker==="quelle") return (
+      <ListPickerDialog title={umbuchung ? "Quellkategorie" : "Kategorie"}
+        options={catOpts} value={catId} emptyLabel="keine"
+        onSelect={(id)=>{ setCatId(id); setSubId(""); zu(); }} onClose={zu}/>
+    );
+    if(katPicker==="quelleSub") return (
+      <ListPickerDialog title="Unterkategorie"
+        options={subOpts} value={subId} emptyLabel="keine"
+        onSelect={(id)=>{ setSubId(id); zu(); }} onClose={zu}/>
+    );
+    if(katPicker==="ziel") return (
+      <ListPickerDialog title="Zielkategorie"
+        options={tgtCats} value={transferToCat} emptyLabel="keine"
+        onSelect={(id)=>{ setTransferToCat(id); setTransferToSub(""); zu(); }} onClose={zu}/>
+    );
+    return (
+      <ListPickerDialog title="Unterkategorie"
+        options={tgtSubs} value={transferToSub} emptyLabel="keine"
+        onSelect={(id)=>{ setTransferToSub(id); zu(); }} onClose={zu}/>
+    );
+  }
+
   if(showNewAcc) return (
     <MobileNewAccOverlay S={S} onClose={(newId)=>{
       setShowNewAcc(false);
@@ -1033,18 +1078,11 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                   Die Unterkategorie steht immer da (gesperrt, wenn es keine
                   gibt) — sonst huepfte die Zeile beim Kategoriewechsel um. */}
               <div style={{display:"flex",gap:6,marginBottom:6}}>
-                <select value={catId} onChange={e=>{setCatId(e.target.value);setSubId("");}}
-                  style={{...INP_GROSS,flex:1,minWidth:0,marginBottom:0}}>
-                  <option value="">{umbuchung ? "Quellkategorie" : "Kategorie"}</option>
-                  {catOpts.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
-                <select value={subId} disabled={!catId || !subOpts.length}
-                  onChange={e=>setSubId(e.target.value)}
-                  style={{...INP_GROSS,flex:1,minWidth:0,marginBottom:0,
-                    opacity:(catId && subOpts.length)?1:0.5}}>
-                  <option value="">Unterkategorie</option>
-                  {subOpts.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
+                {katFeld(catOpts.find(c=>c.id===catId)?.name,
+                  umbuchung ? "Quellkategorie" : "Kategorie",
+                  ()=>setKatPicker("quelle"))}
+                {katFeld(subOpts.find(o=>o.id===subId)?.name, "Unterkategorie",
+                  ()=>setKatPicker("quelleSub"), !catId || !subOpts.length)}
               </div>
 
               {/* 9a. Tank-Erfassung (nur bei Kategorie "Tanken") */}
@@ -1167,20 +1205,11 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                   Quellkategorie: beide beschreiben, wo die Buchung verbucht wird,
                   nur auf verschiedenen Konten. */}
               {umbuchung && transferToAcc && (<>
-                <div style={{display:"flex",gap:6,marginBottom:8}}>
-                  <select value={transferToCat}
-                    onChange={e=>{setTransferToCat(e.target.value);setTransferToSub("");}}
-                    style={{...INP_GROSS,flex:1,minWidth:0,marginBottom:0}}>
-                    <option value="">Zielkategorie</option>
-                    {tgtCats.map(c=>(<option key={c.id} value={c.id}>{c.name}</option>))}
-                  </select>
-                  <select value={transferToSub} disabled={!tgtSubs.length}
-                    onChange={e=>setTransferToSub(e.target.value)}
-                    style={{...INP_GROSS,flex:1,minWidth:0,marginBottom:0,
-                      opacity:tgtSubs.length?1:0.5}}>
-                    <option value="">Unterkategorie</option>
-                    {tgtSubs.map(s=>(<option key={s.id} value={s.id}>{s.name}</option>))}
-                  </select>
+                <div style={{display:"flex",gap:6,marginBottom:6}}>
+                  {katFeld(tgtCats.find(c=>c.id===transferToCat)?.name, "Zielkategorie",
+                    ()=>setKatPicker("ziel"))}
+                  {katFeld(tgtSubs.find(o=>o.id===transferToSub)?.name, "Unterkategorie",
+                    ()=>setKatPicker("zielSub"), !tgtSubs.length)}
                 </div>
                 <div style={{color:T.txt,fontSize:S.fs-8,marginBottom:S.gap,fontStyle:"italic"}}>
                   autom. verknüpfte Eingangs-Vormerkung auf Zielkonto anlegen
