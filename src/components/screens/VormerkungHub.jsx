@@ -739,6 +739,22 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
         return `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`;})()
     : null;
 
+  // Zielkategorien der Umbuchung: alle Income-Behavior-Kategorien, strikt nach
+  // Zielkonto gefiltert ("Income-Behavior" = Gruppen-Behavior "income" ODER
+  // c.type "income"/"tagesgeld" als Altfall). Steht hier oben, weil die Auswahl
+  // inzwischen im Kategorie-Block sitzt, die Ziel-Kacheln aber weiter oben.
+  const tgtCats = (cats||[]).filter(c=>{
+    const grp = (groups||[]).find(g=>g.type===c.type);
+    const beh = grp?.behavior || c.type;
+    if(beh!=="income" && beh!=="tagesgeld" && c.type!=="income" && c.type!=="tagesgeld") return false;
+    if(!transferToAcc) return true;                       // ohne Konto-Wahl alle anzeigen
+    if(c.accountId) return c.accountId === transferToAcc; // Kategorie kennt ihr Konto
+    const matchingGroups = (groups||[]).filter(g=>g.type===c.type);
+    if(matchingGroups.length === 0) return true;          // keine Gruppe → universell
+    return matchingGroups.some(g => !g.accountId || g.accountId === transferToAcc);
+  });
+  const tgtSubs = (tgtCats.find(c=>c.id===transferToCat)?.subs) || [];
+
   // Groessen wie im "neue Vormerkung"-Dialog (MobileVormerkenModal), damit
   // beide Dialoge sich gleich anfuehlen — dort ist die Bedienung auf
   // Daumenbreite ausgelegt, hier waren Felder und Schrift halb so gross.
@@ -937,24 +953,6 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                   wenn oben "Umbuchung" gewaehlt ist. */}
               {umbuchung && accounts.length>1 && (()=>{
                 const targets = accounts.filter(a=>a.id!==accountId);
-                // Zielkategorien: alle Income-Behavior-Kategorien strikt nach Zielkonto filtern.
-                // "Income-Behavior" = Gruppen-Behavior "income" ODER c.type==="income"/"tagesgeld" (Legacy).
-                const tgtCats = (cats||[]).filter(c=>{
-                  const grp = (groups||[]).find(g=>g.type===c.type);
-                  const beh = grp?.behavior || c.type;
-                  // Nur Income-Behavior-Kategorien als Umbuchungsziel
-                  if(beh!=="income" && beh!=="tagesgeld" && c.type!=="income" && c.type!=="tagesgeld") return false;
-                  if(!transferToAcc) return true; // ohne Konto-Wahl alle anzeigen
-                  // 1) Falls Kategorie selbst eine accountId hat → direkt vergleichen
-                  if(c.accountId) return c.accountId === transferToAcc;
-                  // 2) Sonst über Gruppen-Zuordnung: gibt es eine Gruppe mit gleichem type
-                  //    deren accountId zum Target passt? Oder eine Gruppe ohne accountId (global)?
-                  const matchingGroups = (groups||[]).filter(g=>g.type===c.type);
-                  if(matchingGroups.length === 0) return true; // keine Gruppe → universell
-                  return matchingGroups.some(g => !g.accountId || g.accountId === transferToAcc);
-                });
-                const curTgtCat = tgtCats.find(c=>c.id===transferToCat);
-                const tgtSubs = curTgtCat?.subs||[];
                 const umbBlue = "#4A9FD4";
                 return (
                   <>
@@ -983,27 +981,6 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                         }
                       }}/>
                     </div>
-                    {transferToAcc&&(<>
-                      <div style={LBL}>Zielkategorie auf Zielkonto</div>
-                      <div style={{display:"flex",gap:5}}>
-                        <select value={transferToCat}
-                          onChange={e=>{setTransferToCat(e.target.value);setTransferToSub("");}}
-                          style={{...INP_GROSS,flex:1,minWidth:0,marginBottom:0}}>
-                          <option value="">— Hauptkategorie —</option>
-                          {tgtCats.map(c=>(<option key={c.id} value={c.id}>{c.name}</option>))}
-                        </select>
-                        <select value={transferToSub} disabled={!tgtSubs.length}
-                          onChange={e=>setTransferToSub(e.target.value)}
-                          style={{...INP_GROSS,flex:1,minWidth:0,marginBottom:0,
-                            opacity:tgtSubs.length?1:0.5}}>
-                          <option value="">— Unterkategorie —</option>
-                          {tgtSubs.map(s=>(<option key={s.id} value={s.id}>{s.name}</option>))}
-                        </select>
-                      </div>
-                      <div style={{color:T.txt,fontSize:S.fs-6,marginTop:6,marginBottom:S.gap,fontStyle:"italic"}}>
-                        Beim Speichern wird automatisch eine verknüpfte Eingangs-Vormerkung auf dem Zielkonto angelegt.
-                      </div>
-                    </>)}
                   </>
                 );
               })()}
@@ -1016,120 +993,12 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
               <input value={amount} onChange={e=>setAmount(e.target.value)}
                 placeholder="0,00" inputMode="decimal"
                 style={{...INP_GROSS,marginBottom:S.gap,fontWeight:700,
+                  fontSize:S.fs+6,height:S.fs+6+S.padL*2,
                   fontFamily:NUM_FONT,textAlign:"right",
                   border:`2px solid ${amount?T.blue:T.bd}`}}/>
 
-              {/* 4. Intervall (Wiederkehrend/Finanzierung) */}
-              {typ!=="einmalig"&&<>
-                <div style={LBL}>Intervall</div>
-                <div style={{display:"flex",gap:3,marginBottom:8}}>
-                  {[[1,"mtl."],[3,"quartl."],[6,"halb."],[12,"jährl."]].map(([v,l])=>(
-                    <button key={v} onClick={()=>setInterval_(v)}
-                      style={{flex:1,minWidth:0,padding:`${S.pad}px ${S.pad/2}px`,borderRadius:S.radius,border:"none",
-                        cursor:"pointer",fontFamily:"inherit",fontSize:S.fs-8,fontWeight:700,
-                        background:interval_===v?T.blue:"rgba(255,255,255,0.08)",
-                        color:interval_===v?T.on_accent:T.txt2}}>
-                      {l}
-                    </button>
-                  ))}
-                </div>
-              </>}
-
-              {/* 5. Letzter Tag (Wiederkehrend/Finanzierung) */}
-              {typ!=="einmalig"&&(
-                <div onClick={()=>{
-                  const next = !lastOfMonth;
-                  setLastOfMonth(next);
-                  if(next && startDate) {
-                    const [y,m] = startDate.split("-").map(Number);
-                    const lastDay = new Date(y, m, 0).getDate();
-                    setStartDate(`${y}-${String(m).padStart(2,"0")}-${String(lastDay).padStart(2,"0")}`);
-                    setStartDateManual(true);
-                  }
-                  // fromDate immer mitaktualisieren wenn nicht manuell gesetzt
-                  if(!fromDateManual) {
-                    const d=_txDateForMonth(year,month);
-                    setScopeFrom(d); setScopeTo(d);
-                  }
-                }} style={{display:"flex",alignItems:"center",gap:10,padding:`${S.pad}px ${S.padL}px`,
-                  borderRadius:S.radius,cursor:"pointer",marginBottom:S.gap,
-                  background:lastOfMonth?"rgba(74,159,212,0.1)":"rgba(255,255,255,0.03)",
-                  border:`1px solid ${lastOfMonth?T.blue:T.bd}`}}>
-                  <div style={{width:40,height:24,borderRadius:12,position:"relative",flexShrink:0,
-                    background:lastOfMonth?T.blue:"rgba(255,255,255,0.15)",transition:"background 0.2s"}}>
-                    <div style={{position:"absolute",top:3,left:lastOfMonth?19:3,width:18,height:18,
-                      borderRadius:"50%",background:"#fff",transition:"left 0.2s",
-                      boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}/>
-                  </div>
-                  <span style={{color:lastOfMonth?T.txt:T.txt2,fontSize:S.fs-6}}>Immer letzter Tag des Monats</span>
-                </div>
-              )}
-
-              {/* 6. Anzahl / Enddatum (Wiederkehrend/Finanzierung) */}
-              {typ!=="einmalig"&&<div style={{display:"flex",gap:6,marginBottom:8}}>
-                <div style={{flex:1}}>
-                  <div style={LBL}>
-                    {typ==="finanzierung"?"Anzahl Raten":"Anzahl (leer = 7 Jahre)"}
-                  </div>
-                  <input value={count} onChange={e=>{setCount(e.target.value);if(e.target.value)setEndDate("");}}
-                    placeholder={typ==="finanzierung"?"z.B. 36":String(calcCount())}
-                    inputMode="numeric"
-                    style={{...INP_GROSS,marginBottom:0,width:"100%",boxSizing:"border-box"}}/>
-                </div>
-                <div style={{flex:1}}>
-                  <div style={LBL}>oder Enddatum</div>
-                  {endDate?(
-                    <div style={{display:"flex",gap:2,alignItems:"center"}}>
-                      <input type="date" value={endDate}
-                        onChange={e=>{setEndDate(e.target.value);if(e.target.value)setCount("");}}
-                        style={{...INP_GROSS,marginBottom:0,flex:1,minWidth:0,
-                          colorScheme:(isLightTheme())?"light":"dark"}}/>
-                      <button onClick={()=>setEndDate("")}
-                        style={{background:"none",border:"none",color:T.neg,cursor:"pointer",padding:"4px"}}>
-                        {Li("x",16)}
-                      </button>
-                    </div>
-                  ):(
-                    <button onClick={()=>{
-                      setEndDate(new Date(Date.now()+365*24*60*60*1000).toISOString().slice(0,10));
-                      setCount("");
-                    }} style={{...INP_GROSS,marginBottom:0,width:"100%",boxSizing:"border-box",
-                      cursor:"pointer",color:T.txt2,textAlign:"left",fontFamily:"inherit",
-                      border:`1px solid ${T.gold}44`,background:"transparent"}}>
-                      kein Enddatum
-                    </button>
-                  )}
-                </div>
-              </div>}
-
-              {/* 7+8. verursacht + Buchung am / Startdatum nebeneinander */}
-              <div style={{display:"flex",gap:6,marginBottom:8}}>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{...LBL,display:"flex",alignItems:"center",gap:4}}>
-                    {Li("calendar",16,T.txt)} verursacht
-                  </div>
-                  <div style={{display:"flex",gap:2,alignItems:"center"}}>
-                    <input type="date" value={valueDate} onChange={e=>{setValueDate(e.target.value);setStartDateManual(true);}}
-                      style={{...INP_GROSS,marginBottom:0,flex:1,minWidth:0,minWidth:0,
-                        colorScheme:(isLightTheme())?"light":"dark"}}/>
-                    {valueDate&&<button onClick={()=>setValueDate("")}
-                      style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",padding:"4px",flexShrink:0}}>
-                      {Li("x",16)}
-                    </button>}
-                  </div>
-                </div>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={LBL}>
-                    {typ==="einmalig"?"Banktag":"Startdatum"}
-                  </div>
-                  <input type="date" value={startDate} onChange={e=>{setStartDate(e.target.value);setStartDateManual(true);}}
-                    style={{...INP_GROSS,marginBottom:0,
-                      colorScheme:(isLightTheme())?"light":"dark"}}/>
-                </div>
-              </div>
-
-              {/* 9. Kategorie */}
-              <div style={LBL}>Kategorie (optional)</div>
+              {/* 9. Quell-/Zielkategorie */}
+              <div style={LBL}>{umbuchung ? "Quellkategorie" : "Kategorie (optional)"}</div>
               <select value={catId} onChange={e=>{setCatId(e.target.value);setSubId("");}}
                 style={{...INP_GROSS,marginBottom:8,width:"100%",boxSizing:"border-box"}}>
                 <option value="">— keine —</option>
@@ -1259,6 +1128,144 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                   )}
                 </div>
               )}
+
+              {/* 9b. Zielkategorie der Umbuchung — steht bewusst direkt unter der
+                  Quellkategorie: beide beschreiben, wo die Buchung verbucht wird,
+                  nur auf verschiedenen Konten. */}
+              {umbuchung && transferToAcc && (<>
+                <div style={LBL}>Zielkategorie</div>
+                <div style={{display:"flex",gap:6,marginBottom:8}}>
+                  <select value={transferToCat}
+                    onChange={e=>{setTransferToCat(e.target.value);setTransferToSub("");}}
+                    style={{...INP_GROSS,flex:1,minWidth:0,marginBottom:0}}>
+                    <option value="">— Hauptkategorie —</option>
+                    {tgtCats.map(c=>(<option key={c.id} value={c.id}>{c.name}</option>))}
+                  </select>
+                  <select value={transferToSub} disabled={!tgtSubs.length}
+                    onChange={e=>setTransferToSub(e.target.value)}
+                    style={{...INP_GROSS,flex:1,minWidth:0,marginBottom:0,
+                      opacity:tgtSubs.length?1:0.5}}>
+                    <option value="">— Unterkategorie —</option>
+                    {tgtSubs.map(s=>(<option key={s.id} value={s.id}>{s.name}</option>))}
+                  </select>
+                </div>
+                <div style={{color:T.txt,fontSize:S.fs-8,marginBottom:S.gap,fontStyle:"italic"}}>
+                  autom. verknüpfte Eingangs-Vormerkung auf Zielkonto anlegen
+                </div>
+              </>)}
+
+              {/* 4. Intervall (Wiederkehrend/Finanzierung) */}
+              {typ!=="einmalig"&&<>
+                <div style={LBL}>Intervall</div>
+                <div style={{display:"flex",gap:3,marginBottom:8}}>
+                  {[[1,"mtl."],[3,"quartl."],[6,"halb."],[12,"jährl."]].map(([v,l])=>(
+                    <button key={v} onClick={()=>setInterval_(v)}
+                      style={{flex:1,minWidth:0,padding:`${S.pad}px ${S.pad/2}px`,borderRadius:S.radius,border:"none",
+                        cursor:"pointer",fontFamily:"inherit",fontSize:S.fs-8,fontWeight:700,
+                        background:interval_===v?T.blue:"rgba(255,255,255,0.08)",
+                        color:interval_===v?T.on_accent:T.txt2}}>
+                      {l}
+                    </button>
+                  ))}
+                </div>
+              </>}
+
+              {/* 5. Letzter Tag (Wiederkehrend/Finanzierung) */}
+              {typ!=="einmalig"&&(
+                <div onClick={()=>{
+                  const next = !lastOfMonth;
+                  setLastOfMonth(next);
+                  if(next && startDate) {
+                    const [y,m] = startDate.split("-").map(Number);
+                    const lastDay = new Date(y, m, 0).getDate();
+                    setStartDate(`${y}-${String(m).padStart(2,"0")}-${String(lastDay).padStart(2,"0")}`);
+                    setStartDateManual(true);
+                  }
+                  // fromDate immer mitaktualisieren wenn nicht manuell gesetzt
+                  if(!fromDateManual) {
+                    const d=_txDateForMonth(year,month);
+                    setScopeFrom(d); setScopeTo(d);
+                  }
+                }} style={{display:"flex",alignItems:"center",gap:10,padding:`${S.pad}px ${S.padL}px`,
+                  borderRadius:S.radius,cursor:"pointer",marginBottom:S.gap,
+                  background:lastOfMonth?"rgba(74,159,212,0.1)":"rgba(255,255,255,0.03)",
+                  border:`1px solid ${lastOfMonth?T.blue:T.bd}`}}>
+                  <div style={{width:40,height:24,borderRadius:12,position:"relative",flexShrink:0,
+                    background:lastOfMonth?T.blue:"rgba(255,255,255,0.15)",transition:"background 0.2s"}}>
+                    <div style={{position:"absolute",top:3,left:lastOfMonth?19:3,width:18,height:18,
+                      borderRadius:"50%",background:"#fff",transition:"left 0.2s",
+                      boxShadow:"0 1px 3px rgba(0,0,0,0.3)"}}/>
+                  </div>
+                  <span style={{color:lastOfMonth?T.txt:T.txt2,fontSize:S.fs-6}}>Immer letzter Tag des Monats</span>
+                </div>
+              )}
+
+              {/* 6. Anzahl / Enddatum (Wiederkehrend/Finanzierung) */}
+              {/* EINE Beschriftung ueber beiden Feldern statt zwei nebeneinander:
+                  zwei Zeilen brachen unterschiedlich um, wodurch "kein Enddatum"
+                  tiefer stand als das Anzahl-Feld daneben. */}
+              {typ!=="einmalig"&&<>
+                <div style={LBL}>
+                  {typ==="finanzierung"?"Anzahl Raten oder Enddatum":"Anzahl (7 Jahre) oder Enddatum"}
+                </div>
+                <div style={{display:"flex",gap:6,marginBottom:S.gap,alignItems:"flex-start"}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <input value={count} onChange={e=>{setCount(e.target.value);if(e.target.value)setEndDate("");}}
+                    placeholder={typ==="finanzierung"?"z.B. 36":String(calcCount())}
+                    inputMode="numeric"
+                    style={{...INP_GROSS,marginBottom:0,padding:`0 ${S.pad}px`}}/>
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  {endDate?(
+                    <div style={{display:"flex",gap:2,alignItems:"center"}}>
+                      <input type="date" value={endDate}
+                        onChange={e=>{setEndDate(e.target.value);if(e.target.value)setCount("");}}
+                        style={{...INP_GROSS,marginBottom:0,flex:1,minWidth:0,
+                          padding:`0 ${S.pad}px`,colorScheme:(isLightTheme())?"light":"dark"}}/>
+                      <button onClick={()=>setEndDate("")}
+                        style={{background:"none",border:"none",color:T.neg,cursor:"pointer",padding:"4px"}}>
+                        {Li("x",16)}
+                      </button>
+                    </div>
+                  ):(
+                    <button onClick={()=>{
+                      setEndDate(new Date(Date.now()+365*24*60*60*1000).toISOString().slice(0,10));
+                      setCount("");
+                    }} style={{...INP_GROSS,marginBottom:0,width:"100%",boxSizing:"border-box",
+                      cursor:"pointer",color:T.txt2,textAlign:"left",fontFamily:"inherit",
+                      border:`1px solid ${T.gold}44`,background:"transparent"}}>
+                      kein Enddatum
+                    </button>
+                  )}
+                </div>
+                </div>
+              </>}
+
+              {/* 7+8. verursacht + Buchung am / Startdatum nebeneinander */}
+              <div style={{display:"flex",gap:6,marginBottom:8}}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{...LBL,display:"flex",alignItems:"center",gap:4}}>
+                    {Li("calendar",16,T.txt)} verursacht
+                  </div>
+                  <div style={{display:"flex",gap:2,alignItems:"center"}}>
+                    <input type="date" value={valueDate} onChange={e=>{setValueDate(e.target.value);setStartDateManual(true);}}
+                      style={{...INP_GROSS,marginBottom:0,flex:1,minWidth:0,
+                        padding:`0 ${S.pad}px`,colorScheme:(isLightTheme())?"light":"dark"}}/>
+                    {valueDate&&<button onClick={()=>setValueDate("")}
+                      style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",padding:"4px",flexShrink:0}}>
+                      {Li("x",16)}
+                    </button>}
+                  </div>
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={LBL}>
+                    {typ==="einmalig"?"Banktag":"Startdatum"}
+                  </div>
+                  <input type="date" value={startDate} onChange={e=>{setStartDate(e.target.value);setStartDateManual(true);}}
+                    style={{...INP_GROSS,marginBottom:0,
+                      padding:`0 ${S.pad}px`,colorScheme:(isLightTheme())?"light":"dark"}}/>
+                </div>
+              </div>
 
               {/* 10. Beschreibung + Notiz zusammen */}
               <div style={LBL}>Beschreibung</div>
@@ -1561,7 +1568,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                       <input type="date" value={exStartDate}
                         onChange={e=>setExStartDate(e.target.value)}
                         style={{...INP_GROSS,marginBottom:8,width:"100%",boxSizing:"border-box",
-                          colorScheme:(isLightTheme())?"light":"dark"}}/>
+                          padding:`0 ${S.pad}px`,colorScheme:(isLightTheme())?"light":"dark"}}/>
 
                       {/* Rhythmus */}
                       <div style={LBL}>Rhythmus</div>
