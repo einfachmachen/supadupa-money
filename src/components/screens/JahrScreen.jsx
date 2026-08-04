@@ -652,7 +652,9 @@ function JahrScreen({forceSingle=false}) {
                               // s. DashboardScreenV2.LinkBadges / badgeLinkTarget
                               const lt=badgeLinkTarget(lid, id=>txs.find(t=>t.id===id));
                               if(!lt||lt.pending) return null;
-                              const sTotal=lt._seriesTotal; const sIdx=lt._seriesIdx;
+                              // "x/y" nur bei Finanzierungen (s. DashboardScreenV2)
+                              const sTotal=lt._seriesTyp==="finanzierung"?lt._seriesTotal:0;
+                              const sIdx=lt._seriesIdx;
                               return (
                                 <span key={lid} style={{display:"inline-flex",alignItems:"center",gap:3,
                                   background:"rgba(74,159,212,0.12)",border:`1px solid ${T.blue}33`,

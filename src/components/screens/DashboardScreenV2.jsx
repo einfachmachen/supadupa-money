@@ -104,7 +104,12 @@ function DashboardScreenV2() {
         // Buchung praktisch zweimal untereinander.
         const lt=badgeLinkTarget(lid, id=>txs.find(t=>t.id===id));
         if(!lt||lt.pending) return null;
-        const sTotal = lt._seriesTotal;
+        // Zähler "x/y" nur bei Finanzierungen — da ist die verbleibende Anzahl
+        // Raten die eigentliche Information. Bei einer Dauer-Vormerkung (Strom,
+        // Versicherung …) läuft die Serie einfach weiter; "4/80" suggeriert dort
+        // ein Ende, das es nicht gibt (gleiche Regel wie in PendingList).
+        const isFin = lt._seriesTyp === "finanzierung";
+        const sTotal = isFin ? lt._seriesTotal : 0;
         const sIdx = lt._seriesIdx;
         return (
           <span key={lid} style={{display:"inline-flex",alignItems:"center",gap:4,
