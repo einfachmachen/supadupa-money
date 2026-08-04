@@ -3765,10 +3765,15 @@ Abbrechen = ${remoteName}-Stand laden`
               }
               return;
             }
-            // ── START-ZUSTAND (klein): Einzel-Tap öffnet — nach kurzer Verzögerung,
-            //    damit ein Doppel-Tap ihn noch abfangen kann — DIREKT den
-            //    Vormerken-Dialog (ersetzt die frühere Monde-Auswahl). Doppel-Tap
-            //    vergrößert weiterhin für die Datums-/Monatsnavigation (Wisch). ──
+            // ── START-ZUSTAND (klein): Tippen vergrößert nur, es legt NICHTS an.
+            //    Vorher öffnete ein Einzel-Tap hier direkt den Vormerken-Dialog —
+            //    der Knopf sitzt aber am unteren Rand, wo er beim Scrollen und
+            //    beim Greifen des Telefons leicht mitgenommen wird (Nutzer-
+            //    Hinweis). Eine Vormerkung entsteht deshalb nur noch aus dem
+            //    vergrößerten Zustand heraus, also nach einer bewussten Geste.
+            //    Einzel- wie Doppel-Tap enden beide beim vergrößerten Knopf; der
+            //    Einzel-Tap wartet nur das Doppel-Tap-Fenster ab, damit ein
+            //    Doppel-Tap weiterhin offene Dialoge schließen kann. ──
             if(!plusArretiert) {
               if(e.currentTarget) {
                 e.currentTarget.style.transition = "transform 0.2s cubic-bezier(.34,1.4,.64,1)";
@@ -3795,12 +3800,18 @@ Abbrechen = ${remoteName}-Stand laden`
                     setPlusArretiert(true);
                   }
                 } else {
-                  // Einzel-Tap: nach kurzer Verzögerung (Doppel-Tap-Fenster) direkt
-                  // den Vormerken-Dialog öffnen.
+                  // Einzel-Tap: nach dem Doppel-Tap-Fenster vergrößern — dieselbe
+                  // Bewegung wie beim Doppel-Tap. Der Knoten wird vorher
+                  // festgehalten, weil e.currentTarget im Timer nicht mehr steht.
+                  const node = e.currentTarget;
                   const timer = setTimeout(()=>{
                     masterLastTapRef.current = {zone:null, t:0, timer:null};
                     try { if(navigator.vibrate) navigator.vibrate(10); } catch(_) {}
-                    setShowMobileVormerken(true);
+                    if(node) {
+                      node.style.transition = "transform 0.42s cubic-bezier(0.34, 1.45, 0.5, 1)";
+                      node.style.transform = "translate(0px, -94px) scale(1.5)";
+                    }
+                    setPlusArretiert(true);
                   }, DOUBLE_TAP_MS);
                   masterLastTapRef.current = {zone:"center", t:now, timer};
                 }
