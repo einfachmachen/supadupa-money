@@ -51,6 +51,40 @@ export function badgeLinkTarget(linkedId, findById) {
   return (lt.linkedIds || []).map(findById).find(t => t && !hasBankOrigin(t)) || null;
 }
 
+// Notiz der aufnehmenden Buchung beim Verknüpfen.
+//
+// Die BESCHREIBUNG der Vormerkung wandert bewusst NICHT mehr mit hinein: sie
+// steht im Bearbeiten-Dialog ohnehin in der Box "Verknüpfte Vormerkung" —
+// zusätzlich in der Notiz belegt sie nur das Feld, das für echte eigene
+// Notizen da ist (Nutzer-Feedback). Alt-Datensätze werden dabei mitbereinigt:
+// früher erzeugte "Vormerkung: …"-Teile fliegen beim nächsten Verknüpfen raus.
+//
+// Ebenso wenig wird von einer Bank-Zeile etwas übernommen — ihr Text ist die
+// Vorabmeldung derselben Zahlung, die die Buchung selbst schon trägt. Eine
+// wirklich selbst geschriebene Notiz an der eigenen Vormerkung bleibt dagegen
+// erhalten, die ginge sonst verloren.
+function mergeNote(pend, target) {
+  const cleanTargetNote = (target.note || "").split(" · ")
+    .filter(part => !part.startsWith("Vormerkung:"))
+    .join(" · ");
+  const eigeneNotiz = hasBankOrigin(pend) ? "" : (pend.note || "");
+  return [eigeneNotiz, cleanTargetNote].filter(Boolean).join(" · ");
+}
+
+// Bereinigung beim Laden: Bis dahin verknüpfte Buchungen tragen die
+// Beschreibung ihrer Vormerkung noch als "Vormerkung: …"-Teil in der Notiz.
+// Ohne das hier bliebe das Notizfeld bei allen Bestandsbuchungen belegt, denn
+// mergeNote räumt nur beim NÄCHSTEN Verknüpfen auf — das passiert bei einer
+// längst zugeordneten Buchung nie wieder. Nur exakt dieses maschinell erzeugte
+// Muster wird entfernt (eigener Text stand nie in einem so beginnenden Teil).
+export function stripVormNotes(txList) {
+  return (txList || []).map(tx => {
+    if (!tx || !tx.note || !tx.note.includes("Vormerkung:")) return tx;
+    const rest = tx.note.split(" · ").filter(p => !p.startsWith("Vormerkung:")).join(" · ");
+    return rest === tx.note ? tx : { ...tx, note: rest };
+  });
+}
+
 // Führt die eigentliche Verknüpfung durch — identische Feld-Logik wie
 // MatchingScreen.doMatch (manuelles Matching), damit beide Wege nie
 // auseinanderlaufen.
@@ -58,12 +92,7 @@ export function linkPendingToReal(txs, pendId, realId) {
   const pend = txs.find(t => t.id === pendId);
   const real = txs.find(t => t.id === realId);
   if (!pend || !real) return txs;
-  const cleanRealNote = (real.note || "").split(" · ")
-    .filter(part => !part.startsWith("Vormerkung:"))
-    .join(" · ");
-  const vormNote = pend.desc && pend.desc !== real.desc ? `Vormerkung: ${pend.desc}` : "";
-  const combinedNote = [vormNote, pend.note || "", cleanRealNote]
-    .filter(Boolean).join(" · ") || cleanRealNote || "";
+  const combinedNote = mergeNote(pend, real);
   const pendSplits = (pend.splits || []).filter(s => s.catId);
   const pendTotal = pendSplits.reduce((s, sp) => s + (parseFloat(sp.amount) || 0), 0);
   const newSplits = pendSplits.length > 0
@@ -126,12 +155,7 @@ export function linkPendingToPending(txs, manualId, bankId) {
   const manual = txs.find(t => t.id === manualId);
   const bank = txs.find(t => t.id === bankId);
   if (!manual || !bank) return txs;
-  const cleanBankNote = (bank.note || "").split(" · ")
-    .filter(part => !part.startsWith("Vormerkung:"))
-    .join(" · ");
-  const vormNote = manual.desc && manual.desc !== bank.desc ? `Vormerkung: ${manual.desc}` : "";
-  const combinedNote = [vormNote, manual.note || "", cleanBankNote]
-    .filter(Boolean).join(" · ") || cleanBankNote || "";
+  const combinedNote = mergeNote(manual, bank);
   const manualSplits = (manual.splits || []).filter(s => s.catId);
   const manualTotal = manualSplits.reduce((s, sp) => s + (parseFloat(sp.amount) || 0), 0);
   const newSplits = manualSplits.length > 0

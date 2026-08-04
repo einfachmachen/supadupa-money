@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { autoMatchVormerkungen, linkPendingToReal, linkPendingToPending, isBankPending, unlinkPendingFromReal, buildLinkedPendIds, badgeLinkTarget } from "../src/utils/vormMatch.js";
+import { autoMatchVormerkungen, linkPendingToReal, linkPendingToPending, isBankPending, unlinkPendingFromReal, buildLinkedPendIds, badgeLinkTarget, stripVormNotes } from "../src/utils/vormMatch.js";
 import { getVormLinkCandidates, isVormAmountMatch, VormVerknuepfenPanel } from "../src/components/organisms/VormVerknuepfenPanel.jsx";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
@@ -357,5 +357,52 @@ describe("badgeLinkTarget", () => {
     const legacy = { id:"pend-legacy", pending:false, _fp:"fp-x", _csvSource:"Enable Banking",
       desc:"WEMAG AG", totalAmount:-71.00, _linkedTo:"real-1" };
     expect(badgeLinkTarget("pend-legacy", find([legacy]))).toBe(null);
+  });
+});
+
+// Nutzer-Feedback: "Warum wird die Beschreibung der verknüpften Bank-Vormerkung
+// nochmal unter Notiz mitgegeben? Das Notizfeld könnte doch für wirkliche
+// Notizen genutzt werden." — die Beschreibung steht im Bearbeiten-Dialog
+// bereits in der Box "Verknüpfte Vormerkung"; in der Notiz belegt sie nur das
+// Feld, das für eigene Notizen da ist.
+describe("Notiz beim Verknüpfen", () => {
+  it("schreibt die Beschreibung der Vormerkung NICHT in die Notiz", () => {
+    const txs = linkPendingToReal([pend({ desc:"audible 08.2026" }), real()], "pend-1", "real-1");
+    expect(txs.find(t=>t.id==="real-1").note).not.toContain("audible 08.2026");
+  });
+
+  it("behält die eigene Notiz der Vormerkung und die der Buchung", () => {
+    const txs = linkPendingToReal(
+      [pend({ note:"Jahresabo, kündigen!" }), real({ note:"VISA Debitkartenumsatz" })],
+      "pend-1", "real-1");
+    expect(txs.find(t=>t.id==="real-1").note).toBe("Jahresabo, kündigen! · VISA Debitkartenumsatz");
+  });
+
+  it("übernimmt nichts aus einer Bank-Zeile — deren Text trägt die Buchung selbst schon", () => {
+    const bank = { id:"pend-bank", pending:true, _bankPending:true, date:"2026-08-02",
+      totalAmount:-9.95, desc:"Audible Gmbh audible.de/r DE",
+      note:"2026-08-02T22:27 Debitk. 0 2099-12 Zahl.System VISA Debit (ECOM)", splits:[] };
+    const txs = linkPendingToReal([bank, real({ note:"eigene Notiz" })], "pend-bank", "real-1");
+    expect(txs.find(t=>t.id==="real-1").note).toBe("eigene Notiz");
+  });
+
+  it("räumt früher erzeugte 'Vormerkung: …'-Teile beim erneuten Verknüpfen weg", () => {
+    const alt = real({ note:"Vormerkung: audible 08.2026 · echte Notiz" });
+    const txs = linkPendingToReal([pend({ note:"" }), alt], "pend-1", "real-1");
+    expect(txs.find(t=>t.id==="real-1").note).toBe("echte Notiz");
+  });
+
+  it("stripVormNotes bereinigt Bestandsdaten und lässt alles andere unangetastet", () => {
+    const list = [
+      { id:"a", note:"Vormerkung: audible 08.2026 · 2026-08-02T22:27 Debitk." },
+      { id:"b", note:"ganz normale Notiz" },
+      { id:"c" },
+    ];
+    const out = stripVormNotes(list);
+    expect(out[0].note).toBe("2026-08-02T22:27 Debitk.");
+    expect(out[1]).toBe(list[1]); // unveraendert → gleiche Referenz
+    expect(out[2]).toBe(list[2]);
+    // idempotent: ein zweiter Lauf aendert nichts mehr
+    expect(stripVormNotes(out)[0]).toBe(out[0]);
   });
 });

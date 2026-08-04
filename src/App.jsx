@@ -83,6 +83,7 @@ import { DEFAULT_ZINS_MONATE, parseZinsMonate, monatsLetzter, sweepFenster,
 import { Li } from "./utils/icons.jsx";
 import { makeYearData } from "./utils/yearData.js";
 import { isDuplCounterpart, buildTxIdMap } from "./utils/tx.js";
+import { stripVormNotes } from "./utils/vormMatch.js";
 import { compressTxByYear } from "./utils/cloudTx.js";
 import { encryptJSON, decryptJSON, isEncrypted, freshSaltB64 } from "./utils/syncCrypto.js";
 import { exportEbForSync, importEbFromSync } from "./utils/enableBankingStore.js";
@@ -887,7 +888,7 @@ export default function SupaDupaMoney() {
       }
     }
     if(allTxs.length > 0) {
-      const migrated = migrateBudgetDates(migrateRecurringOvershoot(stripBudgetSeries(migrateSeries(allTxs.map(t=>({...t, splits:Array.isArray(t.splits)?t.splits:[]}))))));
+      const migrated = stripVormNotes(migrateBudgetDates(migrateRecurringOvershoot(stripBudgetSeries(migrateSeries(allTxs.map(t=>({...t, splits:Array.isArray(t.splits)?t.splits:[]})))))));
       // Migration: alle Buchungen ohne accountId → acc-giro
       const migratedWithAcc = migrated.map(t => t.accountId ? t : {...t, accountId:"acc-giro"});
       setTxs(migratedWithAcc);
@@ -1111,7 +1112,7 @@ export default function SupaDupaMoney() {
       // sonst kann ein (teilweise fehlgeschlagener oder veralteter) Cloud-
       // Snapshot eine Löschung rückgängig machen, siehe utils/txTombstones.js.
       const incomingTxs = filterTombstonedTxs(d.txs||[]);
-      setTxs(migrateBudgetDates(migrateRecurringOvershoot(stripBudgetSeries(migrateSeries(incomingTxs.map(t=>({...t,splits:Array.isArray(t.splits)?t.splits:[]})))))));
+      setTxs(stripVormNotes(migrateBudgetDates(migrateRecurringOvershoot(stripBudgetSeries(migrateSeries(incomingTxs.map(t=>({...t,splits:Array.isArray(t.splits)?t.splits:[]}))))))));
     }
     if(force || (Array.isArray(d.accounts) && d.accounts.length)) {
       // Migration: alten Puffer ins Giro-Konto übernehmen
