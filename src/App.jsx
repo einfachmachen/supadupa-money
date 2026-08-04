@@ -4082,7 +4082,7 @@ Abbrechen = ${remoteName}-Stand laden`
                 <div style={{width:52,height:30,borderRadius:11,
                   display:"flex",alignItems:"center",justifyContent:"center",
                   background:isActive?"rgba(74,159,212,0.18)":"transparent",transition:"all 0.2s"}}>
-                  {Li(t.icon,26,isActive?T.blue:T.txt2,isActive?2.6:2)}
+                  {Li(t.icon,26,isActive?T.blue:T.txt,isActive?2.6:2)}
                 </div>
                 <span style={{fontSize:11,fontWeight:isActive?700:600,
                   color:isActive?T.blue:T.txt,whiteSpace:"nowrap"}}>{t.label}</span>
