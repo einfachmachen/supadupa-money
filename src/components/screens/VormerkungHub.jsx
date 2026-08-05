@@ -118,6 +118,9 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
   // Offene Kategorie-Auswahl: "quelle" | "quelleSub" | "ziel" | "zielSub".
   // Die "…Sub"-Varianten steigen direkt beim Unterschritt ein (s. unten).
   const [katPicker, setKatPicker] = useState(null);
+  // Beschreibung standardmaessig einzeilig; per Pfeil aufklappbar, um lange
+  // abgerufene Texte ganz zu lesen.
+  const [descOffen, setDescOffen] = useState(false);
   const [transferToCat, setTransferToCat] = useState(_existingLinkSplit?.catId || "");
   const [transferToSub, setTransferToSub] = useState(_existingLinkSplit?.subId || "");
   const [note,      setNote]      = useState(editVorm?.note||"");
@@ -849,7 +852,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
           onBack={()=>setKatPicker(null)}/>
         <div style={{flex:1,overflowY:"auto",overflowX:"hidden",
           WebkitOverflowScrolling:"touch",background:T.surf2,padding:S.padL,
-          paddingBottom:"calc(140px + env(safe-area-inset-bottom, 0px))"}}>
+          paddingBottom:"calc(75px + env(safe-area-inset-bottom, 0px))"}}>
           <MobileCatStep
             key={katPicker}
             startSub={beiUnter}
@@ -916,12 +919,13 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
             der Bildschirm (grosse Schrift, lange Kategorienamen). Der Inhalt
             ist auf die Breite ausgelegt, also soll er auch nur senkrecht
             scrollen.
-            Der Abstand unten deckt die Navigationsleiste UND den + Knopf ab,
-            der ueber sie hinausragt: mit weniger liessen sich die letzten
-            Felder nicht mehr freischieben (Nutzer-Hinweis). */}
+            Die 57px fuer die Navigationsleiste reserviert bereits
+            .mobile-modal; hier kommt nur noch der + Knopf dazu, der darueber
+            hinausragt. Gerade so viel, dass das letzte Feld frei steht — mehr
+            waere nur leerer Hintergrund. */}
         <div style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch",
           background:T.surf2,maxWidth:"100%",
-          paddingBottom:"calc(140px + env(safe-area-inset-bottom, 0px))"}}>
+          paddingBottom:"calc(75px + env(safe-area-inset-bottom, 0px))"}}>
 
           {/* Typ ganz oben, direkt unter dem Titel — er entscheidet, welche
               Felder darunter ueberhaupt erscheinen (Intervall, Anzahl, Raten).
@@ -1360,15 +1364,29 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
 
               <div style={TRENNER}/>
               {/* 10. Beschreibung + Notiz zusammen */}
-              {/* Mehrzeilig statt einzeilig: abgerufene Beschreibungen sind oft
-                  laenger als die Feldbreite ("PAYPAL *KINO KOBLENZ · VISA
-                  Debitkartenumsatz vom …") und liessen sich vorher nur durch
-                  seitliches Scrollen IM Feld lesen. Das Feld waechst jetzt mit
-                  dem Text, sodass immer alles sichtbar ist. */}
-              <div style={LBL}>Beschreibung</div>
+              {/* Abgerufene Beschreibungen sind oft deutlich laenger als die
+                  Feldbreite ("PAYPAL *KINO KOBLENZ · VISA Debitkartenumsatz vom
+                  …"). Das Feld bleibt deshalb einzeilig wie die uebrigen und
+                  laesst sich ueber den Pfeil aufklappen, dann waechst es mit
+                  dem Text. Bewusst weiter ein Textfeld und keine Anzeige: so
+                  bleibt Tippen ein einziger Tap, egal in welchem Zustand. */}
+              <div style={{...LBL,display:"flex",alignItems:"center",gap:8}}>
+                <span>Beschreibung</span>
+                {!!desc && (
+                  <button onClick={()=>setDescOffen(v=>!v)}
+                    aria-label={descOffen?"Beschreibung einklappen":"ganze Beschreibung zeigen"}
+                    style={{background:"none",border:"none",padding:"0 4px",cursor:"pointer",
+                      display:"flex",alignItems:"center",minHeight:0,"--btn-fs":"14px"}}>
+                    {Li(descOffen?"chevron-up":"chevron-down",20,T.txt2)}
+                  </button>
+                )}
+              </div>
               <textarea value={desc} onChange={e=>setDesc(e.target.value)}
                 placeholder="z.B. Miete, Gehalt, Kfz-Steuer…" rows={1}
-                ref={el=>{ if(el){ el.style.height="auto"; el.style.height=el.scrollHeight+"px"; } }}
+                ref={el=>{ if(!el) return;
+                  el.style.height = "auto";
+                  el.style.height = descOffen ? el.scrollHeight+"px" : INPUT_H+"px";
+                }}
                 style={{...INP_GROSS,marginBottom:4,height:"auto",minHeight:INPUT_H,
                   padding:`${S.pad}px ${S.padL}px`,resize:"none",overflow:"hidden",
                   fontFamily:"inherit",lineHeight:1.35}}/>

@@ -271,7 +271,7 @@ function CustomThemeEditor() {
           // der Fussbereich dahinter und ist nicht erreichbar.
         <div style={{position:"fixed",inset:0,background:T.bg,zIndex:200,
           display:"flex",flexDirection:"column",
-          paddingBottom:"calc(120px + env(safe-area-inset-bottom, 0px))"}}>
+          paddingBottom:"calc(110px + env(safe-area-inset-bottom, 0px))"}}>
           <MobileHeader title="Theme-Editor" icon="sliders" iconColor={T.blue}
             onBack={()=>setOpen(false)}/>
           <div style={{flex:1,minHeight:0,display:"flex",flexDirection:"column"}}>
