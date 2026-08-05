@@ -7,6 +7,7 @@ import { VormHubSegBtn } from "../molecules/VormHubSegBtn.jsx";
 import { AccountChips } from "../molecules/AccountChips.jsx";
 import { MobileNewAccOverlay } from "../molecules/MobileNewAccOverlay.jsx";
 import { MobileCatStep } from "../molecules/MobileCatStep.jsx";
+import { hasBankOrigin } from "../../utils/vormMatch.js";
 import { VormVerknuepfenPanel } from "../organisms/VormVerknuepfenPanel.jsx";
 import { RecurringDetectionScreen } from "./RecurringDetectionScreen.jsx";
 import { TagInput } from "../atoms/TagInput.jsx";
@@ -121,6 +122,15 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
   // Beschreibung standardmaessig einzeilig; per Pfeil aufklappbar, um lange
   // abgerufene Texte ganz zu lesen.
   const [descOffen, setDescOffen] = useState(false);
+  // Abgerufene Vormerkung: Betrag, Datum, Beschreibung usw. stammen von der
+  // Bank und sind hier keine Eingabe, sondern ein Beleg — sie zu aendern
+  // wuerde die Buchung von dem entfernen, was die Bank gemeldet hat. Aenderbar
+  // bleiben nur die eigenen Zusaetze: Notiz und Tags (Nutzer-Wunsch).
+  const bankGesperrt = isEdit && hasBankOrigin(editVorm);
+  // Gesperrte Bloecke: sichtbar, aber nicht bedienbar. Bewusst als Sperre am
+  // umgebenden Block statt disabled an jedem einzelnen Feld — so bleibt kein
+  // Bedienelement versehentlich offen, wenn spaeter eines dazukommt.
+  const SPERRE = bankGesperrt ? {pointerEvents:"none", opacity:0.55} : undefined;
   const [transferToCat, setTransferToCat] = useState(_existingLinkSplit?.catId || "");
   const [transferToSub, setTransferToSub] = useState(_existingLinkSplit?.subId || "");
   const [note,      setNote]      = useState(editVorm?.note||"");
@@ -852,7 +862,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
           onBack={()=>setKatPicker(null)}/>
         <div style={{flex:1,overflowY:"auto",overflowX:"hidden",
           WebkitOverflowScrolling:"touch",background:T.surf2,padding:S.padL,
-          paddingBottom:"calc(75px + env(safe-area-inset-bottom, 0px))"}}>
+          paddingBottom:"calc(32px + env(safe-area-inset-bottom, 0px))"}}>
           <MobileCatStep
             key={katPicker}
             startSub={beiUnter}
@@ -921,11 +931,11 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
             scrollen.
             Die 57px fuer die Navigationsleiste reserviert bereits
             .mobile-modal; hier kommt nur noch der + Knopf dazu, der darueber
-            hinausragt. Gerade so viel, dass das letzte Feld frei steht — mehr
-            waere nur leerer Hintergrund. */}
+            hinausragt (rund 30px). Gerade so viel, dass das letzte Feld frei
+            steht — mehr waere nur leerer Hintergrund. */}
         <div style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch",
           background:T.surf2,maxWidth:"100%",
-          paddingBottom:"calc(75px + env(safe-area-inset-bottom, 0px))"}}>
+          paddingBottom:"calc(32px + env(safe-area-inset-bottom, 0px))"}}>
 
           {/* Typ ganz oben, direkt unter dem Titel — er entscheidet, welche
               Felder darunter ueberhaupt erscheinen (Intervall, Anzahl, Raten).
@@ -933,7 +943,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
               entfallen: das Formular ist der Zweck des Dialogs, nicht ein
               aufklappbarer Abschnitt darin. */}
           <div style={{padding:"12px 14px 0"}}>
-            <div style={{display:"flex",gap:3,background:"rgba(0,0,0,0.2)",
+            <div style={{...SPERRE,display:"flex",gap:3,background:"rgba(0,0,0,0.2)",
               borderRadius:10,padding:3}}>
               <VormHubSegBtn v="einmalig"      l="einmalig" icon="calendar"    cur={typ} set={setTyp} clearCount={()=>setCount("")} clearEnd={()=>setEndDate("")}/>
               <VormHubSegBtn v="wiederkehrend" l="Serie"    icon="repeat"      cur={typ} set={setTyp} clearCount={()=>setCount("")} clearEnd={()=>setEndDate("")}/>
@@ -988,6 +998,9 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                 </div>
               )}
 
+              {/* Bei einer abgerufenen Vormerkung ist alles hierin der Beleg
+                  der Bank — sichtbar, aber nicht aenderbar (s. SPERRE). */}
+              <div style={SPERRE}>
               {/* 1. Ausgabe / Einnahme / Umbuchung — dieselbe Dreier-Zeile wie im
                   "neue Vormerkung"-Dialog. Die Umbuchung stand hier vorher als
                   eigener Kasten weiter unten ("Umbuchung auf eigenes Konto
@@ -1363,25 +1376,20 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
               </div>
 
               <div style={TRENNER}/>
+              </div>
+
               {/* 10. Beschreibung + Notiz zusammen */}
               {/* Abgerufene Beschreibungen sind oft deutlich laenger als die
                   Feldbreite ("PAYPAL *KINO KOBLENZ · VISA Debitkartenumsatz vom
                   …"). Das Feld bleibt deshalb einzeilig wie die uebrigen und
-                  laesst sich ueber den Pfeil aufklappen, dann waechst es mit
-                  dem Text. Bewusst weiter ein Textfeld und keine Anzeige: so
-                  bleibt Tippen ein einziger Tap, egal in welchem Zustand. */}
-              <div style={{...LBL,display:"flex",alignItems:"center",gap:8}}>
-                <span>Beschreibung</span>
-                {!!desc && (
-                  <button onClick={()=>setDescOffen(v=>!v)}
-                    aria-label={descOffen?"Beschreibung einklappen":"ganze Beschreibung zeigen"}
-                    style={{background:"none",border:"none",padding:"0 4px",cursor:"pointer",
-                      display:"flex",alignItems:"center",minHeight:0,"--btn-fs":"14px"}}>
-                    {Li(descOffen?"chevron-up":"chevron-down",20,T.txt2)}
-                  </button>
-                )}
-              </div>
+                  klappt beim Antippen auf, solange es den Fokus hat — danach
+                  wieder zu. Kein zusaetzliches Symbol noetig: antippen wollte
+                  man das Feld ohnehin. Auch bei gesperrter Vormerkung, dort
+                  nur ohne Aenderungsmoeglichkeit (readOnly). */}
+              <div style={LBL}>Beschreibung</div>
               <textarea value={desc} onChange={e=>setDesc(e.target.value)}
+                readOnly={bankGesperrt}
+                onFocus={()=>setDescOffen(true)} onBlur={()=>setDescOffen(false)}
                 placeholder="z.B. Miete, Gehalt, Kfz-Steuer…" rows={1}
                 ref={el=>{ if(!el) return;
                   el.style.height = "auto";

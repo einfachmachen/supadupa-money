@@ -32,7 +32,7 @@ function MobileNewAccOverlay({onClose, S}) {
       // der Fussbereich dahinter und ist nicht erreichbar.
     <div style={{position:"fixed",inset:0,background:T.bg,zIndex:400,
       display:"flex",flexDirection:"column",
-      paddingBottom:"calc(110px + env(safe-area-inset-bottom, 0px))"}}>
+      paddingBottom:"calc(88px + env(safe-area-inset-bottom, 0px))"}}>
       <MobileHeader title="Neues Konto" subtitle="Konto oder Zahlungsmittel"
         icon="landmark" iconColor={T.blue} onBack={()=>onClose(null)}/>
       <div style={{flex:1,minHeight:0,overflowY:"auto",WebkitOverflowScrolling:"touch",
