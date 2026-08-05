@@ -122,14 +122,13 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
   // Beschreibung standardmaessig einzeilig; per Pfeil aufklappbar, um lange
   // abgerufene Texte ganz zu lesen.
   const [descOffen, setDescOffen] = useState(false);
-  // Abgerufene Vormerkung: Betrag, Datum, Beschreibung usw. stammen von der
-  // Bank und sind hier keine Eingabe, sondern ein Beleg — sie zu aendern
-  // wuerde die Buchung von dem entfernen, was die Bank gemeldet hat. Aenderbar
-  // bleiben nur die eigenen Zusaetze: Notiz und Tags (Nutzer-Wunsch).
+  // Abgerufene Vormerkung: gesperrt wird genau das, was die BANK gemeldet
+  // hat — Konto, Betrag, Datum und Beschreibung. Das sind Belege, keine
+  // Eingaben; sie zu aendern wuerde die Buchung von dem entfernen, was auf dem
+  // Kontoauszug steht. Alles andere ist die eigene Einordnung und bleibt frei:
+  // Typ, Buchungsart, Kategorien, Notiz und Tags.
   const bankGesperrt = isEdit && hasBankOrigin(editVorm);
-  // Gesperrte Bloecke: sichtbar, aber nicht bedienbar. Bewusst als Sperre am
-  // umgebenden Block statt disabled an jedem einzelnen Feld — so bleibt kein
-  // Bedienelement versehentlich offen, wenn spaeter eines dazukommt.
+  // Sichtbar, aber nicht bedienbar.
   const SPERRE = bankGesperrt ? {pointerEvents:"none", opacity:0.55} : undefined;
   const [transferToCat, setTransferToCat] = useState(_existingLinkSplit?.catId || "");
   const [transferToSub, setTransferToSub] = useState(_existingLinkSplit?.subId || "");
@@ -943,7 +942,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
               entfallen: das Formular ist der Zweck des Dialogs, nicht ein
               aufklappbarer Abschnitt darin. */}
           <div style={{padding:"12px 14px 0"}}>
-            <div style={{...SPERRE,display:"flex",gap:3,background:"rgba(0,0,0,0.2)",
+            <div style={{display:"flex",gap:3,background:"rgba(0,0,0,0.2)",
               borderRadius:10,padding:3}}>
               <VormHubSegBtn v="einmalig"      l="einmalig" icon="calendar"    cur={typ} set={setTyp} clearCount={()=>setCount("")} clearEnd={()=>setEndDate("")}/>
               <VormHubSegBtn v="wiederkehrend" l="Serie"    icon="repeat"      cur={typ} set={setTyp} clearCount={()=>setCount("")} clearEnd={()=>setEndDate("")}/>
@@ -998,9 +997,6 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                 </div>
               )}
 
-              {/* Bei einer abgerufenen Vormerkung ist alles hierin der Beleg
-                  der Bank — sichtbar, aber nicht aenderbar (s. SPERRE). */}
-              <div style={SPERRE}>
               {/* 1. Ausgabe / Einnahme / Umbuchung — dieselbe Dreier-Zeile wie im
                   "neue Vormerkung"-Dialog. Die Umbuchung stand hier vorher als
                   eigener Kasten weiter unten ("Umbuchung auf eigenes Konto
@@ -1051,7 +1047,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                   im "neue Vormerkung"-Dialog, inklusive "+ Konto"-Kachel. */}
               {accounts.length>0&&<>
                 <div style={LBL}>{umbuchung ? "Quelle" : "Zahlungsart"}</div>
-                <div style={{marginBottom:S.gap}}>
+                <div style={{...SPERRE,marginBottom:S.gap}}>
                   <AccountChips accounts={accounts} value={accountId} S={S}
                     onChange={(id)=>{
                       setAccountId(id);
@@ -1108,9 +1104,10 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
               </div>
               <input value={amount} onChange={e=>setAmount(e.target.value)}
                 placeholder="0,00" inputMode="decimal"
+                readOnly={bankGesperrt}
                 style={{...INP_GROSS,marginBottom:S.gap,fontWeight:700,
                   fontSize:S.fs+6,height:S.fs+6+S.padL*2,
-                  fontFamily:NUM_FONT,textAlign:"right",
+                  fontFamily:NUM_FONT,textAlign:"right",opacity:bankGesperrt?0.55:1,
                   border:`2px solid ${amount?T.blue:T.bd}`}}/>
 
               <div style={TRENNER}/>
@@ -1350,7 +1347,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
 
               <div style={TRENNER}/>
               {/* 7+8. verursacht + Buchung am / Startdatum nebeneinander */}
-              <div style={{display:"flex",gap:6,marginBottom:8}}>
+              <div style={{...SPERRE,display:"flex",gap:6,marginBottom:8}}>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{...LBL,display:"flex",alignItems:"center",gap:4}}>
                     {Li("calendar",16,T.txt)} verursacht
@@ -1376,8 +1373,6 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
               </div>
 
               <div style={TRENNER}/>
-              </div>
-
               {/* 10. Beschreibung + Notiz zusammen */}
               {/* Abgerufene Beschreibungen sind oft deutlich laenger als die
                   Feldbreite ("PAYPAL *KINO KOBLENZ · VISA Debitkartenumsatz vom
@@ -1390,6 +1385,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
               <textarea value={desc} onChange={e=>setDesc(e.target.value)}
                 readOnly={bankGesperrt}
                 onFocus={()=>setDescOffen(true)} onBlur={()=>setDescOffen(false)}
+                title={bankGesperrt?"von der Bank gemeldet — nicht änderbar":undefined}
                 placeholder="z.B. Miete, Gehalt, Kfz-Steuer…" rows={1}
                 ref={el=>{ if(!el) return;
                   el.style.height = "auto";
@@ -1397,6 +1393,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                 }}
                 style={{...INP_GROSS,marginBottom:4,height:"auto",minHeight:INPUT_H,
                   padding:`${S.pad}px ${S.padL}px`,resize:"none",overflow:"hidden",
+                  opacity:bankGesperrt?0.55:1,
                   fontFamily:"inherit",lineHeight:1.35}}/>
               {/* 11. Abweichende Erst-/Letztbuchung (nur Finanzierung) */}
               {typ==="finanzierung"&&(
