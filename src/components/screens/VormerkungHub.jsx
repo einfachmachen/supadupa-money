@@ -1377,14 +1377,14 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
               {/* Abgerufene Beschreibungen sind oft deutlich laenger als die
                   Feldbreite ("PAYPAL *KINO KOBLENZ · VISA Debitkartenumsatz vom
                   …"). Das Feld bleibt deshalb einzeilig wie die uebrigen und
-                  klappt beim Antippen auf, solange es den Fokus hat — danach
-                  wieder zu. Kein zusaetzliches Symbol noetig: antippen wollte
-                  man das Feld ohnehin. Auch bei gesperrter Vormerkung, dort
-                  nur ohne Aenderungsmoeglichkeit (readOnly). */}
+                  klappt beim Antippen auf und beim naechsten Antippen wieder
+                  zu — ein Wechselschalter, kein zusaetzliches Symbol noetig.
+                  Bewusst am Klick und nicht am Fokus: ein gesperrtes Feld
+                  bekommt keinen Fokus, soll sich aber genauso lesen lassen. */}
               <div style={LBL}>Beschreibung</div>
               <textarea value={desc} onChange={e=>setDesc(e.target.value)}
                 readOnly={bankGesperrt}
-                onFocus={()=>setDescOffen(true)} onBlur={()=>setDescOffen(false)}
+                onClick={()=>setDescOffen(v=>!v)}
                 title={bankGesperrt?"von der Bank gemeldet — nicht änderbar":undefined}
                 placeholder="z.B. Miete, Gehalt, Kfz-Steuer…" rows={1}
                 ref={el=>{ if(!el) return;
