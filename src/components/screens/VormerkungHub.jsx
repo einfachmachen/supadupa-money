@@ -849,7 +849,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
           onBack={()=>setKatPicker(null)}/>
         <div style={{flex:1,overflowY:"auto",overflowX:"hidden",
           WebkitOverflowScrolling:"touch",background:T.surf2,padding:S.padL,
-          paddingBottom:"calc(40px + env(safe-area-inset-bottom, 0px))"}}>
+          paddingBottom:"calc(140px + env(safe-area-inset-bottom, 0px))"}}>
           <MobileCatStep
             key={katPicker}
             startSub={beiUnter}
@@ -915,10 +915,13 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
             verschieben, sobald irgendeine Zeile ein paar Pixel breiter war als
             der Bildschirm (grosse Schrift, lange Kategorienamen). Der Inhalt
             ist auf die Breite ausgelegt, also soll er auch nur senkrecht
-            scrollen. */}
+            scrollen.
+            Der Abstand unten deckt die Navigationsleiste UND den + Knopf ab,
+            der ueber sie hinausragt: mit weniger liessen sich die letzten
+            Felder nicht mehr freischieben (Nutzer-Hinweis). */}
         <div style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch",
           background:T.surf2,maxWidth:"100%",
-          paddingBottom:"calc(40px + env(safe-area-inset-bottom, 0px))"}}>
+          paddingBottom:"calc(140px + env(safe-area-inset-bottom, 0px))"}}>
 
           {/* Typ ganz oben, direkt unter dem Titel — er entscheidet, welche
               Felder darunter ueberhaupt erscheinen (Intervall, Anzahl, Raten).
@@ -1357,10 +1360,18 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
 
               <div style={TRENNER}/>
               {/* 10. Beschreibung + Notiz zusammen */}
+              {/* Mehrzeilig statt einzeilig: abgerufene Beschreibungen sind oft
+                  laenger als die Feldbreite ("PAYPAL *KINO KOBLENZ · VISA
+                  Debitkartenumsatz vom …") und liessen sich vorher nur durch
+                  seitliches Scrollen IM Feld lesen. Das Feld waechst jetzt mit
+                  dem Text, sodass immer alles sichtbar ist. */}
               <div style={LBL}>Beschreibung</div>
-              <input value={desc} onChange={e=>setDesc(e.target.value)}
-                placeholder="z.B. Miete, Gehalt, Kfz-Steuer…"
-                style={{...INP_GROSS,marginBottom:4,width:"100%",boxSizing:"border-box"}}/>
+              <textarea value={desc} onChange={e=>setDesc(e.target.value)}
+                placeholder="z.B. Miete, Gehalt, Kfz-Steuer…" rows={1}
+                ref={el=>{ if(el){ el.style.height="auto"; el.style.height=el.scrollHeight+"px"; } }}
+                style={{...INP_GROSS,marginBottom:4,height:"auto",minHeight:INPUT_H,
+                  padding:`${S.pad}px ${S.padL}px`,resize:"none",overflow:"hidden",
+                  fontFamily:"inherit",lineHeight:1.35}}/>
               {/* 11. Abweichende Erst-/Letztbuchung (nur Finanzierung) */}
               {typ==="finanzierung"&&(
                 <div onClick={()=>{setCustomFirstLast(v=>{if(v){setFirstAmount("");setLastAmount("");}return !v;})}}

@@ -27,8 +27,12 @@ function MobileNewAccOverlay({onClose, S}) {
     // Anlegen-Schaltflaeche aus dem Bild. Zurueck-Pfeil oben links wie ueberall
     // sonst; das Overlay geht aus bereits vollflaechigen Modals auf, deshalb
     // bleibt zIndex 400 ueber ihnen.
+      // Die Navigationsleiste liegt fest am unteren Rand (z-index 9999)
+      // und der + Knopf ragt darueber hinaus. Ohne diesen Abstand liegt
+      // der Fussbereich dahinter und ist nicht erreichbar.
     <div style={{position:"fixed",inset:0,background:T.bg,zIndex:400,
-      display:"flex",flexDirection:"column"}}>
+      display:"flex",flexDirection:"column",
+      paddingBottom:"calc(120px + env(safe-area-inset-bottom, 0px))"}}>
       <MobileHeader title="Neues Konto" subtitle="Konto oder Zahlungsmittel"
         icon="landmark" iconColor={T.blue} onBack={()=>onClose(null)}/>
       <div style={{flex:1,minHeight:0,overflowY:"auto",WebkitOverflowScrolling:"touch",

@@ -266,8 +266,12 @@ function CustomThemeEditor() {
           Screens: inset:0 + MobileHeader mit Zurueck-Pfeil + Flex-Spalte,
           damit Kopfzeile steht und nur der Inhalt scrollt. */}
       {open && (
+          // Die Navigationsleiste liegt fest am unteren Rand (z-index 9999)
+          // und der + Knopf ragt darueber hinaus. Ohne diesen Abstand liegt
+          // der Fussbereich dahinter und ist nicht erreichbar.
         <div style={{position:"fixed",inset:0,background:T.bg,zIndex:200,
-          display:"flex",flexDirection:"column"}}>
+          display:"flex",flexDirection:"column",
+          paddingBottom:"calc(120px + env(safe-area-inset-bottom, 0px))"}}>
           <MobileHeader title="Theme-Editor" icon="sliders" iconColor={T.blue}
             onBack={()=>setOpen(false)}/>
           <div style={{flex:1,minHeight:0,display:"flex",flexDirection:"column"}}>
