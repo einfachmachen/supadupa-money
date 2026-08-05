@@ -121,7 +121,13 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
   const [katPicker, setKatPicker] = useState(null);
   // Beschreibung standardmaessig einzeilig; per Pfeil aufklappbar, um lange
   // abgerufene Texte ganz zu lesen.
+  // Beschreibung: drei Zustaende. Zugeklappt zeigt sie eine Zeile, aufgeklappt
+  // den ganzen Text, und erst der naechste Tipp macht sie zum Eingabefeld.
+  // Solange getippt wird, verstellt ein Tipp nur den Cursor — abgeschlossen
+  // wird ueber das Haekchen im Feld. Ohne diese Trennung klappte das Feld beim
+  // Cursorsetzen staendig um (Nutzer-Hinweis).
   const [descOffen, setDescOffen] = useState(false);
+  const [descEdit,  setDescEdit]  = useState(false);
   // Abgerufene Vormerkung: gesperrt wird genau das, was die BANK gemeldet
   // hat — Konto, Betrag, Datum und Beschreibung. Das sind Belege, keine
   // Eingaben; sie zu aendern wuerde die Buchung von dem entfernen, was auf dem
@@ -1376,25 +1382,49 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
               {/* 10. Beschreibung + Notiz zusammen */}
               {/* Abgerufene Beschreibungen sind oft deutlich laenger als die
                   Feldbreite ("PAYPAL *KINO KOBLENZ · VISA Debitkartenumsatz vom
-                  …"). Das Feld bleibt deshalb einzeilig wie die uebrigen und
-                  klappt beim Antippen auf und beim naechsten Antippen wieder
-                  zu — ein Wechselschalter, kein zusaetzliches Symbol noetig.
-                  Bewusst am Klick und nicht am Fokus: ein gesperrtes Feld
-                  bekommt keinen Fokus, soll sich aber genauso lesen lassen. */}
+                  …"). Das Feld zeigt deshalb erst eine Zeile, klappt beim
+                  Antippen auf und wird erst beim naechsten Tipp zum
+                  Eingabefeld — so oeffnet sich die Tastatur nicht schon beim
+                  blossen Nachlesen. Bestaetigt wird mit dem Haekchen rechts
+                  unten im Feld. */}
               <div style={LBL}>Beschreibung</div>
-              <textarea value={desc} onChange={e=>setDesc(e.target.value)}
-                readOnly={bankGesperrt}
-                onClick={()=>setDescOffen(v=>!v)}
-                title={bankGesperrt?"von der Bank gemeldet — nicht änderbar":undefined}
-                placeholder="z.B. Miete, Gehalt, Kfz-Steuer…" rows={1}
-                ref={el=>{ if(!el) return;
-                  el.style.height = "auto";
-                  el.style.height = descOffen ? el.scrollHeight+"px" : INPUT_H+"px";
-                }}
-                style={{...INP_GROSS,marginBottom:4,height:"auto",minHeight:INPUT_H,
-                  padding:`${S.pad}px ${S.padL}px`,resize:"none",overflow:"hidden",
-                  opacity:bankGesperrt?0.55:1,
-                  fontFamily:"inherit",lineHeight:1.35}}/>
+              <div style={{position:"relative",marginBottom:4}}>
+                {descEdit ? (
+                  <textarea value={desc} onChange={e=>setDesc(e.target.value)}
+                    placeholder="z.B. Miete, Gehalt, Kfz-Steuer…" rows={1} autoFocus
+                    ref={el=>{ if(el){ el.style.height="auto"; el.style.height=el.scrollHeight+"px"; } }}
+                    style={{...INP_GROSS,height:"auto",minHeight:INPUT_H,
+                      padding:`${S.pad}px ${S.padL}px ${S.pad+34}px`,resize:"none",
+                      overflow:"hidden",fontFamily:"inherit",lineHeight:1.35}}/>
+                ) : (
+                  <div onClick={()=>{
+                      // Gesperrt (Bank-Beschreibung): nur auf- und zuklappen.
+                      if(bankGesperrt) { setDescOffen(v=>!v); return; }
+                      if(!descOffen) setDescOffen(true);
+                      else setDescEdit(true);
+                    }}
+                    title={bankGesperrt?"von der Bank gemeldet — nicht änderbar":undefined}
+                    style={{...INP_GROSS,height:"auto",minHeight:INPUT_H,
+                      padding:`${S.pad}px ${S.padL}px`,cursor:"pointer",
+                      lineHeight:1.35,opacity:bankGesperrt?0.55:1,
+                      color:desc?T.txt:T.txt2,
+                      ...(descOffen
+                        ? {whiteSpace:"pre-wrap",wordBreak:"break-word"}
+                        : {whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"})}}>
+                    {desc || "z.B. Miete, Gehalt, Kfz-Steuer…"}
+                  </div>
+                )}
+                {descEdit && (
+                  <button onClick={()=>{ setDescEdit(false); setDescOffen(false); }}
+                    aria-label="Beschreibung übernehmen"
+                    style={{position:"absolute",right:8,bottom:8,width:36,height:36,
+                      minHeight:0,borderRadius:10,border:"none",cursor:"pointer",
+                      background:T.gold,color:T.on_accent,"--btn-fs":"16px",
+                      display:"flex",alignItems:"center",justifyContent:"center"}}>
+                    {Li("check",20,T.on_accent)}
+                  </button>
+                )}
+              </div>
               {/* 11. Abweichende Erst-/Letztbuchung (nur Finanzierung) */}
               {typ==="finanzierung"&&(
                 <div onClick={()=>{setCustomFirstLast(v=>{if(v){setFirstAmount("");setLastAmount("");}return !v;})}}
