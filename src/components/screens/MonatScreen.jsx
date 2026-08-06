@@ -166,6 +166,12 @@ function MonatScreen() {
     const _txsById = useMemo(()=>buildTxIdMap(txs), [txs]);
     const _isDupl  = t => isDuplCounterpart(t, _txsById);
     const [filt,     setFilt]     = useState("all");
+    // Die Hero-Kacheln melden zusaetzlich, ob nur die erste Monatshaelfte
+    // gemeint ist ("Mitte", bis zum 14.). Das ging bisher verloren: Mitte und
+    // Ende landeten auf demselben Filter, und die beiden Vormerkungs-Kacheln
+    // (Einnahmen/Ausgaben) auf einem gemeinsamen "pending" ohne Richtung —
+    // deshalb sah man dort immer alles (Nutzer-Hinweis).
+    const [filtMitte, setFiltMitte] = useState(false);
     const [heroDetailsOpen, setHeroDetailsOpen] = useState(false);
     const [showAllCats, setShowAllCats] = useState(false);
     const pendingCatsRef = useRef({});
@@ -242,7 +248,12 @@ function MonatScreen() {
       if(d.getFullYear()!==year||d.getMonth()!==month) return false;
       return _txVisible(t);
     }).sort((a,b)=>new Date(b.date)-new Date(a.date));
-    const _applyFilt = (list) => filt==="all" ? list : filt==="pending" ? list.filter(t=>t.pending) : filt==="uncat" ? list.filter(t=>(t.splits||[]).length===0||(t.splits||[]).every(s=>!s.catId)) : filt==="mismatch" ? list.filter(t=>{ const ct=t._csvType; if(!ct) return false; const tt=txType(t); return (ct==="expense"&&tt==="income")||(ct==="income"&&tt==="expense"); }) : list.filter(t=>!t.pending&&txType(t)===filt);
+    // Bis zum 14. — dieselbe Grenze wie "Mitte" im Hero und in der Prognose.
+    const _bisMitte = (t) => new Date(t.date).getDate() <= 14;
+    const _filtRichtung = (t) => filt==="pendingIn" ? txType(t)==="income" : txType(t)!=="income";
+    const _applyFilt = (list0) => { const list = filtMitte ? list0.filter(_bisMitte) : list0;
+      return filt==="pendingIn"||filt==="pendingOut" ? list.filter(t=>t.pending && _filtRichtung(t)) :
+      filt==="all" ? list : filt==="pending" ? list.filter(t=>t.pending) : filt==="uncat" ? list.filter(t=>(t.splits||[]).length===0||(t.splits||[]).every(s=>!s.catId)) : filt==="mismatch" ? list.filter(t=>{ const ct=t._csvType; if(!ct) return false; const tt=txType(t); return (ct==="expense"&&tt==="income")||(ct==="income"&&tt==="expense"); }) : list.filter(t=>!t.pending&&txType(t)===filt); };
     const filtByType = _applyFilt(allMTxs);
     // Globale Suche: durchsucht ALLE Buchungen (alle Monate, gleicher Sichtbarkeits-
     // + Filter-Filter), nicht nur den Anker-Monat. Ohne Suche bleibt es der Monat.
@@ -734,8 +745,11 @@ function MonatScreen() {
           const k = t.date.slice(0,7);
           if(k<range.from || k>range.to) return false;
           if(!_txVisible(t)) return false;
+          if(filtMitte && new Date(t.date).getDate()>14) return false;
           if(filt==="all") return true;
           if(filt==="pending") return t.pending;
+          if(filt==="pendingIn")  return t.pending && txType(t)==="income";
+          if(filt==="pendingOut") return t.pending && txType(t)!=="income";
           return !t.pending && txType(t)===filt;
         }).sort((a,b)=>new Date(b.date)-new Date(a.date))
       : mTxs;
@@ -1263,12 +1277,12 @@ function MonatScreen() {
               prognoseMitte={prognoseMitte} prognoseEnde={prognoseEnde}
               detailMitte={detailMitte} detailEnde={detailEnde}
               saldoMitte={saldoMitte}   saldoEnde={saldoEnde}
-              onDrillBuchIn ={(isMitte)=>setFilt(isMitte?"income":"income")}
-              onDrillBuchOut={(isMitte)=>setFilt(isMitte?"expense":"expense")}
-              onDrillPendIn ={(isMitte)=>setFilt("pending")}
-              onDrillPendOut={(isMitte)=>setFilt("pending")}
-              onDrillUncatIn ={(isMitte)=>setFilt("uncat")}
-              onDrillUncatOut={(isMitte)=>setFilt("uncat")}
+              onDrillBuchIn ={(isMitte)=>{setFiltMitte(!!isMitte);setFilt("income");}}
+              onDrillBuchOut={(isMitte)=>{setFiltMitte(!!isMitte);setFilt("expense");}}
+              onDrillPendIn ={(isMitte)=>{setFiltMitte(!!isMitte);setFilt("pendingIn");}}
+              onDrillPendOut={(isMitte)=>{setFiltMitte(!!isMitte);setFilt("pendingOut");}}
+              onDrillUncatIn ={(isMitte)=>{setFiltMitte(!!isMitte);setFilt("uncat");}}
+              onDrillUncatOut={(isMitte)=>{setFiltMitte(!!isMitte);setFilt("uncat");}}
               detailsOpen={heroDetailsOpen} setDetailsOpen={setHeroDetailsOpen}
               showScrollFocusToggle
             />
@@ -1364,9 +1378,11 @@ function MonatScreen() {
               ["uncat",  "？",        T.txt2,   T.disabled],
             ];
             return chips.map(([v,lbl,col,bgActive])=>{
-              const active = filt===v;
+              // "vorgemerkt" bleibt aktiv markiert, auch wenn ueber die Hero-Kachel
+              // nur eine Richtung gewaehlt wurde.
+              const active = filt===v || (v==="pending" && (filt==="pendingIn"||filt==="pendingOut"));
               return (
-                <button key={v} onClick={()=>setFilt(f=>f===v?"all":v)}
+                <button key={v} onClick={()=>{setFiltMitte(false);setFilt(f=>f===v?"all":v);}}
                   style={{
                     flex:1,minWidth:0,
                     padding:"5px 4px",
@@ -1900,9 +1916,16 @@ function MonatScreen() {
                   // Budgets sind Reservierungen, keine echten Buchungen → bei den
                   // Buchungs-Filtern „Ausgaben"/„Einnahmen" (und „Falsch") ausblenden.
                   if(filt==="mismatch"||filt==="expense"||filt==="income"||filt==="uncat") return null;
+                  // "Mitte" gewaehlt: die Ende-Budgetzeile gehoert nicht dazu.
+                  if(filtMitte && isEndeDay) return null;
                   const details = isMitteDay ? budgetDetailsMitte : budgetDetailsEnde;
                   if(!details.items.length) return null;
-                  return details.items.map(({name,subId,spent,budget,open,type})=>{
+                  // Richtungs-Filter der Vormerkungs-Kacheln auch auf die
+                  // Budgetzeilen anwenden — sonst stuenden bei "Einnahmen
+                  // vorgemerkt" weiterhin die Ausgaben-Budgets darin.
+                  const _budgetPasst = (typ) => filt==="pendingIn" ? typ==="income"
+                    : filt==="pendingOut" ? typ!=="income" : true;
+                  return details.items.filter(it=>_budgetPasst(it.type)).map(({name,subId,spent,budget,open,type})=>{
                     const isIncome = type==="income";
                     const isOverspent = !isIncome && open < 0;
                     // isOverspent → neg (echtes Warnrot), sonst cell_exp (Ausgabe-Vormerkung-
