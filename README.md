@@ -78,6 +78,33 @@ src/
                               NachkategorisierenButton
 ```
 
+## Auslieferung
+
+Zwei unabhängige Wege, beide bauen aus `main`:
+
+| Weg | Workflow | Adresse |
+|---|---|---|
+| GitHub Pages | `.github/workflows/deploy.yml` | `einfachmachen.github.io/supadupa-money/` |
+| Cloudflare Pages | `.github/workflows/deploy-cloudflare.yml` | `<projekt>.pages.dev` bzw. eigene Domain |
+
+Der Cloudflare-Weg ist übersprungen, solange die Repository-Variable
+`CF_DEPLOY` nicht auf `true` steht; die nötigen Secrets und die einmalige
+Einrichtung stehen im Kopf des Workflows.
+
+**Von Hand ausliefern** — der Hebel, wenn eine CI klemmt:
+
+```bash
+npm run deploy:cf     # baut und lädt direkt zu Cloudflare Pages hoch
+```
+
+Dafür einmalig `wrangler login` ausführen oder `CLOUDFLARE_API_TOKEN` und
+`CLOUDFLARE_ACCOUNT_ID` in der Umgebung setzen.
+
+Hintergrund für den zweiten Weg: GitHub Pages veröffentlicht in einem
+GitHub-internen Schritt, den man von außen nicht anstoßen kann. Fällt der aus,
+liegt der fertige Build zwar im `gh-pages`-Branch, ist aber nicht erreichbar —
+ohne jede Eingriffsmöglichkeit (am 06.08.2026 über Stunden erlebt).
+
 ## Verifikation
 
 - ✅ **`npm run build` läuft sauber durch** (929 kB minified / 239 kB gzipped, 0 Errors, 0 Warnings außer chunk-size-Hinweis)

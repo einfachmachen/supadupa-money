@@ -1,0 +1,73 @@
+name: Deploy to Cloudflare Pages
+
+# Zweiter, unabhängiger Auslieferungsweg neben GitHub Pages (deploy.yml).
+#
+# Hintergrund: GitHub Pages veröffentlicht in einem eigenen, GitHub-internen
+# Schritt, den man von außen nicht anstoßen kann. Als der am 06.08.2026 über
+# Stunden ausfiel (Warteschlange ohne Start, "Service Unavailable", ungültiges
+# OIDC-Token), war der fertige Build zwar gebaut und im gh-pages-Branch — aber
+# nicht erreichbar, und es gab keinen Hebel. Cloudflare Pages nimmt den Build
+# per Direkt-Upload entgegen: derselbe Befehl läuft hier in der CI und
+# notfalls von Hand auf dem eigenen Rechner.
+#
+# Bewusst per `npx wrangler` statt über cloudflare/wrangler-action: eine
+# Action weniger, die GitHub erst ausliefern muss — genau daran scheiterte
+# einer der Läufe an besagtem Tag.
+#
+# ── Einmalige Einrichtung ────────────────────────────────────────────────
+#   1. Cloudflare → Workers & Pages → Create → Pages → "Direct Upload",
+#      Projektname z. B. supadupa-money (legt zugleich <name>.pages.dev an).
+#   2. Cloudflare → My Profile → API Tokens → Create Token
+#      → Vorlage "Edit Cloudflare Workers" ODER eigenes Token mit der
+#        Berechtigung  Account › Cloudflare Pages › Edit.
+#   3. Im Repo unter Settings → Secrets and variables → Actions:
+#        Secrets:    CLOUDFLARE_API_TOKEN   (das Token aus Schritt 2)
+#                    CLOUDFLARE_ACCOUNT_ID  (Cloudflare-Übersicht, rechte Spalte)
+#        Variables:  CF_DEPLOY = true       (schaltet diesen Workflow scharf)
+#                    CF_PROJECT = supadupa-money   (optional, sonst dieser Wert)
+#
+# Solange CF_DEPLOY nicht auf "true" steht, wird der Job übersprungen — so
+# scheitert hier nichts, bevor die Zugangsdaten hinterlegt sind.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: "cloudflare-pages"
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    if: vars.CF_DEPLOY == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      # Ohne --base: Vite nimmt "/" (siehe vite.config.js). Auf Cloudflare
+      # liegt die App im Wurzelverzeichnis der Domain, nicht wie bei GitHub
+      # Pages in einem Unterordner mit dem Repo-Namen.
+      - name: Build app
+        run: npm run build
+
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx --yes wrangler@4 pages deploy dist \
+            --project-name="${{ vars.CF_PROJECT || 'supadupa-money' }}" \
+            --branch=main \
+            --commit-dirty=true
