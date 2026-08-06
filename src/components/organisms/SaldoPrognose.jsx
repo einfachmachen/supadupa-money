@@ -60,7 +60,17 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
         const unbPend = drill.unbudgetedPend||[];
         const unbReal = drill.unbudgetedRealTxs||realTxsD.filter(r=>!budgets2.some(b=>b.realTxs.find(br=>br.id===r.id)));
         const hasAny = budgets2.length>0||unbPend.length>0||unbReal.length>0;
-        const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
+        // Schriftgroessen der Detailansicht — dieselben Werte wie im Aufriss des
+// Dashboards ("Ausgaben bis 14."), damit beide Listen nicht in verschiedenen
+// Groessen dastehen (Nutzer-Hinweis). Die Prognose lag durchweg 1-4px
+// darunter, beim Betrag sogar 3,5px.
+//   FS_TEXT   Beschreibung / Zeilentitel
+//   FS_BETRAG Betrag der Zeile
+//   FS_DETAIL Datum, Kategorie, Zusaetze
+//   FS_MARKER Kennzeichnungen (vorgemerkt, wiederkehrend, verknuepft)
+const FS_TEXT = 15, FS_BETRAG = 17, FS_DETAIL = 12, FS_MARKER = 11;
+
+const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
           const cat=getCat((t.splits||[])[0]?.catId);
           const splitAmt = subId ? (t.splits||[]).find(sp=>sp.subId===subId)?.amount : null;
           const displayAmt = splitAmt!=null && splitAmt!==0 ? Math.abs(splitAmt) : Math.abs(t.totalAmount);
@@ -71,47 +81,47 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
             : (isInc ? T.cond_pos : T.neg);
           return (
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:5,paddingLeft:indent?10:0,opacity:dimmed?0.65:1}}>
-              <span style={{color:T.txt2,fontSize:12,flexShrink:0,fontFamily:NUM_FONT,width:36}}>{fmtD(t.date)}</span>
+              <span style={{color:T.txt2,fontSize:FS_DETAIL,flexShrink:0,fontFamily:NUM_FONT,width:36}}>{fmtD(t.date)}</span>
               {icon&&Li(icon,12,iconCol||T.txt2)}
-              <span style={{color:dimmed?T.txt2:T.txt,flex:1,fontSize:13.5,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.desc||cat?.name||"—"}</span>
+              <span style={{color:dimmed?T.txt2:T.txt,flex:1,fontSize:FS_TEXT,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.desc||cat?.name||"—"}</span>
               {(t.tags||[]).map(tg=>(
                 <span key={tg} style={{background:`${T.blue}1a`,color:T.blue,
-                  borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>
+                  borderRadius:5,padding:"1px 5px",fontSize:FS_MARKER,fontWeight:700,flexShrink:0}}>
                   #{tg}
                 </span>
               ))}
-              <span style={{color:amtCol,fontFamily:NUM_FONT,fontSize:13.5,fontWeight:700,flexShrink:0}}>{isInc?"+":"−"}{fmt(displayAmt)}</span>
+              <span style={{color:amtCol,fontFamily:NUM_FONT,fontSize:FS_BETRAG,fontWeight:700,flexShrink:0}}>{isInc?"+":"−"}{fmt(displayAmt)}</span>
             </div>
           );
         };
         return (
           <div style={{marginTop:6,background:"rgba(0,0,0,0.35)",borderRadius:12,padding:"11px 13px",fontSize:13,textAlign:"left"}}>
-            <div style={{color:col,fontWeight:700,fontSize:13.5,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
+            <div style={{color:col,fontWeight:700,fontSize:FS_TEXT,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
               {Li("bar-chart-2",15,col)} Prognose {label} ({label==="Mitte"?"bis 14.":"bis Monatsende"})
             </div>
             {/* ── Saldo Ende + Warnungen + Summen — jetzt OBEN ── */}
             {(drill.overBudgetWarnings||[]).length>0&&(
               <div style={{background:"rgba(255,159,67,0.12)",border:"1px solid rgba(255,159,67,0.4)",borderRadius:8,padding:"7px 10px",marginBottom:6}}>
-                <div style={{color:T.warn,fontSize:12,fontWeight:700,marginBottom:4,display:"flex",alignItems:"center",gap:5}}>{Li("alert-triangle",12,T.warn)} Budget überschritten:</div>
-                {drill.overBudgetWarnings.map((w,i)=>(<div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:2}}><span style={{color:T.warn}}>{w.name}</span><span style={{fontFamily:NUM_FONT,color:T.warn}}>{fmt(w.actual)} {">"} {fmt(w.budget)}</span></div>))}
+                <div style={{color:T.warn,fontSize:FS_DETAIL,fontWeight:700,marginBottom:4,display:"flex",alignItems:"center",gap:5}}>{Li("alert-triangle",12,T.warn)} Budget überschritten:</div>
+                {drill.overBudgetWarnings.map((w,i)=>(<div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:FS_DETAIL,marginBottom:2}}><span style={{color:T.warn}}>{w.name}</span><span style={{fontFamily:NUM_FONT,color:T.warn}}>{fmt(w.actual)} {">"} {fmt(w.budget)}</span></div>))}
               </div>
             )}
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${col}44`,paddingBottom:6,marginBottom:8}}>
-              <span style={{color:col,fontWeight:700,fontSize:14}}>Saldo {label}</span>
+              <span style={{color:col,fontWeight:700,fontSize:FS_TEXT}}>Saldo {label}</span>
               {(()=>{
                 // Externe saldoMitte/saldoEnde haben Vorrang (sind konto-spezifisch wenn selAcc).
                 // drill.saldo (immer Gesamt) nur als Fallback wenn extern nicht gesetzt.
                 const ext = label==="Mitte" ? saldoMitte : saldoEnde;
                 const sv = (ext!==null && ext!==undefined) ? ext : drill.saldo;
                 return sv!==null && sv!==undefined
-                  ? <span style={{color:sv>=0?T.pos:T.warn_icon,fontFamily:NUM_FONT,fontWeight:700,fontSize:16}}>{sv>=0?"+":"−"}{fmt(Math.abs(sv))}</span>
+                  ? <span style={{color:sv>=0?T.pos:T.warn_icon,fontFamily:NUM_FONT,fontWeight:700,fontSize:20}}>{sv>=0?"+":"−"}{fmt(Math.abs(sv))}</span>
                   : null;
               })()}
             </div>
             {hasAny&&(drill.realIn+drill.pendIn+drill.realOut+drill.pendOut)>0&&(
               <div style={{display:"flex",gap:14,justifyContent:"flex-end",marginBottom:8,paddingBottom:6,borderBottom:`1px solid rgba(255,255,255,0.07)`}}>
-                <span style={{color:T.pos,fontSize:12.5,fontFamily:NUM_FONT}}>+{fmt(drill.realIn+drill.pendIn)}</span>
-                <span style={{color:T.neg,fontSize:12.5,fontFamily:NUM_FONT}}>−{fmt(drill.realOut+drill.pendOut)}</span>
+                <span style={{color:T.pos,fontSize:FS_DETAIL,fontFamily:NUM_FONT}}>+{fmt(drill.realIn+drill.pendIn)}</span>
+                <span style={{color:T.neg,fontSize:FS_DETAIL,fontFamily:NUM_FONT}}>−{fmt(drill.realOut+drill.pendOut)}</span>
               </div>
             )}
             {/* ── Buchungen/Budgets — scrollbar ── */}
@@ -170,24 +180,24 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
                         <div key={idx} style={{marginBottom:8,background:"rgba(255,255,255,0.04)",borderRadius:8,padding:"7px 0"}}>
                           {/* Zeile 1: Datum + Icon + Name | offen rechts */}
                           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-                            <span style={{color:T.txt2,fontSize:12,flexShrink:0,fontFamily:NUM_FONT,width:36}}>{fmtD(b.date)}</span>
+                            <span style={{color:T.txt2,fontSize:FS_DETAIL,flexShrink:0,fontFamily:NUM_FONT,width:36}}>{fmtD(b.date)}</span>
                             {Li(overBudget?"alert-triangle":"target",12,overBudget?T.neg:T.cell_exp)}
-                            <span style={{flex:1,minWidth:0,color:overBudget?T.neg:T.cell_exp,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{subName}</span>
+                            <span style={{flex:1,minWidth:0,color:overBudget?T.neg:T.cell_exp,fontSize:FS_TEXT,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{subName}</span>
                             {overBudget ? (
-                              <span style={{color:T.neg,fontSize:11,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>um {fmt(actual-b.budget)} drüber</span>
+                              <span style={{color:T.neg,fontSize:FS_DETAIL,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>um {fmt(actual-b.budget)} drüber</span>
                             ) : (
                               <span style={{display:"inline-flex",alignItems:"baseline",gap:5,flexShrink:0}}>
-                                <span style={{color:T.txt2,fontSize:11}}>offen:</span>
-                                <span style={{color:T.cell_exp,fontSize:13,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(openAmt)}</span>
+                                <span style={{color:T.txt2,fontSize:FS_DETAIL}}>offen:</span>
+                                <span style={{color:T.cell_exp,fontSize:FS_BETRAG,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(openAmt)}</span>
                               </span>
                             )}
                           </div>
                           {/* Zeile 2: Budget links | genutzt rechts (unter dem Namen eingerückt) */}
                           <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:6,marginBottom:5,paddingLeft:44}}>
-                            <span style={{color:T.txt2,fontSize:11}}>Budget: −{fmt(b.budget)}</span>
+                            <span style={{color:T.txt2,fontSize:FS_DETAIL}}>Budget: −{fmt(b.budget)}</span>
                             <span style={{display:"inline-flex",alignItems:"baseline",gap:5}}>
-                              <span style={{color:T.txt2,fontSize:11}}>genutzt:</span>
-                              <span style={{color:actual===0?T.txt2:overBudget?T.neg:effCol,fontSize:12.5,fontWeight:700,fontFamily:NUM_FONT}}>{actual===0?"—":`−${fmt(actual)}`}</span>
+                              <span style={{color:T.txt2,fontSize:FS_DETAIL}}>genutzt:</span>
+                              <span style={{color:actual===0?T.txt2:overBudget?T.neg:effCol,fontSize:FS_DETAIL,fontWeight:700,fontFamily:NUM_FONT}}>{actual===0?"—":`−${fmt(actual)}`}</span>
                             </span>
                           </div>
                           {/* Trennstrich vor Einzelbuchungen */}
@@ -249,12 +259,12 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
                           <div key={idx} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",marginBottom:5}}>
                             {Li("arrow-right-left",13,umbBlue)}
                             <div style={{flex:1,minWidth:0}}>
-                              <span style={{color:umbBlue,fontSize:13,fontWeight:700}}>
+                              <span style={{color:umbBlue,fontSize:FS_TEXT,fontWeight:700}}>
                               {fromAccName} → {targetAcc}
                             </span>
-                              <span style={{color:T.txt2,fontSize:12,marginLeft:6}}>{labelDesc}</span>
+                              <span style={{color:T.txt2,fontSize:FS_DETAIL,marginLeft:6}}>{labelDesc}</span>
                             </div>
-                            <span style={{color:umbBlue,fontSize:14,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
+                            <span style={{color:umbBlue,fontSize:FS_BETRAG,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
                               {fmt(Math.abs(t.totalAmount))} €
                             </span>
                           </div>
@@ -270,8 +280,8 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
             )}
             {/* ── Vormonatssaldo — jetzt UNTEN ── */}
             <div style={{display:"flex",justifyContent:"space-between",borderTop:`1px solid rgba(255,255,255,0.07)`,paddingTop:8,marginTop:8}}>
-              <span style={{color:T.txt2,fontSize:13}}>Vormonatssaldo</span>
-              <span style={{color:T.txt,fontFamily:NUM_FONT,fontSize:13.5,fontWeight:700}}>{drill.base>=0?"+":"−"}{fmt(Math.abs(drill.base))}</span>
+              <span style={{color:T.txt2,fontSize:FS_TEXT}}>Vormonatssaldo</span>
+              <span style={{color:T.txt,fontFamily:NUM_FONT,fontSize:FS_BETRAG,fontWeight:700}}>{drill.base>=0?"+":"−"}{fmt(Math.abs(drill.base))}</span>
             </div>
           </div>
         );

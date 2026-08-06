@@ -2123,16 +2123,16 @@ function DashboardScreenV2() {
                             {Li(isOver?"alert-triangle":"target",15,mainCol)}
                           </div>
                           <div style={{flex:1,minWidth:0}}>
-                            <div style={{color:isOver?T.neg:T.txt,fontSize:14,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>
+                            <div style={{color:isOver?T.neg:T.txt,fontSize:15,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>
                             <div style={{marginTop:5,position:"relative",height:8,maxWidth:120}}>
                               <div style={{position:"absolute",left:0,right:0,top:3.25,height:1.5,background:T.bd,borderRadius:1}}/>
                               <div style={{position:"absolute",left:`calc(3px + (100% - 6px) * ${ratio})`,top:1,width:6,height:6,borderRadius:"50%",background:barCol,transform:"translateX(-50%)"}}/>
                             </div>
                           </div>
                           <div style={{display:"flex",alignItems:"baseline",gap:6,flexShrink:0}}>
-                            <span style={{color:usedCol,fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{spent===0?"—":fmt(Math.abs(spent))}</span>
-                            <span style={{color:T.txt2,fontSize:10}}>{isOver?"zuviel:":"Rest:"}</span>
-                            <span style={{color:restCol,fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmt(Math.abs(open))}</span>
+                            <span style={{color:usedCol,fontSize:17,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{spent===0?"—":fmt(Math.abs(spent))}</span>
+                            <span style={{color:T.txt2,fontSize:12}}>{isOver?"zuviel:":"Rest:"}</span>
+                            <span style={{color:restCol,fontSize:17,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmt(Math.abs(open))}</span>
                           </div>
                         </div>
                       </div>
