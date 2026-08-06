@@ -466,7 +466,6 @@ export default function SupaDupaMoney() {
           setMainTab(p.mainTab); setSubTab(p.subTab);
         },
         onDismiss: () => {                                 // Doppel-Tap → schließen, zurück zum vorherigen Tab (Dashboard)
-          setShowMobilePicker(false);
           const p = prevTabRef.current;
           setMainTab(p.mainTab); setSubTab(p.subTab);
           setPlusArretiert(false);
@@ -3577,9 +3576,8 @@ Abbrechen = ${remoteName}-Stand laden`
       {/* ── BOTTOM NAV BAR — 5 Tabs + + Button ── */}
       {(()=>{
         const onTap = (t) => {
-          // Offene Mobile-Overlays/Picker beim Tab-Wechsel schließen — sonst läge
-          // der Picker über der neuen Ansicht und es "passiert nichts".
-          setShowMobilePicker(false);
+          // Offene Mobile-Overlays beim Tab-Wechsel schließen — sonst laegen sie
+          // über der neuen Ansicht und es "passiert nichts".
           setShowMobileVormerken(false); setShowMobileKategorien(false);
           setShowMobileBudget(false); setShowMobileWiederkehrend(false);
           setShowDataMgr(false); setShowCsv(false); setShowVormHub(false);
