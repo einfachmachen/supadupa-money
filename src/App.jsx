@@ -38,7 +38,6 @@ const lazyNamed = (loader, name) => lazy(() => retryImport(loader).then(m => ({ 
 const AddTxModal            = lazyNamed(() => import("./components/organisms/AddTxModal.jsx"), "AddTxModal");
 const DataManagerDialog     = lazyNamed(() => import("./components/organisms/DataManagerDialog.jsx"), "DataManagerDialog");
 const ExportDialog          = lazyNamed(() => import("./components/organisms/ExportDialog.jsx"), "ExportDialog");
-const MobileActionPicker    = lazyNamed(() => import("./components/organisms/MobileActionPicker.jsx"), "MobileActionPicker");
 const MobileKategorienModal = lazyNamed(() => import("./components/organisms/MobileKategorienModal.jsx"), "MobileKategorienModal");
 const MobileVormerkenModal  = lazyNamed(() => import("./components/organisms/MobileVormerkenModal.jsx"), "MobileVormerkenModal");
 const MonthPickerModal      = lazyNamed(() => import("./components/organisms/MonthPickerModal.jsx"), "MonthPickerModal");
@@ -264,9 +263,7 @@ export default function SupaDupaMoney() {
   const [showMobileVormerken, setShowMobileVormerken] = useState(false);
   const [showMobileWiederkehrend, setShowMobileWiederkehrend] = useState(false);
   const [showMobileWiederkehrendTyp, setShowMobileWiederkehrendTyp] = useState("wiederkehrend");
-  const [showMobilePicker, setShowMobilePicker] = useState(false);
   // Öffnet das Mehr-Menü wieder — für Zurück-Navigation aus Vormerken/Zuordnen.
-  const reopenMobilePicker = () => setShowMobilePicker(true);
   // Plus-Button: arretiert (höhere Position + 1,5× Größe) ja/nein
   // NICHT persistiert — beim App-Start immer false (Bottom-Bar-Position)
   const [plusArretiert, setPlusArretiert] = useState(false);
@@ -443,7 +440,7 @@ export default function SupaDupaMoney() {
   // Schließen träfe das obenliegende Overlay nicht. Overlays bringen ihre eigene
   // Schließen-/Override-Logik mit (eigene Kopfzeile bzw. eigener Override).
   const _structOverlayOpen =
-    showMobilePicker || showDataMgr || showMobileKategorien || showMobileVormerken ||
+    showDataMgr || showMobileKategorien || showMobileVormerken ||
     showMobileWiederkehrend || showMobileBudget || showCsv || showBankWizard ||
     showCloudSetup || showFuelAnalysis || showMatching || showVormHub || showVormMenu ||
     showRecurring || showKategorisieren || showMonthPickerModal || showCloudSave ||
@@ -467,7 +464,6 @@ export default function SupaDupaMoney() {
           // bedient. Verkleinern passiert nur beim Doppel-Tap (onDismiss).
           const p = prevTabRef.current;
           setMainTab(p.mainTab); setSubTab(p.subTab);
-          reopenMobilePicker();
         },
         onDismiss: () => {                                 // Doppel-Tap → schließen, zurück zum vorherigen Tab (Dashboard)
           setShowMobilePicker(false);
@@ -3250,7 +3246,7 @@ Abbrechen = ${remoteName}-Stand laden`
     mainTab==="erfassen"&&(subTab==="jahr"||subTab==="mood"||subTab==="trend") ? "jahr" :
     "home";
   const anyMobileModalOpen = showMobileVormerken||showMobileWiederkehrend||
-    showMobilePicker||showMobileKategorien||showMobileBudget||
+    showMobileKategorien||showMobileBudget||
     showCsv||showVormHub||showRecurring||showMatching||!!modal||dashDrillOpen;
 
   const showMonthPicker = anyMobileModalOpen ||
@@ -3818,8 +3814,7 @@ Abbrechen = ${remoteName}-Stand laden`
                   if(lt.timer) clearTimeout(lt.timer);   // wartenden Einzel-Tap verwerfen
                   masterLastTapRef.current = {zone:null, t:0, timer:null};
                   try { if(navigator.vibrate) navigator.vibrate(15); } catch(_) {}
-                  if(showMobilePicker)          setShowMobilePicker(false);       // Mehr offen → schließen
-                  else if(showMonthPickerModal) setShowMonthPickerModal(false);   // Monatsauswahl → schließen
+                  if(showMonthPickerModal)      setShowMonthPickerModal(false);   // Monatsauswahl → schließen
                   else if(showCloudSave)        setShowCloudSave(false);          // Cloud-Modal → schließen
                   else {
                     // klein → vergrößern (Datums-/Monatsnavigation); KEIN Tab-Wechsel
@@ -3902,8 +3897,7 @@ Abbrechen = ${remoteName}-Stand laden`
                 // aktuelles Datum. KEIN Tab-Wechsel — man bleibt im aktuellen Tab
                 // (Home bleibt Home, Monat bleibt Monat). In JEDEM Fall wird der
                 // Button direkt wieder verkleinert.
-                if(showMobilePicker)          setShowMobilePicker(false);
-                else if(showMonthPickerModal) setShowMonthPickerModal(false);
+                if(showMonthPickerModal)      setShowMonthPickerModal(false);
                 else if(showCloudSave)        setShowCloudSave(false);
                 else                          jumpToToday();
                 if(e.currentTarget) {
@@ -3911,11 +3905,6 @@ Abbrechen = ${remoteName}-Stand laden`
                   e.currentTarget.style.transform = "translate(0px, -14px) scale(1)";
                 }
                 setPlusArretiert(false);
-              } else if(showMobilePicker) {
-                // Picker („Was möchtest du tun?") offen: Einzel-Tap auf den + =
-                // zurück (Picker schließen, Knopf wieder klein).
-                setShowMobilePicker(false); setPlusArretiert(false);
-                masterLastTapRef.current = {zone:null, t:0, timer:null};
               } else {
                 // Einzel-Tap im vergrößerten Zustand: nach kurzer Verzögerung
                 // direkt den Vormerken-Dialog öffnen.
@@ -3987,15 +3976,7 @@ Abbrechen = ${remoteName}-Stand laden`
                     transition: moodDrillOpen ? "none"
                       : "transform 0.25s cubic-bezier(.34,1.4,.64,1), border-color 0.4s ease, border-width 0.4s ease, box-shadow 0.4s ease",
                   }}>
-                  {showMobilePicker ? (
-                    <div style={{pointerEvents:"none",textAlign:"center",width:"86%"}}>
-                      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
-                        <span style={{fontSize:19,fontWeight:800,color:fg,lineHeight:1}}>‹</span>
-                        <span style={{fontSize:14,fontWeight:800,color:fg,lineHeight:1}}>zurück</span>
-                      </div>
-                      <div style={{fontSize:8,fontWeight:700,color:fg,opacity:0.8,letterSpacing:0.3,marginTop:4,whiteSpace:"nowrap"}}>tippen</div>
-                    </div>
-                  ) : (<>
+                  {(<>
                     {_dayStr && !onMoodScreen && (
                       <div style={{fontSize:24,fontWeight:800,color:fg,lineHeight:1,pointerEvents:"none"}}>
                         {_dayStr}
@@ -4202,46 +4183,13 @@ Abbrechen = ${remoteName}-Stand laden`
       {showMobileWiederkehrend&&<MobileVormerkenModal
         initialRecurring={true} initialFinanz={showMobileWiederkehrendTyp==="finanzierung"}
         onClose={()=>{setShowMobileWiederkehrend(false);setPlusArretiert(false);}}
-        onBack={()=>{setShowMobileWiederkehrend(false);reopenMobilePicker("main");}}/>}
+        onBack={()=>{setShowMobileWiederkehrend(false);setPlusArretiert(true);}}/>}
       {showMobileBudget&&<MobileBudgetModal onClose={()=>{setShowMobileBudget(false);setPlusArretiert(false);}}/>}
       {showMobileKategorien&&<MobileKategorienModal
         onClose={()=>{setShowMobileKategorien(false);setPlusArretiert(false);}}
         onBack={()=>{setShowMobileKategorien(false);setPlusArretiert(true);}}
         onKonten={()=>{setShowMobileKategorien(false);setMainTab("struktur");setActiveStructurTab("konten");}}
         onKategorienErweitert={()=>{setShowMobileKategorien(false);setMainTab("struktur");setActiveStructurTab("kategorien");}}/>}
-      {showMobilePicker&&<MobileActionPicker
-        onClose={()=>{setShowMobilePicker(false);setPlusArretiert(false);}}
-        onSelect={(action)=>{
-          setShowMobilePicker(false);
-
-          if(action==="addTx") setShowMobileVormerken(true);
-          else if(action==="desktop") setModal("addTx");
-          else if(action==="vormerken") setShowMobileVormerken(true);
-          else if(action==="matching") setShowMatching(true);
-          else if(action==="csv") setShowCsv(true);
-          else if(action==="bankwizard") setShowBankWizard(true);
-          else if(action==="datenmgr") setShowDataMgr(true);
-          else if(action==="cloudsetup") setShowCloudSetup(true);
-          else if(action==="wiederkehrend") { setShowMobileWiederkehrendTyp("wiederkehrend"); setShowMobileWiederkehrend(true); }
-          else if(action==="finanzierung")  { setShowMobileWiederkehrendTyp("finanzierung");  setShowMobileWiederkehrend(true); }
-          else if(action==="kategorien"||action==="budget") setShowMobileKategorien(true);
-          else if(action==="einstellungen") { setMainTab("struktur"); setActiveStructurTab("einstellungen"); }
-        }}
-        onSwitchToMonth={()=>{ setShowMobilePicker(false); setShowMonthPickerModal(true); }}
-      />}
-
-      {/* ── Monatswähler-Modal (Master-Button Slide-up) ── */}
-      {showMonthPickerModal && (
-        <MonthPickerModal
-          year={year} month={month}
-          setYear={setYear} setMonth={setMonth}
-          plusArretiert={plusArretiert}
-          onClose={()=>{ setShowMonthPickerModal(false); setPlusArretiert(false); }}
-          onSwitchToMore={()=>{ setShowMonthPickerModal(false); setPlusArretiert(true); }}/>
-      )}
-
-      {/* ── Cloud-Speichern-Modal (Master-Button Wisch ↓) ── */}
-      {showCloudSave && <CloudSaveModal onClose={()=>{ setShowCloudSave(false); setPlusArretiert(false); }}/>}
 
       {/* ── MODALS ── */}
       {modal==="addTx"&&<AddTxModal/>}
@@ -4256,7 +4204,7 @@ Abbrechen = ${remoteName}-Stand laden`
         onClose={()=>{setShowFuelAnalysis(false);setPlusArretiert(false);}}
         onBack={()=>{setShowFuelAnalysis(false);setPlusArretiert(true);}}/>}
       {showMatching&&<MatchingScreen onClose={()=>{setShowMatching(false);setPlusArretiert(false);}}
-        onBack={()=>{setShowMatching(false);reopenMobilePicker("main");}}/>}
+        onBack={()=>{setShowMatching(false);setPlusArretiert(true);}}/>}
       {showVormHub&&<VormerkungHub onClose={()=>{setShowVormHub(false);setEditVormTx(null);setPlusArretiert(false);}} editVorm={editVormTx}/>}
       {showRecurring&&<RecurringDetectionScreen onClose={()=>{setShowRecurring(false);setPlusArretiert(false);}}/>}
       {showKategorisieren&&<RecurringDetectionScreen initialTab="kategorisieren" onClose={()=>{setShowKategorisieren(false);setPlusArretiert(false);}}/>}

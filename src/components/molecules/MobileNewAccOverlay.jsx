@@ -1,8 +1,6 @@
 // Auto-generated module (siehe app-src.jsx)
 
 import React, { useContext, useState } from "react";
-import { MobileActionPicker } from "../organisms/MobileActionPicker.jsx";
-import { MonthPickerModal } from "../organisms/MonthPickerModal.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { uid } from "../../utils/format.js";
