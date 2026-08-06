@@ -2141,10 +2141,13 @@ function DashboardScreenV2() {
                             Prognose (budgetEntries.realTxs/concTxs), damit beide
                             Listen dasselbe Bild ergeben. */}
                         {(()=>{
-                          const posten = [
-                            ...((be?.realTxs)||[]).map(t=>({t,vorgemerkt:false})),
-                            ...((be?.concTxs)||[]).map(t=>({t,vorgemerkt:true})),
-                          ].sort((a,b)=>String(b.t.date).localeCompare(String(a.t.date)));
+                          // Nur die Vormerkungen: die Budget-Zeile erscheint in der
+                          // Vormerkungs-Liste, und dort gehoert hin, was noch
+                          // aussteht. Die bereits gebuchten Posten stehen in der
+                          // Liste "Buchungen" (Nutzer-Hinweis).
+                          const posten = ((be?.concTxs)||[])
+                            .map(t=>({t,vorgemerkt:true}))
+                            .sort((a,b)=>String(b.t.date).localeCompare(String(a.t.date)));
                           if(!posten.length) return null;
                           return (<>
                             <div style={{borderTop:`1px solid rgba(255,255,255,0.08)`,margin:"4px 0 3px 38px"}}/>
@@ -2179,7 +2182,90 @@ function DashboardScreenV2() {
                     );
                   };
                   const _todayISOdrill = new Date().toISOString().slice(0,10);
-                  return sorted.map((tx,idx)=>{
+
+                  // ── Buchungsliste: nach Budget-Kategorien buendeln ──────────
+                  // Budget-Platzhalter sind Vormerkungen und tauchen deshalb nur
+                  // in der Vormerkungs-Liste auf. In "Buchungen" standen die
+                  // budgetierten Ausgaben dadurch unsortiert zwischen allen
+                  // anderen — man sah nicht, zu welcher Kategorie sie gehoeren.
+                  // Hier bekommt jede Kategorie eine Kopfzeile mit der Summe des
+                  // tatsaechlich Gebuchten (kein "Rest" — das ist eine Planzahl
+                  // und gehoert in Vormerkungen bzw. Prognose).
+                  const istBuchungsliste = dashDrill.kind==="out" || dashDrill.kind==="in";
+                  const anzeigeListe = (()=>{
+                    if(!istBuchungsliste) return sorted;
+                    const inListe = new Map(sorted.map(t=>[t.id,t]));
+                    const gebuendelt = [], vergeben = new Set();
+                    (dashDetailEnde?.budgetEntries||[]).forEach(be2=>{
+                      const posten = (be2.realTxs||[]).filter(t=>inListe.has(t.id));
+                      if(!posten.length) return;
+                      posten.forEach(t=>vergeben.add(t.id));
+                      gebuendelt.push({id:"grp-"+be2.baseSubId, date:posten[0].date, __gruppe:{be:be2, posten}});
+                    });
+                    if(!gebuendelt.length) return sorted;
+                    return [...gebuendelt, ...sorted.filter(t=>!vergeben.has(t.id))];
+                  })();
+
+                  const renderBuchungsGruppe = ({be:be2, posten}) => {
+                    // budgetEntries fuehren keine catId — der Name kommt wie in
+                    // renderBudgetRow ueber den Budget-Platzhalter, ersatzweise
+                    // ueber den Split der ersten gebuchten Position.
+                    const gCatId = (be2.budgetTx?.splits||[])[0]?.catId
+                      || (posten[0]?.splits||[]).find(x=>x.subId===be2.baseSubId)?.catId;
+                    const gName = getSub(gCatId, be2.baseSubId)?.name
+                      || getCat(gCatId)?.name || "Budget";
+                    const gInc = !!be2.isInc;
+                    const gCol = gInc ? T.cell_inc : T.cell_exp;
+                    const gSumme = posten.reduce((sum,t)=>{
+                      const sp2 = (t.splits||[]).find(x=>x.subId===be2.baseSubId);
+                      return sum + ((sp2?.amount!=null && sp2.amount!==0)
+                        ? Math.abs(pn(sp2.amount)) : Math.abs(t.totalAmount));
+                    },0);
+                    return (
+                      <div key={"grp-"+be2.baseSubId}
+                        style={{padding:"5px 18px",borderBottom:`1px solid ${T.bd}`,background:T.surf3}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <div style={{width:30,height:30,borderRadius:9,flexShrink:0,background:gCol+"22",
+                            border:`1px solid ${T.bd}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                            {Li("target",15,gCol)}
+                          </div>
+                          <div style={{flex:1,minWidth:0,color:T.txt,fontSize:15,fontWeight:600,
+                            overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{gName}</div>
+                          <span style={{color:gCol,fontSize:17,fontWeight:700,fontFamily:NUM_FONT,
+                            fontVariantNumeric:"tabular-nums",flexShrink:0}}>
+                            {gInc?"+":"−"}{fmt(gSumme)}
+                          </span>
+                        </div>
+                        <div style={{borderTop:`1px solid rgba(255,255,255,0.08)`,margin:"4px 0 3px 38px"}}/>
+                        {[...posten].sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(t=>{
+                          const sp2 = (t.splits||[]).find(x=>x.subId===be2.baseSubId);
+                          const betrag = (sp2?.amount!=null && sp2.amount!==0)
+                            ? Math.abs(pn(sp2.amount)) : Math.abs(t.totalAmount);
+                          return (
+                            <div key={t.id} onClick={()=>{setDashDrill(null);openEdit(t);}}
+                              style={{display:"flex",alignItems:"center",gap:8,marginBottom:1,
+                                paddingLeft:38,cursor:"pointer"}}>
+                              <span style={{color:T.txt2,fontSize:12,flexShrink:0,fontFamily:NUM_FONT,width:36}}>
+                                {String(t.date).slice(8,10)}.{String(t.date).slice(5,7)}.
+                              </span>
+                              {Li("check-circle",12,T.pos)}
+                              <span style={{flex:1,minWidth:0,color:T.txt,fontSize:15,
+                                overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                                {t.desc||gName}
+                              </span>
+                              <span style={{color:gInc?T.cond_pos:T.neg,fontFamily:NUM_FONT,fontSize:17,
+                                fontWeight:700,flexShrink:0}}>
+                                {gInc?"+":"−"}{fmt(betrag)}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  };
+
+                  return anzeigeListe.map((tx,idx)=>{
+                    if(tx.__gruppe) return renderBuchungsGruppe(tx.__gruppe);
                     return (<React.Fragment key={tx.id}>
                       {(()=>{
                   // Budget-Platzhalter (gepaart oder einzeln): im Monat-Stil mit
