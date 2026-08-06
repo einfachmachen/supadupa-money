@@ -2135,6 +2135,46 @@ function DashboardScreenV2() {
                             <span style={{color:restCol,fontSize:17,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmt(Math.abs(open))}</span>
                           </div>
                         </div>
+                        {/* Einzelbuchungen der Budget-Kategorie — bisher zeigte
+                            diese Zeile nur Verbrauch und Rest, nicht WOFUER.
+                            Dieselbe Quelle und dieselbe Darstellung wie in der
+                            Prognose (budgetEntries.realTxs/concTxs), damit beide
+                            Listen dasselbe Bild ergeben. */}
+                        {(()=>{
+                          const posten = [
+                            ...((be?.realTxs)||[]).map(t=>({t,vorgemerkt:false})),
+                            ...((be?.concTxs)||[]).map(t=>({t,vorgemerkt:true})),
+                          ].sort((a,b)=>String(b.t.date).localeCompare(String(a.t.date)));
+                          if(!posten.length) return null;
+                          return (<>
+                            <div style={{borderTop:`1px solid rgba(255,255,255,0.08)`,margin:"4px 0 3px 38px"}}/>
+                            {posten.map(({t,vorgemerkt})=>{
+                              const sp2 = (t.splits||[]).find(x=>x.subId===be.baseSubId);
+                              const betrag = (sp2?.amount!=null && sp2.amount!==0)
+                                ? Math.abs(pn(sp2.amount)) : Math.abs(t.totalAmount);
+                              const farbe = vorgemerkt ? (isInc?T.cell_inc:T.cell_exp)
+                                                       : (isInc?T.cond_pos:T.neg);
+                              return (
+                                <div key={t.id} onClick={()=>{setDashDrill(null);openEdit(t);}}
+                                  style={{display:"flex",alignItems:"center",gap:8,marginBottom:1,
+                                    paddingLeft:38,cursor:"pointer",opacity:vorgemerkt?0.75:1}}>
+                                  <span style={{color:T.txt2,fontSize:12,flexShrink:0,fontFamily:NUM_FONT,width:36}}>
+                                    {String(t.date).slice(8,10)}.{String(t.date).slice(5,7)}.
+                                  </span>
+                                  {Li(vorgemerkt?(t._seriesId?"repeat":"calendar"):"check-circle",12,
+                                    vorgemerkt?(isInc?T.cell_inc:T.cell_exp):T.pos)}
+                                  <span style={{flex:1,minWidth:0,color:T.txt,fontSize:15,
+                                    overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                                    {t.desc||name}
+                                  </span>
+                                  <span style={{color:farbe,fontFamily:NUM_FONT,fontSize:17,fontWeight:700,flexShrink:0}}>
+                                    {isInc?"+":"−"}{fmt(betrag)}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </>);
+                        })()}
                       </div>
                     );
                   };
