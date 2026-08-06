@@ -70,6 +70,12 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
 //   FS_MARKER Kennzeichnungen (vorgemerkt, wiederkehrend, verknuepft)
 const FS_TEXT = 15, FS_BETRAG = 17, FS_DETAIL = 12, FS_MARKER = 11;
 
+// Zeilenabstaende bewusst knapp: die Prognose zeigt nur an, hier wird nichts
+// angetippt oder bearbeitet. Je mehr Zeilen ohne Scrollen im Bild stehen,
+// desto besser laesst sich der Monat ueberblicken. Grosszuegig bleibt nur der
+// Abstand ZWISCHEN den Budget-Karten — er trennt die Kategorien voneinander
+// und von den uebrigen Zahlungen (Nutzer-Wunsch).
+
 const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
           const cat=getCat((t.splits||[])[0]?.catId);
           const splitAmt = subId ? (t.splits||[]).find(sp=>sp.subId===subId)?.amount : null;
@@ -80,7 +86,7 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
             ? (isInc ? T.cell_inc : T.cell_exp)
             : (isInc ? T.cond_pos : T.neg);
           return (
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:5,paddingLeft:indent?10:0,opacity:dimmed?0.65:1}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:1,paddingLeft:indent?10:0,opacity:dimmed?0.65:1}}>
               <span style={{color:T.txt2,fontSize:FS_DETAIL,flexShrink:0,fontFamily:NUM_FONT,width:36}}>{fmtD(t.date)}</span>
               {icon&&Li(icon,12,iconCol||T.txt2)}
               <span style={{color:dimmed?T.txt2:T.txt,flex:1,fontSize:FS_TEXT,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.desc||cat?.name||"—"}</span>
@@ -96,7 +102,7 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
         };
         return (
           <div style={{marginTop:6,background:"rgba(0,0,0,0.35)",borderRadius:12,padding:"11px 13px",fontSize:13,textAlign:"left"}}>
-            <div style={{color:col,fontWeight:700,fontSize:FS_TEXT,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
+            <div style={{color:col,fontWeight:700,fontSize:FS_TEXT,marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
               {Li("bar-chart-2",15,col)} Prognose {label} ({label==="Mitte"?"bis 14.":"bis Monatsende"})
             </div>
             {/* ── Saldo Ende + Warnungen + Summen — jetzt OBEN ── */}
@@ -119,7 +125,7 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
               })()}
             </div>
             {hasAny&&(drill.realIn+drill.pendIn+drill.realOut+drill.pendOut)>0&&(
-              <div style={{display:"flex",gap:14,justifyContent:"flex-end",marginBottom:8,paddingBottom:6,borderBottom:`1px solid rgba(255,255,255,0.07)`}}>
+              <div style={{display:"flex",gap:14,justifyContent:"flex-end",marginBottom:6,paddingBottom:4,borderBottom:`1px solid rgba(255,255,255,0.07)`}}>
                 <span style={{color:T.pos,fontSize:FS_DETAIL,fontFamily:NUM_FONT}}>+{fmt(drill.realIn+drill.pendIn)}</span>
                 <span style={{color:T.neg,fontSize:FS_DETAIL,fontFamily:NUM_FONT}}>−{fmt(drill.realOut+drill.pendOut)}</span>
               </div>
@@ -177,9 +183,9 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
                       const actual = b.realAmt+b.concAmt;
                       const openAmt = b.budget - actual;
                       return (
-                        <div key={idx} style={{marginBottom:8,background:"rgba(255,255,255,0.04)",borderRadius:8,padding:"7px 0"}}>
+                        <div key={idx} style={{marginBottom:8,background:"rgba(255,255,255,0.04)",borderRadius:8,padding:"5px 0"}}>
                           {/* Zeile 1: Datum + Icon + Name | offen rechts */}
-                          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
                             <span style={{color:T.txt2,fontSize:FS_DETAIL,flexShrink:0,fontFamily:NUM_FONT,width:36}}>{fmtD(b.date)}</span>
                             {Li(overBudget?"alert-triangle":"target",12,overBudget?T.neg:T.cell_exp)}
                             <span style={{flex:1,minWidth:0,color:overBudget?T.neg:T.cell_exp,fontSize:FS_TEXT,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{subName}</span>
@@ -193,7 +199,7 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
                             )}
                           </div>
                           {/* Zeile 2: Budget links | genutzt rechts (unter dem Namen eingerückt) */}
-                          <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:6,marginBottom:5,paddingLeft:44}}>
+                          <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:6,marginBottom:2,paddingLeft:44}}>
                             <span style={{color:T.txt2,fontSize:FS_DETAIL}}>Budget: −{fmt(b.budget)}</span>
                             <span style={{display:"inline-flex",alignItems:"baseline",gap:5}}>
                               <span style={{color:T.txt2,fontSize:FS_DETAIL}}>genutzt:</span>
@@ -256,7 +262,7 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
                         const fromAccName = accounts.find(a=>a.id===expenseSide.accountId)?.name || "?";
                         const targetAcc  = accounts.find(a=>a.id===incomeSide.accountId)?.name || incomeSide.accountId || "?";
                         return (
-                          <div key={idx} style={{display:"flex",alignItems:"center",gap:8,padding:"5px 0",marginBottom:5}}>
+                          <div key={idx} style={{display:"flex",alignItems:"center",gap:8,padding:"1px 0",marginBottom:1}}>
                             {Li("arrow-right-left",13,umbBlue)}
                             <div style={{flex:1,minWidth:0}}>
                               <span style={{color:umbBlue,fontSize:FS_TEXT,fontWeight:700}}>
