@@ -3508,14 +3508,6 @@ Abbrechen = ${remoteName}-Stand laden`
         </Overlay>
       )}
 
-      {/* ── Cloud-Speichern-Modal ──
-          Wird per Wisch ↓ am + Button UND per Tipp auf den Sync-Hinweis
-          geöffnet. Das Rendern fiel beim Entfernen des "Mehr"-Menüs (5f07e77)
-          versehentlich mit weg: showCloudSave wurde weiterhin gesetzt, es
-          erschien nur nichts mehr — der Sync-Hinweis war damit ein
-          Knopf ohne Wirkung (Nutzer-Hinweis). */}
-      {showCloudSave && <CloudSaveModal onClose={()=>{ setShowCloudSave(false); setPlusArretiert(false); }}/>}
-
       {/* ── Offline-/Sync-Hinweis ──
           Nur auf Screens OHNE Hero. Dashboard und Monat rendern ihn selbst
           unterhalb des Heros (siehe dort) — dort oben unter der Notch war er
@@ -4163,6 +4155,23 @@ Abbrechen = ${remoteName}-Stand laden`
         onBack={()=>{setShowMobileKategorien(false);setPlusArretiert(true);}}
         onKonten={()=>{setShowMobileKategorien(false);setMainTab("struktur");setActiveStructurTab("konten");}}
         onKategorienErweitert={()=>{setShowMobileKategorien(false);setMainTab("struktur");setActiveStructurTab("kategorien");}}/>}
+
+      {/* ── Monatsauswahl + Cloud-Speichern (Gesten am + Button) ──
+          Beide sind Lazy-Chunks und gehören deshalb ZWINGEND unter dieses
+          Suspense: ein Lazy-Chunk, der aus einem Klick heraus nachlädt, wirft
+          sonst React #426 ("A component suspended while responding to
+          synchronous input") — genau das passierte, als der Cloud-Dialog
+          weiter oben ohne Suspense stand (Nutzer-Bild).
+          Beide Render-Aufrufe fielen beim Entfernen des "Mehr"-Menüs (5f07e77)
+          versehentlich weg. Die States wurden weiterhin gesetzt — per Tipp auf
+          den Sync-Hinweis, per Wisch ↑/↓ am + Button — es erschien nur nichts
+          mehr. Zwei Bedienwege ohne jede Wirkung, ohne Fehlermeldung. */}
+      {showMonthPickerModal && <MonthPickerModal
+        year={year} month={month} setYear={setYear} setMonth={setMonth}
+        plusArretiert={plusArretiert}
+        onClose={()=>{ setShowMonthPickerModal(false); setPlusArretiert(false); }}/>}
+      {showCloudSave && <CloudSaveModal
+        onClose={()=>{ setShowCloudSave(false); setPlusArretiert(false); }}/>}
 
       {/* ── MODALS ── */}
       {modal==="addTx"&&<AddTxModal/>}
