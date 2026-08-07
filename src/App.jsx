@@ -96,7 +96,13 @@ export default function SupaDupaMoney() {
   const [sparOpenRequest, setSparOpenRequest] = useState(0);
   const [activeStructurTab, setActiveStructurTab] = useState("daten");
   const [hideEmptyRows, setHideEmptyRows] = useState(true);
-  const [themeName, setThemeName] = useState(()=>kvStore.getItem("mbt_theme")||"dark");
+  // "darkhell" ist entfernt (siehe themes.js) — wer es zuletzt ausgewaehlt
+  // hatte, landet sonst auf einem Namen, den es nicht mehr gibt: die App
+  // zeigte zwar Dark, die Theme-Auswahl aber gar nichts Markiertes.
+  const [themeName, setThemeName] = useState(()=>{
+    const gespeichert = kvStore.getItem("mbt_theme");
+    return (!gespeichert || gespeichert==="darkhell") ? "dark" : gespeichert;
+  });
   const [noBorders, setNoBorders] = useState(()=>kvStore.getItem("mbt_noborders")==="0" ? false : true);
   const [themeRev, setThemeRev] = useState(0); // incremented to force re-render on same theme
   const [handedness, setHandedness] = useState(()=>kvStore.getItem("mbt_handedness")||"right");
@@ -3232,10 +3238,13 @@ Abbrechen = ${remoteName}-Stand laden`
   // Kinder-Themes können eigene, verspieltere Icons für Home/Trend/Daten
   // hinterlegen (T.nav_icons) — Monat bleibt überall der Kalender, da es
   // dafür keine klarere Alternative gibt.
+  // Reihenfolge: Home, Monat, (+), Trend, Daten — Monat liegt damit direkt
+  // neben Home, wo es am haeufigsten gebraucht wird (Nutzer-Wunsch, vorher
+  // standen Trend und Monat andersherum).
   const NAV_TABS = [
     {id:"home",      label:"Home",     icon:T.nav_icons?.home || "home"},
-    {id:"jahr",      label:"Trend",    icon:T.nav_icons?.jahr || "activity"},
     {id:"monat",     label:"Monat",    icon:"calendar"},
+    {id:"jahr",      label:"Trend",    icon:T.nav_icons?.jahr || "activity"},
     {id:"daten",     label:"Daten",    icon:T.nav_icons?.daten || "database"},
   ];
   const activeNavTab =
@@ -4274,14 +4283,14 @@ Abbrechen = ${remoteName}-Stand laden`
 // MasterOverrideSlot genutzt, damit beide IMMER identisch aussehen (früher
 // dupliziert → Override-Variante war abweichend transparent/unlesbar).
 //   • Fläche = Akzentfarbe der Bottom-Bar-Symbole (Terminal=pos-Grün, sonst T.blue)
-//   • dark/darkhell/hellgrau behalten Lime
+//   • dark/hellgrau behalten Lime
 //   • Textfarbe per Kontrast hell/dunkel
 //   • Flache Themes (clean/swiss/terminal/brutalist): Kontrastrahmen statt
 //     Schatten (CSS entfernt dort box-shadow)
 function plusBtnColors(T) {
   const isTerminal  = T.themeName==="terminal";
   const isBrutalist = T.themeName==="brutalist";
-  const useLime = T.themeName==="dark" || T.themeName==="darkhell" || T.themeName==="hellgrau";
+  const useLime = T.themeName==="dark" || T.themeName==="hellgrau";
   const isFlat  = isTerminal || isBrutalist || T.themeName==="clean" || T.themeName==="swiss";
   const accent  = isTerminal ? T.pos : T.blue;
   const bg = useLime ? "linear-gradient(135deg,#9CC800,#AADD00)"

@@ -516,21 +516,10 @@ const THEMES = {
 
 };
 
-// ── Dark Hell — wie Dark, aber mit DEUTLICH hellerem Grau, damit das
-//    Ausgaben-Rot besser lesbar ist. Umschaltbare Variante; wenn sie sich
-//    bewährt, kann sie das bisherige Dark ablösen.
-THEMES.darkhell = {
-  ...THEMES.dark,
-  bg:"#3E444C", surf:"#4B525B", surf2:"#545C66", surf3:"#3A414A",
-  bd:"rgba(215,225,235,0.20)", bds:"rgba(215,225,235,0.34)",
-  txt:"#F5F7F9", txt2:"rgba(218,228,238,0.72)",
-  lbl:"rgba(218,228,238,0.58)",
-  neg:"#00D9FF",                       // Hellorange — bessere Lesbarkeit auf Grau
-  err:"#FFA090", cond_neg:"#00D9FF", neg_aktuell:"#59E6FF", neg_vm:"#8CEEFF", warn_bold:"#FF8800", warn_icon:"#FFD24D",
-  disabled:"#3A4046",
-  hero_bg:"linear-gradient(135deg,#262B32,#363E48)",
-  name:"Dark Hell (helleres Grau)",
-};
+// "Dark Hell (helleres Grau)" stand hier bis zum 08.08.2026 (Nutzer-Wunsch,
+// entfernt). Es war ein Dark mit hellerem Grau; die praktisch gleichen Werte
+// leben in "Tiefsee" (THEMES.deepocean) weiter. Ein gespeichertes "darkhell"
+// wird beim Laden auf "dark" umgebogen (siehe App.jsx).
 
 // ── Hellgrau — echtes helles Neutralgrau als Hintergrund, weiße Karten,
 //    dunkler Text. Basiert auf dem (für helle Gründe abgestimmten) Light-Theme;

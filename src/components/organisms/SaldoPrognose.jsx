@@ -18,14 +18,14 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
   const drill = drillOpen==="Mitte" ? detailMitte : drillOpen==="Ende" ? detailEnde : null;
   const fmtD = iso=>{const[,m,d]=iso.split("-");return `${d}.${m}.`;};
   return (
-    <div style={{borderTop:`1px solid rgba(255,255,255,0.07)`,paddingTop:0,marginTop:0}}>
+    <div style={{borderTop:`1px solid ${T.bd}`,paddingTop:0,marginTop:0}}>
       {/* Toggle-Header nur zeigen wenn nicht direkt aus Hero aufgerufen */}
       {!initialOpen&&<div style={{display:"flex",gap:3,alignItems:"flex-start"}}>
         <div style={{width:44,flexShrink:0}}/>
         {[["Mitte",T.mid,saldoMitte,detailMitte],["Ende",T.gold,saldoEnde,detailEnde],[null,null,null,null]].map(([label,col,saldo,det],i)=>(
           <div key={i} style={{flex:1,minWidth:0,textAlign:"center",
             cursor:label?"pointer":"default",
-            background:label&&drillOpen===label?"rgba(255,255,255,0.07)":"transparent",
+            background:label&&drillOpen===label?T.surf3:"transparent",
             borderRadius:8,padding:"3px 4px",transition:"background 0.15s"}}
             onClick={()=>label&&setDrillOpen(v=>v===label?null:label)}>
             {label&&saldo!==null&&(<>
@@ -101,13 +101,19 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
           );
         };
         return (
-          <div style={{marginTop:6,background:"rgba(0,0,0,0.35)",borderRadius:12,padding:"11px 13px",fontSize:13,textAlign:"left"}}>
+          // Flaechen und Trennlinien aus dem Theme statt fest verdrahteter
+          // Schwarz-/Weiss-Schleier: rgba(0,0,0,0.35) legte auf hellen Themes
+          // eine dunkelgraue Platte mitten in die helle Seite, und die
+          // rgba(255,255,255,...)-Linien darin waren dort unsichtbar
+          // (Nutzer-Bilder). Jetzt dieselbe Sprache wie der Buchungen-/VM-/
+          // unkat.-Aufriss: Panel auf surf3, Budget-Karten eine Stufe heller.
+          <div style={{marginTop:6,background:T.surf3,borderRadius:12,padding:"11px 13px",fontSize:13,textAlign:"left"}}>
             <div style={{color:col,fontWeight:700,fontSize:FS_TEXT,marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
               {Li("bar-chart-2",15,col)} Prognose {label} ({label==="Mitte"?"bis 14.":"bis Monatsende"})
             </div>
             {/* ── Saldo Ende + Warnungen + Summen — jetzt OBEN ── */}
             {(drill.overBudgetWarnings||[]).length>0&&(
-              <div style={{background:"rgba(255,159,67,0.12)",border:"1px solid rgba(255,159,67,0.4)",borderRadius:8,padding:"7px 10px",marginBottom:6}}>
+              <div style={{background:`${T.warn_icon}1f`,border:`1px solid ${T.warn_icon}66`,borderRadius:8,padding:"7px 10px",marginBottom:6}}>
                 <div style={{color:T.warn,fontSize:FS_DETAIL,fontWeight:700,marginBottom:4,display:"flex",alignItems:"center",gap:5}}>{Li("alert-triangle",12,T.warn)} Budget überschritten:</div>
                 {drill.overBudgetWarnings.map((w,i)=>(<div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:FS_DETAIL,marginBottom:2}}><span style={{color:T.warn}}>{w.name}</span><span style={{fontFamily:NUM_FONT,color:T.warn}}>{fmt(w.actual)} {">"} {fmt(w.budget)}</span></div>))}
               </div>
@@ -125,7 +131,7 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
               })()}
             </div>
             {hasAny&&(drill.realIn+drill.pendIn+drill.realOut+drill.pendOut)>0&&(
-              <div style={{display:"flex",gap:14,justifyContent:"flex-end",marginBottom:6,paddingBottom:4,borderBottom:`1px solid rgba(255,255,255,0.07)`}}>
+              <div style={{display:"flex",gap:14,justifyContent:"flex-end",marginBottom:6,paddingBottom:4,borderBottom:`1px solid ${T.bd}`}}>
                 <span style={{color:T.pos,fontSize:FS_DETAIL,fontFamily:NUM_FONT}}>+{fmt(drill.realIn+drill.pendIn)}</span>
                 <span style={{color:T.neg,fontSize:FS_DETAIL,fontFamily:NUM_FONT}}>−{fmt(drill.realOut+drill.pendOut)}</span>
               </div>
@@ -183,31 +189,39 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
                       const actual = b.realAmt+b.concAmt;
                       const openAmt = b.budget - actual;
                       return (
-                        <div key={idx} style={{marginBottom:8,background:"rgba(255,255,255,0.04)",borderRadius:8,padding:"5px 0"}}>
+                        <div key={idx} style={{marginBottom:8,background:T.surf,borderRadius:8,padding:"5px 0"}}>
                           {/* Zeile 1: Datum + Icon + Name | offen rechts */}
                           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
                             <span style={{color:T.txt2,fontSize:FS_DETAIL,flexShrink:0,fontFamily:NUM_FONT,width:36}}>{fmtD(b.date)}</span>
-                            {Li(overBudget?"alert-triangle":"target",12,overBudget?T.neg:T.cell_exp)}
-                            <span style={{flex:1,minWidth:0,color:overBudget?T.neg:T.cell_exp,fontSize:FS_TEXT,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{subName}</span>
+                            {Li(overBudget?"alert-triangle":"target",12,overBudget?T.neg:effCol)}
+                            {/* Kategoriename in normaler Textfarbe — wie im Buchungen-/
+                                VM-/unkat.-Aufriss. Die Budget-Farbe traegt hier das
+                                Symbol und der Betrag; der Name durchgehend eingefaerbt
+                                liess die Prognose als einzige Liste komplett rot bzw.
+                                cyan wirken (Nutzer-Bilder). Ausnahme bleibt das
+                                ueberschrittene Budget — das ist ein Warnzustand. */}
+                            <span style={{flex:1,minWidth:0,color:overBudget?T.neg:T.txt,fontSize:FS_TEXT,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{subName}</span>
                             {overBudget ? (
                               <span style={{color:T.neg,fontSize:FS_DETAIL,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>um {fmt(actual-b.budget)} drüber</span>
                             ) : (
                               <span style={{display:"inline-flex",alignItems:"baseline",gap:5,flexShrink:0}}>
                                 <span style={{color:T.txt2,fontSize:FS_DETAIL}}>offen:</span>
-                                <span style={{color:T.cell_exp,fontSize:FS_BETRAG,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(openAmt)}</span>
+                                {/* effCol statt fest cell_exp: Einnahmen-Budgets standen
+                                    sonst in der Ausgaben-Farbe da. */}
+                                <span style={{color:effCol,fontSize:FS_BETRAG,fontWeight:700,fontFamily:NUM_FONT}}>{b.isInc?"+":"−"}{fmt(openAmt)}</span>
                               </span>
                             )}
                           </div>
                           {/* Zeile 2: Budget links | genutzt rechts (unter dem Namen eingerückt) */}
                           <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:6,marginBottom:2,paddingLeft:44}}>
-                            <span style={{color:T.txt2,fontSize:FS_DETAIL}}>Budget: −{fmt(b.budget)}</span>
+                            <span style={{color:T.txt2,fontSize:FS_DETAIL}}>Budget: {b.isInc?"+":"−"}{fmt(b.budget)}</span>
                             <span style={{display:"inline-flex",alignItems:"baseline",gap:5}}>
                               <span style={{color:T.txt2,fontSize:FS_DETAIL}}>genutzt:</span>
-                              <span style={{color:actual===0?T.txt2:overBudget?T.neg:effCol,fontSize:FS_DETAIL,fontWeight:700,fontFamily:NUM_FONT}}>{actual===0?"—":`−${fmt(actual)}`}</span>
+                              <span style={{color:actual===0?T.txt2:overBudget?T.neg:effCol,fontSize:FS_DETAIL,fontWeight:700,fontFamily:NUM_FONT}}>{actual===0?"—":`${b.isInc?"+":"−"}${fmt(actual)}`}</span>
                             </span>
                           </div>
                           {/* Trennstrich vor Einzelbuchungen */}
-                          {(b.realTxs.length>0||b.concTxs.length>0)&&<div style={{borderTop:`1px solid rgba(255,255,255,0.08)`,margin:"2px 0 4px"}}/>}
+                          {(b.realTxs.length>0||b.concTxs.length>0)&&<div style={{borderTop:`1px solid ${T.bd}`,margin:"2px 0 4px"}}/>}
                           {[...b.realTxs.map(t=>({t,isConc:false})),...b.concTxs.map(t=>({t,isConc:true}))].sort((a,c)=>c.t.date.localeCompare(a.t.date)).map(({t,isConc})=>isConc?(<TxRow key={t.id} t={t} isInc={b.isInc} indent dimmed isPending icon={t._seriesId?"repeat":"calendar"} iconCol={b.isInc?T.cell_inc:T.cell_exp} subId={b.baseSubId}/>):(<TxRow key={t.id} t={t} isInc={b.isInc} indent icon="check-circle" iconCol={T.pos} subId={b.baseSubId}/>))}
                         </div>
                       );
@@ -285,7 +299,7 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
               </div>
             )}
             {/* ── Vormonatssaldo — jetzt UNTEN ── */}
-            <div style={{display:"flex",justifyContent:"space-between",borderTop:`1px solid rgba(255,255,255,0.07)`,paddingTop:8,marginTop:8}}>
+            <div style={{display:"flex",justifyContent:"space-between",borderTop:`1px solid ${T.bd}`,paddingTop:8,marginTop:8}}>
               <span style={{color:T.txt2,fontSize:FS_TEXT}}>Vormonatssaldo</span>
               <span style={{color:T.txt,fontFamily:NUM_FONT,fontSize:FS_BETRAG,fontWeight:700}}>{drill.base>=0?"+":"−"}{fmt(Math.abs(drill.base))}</span>
             </div>
