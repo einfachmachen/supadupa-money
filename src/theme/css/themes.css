@@ -120,6 +120,14 @@
     border-radius: 0 !important;
   }
 
+  /* ── Klötzchenwelt: alles eckig. In einer Welt aus Würfeln gibt es keine
+     abgerundeten Ecken — das ist der halbe Wiedererkennungswert. Der + Button
+     wird hier bewusst NICHT wieder rund gemacht (Regel unten), er ist der
+     größte Klotz der App. ── */
+  .theme-kloetzchenwelt * {
+    border-radius: 0 !important;
+  }
+
   /* ── „+"-Button (.plus-master-btn): in den eckigen Spezial-Themes wieder
      rund. Der zentrale Aktionsknopf soll überall kreisförmig bleiben. ── */
   .theme-brutalist .plus-master-btn,
@@ -127,16 +135,21 @@
   .theme-clean .plus-master-btn {
     border-radius: 50% !important;
   }
-  /* Terminal: grobpixeliger „Kreis" (Retro/8-Bit-Optik) statt glatt rund.
-     8×8-Raster (Schritte von 12,5%) → blockige Kreiskontur wie früher. */
+  /* Terminal: pixeliger „Kreis" (Retro/8-Bit-Optik) statt glatt rund.
+     Feineres 16×16-Raster (Schritte von 6,25%) statt der früheren 8×8-Stufen:
+     die Treppe blieb erkennbar, aber der Knopf wirkte damit eher achteckig
+     als rund (Nutzer-Wunsch: „nicht so stark abgestuft"). */
   .theme-terminal .plus-master-btn {
     border-radius: 0 !important;
     clip-path: polygon(
-      37.5% 0%, 62.5% 0%, 62.5% 12.5%, 75% 12.5%, 75% 25%, 87.5% 25%,
-      87.5% 37.5%, 100% 37.5%, 100% 62.5%, 87.5% 62.5%, 87.5% 75%, 75% 75%,
-      75% 87.5%, 62.5% 87.5%, 62.5% 100%, 37.5% 100%, 37.5% 87.5%, 25% 87.5%,
-      25% 75%, 12.5% 75%, 12.5% 62.5%, 0% 62.5%, 0% 37.5%, 12.5% 37.5%,
-      12.5% 25%, 25% 25%, 25% 12.5%, 37.5% 12.5%
+      68.75% 0%, 68.75% 6.25%, 81.25% 6.25%, 81.25% 12.5%, 87.5% 12.5%,
+      87.5% 18.75%, 93.75% 18.75%, 93.75% 31.25%, 100% 31.25%, 100% 68.75%,
+      93.75% 68.75%, 93.75% 81.25%, 87.5% 81.25%, 87.5% 87.5%, 81.25% 87.5%,
+      81.25% 93.75%, 68.75% 93.75%, 68.75% 100%, 31.25% 100%, 31.25% 93.75%,
+      18.75% 93.75%, 18.75% 87.5%, 12.5% 87.5%, 12.5% 81.25%, 6.25% 81.25%,
+      6.25% 68.75%, 0% 68.75%, 0% 31.25%, 6.25% 31.25%, 6.25% 18.75%,
+      12.5% 18.75%, 12.5% 12.5%, 18.75% 12.5%, 18.75% 6.25%, 31.25% 6.25%,
+      31.25% 0%
     ) !important;
   }
 

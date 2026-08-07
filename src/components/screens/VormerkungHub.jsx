@@ -1037,7 +1037,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                       }
                     }}
                       style={{minWidth:0,padding:`${S.padL}px ${S.pad}px`,borderRadius:S.radius,
-                        cursor:"pointer",fontSize:S.fs-4,"--btn-fs":(S.fs-4)+"px",fontWeight:700,
+                        fontSize:S.fs-4,"--btn-fs":(S.fs-4)+"px",fontWeight:700,
                         border:`2px solid ${active?col:T.bd}`,
                         background:active?col+"22":(isLightTheme())?"rgba(0,0,0,0.04)":"rgba(255,255,255,0.06)",
                         color:active?col:T.txt2,fontFamily:"inherit",transition:"all 0.15s",

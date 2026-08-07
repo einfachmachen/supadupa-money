@@ -808,6 +808,43 @@ THEMES.zirkustaschenrechner = {
   name:"Zirkus-Taschenrechner",
 };
 
+// ── Klötzchenwelt — Kinder-Theme in der Farbwelt der bekannten Klötzchen-
+//    Bauwelt: Grasgrün über Erde, Smaragd für Einnahmen, Diamant-Türkis für
+//    Ausgaben, Gold für Vormerkungen, Redstone-Rot für Warnungen. Der Hero
+//    zeigt einen Grasblock: schmaler grüner Streifen oben, Erde darunter,
+//    darüber ein 8px-Raster als Pixel-Textur.
+//    Bewusst ohne den Markennamen des Spiels benannt.
+THEMES.kloetzchenwelt = {
+  ...THEMES.dark,
+  bg:"#1F1A14", surf:"#3A2C1E", surf2:"#4B3927", surf3:"#16120D",
+  bd:"rgba(205,175,125,0.20)", bds:"rgba(205,175,125,0.36)",
+  txt:"#F2F2F2", txt2:"rgba(228,216,192,0.70)", lbl:"rgba(228,216,192,0.54)",
+  // blue = Hauptakzent (Buttons/Highlights) → Grasgrün, damit das Theme in
+  // der Theme-Auswahl auch unter "Grün" einsortiert wird.
+  blue:"#6BC13B", pos:"#3DD168", neg:"#4AEDD9", gold:"#FCEE4B",
+  on_accent:"#10230A", disabled:"#2C241B", warn:"#E8912B", override:"#B4611C",
+  mid:"#7AB8FF",                      // Lapislazuli für die "Mitte"-Marke
+  cell_inc:"#5EE882", cell_inc_bg:"#0C2412", cell_inc_bd:"#2E7A45", over:"#FF7EB6",
+  tab_exp:"rgba(74,237,217,0.18)", tab_inc:"rgba(61,209,104,0.18)", tab_pend:"rgba(252,238,75,0.18)",
+  err:"#E8453C", err_bg:"#3A100C",
+  vorm_bg:"#3A2E0A", vorm_bd:"#FCEE4B",
+  pal_inc_bg:"#0C2412", pal_inc_bd:"#2E7A45", pal_inc_hdr:"#5EE882", pal_inc_fld:"#102D17", pal_inc_val:"#9CF3B4",
+  pal_exp_bg:"#2A1008", pal_exp_bd:"#7A3418", pal_exp_fld:"#331408",
+  pal_tg_bg:"#0E1A30", pal_tg_bd:"#2A4880", pal_tg_hdr:"#7AB8FF", pal_tg_fld:"#122240", pal_tg_val:"#B4D4FF",
+  // Grasblock: Rasenkante oben, Erde darunter — plus ein 8px-Karo als
+  // Pixel-Textur (zwei sich kreuzende repeating-Gradients).
+  hero_bg:"repeating-linear-gradient(0deg, rgba(0,0,0,0.14) 0 8px, transparent 8px 16px), "+
+          "repeating-linear-gradient(90deg, rgba(0,0,0,0.14) 0 8px, transparent 8px 16px), "+
+          "linear-gradient(180deg,#4E7A2A 0 9%, #3E2E1E 9%, #2A1F14 100%)",
+  logo_c1:"#6BC13B", logo_c2:"#8B5A2B",
+  cond_neg:"#4AEDD9", neg_aktuell:"#7BF5E6", neg_vm:"#A9FAF0",
+  cond_warn:"#E8912B", cond_gold:"#FCEE4B", cond_pos:"#5EE882", pos_aktuell:"#8CF2A6", pos_vm:"#B8F8C8",
+  warn_bold:"#E04B2E", warn_icon:"#FCEE4B",   // TNT-Rot / Gold
+  frame_border:"9px solid #6BC13B", frame_ring:"#8B5A2B",
+  nav_icons:{ home:"boxes", jahr:"mountain", daten:"gem" },
+  name:"Klötzchenwelt",
+};
+
 // ════════════════════════════════════════════════════════════════════════
 //  Magazin (Editorial) — erstes Theme mit EIGENEM Hero-Layout statt nur
 //  eigener Farben: hero_layout:"editorial" schaltet in SaldoHeroV2 auf eine

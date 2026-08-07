@@ -3276,6 +3276,7 @@ Abbrechen = ${remoteName}-Stand laden`
   <AppCtx.Provider value={cx}>
     <>
     <div className={[noBorders?"no-borders":null, themeName==="clean"?"theme-clean":null, themeName==="brutalist"?"theme-brutalist":null, themeName==="terminal"?"theme-terminal":null, themeName==="swiss"?"theme-swiss":null,
+      themeName==="kloetzchenwelt"?"theme-kloetzchenwelt":null,
       amtMode===0?"amts-blur":null, amtMode<2?"amts-neutral":null,
       amtFont?`amtfont-${amtFont}`:null].filter(Boolean).join(" ")||undefined}
       style={{background:T.bg,height:"100vh",maxHeight:"100vh",
@@ -3958,12 +3959,22 @@ Abbrechen = ${remoteName}-Stand laden`
                 transition: flying ? "transform 0.6s cubic-bezier(.34,1,.4,1)" : undefined}}>
                 <button
                   data-tour="master-plus"
-                  className="plus-master-btn"
                   onPointerDown={onPointerDown}
                   onPointerMove={onPointerMove}
                   onPointerUp={onPointerUp}
                   onPointerCancel={onPointerCancel}
-                  className={(!plusArretiert && (plusEinladung || navHinweis)) ? "plus-einladung" : undefined}
+                  // BEIDE Klassen in EINEM className. Vorher stand hier zweimal
+                  // ein className-Attribut — in JSX gewinnt das letzte, also fiel
+                  // "plus-master-btn" ersatzlos weg. Folgen: im Terminal-Theme
+                  // griff die Regel
+                  //   .theme-terminal button:not(.plus-master-btn) { background:transparent }
+                  // auch auf den + Button — er war schlicht unsichtbar
+                  // (Nutzer-Bild). In brutalist/swiss/clean fehlte ihm die
+                  // Rundung, im Terminal die Pixel-Kontur, und die Feature-Tour
+                  // fand ihn per querySelector(".plus-master-btn") nicht.
+                  className={["plus-master-btn",
+                    (!plusArretiert && (plusEinladung || navHinweis)) ? "plus-einladung" : null
+                  ].filter(Boolean).join(" ")}
                   style={{
                     ...plusBtnShell(SIZE),
                     // Farbe des Pulsierens folgt dem Knopf selbst (s. base.css).

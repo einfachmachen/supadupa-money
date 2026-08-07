@@ -158,7 +158,7 @@ function IconSwipePicker({ onClose }) {
           </button>
           <button onClick={toggleFavorite}
             title={isFav?"Favorit entfernen":"Als Favorit markieren"}
-            style={{width:64,height:64,borderRadius:32,border:"none",
+            style={{width:64,height:64,borderRadius:32,
               background:isFav?`linear-gradient(135deg, ${T.gold}, #f0c040)`:"rgba(255,255,255,0.06)",
               color:isFav?"#2a1e00":T.gold,cursor:"pointer",
               display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
