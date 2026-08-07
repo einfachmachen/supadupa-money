@@ -3269,11 +3269,6 @@ Abbrechen = ${remoteName}-Stand laden`
   // unter dem Hero; nur die übrigen bekommen ihn oben unter der Notch.
   const heroScreenAktiv = mainTab==="erfassen" && (subTab==="dashboard" || subTab==="monat");
   const syncBadgeSpace = (!heroScreenAktiv && getSyncBadgeState({isOnline, cfActive, isDirty, syncStatus})) ? "38px" : "0px";
-  // Eckenradius des Deko-Rahmens (Kinder-Themes): an die tatsächliche
-  // Bildschirm-Eckenrundung moderner iPhones angenähert (nicht exakt pro
-  // Modell messbar, es gibt keine CSS-Eigenschaft dafür) — 18px wirkte im
-  // Vergleich zur echten Gehäuserundung eckig/unpassend.
-  const FRAME_RADIUS = 44;
 
   return (
   <AppCtx.Provider value={cx}>
@@ -3293,57 +3288,10 @@ Abbrechen = ${remoteName}-Stand laden`
       // Inhalt (Sync-Banner) näher an die Statusleiste rückt. max(0px, ...)
       // verhindert auf jedem Gerät negative Werte (Inhalt würde sonst hinter
       // die Notch/Dynamic Island rutschen).
-      // Kinder-Themes bekommen zusätzlich die Border-Breite (9-10px) oben
-      // "geschenkt" (border-top ist Teil derselben Box, VOR dem Padding) —
-      // bei alten Themes fehlt diese Border, also weniger stark kappen,
-      // sonst rutscht der Inhalt dort zu nah an/unter die Notch.
-      paddingTop:`max(0px, calc(env(safe-area-inset-top) - ${T.frame_border?24:14}px))`,
+      paddingTop:"max(0px, calc(env(safe-area-inset-top) - 14px))",
       fontFamily:"'SF Pro Text',-apple-system,BlinkMacSystemFont,sans-serif",
-      userSelect:"none",overflow:"hidden",
-      // Deko-Rahmen der Kinder-Themes: Border BLEIBT Teil dieser Box (durch
-      // box-sizing:border-box schrumpft die Inhaltsfläche automatisch mit) —
-      // das ist zugleich, worauf sich Vollbild-Dialoge (position:fixed,
-      // inset:0) stützen: transform etabliert diesen Container als deren
-      // Containing Block, und "inset:0" richtet sich dabei nach der
-      // PADDING-Kante dieser Box, die durch die Border bereits automatisch
-      // eingerückt ist — Dialoge docken sich also INNERHALB des Rahmens an.
-      // Ohne frame_border bleibt das Verhalten alter Themes unverändert
-      // (kein transform, keine Border).
-      ...(T.frame_border ? {
-        border:T.frame_border,
-        boxShadow:`inset 0 0 0 4px ${T.frame_ring||T.bg}`,
-        borderRadius:FRAME_RADIUS,
-        transform:"translateZ(0)",
-      } : {})}}>
+      userSelect:"none",overflow:"hidden"}}>
 
-      {/* Zusätzliche Deko-Rahmen-Overlay-Schicht, GENAU auf derselben Border
-          gemalt — aber ÜBER dem gesamten Inhalt (z-index), nicht darunter.
-          Grund: normale Nachfahren (Hero-Text, Suchleiste, Kategorie-Karten
-          etc.) malen laut CSS-Reihenfolge immer ÜBER der eigenen Border des
-          Elternelements, egal wie viel Innenabstand man ihnen gibt — jeder
-          Versuch, exakt genug Abstand zu berechnen, war ein Wettlauf gegen
-          echte Browser-Schriftbreiten. Diese Overlay-Kopie (pointer-events:
-          none, damit sie nie Klicks abfängt) sitzt einfach ÜBER dem Inhalt
-          und bleibt so immer sichtbar. z-index bewusst niedrig genug, dass
-          echte Dialoge/Dropdowns (alle ≥ 15, siehe z.B. ThemeSwitcherMini/
-          MatchingScreen) weiterhin darüber erscheinen.
-          Negative Offsets (-frameBorderWidth statt inset:0): der Container
-          hat durch transform bereits einen eigenen Containing Block für
-          position:absolute/fixed-Nachfahren — dessen Bezugsrahmen ist die
-          PADDING-Kante (schon um die Border-Breite eingerückt). inset:0
-          würde die Kopie also um die Border-Breite zu weit innen zeichnen;
-          die negativen Offsets schieben sie exakt zurück auf die echte
-          Außenkante, auf der auch die reale Border liegt. */}
-      {T.frame_border && (() => {
-        const w = parseInt(T.frame_border) || 0;
-        return (
-          <div style={{position:"absolute",top:-w,left:-w,right:-w,bottom:-w,
-            pointerEvents:"none",zIndex:5,
-            border:T.frame_border,
-            boxShadow:`inset 0 0 0 4px ${T.frame_ring||T.bg}`,
-            borderRadius:FRAME_RADIUS}}/>
-        );
-      })()}
 
       {/* ── Performance-Debug + Theme-Umschalter wurden nach Einstellungen verschoben ── */}
 
@@ -4173,14 +4121,7 @@ Abbrechen = ${remoteName}-Stand laden`
             background:T.surf,
             display:"flex", alignItems:"center", flexShrink:0, zIndex:10,
             paddingLeft:8, paddingRight:8,
-            // Kinder-Themes: Leiste bekommt rundum Abstand zum Deko-Rahmen
-            // (wie die Kategorie-Karten im Content, die schon immer eingerückt
-            // waren) statt bündig an den Rand zu stoßen — auch unten, nicht
-            // nur seitlich. Andere Themes bleiben unverändert (borderTop wie
-            // zuvor, kein Margin/Radius).
-            ...(T.frame_border
-              ? {margin:"0 10px 10px", borderRadius:16, border:`1px solid ${T.bds}`}
-              : {borderTop:`1px solid ${T.bds}`})}}>
+            borderTop:`1px solid ${T.bds}`}}>
             {items.map(item => item==="plus" ? renderMasterButton("master") : navTab(item))}
           </div>
         );

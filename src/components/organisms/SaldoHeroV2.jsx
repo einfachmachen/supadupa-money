@@ -86,20 +86,13 @@ function SaldoHeroV2({
   // sonst blue/lime) — wirkt harmonischer.
   const plusAccent = T.themeName==="terminal" ? T.pos : T.blue;
   const heroColor = v => v==null?T.txt : v<0?T.warn_icon : plusAccent;
-  // Der Deko-Rahmen der Kinder-Themes wird als eigene Overlay-Schicht ÜBER
-  // dem gesamten Inhalt gemalt (siehe App.jsx) — der Hero muss also nicht
-  // mehr extra Innenabstand reservieren, um den Rahmen freizuhalten.
-  // Schriftgröße ist daher wieder identisch zu den alten Themes (44px).
-  // framePad ist bei Kinder-Themes um die Border-Breite REDUZIERT: die
-  // Border selbst ist (für den Vollbild-Dialog-Containing-Block-Trick) nach
-  // wie vor Teil der Haupt-Box und frisst dort echten Platz von der
-  // Inhaltsbreite weg — das hier gleicht das wieder aus, damit der Hero bei
-  // alten und Kinder-Themes exakt dieselbe nutzbare Breite hat.
   // Die Auge-Zone (mittig zwischen Betrag-Ende und Seitenrand statt direkt
-  // am Betrag) gilt jetzt für ALLE Themes — gefiel so gut, dass sie auf
-  // Wunsch vereinheitlicht wurde.
-  const frameBorderWidth = T.frame_border ? (parseInt(T.frame_border)||0) : 0;
-  const framePad = 20 - frameBorderWidth;
+  // am Betrag) gilt für ALLE Themes — gefiel so gut, dass sie auf Wunsch
+  // vereinheitlicht wurde.
+  // framePad war frueher bei den Kinder-Themes um die Breite ihres farbigen
+  // Aussenrandes reduziert; der ist entfallen (Nutzer-Wunsch), damit auch die
+  // Ausnahme — der Hero rechnet jetzt fuer alle Themes gleich.
+  const framePad = 20;
   const amtFontSize = 44;
   const eyeBoxSize = 30;
   // midGap: Lücke zwischen MITTE- und ENDE-Hälfte — von BEIDEN Zeilen genutzt
@@ -376,13 +369,7 @@ function SaldoHeroV2({
           "dynamisch weiter nach rechts", Kontostand "in jedem Fall zentriert").
           Der Kontoname sitzt klein/zentriert in der MITTE/ENDE-Zeile. */}
       <div ref={amtRowRef} style={{position:"relative",display:"flex",alignItems:"center",justifyContent:"center",
-        userSelect:"none",
-        // Kinder-Themes: kappt den Weichzeichner-"Glow" des ausgeblendeten
-        // Kontostands (filter:blur) exakt an dieser Zeile, statt ihn frei bis
-        // zum Deko-Rahmen bluten zu lassen. Enthält kein Popup/Dropdown (der
-        // Theme-Umschalter sitzt in einer eigenen Geschwister-Box), daher
-        // unbedenklich zu clippen.
-        ...(T.frame_border ? {overflow:"hidden"} : {})}}>
+        userSelect:"none"}}>
         {/* Wrapper: sizt sich exakt auf die Breite des Betrags (inline-block
             als Flex-Item) — dadurch zentriert justifyContent:"center" oben
             NUR den Betrag, das absolut positionierte Auge zählt nicht mit.
@@ -420,38 +407,33 @@ function SaldoHeroV2({
 
       {/* Zeile 2: MITTE | ENDE — zwei flex:1-Hälften (6px-Gap), Kontoname + Caret
           als mittiges Overlay (beansprucht keine Spaltenbreite, damit die
-          Beträge über den Kategorie-Pillen fluchten). Kinder-Themes: die
-          Werte bekommen eine harte Breiten-Deckelung (maxWidth/overflow/
-          ellipsis) — rein defensiv, unabhängig vom Deko-Rahmen (der läuft
-          jetzt als Overlay über allem, siehe App.jsx). */}
+          Beträge über den Kategorie-Pillen fluchten). */}
       <div style={{display:"flex",gap:midGap,marginTop:2,padding:"0 1px",
         alignItems:"stretch",position:"relative"}}>
         {/* Mitte-Spalte — Klickfläche nur um den Text (inline-block), damit sie
             nicht bis zum mittigen Ausklapp-Chevron reicht. Spaltenbreite, Text-
             position und der Highlight bleiben unverändert. */}
-        <div style={{flex:1,...(T.frame_border?{minWidth:0}:{}),textAlign:"center",padding:"2px 0 4px"}}>
+        <div style={{flex:1,textAlign:"center",padding:"2px 0 4px"}}>
           <div onClick={()=>setProgDrill(v=>v==="Mitte"?null:"Mitte")}
-            style={{display:"inline-block",...(T.frame_border?{maxWidth:"100%",overflow:"hidden"}:{}),cursor:"pointer",borderRadius:8,padding:"0 10px",
+            style={{display:"inline-block",cursor:"pointer",borderRadius:8,padding:"0 10px",
               background: progDrill==="Mitte" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
             <div style={{color:T.mid||T.txt2,fontSize:9,fontWeight:700,
               letterSpacing:2,opacity:0.7,marginBottom:2}}>MITTE</div>
             <div className="heroAmt" style={{color: saldoCol(prognoseMitte, mitteAbgHero),
-              fontSize:20,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
-              ...(T.frame_border?{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}:{})}}>
+              fontSize:20,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
               {prognoseMitte>=0?"":"−"}{fmtMoney(Math.abs(prognoseMitte||0))}
             </div>
           </div>
         </div>
         {/* Ende-Spalte — Klickfläche analog nur um den Text. */}
-        <div style={{flex:1,...(T.frame_border?{minWidth:0}:{}),textAlign:"center",padding:"2px 0 4px"}}>
+        <div style={{flex:1,textAlign:"center",padding:"2px 0 4px"}}>
           <div onClick={()=>setProgDrill(v=>v==="Ende"?null:"Ende")}
-            style={{display:"inline-block",...(T.frame_border?{maxWidth:"100%",overflow:"hidden"}:{}),cursor:"pointer",borderRadius:8,padding:"0 10px",
+            style={{display:"inline-block",cursor:"pointer",borderRadius:8,padding:"0 10px",
               background: progDrill==="Ende" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
             <div style={{color:T.gold||T.txt2,fontSize:9,fontWeight:700,
               letterSpacing:2,opacity:0.7,marginBottom:2}}>ENDE</div>
             <div className="heroAmt" style={{color: saldoCol(prognoseEnde, endeAbgHero),
-              fontSize:20,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
-              ...(T.frame_border?{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}:{})}}>
+              fontSize:20,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
               {prognoseEnde>=0?"":"−"}{fmtMoney(Math.abs(prognoseEnde||0))}
             </div>
           </div>
