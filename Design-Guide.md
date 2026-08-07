@@ -189,16 +189,23 @@ Niemals Farben hart kodieren — immer `T.*` aus dem aktiven Theme.
 einem festen Token, sondern aus `flaecheAbgesetzt(untergrund)` in
 `activeTheme.js`. Der Helfer liefert normalerweise `T.surf` — die Themes haben
 ihre Kartenfarbe bewusst gewählt. Nur wenn `surf` dem Untergrund zu nahe kommt
-(< `MIN_ABSTAND`, 0,11 Luma; „Kontrast Hell" setzt beide auf `#FFFFFF`), rückt
-er selbst um **`ZIEL_ABSTAND` (0,13 Luma)** ab — heller bei dunklen, dunkler bei
-hellen Themes. Der Schritt wird auf diesen Zielwert **gerechnet**, nicht fest
-vorgegeben: ein fester Faktor fiele auf fast Schwarz kaum auf und auf mittlerem
-Grau zu kräftig aus. Aktuell helfen 31 der 33 Themes nach; alle landen bei
-~0,130, auch die zwei, die ihre eigene Kartenfarbe behalten.
+(< `MIN_KONTRAST`, 1,42 : 1; „Kontrast Hell" setzt beide auf `#FFFFFF`), rückt
+er selbst vom Untergrund ab — heller bei dunklen, dunkler bei hellen Themes,
+bis **`ZIEL_KONTRAST` (1,52 : 1)** erreicht ist. Den Mischanteil sucht eine
+kurze Binärsuche statt einer geschlossenen Formel, damit der **Farbton des
+Untergrunds erhalten bleibt** (ein blaustichiges Grau bleibt blaustichig).
+Ergebnis über alle 33 Themes: 1,50–1,54 : 1.
 
-> Die beiden Konstanten sind die **einzigen** Stellschrauben dafür, wie deutlich
-> sich ein Budget-Bereich abhebt — eine Zeile ändern wirkt auf die ganze App.
-> Die erste Fassung lag bei 0,05/0,07 und war zu zurückhaltend.
+> **Gemessen wird WCAG-Kontrast, nicht Helligkeit.** Zwei frühere Fassungen
+> nutzten eine schlichte Kanal-Mischung (`0,299·R + 0,587·G + 0,114·B`). Die ist
+> nicht wahrnehmungsgerecht: derselbe Zahlenabstand wirkt auf mittlerem Grau
+> deutlich und auf fast Schwarz kaum. „Kontrast Dunkel" (`bg #000000`) und
+> „Glutorange" (`bg #161616`) lagen rechnerisch beide bei 0,130 — sichtbar aber
+> bei 1,30 : 1 gegen 1,52 : 1, und genau das sah man. Der Kontrastwert bildet
+> die Gamma-Kurve ab und gilt über den ganzen Helligkeitsbereich gleich.
+>
+> `ZIEL_KONTRAST` ist die **einzige** Stellschraube dafür, wie deutlich sich ein
+> Budget-Bereich abhebt — eine Zeile ändern wirkt auf die ganze App.
 
 > **Alle Budget-Bereiche liegen auf `T.bg`** — der Hero-Bereich und die
 > Aufriss-Liste sind beide auf `T.bg` gemalt. Das ist die Voraussetzung dafür,

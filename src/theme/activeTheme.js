@@ -54,43 +54,86 @@ export const isLightTheme = (name = _state.current.themeName) => {
 // ── Abgesetzte Fläche (Budget-Kategorien in den Aufrissen) ───────────────
 // Normalfall ist die Kartenfarbe des Themes (surf) — die haben die Themes
 // bewusst gewählt. Manche setzen surf aber gleich bg ("Kontrast Hell": beides
-// #FFFFFF) oder fast gleich; dort verschwand die Budget-Karte spurlos im
-// Hintergrund. Deshalb wird der Helligkeitsabstand gemessen und nur dann
-// nachgeholfen, wenn er zu klein ist: helle Themes bekommen eine Spur Dunkel,
-// dunkle eine Spur Hell. So hebt sich der Bereich in JEDEM Theme dezent, aber
-// erkennbar ab, ohne die Abstimmung der übrigen Themes anzutasten.
-// Beide Werte sind bewusst die EINZIGEN Stellschrauben fuer "wie deutlich hebt
-// sich ein Budget-Bereich ab" — eine Zeile aendern reicht, um es der ganzen App
-// staerker oder dezenter zu machen. Erste Fassung lag bei 0,05/0,07: zu
-// zurueckhaltend, in "Glutorange" behielt die Karte dadurch ihre surf-Farbe
-// (nur 0,051 vom Untergrund entfernt) und ging optisch unter. Der Zielwert
-// orientiert sich jetzt an der Fassung, die dort gefiel (0,145 ueber dem
-// Untergrund) — leicht darunter, damit helle Themes nicht zu grau werden.
-const MIN_ABSTAND  = 0.11;  // ab hier gilt surf als ausreichend abgesetzt
-const ZIEL_ABSTAND = 0.13;  // so weit rueckt das Nachhelfen vom Untergrund weg
+// #FFFFFF) oder fast gleich; dort verschwände die Budget-Karte spurlos im
+// Hintergrund. Dann rückt der Helfer selbst vom Untergrund ab: heller bei
+// dunklen, dunkler bei hellen Themes.
+//
+// Gemessen wird der **WCAG-Kontrast**, nicht mehr ein Helligkeitsabstand.
+// Vorher stand hier eine schlichte Kanal-Mischung (0,299·R + 0,587·G +
+// 0,114·B) — die ist NICHT wahrnehmungsgerecht: derselbe Zahlenabstand wirkt
+// auf mittlerem Grau deutlich und auf fast Schwarz kaum. "Kontrast Dunkel"
+// (bg #000000) und "Glutorange" (bg #161616) lagen damit rechnerisch beide bei
+// 0,130 — sichtbar aber bei 1,30 : 1 gegen 1,52 : 1, und genau das war der
+// Unterschied, den man sah (Nutzer-Bild). Der Kontrastwert bildet die
+// Gamma-Kurve ab und gilt deshalb über den ganzen Helligkeitsbereich gleich.
+//
+// ZIEL_KONTRAST ist die EINZIGE Stellschraube für "wie deutlich hebt sich ein
+// Budget-Bereich ab" — eine Zeile ändern wirkt auf die ganze App. Der Wert ist
+// der von "Glutorange", der so gefiel.
+const MIN_KONTRAST  = 1.42;  // ab hier gilt surf als ausreichend abgesetzt
+const ZIEL_KONTRAST = 1.52;  // so weit rückt das Nachhelfen vom Untergrund weg
 
-// `untergrund` ist die Flaeche, auf der die Karte TATSAECHLICH liegt — im
-// Prognose-Aufriss das Panel (surf3), in den Buchungen-/VM-Aufrissen der
-// Seitenhintergrund (bg). Ein erster Versuch mass immer gegen bg; im
-// Prognose-Aufriss ging das an der Sache vorbei und lieferte in "Kinorot"
-// eine Karte fast in Panel-Farbe, in "Papier" sogar eine dunklere als noetig
-// (Nutzer-Bilder). Seitdem entscheidet der echte Untergrund.
+const _rgb = (c) => {
+  const h = String(c||"").replace("#","");
+  const f = h.length < 6 ? h.split("").map(x=>x+x).join("") : h;
+  if (/^[0-9a-fA-F]{6}$/.test(f)) {
+    return [parseInt(f.slice(0,2),16), parseInt(f.slice(2,4),16), parseInt(f.slice(4,6),16)];
+  }
+  const m = String(c||"").match(/rgba?\((\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+  return m ? [+m[1], +m[2], +m[3]] : null;
+};
+// Relative Leuchtdichte nach WCAG 2.1 (inkl. Gamma-Rücknahme).
+const _lum = (c) => {
+  const p = _rgb(c);
+  if (!p) return null;
+  const k = p.map(v => { const x = v/255; return x <= 0.03928 ? x/12.92 : Math.pow((x+0.055)/1.055, 2.4); });
+  return 0.2126*k[0] + 0.7152*k[1] + 0.0722*k[2];
+};
+const _kontrast = (a, b) => {
+  const la = _lum(a), lb = _lum(b);
+  if (la == null || lb == null) return null;
+  return (Math.max(la,lb) + 0.05) / (Math.min(la,lb) + 0.05);
+};
+
+// `untergrund` ist die Fläche, auf der die Karte TATSÄCHLICH liegt. Aktuell ist
+// das überall `T.bg` (Hero-Bereich und Aufriss-Liste sind beide darauf gemalt) —
+// genau deshalb hat dieselbe Budget-Kategorie in Prognose und Aufriss dieselbe
+// Farbe. Wer irgendwo eine Zwischenfläche einzieht, muss sie an BEIDEN Orten
+// einziehen, sonst laufen die Farben wieder auseinander.
+//
+// Ergebnis pro Theme + Untergrund gemerkt: die Funktion läuft sonst in jeder
+// Budget-Zeile jedes Renders durch die Suche.
+const _flaechenCache = new Map();
+
 export function flaecheAbgesetzt(untergrund = _state.current.bg) {
   const surf = _state.current.surf;
-  const lu = _luma(untergrund), ls = _luma(surf);
-  if (lu == null) return surf;
-  if (ls != null && Math.abs(lu - ls) >= MIN_ABSTAND) return surf;
-  // Der Schritt wird auf ZIEL_ABSTAND gerechnet statt fest vorgegeben: ein
-  // fester Faktor faellt je nach Ausgangshelligkeit unterschiedlich stark aus
-  // (auf fast Schwarz kaum sichtbar, auf mittlerem Grau zu kraeftig). Aufhellen
-  // verschiebt die Luma um (1-luma)*a, Abdunkeln um luma*a — nach a aufgeloest
-  // landet jedes Theme auf demselben wahrgenommenen Abstand.
-  // darkenHex/lightenHex statt color-mix(): liefert rgb() und funktioniert
-  // damit auch auf aelteren iOS-Webviews ohne Wenn und Aber.
-  const klemm = (a) => Math.min(0.9, Math.max(0.02, a));
-  return isLightTheme()
-    ? darkenHex(untergrund,  klemm(ZIEL_ABSTAND / Math.max(0.05, lu)))
-    : lightenHex(untergrund, klemm(ZIEL_ABSTAND / Math.max(0.05, 1 - lu)));
+  if (_lum(untergrund) == null) return surf;
+  const schluessel = `${_state.current.themeName}|${untergrund}|${surf}`;
+  if (_flaechenCache.has(schluessel)) return _flaechenCache.get(schluessel);
+
+  let farbe = surf;
+  const kSurf = _kontrast(untergrund, surf);
+  if (kSurf == null || kSurf < MIN_KONTRAST) {
+    // Suche den Mischanteil, der ZIEL_KONTRAST trifft. Der Kontrast wächst
+    // monoton mit dem Anteil, deshalb genügt eine kurze Binärsuche — sie
+    // trifft den Zielwert exakt, während eine geschlossene Formel den
+    // Farbton des Untergrunds nicht mitnehmen würde (er soll erhalten
+    // bleiben, ein Theme mit blaustichigem Grau behält seinen Stich).
+    const hell = isLightTheme();
+    const mische = (a) => hell ? darkenHex(untergrund, a) : lightenHex(untergrund, a);
+    let lo = 0, hi = 1, best = mische(hell ? 0.2 : 0.25);
+    for (let i = 0; i < 18; i++) {
+      const a = (lo + hi) / 2;
+      const c = mische(a);
+      const k = _kontrast(untergrund, c);
+      best = c;
+      if (k == null) break;
+      if (k < ZIEL_KONTRAST) lo = a; else hi = a;
+    }
+    farbe = best;
+  }
+  _flaechenCache.set(schluessel, farbe);
+  return farbe;
 }
 
 // Proxy verhält sich wie das aktuelle Theme-Objekt
