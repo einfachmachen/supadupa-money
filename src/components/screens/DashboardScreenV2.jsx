@@ -2102,8 +2102,19 @@ function DashboardScreenV2() {
                     const cat2 = getCat((tx.splits||[])[0]?.catId);
                     const baseSubId = (tx._budgetSubId||"").replace(/_mitte$/,"") || (tx.splits||[])[0]?.subId;
                     const be = _budgetEntryBySub.get(baseSubId);
-                    const budgetFull = be ? be.budget
-                      : Math.abs(tx._mitteAmt!=null ? (tx._mitteAmt+tx._endeAmt) : tx.totalAmount);
+                    // Bezugsgroesse muss zur Zeile passen: In der Mitte-Ansicht steht
+                    // hier NUR der Mitte-Platzhalter, und budgetOpenRest liefert
+                    // entsprechend den Rest dieser HAELFTE. be.budget ist dagegen
+                    // immer das GANZE Monatsbudget (die budgetEntries kommen aus
+                    // dashDetailEnde). Beides gemischt ergab "genutzt = ganzes
+                    // Budget − Rest der Haelfte" — also die zweite Monatshaelfte
+                    // faelschlich als verbraucht (Nutzer-Hinweis: 156,48 statt 6,48).
+                    const istMitteHaelfte = String(tx._budgetSubId||"").endsWith("_mitte")
+                      && !tx._isBudgetPair && tx._mitteAmt==null;
+                    const budgetFull = istMitteHaelfte
+                      ? Math.abs(tx.totalAmount)
+                      : (be ? be.budget
+                         : Math.abs(tx._mitteAmt!=null ? (tx._mitteAmt+tx._endeAmt) : tx.totalAmount));
                     const rawRest = budgetOpenRest(tx);
                     const open = (rawRest==null) ? budgetFull : rawRest;       // offener Rest (kann negativ = überzogen)
                     const spent = Math.max(0, budgetFull - open);

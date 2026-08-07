@@ -71,3 +71,36 @@ describe("budgetOpenRestFor", () => {
     expect(budgetOpenRestFor(ende, txs, txsById, 2026, 4)).toBe(0);
   });
 });
+
+// Regression (echter Nutzer-Bericht mit Screenshots): In der Mitte-Ansicht der
+// Detaillisten stand als "genutzt" ein viel zu hoher Betrag — teils mehr als
+// in der Ende-Ansicht, was gar nicht sein kann: was bis zum 14. verbraucht
+// ist, kann nicht mehr sein als bis zum Monatsende.
+//
+// Ursache war eine gemischte Bezugsgroesse. Die Zeile zeigt
+//   genutzt = Budget − Rest
+// und in der Mitte-Ansicht kam der Rest von der Mitte-HAELFTE, das Budget aber
+// vom GANZEN Monat. Ergebnis: die komplette zweite Monatshaelfte erschien als
+// verbraucht. Der Test haelt die Rechnung als solche fest.
+describe("Budget-Zeile: genutzt = Budget − Rest, beides auf derselben Grundlage", () => {
+  const genutzt = (budget, rest) => Math.max(0, budget - rest);
+
+  // Zahlen aus dem Bericht: volles Monatsbudget, Mitte-Haelfte, gemeldeter Rest
+  // der Haelfte und der Betrag, der tatsaechlich gebucht war.
+  const faelle = [
+    { name: "Unvorhergesehenes", voll: 300, haelfte: 150, restHaelfte: 143.52, echt: 6.48 },
+    { name: "Mittag Lieferdienste", voll: 100, haelfte: 50, restHaelfte: 15.87, echt: 34.13 },
+    { name: "Essen & Trinken", voll: 250, haelfte: 125, restHaelfte: 100.17, echt: 24.83 },
+    { name: "Bäcker", voll: 50, haelfte: 25, restHaelfte: 25, echt: 0 },
+  ];
+
+  faelle.forEach(({ name, voll, haelfte, restHaelfte, echt }) => {
+    it(`${name}: Haelfte als Grundlage ergibt den tatsaechlich gebuchten Betrag`, () => {
+      expect(genutzt(haelfte, restHaelfte)).toBeCloseTo(echt, 2);
+    });
+
+    it(`${name}: mit dem vollen Budget als Grundlage waere es falsch zu hoch`, () => {
+      expect(genutzt(voll, restHaelfte)).toBeGreaterThan(echt);
+    });
+  });
+});
