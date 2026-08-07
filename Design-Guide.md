@@ -1,6 +1,6 @@
 # Design-Guide — SupaDupa Money
 
-> Stand: 2026-06-30 · Abgeleitet aus dem aktuellen Code (`src/`). Diese Datei
+> Stand: 2026-08-07 · Abgeleitet aus dem aktuellen Code (`src/`). Diese Datei
 > beschreibt das gelebte Design-System der App, nicht einen Wunschzustand.
 > Bei Abweichungen gilt der Code — bitte diesen Guide bei Änderungen mitpflegen.
 
@@ -115,6 +115,7 @@ früheren getrennten Screens `EnableBankingConnectScreen` + `EnableBankingGuide`
   Symbol), `MitteEndeFields`, `CategoryChart`/`ChartBlock` (Chart-Bausteine).
 - **atoms/**: `MobileHeader` (Safe-Area + Zurück/X, optionale Icon-Kachel via
   `icon`/`iconColor` — verbindlicher Header aller Daten-Tab-Dialoge, §5),
+  **`RotatedCents`** (kleine, gedrehte Nachkommastellen, §3.3),
   `SupaField`, `Lbl`, `PBtn`, …
 - **buttons/**: Werkzeug-Buttons (`NachkategorisierenButton`, `RegenRulesButton`, …).
 
@@ -150,6 +151,13 @@ früheren getrennten Screens `EnableBankingConnectScreen` + `EnableBankingGuide`
 - **Minuszeichen** ist `−` (U+2212), nicht der Bindestrich.
 - **Euro-Symbol** nur am großen Hero-Kontostand (`… €`); in Listen/Pillen ohne `€`.
 - Tabellarische Ausrichtung mit `fontVariantNumeric:"tabular-nums"`.
+- **`atoms/RotatedCents.jsx`** für enge Stellen: Euro bleiben groß und
+  vollständig, die Nachkommastellen stehen klein und um 90° nach links gedreht
+  daneben — braucht statt „,XX" nur noch etwa eine Ziffernbreite. Im Einsatz in
+  den Hero-Detailzeilen (Buch./VM/unkat.) und am **Tagessaldo der Monatsliste**,
+  wo Datum, Wochentag, „Mitte"-Marke und zwei Zusatzinfos sonst gemeinsam über
+  die Bildschirmbreite hinauslaufen. Das umgebende Element braucht
+  `display:"inline-flex"` + `alignItems:"center"`.
 
 ---
 
@@ -177,27 +185,54 @@ Niemals Farben hart kodieren — immer `T.*` aus dem aktiven Theme.
 
 > `T.blue` ist historisch benannt; es ist der **Primärakzent** des Themes.
 
+**Abgesetzte Flächen** (Budget-Bereiche in den Aufrissen) kommen **nicht** aus
+einem festen Token, sondern aus `flaecheAbgesetzt(untergrund)` in
+`activeTheme.js`. Der Helfer liefert normalerweise `T.surf` — die Themes haben
+ihre Kartenfarbe bewusst gewählt. Nur wenn `surf` dem **tatsächlichen**
+Untergrund zu nahe kommt (< 0,05 Luma; „Kontrast Hell" setzt beide auf
+`#FFFFFF`), hellt bzw. dunkelt er ihn nach. **Den Untergrund immer mitgeben** —
+im Prognose-Aufriss ist das das Panel (`T.surf3`), in den Buchungen-/VM-
+Aufrissen der Seitenhintergrund (`T.bg`). Ein erster Wurf maß immer gegen `bg`
+und lieferte im Prognose-Aufriss dadurch unsichtbare Karten.
+
 ### 4.2 Verfügbare Themes
-29 fest in `themes.js` ausgelieferte Themes (kein Nutzer-Content!), in zwei
+33 fest in `themes.js` ausgelieferte Themes (kein Nutzer-Content!), in zwei
 Gruppen:
 - **Basis-Set** (Objekt-Literal): `dark` (Default), `light`, `firetv`, `xbox`,
   `ps5`, `disneyplus`, `netflix`, `magenta`, `ios`, `material`, `paper`, `dkb`,
   `obsidian`, `sand`, `clean`, `brutalist`, `terminal`, `swiss`, `keyboard`.
-- **Nachträglich ergänzt** (`THEMES.x = {...spread}`): `darkhell`, `hellgrau`,
+- **Nachträglich ergänzt** (`THEMES.x = {...spread}`): `hellgrau`,
   `kontrastdunkel`, `kontrasthell`, `mitternacht`, `creme`, `modernslate`,
-  `cleancorporate`, `deepocean`, `softecotech`. `deepocean` und `darkhell`
-  teilen bewusst **dieselbe Hintergrund-/Flächenhelligkeit** (`bg:"#3E444C"` …) —
-  „Deep Ocean" ist optisch ein helleres Anthrazit auf demselben Grauwert wie
-  „Dark Hell".
+  `cleancorporate`, `deepocean`, `softecotech`, `abenteuergruen`,
+  `weltraumtaschengeld`, `zirkustaschenrechner`, `kloetzchenwelt`, `magazin`.
+
+> **Schlüssel ≠ Anzeigename.** Die Schlüssel sind bewusst eingefroren
+> (gespeicherte Auswahl in `mbt_theme`), die `name`-Felder wurden mehrfach
+> geändert. Anzeigenamen sind **kurze zusammengesetzte Wörter** aus Gattung
+> und Signalfarbe (`firetv` → „Glutorange", `netflix` → „Serienrot", `dkb` →
+> „Direktbank", `dark`/`light` → „Lime"/„Limehell"). Fremde Markennamen sind
+> bewusst **weder benutzt noch übersetzt** — eine Übersetzung wäre der
+> klassische Fallstrick. Wer ein Theme umbenennt: nur `name` anfassen, nie den
+> Schlüssel.
+
+**Kinder-Themes**: `abenteuergruen`, `weltraumtaschengeld`,
+`zirkustaschenrechner`, `kloetzchenwelt` („Klötzchenwelt", Farbwelt der
+bekannten Klötzchen-Bauwelt; alle Ecken eckig via `.theme-kloetzchenwelt *`).
+Sie unterscheiden sich über Farben, `hero_bg` und ein eigenes `nav_icons`-Set.
+Den früheren farbigen Deko-Außenrand (`frame_border`/`frame_ring`) gibt es
+nicht mehr (§10).
 
 Zusätzlich **nutzerdefinierte** Themes aus `mbt_custom_themes` (`CustomThemeEditor`,
 §4.3) — diese kommen **on top**, nicht in `themes.js`.
 
 Jedes Theme definiert denselben Token-Satz. **Helle Themes** werden zentral in
 `activeTheme.js` (`LIGHT_THEMES` / `isLightTheme`) geführt — neue helle Themes
-**nur dort** ergänzen (sonst rechnet `isLightTheme()` für sie falsch; das ist
-bereits einmal passiert und wurde gefixt — `LIGHT_THEMES` enthält jetzt alle 14
-hellen Themes inkl. `kontrasthell`, `creme`, `cleancorporate`, `softecotech`).
+bitte **dort eintragen**. Die Liste war dreimal unvollständig (`keyboard`,
+`abenteuergruen`, `zirkustaschenrechner`), deshalb liegt jetzt ein
+**Sicherheitsnetz** dahinter: Ist ein Theme nicht eingetragen, entscheidet die
+Helligkeit seines `bg` (Luma ≥ 0,5 → hell). Die Liste hat weiterhin Vorrang und
+regelt die Grenzfälle; sie muss nur nicht mehr vollständig sein, damit nichts
+kaputtgeht.
 
 ### 4.3 Eine Farbe ändern — der sichere Weg
 Der frühere Live-Color-Picker wurde entfernt (§10). Stattdessen:
@@ -245,7 +280,10 @@ reservierten Prognosewert.
 ## 5. Layout & Navigation
 
 - **Bottom-Tabbar** (`NAV_TABS` in `App.jsx`, visuell mit dem Master-Button in
-  der Mitte): **Home · Trend · [+] · Monat · Daten**. „Trend" ist
+  der Mitte): **Home · Monat · [+] · Trend · Daten**. Die drei Render-Stellen
+  greifen positionsbasiert zu (`[NAV_TABS[0], NAV_TABS[1], "plus",
+  NAV_TABS[2], NAV_TABS[3]]`) — für eine andere Reihenfolge genügt es, das
+  Array umzusortieren. „Trend" ist
   `JahrScreen`/`MoneyMoodScreen`-Land (`subTab==="mood"`), „Monat" ist die
   vereinte Monats-/Buchungsansicht (§6). „Daten" (vormals „Optionen") führt in
   `ManagementScreen` mit `activeStructurTab==="daten"` — eine Übersicht mit
@@ -271,6 +309,17 @@ reservierten Prognosewert.
   nötig. Der `moonIn`-Keyframe in `theme/css/themes.css` blieb bewusst
   erhalten, falls ein ähnlicher „aufpoppender Kreis"-Effekt später für einen
   Tutorial-/Onboarding-Modus wiederverwendet wird.)**
+  **Invariante zur Optik:** Der Knopf **muss** die Klasse `plus-master-btn`
+  tragen — daran hängen die Theme-Regeln in `theme/css/themes.css` (runde Form
+  in den eckigen Spezial-Themes, die Pixel-Kontur im Terminal-Theme) und die
+  Feature-Tour findet ihn per `querySelector('.plus-master-btn')`. Sie stand
+  einmal in einem **zweiten** `className`-Attribut daneben; in JSX gewinnt das
+  letzte, die Klasse fiel ersatzlos weg. Im Terminal-Theme griff dadurch
+  `button:not(.plus-master-btn) { background:transparent }` auf den Knopf
+  selbst — er war unsichtbar. Neue Klassen deshalb **in dasselbe** `className`
+  (Array + `filter(Boolean).join(" ")`). Doppelte Objekt-Schlüssel meldet der
+  Build als Warnung; die Warnliste bitte leer halten, sonst geht der nächste
+  echte Fall darin unter.
   **Wichtige Invariante:** JEDER Vollbild-Flow, der über den + geöffnet wird,
   **muss** beim Schließen (`onClose`, nicht `onBack`) `setPlusArretiert(false)`
   setzen — sonst bleibt der Button im vergrößerten Zustand hängen und der
@@ -298,8 +347,51 @@ reservierten Prognosewert.
   gelassen, außerhalb des Moon-Umbaus).
 - **Drilldown-Muster**: state-basiertes Vollbild-Overlay, **immer Zurück-Pfeil links
   und X rechts**, Safe-Area-Header (`MobileHeader`), Suchfeld oben. Kein URL-Routing.
+- **Budget-Kategorien in den Aufrissen** (Prognose Mitte/Ende, Buchungen, VM):
+  jeweils ein **abgesetzter Bereich** — eigene Karte mit Rand und Abstand
+  ringsum (`flaecheAbgesetzt()`, §4.1), Kopfzeile mit Symbol, Name und
+  Beträgen, darunter ein dünner Trennstrich und die **Einzelposten** der
+  Kategorie eingerückt (Datum · Symbol · Beschreibung · Betrag). Dadurch ist
+  sichtbar, welche Buchung zu welchem Budget gehört. Regeln, die dabei mehrfach
+  falsch waren und es bleiben sollen:
+  - **Der Kategoriename steht in normaler Textfarbe** (`T.txt`), nicht in der
+    Budget-Farbe — die tragen Symbol und Beträge. Ausnahme: überschrittenes
+    Budget (`T.neg`), das ist ein Warnzustand.
+  - **Jede Liste zeigt nur ihre Seite**: unter „Buchungen" nur abgeschlossene
+    Buchungen, unter „VM" nur Vormerkungen.
+  - **Bezugsgröße muss zur Zeile passen.** In der Mitte-Ansicht steht nur der
+    Mitte-Platzhalter, `budgetOpenRest` liefert den Rest **dieser Hälfte** —
+    `be.budget` aus `dashDetailEnde.budgetEntries` ist dagegen immer das ganze
+    Monatsbudget. Beides gemischt ergibt „genutzt = ganzes Budget − Rest der
+    Hälfte" (`istMitteHaelfte` in `DashboardScreenV2`).
+- **Prognose-Aufriss** (`SaldoPrognose`, aus dem Hero über MITTE/ENDE): Titel
+  und Saldo teilen sich **eine** Zeile („Prognose Mitte" links, Betrag rechts),
+  darunter ohne Abstand die kleinen Summen. Zwischen Hero-Ende und Aufriss
+  liegt nur die Trennlinie, kein Abstand. Flächen und Trennlinien **aus dem
+  Theme** — feste `rgba(0,0,0,…)`/`rgba(255,255,255,…)`-Schleier legten auf
+  hellen Themes eine dunkle Platte in die helle Seite und waren dort als Linien
+  unsichtbar.
+- **Budget-Kategorien in `MonatScreen`**: die Restbudget-Zeile am 14./Monats-
+  letzten ist **antippbar** und klappt ihre Einzelzahlungen auf (Chevron am
+  Namen, immer nur eine Zeile offen). Vorgemerkt (goldene Uhr, gedämpft) und
+  gebucht (Haken) sind unterscheidbar. Die Liste hing früher **nur** am
+  Scroll-Fokus-Effekt — der ist standardmäßig aus, sie war damit praktisch nie
+  erreichbar.
 - **Vollbild-Screens** reservieren unten Platz für die fixe Nav-Bar:
   `calc(57px + env(safe-area-inset-bottom))`.
+- **Sync-Hinweis** (`organisms/SyncStatusBadge`, Zustand aus
+  `utils/syncBadge.js`): eine volle Zeile mit **48px Mindesthöhe** — dieselbe
+  Trefferfläche wie alle anderen antippbaren Zeilen. Auf Screens **mit** Hero
+  (Dashboard, Monat) rendern diese ihn selbst **direkt unter dem Hero**, alle
+  übrigen bekommen ihn aus `App.jsx` oben unter der Notch; `--sync-badge-space`
+  (an dem sich Vollbild-Dialoge für ihren Notch-Abstand orientieren) wird
+  entsprechend nur für die Screens ohne Hero reserviert. Antippen öffnet
+  `CloudSaveModal` (bzw. lädt bei `cloud_newer` nach Rückfrage).
+  **Invariante:** `showCloudSave` wird an drei Stellen gesetzt (Tipp auf den
+  Hinweis, Wisch ↓ am „+", Wechsel aus der Monatsauswahl) — das **Rendern von
+  `<CloudSaveModal>`** in `App.jsx` muss dazu existieren. Es fiel einmal beim
+  Aufräumen eines anderen Menüs mit weg; der Hinweis war danach ein Knopf ohne
+  jede Wirkung, ohne dass irgendetwas gemeldet hätte.
 - **Einheitlicher Dialog-Header** (`atoms/MobileHeader.jsx`) — **verbindlich für
   alle 8 Daten-Tab-Dialoge** (CSV importieren, Bank verbinden, Daten-Manager,
   Cloud-Sync einrichten, Tankverbrauch, Konten, Budget, Einstellungen), damit
@@ -431,6 +523,24 @@ entfernt). Der Hero ist `organisms/SaldoHeroV2`.
 
 ## 10. Entfernt / Deprecated
 
+- **Farbiger Deko-Außenrand der Kinder-Themes** (`frame_border`/`frame_ring`):
+  entfernt. Mit ihm fielen **alle** Sonderfälle weg, die es nur seinetwegen
+  gab — Border + Innenring + `FRAME_RADIUS` am Hauptcontainer samt
+  `translateZ(0)`, die Overlay-Kopie des Rahmens über dem Inhalt, der
+  Notch-Sonderabstand (24px statt 14px), der Sonderfall der Bottom-Nav (Margin
+  + Radius + Rundum-Rahmen statt schlichter Oberkante) und im Hero die
+  `framePad`-Korrektur um die Rahmenbreite samt Clipping und
+  Breiten-Deckelungen der Mitte-/Ende-Spalten. Hero und Hauptcontainer rechnen
+  seither für alle Themes gleich.
+- **Theme „Dark Hell (helleres Grau)"** (`darkhell`): entfernt. Seine Werte
+  leben praktisch unverändert in `deepocean` weiter — das seinerseits inzwischen
+  auf **dasselbe Anthrazit wie `dark`** umgestellt wurde (`#2C3035`), weil die
+  hellere Fassung zu hell wirkte. Ein gespeichertes `"darkhell"` wird beim Start
+  auf `"dark"` umgebogen (`App.jsx`); ohne das zeigte die App zwar Dark
+  (`getTheme` fällt darauf zurück), in der Theme-Auswahl wäre aber nichts
+  markiert gewesen.
+- **Fremde Markennamen in den Theme-Namen**: ersetzt (§4.2). Nur `name`
+  geändert, Schlüssel unverändert.
 - **Live-Color-Picker** (schwebendes Stift-Symbol): komplett entfernt. Farben über
   `themes.js` (§4.3).
 - **Dashboard v1** (`DashboardScreen.jsx`): entfernt — nur noch V2.
@@ -441,8 +551,8 @@ entfernt). Der Hero ist `organisms/SaldoHeroV2`.
   wurde **in `MonatScreen` vereint** (multi-monatiges Durchblättern per
   Swipe/Infinite-Scroll mit Scroll-Spy, globale Suche per Enter, Tages-Gruppierung
   mit Tagessaldo, eingebettete `WerkzeugeSection`). Bottom-Tabbar entsprechend
-  von „Home · Monat · Buchungen · Jahr" zunächst auf „Home · Trend · Monat ·
-  Optionen" geändert.
+  von „Home · Monat · Buchungen · Jahr" über „Home · Trend · Monat · Optionen"
+  auf die heutige Reihenfolge geändert (§5).
 - **Bottom-Tab „Optionen"**: kurzlebig — durch **„Daten"** ersetzt (§5). Ein
   reiner Einstellungen-Tab war zu selten gebraucht für den wertvollsten
   Bottom-Bar-Platz; „Daten" (CSV/Bank/Cloud-Sync/Backup) ist es häufiger.
@@ -451,9 +561,9 @@ entfernt). Der Hero ist `organisms/SaldoHeroV2`.
   `einstellungen`, da Daten den eigenen Tab hat. Die dadurch verwaiste
   `MobileActionPicker`-„daten"-Unteransicht (samt `initialScreen`/
   `mobilePickerScreen`-Umweg) wurde mit entfernt.
-- **~29 Preset-Farbschema-Buttons** in den Einstellungen: entfernt.
+- **Preset-Farbschema-Buttons** in den Einstellungen: entfernt.
   `SettingsInline`/`CustomThemeEditor` zeigen nur noch **selbst angelegte**
-  Farbschemata (§4.3) — die 29 fest verdrahteten `themes.js`-Themes (§4.2)
+  Farbschemata (§4.3) — die fest verdrahteten `themes.js`-Themes (§4.2)
   bleiben als Themes bestehen, sind aber nicht mehr über eine Preset-Knopfreihe
   wählbar.
 - **`EnableBankingGuide.jsx` + `EnableBankingConnectScreen.jsx`**: entfernt,
@@ -692,3 +802,15 @@ Die App hält bis zu 10.000+ Buchungen im Context. Verbindliche Regeln:
 - **Sicherheit**: Der private .pem-Schlüssel liegt nur im Gerät (IndexedDB) bzw.
   ausschließlich **verschlüsselt** in Sync/Backup. Keine Geheimnisse ins Repo.
 - Tests: `npm test` (Vitest/jsdom). Vor Commit Build **und** Tests grün halten.
+- **Kommentare in JSX**: `{/* … */}` funktioniert nur an **Kind-Positionen**.
+  Direkt vor einem Element im Ausdruck (etwa hinter `cond && (`) oder in einer
+  `return (`-Klammer gehört ein normales `//` — sonst liest der Parser ein
+  Objekt-Literal und bricht ab.
+- **Auslieferung**: Push auf `main` baut zwei unabhängige Wege — GitHub Pages
+  (`.github/workflows/deploy.yml`, peaceiris → `gh-pages`) und **Cloudflare
+  Pages** (`deploy-cloudflare.yml`, `wrangler pages deploy` per Direkt-Upload,
+  scharf geschaltet über die Repo-Variable `CF_DEPLOY=true`). Anlass war ein
+  mehrstündiger Ausfall des GitHub-eigenen Publish-Schritts, an dem von außen
+  kein Hebel ansetzt: Der Build lag fertig im `gh-pages`-Branch und war
+  trotzdem nicht erreichbar. Der Cloudflare-Weg baut **ohne** `--base`, weil
+  die App dort im Wurzelverzeichnis liegt.
