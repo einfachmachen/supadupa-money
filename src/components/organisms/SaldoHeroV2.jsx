@@ -8,6 +8,7 @@
 
 import React, { useContext, useLayoutEffect, useRef, useState } from "react";
 import { SaldoPrognose } from "./SaldoPrognose.jsx";
+import { RotatedCents } from "../atoms/RotatedCents.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { amtStyle } from "../../theme/amtPill.js";
@@ -164,23 +165,6 @@ function SaldoHeroV2({
     return T.cond_neg;
   };
 
-  // Nachkommastellen klein & um 90° nach links (gegen den Uhrzeigersinn)
-  // gedreht statt ",XX" in normaler Größe — braucht dadurch nur noch etwa die
-  // Breite einer einzelnen Ziffer (Nutzer-Wunsch, für Buch./VM/unkat.-Beträge).
-  // Rotation dreht Breite/Höhe: bei kleinerer Schrift wird die ROTIERTE Breite
-  // (= ursprüngliche Zeilenhöhe) entsprechend schmal.
-  const RotatedCents = ({v}) => {
-    const s = fmt(v); // z.B. "3.109,42"
-    const i = s.lastIndexOf(",");
-    if (i === -1) return s;
-    return (<>
-      {s.slice(0, i)}
-      <span style={{display:"inline-block",fontSize:"0.5em",lineHeight:1,
-        transform:"rotate(-90deg)",transformOrigin:"center",verticalAlign:"middle"}}>
-        {s.slice(i + 1)}
-      </span>
-    </>);
-  };
   // Ein einzelner Betrags-Slot (Out oder In). Bewusst OHNE flex:1/textAlign-
   // Zwang: die Breite ergibt sich rein aus dem Inhalt, sodass kleine Beträge
   // HalfCell: EINE Hälfte (Mitte oder Ende), nochmal in Out|In geteilt und

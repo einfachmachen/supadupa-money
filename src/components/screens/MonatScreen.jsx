@@ -3,6 +3,7 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { CatPicker } from "../molecules/CatPicker.jsx";
 import { TagInput } from "../atoms/TagInput.jsx";
+import { RotatedCents } from "../atoms/RotatedCents.jsx";
 import { MitteEndeFields } from "../molecules/MitteEndeFields.jsx";
 import { BudgetEditorModal } from "../organisms/BudgetEditorModal.jsx";
 import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
@@ -1640,10 +1641,13 @@ function MonatScreen() {
                 <div data-tx={"day-"+date} data-rest-bg="rgba(255,255,255,0.04)"
                   style={{display:"flex",alignItems:"center",position:"relative",transformOrigin:"top center",
                   padding:"7px 10px 6px",gap:8,background:"rgba(255,255,255,0.04)"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
-                    <span style={{color:T.txt,fontSize:12,fontWeight:700}}>{showFullDate?fmtDFull(date):fmtD(date)}</span>
-                    <span style={{color:T.txt2,fontSize:10}}>{dayName(date)}</span>
-                    {dayOf(date)<=14&&<span style={{color:T.mid,fontSize:9,fontWeight:700,
+                  {/* Darf als EINZIGER Teil der Kopfzeile schrumpfen: wird es auf
+                      sehr schmalen Geräten doch einmal eng, soll das Datum
+                      abgeschnitten werden — nie der Tagessaldo rechts. */}
+                  <div style={{display:"flex",alignItems:"center",gap:5,minWidth:0,overflow:"hidden"}}>
+                    <span style={{color:T.txt,fontSize:12,fontWeight:700,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{showFullDate?fmtDFull(date):fmtD(date)}</span>
+                    <span style={{color:T.txt2,fontSize:10,flexShrink:0}}>{dayName(date)}</span>
+                    {dayOf(date)<=14&&<span style={{color:T.mid,fontSize:9,fontWeight:700,flexShrink:0,whiteSpace:"nowrap",
                       background:"rgba(103,232,249,0.1)",borderRadius:5,padding:"1px 5px"}}>Mitte</span>}
                   </div>
                   {/* Verbindungs-Linie in grün (positiver) / rot (negativer Ist-Saldo).
@@ -1666,8 +1670,8 @@ function MonatScreen() {
                       {(hasReservierung||hasDayPend)&&(
                         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1,lineHeight:1.2}}>
                           {hasReservierung&&(
-                            <span data-role="tx-daydetail" style={{...amtStyle(dayIst>=0?"txt2":"neg",dayIst>=0?undefined:T.warn_icon),fontSize:11,fontFamily:NUM_FONT,fontWeight:600,whiteSpace:"nowrap",transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
-                              ohne Budget {dayIst>=0?"":"−"}{fmt(Math.abs(dayIst))}
+                            <span data-role="tx-daydetail" style={{...amtStyle(dayIst>=0?"txt2":"neg",dayIst>=0?undefined:T.warn_icon),fontSize:11,fontFamily:NUM_FONT,fontWeight:600,whiteSpace:"nowrap",display:"inline-flex",alignItems:"center",transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
+                              ohne&nbsp;Budget&nbsp;{dayIst>=0?"":"−"}<RotatedCents v={Math.abs(dayIst)}/>
                             </span>
                           )}
                           {hasDayPend&&(()=>{
@@ -1684,19 +1688,27 @@ function MonatScreen() {
                           })()}
                         </div>
                       )}
+                      {/* Nachkommastellen klein & gedreht wie im Hero: der Tagessaldo
+                          stand in voller Breite zusammen mit langem Datum, Wochentag,
+                          "Mitte"-Marke und den Zusatzinfos in EINER Zeile — auf dem
+                          iPhone lief er dadurch rechts aus dem Bild (Nutzer-Bild).
+                          Die gedrehten Cent brauchen nur noch etwa eine Ziffernbreite,
+                          die Euro bleiben unverändert groß. */}
                       <span data-role="tx-amt" data-amt-tone={bigVal>=0?"pos":"neg"} style={{
                         ...amtStyle(bigVal>=0?"pos":"neg"),
                         fontSize:18,fontWeight:800,fontFamily:NUM_FONT,whiteSpace:"nowrap",
+                        display:"inline-flex",alignItems:"center",
                         transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
-                        {bigVal>=0?"":"−"}{fmt(Math.abs(bigVal))}
+                        {bigVal>=0?"":"−"}<RotatedCents v={Math.abs(bigVal)}/>
                       </span>
                     </div>
                     );
                   })() : (
                     <span data-role="tx-amt" data-amt-tone={dayNet>=0?"pos":"neg"} style={{...amtStyle(dayNet>=0?"pos":"neg"),fontSize:18,fontWeight:800,
-                      fontFamily:NUM_FONT,flexShrink:0,marginRight:8,
+                      fontFamily:NUM_FONT,flexShrink:0,marginRight:8,whiteSpace:"nowrap",
+                      display:"inline-flex",alignItems:"center",
                       transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
-                      {dayNet>=0?"":"−"}{fmt(Math.abs(dayNet))}
+                      {dayNet>=0?"":"−"}<RotatedCents v={Math.abs(dayNet)}/>
                     </span>
                   )}
                 </div>
