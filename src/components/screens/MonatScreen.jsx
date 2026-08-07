@@ -176,6 +176,13 @@ function MonatScreen() {
     const [showAllCats, setShowAllCats] = useState(false);
     const pendingCatsRef = useRef({});
     const [txIconPickM, setTxIconPickM] = useState(null);
+    // Aufgeklappte Budget-Restzeile (Datum|Kategoriename). Die Einzelzahlungen,
+    // die in "genutzt" eingeflossen sind, hingen bisher ausschliesslich am
+    // Scroll-Fokus-Effekt — und der ist standardmaessig aus, die Zuordnung war
+    // in Monat also praktisch nie zu sehen (Nutzer-Hinweis). Jetzt per Tipp auf
+    // die Zeile aufklappbar, wie in den Dashboard-Aufrissen. Nur EINE Zeile
+    // gleichzeitig offen (Ziehharmonika), damit die Monatsliste nicht ausufert.
+    const [openBudgetRow, setOpenBudgetRow] = useState(null);
     const [search,   setSearch]   = useState("");      // abgeschickte Suche (filtert)
     // von/bis grenzen die (globale) Suche zusätzlich auf einen Zeitraum ein —
     // nur relevant/sichtbar während einer aktiven Suche (sonst zeigt die
@@ -919,7 +926,7 @@ function MonatScreen() {
           if(!m.has(sp.subId)) m.set(sp.subId, []);
           m.get(sp.subId).push({
             day, dateLabel:`${String(day).padStart(2,"0")}. ${MONTHS_SHORT[d.getMonth()]}`,
-            desc: t.desc || "Buchung", amount: amt,
+            desc: t.desc || "Buchung", amount: amt, pending: !!t.pending,
           });
         }
       }
@@ -1946,20 +1953,29 @@ function MonatScreen() {
                     // Einzelzahlungen, die in "spent" eingeflossen sind — für die
                     // Kassenbon-Liste im Detailbereich der aktiven Zeile.
                     const payments = (_subPaymentsMap.get(subId)||[]).filter(p=>p.day<=(isMitteDay?14:lastDayOfMonth));
+                    // Aufklapp-Zustand dieser Zeile (siehe openBudgetRow).
+                    const rowKey   = date+"|"+name;
+                    const istOffen = openBudgetRow===rowKey && payments.length>0;
                     return (
                       // Eigener leerer Wrapper für den Dokumentfluss-Platz — siehe
                       // ausführlichen Kommentar bei der Einnahmen-Zeile oben.
                       <div key={"rb-"+name} style={{position:"relative"}}>
                       <div data-tx={"rb-"+date+"-"+name} style={{borderRadius:0,marginBottom:0,overflow:"visible",background:"transparent",borderTop:`1px solid ${T.bd}`,
                         position:"relative",transformOrigin:"top center"}}>
-                        <div data-role="tx-mainrow" style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px",transition:_reduceMotion?"none":"padding .3s cubic-bezier(0.16, 1, 0.3, 1)"}}>
+                        <div data-role="tx-mainrow"
+                          onClick={payments.length ? ()=>setOpenBudgetRow(o=>o===rowKey?null:rowKey) : undefined}
+                          style={{display:"flex",alignItems:"center",gap:0,padding:"3px 8px",cursor:payments.length?"pointer":"default",transition:_reduceMotion?"none":"padding .3s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                           <div data-role="tx-icon" style={{width:32,height:32,borderRadius:9,flexShrink:0,marginRight:8,background:accentCol+"22",border:`1px solid ${T.bd}`,display:"flex",alignItems:"center",justifyContent:"center",
                             "--icon-accent":accentCol,transition:_reduceMotion?"none":"width .3s cubic-bezier(0.16, 1, 0.3, 1), height .3s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                             {Li(isOverspent?"alert-triangle":"target",16,accentCol)}
                           </div>
                           <div style={{flex:1,minWidth:0,marginRight:6}}>
-                            <div data-role="tx-desc" style={{color:isOverspent?T.neg:T.txt,fontSize:13,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
-                              transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{subName}</div>
+                            <div data-role="tx-desc" style={{color:isOverspent?T.neg:T.txt,fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:4,
+                              transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
+                              <span style={{minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{subName}</span>
+                              {/* Zeigt an, dass sich hier die Einzelzahlungen auffaechern lassen. */}
+                              {payments.length>0 && <span style={{flexShrink:0,display:"inline-flex"}}>{Li(istOffen?"chevron-up":"chevron-down",11,T.txt2)}</span>}
+                            </div>
                             {/* Verbrauch als Punkt auf feiner Linie (gleiche Sprache wie
                                 der Dashboard-Pegel) statt Balken + Prozent-Text */}
                             <div data-role="tx-progress-wrap" style={{marginTop:6,position:"relative",height:8,maxWidth:140,
@@ -1995,9 +2011,14 @@ function MonatScreen() {
                             </div>
                           </div>
                         </div>
-                        {/* Fokus-Effekt: Einzelzahlungen, die in "spent" eingeflossen sind —
-                            wie bei Buchungen NICHT über React-State gesteuert (siehe
-                            setRowFocus), sondern per direktem DOM-Zugriff ein-/ausgeblendet. */}
+                        {/* Einzelzahlungen, die in "genutzt" eingeflossen sind — die
+                            Zuordnung der Einzelbeträge zur Budget-Kategorie, wie in den
+                            Dashboard-Aufrissen. Anders als bei den Buchungszeilen hängt
+                            das hier am React-State (Tippen auf die Zeile) statt nur am
+                            Scroll-Fokus-Effekt: der ist standardmäßig aus, die Liste war
+                            damit in Monat praktisch nie erreichbar. Ist der Fokus-Effekt
+                            per Debug-Schalter an, öffnet setRowFocus dieselbe Fläche
+                            zusätzlich per DOM — beides zeigt denselben Inhalt. */}
                         {/* maxHeight-Deckel: die Andock-Dauer an der Hero-Kante wächst
                             weiterhin mit der Länge von Notiz/Splits/Einzelzahlungen mit
                             (typische, kurze Listen bleiben dadurch vollständig lesbar,
@@ -2006,16 +2027,22 @@ function MonatScreen() {
                             "gefühlt ewig" andocken zu müssen. overflow:"hidden" (nicht
                             "auto"!) — eine scrollbare Fläche hier hätte Mausrad-Events
                             vom äußeren Listen-Scroll abgefangen (bereits einmal isoliert). */}
-                        <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:"0fr",maxHeight:"60vh",overflow:"hidden",
+                        <div data-role="tx-detail-grid" style={{display:"grid",gridTemplateRows:istOffen?"1fr":"0fr",maxHeight:"60vh",overflow:"hidden",
                           transition:_reduceMotion?"none":"grid-template-rows .3s cubic-bezier(0.16, 1, 0.3, 1)"}}>
-                          <div data-role="tx-detail-inner" style={{overflow:"hidden",opacity:0,
+                          <div data-role="tx-detail-inner" style={{overflow:"hidden",opacity:istOffen?1:0,
                             transition:_reduceMotion?"none":"opacity .35s ease .05s"}}>
                             <div style={{padding:"2px 8px 11px 10px",display:"flex",flexDirection:"column",gap:0}}>
                               {payments.map((p,pi)=>(
                                 <div key={pi} style={{display:"flex",alignItems:"baseline",gap:6,padding:"1px 2px",fontSize:12.5}}>
                                   <span style={{fontSize:10.5,fontWeight:600,color:T.txt2,flexShrink:0,width:40,textAlign:"left",fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{p.dateLabel}</span>
-                                  <span style={{flex:1,minWidth:0,fontWeight:600,color:T.txt,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.desc}</span>
-                                  <span style={{fontWeight:700,color:T.txt,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",flexShrink:0}}>{fmt(p.amount)}</span>
+                                  {/* Vorgemerkt vs. gebucht: beide zaehlen in "genutzt" hinein,
+                                      sind aber unterschiedlich sicher — deshalb unterscheidbar. */}
+                                  <span style={{flexShrink:0,display:"inline-flex",alignSelf:"center"}}
+                                    title={p.pending?"vorgemerkt":"gebucht"}>
+                                    {Li(p.pending?"clock":"check",10,p.pending?T.gold:T.txt2)}
+                                  </span>
+                                  <span style={{flex:1,minWidth:0,fontWeight:600,color:p.pending?T.txt2:T.txt,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.desc}</span>
+                                  <span style={{fontWeight:700,color:p.pending?T.txt2:T.txt,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",flexShrink:0}}>{fmt(p.amount)}</span>
                                 </div>
                               ))}
                             </div>
