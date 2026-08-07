@@ -27,14 +27,21 @@ function SyncStatusBadge() {
     ? () => { if (window.confirm("Neuere Daten aus der Cloud laden?\n\nLokale Änderungen seit dem letzten Sync werden dabei überschrieben.")) loadFromCloud?.(); }
     : openCloudSave;
 
+  // Deutlich größere Trefferfläche als früher: die schmale Pille (5px Polster,
+  // 11,5px Schrift) klebte oben am Bildschirmrand direkt unter der Notch und
+  // war kaum zu treffen (Nutzer-Hinweis). Jetzt eine volle Zeile mit 48px
+  // Mindesthöhe — dieselbe Größe, die auch alle anderen antippbaren Zeilen der
+  // App haben (siehe .mobile-modal button in themes.css).
   return (
-    <div style={{display:"flex",justifyContent:"center",padding:"3px 12px 0",flexShrink:0}}>
-      <div onClick={onTap}
-        style={{display:"flex",alignItems:"center",gap:6,
-          padding:"5px 12px",borderRadius:999,
-          background:`${col}1F`,border:`1px solid ${col}66`,
-          color:col,fontSize:11.5,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>
-        <span style={{width:6,height:6,borderRadius:"50%",background:col,display:"inline-block",flexShrink:0}}/>
+    <div style={{display:"flex",justifyContent:"center",padding:"6px 12px 2px",flexShrink:0}}>
+      <div onClick={onTap} role="button"
+        style={{display:"flex",alignItems:"center",justifyContent:"center",gap:9,
+          width:"100%",minHeight:48,boxSizing:"border-box",
+          padding:"10px 16px",borderRadius:14,
+          background:`${col}22`,border:`1.5px solid ${col}77`,
+          color:col,fontSize:14,fontWeight:700,cursor:"pointer",
+          textAlign:"center",lineHeight:1.25}}>
+        <span style={{width:9,height:9,borderRadius:"50%",background:col,display:"inline-block",flexShrink:0}}/>
         {state.text}
       </div>
     </div>

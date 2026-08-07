@@ -10,6 +10,7 @@ import { KontoWarnungWidget } from "../organisms/KontoWarnungWidget.jsx";
 import { SweepBanner } from "../organisms/SweepBanner.jsx";
 import { PendingList } from "../organisms/PendingList.jsx";
 import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
+import { SyncStatusBadge } from "../organisms/SyncStatusBadge.jsx";
 import { BankFetchPanel } from "../organisms/BankFetchPanel.jsx";
 import { TagesgeldWidget } from "../organisms/TagesgeldWidget.jsx";
 import { AutoMatchReview } from "../organisms/AutoMatchReview.jsx";
@@ -1054,6 +1055,12 @@ function DashboardScreenV2() {
           }
         })()}
         </div>
+
+        {/* Sync-Hinweis direkt unter dem Hero, vor dem uebrigen Inhalt: oben
+            unter der Notch war er zu schmal und zu randnah zum Treffen
+            (Nutzer-Hinweis). Auf Screens ohne Hero rendert App.jsx ihn weiter
+            oben. */}
+        <SyncStatusBadge/>
 
         {/* Pull-to-Refresh-Indikator: erscheint beim Herunterziehen zwischen dem
             fest positionierten Hero und der ersten Kategorie. */}

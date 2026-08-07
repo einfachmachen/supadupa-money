@@ -3265,7 +3265,10 @@ Abbrechen = ${remoteName}-Stand laden`
   // Vollbild-Dialoge (die den Badge sonst nicht kennen und ihn überdecken
   // würden, siehe Kategorie-Drilldown) ihren eigenen Notch-Abstand darum
   // ergänzen können: calc(12px + env(safe-area-inset-top) + var(--sync-badge-space)).
-  const syncBadgeSpace = getSyncBadgeState({isOnline, cfActive, isDirty, syncStatus}) ? "38px" : "0px";
+  // Screens mit Hero (Dashboard, Monat) zeigen den Sync-Hinweis selbst direkt
+  // unter dem Hero; nur die übrigen bekommen ihn oben unter der Notch.
+  const heroScreenAktiv = mainTab==="erfassen" && (subTab==="dashboard" || subTab==="monat");
+  const syncBadgeSpace = (!heroScreenAktiv && getSyncBadgeState({isOnline, cfActive, isDirty, syncStatus})) ? "38px" : "0px";
   // Eckenradius des Deko-Rahmens (Kinder-Themes): an die tatsächliche
   // Bildschirm-Eckenrundung moderner iPhones angenähert (nicht exakt pro
   // Modell messbar, es gibt keine CSS-Eigenschaft dafür) — 18px wirkte im
@@ -3557,8 +3560,19 @@ Abbrechen = ${remoteName}-Stand laden`
         </Overlay>
       )}
 
-      {/* ── Offline-/Sync-Hinweis (dauerhaft sichtbar, alle Screens) ── */}
-      <SyncStatusBadge/>
+      {/* ── Cloud-Speichern-Modal ──
+          Wird per Wisch ↓ am + Button UND per Tipp auf den Sync-Hinweis
+          geöffnet. Das Rendern fiel beim Entfernen des "Mehr"-Menüs (5f07e77)
+          versehentlich mit weg: showCloudSave wurde weiterhin gesetzt, es
+          erschien nur nichts mehr — der Sync-Hinweis war damit ein
+          Knopf ohne Wirkung (Nutzer-Hinweis). */}
+      {showCloudSave && <CloudSaveModal onClose={()=>{ setShowCloudSave(false); setPlusArretiert(false); }}/>}
+
+      {/* ── Offline-/Sync-Hinweis ──
+          Nur auf Screens OHNE Hero. Dashboard und Monat rendern ihn selbst
+          unterhalb des Heros (siehe dort) — dort oben unter der Notch war er
+          zu schmal und zu nah am Rand, um ihn zuverlässig zu treffen. ── */}
+      {!heroScreenAktiv && <SyncStatusBadge/>}
 
       {/* ── Interaktive Feature-Tour (Hero-"?"-Symbol): Overlay ÜBER dem
           aktiven Tab, wechselt selbst zwischen Tabs — kein showXxx-Vollbild-

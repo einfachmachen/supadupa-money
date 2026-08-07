@@ -8,6 +8,7 @@ import { MitteEndeFields } from "../molecules/MitteEndeFields.jsx";
 import { BudgetEditorModal } from "../organisms/BudgetEditorModal.jsx";
 import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
 import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
+import { SyncStatusBadge } from "../organisms/SyncStatusBadge.jsx";
 import { WerkzeugeSection } from "../organisms/WerkzeugeSection.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
@@ -1302,6 +1303,10 @@ function MonatScreen() {
         })()}
         {/* "Ausgaben nach Kategorie" wurde ins Dashboard (Home) verschoben. */}
         </div>
+
+        {/* Sync-Hinweis direkt unter dem Hero, vor dem uebrigen Inhalt — siehe
+            Dashboard. Auf Screens ohne Hero rendert App.jsx ihn oben. */}
+        <SyncStatusBadge/>
 
         {/* Budget-Schnellzugriff entfernt — Budgets werden über Mehr →
             Kategorien & Budget gepflegt; die Restbudget-Zeilen in der Liste
