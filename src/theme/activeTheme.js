@@ -59,8 +59,15 @@ export const isLightTheme = (name = _state.current.themeName) => {
 // nachgeholfen, wenn er zu klein ist: helle Themes bekommen eine Spur Dunkel,
 // dunkle eine Spur Hell. So hebt sich der Bereich in JEDEM Theme dezent, aber
 // erkennbar ab, ohne die Abstimmung der übrigen Themes anzutasten.
-const MIN_ABSTAND = 0.05;   // ab hier gilt surf als ausreichend abgesetzt
-const ZIEL_ABSTAND = 0.07;  // so weit rueckt das Nachhelfen vom Untergrund weg
+// Beide Werte sind bewusst die EINZIGEN Stellschrauben fuer "wie deutlich hebt
+// sich ein Budget-Bereich ab" — eine Zeile aendern reicht, um es der ganzen App
+// staerker oder dezenter zu machen. Erste Fassung lag bei 0,05/0,07: zu
+// zurueckhaltend, in "Glutorange" behielt die Karte dadurch ihre surf-Farbe
+// (nur 0,051 vom Untergrund entfernt) und ging optisch unter. Der Zielwert
+// orientiert sich jetzt an der Fassung, die dort gefiel (0,145 ueber dem
+// Untergrund) — leicht darunter, damit helle Themes nicht zu grau werden.
+const MIN_ABSTAND  = 0.11;  // ab hier gilt surf als ausreichend abgesetzt
+const ZIEL_ABSTAND = 0.13;  // so weit rueckt das Nachhelfen vom Untergrund weg
 
 // `untergrund` ist die Flaeche, auf der die Karte TATSAECHLICH liegt — im
 // Prognose-Aufriss das Panel (surf3), in den Buchungen-/VM-Aufrissen der

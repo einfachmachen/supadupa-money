@@ -189,12 +189,16 @@ Niemals Farben hart kodieren — immer `T.*` aus dem aktiven Theme.
 einem festen Token, sondern aus `flaecheAbgesetzt(untergrund)` in
 `activeTheme.js`. Der Helfer liefert normalerweise `T.surf` — die Themes haben
 ihre Kartenfarbe bewusst gewählt. Nur wenn `surf` dem Untergrund zu nahe kommt
-(< 0,05 Luma; „Kontrast Hell" setzt beide auf `#FFFFFF`), rückt er selbst um
-**ZIEL_ABSTAND (0,07 Luma)** ab — heller bei dunklen, dunkler bei hellen
-Themes. Der Schritt wird auf diesen Zielwert **gerechnet**, nicht fest
+(< `MIN_ABSTAND`, 0,11 Luma; „Kontrast Hell" setzt beide auf `#FFFFFF`), rückt
+er selbst um **`ZIEL_ABSTAND` (0,13 Luma)** ab — heller bei dunklen, dunkler bei
+hellen Themes. Der Schritt wird auf diesen Zielwert **gerechnet**, nicht fest
 vorgegeben: ein fester Faktor fiele auf fast Schwarz kaum auf und auf mittlerem
-Grau zu kräftig aus. Aktuell helfen 22 der 33 Themes nach und landen alle auf
-0,070–0,071; die übrigen 11 behalten ihre eigene Kartenfarbe.
+Grau zu kräftig aus. Aktuell helfen 31 der 33 Themes nach; alle landen bei
+~0,130, auch die zwei, die ihre eigene Kartenfarbe behalten.
+
+> Die beiden Konstanten sind die **einzigen** Stellschrauben dafür, wie deutlich
+> sich ein Budget-Bereich abhebt — eine Zeile ändern wirkt auf die ganze App.
+> Die erste Fassung lag bei 0,05/0,07 und war zu zurückhaltend.
 
 > **Alle Budget-Bereiche liegen auf `T.bg`** — der Hero-Bereich und die
 > Aufriss-Liste sind beide auf `T.bg` gemalt. Das ist die Voraussetzung dafür,
