@@ -2135,7 +2135,12 @@ function DashboardScreenV2() {
                     const sub = getSub((tx.splits||[])[0]?.catId, baseSubId);
                     const name = sub?.name || cat2?.name || tx.desc || "Budget";
                     return (
-                      <div key={tx.id} style={{padding:"5px 18px",borderBottom:`1px solid ${T.bd}`,background:T.surf3}}>
+                      // Budget-Kategorie als abgesetzter Bereich (wie im Prognose-
+                      // Aufriss): eigene Karte mit Rand statt vollflaechigem Band —
+                      // so ist auf einen Blick zu sehen, welche Einzelposten zu
+                      // welcher Kategorie gehoeren (Nutzer-Wunsch).
+                      <div key={tx.id} style={{margin:"6px 10px",padding:"6px 8px",borderRadius:10,
+                        border:`1px solid ${T.bd}`,background:T.surf}}>
                         <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}} onClick={()=>{setDashDrill(null);openEdit(tx);}}>
                           <div style={{width:30,height:30,borderRadius:9,flexShrink:0,background:mainCol+"22",border:`1px solid ${T.bd}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
                             {Li(isOver?"alert-triangle":"target",15,mainCol)}
@@ -2168,7 +2173,7 @@ function DashboardScreenV2() {
                             .sort((a,b)=>String(b.t.date).localeCompare(String(a.t.date)));
                           if(!posten.length) return null;
                           return (<>
-                            <div style={{borderTop:`1px solid rgba(255,255,255,0.08)`,margin:"4px 0 3px 38px"}}/>
+                            <div style={{borderTop:`1px solid ${T.bd}`,margin:"4px 0 3px 38px"}}/>
                             {posten.map(({t,vorgemerkt})=>{
                               const sp2 = (t.splits||[]).find(x=>x.subId===be.baseSubId);
                               const betrag = (sp2?.amount!=null && sp2.amount!==0)
@@ -2240,8 +2245,11 @@ function DashboardScreenV2() {
                         ? Math.abs(pn(sp2.amount)) : Math.abs(t.totalAmount));
                     },0);
                     return (
+                      // Gleicher Bereich-Stil wie die Budget-Zeile oben und der
+                      // Prognose-Aufriss.
                       <div key={"grp-"+be2.baseSubId}
-                        style={{padding:"5px 18px",borderBottom:`1px solid ${T.bd}`,background:T.surf3}}>
+                        style={{margin:"6px 10px",padding:"6px 8px",borderRadius:10,
+                          border:`1px solid ${T.bd}`,background:T.surf}}>
                         <div style={{display:"flex",alignItems:"center",gap:8}}>
                           <div style={{width:30,height:30,borderRadius:9,flexShrink:0,background:gCol+"22",
                             border:`1px solid ${T.bd}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -2254,7 +2262,7 @@ function DashboardScreenV2() {
                             {gInc?"+":"−"}{fmt(gSumme)}
                           </span>
                         </div>
-                        <div style={{borderTop:`1px solid rgba(255,255,255,0.08)`,margin:"4px 0 3px 38px"}}/>
+                        <div style={{borderTop:`1px solid ${T.bd}`,margin:"4px 0 3px 38px"}}/>
                         {[...posten].sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(t=>{
                           const sp2 = (t.splits||[]).find(x=>x.subId===be2.baseSubId);
                           const betrag = (sp2?.amount!=null && sp2.amount!==0)

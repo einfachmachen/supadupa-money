@@ -107,10 +107,7 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
           // rgba(255,255,255,...)-Linien darin waren dort unsichtbar
           // (Nutzer-Bilder). Jetzt dieselbe Sprache wie der Buchungen-/VM-/
           // unkat.-Aufriss: Panel auf surf3, Budget-Karten eine Stufe heller.
-          <div style={{marginTop:6,background:T.surf3,borderRadius:12,padding:"11px 13px",fontSize:13,textAlign:"left"}}>
-            <div style={{color:col,fontWeight:700,fontSize:FS_TEXT,marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
-              {Li("bar-chart-2",15,col)} Prognose {label} ({label==="Mitte"?"bis 14.":"bis Monatsende"})
-            </div>
+          <div style={{background:T.surf3,borderRadius:12,padding:"8px 13px 11px",fontSize:13,textAlign:"left"}}>
             {/* ── Saldo Ende + Warnungen + Summen — jetzt OBEN ── */}
             {(drill.overBudgetWarnings||[]).length>0&&(
               <div style={{background:`${T.warn_icon}1f`,border:`1px solid ${T.warn_icon}66`,borderRadius:8,padding:"7px 10px",marginBottom:6}}>
@@ -118,8 +115,15 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
                 {drill.overBudgetWarnings.map((w,i)=>(<div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:FS_DETAIL,marginBottom:2}}><span style={{color:T.warn}}>{w.name}</span><span style={{fontFamily:NUM_FONT,color:T.warn}}>{fmt(w.actual)} {">"} {fmt(w.budget)}</span></div>))}
               </div>
             )}
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",borderBottom:`1px solid ${col}44`,paddingBottom:6,marginBottom:8}}>
-              <span style={{color:col,fontWeight:700,fontSize:FS_TEXT}}>Saldo {label}</span>
+            {/* Titel und Saldo in EINER Zeile: der Kopf stand vorher als eigene
+                Zeile darueber ("Prognose Mitte (bis 14.)"), die Zeile darunter
+                wiederholte mit "Saldo Mitte" praktisch dasselbe Wort. Zusammen-
+                gelegt und gekuerzt spart das eine ganze Zeile (Nutzer-Wunsch).
+                Ebenso weg: der Abstand zu den kleinen Summen darunter. */}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,paddingBottom:0,marginBottom:0}}>
+              <span style={{color:col,fontWeight:700,fontSize:FS_TEXT,display:"flex",alignItems:"center",gap:6,minWidth:0}}>
+                {Li("bar-chart-2",15,col)} Prognose {label}
+              </span>
               {(()=>{
                 // Externe saldoMitte/saldoEnde haben Vorrang (sind konto-spezifisch wenn selAcc).
                 // drill.saldo (immer Gesamt) nur als Fallback wenn extern nicht gesetzt.
@@ -131,7 +135,7 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
               })()}
             </div>
             {hasAny&&(drill.realIn+drill.pendIn+drill.realOut+drill.pendOut)>0&&(
-              <div style={{display:"flex",gap:14,justifyContent:"flex-end",marginBottom:6,paddingBottom:4,borderBottom:`1px solid ${T.bd}`}}>
+              <div style={{display:"flex",gap:14,justifyContent:"flex-end",marginTop:0,marginBottom:6,paddingBottom:4,borderBottom:`1px solid ${T.bd}`}}>
                 <span style={{color:T.pos,fontSize:FS_DETAIL,fontFamily:NUM_FONT}}>+{fmt(drill.realIn+drill.pendIn)}</span>
                 <span style={{color:T.neg,fontSize:FS_DETAIL,fontFamily:NUM_FONT}}>−{fmt(drill.realOut+drill.pendOut)}</span>
               </div>
