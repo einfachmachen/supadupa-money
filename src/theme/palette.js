@@ -21,7 +21,7 @@ const PAL = new Proxy({}, { get:(_,type)=>{
   }[type] || {};
 }});
 
-// Jahresplan colors — Dove Sport Design
+// Jahresplan colors
 // BC is a live getter so it always uses the current T.txt
 
 const getBC = () => {
