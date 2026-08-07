@@ -50,7 +50,7 @@ const THEMES = {
     cond_neg:"#0097A7", cond_warn:"#E67E22", cond_gold:"#D4A017", cond_pos:"#1A8A4A",
     name:"Light (Dove Sport Hell)",
   },
-  // ── Amazon Fire TV (1st Gen) ────────────────────────────────────────────
+  // ── Glutorange — tiefes Schwarz mit warmem Orange-Akzent ────────────────
   firetv: {
     bg:"#161616", surf:"#232323", surf2:"#2C2C2C",
     bd:"rgba(255,165,0,0.18)", bds:"rgba(255,165,0,0.35)",
@@ -69,9 +69,9 @@ const THEMES = {
     pal_tg_bg:"#1A1400", pal_tg_bd:"#4A3800", pal_tg_hdr:"#FF9900", pal_tg_fld:"#221A00", pal_tg_val:"#FFBB44",
     hero_bg:"linear-gradient(135deg,#1C1C1C,#2C2C2C)",  logo_c1:"#FF9900", logo_c2:"#FFBB44", err_bg:"#5A1010",
     cond_neg:"#00D9FF", neg_aktuell:"#59E6FF", neg_vm:"#8CEEFF", warn_bold:"#FF8800", warn_icon:"#FFD24D", cond_warn:"#FF9900", cond_gold:"#FFD700", cond_pos:"#BFFF00", pos_aktuell:"#D5FF59", pos_vm:"#E2FF8C",
-    name:"Amazon Fire TV",
+    name:"Glutorange",
   },
-  // ── Xbox Series S/X ──────────────────────────────────────────────────────
+  // ── Nachtgrün — Fast-Schwarz mit sattem Signalgrün ──────────────────────
   xbox: {
     bg:"#0A0A0A", surf:"#141414", surf2:"#1E1E1E",
     bd:"rgba(16,124,16,0.25)", bds:"rgba(16,124,16,0.50)",
@@ -90,9 +90,9 @@ const THEMES = {
     pal_tg_bg:"#0A1000", pal_tg_bd:"#203A10", pal_tg_hdr:"#107C10", pal_tg_fld:"#0E1A08", pal_tg_val:"#40A040",
     hero_bg:"linear-gradient(135deg,#0A0A0A,#141414)",   logo_c1:"#107C10", logo_c2:"#5EC95E", err_bg:"#4A0808",
     cond_neg:"#00D9FF", neg_aktuell:"#59E6FF", neg_vm:"#8CEEFF", warn_bold:"#FF8800", warn_icon:"#FFD24D", cond_warn:"#FFB900", cond_gold:"#FFD700", cond_pos:"#BFFF00", pos_aktuell:"#D5FF59", pos_vm:"#E2FF8C",
-    name:"Xbox Series",
+    name:"Nachtgrün",
   },
-  // ── PlayStation 5 ────────────────────────────────────────────────────────
+  // ── Nachtblau — sehr dunkles Marineblau mit hellem Cyan-Akzent ──────────
   ps5: {
     bg:"#050914", surf:"#0D1526", surf2:"#152038",
     bd:"rgba(0,160,214,0.20)", bds:"rgba(0,160,214,0.40)",
@@ -111,9 +111,9 @@ const THEMES = {
     pal_tg_bg:"#04091A", pal_tg_bd:"#082040", pal_tg_hdr:"#00A0D6", pal_tg_fld:"#071230", pal_tg_val:"#40C8F0",
     hero_bg:"linear-gradient(135deg,#050914,#0D1526)",   logo_c1:"#00A0D6", logo_c2:"#00CC88", err_bg:"#4A0818",
     cond_neg:"#00D9FF", neg_aktuell:"#59E6FF", neg_vm:"#8CEEFF", warn_bold:"#FF8800", warn_icon:"#FFD24D", cond_warn:"#F0C040", cond_gold:"#FFD700", cond_pos:"#BFFF00", pos_aktuell:"#D5FF59", pos_vm:"#E2FF8C",
-    name:"PlayStation 5",
+    name:"Nachtblau",
   },
-  // ── Disney+ ──────────────────────────────────────────────────────────────
+  // ── Sternenblau — Mitternachtsblau mit kräftigem Königsblau ─────────────
   disneyplus: {
     bg:"#040B1C", surf:"#0B1A38", surf2:"#122248",
     bd:"rgba(20,100,214,0.25)", bds:"rgba(20,100,214,0.48)",
@@ -132,9 +132,9 @@ const THEMES = {
     pal_tg_bg:"#030A1A", pal_tg_bd:"#0A1C48", pal_tg_hdr:"#1464D6", pal_tg_fld:"#081030", pal_tg_val:"#4890F0",
     hero_bg:"linear-gradient(135deg,#040B1C,#0B1A38)",   logo_c1:"#1464D6", logo_c2:"#1AC8A0", err_bg:"#4A0810",
     cond_neg:"#00D9FF", neg_aktuell:"#59E6FF", neg_vm:"#8CEEFF", warn_bold:"#FF8800", warn_icon:"#FFD24D", cond_warn:"#F5C518", cond_gold:"#FFD700", cond_pos:"#BFFF00", pos_aktuell:"#D5FF59", pos_vm:"#E2FF8C",
-    name:"Disney+",
+    name:"Sternenblau",
   },
-  // ── Netflix ──────────────────────────────────────────────────────────────
+  // ── Kinorot — Kohleschwarz mit leuchtendem Rot ──────────────────────────
   netflix: {
     bg:"#141414", surf:"#1F1F1F", surf2:"#2A2A2A",
     bd:"rgba(229,9,20,0.20)", bds:"rgba(229,9,20,0.40)",
@@ -153,9 +153,9 @@ const THEMES = {
     pal_tg_bg:"#141414", pal_tg_bd:"#3A1010", pal_tg_hdr:"#E50914", pal_tg_fld:"#1A0A0A", pal_tg_val:"#FF4444",
     hero_bg:"linear-gradient(135deg,#141414,#1F1F1F)",   logo_c1:"#E50914", logo_c2:"#FF4444", err_bg:"#5A0808",
     cond_neg:"#00D9FF", neg_aktuell:"#59E6FF", neg_vm:"#8CEEFF", warn_bold:"#FF8800", warn_icon:"#FFD24D", cond_warn:"#F5A623", cond_gold:"#FFD700", cond_pos:"#BFFF00", pos_aktuell:"#D5FF59", pos_vm:"#E2FF8C",
-    name:"Netflix",
+    name:"Kinorot",
   },
-  // ── MagentaTV ────────────────────────────────────────────────────────────
+  // ── Magenta Nacht — fast schwarzes Aubergine mit Magenta-Akzent ─────────
   magenta: {
     bg:"#1A0018", surf:"#280028", surf2:"#340038",
     bd:"rgba(226,0,116,0.22)", bds:"rgba(226,0,116,0.44)",
@@ -174,9 +174,9 @@ const THEMES = {
     pal_tg_bg:"#140010", pal_tg_bd:"#400040", pal_tg_hdr:"#E20074", pal_tg_fld:"#1C0018", pal_tg_val:"#FF60B0",
     hero_bg:"linear-gradient(135deg,#1A0018,#280028)",   logo_c1:"#E20074", logo_c2:"#FF60B0", err_bg:"#3A0010",
     cond_neg:"#00D9FF", neg_aktuell:"#59E6FF", neg_vm:"#8CEEFF", warn_bold:"#FF8800", warn_icon:"#FFD24D", cond_warn:"#FFB800", cond_gold:"#FFD700", cond_pos:"#BFFF00", pos_aktuell:"#D5FF59", pos_vm:"#E2FF8C",
-    name:"MagentaTV",
+    name:"Magenta Nacht",
   },
-  // ── iOS / Apple Light ────────────────────────────────────────────────────
+  // ── Systemblau Hell — helles Systemgrau mit klarem Blau ─────────────────
   ios: {
     bg:"#F2F2F7", surf:"#FFFFFF", surf2:"#E5E5EA",
     bd:"rgba(60,60,67,0.12)", bds:"rgba(60,60,67,0.25)",
@@ -195,9 +195,9 @@ const THEMES = {
     pal_tg_bg:"#E8F4FF", pal_tg_bd:"#A8D0F8", pal_tg_hdr:"#007AFF", pal_tg_fld:"#D8ECFF", pal_tg_val:"#0055CC",
     hero_bg:"linear-gradient(135deg,#E8F9ED,#C8F0D8)",   logo_c1:"#007AFF", logo_c2:"#1D7A36", err_bg:"#FFE0E0",
     cond_neg:"#FF3B30", cond_warn:"#FF9500", cond_gold:"#FFCC00", cond_pos:"#1D7A36",
-    name:"iOS Light",
+    name:"Systemblau Hell",
   },
-  // ── Material Light (Google) ───────────────────────────────────────────────
+  // ── Kartenblau Hell — weiße Karten auf Fast-Weiß, ruhiges Blau ──────────
   material: {
     bg:"#FAFAFA", surf:"#FFFFFF", surf2:"#F5F5F5",
     bd:"rgba(0,0,0,0.10)", bds:"rgba(0,0,0,0.22)",
@@ -216,7 +216,7 @@ const THEMES = {
     pal_tg_bg:"#E3F2FD", pal_tg_bd:"#90CAF9", pal_tg_hdr:"#1976D2", pal_tg_fld:"#BBDEFB", pal_tg_val:"#0D47A1",
     hero_bg:"linear-gradient(135deg,#E8F5E9,#C8E6C9)",   logo_c1:"#1976D2", logo_c2:"#388E3C", err_bg:"#FFEBEE",
     cond_neg:"#D32F2F", cond_warn:"#F57C00", cond_gold:"#FBC02D", cond_pos:"#388E3C",
-    name:"Material Light",
+    name:"Kartenblau Hell",
   },
   // ── Papier / Warm White ───────────────────────────────────────────────────
   paper: {
@@ -240,9 +240,9 @@ const THEMES = {
     name:"Papier",
   },
 
-  // ── DKB Banking App (hell, wie die echte App) ────────────────────────────
+  // ── Bankblau Hell — entsättigtes Hellblau, weiße Karten, tiefes Blau ────
   dkb: {
-    bg:"#E8EEF4",        // Entsättigtes Hellblau — DKB App Hintergrund
+    bg:"#E8EEF4",        // Entsättigtes Hellblau als Grundfläche
     surf:"#FFFFFF",      // Weiße Karten / Hero-Cards
     surf2:"#D8E4EE",     // Info-Hero: etwas dunkleres entsättigtes Hellblau
     surf3:"#EDF2F7",     // Leicht abgehobene Fläche
@@ -250,7 +250,7 @@ const THEMES = {
     bds:"#B8CAD8",       // Stärkerer Rahmen
     txt:"#0D1520",       // Fast Schwarz für Haupttext
     txt2:"#5A6E80",      // Hellgrau für Sekundärtext
-    blue:"#003F7E",      // DKB-Primärblau
+    blue:"#003F7E",      // Tiefes Primärblau
     pos:"#1A5C2A",       // Dunkelgrün
     neg:"#0097A7",       // Gedämpftes Rot
     gold:"#8A6800",      // Gedämpftes Amber
@@ -267,7 +267,7 @@ const THEMES = {
     pal_tg_bg:"#DCE8F4",  pal_tg_bd:"#98BAD8",  pal_tg_hdr:"#003F7E",  pal_tg_fld:"#CCE0EE",  pal_tg_val:"#00285A",
     hero_bg:"linear-gradient(135deg,#D8E4EE,#E8EEF4)", logo_c1:"#003F7E", logo_c2:"#0060C0", err_bg:"#FAE0DC",
     cond_neg:"#0097A7", cond_warn:"#8A6800", cond_gold:"#A07800", cond_pos:"#1A5C2A",
-    name:"DKB Hell",
+    name:"Bankblau Hell",
   },
 
   // ── Obsidian — Tiefes Dunkel, elektrische Akzente, maximale Lesbarkeit ───────
@@ -674,16 +674,16 @@ THEMES.cleancorporate = {
 // ── Deep Ocean — tiefes Marineblau, helle Schrift, Cyan-Akzent, Chartreuse-Grün
 THEMES.deepocean = {
   ...THEMES.dark,
-  // Helles Anthrazit (gleiche Helligkeit wie "Dark Hell"), damit das iPhone
-  // bei dunklem Hintergrund nicht spiegelt und Text gut lesbar bleibt.
-  bg:"#3E444C", surf:"#4B525B", surf2:"#545C66", surf3:"#3A414A",
+  // Dasselbe Anthrazit wie Dark: die vorige, hellere Fassung (#3E444C ff.)
+  // wirkte zu hell (Nutzer-Hinweis). Sie stammte aus dem entfernten
+  // "Dark Hell" und sollte Spiegelungen auf dem iPhone dämpfen — der
+  // Unterschied war die Aufhellung nicht wert.
+  bg:"#2C3035", surf:"#363B42", surf2:"#3D4349", surf3:"#2A2E35",
   bd:"rgba(150,180,220,0.18)", bds:"rgba(150,180,220,0.34)",
   txt:"#F4F6F9", txt2:"rgba(200,215,240,0.72)", lbl:"rgba(200,215,240,0.54)",
-  // blue/neg gegenüber surf2 (#545C66) aufgehellt (3.5:1/3.2:1 → 4.5:1+ WCAG-
-  // Kontrast) — bei kleiner Schrift (Badges, Tags) war die vorige, dunklere
-  // Fassung auf diesem mittleren Grau kaum zu erkennen. neg jetzt Hellorange
-  // (#D8A6FF) statt Rot — deutlich bessere Lesbarkeit im Dark Theme, klar
-  // unterscheidbar vom separaten err-Ton.
+  // blue bewusst hell (#65E3FD): auf dem frueheren, mittleren Grau war eine
+  // dunklere Fassung bei kleiner Schrift (Badges, Tags) kaum zu erkennen. Auf
+  // dem jetzt dunkleren Anthrazit stimmt der Kontrast erst recht.
   blue:"#65E3FD", pos:"#BFFF00", neg:"#00D9FF", gold:"#FFC861",
   on_accent:"#06121A", disabled:"#3A414A", warn:"#FFB54A", override:"#C2820F",
   mid:"#67E8F9",
@@ -694,7 +694,7 @@ THEMES.deepocean = {
   pal_inc_bg:"#141F00", pal_inc_bd:"#4A6600", pal_inc_hdr:"#BFFF00", pal_inc_fld:"#1A2600", pal_inc_val:"#D4FF4D",
   pal_exp_bg:"#2A0C0C", pal_exp_bd:"#5C1818", pal_exp_fld:"#330E0E",
   pal_tg_bg:"#0A1B2E", pal_tg_bd:"#1A4658", pal_tg_hdr:"#48CAE4", pal_tg_fld:"#08182A", pal_tg_val:"#8AE0F0",
-  hero_bg:"linear-gradient(135deg,#2A2F36,#4B525B)", logo_c1:"#6FA800", logo_c2:"#BFFF00",
+  hero_bg:"linear-gradient(135deg,#1C2229,#363B42)", logo_c1:"#6FA800", logo_c2:"#BFFF00",
   cond_neg:"#00D9FF", neg_aktuell:"#59E6FF", neg_vm:"#8CEEFF", warn_bold:"#FF8800", warn_icon:"#FFD24D", cond_warn:"#FFB54A", cond_gold:"#FFD263", cond_pos:"#BFFF00", pos_aktuell:"#D5FF59", pos_vm:"#E2FF8C",
   name:"Deep Ocean",
 };
