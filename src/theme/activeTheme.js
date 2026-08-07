@@ -10,22 +10,46 @@ export function setActiveTheme(name, extra = {}) {
   _state.current = { ...getTheme(name), themeName: name, ...extra };
 }
 
+const _luma = (c) => {
+  const h = String(c||"").replace("#","");
+  const f = h.length < 6 ? h.split("").map(x=>x+x).join("") : h;
+  if (!/^[0-9a-fA-F]{6}$/.test(f)) return null;
+  return (0.299*parseInt(f.slice(0,2),16)
+        + 0.587*parseInt(f.slice(2,4),16)
+        + 0.114*parseInt(f.slice(4,6),16)) / 255;
+};
+
 // Zentrale Liste der hellen Themes. Vorher lag dieser Vergleich als
 // inline-Kette ~50x im Code — teils veraltet (neuere helle Themes fehlten).
-// Neues helles Theme? NUR hier ergänzen.
 const LIGHT_THEMES = new Set([
   "light", "ios", "material", "paper", "dkb",
   "sand", "clean", "brutalist", "swiss", "hellgrau",
   "kontrasthell", "creme", "cleancorporate", "softecotech",
-  // "keyboard" gehört fachlich hierher (fast schwarzer Text auf hellen
-  // Tastenflächen), stand aber nie drin — vermutlich, weil sein bg früher ein
-  // mittleres Grau war. Ohne den Eintrag nahm die App überall den
+  // Diese drei gehören fachlich längst dazu (dunkler Text auf hellen
+  // Flächen), standen aber nie drin — bei "keyboard" vermutlich, weil sein
+  // Hintergrund früher ein mittleres Grau war, bei den beiden Kinder-Themes
+  // schlicht vergessen. Ohne Eintrag nahm die App dort überall den
   // Dunkel-Zweig: dunkle Overlay-Schleier, colorScheme:"dark" für die
   // Systemfelder, helle Aufsätze auf ohnehin hellen Flächen.
-  "keyboard",
+  "keyboard", "abenteuergruen", "zirkustaschenrechner",
 ]);
-export const isLightTheme = (name = _state.current.themeName) =>
-  LIGHT_THEMES.has(name);
+
+// Sicherheitsnetz hinter der Liste: ein Theme mit hellem Hintergrund IST
+// hell, auch wenn es oben jemand vergessen hat. Genau das war dreimal
+// passiert (siehe die drei Nachträge). Die Liste bleibt trotzdem — sie
+// entscheidet die Grenzfälle, in denen ein Theme trotz mittlerer Helligkeit
+// bewusst als hell oder dunkel gelten soll. Ergebnis pro Name gemerkt, weil
+// isLightTheme in jedem Render dutzendfach aufgerufen wird.
+const _hellCache = new Map();
+export const isLightTheme = (name = _state.current.themeName) => {
+  if (LIGHT_THEMES.has(name)) return true;
+  if (_hellCache.has(name)) return _hellCache.get(name);
+  const t = name === _state.current.themeName ? _state.current : THEMES[name];
+  const l = _luma(t && t.bg);
+  const hell = l != null && l >= 0.5;
+  _hellCache.set(name, hell);
+  return hell;
+};
 
 // ── Abgesetzte Fläche (Budget-Kategorien in den Aufrissen) ───────────────
 // Normalfall ist die Kartenfarbe des Themes (surf) — die haben die Themes
@@ -35,23 +59,22 @@ export const isLightTheme = (name = _state.current.themeName) =>
 // nachgeholfen, wenn er zu klein ist: helle Themes bekommen eine Spur Dunkel,
 // dunkle eine Spur Hell. So hebt sich der Bereich in JEDEM Theme dezent, aber
 // erkennbar ab, ohne die Abstimmung der übrigen Themes anzutasten.
-const _luma = (c) => {
-  const h = String(c||"").replace("#","");
-  const f = h.length < 6 ? h.split("").map(x=>x+x).join("") : h;
-  if (!/^[0-9a-fA-F]{6}$/.test(f)) return null;
-  return (0.299*parseInt(f.slice(0,2),16)
-        + 0.587*parseInt(f.slice(2,4),16)
-        + 0.114*parseInt(f.slice(4,6),16)) / 255;
-};
-const MIN_ABSTAND = 0.035;
+const MIN_ABSTAND = 0.05;
 
-export function flaecheAbgesetzt() {
-  const bg = _state.current.bg, surf = _state.current.surf;
-  const lb = _luma(bg), ls = _luma(surf);
-  if (lb == null || ls == null || Math.abs(lb - ls) >= MIN_ABSTAND) return surf;
+// `untergrund` ist die Flaeche, auf der die Karte TATSAECHLICH liegt — im
+// Prognose-Aufriss das Panel (surf3), in den Buchungen-/VM-Aufrissen der
+// Seitenhintergrund (bg). Ein erster Versuch mass immer gegen bg; im
+// Prognose-Aufriss ging das an der Sache vorbei und lieferte in "Kinorot"
+// eine Karte fast in Panel-Farbe, in "Papier" sogar eine dunklere als noetig
+// (Nutzer-Bilder). Seitdem entscheidet der echte Untergrund.
+export function flaecheAbgesetzt(untergrund = _state.current.bg) {
+  const surf = _state.current.surf;
+  const lu = _luma(untergrund), ls = _luma(surf);
+  if (lu == null) return surf;
+  if (ls != null && Math.abs(lu - ls) >= MIN_ABSTAND) return surf;
   // darkenHex/lightenHex statt color-mix(): liefert rgb() und funktioniert
   // damit auch auf aelteren iOS-Webviews ohne Wenn und Aber.
-  return isLightTheme() ? darkenHex(bg, 0.06) : lightenHex(bg, 0.10);
+  return isLightTheme() ? darkenHex(untergrund, 0.07) : lightenHex(untergrund, 0.13);
 }
 
 // Proxy verhält sich wie das aktuelle Theme-Objekt

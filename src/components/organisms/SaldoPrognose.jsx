@@ -193,7 +193,7 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
                       const actual = b.realAmt+b.concAmt;
                       const openAmt = b.budget - actual;
                       return (
-                        <div key={idx} style={{marginBottom:8,background:flaecheAbgesetzt(),borderRadius:8,padding:"5px 0"}}>
+                        <div key={idx} style={{marginBottom:8,background:flaecheAbgesetzt(T.surf3),borderRadius:8,padding:"5px 0"}}>
                           {/* Zeile 1: Datum + Icon + Name | offen rechts */}
                           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
                             <span style={{color:T.txt2,fontSize:FS_DETAIL,flexShrink:0,fontFamily:NUM_FONT,width:36}}>{fmtD(b.date)}</span>

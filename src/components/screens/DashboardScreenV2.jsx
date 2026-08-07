@@ -2140,7 +2140,7 @@ function DashboardScreenV2() {
                       // so ist auf einen Blick zu sehen, welche Einzelposten zu
                       // welcher Kategorie gehoeren (Nutzer-Wunsch).
                       <div key={tx.id} style={{margin:"6px 10px",padding:"6px 8px",borderRadius:10,
-                        border:`1px solid ${T.bd}`,background:flaecheAbgesetzt()}}>
+                        border:`1px solid ${T.bd}`,background:flaecheAbgesetzt(T.bg)}}>
                         <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}} onClick={()=>{setDashDrill(null);openEdit(tx);}}>
                           <div style={{width:30,height:30,borderRadius:9,flexShrink:0,background:mainCol+"22",border:`1px solid ${T.bd}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
                             {Li(isOver?"alert-triangle":"target",15,mainCol)}
@@ -2249,7 +2249,7 @@ function DashboardScreenV2() {
                       // Prognose-Aufriss.
                       <div key={"grp-"+be2.baseSubId}
                         style={{margin:"6px 10px",padding:"6px 8px",borderRadius:10,
-                          border:`1px solid ${T.bd}`,background:flaecheAbgesetzt()}}>
+                          border:`1px solid ${T.bd}`,background:flaecheAbgesetzt(T.bg)}}>
                         <div style={{display:"flex",alignItems:"center",gap:8}}>
                           <div style={{width:30,height:30,borderRadius:9,flexShrink:0,background:gCol+"22",
                             border:`1px solid ${T.bd}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
