@@ -479,9 +479,14 @@ const THEMES = {
   //   - Petrol:                      #2D5A78  (Selektions-Highlight)
   keyboard: {
     name:"Keyboard",
-    bg:"#6A6A64",                // App-BG = Installer-Hintergrund (aufgehellt — war zu dunkel
-                                 // für den fast-schwarzen Text, der auf Bildschirm-Titeln direkt
-                                 // auf dem Hintergrund liegt, siehe Kontrast-Audit)
+    bg:"#D2D2CA",                // Gehäuse-Grau: eine Spur HELLER als die Tastenflächen
+                                 // (#B8B8B0), wie das helle Gehäuse unter dunkleren
+                                 // Keycaps. Vorher ein mittleres Grau (#6A6A64) —
+                                 // das passte zu nichts sonst im Theme: der
+                                 // fast-schwarze Text stand darauf grenzwertig (4,3:1),
+                                 // die hellen Karten und der helle Hero-Verlauf wirkten
+                                 // wie Fremdkörper auf einer dunklen Platte
+                                 // (Nutzer-Hinweis).
     surf:"#B8B8B0",              // Karten = Tastenflächen (HELL, schwarzer Text drauf)
     surf2:"#A8A8A0",             // leicht dunkler (Modals etc.)
     surf3:"#9A9A95",             // dunklere Variante (Trennungen)
