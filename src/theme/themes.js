@@ -20,7 +20,7 @@ const THEMES = {
     pal_tg_bg:"#071820",  pal_tg_bd:"#1A3A48",  pal_tg_hdr:"#4A9FC0",  pal_tg_fld:"#091E2A",  pal_tg_val:"#80C8E0",
     hero_bg:"linear-gradient(135deg,#1A1D22,#252B34)", logo_c1:"#6B9900", logo_c2:"#AACC00", err_bg:"#7A1020",
     cond_neg:"#00D9FF", neg_aktuell:"#59E6FF", neg_vm:"#8CEEFF", warn_bold:"#FF8800", warn_icon:"#FFD24D", cond_warn:"#E67E22", cond_gold:"#F1C40F", cond_pos:"#BFFF00", pos_aktuell:"#D5FF59", pos_vm:"#E2FF8C",
-    name:"Dark (Lime)",
+    name:"Lime",
   },
   light: {
     bg:"#F2F4EF",    // Helles Grau-Grün
@@ -48,7 +48,7 @@ const THEMES = {
     pal_tg_bg:"#EFF7FC",  pal_tg_bd:"#A8D0E8",  pal_tg_hdr:"#4A9FC0",  pal_tg_fld:"#E4F2F8",  pal_tg_val:"#2A7A9C",
     hero_bg:"linear-gradient(135deg,#7AAD00,#9CC800)", logo_c1:"#6B9900", logo_c2:"#AACC00", err_bg:"#7A0010",
     cond_neg:"#0097A7", cond_warn:"#E67E22", cond_gold:"#D4A017", cond_pos:"#1A8A4A",
-    name:"Light (Lime)",
+    name:"Limehell",
   },
   // ── Glutorange — tiefes Schwarz mit warmem Orange-Akzent ────────────────
   firetv: {
