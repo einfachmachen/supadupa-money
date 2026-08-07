@@ -188,12 +188,27 @@ Niemals Farben hart kodieren — immer `T.*` aus dem aktiven Theme.
 **Abgesetzte Flächen** (Budget-Bereiche in den Aufrissen) kommen **nicht** aus
 einem festen Token, sondern aus `flaecheAbgesetzt(untergrund)` in
 `activeTheme.js`. Der Helfer liefert normalerweise `T.surf` — die Themes haben
-ihre Kartenfarbe bewusst gewählt. Nur wenn `surf` dem **tatsächlichen**
-Untergrund zu nahe kommt (< 0,05 Luma; „Kontrast Hell" setzt beide auf
-`#FFFFFF`), hellt bzw. dunkelt er ihn nach. **Den Untergrund immer mitgeben** —
-im Prognose-Aufriss ist das das Panel (`T.surf3`), in den Buchungen-/VM-
-Aufrissen der Seitenhintergrund (`T.bg`). Ein erster Wurf maß immer gegen `bg`
-und lieferte im Prognose-Aufriss dadurch unsichtbare Karten.
+ihre Kartenfarbe bewusst gewählt. Nur wenn `surf` dem Untergrund zu nahe kommt
+(< 0,05 Luma; „Kontrast Hell" setzt beide auf `#FFFFFF`), rückt er selbst um
+**ZIEL_ABSTAND (0,07 Luma)** ab — heller bei dunklen, dunkler bei hellen
+Themes. Der Schritt wird auf diesen Zielwert **gerechnet**, nicht fest
+vorgegeben: ein fester Faktor fiele auf fast Schwarz kaum auf und auf mittlerem
+Grau zu kräftig aus. Aktuell helfen 22 der 33 Themes nach und landen alle auf
+0,070–0,071; die übrigen 11 behalten ihre eigene Kartenfarbe.
+
+> **Alle Budget-Bereiche liegen auf `T.bg`** — der Hero-Bereich und die
+> Aufriss-Liste sind beide auf `T.bg` gemalt. Das ist die Voraussetzung dafür,
+> dass dieselbe Kategorie in Prognose und Aufriss **dieselbe** Farbe hat. Der
+> Prognose-Aufriss hatte zwischenzeitlich ein eigenes `surf3`-Panel; dadurch
+> rechnete der Helfer je Zusammenhang gegen einen anderen Untergrund, und die
+> Karten hatten sichtbar zwei verschiedene Grautöne. Wer dort wieder eine
+> Fläche einzieht, muss sie an **beiden** Orten einziehen.
+
+*Warum das bei hellen Themes enger ist:* Über Weiß gibt es keinen Spielraum
+mehr. Wo `bg` schon fast weiß ist, kann die Karte nicht heller werden — sie
+geht dann eine Spur ins Graue, genau wie die grauen Karten-Listen der
+System-UIs. Deshalb entscheidet die Richtung `isLightTheme()` und nicht ein
+fester Weiß-Schleier.
 
 ### 4.2 Verfügbare Themes
 33 fest in `themes.js` ausgelieferte Themes (kein Nutzer-Content!), in zwei

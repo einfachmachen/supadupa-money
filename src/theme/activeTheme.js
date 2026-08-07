@@ -59,7 +59,8 @@ export const isLightTheme = (name = _state.current.themeName) => {
 // nachgeholfen, wenn er zu klein ist: helle Themes bekommen eine Spur Dunkel,
 // dunkle eine Spur Hell. So hebt sich der Bereich in JEDEM Theme dezent, aber
 // erkennbar ab, ohne die Abstimmung der übrigen Themes anzutasten.
-const MIN_ABSTAND = 0.05;
+const MIN_ABSTAND = 0.05;   // ab hier gilt surf als ausreichend abgesetzt
+const ZIEL_ABSTAND = 0.07;  // so weit rueckt das Nachhelfen vom Untergrund weg
 
 // `untergrund` ist die Flaeche, auf der die Karte TATSAECHLICH liegt — im
 // Prognose-Aufriss das Panel (surf3), in den Buchungen-/VM-Aufrissen der
@@ -72,9 +73,17 @@ export function flaecheAbgesetzt(untergrund = _state.current.bg) {
   const lu = _luma(untergrund), ls = _luma(surf);
   if (lu == null) return surf;
   if (ls != null && Math.abs(lu - ls) >= MIN_ABSTAND) return surf;
+  // Der Schritt wird auf ZIEL_ABSTAND gerechnet statt fest vorgegeben: ein
+  // fester Faktor faellt je nach Ausgangshelligkeit unterschiedlich stark aus
+  // (auf fast Schwarz kaum sichtbar, auf mittlerem Grau zu kraeftig). Aufhellen
+  // verschiebt die Luma um (1-luma)*a, Abdunkeln um luma*a — nach a aufgeloest
+  // landet jedes Theme auf demselben wahrgenommenen Abstand.
   // darkenHex/lightenHex statt color-mix(): liefert rgb() und funktioniert
   // damit auch auf aelteren iOS-Webviews ohne Wenn und Aber.
-  return isLightTheme() ? darkenHex(untergrund, 0.07) : lightenHex(untergrund, 0.13);
+  const klemm = (a) => Math.min(0.9, Math.max(0.02, a));
+  return isLightTheme()
+    ? darkenHex(untergrund,  klemm(ZIEL_ABSTAND / Math.max(0.05, lu)))
+    : lightenHex(untergrund, klemm(ZIEL_ABSTAND / Math.max(0.05, 1 - lu)));
 }
 
 // Proxy verhält sich wie das aktuelle Theme-Objekt

@@ -101,13 +101,14 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
           );
         };
         return (
-          // Flaechen und Trennlinien aus dem Theme statt fest verdrahteter
-          // Schwarz-/Weiss-Schleier: rgba(0,0,0,0.35) legte auf hellen Themes
-          // eine dunkelgraue Platte mitten in die helle Seite, und die
-          // rgba(255,255,255,...)-Linien darin waren dort unsichtbar
-          // (Nutzer-Bilder). Jetzt dieselbe Sprache wie der Buchungen-/VM-/
-          // unkat.-Aufriss: Panel auf surf3, Budget-Karten eine Stufe heller.
-          <div style={{background:T.surf3,borderRadius:12,padding:"8px 13px 11px",fontSize:13,textAlign:"left"}}>
+          // Ohne eigene Panel-Flaeche. Der Hero liegt auf T.bg, die Liste im
+          // Buchungen-/VM-Aufriss ebenfalls — nur hier schob frueher ein
+          // surf3-Panel eine dritte Flaeche dazwischen. Dadurch rechnete
+          // flaecheAbgesetzt() je Zusammenhang gegen einen anderen Untergrund
+          // und dieselbe Budget-Kategorie bekam in Prognose und Aufriss zwei
+          // verschiedene Grautoene (Nutzer-Bilder). Jetzt liegen die Karten
+          // ueberall auf demselben Grund und haben damit dieselbe Farbe.
+          <div style={{borderRadius:12,padding:"8px 13px 11px",fontSize:13,textAlign:"left"}}>
             {/* ── Saldo Ende + Warnungen + Summen — jetzt OBEN ── */}
             {(drill.overBudgetWarnings||[]).length>0&&(
               <div style={{background:`${T.warn_icon}1f`,border:`1px solid ${T.warn_icon}66`,borderRadius:8,padding:"7px 10px",marginBottom:6}}>
@@ -193,7 +194,7 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
                       const actual = b.realAmt+b.concAmt;
                       const openAmt = b.budget - actual;
                       return (
-                        <div key={idx} style={{marginBottom:8,background:flaecheAbgesetzt(T.surf3),borderRadius:8,padding:"5px 0"}}>
+                        <div key={idx} style={{marginBottom:8,background:flaecheAbgesetzt(T.bg),borderRadius:8,padding:"5px 0"}}>
                           {/* Zeile 1: Datum + Icon + Name | offen rechts */}
                           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
                             <span style={{color:T.txt2,fontSize:FS_DETAIL,flexShrink:0,fontFamily:NUM_FONT,width:36}}>{fmtD(b.date)}</span>
