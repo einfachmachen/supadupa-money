@@ -1006,7 +1006,11 @@ function MonatScreen() {
     const openBudgetEnde  = budgetDetailsEnde.totalOpen;
     // Budget-Restzeilen nicht in Suchergebnisse einstreuen.
     if(!inSearchMode && budgetDetailsMitte.items.length && !byDate[mitteIso]) byDate[mitteIso]=[];
-    if(!inSearchMode && budgetDetailsEnde.items.length  && !byDate[endeIso])  byDate[endeIso]=[];
+    // Bei "Mitte" (Hero-Kachel bis zum 14.) gehoert der Monatsletzte nicht dazu:
+    // sonst erschiene seine Tagessaldo-Zeile samt Ende-Budgets, obwohl die
+    // Buchungen dorthin ausgefiltert sind (Nutzer-Hinweis). Die Mitte-Zeile
+    // darueber bleibt in beiden Faellen.
+    if(!inSearchMode && !filtMitte && budgetDetailsEnde.items.length && !byDate[endeIso]) byDate[endeIso]=[];
     const dates   = Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
     const fmtD    = iso=>{ const[,,d]=iso.split("-"); return `${d}.`; };
     // "Tag. Monat Jahr" (z.B. "17. Sep 2024") — bei Suche/Mehr-Monats-Ansicht
