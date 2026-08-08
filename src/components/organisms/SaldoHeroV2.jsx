@@ -9,6 +9,7 @@
 import React, { useContext, useLayoutEffect, useRef, useState } from "react";
 import { SaldoPrognose } from "./SaldoPrognose.jsx";
 import { RotatedCents } from "../atoms/RotatedCents.jsx";
+import { SyncStatusBadge } from "./SyncStatusBadge.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { amtStyle } from "../../theme/amtPill.js";
@@ -490,6 +491,14 @@ function SaldoHeroV2({
           )}
         </div>
       )}
+
+      {/* Sync-Hinweis zwischen Hero und Prognose-Aufriss. Er lebt hier im Hero
+          und nicht mehr im aufrufenden Screen: der Aufriss wird SELBST vom Hero
+          gerendert (direkt darunter), also landete ein Banner im Screen
+          zwangslaeufig unterhalb der gesamten Aufriss-Liste, sobald man Mitte
+          oder Ende antippte (Nutzer-Bild). Hier bleibt es in beiden Faellen
+          unmittelbar unter dem Hero. */}
+      <SyncStatusBadge/>
 
       {/* Prognose-Drilldown (Mitte oder Ende) — über das 20px-Hero-Padding hinaus
           ziehen, damit die Liste fast die volle Breite nutzt (Saldo-Anzeige bleibt). */}

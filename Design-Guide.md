@@ -408,8 +408,11 @@ reservierten Prognosewert.
 - **Sync-Hinweis** (`organisms/SyncStatusBadge`, Zustand aus
   `utils/syncBadge.js`): eine volle Zeile mit **48px Mindesthöhe** — dieselbe
   Trefferfläche wie alle anderen antippbaren Zeilen. Auf Screens **mit** Hero
-  (Dashboard, Monat) rendern diese ihn selbst **direkt unter dem Hero**, alle
-  übrigen bekommen ihn aus `App.jsx` oben unter der Notch; `--sync-badge-space`
+  (Dashboard, Monat) rendert ihn **`SaldoHeroV2` selbst**, und zwar zwischen
+  Hero und Prognose-Aufriss — der Aufriss gehört zum Hero, ein Banner im
+  aufrufenden Screen landete deshalb unterhalb der ganzen Aufriss-Liste, sobald
+  MITTE/ENDE angetippt war. Alle übrigen Screens bekommen ihn aus `App.jsx`
+  oben unter der Notch; `--sync-badge-space`
   (an dem sich Vollbild-Dialoge für ihren Notch-Abstand orientieren) wird
   entsprechend nur für die Screens ohne Hero reserviert. Antippen öffnet
   `CloudSaveModal` (bzw. lädt bei `cloud_newer` nach Rückfrage).
