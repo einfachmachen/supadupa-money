@@ -3225,7 +3225,7 @@ Abbrechen = ${remoteName}-Stand laden`
     favIcons, setFavIcons,
   }), [
     cats, groups, txs, accounts, vehicles, yearData,
-    frozenYear, frozenMonth, year, selAcc, isLand, scrollToTodayTick,
+    frozenYear, frozenMonth, year, selAcc, startKonto, isLand, scrollToTodayTick,
     showAllMonths, mainTab, subTab, col3Name, modal, mgmtCat,
     editTx, newTx, newCat, newSubName, exportModal,
     _txIndex, sparOpenRequest,
