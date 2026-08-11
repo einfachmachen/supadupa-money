@@ -2142,9 +2142,9 @@ function DashboardScreenV2() {
                         budget={budgetFull} genutzt={spent} isInc={isInc}>
                         {posten.map(({t,vorgemerkt})=>(
                           <div key={t.id} onClick={()=>{setDashDrill(null);openEdit(t);}}
-                            style={{display:"flex",alignItems:"center",gap:8,marginBottom:1,
+                            style={{display:"flex",alignItems:"center",gap:6,marginBottom:1,
                               paddingLeft:10,cursor:"pointer",opacity:vorgemerkt?0.75:1}}>
-                            <span style={{color:T.txt2,fontSize:12,flexShrink:0,fontFamily:NUM_FONT,width:30}}>
+                            <span style={{color:T.txt2,fontSize:12,flexShrink:0,fontFamily:NUM_FONT}}>
                               {tagKurz(t.date)}
                             </span>
                             {Li(vorgemerkt?(t._seriesId?"repeat":"calendar"):"check-circle",12,
@@ -2214,9 +2214,9 @@ function DashboardScreenV2() {
                             ? Math.abs(pn(sp2.amount)) : Math.abs(t.totalAmount);
                           return (
                             <div key={t.id} onClick={()=>{setDashDrill(null);openEdit(t);}}
-                              style={{display:"flex",alignItems:"center",gap:8,marginBottom:1,
+                              style={{display:"flex",alignItems:"center",gap:6,marginBottom:1,
                                 paddingLeft:10,cursor:"pointer"}}>
-                              <span style={{color:T.txt2,fontSize:12,flexShrink:0,fontFamily:NUM_FONT,width:30}}>
+                              <span style={{color:T.txt2,fontSize:12,flexShrink:0,fontFamily:NUM_FONT}}>
                                 {tagKurz(t.date)}
                               </span>
                               {Li("check-circle",12,T.pos)}
