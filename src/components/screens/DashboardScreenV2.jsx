@@ -2123,11 +2123,15 @@ function DashboardScreenV2() {
                     const isInc = be ? be.isInc : dashDrill.isIncome;
                     const sub = getSub((tx.splits||[])[0]?.catId, baseSubId);
                     const name = sub?.name || cat2?.name || tx.desc || "Budget";
-                    // Nur die Vormerkungen: die Budget-Zeile erscheint in der
-                    // Vormerkungs-Liste, und dort gehoert hin, was noch aussteht.
-                    // Die bereits gebuchten Posten stehen in "Buchungen".
-                    const posten = ((be?.concTxs)||[])
-                      .slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+                    // ALLES, was in "genutzt" steckt — gebucht wie vorgemerkt.
+                    // Vorher standen hier nur die Vormerkungen, waehrend der Kopf
+                    // den gesamten Verbrauch nannte: eine Kategorie, deren Budget
+                    // rein durch Buchungen verbraucht ist, zeigte "genutzt: -68,12"
+                    // und liess sich trotzdem nicht aufklappen (Nutzer-Hinweis).
+                    // Kopf und Zeilen muessen dieselbe Summe ergeben.
+                    const posten = [...((be?.realTxs)||[]).map(t=>({t,vorgemerkt:false})),
+                                    ...((be?.concTxs)||[]).map(t=>({t,vorgemerkt:true}))]
+                      .sort((a,b)=>String(b.t.date).localeCompare(String(a.t.date)));
                     const betragVon = (t) => {
                       const sp2 = (t.splits||[]).find(x=>x.subId===be?.baseSubId);
                       return (sp2?.amount!=null && sp2.amount!==0)
@@ -2136,20 +2140,21 @@ function DashboardScreenV2() {
                     return (
                       <BudgetBereich key={tx.id} datum={tx.date} name={name} seitenrand={10}
                         budget={budgetFull} genutzt={spent} isInc={isInc}>
-                        {posten.map(t=>(
+                        {posten.map(({t,vorgemerkt})=>(
                           <div key={t.id} onClick={()=>{setDashDrill(null);openEdit(t);}}
                             style={{display:"flex",alignItems:"center",gap:8,marginBottom:1,
-                              paddingLeft:10,cursor:"pointer",opacity:0.75}}>
+                              paddingLeft:10,cursor:"pointer",opacity:vorgemerkt?0.75:1}}>
                             <span style={{color:T.txt2,fontSize:12,flexShrink:0,fontFamily:NUM_FONT,width:30}}>
                               {tagKurz(t.date)}
                             </span>
-                            {Li(t._seriesId?"repeat":"calendar",12,isInc?T.cell_inc:T.cell_exp)}
+                            {Li(vorgemerkt?(t._seriesId?"repeat":"calendar"):"check-circle",12,
+                              vorgemerkt?(isInc?T.cell_inc:T.cell_exp):T.pos)}
                             <span style={{flex:1,minWidth:0,color:T.txt,fontSize:15,
                               overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                               {t.desc||name}
                             </span>
-                            <span style={{color:isInc?T.cell_inc:T.cell_exp,fontFamily:NUM_FONT,
-                              fontSize:17,fontWeight:700,flexShrink:0}}>
+                            <span style={{color:vorgemerkt?(isInc?T.cell_inc:T.cell_exp):(isInc?T.cond_pos:T.neg),
+                              fontFamily:NUM_FONT,fontSize:17,fontWeight:700,flexShrink:0}}>
                               {isInc?"+":"−"}{fmt(betragVon(t))}
                             </span>
                           </div>

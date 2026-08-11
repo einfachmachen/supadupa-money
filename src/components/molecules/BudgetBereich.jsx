@@ -14,6 +14,11 @@
 // Buchung per Tipp. Sie stehen eingeklappt hinter einem Tipp auf den
 // Kategorienamen — die Anzahl neben dem Chevron sagt, wie viele es sind.
 //
+// Die children müssen ALLES enthalten, was in `genutzt` steckt. Sonst gibt es
+// Kategorien, deren Kopf einen Verbrauch nennt, die sich aber nicht aufklappen
+// lassen — genau so geschehen, als der Vormerkungs-Aufriss nur die
+// Vormerkungen durchreichte, `genutzt` aber den gesamten Verbrauch zählte.
+//
 // WICHTIG für die Aufrufer: `budget` und `genutzt` werden als fertige Zahlen
 // erwartet, nicht als Budget-Eintrag. In der Mitte-Ansicht gilt nur die
 // HÄLFTE des Monatsbudgets, und die gefilterten Listen (Konto-Filter) ergeben
@@ -54,12 +59,13 @@ function BudgetBereich({ datum, name, budget, genutzt, isInc = false, seitenrand
     <div style={{ margin: `0 ${seitenrand}px 8px`, background: flaecheAbgesetzt(T.bg),
       borderRadius: 8, padding: "5px 0" }}>
 
-      {/* Zeile 1: Datum · Symbol · Name | rechts „offen" bzw. die Überschreitung */}
+      {/* Zeile 1: Symbol · Name | rechts „offen" bzw. die Überschreitung.
+          Symbol und Name beginnen ganz links — die Tageszahl stand hier davor
+          und schob beides ein, ohne dass sie in der Kopfzeile etwas beitrug
+          (Nutzer-Wunsch). Sie steht jetzt eine Zeile tiefer vor „Budget:". */}
       <div onClick={hatPosten ? () => setOffenAufgeklappt(o => !o) : undefined}
         style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2,
           paddingLeft: 8, paddingRight: 8, cursor: hatPosten ? "pointer" : "default" }}>
-        <span style={{ color: T.txt2, fontSize: FS_DETAIL, flexShrink: 0,
-          fontFamily: NUM_FONT, width: 30 }}>{tagKurz(datum)}</span>
         {Li(drueber ? "alert-triangle" : "target", 12, drueber ? T.neg : farbe)}
         <span style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 4,
           color: drueber ? T.neg : T.txt, fontSize: FS_TEXT, fontWeight: 700 }}>
@@ -87,10 +93,15 @@ function BudgetBereich({ datum, name, budget, genutzt, isInc = false, seitenrand
         )}
       </div>
 
-      {/* Zeile 2: Budget links | genutzt rechts, unter dem Namen eingerückt */}
+      {/* Zeile 2: Tageszahl · Budget links | genutzt rechts. Abstand zwischen
+          Zahl und Text wie in den übrigen Zeilen der Aufrisse (gap 6). */}
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between",
-        gap: 6, marginBottom: 2, paddingLeft: 52, paddingRight: 8 }}>
-        <span style={{ color: T.txt2, fontSize: FS_DETAIL }}>Budget: {vz}{fmt(budgetAbs)}</span>
+        gap: 6, marginBottom: 2, paddingLeft: 8, paddingRight: 8 }}>
+        <span style={{ display: "inline-flex", alignItems: "baseline", gap: 6, minWidth: 0 }}>
+          <span style={{ color: T.txt2, fontSize: FS_DETAIL, flexShrink: 0,
+            fontFamily: NUM_FONT }}>{tagKurz(datum)}</span>
+          <span style={{ color: T.txt2, fontSize: FS_DETAIL }}>Budget: {vz}{fmt(budgetAbs)}</span>
+        </span>
         <span style={{ display: "inline-flex", alignItems: "baseline", gap: 5 }}>
           <span style={{ color: T.txt2, fontSize: FS_DETAIL }}>genutzt:</span>
           <span style={{ color: genutztAbs === 0 ? T.txt2 : drueber ? T.neg : farbe,

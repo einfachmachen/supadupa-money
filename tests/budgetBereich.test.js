@@ -117,6 +117,18 @@ describe("BudgetBereich", () => {
     await act(async () => { ohne.root.unmount(); mit.root.unmount(); });
   });
 
+  it("stellt Symbol und Name ganz nach links, die Tageszahl eine Zeile tiefer", async () => {
+    // Die Tageszahl stand vor dem Symbol und schob Symbol wie Name ein, ohne
+    // in der Kopfzeile etwas beizutragen (Nutzer-Wunsch).
+    const { el, root } = await zeichne(BASIS);
+    const [zeile1, zeile2] = el.firstChild.children;
+    expect(zeile1.textContent).not.toContain("14.");     // Kopfzeile ohne Tag
+    expect(zeile1.textContent).toContain("Essen & Trinken");
+    expect(zeile2.textContent.startsWith("14.")).toBe(true);
+    expect(zeile2.textContent).toContain("Budget:");
+    await act(async () => root.unmount());
+  });
+
   it("kommt ohne Datum aus (Aufrisse ohne Stichtag)", async () => {
     const { text, root } = await zeichne({ ...BASIS, datum: null });
     expect(text).toContain("Essen & Trinken");
