@@ -65,13 +65,18 @@ async function heroAufbauen() {
     node.dispatchEvent(new MouseEvent("click", { bubbles: true })));
   const sterne = () => [...el.querySelectorAll("span[title]")]
     .filter(s => /Start/.test(s.getAttribute("title") || ""));
+  // Beschriftung der Zeile, zu der ein Stern gehoert (Stern-Eltern = die Zeile).
+  const zeilen = () => sterne().map(s => ({
+    name: s.parentElement.textContent.trim(),
+    start: s.getAttribute("title") === "Wird beim Start angezeigt",
+  }));
   const menueOeffnen = async () => {
     const pille = [...el.querySelectorAll("span[title]")]
       .find(s => s.getAttribute("title") === "Konto wählen");
     expect(pille, "Konto-Pille im Hero").toBeTruthy();
     await klick(pille);
   };
-  return { el, root, protokoll, sterne, klick, menueOeffnen };
+  return { el, root, protokoll, sterne, zeilen, klick, menueOeffnen };
 }
 
 describe("Konto-Schnellwahl — Stern", () => {
@@ -105,16 +110,32 @@ describe("Konto-Schnellwahl — Stern", () => {
     await act(async () => h.root.unmount());
   });
 
+  it("laesst die Zeile beim Antippen an ihrer Stelle", async () => {
+    // Ohne eingefrorene Reihenfolge sortiert sich die Liste im selben Moment um
+    // (Startkonto nach oben). Unter dem Finger stuende dann eine ANDERE Zeile
+    // mit leerem Stern — es sieht aus, als liesse sich der Stern nicht setzen.
+    // Genau das war gemeldet und im Browser nachgestellt.
+    const h = await heroAufbauen();
+    await h.menueOeffnen();
+    const vorher = h.zeilen().map(z => z.name);
+    await h.klick(h.sterne()[1]);
+    const nachher = h.zeilen();
+    expect(nachher.map(z => z.name)).toEqual(vorher);      // Reihenfolge unveraendert
+    expect(nachher[1].start).toBe(true);                    // getippte Zeile ist markiert
+    expect(nachher[0].start).toBe(false);                   // Gesamt nicht mehr
+    await act(async () => h.root.unmount());
+  });
+
   it("markiert danach das gewaehlte Konto statt Gesamt", async () => {
     const h = await heroAufbauen();
     await h.menueOeffnen();
     await h.klick(h.sterne()[1]);
-    const markiert = h.sterne()
-      .map(s => s.getAttribute("title"))
-      .filter(t => t === "Wird beim Start angezeigt");
-    expect(markiert).toHaveLength(1);
-    // Das Startkonto steht danach ganz oben (siehe startKonto.test.js).
-    expect(h.sterne()[0].getAttribute("title")).toBe("Wird beim Start angezeigt");
+    expect(h.zeilen().filter(z => z.start)).toHaveLength(1);
+    // Die neue Reihenfolge greift beim NAECHSTEN Oeffnen: dann steht das
+    // Startkonto oben (siehe startKonto.test.js).
+    await h.menueOeffnen();                 // schliessen
+    await h.menueOeffnen();                 // neu oeffnen
+    expect(h.zeilen()[0]).toEqual({ name: "Giro", start: true });
     await act(async () => h.root.unmount());
   });
 });

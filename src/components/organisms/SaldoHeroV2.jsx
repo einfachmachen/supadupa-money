@@ -32,6 +32,13 @@ function SaldoHeroV2({
   const { selAcc, setSelAcc, startKonto, setStartKonto, accounts, getKumulierterSaldo, txs, getCat, getSub, amtMode, setAmtMode, setShowGuidedTour, debugFlags, setDebugFlag } = useContext(AppCtx);
   const [progDrill, setProgDrill] = useState(null);
   const [accMenuOpen, setAccMenuOpen] = useState(false);
+  // Reihenfolge, mit der das Menue GEOEFFNET wurde. Ohne das sortiert sich die
+  // Liste im selben Moment um, in dem man einen Stern antippt: das Startkonto
+  // rutscht nach oben, und unter dem Finger steht ploetzlich eine andere Zeile
+  // mit leerem Stern — es sieht aus, als liesse sich der Stern nicht setzen
+  // (Nutzer-Hinweis, im Browser nachgestellt). Die neue Reihenfolge greift
+  // beim naechsten Oeffnen, beim Durchtippen und beim App-Start.
+  const [menuReihenfolge, setMenuReihenfolge] = useState(null);
   // Auge exakt mittig zwischen Betrag-Ende und rechtem Bildschirmrand (Nutzer-
   // Wunsch, mehrfach nachgeschärft): das lässt sich nicht mit festen Prozent-/
   // px-Werten lösen, da sowohl die Zeilenbreite (Gerät) als auch die Betrag-
@@ -238,7 +245,8 @@ function SaldoHeroV2({
       ...(lift?{marginBottom:2}:{}),pointerEvents:"auto"}}>
       {/* Konto-Pille: Tippen öffnet die Schnellwahl. Durchklicken bleibt
           zusätzlich auf dem großen Kontostand-Betrag erhalten. */}
-      <span onClick={allAccIds.length>1?(e)=>{e.stopPropagation();setAccMenuOpen(o=>!o);}:undefined}
+      <span onClick={allAccIds.length>1?(e)=>{e.stopPropagation();
+          setAccMenuOpen(o=>{ if(!o) setMenuReihenfolge(allAccIds); return !o; });}:undefined}
         title={allAccIds.length>1?"Konto wählen":undefined}
         style={{display:"inline-flex",alignItems:"center",gap:3,userSelect:"none",lineHeight:1,
           ...(lift?{position:"relative",top:"-2px"}:{}),   // auf die MITTE/ENDE-Label-Linie heben
@@ -259,7 +267,7 @@ function SaldoHeroV2({
           marginTop:5,zIndex:50,background:T.surf2||T.surf,border:`1px solid ${T.bds}`,
           borderRadius:10,padding:4,minWidth:150,maxHeight:260,overflowY:"auto",
           boxShadow:"0 10px 28px rgba(0,0,0,0.45)"}}>
-          {allAccIds.map(id=>{
+          {(menuReihenfolge||allAccIds).map(id=>{
             const a = id===null ? null : accounts.find(x=>x.id===id);
             const label = id===null ? "Gesamt" : (a?.name||"");
             const active = selAcc===id;
