@@ -87,7 +87,7 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
             ? (isInc ? T.cell_inc : T.cell_exp)
             : (isInc ? T.cond_pos : T.neg);
           return (
-            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:1,paddingLeft:indent?10:0,opacity:dimmed?0.65:1}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:1,paddingLeft:indent?10:8,paddingRight:8,opacity:dimmed?0.65:1}}>
               <span style={{color:T.txt2,fontSize:FS_DETAIL,flexShrink:0,fontFamily:NUM_FONT,width:36}}>{fmtD(t.date)}</span>
               {icon&&Li(icon,12,iconCol||T.txt2)}
               <span style={{color:dimmed?T.txt2:T.txt,flex:1,fontSize:FS_TEXT,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.desc||cat?.name||"—"}</span>
@@ -109,7 +109,7 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
           // und dieselbe Budget-Kategorie bekam in Prognose und Aufriss zwei
           // verschiedene Grautoene (Nutzer-Bilder). Jetzt liegen die Karten
           // ueberall auf demselben Grund und haben damit dieselbe Farbe.
-          <div style={{borderRadius:12,padding:"8px 13px 11px",fontSize:13,textAlign:"left"}}>
+          <div style={{borderRadius:12,padding:"8px 10px 11px",fontSize:13,textAlign:"left"}}>
             {/* ── Saldo Ende + Warnungen + Summen — jetzt OBEN ── */}
             {(drill.overBudgetWarnings||[]).length>0&&(
               <div style={{background:`${T.warn_icon}1f`,border:`1px solid ${T.warn_icon}66`,borderRadius:8,padding:"7px 10px",marginBottom:6}}>
@@ -260,7 +260,7 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
                         const fromAccName = accounts.find(a=>a.id===expenseSide.accountId)?.name || "?";
                         const targetAcc  = accounts.find(a=>a.id===incomeSide.accountId)?.name || incomeSide.accountId || "?";
                         return (
-                          <div key={idx} style={{display:"flex",alignItems:"center",gap:8,padding:"1px 0",marginBottom:1}}>
+                          <div key={idx} style={{display:"flex",alignItems:"center",gap:8,padding:"1px 8px",marginBottom:1}}>
                             {Li("arrow-right-left",13,umbBlue)}
                             <div style={{flex:1,minWidth:0}}>
                               <span style={{color:umbBlue,fontSize:FS_TEXT,fontWeight:700}}>

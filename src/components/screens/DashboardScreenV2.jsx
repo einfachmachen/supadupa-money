@@ -2248,8 +2248,15 @@ function DashboardScreenV2() {
                   const isPendingSplit = tx.pending && isS;
                   const isExpanded = expandedSplitId === tx.id;
                   return (
+                    // Seitlich genauso eingerueckt wie die Budget-Karten
+                    // (BudgetBereich, seitenrand=10): sonst laufen diese Zeilen
+                    // samt Trennstrich bis zur Bildschirmkante, waehrend die
+                    // Karten darueber schmaler stehen (Nutzer-Hinweis). Das
+                    // Innenpolster von 8px setzt den Text auf dieselbe Spalte
+                    // wie den Text IN den Karten (10 + 8).
                     <div key={tx.id}
-                      style={{padding:"6px 18px",borderBottom:`1px solid ${T.bd}`,
+                      style={{padding:"6px 8px",margin:"0 10px",
+                        borderBottom:`1px solid ${T.bd}`,
                         background:tx.pending?T.surf3:"transparent"}}>
                       <div style={{display:"flex",flexDirection:"column",gap:3,marginBottom:(isUncat||isExpanded)?6:0,
                         cursor:isUncat?"default":"pointer"}}
