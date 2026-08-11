@@ -99,38 +99,63 @@ function DashboardScreenV2() {
     // Text in der hellsten, garantiert kontrastreichen Farbe ist die robustere
     // Lösung, statt für jede Kombination aus Akzentfarbe und Fläche erneut
     // nachjustieren zu müssen.
-    const LinkBadges = ({tx}) => {
-      const linkBadges = (tx.linkedIds||[]).map(lid=>{
-        // Nicht die Bank-Vorabmeldung derselben Zahlung anzeigen, sondern die
-        // eigene Vormerkung dahinter (s. badgeLinkTarget) — sonst steht die
-        // Buchung praktisch zweimal untereinander.
-        const lt=badgeLinkTarget(lid, id=>txs.find(t=>t.id===id));
-        if(!lt||lt.pending) return null;
-        // Zähler "x/y" nur bei Finanzierungen — da ist die verbleibende Anzahl
-        // Raten die eigentliche Information. Bei einer Dauer-Vormerkung (Strom,
-        // Versicherung …) läuft die Serie einfach weiter; "4/80" suggeriert dort
-        // ein Ende, das es nicht gibt (gleiche Regel wie in PendingList).
-        const isFin = lt._seriesTyp === "finanzierung";
-        const sTotal = isFin ? lt._seriesTotal : 0;
-        const sIdx = lt._seriesIdx;
-        return (
-          <span key={lid} style={{display:"inline-flex",alignItems:"center",gap:4,
-            background:`${T.blue}26`,border:`1px solid ${T.blue}66`,
-            borderRadius:5,padding:"2px 6px",fontSize:11,fontWeight:600,color:T.txt}}>
-            {Li("link",11,T.blue)}
-            {lt.desc||"Vormerkung"}
-            {sTotal>1&&` · ${sIdx}/${sTotal}`}
-          </span>
-        );
-      });
-      const tagBadges = (tx.tags||[]).map(t=>(
-        <span key={"tag-"+t} style={{background:`${T.blue}26`,border:`1px solid ${T.blue}66`,color:T.txt,
-          borderRadius:5,padding:"2px 6px",fontSize:11,fontWeight:700,flexShrink:0}}>
-          #{t}
+    //
+    // Die Beschreibung der verknüpften Vormerkung ist regelmäßig so lang wie
+    // der Buchungstext selbst ("Fahrradhelm, 2er Lesebrille, Sonoff Zigbee
+    // Stick, …"). Solange sie mit in Zeile 2 stand, schob sie den Betrag aus
+    // der Zeile und die Buchung zerfiel in vier gleich aussehende Fragmente
+    // (Nutzer-Bild: Amazon am 10.). Sie steht deshalb IMMER ZULETZT je Buchung
+    // in einer eigenen Zeile unter Tag/Kategorie/Betrag:
+    //
+    //     Buchungsbeschreibung
+    //     Tag. Kategorie              Betrag
+    //     Vormerkungs-Beschreibung
+    //
+    // Die kurzen #Tags bleiben oben in Zeile 2 — sie sind Merkmale der
+    // Buchung selbst, keine zweite Beschreibung, und passen dort hin.
+    const vormerkungsBadges = (tx) => (tx.linkedIds||[]).map(lid=>{
+      // Nicht die Bank-Vorabmeldung derselben Zahlung anzeigen, sondern die
+      // eigene Vormerkung dahinter (s. badgeLinkTarget) — sonst steht die
+      // Buchung praktisch zweimal untereinander.
+      const lt=badgeLinkTarget(lid, id=>txs.find(t=>t.id===id));
+      if(!lt||lt.pending) return null;
+      // Zähler "x/y" nur bei Finanzierungen — da ist die verbleibende Anzahl
+      // Raten die eigentliche Information. Bei einer Dauer-Vormerkung (Strom,
+      // Versicherung …) läuft die Serie einfach weiter; "4/80" suggeriert dort
+      // ein Ende, das es nicht gibt (gleiche Regel wie in PendingList).
+      const isFin = lt._seriesTyp === "finanzierung";
+      const sTotal = isFin ? lt._seriesTotal : 0;
+      const sIdx = lt._seriesIdx;
+      return (
+        <span key={lid} style={{display:"inline-flex",alignItems:"center",gap:4,maxWidth:"100%",
+          background:`${T.blue}26`,border:`1px solid ${T.blue}66`,
+          borderRadius:5,padding:"2px 6px",fontSize:11,fontWeight:600,color:T.txt}}>
+          {Li("link",11,T.blue)}
+          {lt.desc||"Vormerkung"}
+          {sTotal>1&&` · ${sIdx}/${sTotal}`}
         </span>
-      ));
-      return [...linkBadges, ...tagBadges];
+      );
+    }).filter(Boolean);
+
+    // Die Schlusszeile einer Buchung. Ohne verknüpfte Vormerkung entfällt sie
+    // ganz — sonst entstünde je Buchung eine leere Zeile Abstand.
+    const VormerkungZeile = ({tx}) => {
+      const badges = vormerkungsBadges(tx);
+      if(!badges.length) return null;
+      return (
+        <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:6,minWidth:0}}>
+          {badges}
+        </div>
+      );
     };
+
+    // Nur noch die #Tags — die Vormerkung hat ihre eigene Zeile (s. oben).
+    const TagBadges = ({tx}) => (tx.tags||[]).map(t=>(
+      <span key={"tag-"+t} style={{background:`${T.blue}26`,border:`1px solid ${T.blue}66`,color:T.txt,
+        borderRadius:5,padding:"2px 6px",fontSize:11,fontWeight:700,flexShrink:0}}>
+        #{t}
+      </span>
+    ));
     // Solange der Erststart läuft, startet der Detail-Block aufgeklappt —
     // sonst finden neue Nutzer die Konten-/Budget-Kurzwege in der Zeile
     // darunter nicht von allein. Einmal eingerichtet, wieder wie gewohnt
@@ -1883,10 +1908,12 @@ function DashboardScreenV2() {
                               {tx.pending&&<span style={{background:tx._seriesId?"rgba(170,204,0,0.24)":"rgba(245,166,35,0.24)",
                                 border:`1px solid ${(tx._seriesId?T.pos:T.gold)}66`,color:T.txt,
                                 borderRadius:4,padding:"1px 6px",fontSize:11,fontWeight:700}}>{tx._seriesId?"wiederkehrend":"vorgemerkt"}</span>}
-                              <LinkBadges tx={tx}/>
+                              <TagBadges tx={tx}/>
                             </div>
                             <span style={{...amtStyle(tx.pending?(cat.type==="income"?"cell_inc":"cell_exp"):cat.type==="income"?"pos":"neg", tx.pending?undefined:bookCol(cat.type==="income",tx.date)),fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>{fmt(amt)}</span>
                           </div>
+                          {/* Zeile 3: verknüpfte Vormerkung, immer zuletzt */}
+                          <VormerkungZeile tx={tx}/>
                         </div>
                       );
                     })}
@@ -2056,13 +2083,15 @@ function DashboardScreenV2() {
                                     borderRadius:4,padding:"1px 6px",fontSize:11,fontWeight:700}}>
                                     {tx._seriesId?"wiederkehrend":"vorgemerkt"}
                                   </span>}
-                                  <LinkBadges tx={tx}/>
+                                  <TagBadges tx={tx}/>
                                 </div>
                                 <span style={{color:tx.pending?(cat.type==="income"?T.cell_inc:T.cell_exp):bookCol(cat.type==="income",tx.date),fontSize:17,
                                   fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
                                   {fmt(amt)}
                                 </span>
                               </div>
+                              {/* Zeile 3: verknüpfte Vormerkung, immer zuletzt */}
+                              <VormerkungZeile tx={tx}/>
                             </div>
                           );
                         })}
@@ -2322,7 +2351,7 @@ function DashboardScreenV2() {
                                 </span>
                               );
                             })()}
-                            <LinkBadges tx={tx}/>
+                            <TagBadges tx={tx}/>
                             {/* Flexibler Topf: Buchung belastet nicht die eigene Kategorie */}
                             {tx._potSubId&&<span style={{background:"rgba(245,166,35,0.24)",border:`1px solid ${T.gold}66`,color:T.txt,
                               borderRadius:4,padding:"2px 6px",fontSize:11,fontWeight:700,
@@ -2339,6 +2368,8 @@ function DashboardScreenV2() {
                             {fmt(amt)}
                           </div>
                         </div>
+                        {/* Zeile 3: verknüpfte Vormerkung, immer zuletzt */}
+                        <VormerkungZeile tx={tx}/>
                       </div>
                       {/* Aufgeklappte Split-Kategorien für alle Splitbuchungen */}
                       {isS&&isExpanded&&(

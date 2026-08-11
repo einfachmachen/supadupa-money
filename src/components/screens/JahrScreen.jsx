@@ -650,7 +650,7 @@ function JahrScreen({forceSingle=false}) {
                               {sub?.name||cat?.name||"unkategorisiert"}
                             </span>
                             {(tx.linkedIds||[]).map(lid=>{
-                              // s. DashboardScreenV2.LinkBadges / badgeLinkTarget
+                              // s. DashboardScreenV2.vormerkungsBadges / badgeLinkTarget
                               const lt=badgeLinkTarget(lid, id=>txs.find(t=>t.id===id));
                               if(!lt||lt.pending) return null;
                               // "x/y" nur bei Finanzierungen (s. DashboardScreenV2)

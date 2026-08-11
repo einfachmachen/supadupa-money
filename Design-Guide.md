@@ -385,8 +385,8 @@ reservierten Prognosewert.
   und X rechts**, Safe-Area-Header (`MobileHeader`), Suchfeld oben. Kein URL-Routing.
 - **Budget-Kategorien in den Aufrissen** (Prognose Mitte/Ende, Buchungen, VM):
   **`molecules/BudgetBereich.jsx`** — ein Baustein für alle. Karte
-  (`flaecheAbgesetzt()`, §4.1), Zeile 1 = Datum · Symbol · Name | „offen",
-  Zeile 2 = „Budget:" | „genutzt:", darunter ein dünner Trennstrich und die
+  (`flaecheAbgesetzt()`, §4.1), Zeile 1 = Symbol · Name | „offen",
+  Zeile 2 = Tag · „Budget:" | „genutzt:", darunter ein dünner Trennstrich und die
   Einzelposten als `children` — **eingeklappt**, ein Tipp auf die Kopfzeile
   fächert sie auf (Chevron + Anzahl neben dem Namen). Eine Kategorie mit acht
   Zahlungen schob sonst alles Weitere aus dem Bild.
@@ -414,6 +414,25 @@ reservierten Prognosewert.
     `be.budget` aus `dashDetailEnde.budgetEntries` ist dagegen immer das ganze
     Monatsbudget. Beides gemischt ergibt „genutzt = ganzes Budget − Rest der
     Hälfte" (`istMitteHaelfte` in `DashboardScreenV2`).
+- **Buchungszeile in den Aufrissen** — drei Zeilen, immer in dieser Reihenfolge:
+
+  ```
+  Buchungsbeschreibung                        ⌄
+  Tag.  Kategorie                        Betrag
+  🔗 Beschreibung der verknüpften Vormerkung
+  ```
+
+  Die dritte Zeile (`VormerkungZeile` in `DashboardScreenV2`) entfällt ganz,
+  wenn keine eigene Vormerkung verknüpft ist. Sie **muss** unten stehen: ihre
+  Beschreibung ist regelmäßig so lang wie der Buchungstext selbst
+  („Fahrradhelm, 2er Lesebrille, Sonoff Zigbee Stick, …"). Solange sie mit in
+  Zeile 2 stand, schob sie den Betrag aus der Zeile, die Beträge standen
+  untereinander auf verschiedenen Höhen und die Buchung zerfiel in vier gleich
+  aussehende Fragmente. Die kurzen `#Tags` bleiben dagegen in Zeile 2 — sie
+  sind Merkmale der Buchung, keine zweite Beschreibung.
+  Tag und Text trennt überall `gap: 6`; die Datumsspalte hat **keine** feste
+  Breite (`tagKurz` liefert immer zwei Ziffern und einen Punkt, eine feste
+  Breite erzeugt daher nur Luft).
 - **Prognose-Aufriss** (`SaldoPrognose`, aus dem Hero über MITTE/ENDE): Titel
   und Saldo teilen sich **eine** Zeile („Prognose Mitte" links, Betrag rechts),
   darunter ohne Abstand die kleinen Summen. Zwischen Hero-Ende und Aufriss
