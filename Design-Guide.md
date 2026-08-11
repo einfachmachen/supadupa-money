@@ -259,19 +259,25 @@ Den früheren farbigen Deko-Außenrand (`frame_border`/`frame_ring`) gibt es
 nicht mehr (§10).
 
 **`keyboard`** bildet die Tastatur aus dem CachyOS-Installationsprogramm nach
-(Nutzer-Foto): **dunkle Keycaps**, **weiße** Hauptbeschriftung, **gelbgrüne**
-Zweitbelegung als Akzent — dazwischen die fast weiße Tastatur-Platte als Fuge.
-Zwei Fallen stecken darin:
+(Nutzer-Foto): **dunkle Keycaps** (`surf` `#333333`), **weiße**
+Hauptbeschriftung, **gelbgrüne** Zweitbelegung als Akzent, und als Hintergrund
+die **helle Tastatur-Platte** (`bg` `#666660`). Drei Dinge sind darin
+festgehalten:
 - Es war einmal umgekehrt gebaut (helle Tasten, schwarzer Text) und damit
-  „meilenweit" von der Vorlage entfernt. Der Grund dafür ist echt: **eine**
-  Textfarbe muss auf Hintergrund UND Karten sitzen, eine weiße Platte als
-  Hintergrund mit dunklen Keycaps als Karten geht deshalb nicht. Aufgelöst über
-  die Fuge — Hintergrund = die dunkle Vertiefung zwischen den Tasten.
-- Die Fuge kann **nicht** aus `bd` kommen: „Rahmen aus" ist der Standard und
-  setzt per `.no-borders *` jede `border-color` auf transparent. Sie kommt
-  deshalb als `box-shadow` aus `.theme-keyboard` (themes.css), der die Karten
-  über ihre Hintergrundfarbe trifft — die Karten der App haben keine
-  gemeinsame Klasse.
+  „meilenweit" von der Vorlage entfernt.
+- **Wie hell die Platte sein darf, ist eine Rechnung, keine Geschmacksfrage.**
+  Es gibt **eine** Textfarbe für Hintergrund UND Karten, und an mehreren
+  Stellen (Aufriss-Listen, Hero) steht Text direkt auf `bg`. Weiß ist wegen der
+  dunklen Keycaps gesetzt, also muss die Platte Weiß tragen: bei `#666660`
+  sind es 5,8:1 für weißen Text, 3,8:1 fürs Gelbgrün, 3,4:1 fürs Ausgaben-Cyan.
+  Eine fast weiße Platte lässt weißen Text auf 1,2:1 zusammenfallen — im
+  Aufriss verschwanden die Buchungszeilen dabei komplett. Heller geht erst,
+  wenn die App eine **zweite Textfarbe für Kartenflächen** bekommt.
+- Die **Fuge** zwischen den Keycaps kann **nicht** aus `bd` kommen: „Rahmen
+  aus" ist der Standard und setzt per `.no-borders *` jede `border-color` auf
+  transparent. Sie kommt als `box-shadow` aus `.theme-keyboard` (themes.css),
+  der die Karten über ihre Hintergrundfarbe trifft — die Karten der App haben
+  keine gemeinsame Klasse.
 
 Zusätzlich **nutzerdefinierte** Themes aus `mbt_custom_themes` (`CustomThemeEditor`,
 §4.3) — diese kommen **on top**, nicht in `themes.js`.
