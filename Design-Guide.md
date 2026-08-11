@@ -338,8 +338,11 @@ Die Regel dahinter, und sie ist wichtig:
 
 Ein `betrag()` im String-Kontext ergibt `[object Object]` — und zwar erst,
 wenn die Option eingeschaltet wird, also lange nach dem Schreiben des Codes.
-Ebenso wenig funktioniert es in SVG-`<text>`-Knoten: dort rendert kein
-HTML-`<span>`, weshalb `CategoryChart` bewusst bei `fmt()` bleibt.
+Ebenso wenig funktioniert es direkt in SVG-`<text>`-Knoten: HTML rendert
+innerhalb von `<svg>` nur in einem `<foreignObject>`. Im Tortendiagramm
+übernimmt das der Helfer `SvgBetrag` (`CategoryChart.jsx`) — und **nur bei
+aktiver Option**; sonst bleibt es beim unveränderten `<text>`, damit das
+Diagramm ohne die Option Pixel für Pixel so aussieht wie vorher.
 `tests/betragOption.test.js` scannt den Quelltext auf beide Fälle.
 
 Das Flag liegt im Modul, nicht im Context — über hundert Aufrufstellen bräuchten

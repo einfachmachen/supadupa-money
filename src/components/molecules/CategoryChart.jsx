@@ -3,13 +3,41 @@
 import React, { useMemo, useState } from "react";
 import { ChartBlock } from "./ChartBlock.jsx";
 import { theme as T } from "../../theme/activeTheme.js";
-import { fmt } from "../../utils/format.js";
+import { fmt, NUM_FONT } from "../../utils/format.js";
+import { betrag, centsGedreht } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 
-// Die Betraege stehen hier in SVG-<text>-Knoten. Dort ist `betrag()` NICHT
-// verwendbar: bei aktiver Nachkommastellen-Option liefert es ein <span>, und
-// HTML-Elemente rendern innerhalb von <svg> nicht. Deshalb bleibt es hier bei
-// fmt() — das Tortendiagramm folgt der Option bewusst nicht.
+// Betrag in einem SVG-Knoten.
+//
+// Die Beschriftungen des Tortendiagramms sind <text>-Knoten. Dort laesst sich
+// `betrag()` nicht direkt einsetzen: bei aktiver Nachkommastellen-Option
+// liefert es ein <span>, und HTML rendert innerhalb von <svg> ausschliesslich
+// in einem <foreignObject>. Genau darauf schaltet dieser Helfer um — aber NUR,
+// wenn die Option an ist. Sonst bleibt es beim unveraenderten <text>, damit
+// das Diagramm ohne die Option Pixel fuer Pixel so aussieht wie bisher.
+//
+// Der Kasten braucht eine feste Groesse. Alle Beschriftungen hier stehen
+// zentriert (textAnchor="middle"), also wird er um den Ankerpunkt zentriert;
+// senkrecht liegt die Grundlinie eines <text> etwa 0,36 Schriftgroessen unter
+// der optischen Mitte, das rechnet `oben` heraus.
+const SvgBetrag = ({x, y, groesse, farbe, fett, opacity, wert, breite = 120}) => {
+  if (!centsGedreht()) return (
+    <text x={x} y={y} textAnchor="middle" fill={farbe} fontSize={groesse}
+      fontWeight={fett} opacity={opacity}>{fmt(wert)}</text>
+  );
+  const hoehe = Math.ceil(groesse * 1.6);
+  const oben = y - 0.36 * groesse - hoehe / 2;
+  return (
+    <foreignObject x={x - breite / 2} y={oben} width={breite} height={hoehe} opacity={opacity}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"center",
+        width:"100%",height:"100%",color:farbe,fontSize:groesse,fontWeight:fett,
+        fontFamily:NUM_FONT,lineHeight:1,whiteSpace:"nowrap"}}>
+        {betrag(wert)}
+      </div>
+    </foreignObject>
+  );
+};
+
 function CategoryChart({catSums, maxSum, budgets, getBudgetForMonth, year, month}) {
   const [chartOpen, setChartOpen] = React.useState(false);
   const [view, setView] = React.useState("bar");
@@ -73,10 +101,10 @@ function CategoryChart({catSums, maxSum, budgets, getBudgetForMonth, year, month
               <circle cx={160} cy={160} r={62} fill={T.surf2||T.surf}/>
               {hovered===null ? (<>
                 <text x={160} y={153} textAnchor="middle" fill={T.txt2} fontSize={10}>Gesamt</text>
-                <text x={160} y={169} textAnchor="middle" fill={T.txt} fontSize={13} fontWeight="800">{fmt(total)}</text>
+                <SvgBetrag x={160} y={169} groesse={13} farbe={T.txt} fett="800" wert={total}/>
               </>) : (<>
                 <text x={160} y={149} textAnchor="middle" fill={pie[hovered]?.color} fontSize={9} fontWeight="700">{pie[hovered]?.cat.name}</text>
-                <text x={160} y={164} textAnchor="middle" fill={T.txt} fontSize={13} fontWeight="800">{fmt(pie[hovered]?.cat.sum)}</text>
+                <SvgBetrag x={160} y={164} groesse={13} farbe={T.txt} fett="800" wert={pie[hovered]?.cat.sum}/>
                 <text x={160} y={177} textAnchor="middle" fill={T.txt2} fontSize={10}>{pie[hovered]?.pct}%</text>
               </>)}
               {pie.map((seg,i)=>{
@@ -89,10 +117,8 @@ function CategoryChart({catSums, maxSum, budgets, getBudgetForMonth, year, month
                       fill="#fff" fontSize={seg.pct>=15?10:8.5} fontWeight="700" opacity={op}>
                       {seg.cat.name.length>10 ? seg.cat.name.slice(0,9)+"\u2026" : seg.cat.name}
                     </text>
-                    <text x={seg.lx} y={seg.ly+3} textAnchor="middle"
-                      fill="#fff" fontSize={seg.pct>=15?9.5:8} fontWeight="600" opacity={op*0.95}>
-                      {fmt(seg.cat.sum)}
-                    </text>
+                    <SvgBetrag x={seg.lx} y={seg.ly+3} groesse={seg.pct>=15?9.5:8}
+                      farbe="#fff" fett="600" opacity={op*0.95} wert={seg.cat.sum} breite={80}/>
                     <text x={seg.lx} y={seg.ly+15} textAnchor="middle"
                       fill="#fff" fontSize={7.5} opacity={op*0.75}>
                       {seg.pct}%

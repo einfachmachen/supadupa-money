@@ -5,7 +5,7 @@ import { CatPicker } from "../molecules/CatPicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, uid, NUM_FONT } from "../../utils/format.js";
-import { betrag } from "../../utils/betrag.jsx";
+import { betrag, betragText } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
 import { planLegDecisions } from "../../utils/sparPlanSeries.js";
@@ -438,6 +438,10 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   // In der Tabelle stehen fast nur glatte Euro-Beträge — die ",00" kosten dort
   // nur Breite. Nachkommastellen bleiben, sobald sie etwas aussagen.
   const fmtK = (v) => { const s = fmt(v); return s.endsWith(",00") ? s.slice(0,-3) : s; };
+  // Anzeige-Variante davon: dieselbe Kuerzung, aber der Nachkommastellen-
+  // Option folgend. fmtK selbst bleibt ein String — er wird mit dem
+  // Vorzeichen zusammengesetzt, und da darf kein Element stehen.
+  const betragK = (v) => betragText(fmtK(v));
   const zielKontoName = accounts.find(a=>a.id===sparAccId)?.name || "Tagesgeld";
   const WOCHENTAGE = ["So","Mo","Di","Mi","Do","Fr","Sa"];
   const kurzDat = (iso) => {
@@ -895,18 +899,18 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                     <span style={{color:T.txt,fontSize:10,marginLeft:2}}>{String(y).slice(2)}</span>
                   </div>
                   <div style={{flex:1,textAlign:"right",color:minTag===null?T.txt:minTag<puffer?T.neg:T.txt,fontSize:12,fontFamily:NUM_FONT}}>
-                    {minTag!==null?(minTag>=0?"+":"−")+fmtK(Math.abs(minTag)):"—"}
+                    {minTag===null?"—":<>{minTag>=0?"+":"−"}{betragK(Math.abs(minTag))}</>}
                   </div>
                   <div style={{flex:1,textAlign:"right",fontSize:12,fontFamily:NUM_FONT,fontWeight:700,
                     color:minNach===null?T.txt:minNach<puffer?T.neg:T.pos}}>
-                    {minNach!==null?(minNach>=0?"+":"−")+fmtK(Math.abs(minNach)):"—"}
+                    {minNach===null?"—":<>{minNach>=0?"+":"−"}{betragK(Math.abs(minNach))}</>}
                     {kritisch&&<span style={{color:T.neg,fontSize:7}}> ⚠</span>}
                   </div>
                   <div style={{flex:1,textAlign:"right",color:zusCol,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>
-                    {zusaetzlich>0?"+"+fmtK(zusaetzlich):"—"}
+                    {zusaetzlich>0?<>+{betragK(zusaetzlich)}</>:"—"}
                   </div>
                   <div style={{flex:1,textAlign:"right",color:kumuliert>0?T.pos:T.txt,fontSize:12,fontWeight:800,fontFamily:NUM_FONT}}>
-                    {kumuliert>0?fmtK(kumuliert):"—"}
+                    {kumuliert>0?betragK(kumuliert):"—"}
                   </div>
                 </div>
               );

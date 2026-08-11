@@ -79,16 +79,24 @@ describe("Betrags-Option: Nachkommastellen drehen", () => {
   });
 
   it("betrag() steht in keinem SVG-<text>-Knoten", () => {
-    // Bei aktiver Option ist das Ergebnis ein <span>; HTML-Elemente rendern
-    // innerhalb von <svg> nicht (CategoryChart nutzt dort bewusst fmt()).
+    // Bei aktiver Option ist das Ergebnis ein <span>; HTML rendert innerhalb
+    // von <svg> ausschliesslich in einem <foreignObject>. Im Tortendiagramm
+    // uebernimmt das der Helfer SvgBetrag — der Aufruf steht dort also
+    // ausserhalb des <svg>-Blocks und faellt hier nicht auf.
     const funde = [];
+    const istKommentar = z => /^\s*(\/\/|\*|\/\*)/.test(z);
     for (const datei of alleQuellen()) {
       const zeilen = readFileSync(datei, "utf8").split("\n");
-      let imSvg = false;
+      let imSvg = false, imForeignObject = false;
       zeilen.forEach((z, i) => {
-        if (/<svg[\s>]/.test(z)) imSvg = true;
-        if (/<\/svg>/.test(z)) imSvg = false;
-        if (imSvg && /\bbetrag(Text|Short)?\(/.test(z)) {
+        // Kommentare duerfen die Tags nennen — sie erklaeren genau diese Regel.
+        if (!istKommentar(z)) {
+          if (/<svg[\s>]/.test(z)) imSvg = true;
+          if (/<\/svg>/.test(z)) imSvg = false;
+          if (/<foreignObject[\s>]/.test(z)) imForeignObject = true;
+          if (/<\/foreignObject>/.test(z)) imForeignObject = false;
+        }
+        if (imSvg && !imForeignObject && /\bbetrag(Text|Short)?\(/.test(z)) {
           funde.push(`${datei.slice(SRC.length + 1)}:${i + 1}`);
         }
       });

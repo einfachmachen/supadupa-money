@@ -1974,6 +1974,11 @@ function MonatScreen() {
                     // cond_neg, wodurch "über Budget" und "normale Vormerkung" nicht mehr
                     // zu unterscheiden waren.
                     const accentCol = isIncome ? T.cell_inc : (isOverspent ? T.neg : T.cell_exp);
+                    // Der VERBRAUCHTE Betrag ist geflossenes Geld und traegt deshalb die
+                    // gesaettigte Farbe (§4.4) — genau wie "genutzt:" in den Aufrissen.
+                    // accentCol bleibt der Kategorie-Akzent fuer Symbol und Kachel; blass
+                    // ist dort richtig, weil es keine Betragsaussage ist.
+                    const verbrauchtCol = isIncome ? T.pos : T.neg;
                     const pct = budget > 0 ? Math.min(150, spent/budget*100) : 100;
                     const barCol = isIncome ? T.cell_inc : (pct>=100?T.neg:pct>=75?T.gold:T.pos);
                     const subName = name.split(" / ")[1]||name;
@@ -2036,7 +2041,7 @@ function MonatScreen() {
                                   display:"inline-flex",alignItems:"center",transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}><RotatedCents v={Math.abs(signedOpen)}/></span>
                               </span>
                               <span data-role="tx-spentside" style={{display:"inline-flex",alignItems:"baseline"}}>
-                                <span data-role="tx-amt" data-amt-tone={spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"cell_exp"} style={{...amtStyle(spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"cell_exp",spent===0?T.txt2:accentCol),fontSize:FS_BETRAG,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",display:"inline-flex",alignItems:"center",transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{spent===0?"—":<RotatedCents v={Math.abs(spent)}/>}</span>
+                                <span data-role="tx-amt" data-amt-tone={spent===0?"txt2":isIncome?"pos":"neg"} style={{...amtStyle(spent===0?"txt2":isIncome?"pos":"neg",spent===0?T.txt2:verbrauchtCol),fontSize:FS_BETRAG,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",display:"inline-flex",alignItems:"center",transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{spent===0?"—":<RotatedCents v={Math.abs(spent)}/>}</span>
                               </span>
                             </div>
                           </div>
