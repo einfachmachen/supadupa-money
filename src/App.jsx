@@ -64,7 +64,7 @@ function LazyFallback() {
   );
 }
 import { AppCtx } from "./state/AppContext.js";
-import { theme as T, setActiveTheme, isLightTheme } from "./theme/activeTheme.js";
+import { theme as T, setActiveTheme, isLightTheme, kartenTextRegel, wurzelTextVars } from "./theme/activeTheme.js";
 import { readableOn } from "./theme/amtPill.js";
 import { PAL, gs } from "./theme/palette.js";
 import { getTheme, THEMES } from "./theme/themes.js";
@@ -3332,6 +3332,10 @@ export default function SupaDupaMoney() {
       style={{background:T.bg,height:"100vh",maxHeight:"100vh",
       colorScheme:(isLightTheme())?"light":"dark",
       "--amt-neutral":T.txt,  // Neutral-Schriftfarbe für Beträge (= Kategorie-Text)
+      // Themes mit eigener Karten-Textfarbe (z.B. Keyboard): hier stehen die
+      // Werte für Text, der direkt auf dem HINTERGRUND liegt. Auf den Karten
+      // überschreibt sie die Regel aus kartenTextRegel() (siehe <style> unten).
+      ...(wurzelTextVars()||{}),
       "--sync-badge-space":syncBadgeSpace,
       display:"flex",flexDirection:"column",
       // Inhalt unter die Notch/Statusleiste; bg füllt bis ganz oben. Der volle
@@ -3344,6 +3348,10 @@ export default function SupaDupaMoney() {
       fontFamily:"'SF Pro Text',-apple-system,BlinkMacSystemFont,sans-serif",
       userSelect:"none",overflow:"hidden"}}>
 
+      {/* Setzt auf jeder Kartenfläche die Karten-Textfarben (CSS-Variablen).
+          Leer bei allen Themes ohne eigene Karten-Textfarbe — dort ändert
+          sich nichts. Siehe kartenTextRegel() in activeTheme.js. */}
+      {kartenTextRegel() && <style>{kartenTextRegel()}</style>}
 
       {/* ── Performance-Debug + Theme-Umschalter wurden nach Einstellungen verschoben ── */}
 

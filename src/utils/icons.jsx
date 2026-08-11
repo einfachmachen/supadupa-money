@@ -101,7 +101,12 @@ const Li = (name, size=16, color="currentColor") => {
     // asynchron nachgeladene Gesamtset
     const Comp = STATIC_LUCIDE[name] || (window.LucideIcons || {})[_toPascal(name)];
     if (!Comp) return null;
-    return <Comp size={size} color={color} strokeWidth={2} style={{display:"inline-block",verticalAlign:"middle",flexShrink:0}} />;
+    // Farbe ueber die CSS-Eigenschaft `color` statt ueber das SVG-Attribut
+    // `stroke`: nur so kommt eine CSS-Variable an (Themes mit eigener
+    // Karten-Textfarbe liefern `var(--txt2)` statt eines Festwerts, siehe
+    // activeTheme.js). `currentColor` ist Lucides Standard und nimmt sie auf.
+    return <Comp size={size} color="currentColor" strokeWidth={2}
+      style={{display:"inline-block",verticalAlign:"middle",flexShrink:0,color}} />;
   } catch(e) { return null; }
 };
 // ─── Shared UI components (defined outside app to avoid recreation) ───────────

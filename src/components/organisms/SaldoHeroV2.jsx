@@ -317,7 +317,10 @@ function SaldoHeroV2({
   );
 
   return (
-    <div style={{
+    // `hero-flaeche`: Haken fuer Themes, die dem Hero eine eigene Flaeche geben
+    // wollen (siehe hero_surface/kartenTextRegel in activeTheme.js). Ohne ein
+    // solches Theme hat die Klasse keinerlei Wirkung.
+    <div className="hero-flaeche" style={{
       padding: `5px ${framePad}px 6px`,
       position:"relative"}}>
       {/* Freier Bereich links oben: minimaler Theme-Umschalter, direkt darunter

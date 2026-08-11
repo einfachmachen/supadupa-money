@@ -160,9 +160,81 @@ export function flaecheAbgesetzt(untergrund = _state.current.bg) {
   return farbe;
 }
 
+// ── Zwei Textfarben: auf dem Hintergrund und auf Kartenflächen ──────────
+//
+// Bis hierher hatte die App EINE Textfarbe (`txt`/`txt2`/`lbl`) für beides.
+// Für die allermeisten Themes stimmt das auch — Hintergrund und Karten liegen
+// dort dicht beieinander. Es schließt aber jedes Motiv aus, das die beiden
+// Flächen GEGENSÄTZLICH färbt: das Keyboard-Theme braucht dunkle Keycaps auf
+// einer fast weißen Tastatur-Platte, also weißen Text auf den Karten und
+// dunklen auf dem Hintergrund. Solange es nur eine Farbe gab, fiel zwangsläufig
+// eine der beiden Seiten durch (Nutzer-Hinweis; im Browser nachgestellt: im
+// Aufriss standen die Buchungszeilen weiß auf fast weiß).
+//
+// Ein Theme kann jetzt zusätzlich `txt_card`/`txt2_card`/`lbl_card` angeben.
+// Tut es das, liefern `T.txt` & Co. eine CSS-Variable statt einer festen
+// Farbe; die Wurzel setzt die Hintergrund-Werte, und `kartenTextRegel()`
+// setzt auf jeder Kartenfläche die Karten-Werte. Da CSS-Variablen erben,
+// bekommt jeder Text automatisch die Farbe der Fläche, auf der er liegt —
+// ohne dass eine einzige der rund 1350 Aufrufstellen etwas davon wissen muss.
+//
+// Themes OHNE diese Angaben bleiben Zeichen für Zeichen unverändert; die
+// Umschaltung greift ausschließlich dort, wo ein Theme sie anfordert.
+const _TEXT_KEYS = { txt: "--txt", txt2: "--txt2", lbl: "--lbl" };
+
+export const hatKartenText = (t = _state.current) => !!(t && t.txt_card);
+
+// Werte für die Wurzel: die Farben für Text, der direkt auf `bg` liegt.
+export function wurzelTextVars(t = _state.current) {
+  if (!hatKartenText(t)) return null;
+  return { "--txt": t.txt, "--txt2": t.txt2, "--lbl": t.lbl };
+}
+
+// Farbwert → so, wie ihn der Browser ins style-Attribut zurückschreibt.
+// Genau diese Schreibweise braucht der Selektor unten.
+function _alsRgbText(c) {
+  const h = String(c || "").trim();
+  const m = h.match(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
+  if (!m) return null;
+  const f = m[1].length === 3 ? m[1].split("").map(x => x + x).join("") : m[1];
+  const [r, g, b] = [0, 2, 4].map(i => parseInt(f.slice(i, i + 2), 16));
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+// Die CSS-Regel, die auf Kartenflächen die Karten-Textfarben setzt.
+//
+// Getroffen werden die Karten über ihre Hintergrundfarbe im style-Attribut.
+// Das ist bewusst so: die Karten der App haben keine gemeinsame Klasse, und
+// eine einzuführen hieße, dutzende Dateien anzufassen. Die Farben kommen aus
+// dem Theme selbst, die Regel ist also nicht auf ein bestimmtes Theme fest
+// verdrahtet.
+export function kartenTextRegel(t = _state.current) {
+  if (!hatKartenText(t)) return "";
+  const flaechen = [...new Set([t.surf, t.surf2, t.surf3, t.cat_bg]
+    .map(_alsRgbText).filter(Boolean))];
+  if (!flaechen.length) return "";
+  const sel = flaechen.map(c => `[style*="${c}"]`).join(",");
+  const txt2 = t.txt2_card || t.txt_card;
+  const kartenVars = `--txt:${t.txt_card};--txt2:${txt2};--lbl:${t.lbl_card || txt2};`;
+  let css = `${sel}{${kartenVars}}`;
+  // `hero_surface`: gibt dem Hero eine eigene Flaeche. Noetig, sobald
+  // Hintergrund und Karten gegensaetzlich sind — der Hero traegt Akzentfarben
+  // (Kontostand, Prognose), die auf einer hellen Platte durchfallen wuerden.
+  // Er zaehlt dann als Karte und bekommt deren Textfarben mit.
+  if (t.hero_surface) css += `.hero-flaeche{background:${t.hero_surface};${kartenVars}}`;
+  return css;
+}
+
 // Proxy verhält sich wie das aktuelle Theme-Objekt
 export const theme = new Proxy({}, {
-  get(_, key) { return _state.current[key]; },
+  get(_, key) {
+    const t = _state.current;
+    // Nur bei Themes mit eigener Karten-Textfarbe: Variable statt Festwert.
+    // Der Rückfallwert ist die Hintergrund-Farbe — käme die Variable irgendwo
+    // nicht an, steht dort dieselbe Farbe wie vor diesem Umbau.
+    if (_TEXT_KEYS[key] && t.txt_card) return `var(${_TEXT_KEYS[key]}, ${t[key]})`;
+    return t[key];
+  },
   set(_, key, value) { _state.current[key] = value; return true; },
   ownKeys() { return Reflect.ownKeys(_state.current); },
   getOwnPropertyDescriptor(_, key) {

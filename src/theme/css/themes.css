@@ -142,6 +142,16 @@
      bewusst nur hier so geloest — die Karten der App haben keine gemeinsame
      Klasse, und eine einzufuehren haette Dutzende Dateien angefasst.
      Der zweite, dunkle Schatten unten ist die Kante des Keycaps. */
+  /* Der Hero als grosser Keycap: Rundung und Kante wie bei den Karten.
+     Die Flaeche selbst kommt aus `hero_surface` (activeTheme.js). */
+  .theme-keyboard .hero-flaeche {
+    border-radius: 14px;
+    margin: 6px 8px 2px;
+    box-shadow:
+      0 0 0 1.5px rgba(238, 238, 230, 0.85),
+      0 2px 4px rgba(0, 0, 0, 0.35) !important;
+  }
+
   .theme-keyboard [style*="rgb(51, 51, 51)"] {
     box-shadow:
       0 0 0 1.5px rgba(238, 238, 230, 0.85),

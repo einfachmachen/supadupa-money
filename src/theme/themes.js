@@ -476,38 +476,35 @@ const THEMES = {
   //      leuchtenden Gelbgruen — das ist die Akzentfarbe des Themes.
   //   4. Zwischen und um die Tasten liegt die HELLE Tastatur-Platte.
   //
-  // Punkt 4 ist der Grund, warum `bg` hier ein mittelhelles Grau ist und nicht
-  // das erwartbare Dunkel: die Platte SOLL der Hintergrund sein (Nutzer-Wunsch).
-  // Heller geht es aber nicht — und das ist keine Geschmacksfrage, sondern eine
-  // Rechnung. In dieser App gibt es EINE Textfarbe fuer Hintergrund UND Karten,
-  // und an mehreren Stellen (Aufriss-Listen, Hero) steht Text direkt auf `bg`.
-  // Weiss ist wegen der dunklen Keycaps gesetzt, also muss die Platte weiss
-  // tragen koennen. Bei #666660 sind es 5,8:1 fuer weissen Text, 3,8:1 fuers
-  // Gelbgruen und 3,4:1 fuers Ausgaben-Cyan — alle ueber der Schwelle. Eine
-  // fast weisse Platte (#ECECE4) laesst weissen Text auf 1,2:1 zusammenfallen;
-  // im Aufriss verschwanden die Buchungszeilen dabei komplett (im Browser
-  // nachgestellt). Wer sie heller will, muss zuerst der App eine zweite
-  // Textfarbe fuer Kartenflaechen beibringen.
+  // Punkt 4 war lange nicht darstellbar: die App hatte EINE Textfarbe fuer
+  // Hintergrund UND Karten. Eine fast weisse Platte als Hintergrund mit dunklen
+  // Keycaps als Karten liess damit zwangslaeufig eine Seite durchfallen — im
+  // Aufriss standen die Buchungszeilen weiss auf fast weiss.
   //
-  // Die eigentliche FUGE — die fast weisse Kante zwischen zwei Keycaps —
-  // kommt nicht aus `bd`, sondern als box-shadow aus `.theme-keyboard`
-  // (themes.css): "Rahmen aus" ist der Standard und setzt jede border-color
-  // auf transparent.
+  // Seit dem Umbau kann ein Theme zwei Saetze angeben (siehe activeTheme.js,
+  // `kartenTextRegel`): `txt`/`txt2`/`lbl` gelten fuer Text auf dem
+  // HINTERGRUND, `txt_card`/`txt2_card`/`lbl_card` fuer Text auf KARTEN.
+  // Genau das braucht dieses Motiv — und nur deshalb ist die Platte hier so
+  // hell wie in der Vorlage.
+  //
+  // Die FUGE — die Kante zwischen zwei Keycaps — kommt als box-shadow aus
+  // `.theme-keyboard` (themes.css): "Rahmen aus" ist der Standard und setzt
+  // jede border-color auf transparent.
   keyboard: {
     name:"Keyboard",
-    bg:"#666660",                // Tastatur-Platte zwischen den Tasten. So hell, wie
-                                 // sie sein KANN, ohne dass etwas darauf durchfaellt:
-                                 // weisser Text 5,8:1, das Gelbgruen 3,8:1, das
-                                 // Ausgaben-Cyan 3,4:1 — alle ueber der Schwelle.
+    bg:"#ECECE4",                // die fast weisse Tastatur-Platte
     surf:"#333333",              // Keycap-Flaeche
     surf2:"#2C2C2C",             // etwas tiefer (Modale, Dialogkarten)
     surf3:"#262626",             // dunkelste Stufe (Trennungen)
     cat_bg:"#333333",            // Kategorien-Karten = Keycaps
     bd:"rgba(238,238,230,0.55)",   // helle Platte als Fuge zwischen den Tasten
     bds:"rgba(238,238,230,0.92)",  // staerker (Umriss der ganzen Tastatur)
-    txt:"#FFFFFF",               // Hauptbeschriftung: reinweiss
-    txt2:"rgba(255,255,255,0.78)",   // auf der mittelhellen Platte kraeftiger
-    lbl:"rgba(255,255,255,0.62)",
+    txt:"#1E1E1C",               // Text auf der Platte: fast schwarz
+    txt_card:"#FFFFFF",          // Text auf den Keycaps: reinweiss (Hauptbeschriftung)
+    txt2:"rgba(30,30,28,0.66)",
+    txt2_card:"rgba(255,255,255,0.72)",
+    lbl:"rgba(30,30,28,0.50)",
+    lbl_card:"rgba(255,255,255,0.55)",
     blue:"#C8DC2E",              // Zweitbelegung: leuchtendes Gelbgruen
     pos:"#C8DC2E",
     neg:"#00D9FF",               // Ausgaben-Cyan wie im ueblichen Farbkonzept
@@ -525,6 +522,9 @@ const THEMES = {
     pal_exp_bg:"#1F0608", pal_exp_bd:"#5C1018", pal_exp_fld:"#240408",
     pal_tg_bg:"#071820",  pal_tg_bd:"#1A3A48",  pal_tg_hdr:"#4A9FC0",  pal_tg_fld:"#091E2A",  pal_tg_val:"#80C8E0",
     hero_bg:"linear-gradient(135deg,#333333,#242424)",
+    hero_surface:"#333333",      // der Hero ist ein grosser Keycap auf der Platte —
+                                 // sonst stuenden Kontostand und Prognose in
+                                 // Gelbgruen/Cyan auf fast weissem Grund.
     logo_c1:"#7E8F1A",     logo_c2:"#C8DC2E",
     cond_neg:"#00D9FF", neg_aktuell:"#59E6FF", neg_vm:"#8CEEFF", warn_bold:"#FF8800", warn_icon:"#FFD24D",
     cond_warn:"#E67E22", cond_gold:"#F1C40F", cond_pos:"#BFFF00", pos_aktuell:"#D5FF59", pos_vm:"#E2FF8C",

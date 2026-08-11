@@ -259,25 +259,17 @@ Den früheren farbigen Deko-Außenrand (`frame_border`/`frame_ring`) gibt es
 nicht mehr (§10).
 
 **`keyboard`** bildet die Tastatur aus dem CachyOS-Installationsprogramm nach
-(Nutzer-Foto): **dunkle Keycaps** (`surf` `#333333`), **weiße**
-Hauptbeschriftung, **gelbgrüne** Zweitbelegung als Akzent, und als Hintergrund
-die **helle Tastatur-Platte** (`bg` `#666660`). Drei Dinge sind darin
-festgehalten:
+(Nutzer-Foto): **dunkle Keycaps** (`surf` `#333333`) mit **weißer**
+Hauptbeschriftung und **gelbgrüner** Zweitbelegung, auf der **fast weißen
+Tastatur-Platte** (`bg` `#ECECE4`). Es ist damit das einzige Theme mit
+**gegensätzlichen Flächen** — und der Grund für §4.7:
 - Es war einmal umgekehrt gebaut (helle Tasten, schwarzer Text) und damit
   „meilenweit" von der Vorlage entfernt.
-- **Wie hell die Platte sein darf, ist eine Rechnung, keine Geschmacksfrage.**
-  Es gibt **eine** Textfarbe für Hintergrund UND Karten, und an mehreren
-  Stellen (Aufriss-Listen, Hero) steht Text direkt auf `bg`. Weiß ist wegen der
-  dunklen Keycaps gesetzt, also muss die Platte Weiß tragen: bei `#666660`
-  sind es 5,8:1 für weißen Text, 3,8:1 fürs Gelbgrün, 3,4:1 fürs Ausgaben-Cyan.
-  Eine fast weiße Platte lässt weißen Text auf 1,2:1 zusammenfallen — im
-  Aufriss verschwanden die Buchungszeilen dabei komplett. Heller geht erst,
-  wenn die App eine **zweite Textfarbe für Kartenflächen** bekommt.
 - Die **Fuge** zwischen den Keycaps kann **nicht** aus `bd` kommen: „Rahmen
   aus" ist der Standard und setzt per `.no-borders *` jede `border-color` auf
-  transparent. Sie kommt als `box-shadow` aus `.theme-keyboard` (themes.css),
-  der die Karten über ihre Hintergrundfarbe trifft — die Karten der App haben
-  keine gemeinsame Klasse.
+  transparent. Sie kommt als `box-shadow` aus `.theme-keyboard` (themes.css).
+- Der **Hero** ist ein großer Keycap (`hero_surface`) — er trägt Akzentfarben
+  (Kontostand, Prognose), die auf der hellen Platte durchfallen würden.
 
 Zusätzlich **nutzerdefinierte** Themes aus `mbt_custom_themes` (`CustomThemeEditor`,
 §4.3) — diese kommen **on top**, nicht in `themes.js`.
@@ -371,7 +363,41 @@ Das Flag liegt im Modul, nicht im Context — über hundert Aufrufstellen bräuc
 sonst alle einen Context-Zugriff. `App.jsx` setzt es beim Rendern aus dem
 persistierten Zustand; die Kinder rendern danach.
 
-### 4.7 Budget-Ampel
+### 4.7 Zwei Textfarben: Hintergrund vs. Kartenfläche
+Bis dahin hatte die App **eine** Textfarbe (`txt`/`txt2`/`lbl`) für beides. Für
+fast alle Themes stimmt das — Hintergrund und Karten liegen dort dicht
+beieinander. Es schließt aber jedes Motiv aus, das die Flächen **gegensätzlich**
+färbt (Keyboard: dunkle Keycaps auf heller Platte). Solange es nur eine Farbe
+gab, fiel zwangsläufig eine Seite durch.
+
+Ein Theme kann jetzt zusätzlich `txt_card` / `txt2_card` / `lbl_card` angeben:
+
+| Token | gilt für |
+|---|---|
+| `txt`, `txt2`, `lbl` | Text direkt auf `bg` |
+| `txt_card`, `txt2_card`, `lbl_card` | Text auf `surf`/`surf2`/`surf3`/`cat_bg` |
+| `hero_surface` | gibt dem Hero eine eigene Kartenfläche (`.hero-flaeche`) |
+
+Mechanik (`activeTheme.js`): sobald `txt_card` gesetzt ist, liefern `T.txt` & Co.
+`var(--txt, <Hintergrund-Farbe>)` statt eines Festwerts. Die Wurzel setzt die
+Hintergrund-Werte, `kartenTextRegel()` setzt auf jeder Kartenfläche die
+Karten-Werte. **CSS-Variablen erben** — damit bekommt jeder Text automatisch die
+Farbe der Fläche, auf der er liegt, ohne dass eine der ~1350 Aufrufstellen etwas
+davon weiß. Der Rückfallwert im `var()` ist die Hintergrund-Farbe: käme die
+Variable irgendwo nicht an, stünde dort dieselbe Farbe wie vor dem Umbau.
+
+Regeln dazu:
+- **Themes ohne `txt_card` bleiben unverändert** — die Umschaltung greift nur
+  dort, wo ein Theme sie anfordert (`tests/kartenText.test.js` wacht darüber).
+- **Icons müssen die Farbe über die CSS-Eigenschaft `color` bekommen**, nicht
+  über das SVG-Attribut. `Li()` setzt deshalb `color="currentColor"` und die
+  Farbe im `style` — sonst käme die Variable dort nicht an.
+- **Nicht auf Akzentfarben übertragbar.** `T.blue`/`pos`/`neg`/`gold` werden an
+  über 200 Stellen mit angehängtem Hex-Alpha benutzt (`${T.blue}18`); an einer
+  `var()` scheitert das. Wer Akzente flächenabhängig machen will, muss diese
+  Stellen zuerst auf `color-mix()` o. Ä. umstellen.
+
+### 4.8 Budget-Ampel
 Budget-Auslastung färbt nach **tatsächlichem Verbrauch (Ist)**, nicht nach dem
 reservierten Prognosewert.
 
