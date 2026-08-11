@@ -28,6 +28,11 @@ Heute öffnet JEDER Bearbeiten-Tipp das Desktop-`EditPopup` (App.jsx:2609,
 - [ ] **Landmine entschärfen:** `MobileBudgetModal` (App.jsx:3169) ist gerendert,
   aber nicht importiert/definiert; `setShowMobileBudget(true)` wird nie
   aufgerufen → toten Verweis + State entfernen oder echtes Modal bauen.
+- [ ] **`StartBalanceEditor.jsx` entfernen.** Seit ihrer Entstehung bei der
+  Modul-Aufteilung (Commit `17bd2c8`) ruft sie **niemand** auf — nie über die
+  Oberfläche erreichbar. Dieselbe Aufgabe (Anker-Kontostände anlegen, listen,
+  löschen) erledigt `AnchorSection`, eingebunden im CSV-Import. Bewusst noch
+  liegen gelassen (Nutzer-Entscheidung), stört im Build nicht.
 
 ## Auswertungen / Features
 
