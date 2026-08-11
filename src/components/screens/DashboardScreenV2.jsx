@@ -1564,11 +1564,16 @@ function DashboardScreenV2() {
             const _endeW    = showEnde ? fmtShort(ende).length*9.2 : 0;
             const _reserveR = Math.round(_endeW + 10 + _mitW/2);
             const mitLeft   = `min(2px + (100% - 3px) * ${_mfr}, 100% - ${_reserveR}px)`;
-            // Prognose-Farbe (Mitte/Ende): folgt dem Farbkonzept der App
-            // (Einnahmen=Grün, Ausgaben=Cyan) statt eigener Amber/Blau-Töne —
-            // Ende = volle Deckkraft (verlässlichere Prognose), Mitte =
-            // gedämpfter (vorläufigere Zwischenmarke), derselbe Farbton.
-            const fcColor = isInc ? (T.pos||T.txt2) : (T.neg||T.txt2);
+            // Prognose-Farbe (Mitte/Ende): das BLASSE Paar des Farbkonzepts
+            // (§4.4 — blass = geplant/vorgemerkt, gesättigt = geflossen). Diese
+            // beiden Zahlen sind Prognosen und stehen ausserdem nur dann da,
+            // wenn sie vom bereits Gebuchten ABWEICHEN (siehe showMitte/
+            // showEnde) — es ist also immer noch nicht geflossenes Geld. Vorher
+            // trugen sie die gesaettigte Farbe und sahen damit aus wie die
+            // Kopfzahl daneben, die das tatsaechlich Gebuchte nennt
+            // (Nutzer-Hinweis). Ende = volle Deckkraft (verlaesslichere
+            // Prognose), Mitte = gedaempfter, derselbe Farbton.
+            const fcColor = isInc ? (T.cell_inc||T.txt2) : (T.cell_exp||T.txt2);
             const dot = (key, leftCalc, size, bg, opacity=1) => (
               <div key={key} style={{position:"absolute",left:leftCalc,top:6-size/2,
                 width:size,height:size,borderRadius:"50%",background:bg,opacity,
