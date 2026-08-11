@@ -548,7 +548,14 @@ function SaldoHeroV2({
         // Kein Abstand mehr zwischen Hero-Ende und Prognose (Nutzer-Wunsch):
         // die Trennlinie allein reicht als Grenze, die 8px darueber und
         // darunter waren nur verschenkte Hoehe.
-        <div style={{marginTop:0,paddingTop:0,borderTop:`1px solid ${T.bd}`,marginLeft:-15,marginRight:-15}}>
+        // Zieht sich um die VOLLE Hero-Polsterung heraus (framePad), damit der
+        // Aufriss an der Bildschirmkante beginnt. Dann ergibt das seitliche
+        // Polster des Panels (10px) exakt denselben Rand wie in den
+        // Buchungen-/VM-Aufrissen. Vorher standen hier feste -15px: bei 20px
+        // Hero-Polster blieben 5px uebrig, die Prognose-Karten sassen dadurch
+        // sichtbar weiter innen als die der anderen Aufrisse (Nutzer-Hinweis).
+        <div style={{marginTop:0,paddingTop:0,borderTop:`1px solid ${T.bd}`,
+          marginLeft:-framePad,marginRight:-framePad}}>
           <SaldoPrognose year={year} month={month} txs={[]}
             detailMitte={detailMitte} detailEnde={detailEnde}
             saldoMitte={saldoMitte} saldoEnde={saldoEnde}
