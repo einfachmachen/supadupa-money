@@ -258,13 +258,29 @@ Sie unterscheiden sich über Farben, `hero_bg` und ein eigenes `nav_icons`-Set.
 Den früheren farbigen Deko-Außenrand (`frame_border`/`frame_ring`) gibt es
 nicht mehr (§10).
 
+**`keyboard`** bildet die Tastatur aus dem CachyOS-Installationsprogramm nach
+(Nutzer-Foto): **dunkle Keycaps**, **weiße** Hauptbeschriftung, **gelbgrüne**
+Zweitbelegung als Akzent — dazwischen die fast weiße Tastatur-Platte als Fuge.
+Zwei Fallen stecken darin:
+- Es war einmal umgekehrt gebaut (helle Tasten, schwarzer Text) und damit
+  „meilenweit" von der Vorlage entfernt. Der Grund dafür ist echt: **eine**
+  Textfarbe muss auf Hintergrund UND Karten sitzen, eine weiße Platte als
+  Hintergrund mit dunklen Keycaps als Karten geht deshalb nicht. Aufgelöst über
+  die Fuge — Hintergrund = die dunkle Vertiefung zwischen den Tasten.
+- Die Fuge kann **nicht** aus `bd` kommen: „Rahmen aus" ist der Standard und
+  setzt per `.no-borders *` jede `border-color` auf transparent. Sie kommt
+  deshalb als `box-shadow` aus `.theme-keyboard` (themes.css), der die Karten
+  über ihre Hintergrundfarbe trifft — die Karten der App haben keine
+  gemeinsame Klasse.
+
 Zusätzlich **nutzerdefinierte** Themes aus `mbt_custom_themes` (`CustomThemeEditor`,
 §4.3) — diese kommen **on top**, nicht in `themes.js`.
 
 Jedes Theme definiert denselben Token-Satz. **Helle Themes** werden zentral in
 `activeTheme.js` (`LIGHT_THEMES` / `isLightTheme`) geführt — neue helle Themes
-bitte **dort eintragen**. Die Liste war dreimal unvollständig (`keyboard`,
-`abenteuergruen`, `zirkustaschenrechner`), deshalb liegt jetzt ein
+bitte **dort eintragen**. Die Liste war dreimal unvollständig (`keyboard` —
+inzwischen wieder dunkel, s. u. —, `abenteuergruen`,
+`zirkustaschenrechner`), deshalb liegt jetzt ein
 **Sicherheitsnetz** dahinter: Ist ein Theme nicht eingetragen, entscheidet die
 Helligkeit seines `bg` (Luma ≥ 0,5 → hell). Die Liste hat weiterhin Vorrang und
 regelt die Grenzfälle; sie muss nur nicht mehr vollständig sein, damit nichts

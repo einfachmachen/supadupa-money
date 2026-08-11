@@ -25,13 +25,17 @@ const LIGHT_THEMES = new Set([
   "light", "ios", "material", "paper", "dkb",
   "sand", "clean", "brutalist", "swiss", "hellgrau",
   "kontrasthell", "creme", "cleancorporate", "softecotech",
-  // Diese drei gehören fachlich längst dazu (dunkler Text auf hellen
-  // Flächen), standen aber nie drin — bei "keyboard" vermutlich, weil sein
-  // Hintergrund früher ein mittleres Grau war, bei den beiden Kinder-Themes
-  // schlicht vergessen. Ohne Eintrag nahm die App dort überall den
-  // Dunkel-Zweig: dunkle Overlay-Schleier, colorScheme:"dark" für die
-  // Systemfelder, helle Aufsätze auf ohnehin hellen Flächen.
-  "keyboard", "abenteuergruen", "zirkustaschenrechner",
+  // Diese beiden gehören fachlich längst dazu (dunkler Text auf hellen
+  // Flächen), standen aber nie drin — schlicht vergessen. Ohne Eintrag nahm
+  // die App dort überall den Dunkel-Zweig: dunkle Overlay-Schleier,
+  // colorScheme:"dark" für die Systemfelder, helle Aufsätze auf ohnehin
+  // hellen Flächen.
+  //
+  // "keyboard" stand hier ebenfalls, solange es helle Tastenflächen mit
+  // schwarzem Text hatte. Seit es die dunklen Keycaps der Vorlage nachbildet
+  // (weisse Beschriftung, gelbgrüne Zweitbelegung), ist es ein DUNKLES Theme
+  // und gehört nicht mehr in diese Liste.
+  "abenteuergruen", "zirkustaschenrechner",
 ]);
 
 // Sicherheitsnetz hinter der Liste: ein Theme mit hellem Hintergrund IST

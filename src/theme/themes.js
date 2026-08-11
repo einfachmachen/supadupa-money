@@ -467,56 +467,56 @@ const THEMES = {
   },
 
   // ── Keyboard / Tastatur-inspiriert ─────────────────────────────────────────
-  // Korrigiert nach genauer Screenshot-Analyse: Tasten sind HELL genug, dass
-  // schwarzer Text + leuchtend gelbgrüne Großbuchstaben gut lesbar sind.
-  // Hierarchie wie auf der echten Tastatur:
-  //   - App-BG (Installer-Fenster):  #2D2D33  dunkles Anthrazit
-  //   - Tastatur-Rahmen (Strich):    #E8E8E0  fast-weiß
-  //   - Zwischen den Tasten:         #4A4A48  mittel-dunkel
-  //   - Tastenflächen (=Karten):     #B8B8B0  helles Grau (Sand-ähnlich)
-  //   - Text auf Tasten:             #1A1A18  schwarz (wie Kleinbuchstaben)
-  //   - Akzent:                      #D4E834  gelbgrün (Großbuchstaben)
-  //   - Petrol:                      #2D5A78  (Selektions-Highlight)
+  // ── Keyboard ──────────────────────────────────────────────────────────
+  // Vorbild ist die Tastatur-Darstellung im CachyOS-Installationsprogramm
+  // (Nutzer-Foto). Entscheidend sind dort DREI Dinge:
+  //   1. Die Keycaps sind DUNKEL — mittleres Anthrazit, kein helles Grau.
+  //   2. Die Hauptbeschriftung (Kleinbuchstaben, Ziffern) ist REINWEISS.
+  //   3. Die Zweitbelegung (Grossbuchstaben, Sonderzeichen) steht in einem
+  //      leuchtenden Gelbgruen — das ist die Akzentfarbe des Themes.
+  // Dazwischen sitzt die fast weisse Tastatur-Platte; sie erscheint hier als
+  // heller Rand um jede Karte (bd/bds), wie die Fuge zwischen zwei Keycaps.
+  //
+  // Die frueherere Fassung hatte genau das umgedreht: helle Tastenflaechen mit
+  // schwarzem Text. Damit war es "meilenweit" von der Vorlage entfernt
+  // (Nutzer-Hinweis) — und der Grund, warum es damals so gebaut wurde, ist die
+  // Falle dieses Motivs: EINE Textfarbe muss sowohl auf dem Hintergrund als
+  // auch auf den Karten sitzen. Eine weisse Platte als Hintergrund UND dunkle
+  // Keycaps als Karten gehen deshalb nicht zusammen. Aufgeloest ist es hier
+  // ueber die Fuge: Hintergrund = die dunkle Vertiefung zwischen den Tasten,
+  // Karten = die Keycaps, Rand = die helle Platte.
   keyboard: {
     name:"Keyboard",
-    bg:"#D2D2CA",                // Gehäuse-Grau: eine Spur HELLER als die Tastenflächen
-                                 // (#B8B8B0), wie das helle Gehäuse unter dunkleren
-                                 // Keycaps. Vorher ein mittleres Grau (#6A6A64) —
-                                 // das passte zu nichts sonst im Theme: der
-                                 // fast-schwarze Text stand darauf grenzwertig (4,3:1),
-                                 // die hellen Karten und der helle Hero-Verlauf wirkten
-                                 // wie Fremdkörper auf einer dunklen Platte
-                                 // (Nutzer-Hinweis).
-    surf:"#B8B8B0",              // Karten = Tastenflächen (HELL, schwarzer Text drauf)
-    surf2:"#A8A8A0",             // leicht dunkler (Modals etc.)
-    surf3:"#9A9A95",             // dunklere Variante (Trennungen)
-    cat_bg:"#B8B8B0",            // Kategorien-Karten = Tasten-Hell
-    bd:"rgba(40,40,38,0.45)",        // Tasten-Rahmen-Kanten
-    bds:"rgba(40,40,38,0.75)",       // stärker
-    txt:"#1A1A18",               // schwarzer Text auf den hellen Tasten
-    txt2:"rgba(30,30,28,0.65)",  // gedämpfter Text
-    lbl:"rgba(30,30,28,0.50)",   // Labels
-    blue:"#2C3406",              // sattes Olivgrün als Hauptakzent — abgedunkelt, damit es
-                                 // auch auf dem (hellgrauen) App-BG noch lesbar bleibt
-    pos:"#2C3406",               // Einnahmen-Grün
-    neg:"#5C1611",               // sattes Rot (auf hell gut sichtbar) — abgedunkelt s.o.
-    gold:"#553800",              // dunkler Bernstein — abgedunkelt s.o.
-    warn:"#A0541A",
-    override:"#7A3A00",
-    on_accent:"#FFFFFF",         // weißer Text auf Accent-Buttons
-    disabled:"#888880",
-    mid:"#1F4060",               // tiefes Petrol-Blau (für Mitte/Tagesgeld)
-    cf:"#B0501A",
-    vorm_bg:"#F0E0B0",   vorm_bd:"#FFD700",
-    cell_inc:"#4A5810",  cell_inc_bg:"rgba(212,232,52,0.32)", cell_inc_bd:"#8FA821",
-    tab_exp:"rgba(168,40,32,0.18)",   tab_inc:"rgba(212,232,52,0.32)",     tab_pend:"rgba(180,130,0,0.20)",
-    pal_inc_bg:"#D4E07A",  pal_inc_bd:"#A0B82A",  pal_inc_hdr:"#3A4A00",  pal_inc_fld:"#C8D670",  pal_inc_val:"#2A3500",
-    pal_exp_bg:"#E8C0B8",  pal_exp_bd:"#A82820",  pal_exp_fld:"#DCB0A8",  /* fld für Eingabefeld in Ausgaben-Palette */
-    pal_tg_bg:"#A8C8DC",   pal_tg_bd:"#1F4060",   pal_tg_hdr:"#0A2540",   pal_tg_fld:"#90B8D0",   pal_tg_val:"#0A2540",
-    hero_bg:"linear-gradient(135deg,#C8C8C0,#A8A8A0)",
-    logo_c1:"#3A4A00",     logo_c2:"#D4E834",
-    err:"#A82820",         err_bg:"rgba(168,40,32,0.18)",
-    cond_neg:"#A82820",    cond_warn:"#8B5A00",   cond_gold:"#8B5A00",   cond_pos:"#5A6B14",
+    bg:"#2A2A2A",                // Vertiefung zwischen und unter den Tasten
+    surf:"#454545",              // Keycap-Flaeche
+    surf2:"#3E3E3E",             // etwas tiefer (Modale, Dialogkarten)
+    surf3:"#333333",             // dunkelste Stufe (Trennungen)
+    cat_bg:"#454545",            // Kategorien-Karten = Keycaps
+    bd:"rgba(238,238,230,0.55)",   // helle Platte als Fuge zwischen den Tasten
+    bds:"rgba(238,238,230,0.92)",  // staerker (Umriss der ganzen Tastatur)
+    txt:"#FFFFFF",               // Hauptbeschriftung: reinweiss
+    txt2:"rgba(255,255,255,0.62)",
+    lbl:"rgba(255,255,255,0.45)",
+    blue:"#C8DC2E",              // Zweitbelegung: leuchtendes Gelbgruen
+    pos:"#C8DC2E",
+    neg:"#00D9FF",               // Ausgaben-Cyan wie im ueblichen Farbkonzept
+    gold:"#FFD700",
+    warn:"#F59E0B", override:"#B45309",
+    on_accent:"#1A1E00",         // dunkler Text auf dem hellen Gelbgruen
+    disabled:"#2A2A2A",
+    mid:"#67E8F9",
+    cf:"#F6821F",
+    vorm_bg:"#FFD700", vorm_bd:"#FFD700",
+    cell_inc:"#9CB336", cell_inc_bg:"#141A00", cell_inc_bd:"#4A6600", cell_exp:"#FFD24D", over:"#FF7EB6",
+    tab_exp:"#6B1A10", tab_inc:"#2A4A00", tab_pend:"#5A3A00",
+    err:"#FF4444", err_bg:"#7A1020",
+    pal_inc_bg:"#161900", pal_inc_bd:"#3A4800", pal_inc_hdr:"#C8D400", pal_inc_fld:"#1A1E00", pal_inc_val:"#D4E040",
+    pal_exp_bg:"#1F0608", pal_exp_bd:"#5C1018", pal_exp_fld:"#240408",
+    pal_tg_bg:"#071820",  pal_tg_bd:"#1A3A48",  pal_tg_hdr:"#4A9FC0",  pal_tg_fld:"#091E2A",  pal_tg_val:"#80C8E0",
+    hero_bg:"linear-gradient(135deg,#3C3C3C,#242424)",
+    logo_c1:"#7E8F1A",     logo_c2:"#C8DC2E",
+    cond_neg:"#00D9FF", neg_aktuell:"#59E6FF", neg_vm:"#8CEEFF", warn_bold:"#FF8800", warn_icon:"#FFD24D",
+    cond_warn:"#E67E22", cond_gold:"#F1C40F", cond_pos:"#BFFF00", pos_aktuell:"#D5FF59", pos_vm:"#E2FF8C",
   },
 
 };

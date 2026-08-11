@@ -3326,6 +3326,7 @@ export default function SupaDupaMoney() {
     <>
     <div className={[noBorders?"no-borders":null, themeName==="clean"?"theme-clean":null, themeName==="brutalist"?"theme-brutalist":null, themeName==="terminal"?"theme-terminal":null, themeName==="swiss"?"theme-swiss":null,
       themeName==="kloetzchenwelt"?"theme-kloetzchenwelt":null,
+      themeName==="keyboard"?"theme-keyboard":null,
       amtMode===0?"amts-blur":null, amtMode<2?"amts-neutral":null,
       amtFont?`amtfont-${amtFont}`:null].filter(Boolean).join(" ")||undefined}
       style={{background:T.bg,height:"100vh",maxHeight:"100vh",
