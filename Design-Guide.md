@@ -151,12 +151,22 @@ früheren getrennten Screens `EnableBankingConnectScreen` + `EnableBankingGuide`
 - **Minuszeichen** ist `−` (U+2212), nicht der Bindestrich.
 - **Euro-Symbol** nur am großen Hero-Kontostand (`… €`); in Listen/Pillen ohne `€`.
 - Tabellarische Ausrichtung mit `fontVariantNumeric:"tabular-nums"`.
+- **Schriftgrößen**: Dashboard und Monatsliste teilen sich **eine** Stufenleiter
+  — 20 für die Kopfzeile einer Gruppe (Kategorie bzw. Tag samt Tagessaldo), 17
+  für die Zeilen darunter (Buchung, Budget-Kategorie), 12 für Unterzeilen,
+  Datum und Zusätze. In `MonatScreen` stehen sie als `FS_ZEILE`/`FS_BETRAG`/
+  `FS_SUB`/`FS_KOPF`/`FS_SALDO`/`FS_DETAIL` oben in der Datei. **Wer sie
+  ändert, muss die Ruhewerte im Fokus-Effekt (`setRowFocus`) mitziehen** — der
+  setzt die Größen per DOM und würde sonst beim Deaktivieren auf alte Zahlen
+  zurückfallen.
 - **`atoms/RotatedCents.jsx`** für enge Stellen: Euro bleiben groß und
   vollständig, die Nachkommastellen stehen klein und um 90° nach links gedreht
   daneben — braucht statt „,XX" nur noch etwa eine Ziffernbreite. Im Einsatz in
-  den Hero-Detailzeilen (Buch./VM/unkat.) und am **Tagessaldo der Monatsliste**,
-  wo Datum, Wochentag, „Mitte"-Marke und zwei Zusatzinfos sonst gemeinsam über
-  die Bildschirmbreite hinauslaufen. Das umgebende Element braucht
+  den Hero-Detailzeilen (Buch./VM/unkat.) und bei **allen Beträgen der
+  Monatsliste**. Dort ist es die Gegenrechnung zu den größeren Schriften: die
+  Zeilen wurden auf Dashboard-Maß angehoben, ohne breiter zu werden. In der
+  Tages-Kopfzeile ist es zusätzlich nötig, weil Datum, Wochentag, „Mitte"-Marke
+  und zwei Zusatzinfos sonst gemeinsam über die Bildschirmbreite hinauslaufen. Das umgebende Element braucht
   `display:"inline-flex"` + `alignItems:"center"`.
 
 ---

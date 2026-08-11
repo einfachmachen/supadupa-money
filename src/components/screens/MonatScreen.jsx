@@ -4,6 +4,23 @@ import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { CatPicker } from "../molecules/CatPicker.jsx";
 import { TagInput } from "../atoms/TagInput.jsx";
 import { RotatedCents } from "../atoms/RotatedCents.jsx";
+
+// Schriftgroessen der Monatsliste — bewusst dieselben Stufen wie im Dashboard
+// (Nutzer-Wunsch: "die Schriftgroessen der Monatsansicht an die der
+// Home-Ansicht angleichen"). Dort gilt 20 fuer die Kopfzeile einer Kategorie,
+// 17 fuer die Zeilen darunter und 12 fuer Datum/Zusaetze. Die Monatsliste lag
+// durchweg 3-4px darunter (13 fuer die Beschreibung, 10 fuer die Unterzeile).
+// Damit die Zeilen dadurch nicht breiter werden, stehen ALLE Betraege hier auf
+// RotatedCents: die Euro bleiben gross, die Cent brauchen nur noch etwa eine
+// Ziffernbreite.
+//   FS_ZEILE   Beschreibung einer Buchung / Name einer Budget-Kategorie
+//   FS_BETRAG  Betrag einer Zeile
+//   FS_SUB     Unterzeile (Kategorie, Status)
+//   FS_KOPF    Datum der Tages-Kopfzeile
+//   FS_SALDO   Tagessaldo rechts in der Kopfzeile
+//   FS_DETAIL  Zusaetze in der Kopfzeile ("ohne Budget …", "inkl. N Vorm.")
+const FS_ZEILE = 17, FS_BETRAG = 17, FS_SUB = 12,
+      FS_KOPF = 14, FS_SALDO = 20, FS_DETAIL = 12;
 import { MitteEndeFields } from "../molecules/MitteEndeFields.jsx";
 import { BudgetEditorModal } from "../organisms/BudgetEditorModal.jsx";
 import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
@@ -505,7 +522,7 @@ function MonatScreen() {
       if(icon) { const s = active ? "46px" : "32px"; icon.style.width = s; icon.style.height = s; }
       const desc = row.querySelector('[data-role="tx-desc"]');
       if(desc) {
-        desc.style.fontSize = active ? "18px" : "13px";
+        desc.style.fontSize = active ? "22px" : FS_ZEILE + "px";
         // tx-desc kann entweder das <ExpandableLine>-Wurzel-div selbst sein
         // (trägt dann data-expandable-line, das eigentliche Kürzungs-Div ist
         // sein erstes Kind) oder — bei Budget-Restanzeigen — direkt das
@@ -574,18 +591,18 @@ function MonatScreen() {
       // querySelector, da BEIDE Werte (Verbraucht + Rest/zuviel) wachsen
       // sollen, nicht nur der erste Treffer im DOM.
       row.querySelectorAll('[data-role="tx-amt"], [data-role="tx-rest-amt"]').forEach(el=>{
-        el.style.fontSize = active ? "27px" : "16px";
+        el.style.fontSize = active ? "27px" : FS_BETRAG + "px";
       });
       // Tagessaldo-Kopfzeile: die kleinen Zusatzinfos ("ohne Budget X" /
       // "inkl. N Vorm.") links neben dem großen Saldo wachsen aktiv mit,
       // statt bei jeder anderen Zeile größer zu werden nur hier nicht.
       row.querySelectorAll('[data-role="tx-daydetail"]').forEach(el=>{
-        el.style.fontSize = active ? "14px" : "11px";
+        el.style.fontSize = active ? "16px" : FS_DETAIL + "px";
       });
       // "Rest:"/"zuviel:"-Beschriftung wächst mit dem dazugehörigen Wert mit
       // (vorher blieb sie klein, während der Wert daneben schon 27px groß war).
       row.querySelectorAll('[data-role="tx-rest-label"]').forEach(el=>{
-        el.style.fontSize = active ? "14px" : "10px";
+        el.style.fontSize = active ? "16px" : FS_SUB + "px";
       });
       const detailGrid = row.querySelector('[data-role="tx-detail-grid"]');
       const detailInner = row.querySelector('[data-role="tx-detail-inner"]');
@@ -1645,8 +1662,8 @@ function MonatScreen() {
                       sehr schmalen Geräten doch einmal eng, soll das Datum
                       abgeschnitten werden — nie der Tagessaldo rechts. */}
                   <div style={{display:"flex",alignItems:"center",gap:5,minWidth:0,overflow:"hidden"}}>
-                    <span style={{color:T.txt,fontSize:12,fontWeight:700,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{showFullDate?fmtDFull(date):fmtD(date)}</span>
-                    <span style={{color:T.txt2,fontSize:10,flexShrink:0}}>{dayName(date)}</span>
+                    <span style={{color:T.txt,fontSize:FS_KOPF,fontWeight:700,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{showFullDate?fmtDFull(date):fmtD(date)}</span>
+                    <span style={{color:T.txt2,fontSize:FS_SUB,flexShrink:0}}>{dayName(date)}</span>
                     {dayOf(date)<=14&&<span style={{color:T.mid,fontSize:9,fontWeight:700,flexShrink:0,whiteSpace:"nowrap",
                       background:"rgba(103,232,249,0.1)",borderRadius:5,padding:"1px 5px"}}>Mitte</span>}
                   </div>
@@ -1670,7 +1687,7 @@ function MonatScreen() {
                       {(hasReservierung||hasDayPend)&&(
                         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1,lineHeight:1.2}}>
                           {hasReservierung&&(
-                            <span data-role="tx-daydetail" style={{...amtStyle(dayIst>=0?"txt2":"neg",dayIst>=0?undefined:T.warn_icon),fontSize:11,fontFamily:NUM_FONT,fontWeight:600,whiteSpace:"nowrap",display:"inline-flex",alignItems:"center",transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
+                            <span data-role="tx-daydetail" style={{...amtStyle(dayIst>=0?"txt2":"neg",dayIst>=0?undefined:T.warn_icon),fontSize:FS_DETAIL,fontFamily:NUM_FONT,fontWeight:600,whiteSpace:"nowrap",display:"inline-flex",alignItems:"center",transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                               ohne&nbsp;Budget&nbsp;{dayIst>=0?"":"−"}<RotatedCents v={Math.abs(dayIst)}/>
                             </span>
                           )}
@@ -1682,7 +1699,7 @@ function MonatScreen() {
                             });
                             const n = pendUpToDay.length;
                             const todayPend = dayTxs.filter(t=>t.pending&&!t._budgetSubId);
-                            return <span data-role="tx-daydetail" style={{color:T.gold,fontSize:11,whiteSpace:"nowrap",transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
+                            return <span data-role="tx-daydetail" style={{color:T.gold,fontSize:FS_DETAIL,whiteSpace:"nowrap",transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                               inkl. {n} Vorm. ({todayPend.length} heute)
                             </span>;
                           })()}
@@ -1696,7 +1713,7 @@ function MonatScreen() {
                           die Euro bleiben unverändert groß. */}
                       <span data-role="tx-amt" data-amt-tone={bigVal>=0?"pos":"neg"} style={{
                         ...amtStyle(bigVal>=0?"pos":"neg"),
-                        fontSize:18,fontWeight:800,fontFamily:NUM_FONT,whiteSpace:"nowrap",
+                        fontSize:FS_SALDO,fontWeight:800,fontFamily:NUM_FONT,whiteSpace:"nowrap",
                         display:"inline-flex",alignItems:"center",
                         transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                         {bigVal>=0?"":"−"}<RotatedCents v={Math.abs(bigVal)}/>
@@ -1704,7 +1721,7 @@ function MonatScreen() {
                     </div>
                     );
                   })() : (
-                    <span data-role="tx-amt" data-amt-tone={dayNet>=0?"pos":"neg"} style={{...amtStyle(dayNet>=0?"pos":"neg"),fontSize:18,fontWeight:800,
+                    <span data-role="tx-amt" data-amt-tone={dayNet>=0?"pos":"neg"} style={{...amtStyle(dayNet>=0?"pos":"neg"),fontSize:FS_SALDO,fontWeight:800,
                       fontFamily:NUM_FONT,flexShrink:0,marginRight:8,whiteSpace:"nowrap",
                       display:"inline-flex",alignItems:"center",
                       transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
@@ -1818,10 +1835,10 @@ function MonatScreen() {
                           </div>
                           {txIconPickM===tx.id&&(<IconPickerDialog selectedIcon={involvedCats[0]?.icon||"help-circle"} selectedColor={involvedCats[0]?.color||T.txt2} onSelect={ic=>{if(involvedCats[0])setCats(p=>p.map(c=>c.id===involvedCats[0].id?{...c,icon:ic}:c));setTxIconPickM(null);}} onClose={()=>setTxIconPickM(null)}/>)}
                           <div onClick={()=>openEdit(tx)} style={{flex:1,minWidth:0,marginRight:6,cursor:"pointer"}}>
-                            <ExpandableLine data-role="tx-desc" style={{color:T.txt,fontSize:13,fontWeight:700,transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
+                            <ExpandableLine data-role="tx-desc" style={{color:T.txt,fontSize:FS_ZEILE,fontWeight:700,transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                               {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.gold)}</span>}
                             </ExpandableLine>
-                            <ExpandableLine data-role="tx-subline" style={{color:cat?.color||T.txt2,fontSize:10,marginTop:1,fontWeight:600,transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
+                            <ExpandableLine data-role="tx-subline" style={{color:cat?.color||T.txt2,fontSize:FS_SUB,marginTop:1,fontWeight:600,transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                               {tx.pending && (_isOverduePending(tx)
                                 ? <span style={{color:T.gold,fontWeight:800,display:"inline-flex",alignItems:"center",gap:2}}
                                     title="Buchungsdatum bereits vergangen, aber noch nicht als tatsächliche Buchung eingetroffen">
@@ -1846,8 +1863,8 @@ function MonatScreen() {
                               transition:_reduceMotion?"none":"background .15s ease, padding .3s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease"}}>
                               <span data-role="tx-amt-label" style={{display:"none",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.03em"}}>Betrag</span>
                               <div data-role="tx-amt" data-amt-tone="pos" style={{...amtStyle("pos",pal.val),...(tx.pending?{color:T.cell_inc}:{}),
-                                fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
-                                transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{fmt(tx.totalAmount)}</div>
+                                fontSize:FS_BETRAG,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
+                                transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease",display:"inline-flex",alignItems:"center",justifyContent:"flex-end"}}><RotatedCents s={fmt(tx.totalAmount)}/></div>
                             </div>
                             {isS&&(
                               <div style={{marginTop:2}}>
@@ -1982,7 +1999,7 @@ function MonatScreen() {
                             {Li(isOverspent?"alert-triangle":"target",16,accentCol)}
                           </div>
                           <div style={{flex:1,minWidth:0,marginRight:6}}>
-                            <div data-role="tx-desc" style={{color:isOverspent?T.neg:T.txt,fontSize:13,fontWeight:700,display:"flex",alignItems:"center",gap:4,
+                            <div data-role="tx-desc" style={{color:isOverspent?T.neg:T.txt,fontSize:FS_ZEILE,fontWeight:700,display:"flex",alignItems:"center",gap:4,
                               transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                               <span style={{minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{subName}</span>
                               {/* Zeigt an, dass sich hier die Einzelzahlungen auffaechern lassen. */}
@@ -2012,13 +2029,13 @@ function MonatScreen() {
                             <div data-role="tx-amtbar" style={{display:"flex",alignItems:"baseline",gap:10,
                               transition:_reduceMotion?"none":"background .15s ease, padding .3s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease"}}>
                               <span data-role="tx-restwrap" style={{display:"inline-flex",alignItems:"baseline",gap:6}}>
-                                <span data-role="tx-rest-label" data-amt-tone={isOverspent?"neg":open>0?"pos":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"pos":"txt2",isOverspent?T.neg:undefined),fontSize:10,fontWeight:700,marginLeft:8,
+                                <span data-role="tx-rest-label" data-amt-tone={isOverspent?"neg":open>0?"pos":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"pos":"txt2",isOverspent?T.neg:undefined),fontSize:FS_SUB,fontWeight:700,marginLeft:8,
                                   transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{isOverspent?"zuviel:":"Rest:"}</span>
-                                <span data-role="tx-rest-amt" data-amt-tone={isOverspent?"neg":open>0?"pos":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"pos":"txt2",isOverspent?T.neg:undefined),fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
-                                  transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{fmt(Math.abs(signedOpen))}</span>
+                                <span data-role="tx-rest-amt" data-amt-tone={isOverspent?"neg":open>0?"pos":"txt2"} style={{...amtStyle(isOverspent?"neg":open>0?"pos":"txt2",isOverspent?T.neg:undefined),fontSize:FS_BETRAG,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
+                                  display:"inline-flex",alignItems:"center",transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}><RotatedCents v={Math.abs(signedOpen)}/></span>
                               </span>
                               <span data-role="tx-spentside" style={{display:"inline-flex",alignItems:"baseline"}}>
-                                <span data-role="tx-amt" data-amt-tone={spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"cell_exp"} style={{...amtStyle(spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"cell_exp",spent===0?T.txt2:accentCol),fontSize:16,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{spent===0?"—":fmt(Math.abs(spent))}</span>
+                                <span data-role="tx-amt" data-amt-tone={spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"cell_exp"} style={{...amtStyle(spent===0?"txt2":isIncome?"pos":isOverspent?"neg":"cell_exp",spent===0?T.txt2:accentCol),fontSize:FS_BETRAG,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",display:"inline-flex",alignItems:"center",transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>{spent===0?"—":<RotatedCents v={Math.abs(spent)}/>}</span>
                               </span>
                             </div>
                           </div>
@@ -2045,8 +2062,8 @@ function MonatScreen() {
                             transition:_reduceMotion?"none":"opacity .35s ease .05s"}}>
                             <div style={{padding:"2px 8px 11px 10px",display:"flex",flexDirection:"column",gap:0}}>
                               {payments.map((p,pi)=>(
-                                <div key={pi} style={{display:"flex",alignItems:"baseline",gap:6,padding:"1px 2px",fontSize:12.5}}>
-                                  <span style={{fontSize:10.5,fontWeight:600,color:T.txt2,flexShrink:0,width:40,textAlign:"left",fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{p.dateLabel}</span>
+                                <div key={pi} style={{display:"flex",alignItems:"baseline",gap:6,padding:"1px 2px",fontSize:FS_SUB+1.5}}>
+                                  <span style={{fontSize:FS_SUB,fontWeight:600,color:T.txt2,flexShrink:0,width:40,textAlign:"left",fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{p.dateLabel}</span>
                                   {/* Vorgemerkt vs. gebucht: beide zaehlen in "genutzt" hinein,
                                       sind aber unterschiedlich sicher — deshalb unterscheidbar. */}
                                   <span style={{flexShrink:0,display:"inline-flex",alignSelf:"center"}}
@@ -2054,7 +2071,7 @@ function MonatScreen() {
                                     {Li(p.pending?"clock":"check",10,p.pending?T.gold:T.txt2)}
                                   </span>
                                   <span style={{flex:1,minWidth:0,fontWeight:600,color:p.pending?T.txt2:T.txt,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.desc}</span>
-                                  <span style={{fontWeight:700,color:p.pending?T.txt2:T.txt,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",flexShrink:0}}>{fmt(p.amount)}</span>
+                                  <span style={{fontWeight:700,color:p.pending?T.txt2:T.txt,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",flexShrink:0,display:"inline-flex",alignItems:"center"}}><RotatedCents v={p.amount}/></span>
                                 </div>
                               ))}
                             </div>
@@ -2135,10 +2152,10 @@ function MonatScreen() {
                           )}
                           {/* Text — Klick öffnet Edit */}
                           <div onClick={()=>openEdit(tx)} style={{flex:1,minWidth:0,marginRight:6,cursor:"pointer"}}>
-                            <ExpandableLine data-role="tx-desc" style={{color:T.txt,fontSize:13,fontWeight:700,transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
+                            <ExpandableLine data-role="tx-desc" style={{color:T.txt,fontSize:FS_ZEILE,fontWeight:700,transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                               {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.gold)}</span>}
                             </ExpandableLine>
-                            <ExpandableLine data-role="tx-subline" style={{color:cat?.color||T.txt2,fontSize:10,marginTop:1,fontWeight:600,transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
+                            <ExpandableLine data-role="tx-subline" style={{color:cat?.color||T.txt2,fontSize:FS_SUB,marginTop:1,fontWeight:600,transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                               {tx.pending && (_isOverduePending(tx)
                                 ? <span style={{color:T.gold,fontWeight:800,display:"inline-flex",alignItems:"center",gap:2}}
                                     title="Buchungsdatum bereits vergangen, aber noch nicht als tatsächliche Buchung eingetroffen">
@@ -2180,9 +2197,10 @@ function MonatScreen() {
                               transition:_reduceMotion?"none":"background .15s ease, padding .3s cubic-bezier(0.16, 1, 0.3, 1), border-radius .4s ease"}}>
                               <span data-role="tx-amt-label" style={{display:"none",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.03em"}}>Betrag</span>
                               <div data-role="tx-amt" data-amt-tone={type==="income"?"pos":tx.pending?"gold":"neg"} style={{...amtStyle(type==="income"?"pos":tx.pending?"gold":"neg",pal.val),...(type==="income"&&tx.pending?{color:T.cell_inc}:{}),
-                                fontSize:16,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
-                                transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
-                                {fmt(tx.totalAmount)}
+                                fontSize:FS_BETRAG,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",
+                                transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease",
+                                display:"inline-flex",alignItems:"center",justifyContent:"flex-end"}}>
+                                <RotatedCents s={fmt(tx.totalAmount)}/>
                               </div>
                             </div>
                             {isS&&(
