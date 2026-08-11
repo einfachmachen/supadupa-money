@@ -2169,8 +2169,18 @@ function DashboardScreenV2() {
                     return t._budgetSubId.endsWith("_mitte") ? 0 : 1;
                   };
                   let lastSection = null;
+                  // Die Budget-Details muessen zum ZEITRAUM des Aufrisses passen.
+                  // dashDetailEnde fasst Mitte- und Ende-Platzhalter zu EINEM
+                  // Eintrag fuer den ganzen Monat zusammen (Budget = Summe beider,
+                  // Datum = Monatsletzter); dashDetailMitte enthaelt nur die erste
+                  // Haelfte (Budget = Mitte-Platzhalter, Datum = 14., realTxs nur
+                  // bis zum 14.). Hier stand fest dashDetailEnde — im Aufriss
+                  // „Ausgaben bis 14." las man deshalb „31. Budget: −300,00" statt
+                  // „14. Budget: −150,00" (Nutzer-Hinweis). Der Vormerkungs- und
+                  // der Prognose-Aufriss zeigten daneben die richtige Haelfte.
+                  const detailFuerAufriss = dashDrill.isMitte ? dashDetailMitte : dashDetailEnde;
                   // Budget-Details (voll, verbraucht) je Unterkategorie — wie in Monat.
-                  const _budgetEntryBySub = new Map((dashDetailEnde?.budgetEntries||[]).map(e=>[e.baseSubId,e]));
+                  const _budgetEntryBySub = new Map((detailFuerAufriss?.budgetEntries||[]).map(e=>[e.baseSubId,e]));
                   // Budget-Zeile im Monat-Stil: verbraucht + „Rest:"/„zuviel:" (volles Budget).
                   const renderBudgetRow = (tx) => {
                     const cat2 = getCat((tx.splits||[])[0]?.catId);
@@ -2178,11 +2188,14 @@ function DashboardScreenV2() {
                     const be = _budgetEntryBySub.get(baseSubId);
                     // Bezugsgroesse muss zur Zeile passen: In der Mitte-Ansicht steht
                     // hier NUR der Mitte-Platzhalter, und budgetOpenRest liefert
-                    // entsprechend den Rest dieser HAELFTE. be.budget ist dagegen
-                    // immer das GANZE Monatsbudget (die budgetEntries kommen aus
-                    // dashDetailEnde). Beides gemischt ergab "genutzt = ganzes
-                    // Budget − Rest der Haelfte" — also die zweite Monatshaelfte
-                    // faelschlich als verbraucht (Nutzer-Hinweis: 156,48 statt 6,48).
+                    // entsprechend den Rest dieser HAELFTE. Beides gemischt ergab
+                    // "genutzt = ganzes Budget − Rest der Haelfte" — also die zweite
+                    // Monatshaelfte faelschlich als verbraucht (Nutzer-Hinweis:
+                    // 156,48 statt 6,48). Seit die budgetEntries aus dem passenden
+                    // Zeitraum kommen (detailFuerAufriss), liefert be.budget in der
+                    // Mitte-Ansicht denselben Wert; der Zweig bleibt trotzdem, denn
+                    // ohne passenden Eintrag (be === undefined) ist der Platzhalter
+                    // selbst die einzige verlaessliche Quelle.
                     const istMitteHaelfte = String(tx._budgetSubId||"").endsWith("_mitte")
                       && !tx._isBudgetPair && tx._mitteAmt==null;
                     const budgetFull = istMitteHaelfte
@@ -2249,7 +2262,7 @@ function DashboardScreenV2() {
                     if(!istBuchungsliste) return sorted;
                     const inListe = new Map(sorted.map(t=>[t.id,t]));
                     const gebuendelt = [], vergeben = new Set();
-                    (dashDetailEnde?.budgetEntries||[]).forEach(be2=>{
+                    (detailFuerAufriss?.budgetEntries||[]).forEach(be2=>{
                       const posten = (be2.realTxs||[]).filter(t=>inListe.has(t.id));
                       if(!posten.length) return;
                       posten.forEach(t=>vergeben.add(t.id));
