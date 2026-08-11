@@ -5,6 +5,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, flaecheAbgesetzt } from "../../theme/activeTheme.js";
 import { fmt, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
+import { BudgetBereich } from "../molecules/BudgetBereich.jsx";
 
 function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, saldoEnde, getCat, getSub, initialOpen=null}) {
   if(window.MBT_DEBUG?.disable_drilldown) return null;
@@ -189,46 +190,24 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
                       const b=item.data;
                       const sub=getSub(getCat((b.budgetTx.splits||[])[0]?.catId)?.id||"",b.baseSubId)||getCat((b.budgetTx.splits||[])[0]?.catId);
                       const subName=sub?.name||b.budgetTx.desc||"Budget";
-                      const overBudget=(b.realAmt+b.concAmt)>b.budget;
-                      const effCol=b.isInc?T.cell_inc:T.cell_exp;
-                      const actual = b.realAmt+b.concAmt;
-                      const openAmt = b.budget - actual;
+                      // genutzt aus den TATSAECHLICH gelisteten Posten, nicht aus
+                      // realAmt/concAmt des Eintrags: die Listen sind gefiltert,
+                      // die Summenfelder nicht — sonst passt der Kopf nicht zu den
+                      // Zeilen darunter.
+                      const posten=[...b.realTxs.map(t=>({t,isConc:false})),...b.concTxs.map(t=>({t,isConc:true}))]
+                        .sort((a,c)=>c.t.date.localeCompare(a.t.date));
+                      const betragVon=(t)=>{
+                        const sp=(t.splits||[]).find(x=>x.subId===b.baseSubId);
+                        return (sp?.amount!=null&&sp.amount!==0)?Math.abs(sp.amount):Math.abs(t.totalAmount);
+                      };
+                      const genutzt=posten.reduce((sum,{t})=>sum+betragVon(t),0);
                       return (
-                        <div key={idx} style={{marginBottom:8,background:flaecheAbgesetzt(T.bg),borderRadius:8,padding:"5px 0"}}>
-                          {/* Zeile 1: Datum + Icon + Name | offen rechts */}
-                          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:2}}>
-                            <span style={{color:T.txt2,fontSize:FS_DETAIL,flexShrink:0,fontFamily:NUM_FONT,width:36}}>{fmtD(b.date)}</span>
-                            {Li(overBudget?"alert-triangle":"target",12,overBudget?T.neg:effCol)}
-                            {/* Kategoriename in normaler Textfarbe — wie im Buchungen-/
-                                VM-/unkat.-Aufriss. Die Budget-Farbe traegt hier das
-                                Symbol und der Betrag; der Name durchgehend eingefaerbt
-                                liess die Prognose als einzige Liste komplett rot bzw.
-                                cyan wirken (Nutzer-Bilder). Ausnahme bleibt das
-                                ueberschrittene Budget — das ist ein Warnzustand. */}
-                            <span style={{flex:1,minWidth:0,color:overBudget?T.neg:T.txt,fontSize:FS_TEXT,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{subName}</span>
-                            {overBudget ? (
-                              <span style={{color:T.neg,fontSize:FS_DETAIL,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>um {fmt(actual-b.budget)} drüber</span>
-                            ) : (
-                              <span style={{display:"inline-flex",alignItems:"baseline",gap:5,flexShrink:0}}>
-                                <span style={{color:T.txt2,fontSize:FS_DETAIL}}>offen:</span>
-                                {/* effCol statt fest cell_exp: Einnahmen-Budgets standen
-                                    sonst in der Ausgaben-Farbe da. */}
-                                <span style={{color:effCol,fontSize:FS_BETRAG,fontWeight:700,fontFamily:NUM_FONT}}>{b.isInc?"+":"−"}{fmt(openAmt)}</span>
-                              </span>
-                            )}
-                          </div>
-                          {/* Zeile 2: Budget links | genutzt rechts (unter dem Namen eingerückt) */}
-                          <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:6,marginBottom:2,paddingLeft:44}}>
-                            <span style={{color:T.txt2,fontSize:FS_DETAIL}}>Budget: {b.isInc?"+":"−"}{fmt(b.budget)}</span>
-                            <span style={{display:"inline-flex",alignItems:"baseline",gap:5}}>
-                              <span style={{color:T.txt2,fontSize:FS_DETAIL}}>genutzt:</span>
-                              <span style={{color:actual===0?T.txt2:overBudget?T.neg:effCol,fontSize:FS_DETAIL,fontWeight:700,fontFamily:NUM_FONT}}>{actual===0?"—":`${b.isInc?"+":"−"}${fmt(actual)}`}</span>
-                            </span>
-                          </div>
-                          {/* Trennstrich vor Einzelbuchungen */}
-                          {(b.realTxs.length>0||b.concTxs.length>0)&&<div style={{borderTop:`1px solid ${T.bd}`,margin:"2px 0 4px"}}/>}
-                          {[...b.realTxs.map(t=>({t,isConc:false})),...b.concTxs.map(t=>({t,isConc:true}))].sort((a,c)=>c.t.date.localeCompare(a.t.date)).map(({t,isConc})=>isConc?(<TxRow key={t.id} t={t} isInc={b.isInc} indent dimmed isPending icon={t._seriesId?"repeat":"calendar"} iconCol={b.isInc?T.cell_inc:T.cell_exp} subId={b.baseSubId}/>):(<TxRow key={t.id} t={t} isInc={b.isInc} indent icon="check-circle" iconCol={T.pos} subId={b.baseSubId}/>))}
-                        </div>
+                        <BudgetBereich key={idx} datum={b.date} name={subName}
+                          budget={b.budget} genutzt={genutzt} isInc={b.isInc}>
+                          {posten.map(({t,isConc})=>isConc
+                            ? <TxRow key={t.id} t={t} isInc={b.isInc} indent dimmed isPending icon={t._seriesId?"repeat":"calendar"} iconCol={b.isInc?T.cell_inc:T.cell_exp} subId={b.baseSubId}/>
+                            : <TxRow key={t.id} t={t} isInc={b.isInc} indent icon="check-circle" iconCol={T.pos} subId={b.baseSubId}/>)}
+                        </BudgetBereich>
                       );
                     }
                     if(item.type==="pend") {

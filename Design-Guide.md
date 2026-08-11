@@ -384,17 +384,26 @@ reservierten Prognosewert.
 - **Drilldown-Muster**: state-basiertes Vollbild-Overlay, **immer Zurück-Pfeil links
   und X rechts**, Safe-Area-Header (`MobileHeader`), Suchfeld oben. Kein URL-Routing.
 - **Budget-Kategorien in den Aufrissen** (Prognose Mitte/Ende, Buchungen, VM):
-  jeweils ein **abgesetzter Bereich** — eigene Karte mit Rand und Abstand
-  ringsum (`flaecheAbgesetzt()`, §4.1), Kopfzeile mit Symbol, Name und
-  Beträgen, darunter ein dünner Trennstrich und die **Einzelposten** der
-  Kategorie eingerückt (Datum · Symbol · Beschreibung · Betrag). Dadurch ist
-  sichtbar, welche Buchung zu welchem Budget gehört. Regeln, die dabei mehrfach
-  falsch waren und es bleiben sollen:
+  **`molecules/BudgetBereich.jsx`** — ein Baustein für alle. Karte
+  (`flaecheAbgesetzt()`, §4.1), Zeile 1 = Datum · Symbol · Name | „offen",
+  Zeile 2 = „Budget:" | „genutzt:", darunter ein dünner Trennstrich und die
+  Einzelposten als `children`. Die Posten bleiben bei den Aufrufern, weil sie
+  sich berechtigt unterscheiden (Tag-Chips in der Prognose, Tipp-zum-Öffnen in
+  den Aufrissen) — Kopf und Beträge sind dagegen überall identisch.
+  Vorher hatte jeder Aufriss eine eigene Fassung (Prognose mit Datum + „offen",
+  Buchungen mit 30px-Symbolkachel und nur der Summe, VM mit Verbrauchs-Pegel);
+  jede Korrektur musste dreimal gemacht werden und lief entsprechend
+  auseinander.
+  Regeln, die dabei mehrfach falsch waren und es bleiben sollen:
   - **Der Kategoriename steht in normaler Textfarbe** (`T.txt`), nicht in der
     Budget-Farbe — die tragen Symbol und Beträge. Ausnahme: überschrittenes
     Budget (`T.neg`), das ist ein Warnzustand.
   - **Jede Liste zeigt nur ihre Seite**: unter „Buchungen" nur abgeschlossene
     Buchungen, unter „VM" nur Vormerkungen.
+  - **`budget`/`genutzt` sind fertige Zahlen, kein Budget-Eintrag.** `genutzt`
+    wird aus den TATSÄCHLICH gelisteten Posten gerechnet: die Listen sind
+    konto-gefiltert, die Summenfelder des Eintrags (`realAmt`/`concAmt`) nicht
+    — sonst passt der Kopf nicht zu den Zeilen darunter.
   - **Bezugsgröße muss zur Zeile passen.** In der Mitte-Ansicht steht nur der
     Mitte-Platzhalter, `budgetOpenRest` liefert den Rest **dieser Hälfte** —
     `be.budget` aus `dashDetailEnde.budgetEntries` ist dagegen immer das ganze

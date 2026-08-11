@@ -10,6 +10,7 @@ import { KontoWarnungWidget } from "../organisms/KontoWarnungWidget.jsx";
 import { SweepBanner } from "../organisms/SweepBanner.jsx";
 import { PendingList } from "../organisms/PendingList.jsx";
 import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
+import { BudgetBereich } from "../molecules/BudgetBereich.jsx";
 import { BankFetchPanel } from "../organisms/BankFetchPanel.jsx";
 import { TagesgeldWidget } from "../organisms/TagesgeldWidget.jsx";
 import { AutoMatchReview } from "../organisms/AutoMatchReview.jsx";
@@ -2119,82 +2120,40 @@ function DashboardScreenV2() {
                     const open = (rawRest==null) ? budgetFull : rawRest;       // offener Rest (kann negativ = überzogen)
                     const spent = Math.max(0, budgetFull - open);
                     const isInc = be ? be.isInc : dashDrill.isIncome;
-                    const isOver = !isInc && open < 0;
-                    const mainCol = isInc ? T.cell_inc : (isOver ? T.neg : T.cell_exp);
-                    const usedCol = spent===0 ? T.txt2 : mainCol;
-                    const restCol = isOver ? T.neg : (open>0 ? (isInc?T.cell_inc:T.cell_exp) : T.txt2);
-                    const ratio = budgetFull>0 ? Math.min(1, spent/budgetFull) : 0;
-                    const barCol = isInc ? T.cell_inc : (ratio>=1?T.neg:ratio>=0.75?T.gold:T.pos);
                     const sub = getSub((tx.splits||[])[0]?.catId, baseSubId);
                     const name = sub?.name || cat2?.name || tx.desc || "Budget";
+                    // Nur die Vormerkungen: die Budget-Zeile erscheint in der
+                    // Vormerkungs-Liste, und dort gehoert hin, was noch aussteht.
+                    // Die bereits gebuchten Posten stehen in "Buchungen".
+                    const posten = ((be?.concTxs)||[])
+                      .slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+                    const betragVon = (t) => {
+                      const sp2 = (t.splits||[]).find(x=>x.subId===be?.baseSubId);
+                      return (sp2?.amount!=null && sp2.amount!==0)
+                        ? Math.abs(pn(sp2.amount)) : Math.abs(t.totalAmount);
+                    };
                     return (
-                      // Budget-Kategorie als abgesetzter Bereich (wie im Prognose-
-                      // Aufriss): eigene Karte mit Rand statt vollflaechigem Band —
-                      // so ist auf einen Blick zu sehen, welche Einzelposten zu
-                      // welcher Kategorie gehoeren (Nutzer-Wunsch).
-                      <div key={tx.id} style={{margin:"6px 10px",padding:"6px 8px",borderRadius:10,
-                        border:`1px solid ${T.bd}`,background:flaecheAbgesetzt(T.bg)}}>
-                        <div style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer"}} onClick={()=>{setDashDrill(null);openEdit(tx);}}>
-                          <div style={{width:30,height:30,borderRadius:9,flexShrink:0,background:mainCol+"22",border:`1px solid ${T.bd}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                            {Li(isOver?"alert-triangle":"target",15,mainCol)}
+                      <BudgetBereich key={tx.id} datum={tx.date} name={name}
+                        budget={budgetFull} genutzt={spent} isInc={isInc}>
+                        {posten.map(t=>(
+                          <div key={t.id} onClick={()=>{setDashDrill(null);openEdit(t);}}
+                            style={{display:"flex",alignItems:"center",gap:8,marginBottom:1,
+                              paddingLeft:10,cursor:"pointer",opacity:0.75}}>
+                            <span style={{color:T.txt2,fontSize:12,flexShrink:0,fontFamily:NUM_FONT,width:36}}>
+                              {String(t.date).slice(8,10)}.{String(t.date).slice(5,7)}.
+                            </span>
+                            {Li(t._seriesId?"repeat":"calendar",12,isInc?T.cell_inc:T.cell_exp)}
+                            <span style={{flex:1,minWidth:0,color:T.txt,fontSize:15,
+                              overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                              {t.desc||name}
+                            </span>
+                            <span style={{color:isInc?T.cell_inc:T.cell_exp,fontFamily:NUM_FONT,
+                              fontSize:17,fontWeight:700,flexShrink:0}}>
+                              {isInc?"+":"−"}{fmt(betragVon(t))}
+                            </span>
                           </div>
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{color:isOver?T.neg:T.txt,fontSize:15,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>
-                            <div style={{marginTop:5,position:"relative",height:8,maxWidth:120}}>
-                              <div style={{position:"absolute",left:0,right:0,top:3.25,height:1.5,background:T.bd,borderRadius:1}}/>
-                              <div style={{position:"absolute",left:`calc(3px + (100% - 6px) * ${ratio})`,top:1,width:6,height:6,borderRadius:"50%",background:barCol,transform:"translateX(-50%)"}}/>
-                            </div>
-                          </div>
-                          <div style={{display:"flex",alignItems:"baseline",gap:6,flexShrink:0}}>
-                            <span style={{color:usedCol,fontSize:17,fontWeight:700,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{spent===0?"—":fmt(Math.abs(spent))}</span>
-                            <span style={{color:T.txt2,fontSize:12}}>{isOver?"zuviel:":"Rest:"}</span>
-                            <span style={{color:restCol,fontSize:17,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmt(Math.abs(open))}</span>
-                          </div>
-                        </div>
-                        {/* Einzelbuchungen der Budget-Kategorie — bisher zeigte
-                            diese Zeile nur Verbrauch und Rest, nicht WOFUER.
-                            Dieselbe Quelle und dieselbe Darstellung wie in der
-                            Prognose (budgetEntries.realTxs/concTxs), damit beide
-                            Listen dasselbe Bild ergeben. */}
-                        {(()=>{
-                          // Nur die Vormerkungen: die Budget-Zeile erscheint in der
-                          // Vormerkungs-Liste, und dort gehoert hin, was noch
-                          // aussteht. Die bereits gebuchten Posten stehen in der
-                          // Liste "Buchungen" (Nutzer-Hinweis).
-                          const posten = ((be?.concTxs)||[])
-                            .map(t=>({t,vorgemerkt:true}))
-                            .sort((a,b)=>String(b.t.date).localeCompare(String(a.t.date)));
-                          if(!posten.length) return null;
-                          return (<>
-                            <div style={{borderTop:`1px solid ${T.bd}`,margin:"4px 0 3px 38px"}}/>
-                            {posten.map(({t,vorgemerkt})=>{
-                              const sp2 = (t.splits||[]).find(x=>x.subId===be.baseSubId);
-                              const betrag = (sp2?.amount!=null && sp2.amount!==0)
-                                ? Math.abs(pn(sp2.amount)) : Math.abs(t.totalAmount);
-                              const farbe = vorgemerkt ? (isInc?T.cell_inc:T.cell_exp)
-                                                       : (isInc?T.cond_pos:T.neg);
-                              return (
-                                <div key={t.id} onClick={()=>{setDashDrill(null);openEdit(t);}}
-                                  style={{display:"flex",alignItems:"center",gap:8,marginBottom:1,
-                                    paddingLeft:38,cursor:"pointer",opacity:vorgemerkt?0.75:1}}>
-                                  <span style={{color:T.txt2,fontSize:12,flexShrink:0,fontFamily:NUM_FONT,width:36}}>
-                                    {String(t.date).slice(8,10)}.{String(t.date).slice(5,7)}.
-                                  </span>
-                                  {Li(vorgemerkt?(t._seriesId?"repeat":"calendar"):"check-circle",12,
-                                    vorgemerkt?(isInc?T.cell_inc:T.cell_exp):T.pos)}
-                                  <span style={{flex:1,minWidth:0,color:T.txt,fontSize:15,
-                                    overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                                    {t.desc||name}
-                                  </span>
-                                  <span style={{color:farbe,fontFamily:NUM_FONT,fontSize:17,fontWeight:700,flexShrink:0}}>
-                                    {isInc?"+":"−"}{fmt(betrag)}
-                                  </span>
-                                </div>
-                              );
-                            })}
-                          </>);
-                        })()}
-                      </div>
+                        ))}
+                      </BudgetBereich>
                     );
                   };
                   const _todayISOdrill = new Date().toISOString().slice(0,10);
@@ -2237,25 +2196,12 @@ function DashboardScreenV2() {
                       return sum + ((sp2?.amount!=null && sp2.amount!==0)
                         ? Math.abs(pn(sp2.amount)) : Math.abs(t.totalAmount));
                     },0);
+                    // "genutzt" aus den TATSAECHLICH gelisteten Posten: die Listen
+                    // sind konto-gefiltert, die Summenfelder des Eintrags nicht —
+                    // sonst passt der Kopf nicht zu den Zeilen darunter.
                     return (
-                      // Gleicher Bereich-Stil wie die Budget-Zeile oben und der
-                      // Prognose-Aufriss.
-                      <div key={"grp-"+be2.baseSubId}
-                        style={{margin:"6px 10px",padding:"6px 8px",borderRadius:10,
-                          border:`1px solid ${T.bd}`,background:flaecheAbgesetzt(T.bg)}}>
-                        <div style={{display:"flex",alignItems:"center",gap:8}}>
-                          <div style={{width:30,height:30,borderRadius:9,flexShrink:0,background:gCol+"22",
-                            border:`1px solid ${T.bd}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                            {Li("target",15,gCol)}
-                          </div>
-                          <div style={{flex:1,minWidth:0,color:T.txt,fontSize:15,fontWeight:600,
-                            overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{gName}</div>
-                          <span style={{color:gCol,fontSize:17,fontWeight:700,fontFamily:NUM_FONT,
-                            fontVariantNumeric:"tabular-nums",flexShrink:0}}>
-                            {gInc?"+":"−"}{fmt(gSumme)}
-                          </span>
-                        </div>
-                        <div style={{borderTop:`1px solid ${T.bd}`,margin:"4px 0 3px 38px"}}/>
+                      <BudgetBereich key={"grp-"+be2.baseSubId} datum={be2.date}
+                        name={gName} budget={be2.budget} genutzt={gSumme} isInc={gInc}>
                         {[...posten].sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(t=>{
                           const sp2 = (t.splits||[]).find(x=>x.subId===be2.baseSubId);
                           const betrag = (sp2?.amount!=null && sp2.amount!==0)
@@ -2263,7 +2209,7 @@ function DashboardScreenV2() {
                           return (
                             <div key={t.id} onClick={()=>{setDashDrill(null);openEdit(t);}}
                               style={{display:"flex",alignItems:"center",gap:8,marginBottom:1,
-                                paddingLeft:38,cursor:"pointer"}}>
+                                paddingLeft:10,cursor:"pointer"}}>
                               <span style={{color:T.txt2,fontSize:12,flexShrink:0,fontFamily:NUM_FONT,width:36}}>
                                 {String(t.date).slice(8,10)}.{String(t.date).slice(5,7)}.
                               </span>
@@ -2279,7 +2225,7 @@ function DashboardScreenV2() {
                             </div>
                           );
                         })}
-                      </div>
+                      </BudgetBereich>
                     );
                   };
 
