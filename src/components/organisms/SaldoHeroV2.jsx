@@ -29,7 +29,7 @@ function SaldoHeroV2({
   detailsOpen, setDetailsOpen, hideDetailRows,
   showScrollFocusToggle,
 }) {
-  const { selAcc, setSelAcc, accounts, getKumulierterSaldo, txs, getCat, getSub, amtMode, setAmtMode, setShowGuidedTour, debugFlags, setDebugFlag } = useContext(AppCtx);
+  const { selAcc, setSelAcc, startKonto, setStartKonto, accounts, getKumulierterSaldo, txs, getCat, getSub, amtMode, setAmtMode, setShowGuidedTour, debugFlags, setDebugFlag } = useContext(AppCtx);
   const [progDrill, setProgDrill] = useState(null);
   const [accMenuOpen, setAccMenuOpen] = useState(false);
   // Auge exakt mittig zwischen Betrag-Ende und rechtem Bildschirmrand (Nutzer-
@@ -70,7 +70,15 @@ function SaldoHeroV2({
     return s;
   })();
   const filteredAccs = (accounts||[]).filter(a => usedAccIds.has(a.id));
-  const allAccIds = [null, ...filteredAccs.map(a => a.id)];
+  // Reihenfolge: das Startkonto steht ganz oben, danach Gesamt und der Rest in
+  // ihrer bisherigen Folge. Das gilt fuer die Schnellwahl UND fuers
+  // Durchklicken auf dem Kontostand (cycleAcc nutzt dieselbe Liste), damit
+  // beides zusammenpasst.
+  const allAccIds = (()=>{
+    const rest = [null, ...filteredAccs.map(a => a.id)];
+    if(!startKonto || !filteredAccs.some(a=>a.id===startKonto)) return rest;
+    return [startKonto, ...rest.filter(id => id !== startKonto)];
+  })();
   const cycleAcc = () => {
     const idx = allAccIds.findIndex(a => a===selAcc);
     setSelAcc(allAccIds[(idx+1) % allAccIds.length]);
@@ -255,17 +263,43 @@ function SaldoHeroV2({
             const a = id===null ? null : accounts.find(x=>x.id===id);
             const label = id===null ? "Gesamt" : (a?.name||"");
             const active = selAcc===id;
+            // Startkonto: was die App nach dem Start zeigt. null (Gesamt) ist
+            // der Ausgangszustand und entspricht einem leeren startKonto.
+            const istStart = (id===null) ? !startKonto : startKonto===id;
             return (
               <div key={id||"__all__"} onClick={(e)=>{e.stopPropagation();setSelAcc(id);setAccMenuOpen(false);}}
-                style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",borderRadius:8,
+                style={{display:"flex",alignItems:"center",gap:8,padding:"8px 6px 8px 10px",borderRadius:8,
                   cursor:"pointer",background:active?(T.blue+"22"):"transparent",
                   color:active?T.blue:T.txt,fontSize:13,fontWeight:active?700:500,whiteSpace:"nowrap"}}>
                 {id===null ? Li("layers",14,active?T.blue:T.txt2) : Li(a?.icon||"wallet",14,a?.color||T.txt2)}
                 <span style={{flex:1}}>{label}</span>
                 {active && Li("check",14,T.blue)}
+                {/* Stern = "damit starten". Eigene Trefferflaeche mit
+                    stopPropagation, damit das Antippen NUR das Startkonto
+                    setzt und nicht zugleich die Auswahl umschaltet und das
+                    Menue schliesst. Ausgefuellt beim aktuellen Startkonto,
+                    sonst blass — dadurch ist ohne Beschriftung erkennbar,
+                    dass hier etwas zu holen ist. Bewusst "star" und nicht
+                    "pin": nur das statische Icon-Set (lucideStatic.js) rendert
+                    sofort, alles andere bliebe leer, bis der grosse
+                    Lucide-Chunk nachgeladen ist. */}
+                <span onClick={(e)=>{e.stopPropagation();setStartKonto(id===null?"":id);}}
+                  title={istStart ? "Wird beim Start angezeigt" : "Beim Start dieses Konto zeigen"}
+                  style={{display:"inline-flex",alignItems:"center",justifyContent:"center",
+                    width:28,height:28,borderRadius:8,flexShrink:0,cursor:"pointer",
+                    background:istStart?(T.gold+"26"):"transparent",
+                    opacity:istStart?1:0.45}}>
+                  {Li("star",13,istStart?T.gold:T.txt2)}
+                </span>
               </div>
             );
           })}
+          {/* Einzeiler statt gar keiner Erklaerung: der Stern allein bliebe
+              raten. Bewusst klein und gedaempft, er steht nur einmal unten. */}
+          <div style={{borderTop:`1px solid ${T.bd}`,margin:"4px 2px 0",paddingTop:5,
+            color:T.txt2,fontSize:10.5,lineHeight:1.35,whiteSpace:"normal",padding:"5px 8px 3px"}}>
+            {Li("star",10,T.txt2)} Stern = beim Start zeigen
+          </div>
         </div>
       </>)}
     </span>

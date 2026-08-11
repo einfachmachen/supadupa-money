@@ -236,7 +236,13 @@ export default function SupaDupaMoney() {
   // bei JEDER Änderung erneut zum heutigen Tag — auch wenn "heute" (Anker-Monat)
   // sich zwischen zwei Sprüngen gar nicht geändert hat.
   const [scrollToTodayTick, setScrollToTodayTick] = useState(0);
-  const [selAcc,        setSelAcc]       = useState(null); // Globaler Konto-Filter (null = Gesamt)
+  // Startkonto: welches Konto der Hero nach dem App-Start zeigt. "" (bzw. kein
+  // Eintrag) = Gesamt, wie bisher. Wird in der Konto-Schnellwahl im Hero
+  // gesetzt (Stern-Symbol) und bestimmt dort zugleich die Reihenfolge — das
+  // Startkonto steht ganz oben und ist damit auch beim Durchklicken das erste.
+  const [startKonto, setStartKontoState] = useState(()=>kvStore.getItem("mbt_start_konto")||"");
+  const setStartKonto = (v)=>{ setStartKontoState(v||""); kvStore.setItem("mbt_start_konto", v||""); };
+  const [selAcc,        setSelAcc]       = useState(()=>kvStore.getItem("mbt_start_konto")||null);
   const [col3Name,      setCol3Name]     = useState("aktuell");
   const [csvRules,      setCsvRules]     = useState({});
   const [budgets,       setBudgets]      = useState({}); // {catId: monatsbetrag}
@@ -245,6 +251,16 @@ export default function SupaDupaMoney() {
   const [groups,        setGroups]       = useState([]);
   const [txs,           setTxs]         = useState([]);
   const [accounts,      setAccounts]     = useState(INIT_ACCOUNTS);
+  // Sicherung fuer das Startkonto: wurde das gemerkte Konto geloescht (oder ist
+  // es in diesen Daten gar nicht vorhanden), zeigte der Hero sonst eine leere
+  // Konto-Pille und einen Saldo ohne Bezug. Dann still zurueck auf Gesamt.
+  useEffect(()=>{
+    if(!startKonto) return;
+    if(!accounts.length) return;            // noch nicht geladen
+    if(accounts.some(a=>a.id===startKonto)) return;
+    setStartKonto("");
+    setSelAcc(v => v===startKonto ? null : v);
+  }, [accounts, startKonto]);
   // Fahrzeuge für die Tank-Erfassung (Verbrauch/Preis je Fahrzeug): {id,name,icon,color}
   const [vehicles,      setVehicles]     = useState([]);
   const [yearData,      setYearData]     = useState(makeYearData);
@@ -3118,7 +3134,7 @@ Abbrechen = ${remoteName}-Stand laden`
     yearData, setYearData,
     year: frozenYear, setYear, month: frozenMonth, setMonth,
     scrollToTodayTick,
-    selAcc, setSelAcc, isLand,
+    selAcc, setSelAcc, startKonto, setStartKonto, isLand,
     showAllMonths, setShowAllMonths, mainTab, setMainTab, subTab, setSubTab,
     col3Name, setCol3Name, modal, setModal, mgmtCat, setMgmtCat,
     editTx, setEditTx, newTx, setNewTx, newCat, setNewCat,

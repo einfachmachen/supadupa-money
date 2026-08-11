@@ -486,6 +486,17 @@ entfernt). Der Hero ist `organisms/SaldoHeroV2`.
 - **Hero-Konto-Dropdown**: Der Kontoname im Hero ist eine tippbare Pille — öffnet
   ein Dropdown zum direkten Kontowechsel (`SaldoHeroV2`, `accMenuOpen`); der
   große Kontostand selbst bleibt für das Durch-Tippen mehrerer Konten zuständig.
+  Jede Zeile trägt rechts einen **Stern** = „beim Start dieses Konto zeigen"
+  (`startKonto` im Context, `mbt_start_konto`). Das Startkonto steht zugleich
+  **ganz oben** in der Liste, und `cycleAcc` nutzt dieselbe Liste — Schnellwahl
+  und Durchtippen bleiben dadurch in derselben Reihenfolge. Ohne gesetztes
+  Startkonto ist alles wie zuvor: Gesamt zuerst.
+  Zwei Fallstricke: Der Stern braucht **`stopPropagation`** (sonst schaltet das
+  Antippen zugleich die Auswahl um und schließt das Menü), und er nutzt bewusst
+  `star` statt `pin` — nur Icons aus `lucideStatic.js` rendern sofort, alles
+  andere bleibt leer, bis der große Lucide-Chunk nachgeladen ist. Ein
+  gelöschtes Startkonto fängt eine `useEffect`-Sicherung in `App.jsx` ab und
+  setzt still auf Gesamt zurück.
 - **Bank-Abruf per Pull-to-Refresh**: Ziehen am oberen Rand (Scroll-Top) startet
   einen PSD2-Abruf neuer Bankumsätze (`enableBankingFetch.js`); Treffer landen
   **erst als Vorschau/Staging** in `organisms/BankFetchPanel` (Vorgemerkt-Badge,
