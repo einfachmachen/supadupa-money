@@ -102,22 +102,29 @@ function DashboardScreenV2() {
     //
     // Die Beschreibung der verknüpften Vormerkung ist regelmäßig so lang wie
     // der Buchungstext selbst ("Fahrradhelm, 2er Lesebrille, Sonoff Zigbee
-    // Stick, …"). Solange sie mit in Zeile 2 stand, schob sie den Betrag aus
-    // der Zeile und die Buchung zerfiel in vier gleich aussehende Fragmente
-    // (Nutzer-Bild: Amazon am 10.). Sie steht deshalb IMMER ZULETZT je Buchung
-    // in einer eigenen Zeile unter Tag/Kategorie/Betrag:
+    // Stick, …"). Sie stand einmal mitten in Zeile 2 zwischen Tag und
+    // Kategorie, schob dort den Betrag aus der Zeile und ließ die Buchung in
+    // vier gleich aussehende Fragmente zerfallen (Nutzer-Bild: Amazon am 10.).
+    // Deshalb steht in der Zeile nur noch das Kettensymbol — ein Tipp darauf
+    // klappt die vollständige Beschreibung als letzte Zeile der Buchung auf:
     //
     //     Buchungsbeschreibung
-    //     Tag. Kategorie              Betrag
-    //     Vormerkungs-Beschreibung
+    //     Tag. Kategorie          🔗⌄   Betrag
+    //     🔗 Vormerkungs-Beschreibung        ← erst nach Tipp aufs Symbol
     //
-    // Die kurzen #Tags bleiben oben in Zeile 2 — sie sind Merkmale der
-    // Buchung selbst, keine zweite Beschreibung, und passen dort hin.
-    const vormerkungsBadges = (tx) => (tx.linkedIds||[]).map(lid=>{
+    // So sind alle Buchungen gleich hoch und die Beträge stehen auf einer
+    // Linie, egal ob eine Vormerkung dranhängt. Aufgeklappt trägt der Text
+    // KEINE Chip-Fläche mehr: als Fläche musste er umbrechen, und mehrere
+    // Zeilen eingefärbter Untergrund wirken unruhig (Nutzer-Hinweis). Ein
+    // vorangestelltes Symbol ordnet ihn genauso eindeutig zu.
+    //
+    // Die kurzen #Tags bleiben in Zeile 2 — sie sind Merkmale der Buchung
+    // selbst, keine zweite Beschreibung, und passen dort hin.
+    const vormerkungsInfos = (tx) => (tx.linkedIds||[]).map(lid=>{
       // Nicht die Bank-Vorabmeldung derselben Zahlung anzeigen, sondern die
       // eigene Vormerkung dahinter (s. badgeLinkTarget) — sonst steht die
       // Buchung praktisch zweimal untereinander.
-      const lt=badgeLinkTarget(lid, id=>txs.find(t=>t.id===id));
+      const lt=badgeLinkTarget(lid, id=>_txsById.get(id));
       if(!lt||lt.pending) return null;
       // Zähler "x/y" nur bei Finanzierungen — da ist die verbleibende Anzahl
       // Raten die eigentliche Information. Bei einer Dauer-Vormerkung (Strom,
@@ -125,31 +132,60 @@ function DashboardScreenV2() {
       // ein Ende, das es nicht gibt (gleiche Regel wie in PendingList).
       const isFin = lt._seriesTyp === "finanzierung";
       const sTotal = isFin ? lt._seriesTotal : 0;
-      const sIdx = lt._seriesIdx;
-      return (
-        <span key={lid} style={{display:"inline-flex",alignItems:"center",gap:4,maxWidth:"100%",
-          background:`${T.blue}26`,border:`1px solid ${T.blue}66`,
-          borderRadius:5,padding:"2px 6px",fontSize:11,fontWeight:600,color:T.txt}}>
-          {Li("link",11,T.blue)}
-          {lt.desc||"Vormerkung"}
-          {sTotal>1&&` · ${sIdx}/${sTotal}`}
-        </span>
-      );
+      return { id: lid,
+        text: (lt.desc||"Vormerkung") + (sTotal>1 ? ` · ${lt._seriesIdx}/${sTotal}` : "") };
     }).filter(Boolean);
 
-    // Die Schlusszeile einer Buchung. Ohne verknüpfte Vormerkung entfällt sie
-    // ganz — sonst entstünde je Buchung eine leere Zeile Abstand.
-    const VormerkungZeile = ({tx}) => {
-      const badges = vormerkungsBadges(tx);
-      if(!badges.length) return null;
+    // Welche Buchungen ihre Vormerkung gerade zeigen. Mehrere gleichzeitig sind
+    // erlaubt — beim Durchsehen einer Liste will man sie vergleichen, nicht
+    // jedes Mal die vorige wieder verlieren.
+    const [vmOffen, setVmOffen] = useState(() => new Set());
+    const vmToggle = (id) => setVmOffen(s => {
+      const n = new Set(s);
+      if(n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+
+    // Das Kettensymbol in Zeile 2. Ohne verknüpfte Vormerkung gibt es nichts —
+    // dann fehlt auch das Symbol, es ist also zugleich der Hinweis DARAUF, dass
+    // eine existiert. Das Chevron daneben sagt, dass sich etwas aufklappen
+    // lässt; ein Symbol allein liest sich wie reine Verzierung.
+    // stopPropagation ist Pflicht: die ganze Zeile öffnet sonst den
+    // Bearbeiten-Dialog, und der Tipp käme nie hier an.
+    const VormerkungSymbol = ({tx}) => {
+      if(!vormerkungsInfos(tx).length) return null;
+      const offen = vmOffen.has(tx.id);
       return (
-        <div style={{display:"flex",flexWrap:"wrap",alignItems:"center",gap:6,minWidth:0}}>
-          {badges}
+        <span onClick={e=>{e.stopPropagation(); vmToggle(tx.id);}} role="button"
+          title={offen?"Vormerkung ausblenden":"Verknüpfte Vormerkung anzeigen"}
+          style={{display:"inline-flex",alignItems:"center",gap:1,flexShrink:0,cursor:"pointer",
+            background:`${T.blue}26`,border:`1px solid ${T.blue}66`,borderRadius:5,
+            padding:"3px 6px",lineHeight:1}}>
+          {Li("link",11,T.blue)}
+          {Li(offen?"chevron-up":"chevron-down",10,T.blue)}
+        </span>
+      );
+    };
+
+    // Die aufgeklappte Schlusszeile einer Buchung.
+    const VormerkungZeile = ({tx}) => {
+      if(!vmOffen.has(tx.id)) return null;
+      const infos = vormerkungsInfos(tx);
+      if(!infos.length) return null;
+      return (
+        <div style={{display:"flex",flexDirection:"column",gap:2}}>
+          {infos.map(i=>(
+            <div key={i.id} style={{display:"flex",alignItems:"flex-start",gap:5,
+              color:T.txt,fontSize:12,lineHeight:1.35,minWidth:0}}>
+              <span style={{flexShrink:0,display:"inline-flex",paddingTop:1}}>{Li("link",11,T.blue)}</span>
+              <span style={{minWidth:0}}>{i.text}</span>
+            </div>
+          ))}
         </div>
       );
     };
 
-    // Nur noch die #Tags — die Vormerkung hat ihre eigene Zeile (s. oben).
+    // Nur noch die #Tags — die Vormerkung hat ihr eigenes Symbol (s. oben).
     const TagBadges = ({tx}) => (tx.tags||[]).map(t=>(
       <span key={"tag-"+t} style={{background:`${T.blue}26`,border:`1px solid ${T.blue}66`,color:T.txt,
         borderRadius:5,padding:"2px 6px",fontSize:11,fontWeight:700,flexShrink:0}}>
@@ -1909,10 +1945,11 @@ function DashboardScreenV2() {
                                 border:`1px solid ${(tx._seriesId?T.pos:T.gold)}66`,color:T.txt,
                                 borderRadius:4,padding:"1px 6px",fontSize:11,fontWeight:700}}>{tx._seriesId?"wiederkehrend":"vorgemerkt"}</span>}
                               <TagBadges tx={tx}/>
+                              <VormerkungSymbol tx={tx}/>
                             </div>
                             <span style={{...amtStyle(tx.pending?(cat.type==="income"?"cell_inc":"cell_exp"):cat.type==="income"?"pos":"neg", tx.pending?undefined:bookCol(cat.type==="income",tx.date)),fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>{fmt(amt)}</span>
                           </div>
-                          {/* Zeile 3: verknüpfte Vormerkung, immer zuletzt */}
+                          {/* Zeile 3: verknüpfte Vormerkung, aufgeklappt immer zuletzt */}
                           <VormerkungZeile tx={tx}/>
                         </div>
                       );
@@ -2084,13 +2121,14 @@ function DashboardScreenV2() {
                                     {tx._seriesId?"wiederkehrend":"vorgemerkt"}
                                   </span>}
                                   <TagBadges tx={tx}/>
+                                  <VormerkungSymbol tx={tx}/>
                                 </div>
                                 <span style={{color:tx.pending?(cat.type==="income"?T.cell_inc:T.cell_exp):bookCol(cat.type==="income",tx.date),fontSize:17,
                                   fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
                                   {fmt(amt)}
                                 </span>
                               </div>
-                              {/* Zeile 3: verknüpfte Vormerkung, immer zuletzt */}
+                              {/* Zeile 3: verknüpfte Vormerkung, aufgeklappt immer zuletzt */}
                               <VormerkungZeile tx={tx}/>
                             </div>
                           );
@@ -2363,12 +2401,13 @@ function DashboardScreenV2() {
                             {sub&&!isUncat&&!isS&&<span style={{color:T.txt,fontSize:12,fontWeight:600}}>{sub.name}</span>}
                             {isUncat&&<span style={{color:T.txt,background:"rgba(255,80,80,0.24)",border:`1px solid ${T.neg}66`,
                               borderRadius:4,padding:"1px 6px",fontSize:11,fontWeight:700}}>unkategorisiert</span>}
+                            <VormerkungSymbol tx={tx}/>
                           </div>
                           <div style={{...amtStyle(dashDrill.isIncome?"pos":"neg", dashDrill.isPending?undefined:bookCol(dashDrill.isIncome,tx.date)),...(dashDrill.isPending?{color:dashDrill.isIncome?T.cell_inc:T.cell_exp}:{}),fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
                             {fmt(amt)}
                           </div>
                         </div>
-                        {/* Zeile 3: verknüpfte Vormerkung, immer zuletzt */}
+                        {/* Zeile 3: verknüpfte Vormerkung, aufgeklappt immer zuletzt */}
                         <VormerkungZeile tx={tx}/>
                       </div>
                       {/* Aufgeklappte Split-Kategorien für alle Splitbuchungen */}

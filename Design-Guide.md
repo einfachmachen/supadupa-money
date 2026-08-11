@@ -414,25 +414,38 @@ reservierten Prognosewert.
     `be.budget` aus `dashDetailEnde.budgetEntries` ist dagegen immer das ganze
     Monatsbudget. Beides gemischt ergibt „genutzt = ganzes Budget − Rest der
     Hälfte" (`istMitteHaelfte` in `DashboardScreenV2`).
-- **Buchungszeile in den Aufrissen** — drei Zeilen, immer in dieser Reihenfolge:
+- **Buchungszeile in den Aufrissen** — **zwei** Zeilen, für jede Buchung gleich
+  hoch; die verknüpfte Vormerkung kommt als dritte Zeile nur auf Wunsch dazu:
 
   ```
   Buchungsbeschreibung                        ⌄
-  Tag.  Kategorie                        Betrag
-  🔗 Beschreibung der verknüpften Vormerkung
+  Tag.  Kategorie              🔗⌄       Betrag
+  🔗 Beschreibung der Vormerkung   ← erst nach Tipp aufs Kettensymbol
   ```
 
-  Die dritte Zeile (`VormerkungZeile` in `DashboardScreenV2`) entfällt ganz,
-  wenn keine eigene Vormerkung verknüpft ist. Sie **muss** unten stehen: ihre
-  Beschreibung ist regelmäßig so lang wie der Buchungstext selbst
-  („Fahrradhelm, 2er Lesebrille, Sonoff Zigbee Stick, …"). Solange sie mit in
-  Zeile 2 stand, schob sie den Betrag aus der Zeile, die Beträge standen
-  untereinander auf verschiedenen Höhen und die Buchung zerfiel in vier gleich
-  aussehende Fragmente. Die kurzen `#Tags` bleiben dagegen in Zeile 2 — sie
-  sind Merkmale der Buchung, keine zweite Beschreibung.
-  Tag und Text trennt überall `gap: 6`; die Datumsspalte hat **keine** feste
-  Breite (`tagKurz` liefert immer zwei Ziffern und einen Punkt, eine feste
-  Breite erzeugt daher nur Luft).
+  In Zeile 2 steht nur das **Kettensymbol** (`VormerkungSymbol`), ein Tipp
+  darauf klappt die vollständige Beschreibung als letzte Zeile auf
+  (`VormerkungZeile`, beide in `DashboardScreenV2`). Ohne verknüpfte
+  Vormerkung fehlt das Symbol ganz — es ist damit zugleich der Hinweis darauf,
+  dass eine existiert. Regeln, die dabei zählen:
+  - **Die Beschreibung gehört nicht in Zeile 2.** Sie ist regelmäßig so lang
+    wie der Buchungstext selbst („Fahrradhelm, 2er Lesebrille, Sonoff Zigbee
+    Stick, …"). Dort schob sie den Betrag aus der Zeile, die Beträge standen
+    untereinander auf verschiedenen Höhen und die Buchung zerfiel in vier
+    gleich aussehende Fragmente.
+  - **Aufgeklappt trägt der Text keine Chip-Fläche**, nur ein vorangestelltes
+    Symbol. Als Fläche musste er umbrechen, und mehrere Zeilen eingefärbter
+    Untergrund wirken unruhig.
+  - **`stopPropagation` am Symbol ist Pflicht** — die ganze Zeile öffnet sonst
+    den Bearbeiten-Dialog und der Tipp käme nie an.
+  - **Mehrere Buchungen dürfen gleichzeitig offen sein** (`vmOffen` als Set,
+    nicht als einzelne ID): beim Durchsehen einer Liste will man vergleichen,
+    nicht jedes Mal die vorige verlieren.
+  - Die kurzen `#Tags` bleiben in Zeile 2 — sie sind Merkmale der Buchung,
+    keine zweite Beschreibung.
+  - Tag und Text trennt überall `gap: 6`; die Datumsspalte hat **keine** feste
+    Breite (`tagKurz` liefert immer zwei Ziffern und einen Punkt, eine feste
+    Breite erzeugt daher nur Luft).
 - **Prognose-Aufriss** (`SaldoPrognose`, aus dem Hero über MITTE/ENDE): Titel
   und Saldo teilen sich **eine** Zeile („Prognose Mitte" links, Betrag rechts),
   darunter ohne Abstand die kleinen Summen. Zwischen Hero-Ende und Aufriss
