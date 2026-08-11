@@ -5,6 +5,7 @@ import { CatPicker } from "../molecules/CatPicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, uid } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 
 function ReviewQueueModal({queue, setQueue}) {
@@ -52,7 +53,7 @@ function ReviewQueueModal({queue, setQueue}) {
           <div style={{color:T.txt2,fontSize:11,marginTop:2,display:"flex",gap:8}}>
             <span>{item.tx.date}</span>
             <span style={{color:item.tx._csvType==="income"?T.pos:T.neg,fontWeight:700}}>
-              {item.tx._csvType==="income"?"+":"−"}{fmt(Math.abs(item.tx.totalAmount))} laut CSV
+              {item.tx._csvType==="income"?"+":"−"}{betrag(Math.abs(item.tx.totalAmount))} laut CSV
             </span>
           </div>
           {queue.mode==="typfix"&&item.wrongCatName&&(

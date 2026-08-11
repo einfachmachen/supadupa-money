@@ -4,6 +4,7 @@ import React, { useMemo, useState } from "react";
 import { tagMonat } from "../../utils/date.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { dayOf, fmt, pn, NUM_FONT, lightenHex } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { budgetPlaceholderActive } from "../../utils/saldo.js";
@@ -110,11 +111,11 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
                   // Budget überschritten: Hellorange wie bei negativem Kontostand
                   // (T.warn_icon), nicht mehr die Ausgaben-Farbe (T.neg/Cyan) —
                   // das ist eine Warnung, keine normale Ausgaben-Vormerkung.
-                  <span style={{color:T.warn_icon,fontSize:15,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>{fmt(Math.abs(rest))} drüber</span>
+                  <span style={{color:T.warn_icon,fontSize:15,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>{betrag(Math.abs(rest))} drüber</span>
                 ) : (
                   <span style={{display:"inline-flex",alignItems:"baseline",gap:4,flexShrink:0}}>
                     <span style={{color:T.txt2,fontSize:10}}>offen:</span>
-                    <span style={{color:T.neg_vm,fontSize:15,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(rest)}</span>
+                    <span style={{color:T.neg_vm,fontSize:15,fontWeight:700,fontFamily:NUM_FONT}}>{betrag(rest)}</span>
                   </span>
                 )}
                 <span style={{color:T.txt2,flexShrink:0}}>{Li("chevron-right",14)}</span>
@@ -164,7 +165,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
               </div>
               <span style={{color:day<=14?T.mid:T.gold,fontSize:11,flexShrink:0}}>{day<=14?"Mitte":"Ende"}</span>
               <span style={{color:col,fontSize:15,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
-                {fmt(_pendOpenAmt(tx))}
+                {betrag(_pendOpenAmt(tx))}
               </span>
               <span style={{color:T.txt2,flexShrink:0}}>{Li(isS?(isExpanded?"chevron-up":"chevron-down"):"chevron-right",14)}</span>
             </div>
@@ -183,7 +184,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
                         {sSub?.name||sCat?.name||"?"}
                       </span>
                       <span style={{color:col,fontSize:11,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
-                        {isIncome?"+":"−"}{fmt(pn(s.amount))}
+                        {isIncome?"+":"−"}{betrag(pn(s.amount))}
                       </span>
                     </div>
                   );

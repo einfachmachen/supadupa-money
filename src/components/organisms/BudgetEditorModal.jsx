@@ -5,6 +5,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { suggestBudget } from "../../utils/budgetSuggest.js";
 
@@ -252,7 +253,7 @@ function BudgetEditorModal({sub, cat, accountId="acc-giro", onClose}) {
               fontFamily:"inherit",textAlign:"left"}}>
             {Li("bar-chart-2",16,T.blue)}
             <span style={{flex:1,minWidth:0,lineHeight:1.3}}>
-              <span style={{fontSize:12.5}}>Vorschlag: <b style={{color:T.blue}}>{fmt(suggestAmt)} €</b>/Monat</span>
+              <span style={{fontSize:12.5}}>Vorschlag: <b style={{color:T.blue}}>{betrag(suggestAmt)} €</b>/Monat</span>
               <span style={{display:"block",color:T.txt2,fontSize:10.5,marginTop:1}}>
                 Schnitt aus {suggestion.months} Mon. ({suggestion.actualMonths} gebucht · {suggestion.pendingMonths} geplant)
               </span>
@@ -267,13 +268,13 @@ function BudgetEditorModal({sub, cat, accountId="acc-giro", onClose}) {
             background:"rgba(255,255,255,0.04)",borderRadius:7,padding:"6px 10px",
             fontSize:12,fontFamily:NUM_FONT}}>
             <span><span style={{color:T.txt2,fontFamily:"inherit",fontSize:11}}>Mitte: </span>
-              <span style={{color:T.mid,fontWeight:700}}>{fmt(amtM||0)}</span></span>
+              <span style={{color:T.mid,fontWeight:700}}>{betrag(amtM||0)}</span></span>
             <span style={{color:T.txt2}}>·</span>
             <span><span style={{color:T.txt2,fontFamily:"inherit",fontSize:11}}>Gesamt: </span>
-              <span style={{color:T.txt,fontWeight:700}}>{fmt(amtG)}</span></span>
+              <span style={{color:T.txt,fontWeight:700}}>{betrag(amtG)}</span></span>
             <span style={{color:T.txt2}}>·</span>
             <span><span style={{color:T.txt2,fontFamily:"inherit",fontSize:11}}>Ende: </span>
-              <span style={{color:T.pos,fontWeight:700}}>{fmt(amtE)}</span></span>
+              <span style={{color:T.pos,fontWeight:700}}>{betrag(amtE)}</span></span>
           </div>
         )}
 

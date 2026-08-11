@@ -9,6 +9,7 @@ import React, { useContext, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, uid, NUM_FONT } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { CatPicker } from "../molecules/CatPicker.jsx";
 import { TagInput } from "../atoms/TagInput.jsx";
@@ -41,7 +42,7 @@ function Row({ t, accName, setRowCat, removeRow, setRowNote, setRowTags, allTags
           textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.desc || "Buchung"}</span>
         <span style={{ color: t.pending ? T.gold : (isInc ? T.pos : T.neg), fontSize: 14, fontWeight: 800,
           fontVariantNumeric: "tabular-nums", fontFamily: NUM_FONT, flexShrink: 0 }}>
-          {isInc ? "" : "−"}{fmt(Math.abs(t.totalAmount))} €
+          {isInc ? "" : "−"}{betrag(Math.abs(t.totalAmount))} €
         </span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
@@ -297,7 +298,7 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm, 
                 textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.row.desc}</span>
               <span style={{ color: it.row.amount < 0 ? T.neg : T.pos, fontSize: 12.5, fontWeight: 700,
                 fontVariantNumeric: "tabular-nums", fontFamily: NUM_FONT, flexShrink: 0 }}>
-                {fmt(Math.abs(it.row.amount))} €
+                {betrag(Math.abs(it.row.amount))} €
               </span>
               <button onClick={() => onPromoteDupe?.(it)} title="Als neue, eigenständige Buchung übernehmen"
                 style={{ flexShrink: 0, background: "transparent", border: `1px solid ${T.gold}88`, borderRadius: 6,
@@ -353,7 +354,7 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm, 
               <span style={{ color: T.txt2, fontSize: 11, flexShrink: 0 }}>vorhanden</span>
               <span style={{ color: it.row.amount < 0 ? T.neg : T.pos, fontSize: 12.5, fontWeight: 700,
                 fontVariantNumeric: "tabular-nums", fontFamily: NUM_FONT, flexShrink: 0 }}>
-                {fmt(Math.abs(it.row.amount))} €
+                {betrag(Math.abs(it.row.amount))} €
               </span>
             </div>
           ))}

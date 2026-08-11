@@ -6,6 +6,10 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { fmt } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
+// Die Betraege stehen hier in SVG-<text>-Knoten. Dort ist `betrag()` NICHT
+// verwendbar: bei aktiver Nachkommastellen-Option liefert es ein <span>, und
+// HTML-Elemente rendern innerhalb von <svg> nicht. Deshalb bleibt es hier bei
+// fmt() — das Tortendiagramm folgt der Option bewusst nicht.
 function CategoryChart({catSums, maxSum, budgets, getBudgetForMonth, year, month}) {
   const [chartOpen, setChartOpen] = React.useState(false);
   const [view, setView] = React.useState("bar");

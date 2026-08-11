@@ -14,6 +14,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { amtStyle } from "../../theme/amtPill.js";
 import { fmt, NUM_FONT, darkenHex, lightenHex } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { phaseStillReachable } from "../../utils/saldo.js";
 import { Li } from "../../utils/icons.jsx";
 import { ThemeSwitcherMini } from "../molecules/ThemeSwitcherMini.jsx";
@@ -93,7 +94,9 @@ function SaldoHeroV2({
   const saldo = selAcc === null
     ? getKumulierterSaldo(year, month)
     : getKumulierterSaldo(year, month, selAcc);
-  const fmtMoney = v => v==null||v===undefined ? "—" : fmt(v);
+  // Nur fuer die JSX-Kindposition (grosser Saldo, Prognosen) — deshalb betrag()
+  // und nicht fmt(): so folgen auch diese Betraege der Nachkommastellen-Option.
+  const fmtMoney = v => v==null||v===undefined ? "—" : betrag(v);
   // Aktueller Kontostand (großer Wert): an die Akzentfarbe angeglichen.
   // Negativ = eigene, kräftige Warnfarbe (Hellorange) — ein Minus-Saldo soll
   // nicht in der Markenfarbe "unsichtbar" werden, und Cyan ist jetzt die
@@ -193,13 +196,13 @@ function SaldoHeroV2({
       <div style={{flex:1,textAlign:"center",cursor:vOut>0&&onTapOut?"pointer":"default",padding:"2px 0"}}
         onClick={vOut>0&&onTapOut?()=>onTapOut(isMitte):undefined}>
         {vOut>0
-          ? <span style={{...amtStyle("neg",clrOut||T.cond_neg),fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,whiteSpace:"nowrap",...(rotatedCents?{display:"inline-flex",alignItems:"center"}:{})}}>{rotatedCents?<RotatedCents v={vOut}/>:fmt(vOut)}</span>
+          ? <span style={{...amtStyle("neg",clrOut||T.cond_neg),fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,whiteSpace:"nowrap",...(rotatedCents?{display:"inline-flex",alignItems:"center"}:{})}}>{rotatedCents?<RotatedCents v={vOut}/>:betrag(vOut)}</span>
           : <span style={{color:T.txt2,fontSize:20}}>—</span>}
       </div>
       <div style={{flex:1,textAlign:"center",cursor:vIn>0&&onTapIn?"pointer":"default",padding:"2px 0"}}
         onClick={vIn>0&&onTapIn?()=>onTapIn(isMitte):undefined}>
         {vIn>0
-          ? <span style={{...amtStyle("pos",clrIn||T.cond_pos),fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,whiteSpace:"nowrap",...(rotatedCents?{display:"inline-flex",alignItems:"center"}:{})}}>{rotatedCents?<RotatedCents v={vIn}/>:fmt(vIn)}</span>
+          ? <span style={{...amtStyle("pos",clrIn||T.cond_pos),fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,whiteSpace:"nowrap",...(rotatedCents?{display:"inline-flex",alignItems:"center"}:{})}}>{rotatedCents?<RotatedCents v={vIn}/>:betrag(vIn)}</span>
           : <span style={{color:T.txt2,fontSize:20}}>—</span>}
       </div>
     </div>

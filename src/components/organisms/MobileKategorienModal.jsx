@@ -8,6 +8,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { suggestBudget } from "../../utils/budgetSuggest.js";
 
@@ -679,8 +680,8 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                     {/* Budget-Anzeige */}
                     {curGesamt>0&&!editing&&(
                       <div style={{textAlign:"right",flexShrink:0}}>
-                        <div style={{color:T.gold,fontSize:17,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(curGesamt)}</div>
-                        {curMitte>0&&<div style={{color:T.txt2,fontSize:11}}>Mitte: {fmt(curMitte)}</div>}
+                        <div style={{color:T.gold,fontSize:17,fontWeight:700,fontFamily:NUM_FONT}}>{betrag(curGesamt)}</div>
+                        {curMitte>0&&<div style={{color:T.txt2,fontSize:11}}>Mitte: {betrag(curMitte)}</div>}
                       </div>
                     )}
                     {/* Budget öffnen/schließen – Pfeil wenn offen, Zielscheibe wenn zu */}
@@ -729,7 +730,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                             <div style={{flex:1,minWidth:0}}>
                               <div style={{display:"flex",alignItems:"baseline",gap:6,flexWrap:"wrap"}}>
                                 <span style={{fontSize:14,color:T.txt2}}>Vorschlag</span>
-                                <b style={{fontSize:18,color:T.blue,fontFamily:NUM_FONT}}>{fmt(sugAmt)} €</b>
+                                <b style={{fontSize:18,color:T.blue,fontFamily:NUM_FONT}}>{betrag(sugAmt)} €</b>
                                 <span style={{fontSize:13,color:T.txt2}}>· {RL}</span>
                               </div>
                               <div style={{color:T.txt2,fontSize:11.5,marginTop:2}}>
@@ -760,7 +761,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                         </div>
                       </div>
                       {amtG>0&&<div style={{color:T.txt2,fontSize:12,marginBottom:S.gap/2,textAlign:"right"}}>
-                        2. Hälfte: {fmt(amtE)}
+                        2. Hälfte: {betrag(amtE)}
                       </div>}
                       {/* Rhythmus */}
                       <div style={{display:"flex",gap:4,marginBottom:S.gap/2}}>

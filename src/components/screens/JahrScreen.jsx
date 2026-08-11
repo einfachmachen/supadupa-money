@@ -9,6 +9,7 @@ import { amtStyle } from "../../theme/amtPill.js";
 import { groupBudgetPairs } from "../../utils/budgets.js";
 import { BASE_ROWS, CUR_YEAR, MONTHS_F, MONTHS_S } from "../../utils/constants.js";
 import { drillSort, fmt, pn, sumAmounts, uid, NUM_FONT } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { saldoAt, saldoMitte, saldoEnde } from "../../utils/saldo.js";
 import { badgeLinkTarget } from "../../utils/vormMatch.js";
@@ -315,7 +316,7 @@ function JahrScreen({forceSingle=false}) {
                   opacity:   hasPend&&sub!=="D"&&!isPendOpen ? 0.65 : 1,
                   textDecoration: hasPend&&sub!=="D" ? "underline dotted" : "none",
                 }}>
-                  {isEmpty ? "" : fmt(pn(effVal))}
+                  {isEmpty ? "" : betrag(pn(effVal))}
                   {hasPend&&sub!=="D"&&<span style={{marginLeft:1,opacity:0.7,display:"inline-flex"}}>{Li(isPendOpen?"chevron-up":"chevron-down",7,T.txt2)}</span>}
                 </span>
 
@@ -346,7 +347,7 @@ function JahrScreen({forceSingle=false}) {
                     ))}
                     <div style={{borderTop:"1px solid rgba(61,126,170,0.15)",marginTop:4,paddingTop:4,display:"flex",justifyContent:"space-between"}}>
                       <span style={{color:T.txt2,fontSize:8}}>Σ</span>
-                      <span style={{color:T.txt,fontSize:10,fontWeight:800,fontFamily:NUM_FONT}}>{fmt(pendItems.reduce((s,i)=>s+pn(i.amount),0))}</span>
+                      <span style={{color:T.txt,fontSize:10,fontWeight:800,fontFamily:NUM_FONT}}>{betrag(pendItems.reduce((s,i)=>s+pn(i.amount),0))}</span>
                     </div>
                   </div>
                 )}
@@ -381,7 +382,7 @@ function JahrScreen({forceSingle=false}) {
               <div style={{background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"7px 10px",marginBottom:14,border:"1px solid rgba(61,126,170,0.15)"}}>
                 <div style={{color:T.txt2,fontSize:10,marginBottom:2}}>Aktueller Wert</div>
                 <div style={{color:popup.sub==="D"?T.gold:T.txt,fontSize:22,fontWeight:800,fontFamily:NUM_FONT,textAlign:"right"}}>
-                  {popup.val ? fmt(pn(popup.val)) : "–"}
+                  {popup.val ? betrag(pn(popup.val)) : "–"}
                 </div>
               </div>
               {/* Reset-Button wenn manuell überschrieben */}
@@ -389,7 +390,7 @@ function JahrScreen({forceSingle=false}) {
                 <div style={{background:"rgba(180,83,9,0.1)",border:"1px solid rgba(180,83,9,0.3)",borderRadius:10,padding:"8px 12px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
                   <div>
                     <div style={{color:T.override,fontSize:10,fontWeight:700,marginBottom:1}}>Manuell überschrieben</div>
-                    <div style={{color:T.txt2,fontSize:10}}>Auto-Wert: <b style={{color:T.txt}}>{fmt(getActualSum(year, popup.mi, popup.row.subId, popup.sub)||0)}</b></div>
+                    <div style={{color:T.txt2,fontSize:10}}>Auto-Wert: <b style={{color:T.txt}}>{betrag(getActualSum(year, popup.mi, popup.row.subId, popup.sub)||0)}</b></div>
                   </div>
                   <button onClick={()=>{setJV(popup.mi,popup.id,popup.sub,"");setPopup(null);}}
                     style={{background:"`${T.override}26`",border:"1px solid `${T.override}66`",color:T.override,borderRadius:8,padding:"6px 12px",fontSize:12,cursor:"pointer",fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>
@@ -483,8 +484,8 @@ function JahrScreen({forceSingle=false}) {
                   <div style={{flex:1}}>
                     <div style={{color:T.override,fontSize:10,fontWeight:700}}>Manuell überschrieben</div>
                     <div style={{color:T.txt2,fontSize:10}}>
-                      Gespeichert: <b style={{color:T.override}}>{fmt(pn(drilldown.storedVal))}</b>
-                      {" · "}Auto: <b style={{color:T.txt}}>{fmt(pn(drilldown.autoVal))}</b>
+                      Gespeichert: <b style={{color:T.override}}>{betrag(pn(drilldown.storedVal))}</b>
+                      {" · "}Auto: <b style={{color:T.txt}}>{betrag(pn(drilldown.autoVal))}</b>
                     </div>
                   </div>
                   <button onClick={()=>{
@@ -533,7 +534,7 @@ function JahrScreen({forceSingle=false}) {
                             paddingTop:i===3?3:0}}>
                             <span style={{color:T.txt2}}>{label}</span>
                             <span style={{...amtStyle(col),fontFamily:NUM_FONT,fontWeight:i===3?700:400}}>
-                              {val>=0?"+":"−"}{fmt(Math.abs(val))}
+                              {val>=0?"+":"−"}{betrag(Math.abs(val))}
                             </span>
                           </div>
                         ))}
@@ -567,9 +568,9 @@ function JahrScreen({forceSingle=false}) {
                           </div>
                           <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
                             <span style={{color:T.mid,fontSize:10}}>Mitte</span>
-                            <span style={{...amtStyle("neg",col2),fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(tx._mitteAmt)}</span>
+                            <span style={{...amtStyle("neg",col2),fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>−{betrag(tx._mitteAmt)}</span>
                             <span style={{color:T.gold,fontSize:10}}>Gesamt</span>
-                            <span style={{...amtStyle("neg",col2),fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(tx._mitteAmt+tx._endeAmt)}</span>
+                            <span style={{...amtStyle("neg",col2),fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>−{betrag(tx._mitteAmt+tx._endeAmt)}</span>
                           </div>
                         </div>
                       );
@@ -671,18 +672,18 @@ function JahrScreen({forceSingle=false}) {
                         {/* Betrag */}
                         <div style={{textAlign:"right",flexShrink:0}}>
                           <div style={{...amtStyle(txType(tx)==="income"?"pos":"neg"),fontSize:13,fontWeight:700,fontFamily:NUM_FONT}}>
-                            {txType(tx)==="income"?"+":"−"}{fmt(amt)}
+                            {txType(tx)==="income"?"+":"−"}{betrag(amt)}
                           </div>
                           {isS&&(
                             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1,marginTop:2}}>
                               <div style={{color:T.txt2,fontSize:9,fontFamily:NUM_FONT,whiteSpace:"nowrap"}}>
-                                {Li("arrow-left-right",8,T.blue)} Gesamt: {fmt(tx.totalAmount)}
+                                {Li("arrow-left-right",8,T.blue)} Gesamt: {betrag(tx.totalAmount)}
                               </div>
                               {(tx.splits||[]).filter(sp=>sp.catId&&sp.subId!==drilldown.subId).map(sp=>{
                                 const oCat=getCat(sp.catId), oSub=getSub(sp.catId,sp.subId);
                                 return (
                                   <div key={sp.id} style={{color:T.txt2,fontSize:9,fontFamily:NUM_FONT,whiteSpace:"nowrap"}}>
-                                    <span style={{color:oCat?.color||T.txt2}}>{oSub?.name||oCat?.name||"?"}</span>: {fmt(pn(sp.amount))}
+                                    <span style={{color:oCat?.color||T.txt2}}>{oSub?.name||oCat?.name||"?"}</span>: {betrag(pn(sp.amount))}
                                   </div>
                                 );
                               })}

@@ -8,6 +8,9 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { THEMES } from "../../theme/themes.js";
 import { AppCtx } from "../../state/AppContext.js";
 import { kvStore } from "../../utils/kvStore.js";
+import { NUM_FONT } from "../../utils/format.js";
+import { Li } from "../../utils/icons.jsx";
+import { RotatedCents } from "../atoms/RotatedCents.jsx";
 
 // Farbwert → #rrggbb (versteht #… und rgb()/rgba())
 const toH = c => {
@@ -73,7 +76,7 @@ function Swatch({ th, size = 22, dot = 5, gap = 2 }) {
 
 function ThemeSwitcherMini() {
   const { themeName, setThemeName, setThemeRev, amtFont, setAmtFont,
-    themeSlideshow, setThemeSlideshow } = useContext(AppCtx);
+    themeSlideshow, setThemeSlideshow, centsGedreht, setCentsGedreht } = useContext(AppCtx);
   const [open, setOpen] = React.useState(false);
   const luma = c => { const h = toH(c); const r = parseInt(h.slice(1,3),16)||0, g = parseInt(h.slice(3,5),16)||0, b = parseInt(h.slice(5,7),16)||0; return (0.299*r+0.587*g+0.114*b)/255; };
   // Gruppierung: primär nach Farbfamilie der Akzentfarbe (T.blue — die
@@ -244,6 +247,30 @@ function ThemeSwitcherMini() {
                   </button>
                 );
               })}
+            </div>
+
+            {/* Nachkommastellen drehen — app-weit. Hero und Monatsliste machen
+                das an einzelnen Stellen ohnehin schon fest; hier zum Vergleich
+                fuer ALLE Betraege (Nutzer-Wunsch: "damit ich den Unterschied
+                sehe"). Die beiden Beispiele daneben zeigen den Unterschied,
+                ohne dass man das Menue dafuer schliessen muss. */}
+            <div style={{ padding: "0 12px 10px" }}>
+              <button onClick={() => setCentsGedreht?.(!centsGedreht)}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 8,
+                  padding: "6px 8px", cursor: "pointer", borderRadius: 7,
+                  color: centsGedreht ? T.blue : T.txt,
+                  background: centsGedreht ? `${T.blue}18` : "transparent",
+                  border: `1px solid ${centsGedreht ? T.blue : T.bd}`,
+                  fontFamily: "inherit", textAlign: "left",
+                }}>
+                {Li(centsGedreht ? "check-square" : "square", 13, centsGedreht ? T.blue : T.txt2)}
+                <span style={{ flex: 1, fontSize: 11 }}>Nachkommastellen drehen</span>
+                <span style={{ fontSize: 13, fontFamily: NUM_FONT, opacity: centsGedreht ? 1 : 0.5,
+                  display: "inline-flex", alignItems: "center" }}>
+                  {centsGedreht ? <RotatedCents s="1.234,56"/> : "1.234,56"}
+                </span>
+              </button>
             </div>
           </div>
         </>

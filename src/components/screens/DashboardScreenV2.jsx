@@ -20,6 +20,7 @@ import { theme as T, isLightTheme, flaecheAbgesetzt } from "../../theme/activeTh
 import { amtStyle, readableOn, isLightColor } from "../../theme/amtPill.js";
 import { groupBudgetPairs, budgetOpenRestFor } from "../../utils/budgets.js";
 import { dayOf, drillSort, fmt, pn, uid, NUM_FONT, lightenHex } from "../../utils/format.js";
+import { betrag, betragText } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { recordDeletedTxs } from "../../utils/txTombstones.js";
@@ -1005,7 +1006,7 @@ function DashboardScreenV2() {
                           <span style={{color:(t.splits||[]).some(s=>s.catId)?T.pos:T.txt2,fontSize:9,flexShrink:0}}>
                             {(t.splits||[]).some(s=>s.catId)?"✓ kat.":"unkategorisiert"}
                           </span>
-                          <span style={{...amtStyle("neg"),fontSize:10,fontFamily:NUM_FONT,flexShrink:0}}>{fmt(Math.abs(t.totalAmount))}</span>
+                          <span style={{...amtStyle("neg"),fontSize:10,fontFamily:NUM_FONT,flexShrink:0}}>{betrag(Math.abs(t.totalAmount))}</span>
                         </div>
                       ))}
                     </div>
@@ -1390,7 +1391,7 @@ function DashboardScreenV2() {
                         textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.desc}</span>
                       <span style={{color:t.totalAmount<0?T.neg:T.pos,fontSize:11,
                         fontFamily:NUM_FONT,flexShrink:0,fontWeight:700}}>
-                        {t.totalAmount<0?"−":"+"}{fmt(Math.abs(t.totalAmount))}
+                        {t.totalAmount<0?"−":"+"}{betrag(Math.abs(t.totalAmount))}
                       </span>
                     </div>
                   );
@@ -1449,6 +1450,10 @@ function DashboardScreenV2() {
           const lastDay = new Date(year, month+1, 0).getDate();
           // Beträge platzsparend: ",00" weglassen (nur ganze Euro).
           const fmtShort = v => { const s = fmt(v); return s.endsWith(",00") ? s.slice(0,-3) : s; };
+          // Anzeige-Variante davon: dieselbe Kuerzung, aber der Nachkommastellen-
+          // Option folgend. fmtShort selbst bleibt ein String — die Breiten-
+          // rechnung unten misst seine Laenge.
+          const betragShort = v => betragText(fmtShort(v));
           const allCatsToShow = [...incomeTotals, ...catTotals];
           if(allCatsToShow.length===0) return null;
 
@@ -1522,7 +1527,7 @@ function DashboardScreenV2() {
                   fontSize:opts.size||20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
                   overflow:"hidden",
                   cursor:clickable?"pointer":"default"}}>
-                {val>0 ? fmt(val) : "—"}
+                {val>0 ? betrag(val) : "—"}
                 {usedFrac!=null && (<>
                   {/* feine Verbrauchs-Linie 0→Budget */}
                   <div style={{position:"absolute",left:8,right:8,bottom:4,height:1.5,
@@ -1590,9 +1595,9 @@ function DashboardScreenV2() {
                 {/* aktuelles Gesamt (Ampelfarben-Punkt) */}
                 {dot("a", at(istPct), 8, actClr)}
                 {/* Mitte-Wert */}
-                {showMitte && <span style={{position:"absolute",left:mitLeft,top:10,transform:"translateX(-50%)",color:fcColor,opacity:0.7,fontSize:16,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(mitte)}</span>}
+                {showMitte && <span style={{position:"absolute",left:mitLeft,top:10,transform:"translateX(-50%)",color:fcColor,opacity:0.7,fontSize:16,fontWeight:600,whiteSpace:"nowrap"}}>{betragShort(mitte)}</span>}
                 {/* Ende-Wert rechts */}
-                {showEnde && <span style={{position:"absolute",right:0,top:10,color:fcColor,fontSize:16,fontWeight:600,whiteSpace:"nowrap"}}>{fmtShort(ende)}</span>}
+                {showEnde && <span style={{position:"absolute",right:0,top:10,color:fcColor,fontSize:16,fontWeight:600,whiteSpace:"nowrap"}}>{betragShort(ende)}</span>}
               </div>
             );
           };
@@ -1707,7 +1712,7 @@ function DashboardScreenV2() {
                       <div onClick={e=>{e.stopPropagation(); if(iAkt>0||iEnde>0) openCatDrill(lastDay,null,iAkt,false);}}
                         style={{color:headColor,fontSize:20,fontWeight:700,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,
                           flexShrink:0, cursor:(iAkt>0||iEnde>0)?"pointer":"default"}}>
-                        {fmtShort(iAkt)}
+                        {betragShort(iAkt)}
                       </div>
                     </div>
                     {/* Pegel-Zeile (per Tap eingeblendet): eigene Zeile UNTER dem Header,
@@ -1767,7 +1772,7 @@ function DashboardScreenV2() {
                             </div>
                             <div style={{color:sHead,fontSize:17,fontWeight:700,
                               fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT,flexShrink:0}}>
-                              {sAkt>0?fmt(sAkt):"—"}
+                              {sAkt>0?betrag(sAkt):"—"}
                             </div>
                           </div>
                           {/* Sub Zeile 2: Pegel (wie Hauptkategorie) ODER Mitte/Ende-Pillen —
@@ -1843,7 +1848,7 @@ function DashboardScreenV2() {
                     <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",flexShrink:0}}>
                       <div style={{color:dashDrillColor(dashDrill,dashDrillSeg),fontWeight:800,fontSize:26,
                         fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",lineHeight:1.1}}>
-                        {fmt(dashDrillTotal)}
+                        {betrag(dashDrillTotal)}
                       </div>
                       <div style={{display:"flex",gap:8,marginTop:3}}>
                         <span title="Gebucht" style={countStyle("buch")}>{Li("check",12,"#fff")}{dashDrillCounts.buch}</span>
@@ -1947,7 +1952,7 @@ function DashboardScreenV2() {
                               <TagBadges tx={tx}/>
                               <VormerkungSymbol tx={tx}/>
                             </div>
-                            <span style={{...amtStyle(tx.pending?(cat.type==="income"?"cell_inc":"cell_exp"):cat.type==="income"?"pos":"neg", tx.pending?undefined:bookCol(cat.type==="income",tx.date)),fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>{fmt(amt)}</span>
+                            <span style={{...amtStyle(tx.pending?(cat.type==="income"?"cell_inc":"cell_exp"):cat.type==="income"?"pos":"neg", tx.pending?undefined:bookCol(cat.type==="income",tx.date)),fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>{betrag(amt)}</span>
                           </div>
                           {/* Zeile 3: verknüpfte Vormerkung, aufgeklappt immer zuletzt */}
                           <VormerkungZeile tx={tx}/>
@@ -1969,7 +1974,7 @@ function DashboardScreenV2() {
                               {sub.name}
                             </div>
                             {pend>0&&<div style={{color:T.txt,fontSize:11,marginTop:1,fontWeight:600}}>
-                              {Li("clock",10,T.gold)} {fmt(pend)} vorgemerkt
+                              {Li("clock",10,T.gold)} {betrag(pend)} vorgemerkt
                             </div>}
                           </div>
                           {/* Budget-Button */}
@@ -1981,7 +1986,7 @@ function DashboardScreenV2() {
                               borderRadius:7,padding:"4px 8px",flexShrink:0,
                               display:"flex",alignItems:"center",gap:4,fontSize:13}}>
                             {Li("target",14,budget>0?T.gold:T.txt2)}
-                            {budget>0&&<span style={{fontWeight:700}}>{fmt(budget)}</span>}
+                            {budget>0&&<span style={{fontWeight:700}}>{betrag(budget)}</span>}
                           </button>
                           </div>
                           {/* Werte-Zeile (Spaltenkoepfe stehen fix oben im Modal) */}
@@ -2028,7 +2033,7 @@ function DashboardScreenV2() {
                                     {/* Betrag (Label steht als fixe Spaltenueberschrift darueber; Vorzeichen weggelassen, Farbe codiert) */}
                                     <div style={{color:valCol,fontSize:18,
                                       fontWeight:800,fontFamily:NUM_FONT,whiteSpace:"nowrap"}}>
-                                      {val>0?fmt(val):"—"}
+                                      {val>0?betrag(val):"—"}
                                     </div>
                                     {/* Budget-Balken direkt in Zelle */}
                                     {bgt>0&&(
@@ -2044,7 +2049,7 @@ function DashboardScreenV2() {
                                     {bgt>0&&(
                                       <div style={{color:T.txt2,fontSize:11,fontWeight:600,
                                         whiteSpace:"nowrap",opacity:0.8}}>
-                                        {fmt(bgt)}
+                                        {betrag(bgt)}
                                       </div>
                                     )}
                                   </div>
@@ -2081,16 +2086,16 @@ function DashboardScreenV2() {
                                 alignItems:"center",gap:8}}>
                                 <div style={{fontSize:9,color:T.txt2}}>
                                   <span style={{...amtStyle("neg", bookColAbg(false, !endeReach)),fontWeight:700,fontFamily:NUM_FONT}}>
-                                    −{fmt(realAmt)}
+                                    −{betrag(realAmt)}
                                   </span>
                                   {pendAmt>0&&<span style={{color:cat.type==="income"?T.cell_inc:T.cell_exp,fontFamily:NUM_FONT}}>
-                                    {" "}+<span style={{color:cat.type==="income"?T.cell_inc:T.cell_exp}}>{cat.type==="income"?"+":"−"}{fmt(pendAmt)} vorgem.</span>
+                                    {" "}+<span style={{color:cat.type==="income"?T.cell_inc:T.cell_exp}}>{cat.type==="income"?"+":"−"}{betrag(pendAmt)} vorgem.</span>
                                   </span>}
-                                  <span style={{color:T.txt2}}> / {cat.type==="income"?"+":"−"}{fmt(budget)}</span>
+                                  <span style={{color:T.txt2}}> / {cat.type==="income"?"+":"−"}{betrag(budget)}</span>
                                 </div>
                                 {ueber>0
                                   ? <span style={{fontSize:9,color:T.neg,fontWeight:700}}>
-                                      {Li("alert-circle",9,T.neg)} −{fmt(ueber)} über Budget
+                                      {Li("alert-circle",9,T.neg)} −{betrag(ueber)} über Budget
                                     </span>
                                   : <span style={{fontSize:9,color:rest>0?T.pos:T.txt2,fontWeight:700}}>
                                       {rest>0?`${fmt(rest)} frei`:"aufgebraucht"}
@@ -2125,7 +2130,7 @@ function DashboardScreenV2() {
                                 </div>
                                 <span style={{color:tx.pending?(cat.type==="income"?T.cell_inc:T.cell_exp):bookCol(cat.type==="income",tx.date),fontSize:17,
                                   fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
-                                  {fmt(amt)}
+                                  {betrag(amt)}
                                 </span>
                               </div>
                               {/* Zeile 3: verknüpfte Vormerkung, aufgeklappt immer zuletzt */}
@@ -2222,7 +2227,7 @@ function DashboardScreenV2() {
                             </span>
                             <span style={{color:vorgemerkt?(isInc?T.cell_inc:T.cell_exp):(isInc?T.cond_pos:T.neg),
                               fontFamily:NUM_FONT,fontSize:17,fontWeight:700,flexShrink:0}}>
-                              {isInc?"+":"−"}{fmt(betragVon(t))}
+                              {isInc?"+":"−"}{betrag(betragVon(t))}
                             </span>
                           </div>
                         ))}
@@ -2293,7 +2298,7 @@ function DashboardScreenV2() {
                               </span>
                               <span style={{color:gInc?T.cond_pos:T.neg,fontFamily:NUM_FONT,fontSize:17,
                                 fontWeight:700,flexShrink:0}}>
-                                {gInc?"+":"−"}{fmt(betrag)}
+                                {gInc?"+":"−"}{betrag(betrag)}
                               </span>
                             </div>
                           );
@@ -2404,7 +2409,7 @@ function DashboardScreenV2() {
                             <VormerkungSymbol tx={tx}/>
                           </div>
                           <div style={{...amtStyle(dashDrill.isIncome?"pos":"neg", dashDrill.isPending?undefined:bookCol(dashDrill.isIncome,tx.date)),...(dashDrill.isPending?{color:dashDrill.isIncome?T.cell_inc:T.cell_exp}:{}),fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
-                            {fmt(amt)}
+                            {betrag(amt)}
                           </div>
                         </div>
                         {/* Zeile 3: verknüpfte Vormerkung, aufgeklappt immer zuletzt */}
@@ -2435,7 +2440,7 @@ function DashboardScreenV2() {
                                 <span style={{color:isLinked?T.txt2:(dashDrill.isPending?(dashDrill.isIncome?T.cell_inc:T.cell_exp):bookCol(dashDrill.isIncome,tx.date)),
                                   fontSize:11,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0,
                                   opacity:isLinked?0.5:1}}>
-                                  {fmt(pn(s.amount))}
+                                  {betrag(pn(s.amount))}
                                 </span>
                               </div>
                             );

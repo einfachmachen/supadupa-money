@@ -28,6 +28,7 @@
 import React, { useState } from "react";
 import { theme as T, flaecheAbgesetzt } from "../../theme/activeTheme.js";
 import { fmt, NUM_FONT } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { tagKurz } from "../../utils/date.js";
 
@@ -54,6 +55,9 @@ function BudgetBereich({ datum, name, budget, genutzt, isInc = false, seitenrand
   // Beträge — der NAME bleibt in normaler Textfarbe, sonst wirkt die ganze
   // Liste eingefärbt. Ausnahme ist das überschrittene Budget (Warnzustand).
   const farbe = isInc ? T.cell_inc : T.cell_exp;
+  // Die reale Seite desselben Farbpaars (§4.4 im Design-Guide): blass steht für
+  // Geplantes/Vorgemerktes, gesättigt für Geld, das tatsächlich geflossen ist.
+  const gesaettigt = isInc ? T.pos : T.neg;
 
   return (
     <div style={{ margin: `0 ${seitenrand}px 8px`, background: flaecheAbgesetzt(T.bg),
@@ -83,12 +87,12 @@ function BudgetBereich({ datum, name, budget, genutzt, isInc = false, seitenrand
         </span>
         {drueber ? (
           <span style={{ color: T.neg, fontSize: FS_DETAIL, fontWeight: 700,
-            fontFamily: NUM_FONT, flexShrink: 0 }}>um {fmt(-offen)} drüber</span>
+            fontFamily: NUM_FONT, flexShrink: 0 }}>um {betrag(-offen)} drüber</span>
         ) : (
           <span style={{ display: "inline-flex", alignItems: "baseline", gap: 5, flexShrink: 0 }}>
             <span style={{ color: T.txt2, fontSize: FS_DETAIL }}>offen:</span>
             <span style={{ color: farbe, fontSize: FS_BETRAG, fontWeight: 700,
-              fontFamily: NUM_FONT }}>{vz}{fmt(offen)}</span>
+              fontFamily: NUM_FONT }}>{vz}{betrag(offen)}</span>
           </span>
         )}
       </div>
@@ -100,13 +104,17 @@ function BudgetBereich({ datum, name, budget, genutzt, isInc = false, seitenrand
         <span style={{ display: "inline-flex", alignItems: "baseline", gap: 6, minWidth: 0 }}>
           <span style={{ color: T.txt2, fontSize: FS_DETAIL, flexShrink: 0,
             fontFamily: NUM_FONT }}>{tagKurz(datum)}</span>
-          <span style={{ color: T.txt2, fontSize: FS_DETAIL }}>Budget: {vz}{fmt(budgetAbs)}</span>
+          <span style={{ color: T.txt2, fontSize: FS_DETAIL }}>Budget: {vz}{betrag(budgetAbs)}</span>
         </span>
         <span style={{ display: "inline-flex", alignItems: "baseline", gap: 5 }}>
           <span style={{ color: T.txt2, fontSize: FS_DETAIL }}>genutzt:</span>
-          <span style={{ color: genutztAbs === 0 ? T.txt2 : drueber ? T.neg : farbe,
+          {/* „genutzt" ist bereits ausgegebenes Geld — also die GESÄTTIGTE Farbe
+              (§4.4: T.pos/T.neg = real). Die blasse Vormerkungs-Farbe stand hier
+              falsch: sie ist für Geplantes reserviert, und genau das ist „offen"
+              daneben. */}
+          <span style={{ color: genutztAbs === 0 ? T.txt2 : drueber ? T.neg : gesaettigt,
             fontSize: FS_DETAIL, fontWeight: 700, fontFamily: NUM_FONT }}>
-            {genutztAbs === 0 ? "—" : `${vz}${fmt(genutztAbs)}`}
+            {genutztAbs === 0 ? "—" : <>{vz}{betrag(genutztAbs)}</>}
           </span>
         </span>
       </div>

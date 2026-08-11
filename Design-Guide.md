@@ -295,6 +295,12 @@ die **Farbe** kommuniziert Richtung und Art:
 | Blasses Cyan | `T.cell_exp` (= `neg_vm`) | **Ausgaben**-Vormerkung |
 | Rot/Cyan | `T.neg` | reale **Ausgabe** (Farbe je nach Farbkonzept-Version des Themes) |
 
+**Blass heißt geplant, gesättigt heißt geflossen.** Daraus folgt für jedes
+Gegensatzpaar in den Aufrissen: „genutzt" (bereits ausgegeben) steht
+**gesättigt**, „offen"/„Rest" (noch nicht ausgegeben) **blass**. In
+`BudgetBereich` trug „genutzt" lange die blasse Vormerkungsfarbe und war damit
+von „offen" daneben nicht zu unterscheiden.
+
 ### 4.5 Betrags-Sichtbarkeit (`amtMode`) — das Augensymbol
 `amtMode` (Context) steuert global per CSS-Klassen auf dem Wurzel-Container:
 - **0** = unscharf (`.amts-blur`) + neutral — Beträge verwischt.
@@ -307,7 +313,31 @@ zwischen MITTE und ENDE — farbig nur im ausgeklappten Detail-Zustand. Der gro�
 **Kontostand** ist davon ausgenommen (`.heroBalance` + `--bal-col`): Er trägt immer
 die Akzentfarbe des „+"-Buttons (negativ rot).
 
-### 4.6 Budget-Ampel
+### 4.6 Nachkommastellen drehen (`betrag()` statt `fmt()`)
+Option im Theme-Menü unter „Beträge", persistiert als `mbt_cents_gedreht`.
+Eingeschaltet stehen die Cent überall klein und um 90° gedreht — das, was Hero
+und Monatsliste an einzelnen Stellen ohnehin fest tun (`RotatedCents`), nur für
+**alle** Beträge. Spart je Betrag etwa die Breite einer Ziffer.
+
+Die Regel dahinter, und sie ist wichtig:
+
+| Funktion | Rückgabe | Wofür |
+|---|---|---|
+| `fmt(v)` (`utils/format.js`) | **immer** ein String | Template-Literals, Attribute, `alert()`/Toasts, Exporte, Breitenrechnungen |
+| `betrag(v)` (`utils/betrag.jsx`) | String **oder Element** | ausschließlich JSX-Kindposition |
+| `betragText(s)` | dito, aus fertigem Text | bereits gekürzte Beträge (`fmtShort`, „2.480" ohne `,00`) |
+
+Ein `betrag()` im String-Kontext ergibt `[object Object]` — und zwar erst,
+wenn die Option eingeschaltet wird, also lange nach dem Schreiben des Codes.
+Ebenso wenig funktioniert es in SVG-`<text>`-Knoten: dort rendert kein
+HTML-`<span>`, weshalb `CategoryChart` bewusst bei `fmt()` bleibt.
+`tests/betragOption.test.js` scannt den Quelltext auf beide Fälle.
+
+Das Flag liegt im Modul, nicht im Context — über hundert Aufrufstellen bräuchten
+sonst alle einen Context-Zugriff. `App.jsx` setzt es beim Rendern aus dem
+persistierten Zustand; die Kinder rendern danach.
+
+### 4.7 Budget-Ampel
 Budget-Auslastung färbt nach **tatsächlichem Verbrauch (Ist)**, nicht nach dem
 reservierten Prognosewert.
 

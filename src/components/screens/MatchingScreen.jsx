@@ -11,6 +11,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { isoAddMonths } from "../../utils/date.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { linkPendingToReal, linkPendingToPending, isBankPending } from "../../utils/vormMatch.js";
@@ -216,7 +217,7 @@ function MatchingScreen({onClose, onBack}) {
                   <div style={{color:T.txt2,fontSize:9}}>{cat?.name||"unkategorisiert"}</div>
                 </div>
                 <div style={{color:T.gold,fontSize:11,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
-                  {fmt(tx.totalAmount)}
+                  {betrag(tx.totalAmount)}
                 </div>
               </div>
             );
@@ -392,7 +393,7 @@ function MatchingScreen({onClose, onBack}) {
                   background: matchAmt&&selectedPendAmt!==null&&Math.abs(Math.abs(tx.totalAmount)-selectedPendAmt)<0.01
                     ? `${col}22` : "transparent",
                   borderRadius:4}}>
-                  {type==="income"?"+":"−"}{fmt(tx.totalAmount)}
+                  {type==="income"?"+":"−"}{betrag(tx.totalAmount)}
                 </div>
                 <div style={{width:28,height:28,borderRadius:8,
                   background:bankPend?T.gold+"33":(cat?.color||"#888")+"33",

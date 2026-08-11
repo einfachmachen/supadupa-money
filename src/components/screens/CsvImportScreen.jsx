@@ -14,6 +14,7 @@ import { AccountChips } from "../molecules/AccountChips.jsx";
 import { parsePdfStatement } from "../../utils/pdfStatement.js";
 import { anchorFromDetectedBalance, makeAnchorEntry } from "../../utils/anchors.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch, getAllTags } from "../../utils/search.js";
 import { txFingerprint, txFingerprintNorm } from "../../utils/tx.js";
@@ -591,7 +592,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                 border:`1px solid ${T.bd}`,cursor:"pointer",fontFamily:"inherit"}}>
               <div style={{display:"flex",justifyContent:"space-between",gap:8}}>
                 <span style={{color:T.txt,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>
-                  {fmt(Math.abs(t.totalAmount||0))}
+                  {betrag(Math.abs(t.totalAmount||0))}
                 </span>
                 <span style={{color:T.txt2,fontSize:11}}>
                   {dshort(t.date)}{signed!=null?` · ${signed>=0?`${signed} T. nach`:`${Math.abs(signed)} T. vor`} PayPal`:""}
@@ -1404,7 +1405,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                         background:accepted?"rgba(34,197,94,0.07)":"transparent"}}>
                         <div style={{display:"flex",alignItems:"baseline",gap:8}}>
                           <div style={{flex:1,minWidth:0,color:T.pos,fontSize:autoSuggFull?(mobileMode?22:17):(mobileMode?17:13.5),
-                            fontWeight:800,fontFamily:NUM_FONT}}>+ {fmt(amt)}</div>
+                            fontWeight:800,fontFamily:NUM_FONT}}>+ {betrag(amt)}</div>
                           <div style={{flexShrink:0,color:T.txt2,fontSize:metaFS}}>
                             {linkedGiro?`Giro ${dshort(linkedGiro.date)} · `:""}PayPal {dshort(r.isoDate)}
                           </div>
@@ -1525,7 +1526,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                     <div style={{display:"flex",alignItems:"baseline",gap:8}}>
                       <div style={{flex:1,minWidth:0,color:isExpense?T.neg:T.pos,fontSize:amtFS,
                         fontWeight:800,fontFamily:NUM_FONT}}>
-                        {isExpense?"−":"+"} {fmt(ppAmt)}
+                        {isExpense?"−":"+"} {betrag(ppAmt)}
                       </div>
                       <div style={{flexShrink:0,color:T.txt2,fontSize:metaFS,textAlign:"right"}}>
                         Giro {dshort(s.giroTx.date)} · PayPal {dshort(r.isoDate)}
@@ -1596,7 +1597,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                       padding:autoSuggFull?"11px 2px":"8px 2px",borderBottom:`1px solid rgba(255,255,255,0.06)`,
                       background:mg?"rgba(34,197,94,0.07)":"transparent"}}>
                       <div style={{display:"flex",alignItems:"baseline",gap:8}}>
-                        <div style={{flex:1,minWidth:0,color:T.neg,fontSize:amtFS,fontWeight:800,fontFamily:NUM_FONT}}>− {fmt(exAmt)}</div>
+                        <div style={{flex:1,minWidth:0,color:T.neg,fontSize:amtFS,fontWeight:800,fontFamily:NUM_FONT}}>− {betrag(exAmt)}</div>
                         <div style={{flexShrink:0,color:T.txt2,fontSize:metaFS}}>
                           {mg?`Giro ${dshort(mg.date)} · `:""}PayPal {dshort(r.isoDate)}
                         </div>
@@ -1902,7 +1903,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                     <div key={i} style={{display:"flex",justifyContent:"space-between",gap:8,fontSize:MFSl}}>
                       <span style={{color:T.txt,fontWeight:600}}>{m.desc||"(ohne Bezeichnung)"}</span>
                       <span style={{color:T.txt2,fontFamily:NUM_FONT}}>
-                        {fmt(Math.abs(m.totalAmount||0))} € · {(m.date||"").split("-").reverse().join(".")}
+                        {betrag(Math.abs(m.totalAmount||0))} € · {(m.date||"").split("-").reverse().join(".")}
                       </span>
                     </div>
                   ))}

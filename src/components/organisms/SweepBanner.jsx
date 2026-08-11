@@ -20,6 +20,7 @@ import React, { useContext, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, NUM_FONT } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
 import { buildTxIdMap } from "../../utils/tx.js";
@@ -97,7 +98,7 @@ function SweepBanner() {
       </div>
       {betrag !== null && betrag !== undefined && (
         <div style={{ flexShrink: 0, color: farbe, fontSize: 15, fontWeight: 800,
-          fontFamily: NUM_FONT }}>{fmt(betrag)} €</div>
+          fontFamily: NUM_FONT }}>{betrag(betrag)} €</div>
       )}
     </div>
   );

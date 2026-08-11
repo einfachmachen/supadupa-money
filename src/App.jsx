@@ -75,6 +75,7 @@ import { useCloudCredentials } from "./hooks/useCloudCredentials.js";
 import { isoAddMonths, calcRecurringCount } from "./utils/date.js";
 import { anchorValue, anchorDay } from "./utils/anchors.js";
 import { pn, uid, sumAmounts, fmt, round2 } from "./utils/format.js";
+import { betrag, setCentsGedreht as setCentsGedrehtFlag } from "./utils/betrag.jsx";
 import { MONTHS_S } from "./utils/constants.js";
 import { computeKontoWarnungen } from "./utils/kontoWarnungen.js";
 import { computeSafeCurrentMonthAmount, computeTagessaldoAt, buildTxsByMonth } from "./utils/sparBerechnen.js";
@@ -347,6 +348,14 @@ export default function SupaDupaMoney() {
   // tabellarische Ziffern). Klasse amtfont-* am Wurzel-Div schaltet die CSS-Regel.
   const [amtFont, setAmtFontState] = useState(()=>kvStore.getItem("mbt_amt_font")||"");
   const setAmtFont = (v)=>{ setAmtFontState(v||""); kvStore.setItem("mbt_amt_font", v||""); };
+  // Nachkommastellen drehen (persistiert, im Theme-Menue unter "Betraege"):
+  // die Cent klein und um 90 Grad gedreht, wie es Hero und Monatsliste ohnehin
+  // schon fest tun — hier fuer ALLE Betraege der App. Siehe utils/betrag.jsx.
+  const [centsGedreht, setCentsGedrehtState] = useState(()=>kvStore.getItem("mbt_cents_gedreht")==="1");
+  const setCentsGedreht = (v)=>{ setCentsGedrehtState(!!v); kvStore.setItem("mbt_cents_gedreht", v?"1":"0"); };
+  // Das Modul-Flag JETZT setzen, waehrend App rendert: die Kinder rendern
+  // danach und sehen damit immer den aktuellen Wert (siehe utils/betrag.jsx).
+  setCentsGedrehtFlag(centsGedreht);
   // Sync: wenn Modal NICHT offen ist, frozenYear/frozenMonth = year/month
   React.useEffect(()=>{
     if(!showMonthPickerModal) {
@@ -3227,6 +3236,7 @@ Abbrechen = ${remoteName}-Stand laden`
     dashDrillOpen, setDashDrillOpen,
     amtMode, setAmtMode,
     amtFont, setAmtFont,
+    centsGedreht, setCentsGedreht,
     noBorders, setNoBorders,
     masterOverride, setMasterOverride,
     tourPlusFly, setTourPlusFly,
@@ -3248,7 +3258,7 @@ Abbrechen = ${remoteName}-Stand laden`
     cfActive, cfStatus, cfUrl, cfSecret,
     syncPass, syncEncActive, showCloudSetup, showFuelAnalysis, showGuidedTour,
     syncStatus, syncError, isDirty, isOnline, cfSaveOnClose,
-    dashDrillOpen, amtMode, amtFont, noBorders, masterOverride, tourPlusFly,
+    dashDrillOpen, amtMode, amtFont, centsGedreht, noBorders, masterOverride, tourPlusFly,
     favIcons,
   ]);
 
@@ -3335,7 +3345,7 @@ Abbrechen = ${remoteName}-Stand laden`
               Sparrate {autoSparInfo.monthLabel} automatisch {autoSparInfo.direction==="up"?"erhöht":"reduziert"}
             </div>
             <div style={{fontSize:11,opacity:0.92,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-              {fmt(autoSparInfo.oldAmount)} € → {fmt(autoSparInfo.newAmount)} € · Puffer bleibt gewahrt
+              {betrag(autoSparInfo.oldAmount)} € → {betrag(autoSparInfo.newAmount)} € · Puffer bleibt gewahrt
             </div>
           </div>
           {Li("x",16,T.on_accent||"#fff")}
@@ -3378,7 +3388,7 @@ Abbrechen = ${remoteName}-Stand laden`
             <div style={{flex:1,minWidth:0,lineHeight:1.25}}>
               <div style={{fontSize:12.5,fontWeight:700,overflow:"hidden",
                 textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                {fmt(Math.abs(offen.totalAmount))} € zurück aufs Giro
+                {betrag(Math.abs(offen.totalAmount))} € zurück aufs Giro
                 {ueberfaellig ? " — überfällig!" : ""}
               </div>
               <div style={{fontSize:11,opacity:0.92,overflow:"hidden",
@@ -3407,10 +3417,10 @@ Abbrechen = ${remoteName}-Stand laden`
             {Li("alert-triangle",16,"#fff")}
             <div style={{flex:1,minWidth:0,lineHeight:1.25}}>
               <div style={{fontSize:12.5,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                Liquiditäts-Engpass ab {label}: Konto fällt auf {s.saldoVal < 0 ? "−" : ""}{fmt(s.saldoVal)} €
+                Liquiditäts-Engpass ab {label}: Konto fällt auf {s.saldoVal < 0 ? "−" : ""}{betrag(s.saldoVal)} €
               </div>
               <div style={{fontSize:11,opacity:0.92,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                {fmt(s.deficit)} € unter Puffer ({fmt(w.buffer)} €){w.count>1?` · +${w.count-1} weitere${w.count-1===1?"r":""} Monat${w.count-1===1?"":"e"}`:""} · tippen
+                {betrag(s.deficit)} € unter Puffer ({betrag(w.buffer)} €){w.count>1?` · +${w.count-1} weitere${w.count-1===1?"r":""} Monat${w.count-1===1?"":"e"}`:""} · tippen
               </div>
             </div>
             {Li("chevron-right",18,"#fff")}
@@ -3470,7 +3480,7 @@ Abbrechen = ${remoteName}-Stand laden`
                   </div>
                 </div>
                 <div style={{fontSize:14,fontWeight:700,color:isInc?T.pos:T.txt,flexShrink:0}}>
-                  {isInc?"+":"−"}{fmt(Math.abs(tx.totalAmount))} €
+                  {isInc?"+":"−"}{betrag(Math.abs(tx.totalAmount))} €
                 </div>
                 {Li("chevron-right",16,T.txt2)}
               </div>
@@ -3506,7 +3516,7 @@ Abbrechen = ${remoteName}-Stand laden`
                   {sub?.name || cat?.name || it.desc}
                 </div>
                 <div style={{fontSize:11.5,color:T.txt2,marginTop:2}}>
-                  {it.count} neue Buchung{it.count===1?"":"en"} · {fmt(Math.abs(it.amount))} € ·
+                  {it.count} neue Buchung{it.count===1?"":"en"} · {betrag(Math.abs(it.amount))} € ·
                   {" "}{it.from.split("-").reverse().join(".")} – {it.to.split("-").reverse().join(".")} · {acc?.name}
                 </div>
               </div>

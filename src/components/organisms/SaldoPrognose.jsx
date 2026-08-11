@@ -4,6 +4,7 @@ import React, { useContext, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, flaecheAbgesetzt } from "../../theme/activeTheme.js";
 import { fmt, NUM_FONT } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { BudgetBereich } from "../molecules/BudgetBereich.jsx";
 import { tagKurz } from "../../utils/date.js";
@@ -36,7 +37,7 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
                 {label} {Li(drillOpen===label?"chevron-up":"chevron-down",8,col)}
               </div>
               <div style={{color:saldo>=0?T.pos:T.warn_icon,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>
-                {saldo>=0?"+":"−"}{fmt(Math.abs(saldo))} €
+                {saldo>=0?"+":"−"}{betrag(Math.abs(saldo))} €
               </div>
             </>)}
           </div>
@@ -98,7 +99,7 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
                   #{tg}
                 </span>
               ))}
-              <span style={{color:amtCol,fontFamily:NUM_FONT,fontSize:FS_BETRAG,fontWeight:700,flexShrink:0}}>{isInc?"+":"−"}{fmt(displayAmt)}</span>
+              <span style={{color:amtCol,fontFamily:NUM_FONT,fontSize:FS_BETRAG,fontWeight:700,flexShrink:0}}>{isInc?"+":"−"}{betrag(displayAmt)}</span>
             </div>
           );
         };
@@ -115,7 +116,7 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
             {(drill.overBudgetWarnings||[]).length>0&&(
               <div style={{background:`${T.warn_icon}1f`,border:`1px solid ${T.warn_icon}66`,borderRadius:8,padding:"7px 10px",marginBottom:6}}>
                 <div style={{color:T.warn,fontSize:FS_DETAIL,fontWeight:700,marginBottom:4,display:"flex",alignItems:"center",gap:5}}>{Li("alert-triangle",12,T.warn)} Budget überschritten:</div>
-                {drill.overBudgetWarnings.map((w,i)=>(<div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:FS_DETAIL,marginBottom:2}}><span style={{color:T.warn}}>{w.name}</span><span style={{fontFamily:NUM_FONT,color:T.warn}}>{fmt(w.actual)} {">"} {fmt(w.budget)}</span></div>))}
+                {drill.overBudgetWarnings.map((w,i)=>(<div key={i} style={{display:"flex",justifyContent:"space-between",fontSize:FS_DETAIL,marginBottom:2}}><span style={{color:T.warn}}>{w.name}</span><span style={{fontFamily:NUM_FONT,color:T.warn}}>{betrag(w.actual)} {">"} {betrag(w.budget)}</span></div>))}
               </div>
             )}
             {/* Titel und Saldo in EINER Zeile: der Kopf stand vorher als eigene
@@ -133,14 +134,14 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
                 const ext = label==="Mitte" ? saldoMitte : saldoEnde;
                 const sv = (ext!==null && ext!==undefined) ? ext : drill.saldo;
                 return sv!==null && sv!==undefined
-                  ? <span style={{color:sv>=0?T.pos:T.warn_icon,fontFamily:NUM_FONT,fontWeight:700,fontSize:20}}>{sv>=0?"+":"−"}{fmt(Math.abs(sv))}</span>
+                  ? <span style={{color:sv>=0?T.pos:T.warn_icon,fontFamily:NUM_FONT,fontWeight:700,fontSize:20}}>{sv>=0?"+":"−"}{betrag(Math.abs(sv))}</span>
                   : null;
               })()}
             </div>
             {hasAny&&(drill.realIn+drill.pendIn+drill.realOut+drill.pendOut)>0&&(
               <div style={{display:"flex",gap:14,justifyContent:"flex-end",marginTop:0,marginBottom:6,paddingBottom:4,borderBottom:`1px solid ${T.bd}`}}>
-                <span style={{color:T.pos,fontSize:FS_DETAIL,fontFamily:NUM_FONT}}>+{fmt(drill.realIn+drill.pendIn)}</span>
-                <span style={{color:T.neg,fontSize:FS_DETAIL,fontFamily:NUM_FONT}}>−{fmt(drill.realOut+drill.pendOut)}</span>
+                <span style={{color:T.pos,fontSize:FS_DETAIL,fontFamily:NUM_FONT}}>+{betrag(drill.realIn+drill.pendIn)}</span>
+                <span style={{color:T.neg,fontSize:FS_DETAIL,fontFamily:NUM_FONT}}>−{betrag(drill.realOut+drill.pendOut)}</span>
               </div>
             )}
             {/* ── Buchungen/Budgets — scrollbar ── */}
@@ -270,7 +271,7 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
                               <span style={{color:T.txt2,fontSize:FS_DETAIL,marginLeft:6}}>{labelDesc}</span>
                             </div>
                             <span style={{color:umbBlue,fontSize:FS_BETRAG,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
-                              {fmt(Math.abs(t.totalAmount))} €
+                              {betrag(Math.abs(t.totalAmount))} €
                             </span>
                           </div>
                         );
@@ -286,7 +287,7 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
             {/* ── Vormonatssaldo — jetzt UNTEN ── */}
             <div style={{display:"flex",justifyContent:"space-between",borderTop:`1px solid ${T.bd}`,paddingTop:8,marginTop:8}}>
               <span style={{color:T.txt2,fontSize:FS_TEXT}}>Vormonatssaldo</span>
-              <span style={{color:T.txt,fontFamily:NUM_FONT,fontSize:FS_BETRAG,fontWeight:700}}>{drill.base>=0?"+":"−"}{fmt(Math.abs(drill.base))}</span>
+              <span style={{color:T.txt,fontFamily:NUM_FONT,fontSize:FS_BETRAG,fontWeight:700}}>{drill.base>=0?"+":"−"}{betrag(Math.abs(drill.base))}</span>
             </div>
           </div>
         );

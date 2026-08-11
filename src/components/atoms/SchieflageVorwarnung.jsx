@@ -13,6 +13,7 @@ import React, { useContext, useMemo, useState, useEffect } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, pn } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { MONTHS_S } from "../../utils/constants.js";
 import { schieflagePreview } from "../../utils/schieflagePreview.js";
@@ -67,7 +68,7 @@ export function SchieflageVorwarnung({ draftTxs, kind = "vormerkung", style }) {
         <div style={{ fontSize: 13, color: T.txt }}>
           {subj} drückt das Giro-Konto ab <b>{label}</b> auf{" "}
           <b style={{ color: saldoColor }}>{saldoStr}</b> —{" "}
-          <b style={{ color: T.gold }}>{fmt(res.deficit)} €</b> unter deinen Puffer ({fmt(res.buffer)} €).
+          <b style={{ color: T.gold }}>{betrag(res.deficit)} €</b> unter deinen Puffer ({betrag(res.buffer)} €).
           {res.count > 1 ? ` Betroffen: ${res.count} Monate.` : ""}
         </div>
         {res.sparAdjust && (
@@ -75,8 +76,8 @@ export function SchieflageVorwarnung({ draftTxs, kind = "vormerkung", style }) {
             {Li("arrow-down", 13, T.pos)}{" "}
             Durch Reduzierung der Tagesgeld-Sparrate im{" "}
             {MONTHS_S[res.sparAdjust.month]} {res.sparAdjust.year} von{" "}
-            <b>{fmt(res.sparAdjust.oldAmount)} €</b> auf{" "}
-            <b style={{ color: T.pos }}>{fmt(res.sparAdjust.safeAmount)} €</b>{" "}
+            <b>{betrag(res.sparAdjust.oldAmount)} €</b> auf{" "}
+            <b style={{ color: T.pos }}>{betrag(res.sparAdjust.safeAmount)} €</b>{" "}
             wird die Schieflage vermieden.
           </div>
         )}

@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { tagMonat } from "../../utils/date.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, NUM_FONT } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { linkPendingToReal, linkPendingToPending, isBankPending } from "../../utils/vormMatch.js";
 
@@ -89,7 +90,7 @@ function VormVerknuepfenPanel({editVorm, txs, setTxs, onClose}) {
               </div>
               <div style={{color:T.txt2,fontSize:9}}>{tagMonat(tx.date)}</div>
             </div>
-            <span style={{color:isMatch?T.pos:T.txt,fontFamily:NUM_FONT,fontSize:11,fontWeight:700,flexShrink:0}}>{fmt(tx.totalAmount)}</span>
+            <span style={{color:isMatch?T.pos:T.txt,fontFamily:NUM_FONT,fontSize:11,fontWeight:700,flexShrink:0}}>{betrag(tx.totalAmount)}</span>
             {Li("link",10,T.blue)}
           </div>
         );

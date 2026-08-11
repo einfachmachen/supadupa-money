@@ -4,6 +4,7 @@ import React, { useEffect } from "react";
 import { Overlay } from "../atoms/Overlay.jsx";
 import { theme as T } from "../../theme/activeTheme.js";
 import { fmt } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { unlinkPendingFromReal } from "../../utils/vormMatch.js";
 
@@ -58,7 +59,7 @@ function AutoMatchReview({ matches, txs, setTxs, getAcc, onClose }) {
                   {pend.desc || "(ohne Bezeichnung)"}
                 </div>
                 <div style={{ color: T.txt2, fontSize: 10 }}>
-                  {(pend.date || "").split("-").reverse().join(".")} · {fmt(Math.abs(pend.totalAmount || 0))} €
+                  {(pend.date || "").split("-").reverse().join(".")} · {betrag(Math.abs(pend.totalAmount || 0))} €
                 </div>
               </div>
               {Li("arrow-right", 14, T.txt2)}
@@ -68,7 +69,7 @@ function AutoMatchReview({ matches, txs, setTxs, getAcc, onClose }) {
                   {real.desc || "(ohne Bezeichnung)"}
                 </div>
                 <div style={{ color: T.txt2, fontSize: 10 }}>
-                  {(real.date || "").split("-").reverse().join(".")} · {fmt(Math.abs(real.totalAmount || 0))} €
+                  {(real.date || "").split("-").reverse().join(".")} · {betrag(Math.abs(real.totalAmount || 0))} €
                 </div>
               </div>
             </div>

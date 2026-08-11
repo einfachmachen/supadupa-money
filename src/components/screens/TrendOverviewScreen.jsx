@@ -15,6 +15,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { Li } from "../../utils/icons.jsx";
 import { fmt, NUM_FONT } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { saldoEnde } from "../../utils/saldo.js";
 import { buildTxIdMap, isDuplCounterpart } from "../../utils/tx.js";
 import { YearSectionHeader } from "../molecules/YearSectionHeader.jsx";
@@ -307,7 +308,7 @@ function YearBarListHorizontal({ perYear, get, getPending, color, aktuellFill, o
               )}
             </div>
             <div style={{ width: 78, flexShrink: 0, textAlign: "right", color: T.txt, fontSize: 11, fontWeight: 700, fontFamily: NUM_FONT }}>
-              {v < 0 ? "−" : ""}{fmt(v)}
+              {v < 0 ? "−" : ""}{betrag(v)}
             </div>
           </button>
         );
@@ -406,7 +407,7 @@ function TrendOverviewScreen() {
                   <div style={{ minWidth: 72, flexShrink: 0 }}>
                     <div style={{ color: T.txt2, fontSize: 11, fontWeight: 700 }}>{m.label}</div>
                     <div style={{ color: T.txt, fontSize: 15, fontWeight: 700, fontFamily: NUM_FONT }}>
-                      {fmt(latest)}
+                      {betrag(latest)}
                     </div>
                   </div>
                   <MiniSpark values={values} color={col} />

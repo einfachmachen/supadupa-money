@@ -18,6 +18,7 @@ import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
 import { isoAddMonths } from "../../utils/date.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { isFuelSelection, checkOdometerPlausibility } from "../../utils/fuel.js";
 import { getAllTags } from "../../utils/search.js";
@@ -366,7 +367,7 @@ function AddTxModal() {
                       {hasBudget?(
                         <span style={{color:T.gold,fontSize:10,fontWeight:700,
                           background:"rgba(245,166,35,0.12)",borderRadius:5,padding:"2px 6px"}}>
-                          {Li("target",9,T.gold)} {fmt(totalBudget)} {budgets[sub.id].months===1?"mtl.":budgets[sub.id].months===3?"quartl.":budgets[sub.id].months===6?"halbj.":"jährl."}
+                          {Li("target",9,T.gold)} {betrag(totalBudget)} {budgets[sub.id].months===1?"mtl.":budgets[sub.id].months===3?"quartl.":budgets[sub.id].months===6?"halbj.":"jährl."}
                         </span>
                       ):(
                         <span style={{color:T.txt2,fontSize:10}}>{Li("plus",10,T.txt2)} Budget</span>
@@ -730,7 +731,7 @@ function AddTxModal() {
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,
               background:"rgba(0,0,0,0.2)",borderRadius:8,padding:"7px 10px"}}>
               <span style={{color:T.txt2,fontSize:10.5}}>
-                berechnet: <b style={{color:T.txt}}>{fmt(fuelComputedTotal)}</b>
+                berechnet: <b style={{color:T.txt}}>{betrag(fuelComputedTotal)}</b>
               </span>
               <button onClick={()=>setAmount(fuelComputedTotal.toFixed(2).replace(".",","))}
                 style={{padding:"4px 10px",borderRadius:7,border:"none",

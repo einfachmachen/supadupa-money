@@ -8,6 +8,7 @@ import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 
 function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAmount=0, onSplit=null, date=null, desc=null, filterType=null, openUp=false, accountId=null, noMargin=false, triggerStyle, wrapLabel=false}) {
@@ -181,7 +182,7 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
                   {date ? date.split("-").reverse().join(".") : ""}
                 </span>
                 <span style={{color:T.txt,fontSize:16,fontWeight:700,fontFamily:NUM_FONT}}>
-                  {fmt(Math.abs(totalAmount))} €
+                  {betrag(Math.abs(totalAmount))} €
                 </span>
               </div>
             </div>

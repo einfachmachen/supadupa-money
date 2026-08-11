@@ -32,6 +32,7 @@ import { PAL } from "../../theme/palette.js";
 import { amtStyle, readableOn } from "../../theme/amtPill.js";
 import { MONTHS_F } from "../../utils/constants.js";
 import { dayOf, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch, getAllTags } from "../../utils/search.js";
 import { isDuplCounterpart, buildTxIdMap } from "../../utils/tx.js";
@@ -1497,8 +1498,8 @@ function MonatScreen() {
               const totalIncome  = mTxs.reduce((s,t)=>s+Math.abs(t.totalAmount||0),0) - totalExpense;
               return (
                 <span style={{marginLeft:"auto",display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
-                  {totalExpense>0&&<span style={{color:T.cond_neg,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>−{fmt(totalExpense)}</span>}
-                  {totalIncome>0&&<span style={{color:T.cond_pos,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>+{fmt(totalIncome)}</span>}
+                  {totalExpense>0&&<span style={{color:T.cond_neg,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>−{betrag(totalExpense)}</span>}
+                  {totalIncome>0&&<span style={{color:T.cond_pos,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>+{betrag(totalIncome)}</span>}
                 </span>
               );
             })()}
@@ -1595,7 +1596,7 @@ function MonatScreen() {
                       <span style={{flex:1}}/>
                       <span data-role="tx-amt" style={{...amtStyle(isExp?"neg":"pos",pal.val),
                         fontSize:15,fontWeight:800,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums",whiteSpace:"nowrap"}}>
-                        {isExp?"−":""}{fmt(Math.abs(tx.totalAmount))}
+                        {isExp?"−":""}{betrag(Math.abs(tx.totalAmount))}
                       </span>
                       <span data-role="tx-details-toggle" style={{display:"inline-flex",opacity:0.6,flexShrink:0}}>
                         {Li(expanded?"chevron-up":"chevron-down",13,T.txt2)}
@@ -1757,18 +1758,18 @@ function MonatScreen() {
                       </div>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{color:T.warn_icon,fontSize:12,fontWeight:700,lineHeight:1.3}}>
-                          {nurBudget ? "Nach Budget im Minus" : "Kontostand im Minus"}: −{fmt(w.deficit)} €
+                          {nurBudget ? "Nach Budget im Minus" : "Kontostand im Minus"}: −{betrag(w.deficit)} €
                         </div>
                         <div style={{color:T.txt2,fontSize:10,marginTop:2,lineHeight:1.4}}>
                           {w.nextPos
                             ? <>Fehlbetrag ausgleichen bis <span style={{color:T.gold,fontWeight:700}}>{nextLabel}</span>
                               {w.nextPos.name&&<span> ({w.nextPos.name})</span>}
                               {" — mindestens "}<span style={{...amtStyle("neg",T.warn_icon),fontWeight:700,fontFamily:NUM_FONT}}>
-                                {fmt(w.deficit)} €
+                                {betrag(w.deficit)} €
                               </span>{" einplanen"}</>
                             : <>Kein positiver Saldo-Tag im Monat gefunden — mindestens{" "}
                               <span style={{...amtStyle("neg",T.warn_icon),fontWeight:700,fontFamily:NUM_FONT}}>
-                                {fmt(w.deficit)} €
+                                {betrag(w.deficit)} €
                               </span>{" fehlen"}</>
                           }
                         </div>
@@ -1873,7 +1874,7 @@ function MonatScreen() {
                                   return (
                                     <div key={sp.id} style={{display:"flex",alignItems:"center",gap:3,justifyContent:"flex-end",marginBottom:1}}>
                                       <span style={{width:6,height:6,borderRadius:"50%",background:spCat?.color||T.txt2,flexShrink:0,display:"inline-block"}}/>
-                                      <span style={{...amtStyle(spCat?.color||T.txt2),fontSize:9,fontFamily:NUM_FONT,fontWeight:700}}>{fmt(pn(sp.amount))}</span>
+                                      <span style={{...amtStyle(spCat?.color||T.txt2),fontSize:9,fontFamily:NUM_FONT,fontWeight:700}}>{betrag(pn(sp.amount))}</span>
                                     </div>
                                   );
                                 })}
@@ -1908,7 +1909,7 @@ function MonatScreen() {
                                     return (
                                       <div key={sp.id} style={{display:"flex",justifyContent:"space-between",gap:8,fontSize:11.5}}>
                                         <span style={{color:T.txt2}}>{spSub?.name||spCat?.name||"—"}</span>
-                                        <span style={{color:T.txt,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmt(pn(sp.amount))} €</span>
+                                        <span style={{color:T.txt,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{betrag(pn(sp.amount))} €</span>
                                       </div>
                                     );
                                   })}
@@ -1921,9 +1922,9 @@ function MonatScreen() {
                                   {Li("alert-triangle",12,T.gold)}
                                   <span style={{color:T.txt}}>
                                     Vormerkung{" "}
-                                    <span style={{textDecoration:"line-through",color:T.txt2,fontFamily:NUM_FONT}}>{fmt(vormInfo.plannedAmt)} €</span>
+                                    <span style={{textDecoration:"line-through",color:T.txt2,fontFamily:NUM_FONT}}>{betrag(vormInfo.plannedAmt)} €</span>
                                     {" → "}
-                                    <span style={{fontWeight:700,color:T.gold,fontFamily:NUM_FONT}}>{fmt(vormInfo.actualAmt)} €</span>
+                                    <span style={{fontWeight:700,color:T.gold,fontFamily:NUM_FONT}}>{betrag(vormInfo.actualAmt)} €</span>
                                   </span>
                                 </div>
                               ) : (
@@ -1932,7 +1933,7 @@ function MonatScreen() {
                                   {Li("check-circle",13,"#fff")}
                                   <span>
                                     Vormerkung erfüllt{" "}
-                                    <span style={{fontWeight:800,fontFamily:NUM_FONT}}>({fmt(vormInfo.actualAmt)} €)</span>
+                                    <span style={{fontWeight:800,fontFamily:NUM_FONT}}>({betrag(vormInfo.actualAmt)} €)</span>
                                   </span>
                                 </div>
                               ))}
@@ -2210,7 +2211,7 @@ function MonatScreen() {
                                   return (
                                     <div key={sp.id} style={{display:"flex",alignItems:"center",gap:3,justifyContent:"flex-end",marginBottom:1}}>
                                       <span style={{width:6,height:6,borderRadius:"50%",background:spCat?.color||T.txt2,flexShrink:0,display:"inline-block"}}/>
-                                      <span style={{...amtStyle(spCat?.color||T.txt2),fontSize:9,fontFamily:NUM_FONT,fontWeight:700}}>{fmt(pn(sp.amount))}</span>
+                                      <span style={{...amtStyle(spCat?.color||T.txt2),fontSize:9,fontFamily:NUM_FONT,fontWeight:700}}>{betrag(pn(sp.amount))}</span>
                                     </div>
                                   );
                                 })}
@@ -2246,7 +2247,7 @@ function MonatScreen() {
                                     return (
                                       <div key={sp.id} style={{display:"flex",justifyContent:"space-between",gap:8,fontSize:11.5}}>
                                         <span style={{color:T.txt2}}>{spSub?.name||spCat?.name||"—"}</span>
-                                        <span style={{color:T.txt,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{fmt(pn(sp.amount))} €</span>
+                                        <span style={{color:T.txt,fontFamily:NUM_FONT,fontVariantNumeric:"tabular-nums"}}>{betrag(pn(sp.amount))} €</span>
                                       </div>
                                     );
                                   })}
@@ -2259,9 +2260,9 @@ function MonatScreen() {
                                   {Li("alert-triangle",12,T.gold)}
                                   <span style={{color:T.txt}}>
                                     Vormerkung{" "}
-                                    <span style={{textDecoration:"line-through",color:T.txt2,fontFamily:NUM_FONT}}>{fmt(vormInfo.plannedAmt)} €</span>
+                                    <span style={{textDecoration:"line-through",color:T.txt2,fontFamily:NUM_FONT}}>{betrag(vormInfo.plannedAmt)} €</span>
                                     {" → "}
-                                    <span style={{fontWeight:700,color:T.gold,fontFamily:NUM_FONT}}>{fmt(vormInfo.actualAmt)} €</span>
+                                    <span style={{fontWeight:700,color:T.gold,fontFamily:NUM_FONT}}>{betrag(vormInfo.actualAmt)} €</span>
                                   </span>
                                 </div>
                               ) : (
@@ -2270,7 +2271,7 @@ function MonatScreen() {
                                   {Li("check-circle",13,"#fff")}
                                   <span>
                                     Vormerkung erfüllt{" "}
-                                    <span style={{fontWeight:800,fontFamily:NUM_FONT}}>({fmt(vormInfo.actualAmt)} €)</span>
+                                    <span style={{fontWeight:800,fontFamily:NUM_FONT}}>({betrag(vormInfo.actualAmt)} €)</span>
                                   </span>
                                 </div>
                               ))}

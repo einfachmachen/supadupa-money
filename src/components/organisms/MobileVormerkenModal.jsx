@@ -13,6 +13,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { nextBankWorkday, isoAddMonths, calcRecurringCount } from "../../utils/date.js";
 import { Li } from "../../utils/icons.jsx";
 import { SchieflageVorwarnung } from "../atoms/SchieflageVorwarnung.jsx";
@@ -614,7 +615,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
               <div style={{background:"rgba(0,0,0,0.2)",borderRadius:S.radius/2,
                 padding:"10px 14px",marginBottom:S.gap,fontSize:S.fs-4,color:T.txt2,lineHeight:1.7}}>
                 <span style={{color:T.pos,fontWeight:700}}>{totalCount}× {intervalLabel}</span>
-                {amount&&<>{" · "}{isFinanz?"Rate":""} {fmt(amtVal())}</>}
+                {amount&&<>{" · "}{isFinanz?"Rate":""} {betrag(amtVal())}</>}
                 {gesamtbetrag&&<>{" · "}Gesamt: {gesamtbetrag}</>}
                 {date&&<>{" · "}ab {date.split("-").reverse().join(".")}</>}
               </div>
@@ -854,8 +855,8 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
                   borderRadius:S.radius/2,padding:"10px 14px"}}>
                   {Li("alert-triangle",S.fs-10,T.gold)}
                   <span style={{color:T.gold,fontSize:S.fs-8,lineHeight:1.4}}>
-                    Liter × Preis ergibt <b style={{color:T.txt}}>{fmt(fuelComputedTotal)}</b> —
-                    weicht vom eingegebenen Betrag (<b style={{color:T.txt}}>{fmt(_amt)}</b>) ab.
+                    Liter × Preis ergibt <b style={{color:T.txt}}>{betrag(fuelComputedTotal)}</b> —
+                    weicht vom eingegebenen Betrag (<b style={{color:T.txt}}>{betrag(_amt)}</b>) ab.
                     Der eingegebene Betrag bleibt bestehen; bei Bedarf in Schritt 1 korrigieren.
                   </span>
                 </div>

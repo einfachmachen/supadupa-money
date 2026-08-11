@@ -6,6 +6,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { MONTHS_S } from "../../utils/constants.js";
 import { fmt, pn, NUM_FONT } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 
 function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=false}) {
@@ -62,15 +63,15 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
                   {isFuture&&<span style={{color:T.gold,fontSize:10,marginRight:6}}>{MONTHS_S[w.month]} {w.year}</span>}
                   {hasMultiple
                     ? (w.minPuffer>0
-                      ? <>{(w.allDays||[]).length}× unter Puffer ({fmt(w.minPuffer)} €) — schlimmste: {fmt(w.saldoVal)} €</>
-                      : <>{(w.allDays||[]).length}× Kontostand im Minus — schlimmste: −{fmt(w.deficit)} €</>)
+                      ? <>{(w.allDays||[]).length}× unter Puffer ({betrag(w.minPuffer)} €) — schlimmste: {betrag(w.saldoVal)} €</>
+                      : <>{(w.allDays||[]).length}× Kontostand im Minus — schlimmste: −{betrag(w.deficit)} €</>)
                     : (w.minPuffer>0
-                      ? <>Ab {(()=>{const[,dm,dd]=w.date.split("-");return`${parseInt(dd)}.${parseInt(dm)}.`;})()} unter Puffer ({fmt(w.minPuffer)} €): {fmt(w.saldoVal)} €</>
-                      : <>Ab {(()=>{const[,dm,dd]=w.date.split("-");return`${parseInt(dd)}.${parseInt(dm)}.`;})()}  Kontostand im Minus: −{fmt(w.deficit)} €</>)
+                      ? <>Ab {(()=>{const[,dm,dd]=w.date.split("-");return`${parseInt(dd)}.${parseInt(dm)}.`;})()} unter Puffer ({betrag(w.minPuffer)} €): {betrag(w.saldoVal)} €</>
+                      : <>Ab {(()=>{const[,dm,dd]=w.date.split("-");return`${parseInt(dd)}.${parseInt(dm)}.`;})()}  Kontostand im Minus: −{betrag(w.deficit)} €</>)
                   }
                 </div>
                 {!hasMultiple&&<div style={{color:T.txt2,fontSize:10,marginTop:2}}>
-                  {w.nextPos?(()=>{const[,wm,wd]=(w.nextPos.date||"").split("-");return<>Ausgleichen bis <span style={{color:T.gold,fontWeight:700}}>{parseInt(wd)}.{parseInt(wm)}.</span>{w.nextPos.name&&` (${w.nextPos.name})`} — mindestens <span style={{color:T.neg,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(w.deficit)} €</span> einplanen</>})():<>Kein Ausgleich — mindestens <span style={{color:T.neg,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(w.deficit)} €</span> fehlen</>}
+                  {w.nextPos?(()=>{const[,wm,wd]=(w.nextPos.date||"").split("-");return<>Ausgleichen bis <span style={{color:T.gold,fontWeight:700}}>{parseInt(wd)}.{parseInt(wm)}.</span>{w.nextPos.name&&` (${w.nextPos.name})`} — mindestens <span style={{color:T.neg,fontWeight:700,fontFamily:NUM_FONT}}>{betrag(w.deficit)} €</span> einplanen</>})():<>Kein Ausgleich — mindestens <span style={{color:T.neg,fontWeight:700,fontFamily:NUM_FONT}}>{betrag(w.deficit)} €</span> fehlen</>}
                 </div>}
               </div>
               {hasMultiple&&<div style={{color:T.txt2,fontSize:10,flexShrink:0}}>
@@ -87,11 +88,11 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
                 <div key={j} style={{padding:"5px 10px 5px 48px",
                   borderTop:`1px solid ${T.neg}22`,background:`${T.neg}0C`}}>
                   <div style={{color:T.neg,fontSize:11,fontWeight:700}}>
-                    Ab {fromLabel} −{fmt(d.deficit)} €
+                    Ab {fromLabel} −{betrag(d.deficit)} €
                   </div>
                   <div style={{color:T.txt2,fontSize:10}}>
                     {nextLabel
-                      ? <>Ausgleichen bis <span style={{color:T.gold,fontWeight:700}}>{nextLabel}</span>{d.nextPos?.name&&` (${d.nextPos.name})`} — mindestens <span style={{color:T.neg,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(d.deficit)} €</span></>
+                      ? <>Ausgleichen bis <span style={{color:T.gold,fontWeight:700}}>{nextLabel}</span>{d.nextPos?.name&&` (${d.nextPos.name})`} — mindestens <span style={{color:T.neg,fontWeight:700,fontFamily:NUM_FONT}}>{betrag(d.deficit)} €</span></>
                       : <>Kein Ausgleich im Monat</>}
                   </div>
                 </div>

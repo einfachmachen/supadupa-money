@@ -129,6 +129,24 @@ describe("BudgetBereich", () => {
     await act(async () => root.unmount());
   });
 
+  it("zeigt genutzt gesaettigt und offen blass", async () => {
+    // §4.4: blass = geplant/vorgemerkt, gesaettigt = tatsaechlich geflossen.
+    // „genutzt" trug faelschlich die blasse Vormerkungsfarbe und war damit von
+    // „offen" daneben nicht zu unterscheiden (Nutzer-Hinweis).
+    const { el, root } = await zeichne(BASIS);
+    const [, zeile2] = el.firstChild.children;
+    const farbeVon = (wurzel, label) => {
+      const gruppe = [...wurzel.querySelectorAll("span")]
+        .find(s => s.firstElementChild?.textContent === label);
+      return gruppe.children[1].style.color;
+    };
+    const genutztFarbe = farbeVon(zeile2, "genutzt:");
+    const offenFarbe   = farbeVon(el.firstChild.children[0], "offen:");
+    expect(genutztFarbe).toBeTruthy();
+    expect(genutztFarbe).not.toBe(offenFarbe);
+    await act(async () => root.unmount());
+  });
+
   it("kommt ohne Datum aus (Aufrisse ohne Stichtag)", async () => {
     const { text, root } = await zeichne({ ...BASIS, datum: null });
     expect(text).toContain("Essen & Trinken");

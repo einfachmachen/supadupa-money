@@ -5,6 +5,7 @@ import { CatPicker } from "../molecules/CatPicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, uid, NUM_FONT } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
 import { planLegDecisions } from "../../utils/sparPlanSeries.js";
@@ -693,13 +694,13 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                   Heute sicher sparen (Monat 1):
                 </div>
                 <div style={{color:col,fontSize:26,fontWeight:800,fontFamily:NUM_FONT,letterSpacing:-0.5}}>
-                  {computing?"…":maxTransfer===null?"—":maxTransfer<=0?"0":fmt(maxTransfer)} €
+                  {computing?"…":maxTransfer===null?"—":maxTransfer<=0?"0":betrag(maxTransfer)} €
                 </div>
                 {result&&!keinSpielraum&&<div style={{color:T.pos,fontSize:9,marginTop:2}}>
                   ∑ {monate+1} Monate: <span style={{fontWeight:700,fontFamily:NUM_FONT}}>
-                    {fmt(totalKumuliert)} €
+                    {betrag(totalKumuliert)} €
                   </span>
-                  {" · "}Ø <span style={{fontWeight:700,fontFamily:NUM_FONT}}>{fmt(Math.round(durchschnitt))} €</span>/Monat
+                  {" · "}Ø <span style={{fontWeight:700,fontFamily:NUM_FONT}}>{betrag(Math.round(durchschnitt))} €</span>/Monat
                 </div>}
                 {keinSpielraum&&(
                   <div style={{marginTop:4,background:"rgba(234,64,37,0.12)",border:`1px solid ${T.neg}44`,
@@ -764,7 +765,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                 Mega-Sparrate zum {kurzDat(sweep.termin)} <span style={{color:T.gold}}>(Zinstermin)</span>
               </div>
               <div style={{color:T.gold,fontSize:20,fontWeight:800,fontFamily:NUM_FONT,letterSpacing:-0.5}}>
-                {fmt(sweep.hin)} €
+                {betrag(sweep.hin)} €
               </div>
             </div>
             <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:8,marginTop:3}}>
@@ -772,14 +773,14 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                 zurück aufs Giro am {kurzDat(sweep.bis)} ({wochentag(sweep.bis)})
               </div>
               <div style={{color:T.blue,fontSize:13,fontWeight:800,fontFamily:NUM_FONT}}>
-                {fmt(sweep.zurueck)} €
+                {betrag(sweep.zurueck)} €
               </div>
             </div>
             <div style={{color:T.txt,fontSize:12,marginTop:5,lineHeight:1.45}}>
               {sweep.bleibt>0
                 ? `Enthält die normale Sparrate von ${fmt(sweep.bleibt)} € — die bleibt auf dem ${zielKontoName} und wird nicht zusätzlich überwiesen. `
                 : ""}
-              Engster Tag {kurzDat(sweep.engpassTag)}: danach bleiben {fmt(Math.round(sweep.restNachSweep))} € auf dem Giro.
+              Engster Tag {kurzDat(sweep.engpassTag)}: danach bleiben {betrag(Math.round(sweep.restNachSweep))} € auf dem Giro.
             </div>
             {/* Ehrliche Einordnung: der Wert ist eine Vorschau, keine Zusage.
                 Werden nach dem Gehaltseingang noch Budget-Vormerkungen
@@ -912,7 +913,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
             })}
           </div>
           <div style={{textAlign:"right",color:T.txt,fontSize:11,marginTop:5,lineHeight:1.45}}>
-            * Tiefst-Saldo nach Abzug bereits eingeplanter Sparraten · Sparen = Tiefst-Saldo − {fmt(puffer)} € Puffer
+            * Tiefst-Saldo nach Abzug bereits eingeplanter Sparraten · Sparen = Tiefst-Saldo − {betrag(puffer)} € Puffer
           </div>
         </>)}
 

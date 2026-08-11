@@ -7,6 +7,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { fmt, NUM_FONT } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { buildFuelSeries } from "../../utils/fuel.js";
 
@@ -223,7 +224,7 @@ function FuelAnalysisScreen({onClose, onBack, mobileMode=false}) {
                     )}
                   </div>
                 )}
-                <div style={{color:T.txt2,fontSize:12,fontFamily:NUM_FONT,flexShrink:0}}>{fmt(Math.abs(t.totalAmount||0))}</div>
+                <div style={{color:T.txt2,fontSize:12,fontFamily:NUM_FONT,flexShrink:0}}>{betrag(Math.abs(t.totalAmount||0))}</div>
               </div>
             ))}
 

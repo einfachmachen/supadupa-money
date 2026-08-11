@@ -17,6 +17,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { MONTHS_S, MONTHS_F } from "../../utils/constants.js";
 import { fmt, pn, NUM_FONT } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { pendingForecast } from "../../utils/moodForecast.js";
 import { YearSectionHeader } from "../molecules/YearSectionHeader.jsx";
@@ -352,7 +353,7 @@ function MoneyMoodScreen() {
                   <button key={s.mi} onClick={() => setSelStrainMi(s.mi)}
                     style={{ display: "inline-flex", alignItems: "baseline", gap: 5, background: on ? T.neg + "33" : "rgba(255,255,255,0.05)", border: `1px solid ${on ? T.neg : T.bd}`, borderRadius: 13, padding: "3px 9px", cursor: "pointer", fontFamily: "inherit" }}>
                     <span style={{ color: on ? T.neg : T.txt, fontSize: 11.5, fontWeight: on ? 800 : 600 }}>{MONTHS_S[s.mi]}</span>
-                    <span style={{ color: T.txt2, fontSize: 10.5, fontFamily: NUM_FONT }}>−{fmt(s.deficit)} €</span>
+                    <span style={{ color: T.txt2, fontSize: 10.5, fontFamily: NUM_FONT }}>−{betrag(s.deficit)} €</span>
                   </button>
                 );
               })}
@@ -360,7 +361,7 @@ function MoneyMoodScreen() {
           )}
 
           <div style={{ color: T.txt, fontSize: 12.5, lineHeight: 1.4, marginBottom: activeStrain.drivers.length ? 7 : 0 }}>
-            <b>{MONTHS_F[activeStrain.mi]}:</b> Konto fällt auf <b style={{ color: T.neg }}>{activeStrain.saldoVal < 0 ? "−" : ""}{fmt(activeStrain.saldoVal)} €</b> — <b style={{ color: T.gold }}>{fmt(activeStrain.deficit)} €</b> unter Puffer ({fmt(buffer)} €).
+            <b>{MONTHS_F[activeStrain.mi]}:</b> Konto fällt auf <b style={{ color: T.neg }}>{activeStrain.saldoVal < 0 ? "−" : ""}{betrag(activeStrain.saldoVal)} €</b> — <b style={{ color: T.gold }}>{betrag(activeStrain.deficit)} €</b> unter Puffer ({betrag(buffer)} €).
           </div>
 
           {activeStrain.drivers.length > 0 && (
@@ -375,7 +376,7 @@ function MoneyMoodScreen() {
                     {ess && Li("lock", 11, T.txt2)}
                     {Li(d.row.icon || "folder", 12, d.row.color || T.neg)}
                     <span style={{ color: T.txt, fontSize: 11.5, fontWeight: flex ? 700 : 600 }}>{d.row.name}</span>
-                    <span style={{ color: T.txt2, fontSize: 11, fontFamily: NUM_FONT }}>{fmt(d.val)} €</span>
+                    <span style={{ color: T.txt2, fontSize: 11, fontFamily: NUM_FONT }}>{betrag(d.val)} €</span>
                     {d.fromBudget && <span style={{ background: T.gold + "22", color: T.gold, borderRadius: 4, padding: "0 4px", fontSize: 9.5, fontWeight: 700, flexShrink: 0 }}>Budget</span>}
                   </button>
                 );
@@ -549,14 +550,14 @@ function MoodDetail({ row, isSub, isIncome, focusMi, year, txs, getAcc, recentId
                   {bookings.length} {bookings.length === 1 ? "Buchung" : "Buchungen"}
                 </span>
               </span>
-              <span style={{ color: isIncome ? T.pos : T.txt, fontSize: 19, fontWeight: 800, fontFamily: NUM_FONT }}>{fmt(headTotal)}</span>
+              <span style={{ color: isIncome ? T.pos : T.txt, fontSize: 19, fontWeight: 800, fontFamily: NUM_FONT }}>{betrag(headTotal)}</span>
             </div>
             {bookings.length === 0 ? (
               bkBudget > 0 ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: 6, background: "rgba(255,255,255,0.04)" }}>
                   <span style={{ background: "rgba(245,166,35,0.15)", color: T.gold, borderRadius: 4, padding: "0 5px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>Budget</span>
                   <span style={{ flex: 1, color: T.txt2, fontSize: 12 }}>geplant, noch keine Buchungen</span>
-                  <span style={{ color: T.txt, fontSize: 15, fontWeight: 700, fontFamily: NUM_FONT }}>{fmt(bkBudget)}</span>
+                  <span style={{ color: T.txt, fontSize: 15, fontWeight: 700, fontFamily: NUM_FONT }}>{betrag(bkBudget)}</span>
                 </div>
               ) : (
                 <div style={{ color: T.txt2, fontSize: 12, padding: "4px 0" }}>Keine Buchungen in diesem Monat.</div>
@@ -578,7 +579,7 @@ function MoodDetail({ row, isSub, isIncome, focusMi, year, txs, getAcc, recentId
                             <span style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
                             {it.pending && <span style={{ background: "rgba(245,166,35,0.15)", color: T.gold, borderRadius: 4, padding: "0 5px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>VM</span>}
                             <span style={{ color: T.txt2, fontSize: 12, flexShrink: 0, whiteSpace: "nowrap" }}>{it.dateStr}</span>
-                            <span style={{ color: T.txt, fontSize: 16, fontWeight: 700, fontFamily: NUM_FONT, flexShrink: 0, whiteSpace: "nowrap" }}>{fmt(it.val)}</span>
+                            <span style={{ color: T.txt, fontSize: 16, fontWeight: 700, fontFamily: NUM_FONT, flexShrink: 0, whiteSpace: "nowrap" }}>{betrag(it.val)}</span>
                           </div>
                         </button>
                         {open && (
@@ -617,7 +618,7 @@ function MoodDetail({ row, isSub, isIncome, focusMi, year, txs, getAcc, recentId
           <div style={{ border: `1px solid ${T.bd}`, borderRadius: 12, padding: "8px 6px", marginBottom: 8, background: "rgba(255,255,255,0.02)" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
               <span style={{ flex: 1, color: T.txt, fontSize: 15, fontWeight: 700 }}>{MONTHS_F[sel]} {year}</span>
-              <span style={{ color: isIncome ? T.pos : T.txt, fontSize: 18, fontWeight: 800, fontFamily: NUM_FONT }}>{fmt(selTotal)}</span>
+              <span style={{ color: isIncome ? T.pos : T.txt, fontSize: 18, fontWeight: 800, fontFamily: NUM_FONT }}>{betrag(selTotal)}</span>
             </div>
             {subBreakdown.length === 0 ? (
               <div style={{ color: T.txt2, fontSize: 13, padding: "4px 0" }}>Keine Buchungen in diesem Monat.</div>
@@ -663,10 +664,10 @@ function MoodDetail({ row, isSub, isIncome, focusMi, year, txs, getAcc, recentId
                           <div style={{ display: "flex", alignItems: "baseline", gap: 6, flexShrink: 0 }}>
                             <span style={{ color: usedCol, fontSize: 16, fontWeight: 700, fontFamily: NUM_FONT, fontVariantNumeric: "tabular-nums" }}>{spent === 0 ? "—" : fmt(Math.abs(spent))}</span>
                             <span style={{ color: T.txt2, fontSize: 10 }}>{isOver ? "zuviel:" : "Rest:"}</span>
-                            <span style={{ color: restCol, fontSize: 16, fontWeight: 800, fontFamily: NUM_FONT, fontVariantNumeric: "tabular-nums" }}>{fmt(Math.abs(open))}</span>
+                            <span style={{ color: restCol, fontSize: 16, fontWeight: 800, fontFamily: NUM_FONT, fontVariantNumeric: "tabular-nums" }}>{betrag(Math.abs(open))}</span>
                           </div>
                         ) : (
-                          <span style={{ color: isIncome ? T.pos : T.txt, fontSize: 16, fontWeight: 700, fontFamily: NUM_FONT, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{fmt(it.val)}</span>
+                          <span style={{ color: isIncome ? T.pos : T.txt, fontSize: 16, fontWeight: 700, fontFamily: NUM_FONT, fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>{betrag(it.val)}</span>
                         )}
                         {Li("chevron-right", 18, active ? T.gold : T.txt2)}
                       </div>

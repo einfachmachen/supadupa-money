@@ -4,6 +4,7 @@ import React, { useContext, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, pn, NUM_FONT } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 
 function MitteEndeFields({tx, pal, fulfilled, needsHatch, effE=""}) {
@@ -82,7 +83,7 @@ function MitteEndeFields({tx, pal, fulfilled, needsHatch, effE=""}) {
                         style={{textAlign:"right",color:pal.val,fontSize:12,fontWeight:700,fontFamily:NUM_FONT,
                           padding:"4px 5px",borderRadius:7,background:bg,minHeight:24,
                           display:"flex",alignItems:"center",justifyContent:"flex-end",cursor:"pointer"}}>
-                        {fmt(autoSum)}
+                        {betrag(autoSum)}
                         <span style={{color:pal.hdr,fontSize:9,marginLeft:4}}>{items.length}×</span>
                       </div>
                     : <input
@@ -122,7 +123,7 @@ function MitteEndeFields({tx, pal, fulfilled, needsHatch, effE=""}) {
                     ))}
                     <div style={{borderTop:`1px solid ${pal.bd}`,marginTop:4,paddingTop:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                       <span style={{color:"rgba(200,210,230,0.4)",fontSize:9}}>Summe</span>
-                      <span style={{color:pal.val,fontSize:12,fontWeight:800,fontFamily:NUM_FONT}}>{fmt(sumOf(col))}</span>
+                      <span style={{color:pal.val,fontSize:12,fontWeight:800,fontFamily:NUM_FONT}}>{betrag(sumOf(col))}</span>
                     </div>
                   </div>
                 )}

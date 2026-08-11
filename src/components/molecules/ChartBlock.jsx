@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, NUM_FONT } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 
 function ChartBlock({catSums, maxSum, budgets, getBudgetForMonth, year, month}) {
@@ -42,7 +43,7 @@ function ChartBlock({catSums, maxSum, budgets, getBudgetForMonth, year, month}) 
             <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
               <span style={{width:16,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{Li(cat.icon,12,cat.color||T.txt2)}</span>
               <span style={{color:onHero,fontSize:10,fontWeight:600,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{cat.name}</span>
-              <span style={{color:onHeroMut,fontSize:10,fontFamily:NUM_FONT,flexShrink:0}}>{fmt(cat.sum)}</span>
+              <span style={{color:onHeroMut,fontSize:10,fontFamily:NUM_FONT,flexShrink:0}}>{betrag(cat.sum)}</span>
             </div>
             <div style={{height:4,borderRadius:2,background:trackBg,position:"relative",marginLeft:22}}>
               {budget>0&&<div style={{position:"absolute",inset:0,borderRadius:2,background:trackBud}}/>}

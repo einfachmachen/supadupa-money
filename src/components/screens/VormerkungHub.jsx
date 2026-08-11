@@ -18,6 +18,7 @@ import { INP } from "../../theme/palette.js";
 import { MONTHS_F } from "../../utils/constants.js";
 import { isoAddMonths, nextBankWorkday, calcRecurringCount } from "../../utils/date.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { isFuelSelection, checkOdometerPlausibility } from "../../utils/fuel.js";
 import { recordDeletedTxs } from "../../utils/txTombstones.js";
@@ -1235,7 +1236,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                     <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,
                       background:"rgba(0,0,0,0.2)",borderRadius:8,padding:"7px 10px"}}>
                       <span style={{color:T.txt2,fontSize:S.fs-10}}>
-                        berechnet: <b style={{color:T.txt}}>{fmt(fuelComputedTotal)}</b>
+                        berechnet: <b style={{color:T.txt}}>{betrag(fuelComputedTotal)}</b>
                       </span>
                       <button onClick={()=>setAmount(fuelComputedTotal.toFixed(2).replace(".",","))}
                         style={{padding:"4px 10px",borderRadius:7,border:"none",
@@ -1525,7 +1526,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                             <span style={{color:T.txt2,opacity:0.6}}> ({s.count}×)</span>}
                         </span>
                         <span style={{color:T.pos,fontWeight:700,fontFamily:NUM_FONT}}>
-                          {fmt(s.amt)} €
+                          {betrag(s.amt)} €
                         </span>
                       </div>
                     ))}
@@ -1539,7 +1540,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                             : `${fmtMY(ex.dates[0])} · ${ex.dates.length}×`}
                         </span>
                         <span style={{color:T.gold,fontWeight:700,fontFamily:NUM_FONT}}>
-                          {fmt(ex.amt)} €
+                          {betrag(ex.amt)} €
                         </span>
                       </div>
                     ))}
@@ -1645,7 +1646,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                             display:"flex",alignItems:"center",gap:8}}>
                             <div style={{flex:1}}>
                               <div style={{color:T.gold,fontSize:S.fs-6,fontWeight:700}}>
-                                {fmt(ex.amount)} · {intervalLabel} · {ex.items.length}×
+                                {betrag(ex.amount)} · {intervalLabel} · {ex.items.length}×
                               </div>
                               <div style={{color:T.txt2,fontSize:S.fs-10}}>
                                 {fmtD(firstD)} – {fmtD(lastD)}
@@ -1766,7 +1767,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                           {" · "}{pad2(first.getDate())}.{pad2(first.getMonth()+1)}.{first.getFullYear()}
                           {matches.length>1&&<> – {pad2(last.getDate())}.{pad2(last.getMonth()+1)}.{last.getFullYear()}</>}
                           <div style={{color:T.txt2,marginTop:3,fontSize:S.fs-10}}>
-                            Diese Monate bekommen {exAmount.replace(".",",")} € statt {fmt(seriesAmtInfo.regularAmt)} €
+                            Diese Monate bekommen {exAmount.replace(".",",")} € statt {betrag(seriesAmtInfo.regularAmt)} €
                           </div>
                         </div>;
                       })()}

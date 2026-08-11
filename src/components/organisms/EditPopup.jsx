@@ -11,6 +11,7 @@ import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
 import { isoAddMonths } from "../../utils/date.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
+import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { linkChain, hasBankOrigin } from "../../utils/vormMatch.js";
 import { isFuelSelection, checkOdometerPlausibility } from "../../utils/fuel.js";
@@ -213,9 +214,9 @@ function EditPopup() {
                     Betrag stimmt nicht überein
                   </div>
                   <div style={{color:T.txt2,fontSize:11,lineHeight:1.5}}>
-                    Vormerkung: <b style={{color:T.txt}}>{fmt(mm.pendAmt)}</b>
-                    {" · "}Buchung: <b style={{color:T.txt}}>{fmt(mm.realAmt)}</b>
-                    {" · "}Differenz: <b style={{color:T.neg}}>{fmt(Math.abs(mm.pendAmt-mm.realAmt))}</b>
+                    Vormerkung: <b style={{color:T.txt}}>{betrag(mm.pendAmt)}</b>
+                    {" · "}Buchung: <b style={{color:T.txt}}>{betrag(mm.realAmt)}</b>
+                    {" · "}Differenz: <b style={{color:T.neg}}>{betrag(Math.abs(mm.pendAmt-mm.realAmt))}</b>
                   </div>
                   {pend&&<button onClick={()=>{ setEditTx(null); setTimeout(()=>setEditTx(pend),50); }}
                     style={{marginTop:6,background:(isLightTheme())?"rgba(192,120,0,0.18)":"rgba(245,166,35,0.15)",border:`1px solid ${T.gold}44`,
@@ -445,14 +446,14 @@ function EditPopup() {
               display:"flex",alignItems:"flex-start",gap:8}}>
               {Li("arrow-left-right",13,T.blue)}
               <div style={{flex:1}}>
-                <div style={{color:T.blue,fontSize:11,fontWeight:700,marginBottom:4}}>Splitbuchung · Gesamtbetrag {fmt(pn(editTx.totalAmount))}</div>
+                <div style={{color:T.blue,fontSize:11,fontWeight:700,marginBottom:4}}>Splitbuchung · Gesamtbetrag {betrag(pn(editTx.totalAmount))}</div>
                 <div style={{display:"flex",flexDirection:"column",gap:3}}>
                   {(editTx.splits||[]).map((sp,si)=>{
                     const spCat=getCat(sp.catId), spSub=getSub(sp.catId,sp.subId);
                     return (
                       <div key={sp.id} style={{display:"flex",alignItems:"center",gap:6}}>
                         <span style={{width:7,height:7,borderRadius:"50%",background:spCat?.color||T.txt2,flexShrink:0,display:"inline-block"}}/>
-                        <span style={{color:spCat?.color||T.txt2,fontSize:11,fontWeight:700,fontFamily:NUM_FONT,minWidth:52,textAlign:"right"}}>{fmt(pn(sp.amount))}</span>
+                        <span style={{color:spCat?.color||T.txt2,fontSize:11,fontWeight:700,fontFamily:NUM_FONT,minWidth:52,textAlign:"right"}}>{betrag(pn(sp.amount))}</span>
                         <span style={{color:T.txt2,fontSize:10}}>{spSub?.name||spCat?.name||<span style={{color:"rgba(255,255,255,0.3)"}}>unkategorisiert</span>}</span>
                       </div>
                     );
@@ -797,8 +798,8 @@ function EditPopup() {
                     </div>
                   </div>
                   <div style={{color:T.txt2,fontSize:9,textAlign:"right"}}>
-                    2. Hälfte: <b style={{color:T.gold}}>{fmt(Math.max(0,gesamtAmt-mitteAmt))}</b>
-                    {" · "}Gesamt: <b style={{color:T.gold}}>{fmt(gesamtAmt)}</b>
+                    2. Hälfte: <b style={{color:T.gold}}>{betrag(Math.max(0,gesamtAmt-mitteAmt))}</b>
+                    {" · "}Gesamt: <b style={{color:T.gold}}>{betrag(gesamtAmt)}</b>
                   </div>
                 </>
               ) : (
@@ -873,12 +874,12 @@ function EditPopup() {
                       {paid>0&&<div style={{flex:1,background:"rgba(170,204,0,0.08)",border:`1px solid ${T.pos}33`,
                         borderRadius:8,padding:"5px 8px",textAlign:"center"}}>
                         <div style={{color:T.pos,fontSize:10,fontWeight:700}}>{paid} bezahlt</div>
-                        <div style={{color:T.pos,fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(paidAmt)}</div>
+                        <div style={{color:T.pos,fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>{betrag(paidAmt)}</div>
                       </div>}
                       {open>0&&<div style={{flex:1,background:"rgba(234,64,37,0.08)",border:`1px solid ${T.neg}33`,
                         borderRadius:8,padding:"5px 8px",textAlign:"center"}}>
                         <div style={{color:T.neg,fontSize:10,fontWeight:700}}>{open} offen</div>
-                        <div style={{color:T.neg,fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>{fmt(openAmt)}</div>
+                        <div style={{color:T.neg,fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>{betrag(openAmt)}</div>
                       </div>}
                     </div>
                   );
