@@ -1,42 +1,33 @@
 // Auto-generated module (siehe app-src.jsx)
 
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { ChartBlock } from "./ChartBlock.jsx";
 import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, NUM_FONT } from "../../utils/format.js";
 import { betrag, centsGedreht } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 
-// Betrag in einem SVG-Knoten.
+// Betragsbeschriftungen des Tortendiagramms.
 //
-// Die Beschriftungen des Tortendiagramms sind <text>-Knoten. Dort laesst sich
-// `betrag()` nicht direkt einsetzen: bei aktiver Nachkommastellen-Option
-// liefert es ein <span>, und HTML rendert innerhalb von <svg> ausschliesslich
-// in einem <foreignObject>. Genau darauf schaltet dieser Helfer um — aber NUR,
-// wenn die Option an ist. Sonst bleibt es beim unveraenderten <text>, damit
-// das Diagramm ohne die Option Pixel fuer Pixel so aussieht wie bisher.
+// Die Beschriftungen sind SVG-<text>-Knoten. `betrag()` liefert bei aktiver
+// Nachkommastellen-Option ein <span>, und HTML rendert innerhalb von <svg> nur
+// in einem <foreignObject>. Das war der erste Versuch — und ging auf dem iPhone
+// schief: WebKit setzte die gedrehten Cent an voellig andere Stellen als Blink
+// (Nutzer-Bild). foreignObject ist in Safari seit jeher fehleranfaellig, und
+// hier ist ohnehin nichts gewonnen, wenn es nur in einem Browser stimmt.
 //
-// Der Kasten braucht eine feste Groesse. Alle Beschriftungen hier stehen
-// zentriert (textAnchor="middle"), also wird er um den Ankerpunkt zentriert;
-// senkrecht liegt die Grundlinie eines <text> etwa 0,36 Schriftgroessen unter
-// der optischen Mitte, das rechnet `oben` heraus.
-const SvgBetrag = ({x, y, groesse, farbe, fett, opacity, wert, breite = 120}) => {
-  if (!centsGedreht()) return (
-    <text x={x} y={y} textAnchor="middle" fill={farbe} fontSize={groesse}
-      fontWeight={fett} opacity={opacity}>{fmt(wert)}</text>
-  );
-  const hoehe = Math.ceil(groesse * 1.6);
-  const oben = y - 0.36 * groesse - hoehe / 2;
-  return (
-    <foreignObject x={x - breite / 2} y={oben} width={breite} height={hoehe} opacity={opacity}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"center",
-        width:"100%",height:"100%",color:farbe,fontSize:groesse,fontWeight:fett,
-        fontFamily:NUM_FONT,lineHeight:1,whiteSpace:"nowrap"}}>
-        {betrag(wert)}
-      </div>
-    </foreignObject>
-  );
-};
+// Deshalb JETZT ohne SVG: die Betraege liegen als normales HTML in einer
+// Auflage ueber dem Diagramm — derselbe Renderpfad wie Hero und Monatsliste,
+// die auf dem iPhone nachweislich richtig aussehen. Die Auflage ist genauso
+// gross wie das (quadratische) Diagramm, deshalb rechnet ein Faktor die
+// SVG-Einheiten in Pixel um: `skala = Breite / 320`.
+//
+// Ist die Option AUS, bleibt alles beim unveraenderten <text> im SVG — dann
+// gibt es weder Auflage noch Messung.
+//
+// `y` ist die Grundlinie des <text>; die optische Mitte liegt etwa 0,36
+// Schriftgroessen darueber.
+const GRUNDLINIE_ZU_MITTE = 0.36;
 
 function CategoryChart({catSums, maxSum, budgets, getBudgetForMonth, year, month}) {
   const [chartOpen, setChartOpen] = React.useState(false);
@@ -64,6 +55,36 @@ function CategoryChart({catSums, maxSum, budgets, getBudgetForMonth, year, month
         path:`M${cx},${cy} L${x1},${y1} A${R},${R} 0 ${large},1 ${x2},${y2} Z`, lx, ly};
     });
   }, [catSums, total]);
+
+  // Breite des Diagramms in Pixeln — nur noetig, wenn die Betraege als HTML-
+  // Auflage darueber liegen (siehe oben). Callback-Ref statt useEffect, weil das
+  // <svg> erst existiert, sobald der Bereich aufgeklappt UND "Torte" gewaehlt
+  // ist; ein Effekt mit leerer Abhaengigkeitsliste haette es nie gesehen.
+  const [tortenBreite, setTortenBreite] = useState(0);
+  const tortenRef = useCallback((el) => {
+    if (!el) return;
+    setTortenBreite(el.getBoundingClientRect().width);
+    const ro = new ResizeObserver(([e]) => setTortenBreite(e.contentRect.width));
+    ro.observe(el);
+  }, []);
+  const gedreht = centsGedreht();
+  const skala = tortenBreite / 320;   // SVG-Einheit -> Pixel
+
+  // Alle Betragsbeschriftungen an EINER Stelle: einmal als <text> im SVG
+  // (Option aus), einmal als HTML in der Auflage (Option an). So koennen die
+  // beiden Darstellungen nicht auseinanderlaufen.
+  const betragsLabels = [
+    hovered === null
+      ? { key: "gesamt", x: 160, y: 169, groesse: 13, farbe: T.txt, fett: "800", wert: total }
+      : { key: "hover",  x: 160, y: 164, groesse: 13, farbe: T.txt, fett: "800", wert: pie[hovered]?.cat.sum },
+    ...pie.map((seg, i) => (seg.pct >= 8 ? {
+      key: "seg" + i, x: seg.lx, y: seg.ly + 3,
+      groesse: seg.pct >= 15 ? 9.5 : 8, farbe: "#fff", fett: "600",
+      opacity: (hovered === null || hovered === i ? 1 : 0.4) * 0.95,
+      wert: seg.cat.sum,
+    } : null)),
+  ].filter(Boolean);
+
   return (
     <div style={{margin:"0 0 4px",borderRadius:12,overflow:"hidden",border:`1px solid ${T.bd}`}}>
       <div onClick={()=>setChartOpen(v=>!v)}
@@ -87,8 +108,8 @@ function CategoryChart({catSums, maxSum, budgets, getBudgetForMonth, year, month
         </div>
         {view==="bar"&&<ChartBlock catSums={catSums} maxSum={maxSum} budgets={budgets} getBudgetForMonth={getBudgetForMonth} year={year} month={month}/>}
         {view==="pie"&&(
-          <div style={{padding:"0 0 8px"}}>
-            <svg viewBox="0 0 320 320" style={{width:"100%",display:"block"}}
+          <div style={{padding:"0 0 8px",position:"relative"}}>
+            <svg ref={tortenRef} viewBox="0 0 320 320" style={{width:"100%",display:"block"}}
               onMouseLeave={()=>setHovered(null)}>
               {pie.map((seg,i)=>(
                 <path key={i} d={seg.path} fill={seg.color}
@@ -101,10 +122,12 @@ function CategoryChart({catSums, maxSum, budgets, getBudgetForMonth, year, month
               <circle cx={160} cy={160} r={62} fill={T.surf2||T.surf}/>
               {hovered===null ? (<>
                 <text x={160} y={153} textAnchor="middle" fill={T.txt2} fontSize={10}>Gesamt</text>
-                <SvgBetrag x={160} y={169} groesse={13} farbe={T.txt} fett="800" wert={total}/>
+                {!gedreht && <text x={160} y={169} textAnchor="middle" fill={T.txt}
+                  fontSize={13} fontWeight="800">{fmt(total)}</text>}
               </>) : (<>
                 <text x={160} y={149} textAnchor="middle" fill={pie[hovered]?.color} fontSize={9} fontWeight="700">{pie[hovered]?.cat.name}</text>
-                <SvgBetrag x={160} y={164} groesse={13} farbe={T.txt} fett="800" wert={pie[hovered]?.cat.sum}/>
+                {!gedreht && <text x={160} y={164} textAnchor="middle" fill={T.txt}
+                  fontSize={13} fontWeight="800">{fmt(pie[hovered]?.cat.sum)}</text>}
                 <text x={160} y={177} textAnchor="middle" fill={T.txt2} fontSize={10}>{pie[hovered]?.pct}%</text>
               </>)}
               {pie.map((seg,i)=>{
@@ -117,8 +140,10 @@ function CategoryChart({catSums, maxSum, budgets, getBudgetForMonth, year, month
                       fill="#fff" fontSize={seg.pct>=15?10:8.5} fontWeight="700" opacity={op}>
                       {seg.cat.name.length>10 ? seg.cat.name.slice(0,9)+"\u2026" : seg.cat.name}
                     </text>
-                    <SvgBetrag x={seg.lx} y={seg.ly+3} groesse={seg.pct>=15?9.5:8}
-                      farbe="#fff" fett="600" opacity={op*0.95} wert={seg.cat.sum} breite={80}/>
+                    {!gedreht && <text x={seg.lx} y={seg.ly+3} textAnchor="middle"
+                      fill="#fff" fontSize={seg.pct>=15?9.5:8} fontWeight="600" opacity={op*0.95}>
+                      {fmt(seg.cat.sum)}
+                    </text>}
                     <text x={seg.lx} y={seg.ly+15} textAnchor="middle"
                       fill="#fff" fontSize={7.5} opacity={op*0.75}>
                       {seg.pct}%
@@ -135,6 +160,28 @@ function CategoryChart({catSums, maxSum, budgets, getBudgetForMonth, year, month
                 );
               })}
             </svg>
+
+            {/* Betraege als HTML-Auflage — nur bei aktiver Option (siehe oben).
+                Die Auflage deckt exakt das quadratische Diagramm ab, deshalb
+                genuegt `skala`, um SVG-Einheiten in Pixel umzurechnen. Sie
+                nimmt keine Tipps an, damit die Segmente darunter weiter
+                antippbar bleiben. */}
+            {gedreht && skala > 0 && (
+              <div style={{position:"absolute",left:0,top:0,width:tortenBreite,height:tortenBreite,
+                pointerEvents:"none"}}>
+                {betragsLabels.map(l => (
+                  <div key={l.key} style={{position:"absolute",
+                    left: l.x * skala,
+                    top: (l.y - GRUNDLINIE_ZU_MITTE * l.groesse) * skala,
+                    transform:"translate(-50%,-50%)",
+                    display:"flex",alignItems:"center",whiteSpace:"nowrap",
+                    color:l.farbe, fontSize:l.groesse * skala, fontWeight:l.fett,
+                    fontFamily:NUM_FONT, lineHeight:1, opacity:l.opacity}}>
+                    {betrag(l.wert)}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </>}
