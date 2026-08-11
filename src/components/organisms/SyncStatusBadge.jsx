@@ -12,7 +12,7 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { getSyncBadgeState } from "../../utils/syncBadge.js";
 
 function SyncStatusBadge() {
-  const { isOnline, cfActive, isDirty, syncStatus, openCloudSave, loadFromCloud } = useContext(AppCtx);
+  const { isOnline, cfActive, isDirty, syncStatus, openCloudSave, loadFromCloud, frageBestaetigung } = useContext(AppCtx);
   const state = getSyncBadgeState({ isOnline, cfActive, isDirty, syncStatus });
   if (!state) return null;
 
@@ -24,7 +24,10 @@ function SyncStatusBadge() {
   // Einstellungen → "Cloudflare → Lokal" erreichbar; das machte den Hinweis
   // faktisch unsichtbar, weil er nirgends im normalen Nutzungsfluss auftauchte.
   const onTap = state.key === "cloud_newer"
-    ? () => { if (window.confirm("Neuere Daten aus der Cloud laden?\n\nLokale Änderungen seit dem letzten Sync werden dabei überschrieben.")) loadFromCloud?.(); }
+    ? () => frageBestaetigung?.(
+        "Neuere Daten aus der Cloud laden?\n\nLokale Änderungen seit dem letzten Sync werden dabei überschrieben.",
+        () => loadFromCloud?.(),
+        { jaLabel: "Laden", ton: "gefahr" })
     : openCloudSave;
 
   // Deutlich größere Trefferfläche als früher: die schmale Pille (5px Polster,

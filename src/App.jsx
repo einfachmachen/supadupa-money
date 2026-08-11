@@ -15,6 +15,7 @@ import { MonatScreen } from "./components/screens/MonatScreen.jsx";
 import { MoneyMoodScreen } from "./components/screens/MoneyMoodScreen.jsx";
 import { TrendOverviewScreen } from "./components/screens/TrendOverviewScreen.jsx";
 import { SyncStatusBadge } from "./components/organisms/SyncStatusBadge.jsx";
+import { BestaetigenDialog } from "./components/organisms/BestaetigenDialog.jsx";
 import { GuidedFeatureTour } from "./components/organisms/GuidedFeatureTour.jsx";
 import { useOnlineStatus } from "./hooks/useOnlineStatus.js";
 
@@ -333,6 +334,9 @@ export default function SupaDupaMoney() {
   const [showMobileKategorien, setShowMobileKategorien] = useState(false);
   const [showMonthPickerModal, setShowMonthPickerModal] = useState(false);  // für Master-Button
   const [showCloudSave, setShowCloudSave] = useState(false);  // Cloud-Speichern-Modal (Wisch ↓)
+  // Rückfrage im App-Stil statt window.confirm — siehe BestaetigenDialog.jsx.
+  // {frage, onJa, jaLabel, ton}
+  const [bestaetigung, setBestaetigung] = useState(null);
   // Betrags-Sichtbarkeit (Augensymbol): 0 = unscharf + neutral, 1 = scharf +
   // neutral, 2 = scharf + farbig (wie bisher). Startet IMMER bei 0 (alle Beträge
   // unscharf & in Kategorie-Schriftfarbe) — bewusst nicht persistiert.
@@ -3215,6 +3219,10 @@ Abbrechen = ${remoteName}-Stand laden`
     setShowCsv, setShowDataMgr,
     syncStatus, setSyncStatus, syncError, isDirty,
     isOnline, openCloudSave: ()=>setShowCloudSave(true),
+    // Rückfrage im App-Stil. Der native window.confirm-Dialog bestimmt seine
+    // Breite selbst und ragte auf schmalen Fenstern rechts aus dem Bild
+    // (Nutzer-Bild) — daran ist von außen nichts zu ändern.
+    frageBestaetigung: (frage, onJa, opts) => setBestaetigung({ frage, onJa, ...(opts||{}) }),
     cfSaveOnClose, setCfSaveOnClose,
     dashDrillOpen, setDashDrillOpen,
     amtMode, setAmtMode,
@@ -3522,6 +3530,15 @@ Abbrechen = ${remoteName}-Stand laden`
             </button>
           </div>
         </Overlay>
+      )}
+
+      {bestaetigung && (
+        <BestaetigenDialog
+          frage={bestaetigung.frage}
+          jaLabel={bestaetigung.jaLabel}
+          ton={bestaetigung.ton}
+          onJa={()=>{ const f = bestaetigung.onJa; setBestaetigung(null); f?.(); }}
+          onAbbrechen={()=>setBestaetigung(null)}/>
       )}
 
       {/* ── Offline-/Sync-Hinweis ──

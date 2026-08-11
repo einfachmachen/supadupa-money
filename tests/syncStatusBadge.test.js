@@ -34,34 +34,44 @@ describe("SyncStatusBadge — 'cloud_newer' sichtbar und antippbar", () => {
     act(() => { root.unmount(); });
   });
 
-  it("ruft bei cloud_newer nach Bestätigung loadFromCloud auf, NICHT openCloudSave", () => {
+  it("fragt bei cloud_newer erst nach und laedt dann, NICHT openCloudSave", () => {
+    // Seit der native window.confirm-Dialog auf schmalen Fenstern rechts aus
+    // dem Bild ragte (Nutzer-Bild), laeuft die Rueckfrage ueber den
+    // App-eigenen BestaetigenDialog: frageBestaetigung(text, onJa, opts).
     const openCloudSave = vi.fn();
     const loadFromCloud = vi.fn();
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+    const frageBestaetigung = vi.fn();
     const { container, root } = renderBadge({
       isOnline: true, cfActive: true, isDirty: false, syncStatus: "cloud_newer",
-      openCloudSave, loadFromCloud,
+      openCloudSave, loadFromCloud, frageBestaetigung,
     });
     const badge = container.querySelector("div[style*='cursor: pointer']") || container.firstChild.firstChild;
     act(() => { badge.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
-    expect(loadFromCloud).toHaveBeenCalledTimes(1);
+
+    expect(frageBestaetigung).toHaveBeenCalledTimes(1);
     expect(openCloudSave).not.toHaveBeenCalled();
-    confirmSpy.mockRestore();
+    const [text, onJa] = frageBestaetigung.mock.calls[0];
+    expect(text).toMatch(/Cloud laden/);
+    expect(text).toMatch(/ueberschrieben|überschrieben/);
+
+    // Solange nicht bestaetigt wurde, passiert nichts.
+    expect(loadFromCloud).not.toHaveBeenCalled();
+    onJa();
+    expect(loadFromCloud).toHaveBeenCalledTimes(1);
     act(() => { root.unmount(); });
   });
 
-  it("ruft loadFromCloud NICHT auf, wenn der Nutzer die Sicherheitsabfrage abbricht", () => {
+  it("laedt nicht, wenn die Rueckfrage nicht bestaetigt wird", () => {
     const openCloudSave = vi.fn();
     const loadFromCloud = vi.fn();
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    const frageBestaetigung = vi.fn();          // onJa wird nie aufgerufen
     const { container, root } = renderBadge({
       isOnline: true, cfActive: true, isDirty: false, syncStatus: "cloud_newer",
-      openCloudSave, loadFromCloud,
+      openCloudSave, loadFromCloud, frageBestaetigung,
     });
     const badge = container.querySelector("div[style*='cursor: pointer']") || container.firstChild.firstChild;
     act(() => { badge.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
     expect(loadFromCloud).not.toHaveBeenCalled();
-    confirmSpy.mockRestore();
     act(() => { root.unmount(); });
   });
 
