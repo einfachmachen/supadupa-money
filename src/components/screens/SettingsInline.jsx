@@ -1,3 +1,4 @@
+/* global __BUILD_ID__ */
 // Auto-generated module (siehe app-src.jsx)
 
 import React, { useContext, useState, useEffect } from "react";
@@ -427,6 +428,22 @@ function SettingsInline() {
             </button>
           </div>
         )}
+      </div>
+
+      {/* ── Version ──
+          Bisher liess sich von aussen nicht feststellen, welchen Build ein
+          Geraet gerade laufen hat. Bei "das ist doch behoben?" blieb deshalb
+          immer offen, ob die Aenderung schon angekommen war oder noch der
+          alte Bundle aus dem Cache lief — das hat mehrfach Zeit gekostet.
+          __BUILD_ID__ wird beim Build injiziert und steht identisch in
+          version.json, gegen die autoUpdate.js prueft (siehe dort). */}
+      <div style={{...SECTION, display:"flex", alignItems:"center", gap:8,
+        color:T.txt2, fontSize:11}}>
+        {Li("info",13,T.txt2)}
+        <span style={{flex:1}}>Version</span>
+        <span style={{fontFamily:"monospace",userSelect:"text",color:T.txt}}>
+          {typeof __BUILD_ID__ !== "undefined" ? __BUILD_ID__ : "dev"}
+        </span>
       </div>
     </div>
   );
