@@ -101,6 +101,26 @@ const _kontrast = (a, b) => {
 // Farbe. Wer irgendwo eine Zwischenfläche einzieht, muss sie an BEIDEN Orten
 // einziehen, sonst laufen die Farben wieder auseinander.
 //
+// Gefahr-Rot für Löschen und Überschreiben (BestaetigenDialog, ton:"gefahr").
+//
+// BEWUSST nicht aus dem Theme: `T.neg` trägt im 4-Farben-Schema die AUSGABEN-
+// Farbe und ist in den meisten Themes cyan — als Warnsignal liest sich das
+// überhaupt nicht (Nutzer-Hinweis). Ein Sicherheitshinweis darf auch nicht
+// davon abhängen, welches Theme gerade läuft; genau darin liegt sein Wert.
+//
+// Der Ton ist so gewählt, dass weißer Text darauf 4,77:1 erreicht.
+//
+// Auf mittelgrauen Karten (mehrere dunkle Themes haben `surf2` um #3D4349) ist
+// es rechnerisch UNMÖGLICH, gleichzeitig 3:1 gegen die Karte und 4,5:1 gegen
+// weißen Text zu erreichen: die Karte verlangt eine Luminanz ab 0,265, der
+// weiße Text erlaubt höchstens 0,183. Deshalb bekommt der Knopf zusätzlich
+// eine hellere Kante — sie trägt die Abgrenzung dort, wo die Füllung sie nicht
+// tragen kann (≥ 3,9:1 auf allen dunklen Karten). Auf hellen Karten setzt sich
+// die Füllung selbst ab (4,42:1). tests/gefahrFarbe.test.js rechnet beides
+// über alle Themes nach.
+export const GEFAHR = "#D93025";
+export const GEFAHR_KANTE = "#FF7A6B";
+
 // Ergebnis pro Theme + Untergrund gemerkt: die Funktion läuft sonst in jeder
 // Budget-Zeile jedes Renders durch die Suche.
 const _flaechenCache = new Map();

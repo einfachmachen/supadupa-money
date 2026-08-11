@@ -295,6 +295,15 @@ die **Farbe** kommuniziert Richtung und Art:
 | Blasses Cyan | `T.cell_exp` (= `neg_vm`) | **Ausgaben**-Vormerkung |
 | Rot/Cyan | `T.neg` | reale **Ausgabe** (Farbe je nach Farbkonzept-Version des Themes) |
 
+**`T.neg` ist keine Warnfarbe.** Es ist die **Ausgaben**-Farbe des Themes und in
+den meisten Themes cyan. Für Löschen/Überschreiben gibt es `GEFAHR` (+
+`GEFAHR_KANTE`) in `activeTheme.js` — ein festes Rot, bewusst nicht aus dem
+Theme: ein Sicherheitshinweis darf nicht davon abhängen, welches Theme läuft.
+Auf mittelgrauen Karten ist es rechnerisch unmöglich, gleichzeitig 3:1 gegen die
+Karte und 4,5:1 gegen weißen Text zu erreichen — deshalb trägt dort die hellere
+Kante die Abgrenzung (`tests/gefahrFarbe.test.js` rechnet beides über alle
+Themes nach).
+
 **Blass heißt geplant, gesättigt heißt geflossen.** Daraus folgt für jedes
 Gegensatzpaar in den Aufrissen: „genutzt" (bereits ausgegeben) steht
 **gesättigt**, „offen"/„Rest" (noch nicht ausgegeben) **blass**. In

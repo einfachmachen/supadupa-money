@@ -13,12 +13,15 @@
 
 import React from "react";
 import { Overlay } from "../atoms/Overlay.jsx";
-import { theme as T } from "../../theme/activeTheme.js";
+import { theme as T, GEFAHR, GEFAHR_KANTE } from "../../theme/activeTheme.js";
 import { Li } from "../../utils/icons.jsx";
 
 function BestaetigenDialog({ frage, jaLabel = "OK", ton, onJa, onAbbrechen }) {
   const gefahr = ton === "gefahr";
-  const akzent = gefahr ? T.neg : T.blue;
+  // Gefahr-Rot statt T.neg: T.neg ist die Ausgaben-Farbe des Themes und in
+  // den meisten Themes cyan — ein Löschen-Knopf sah damit aus wie jeder
+  // andere Betrag (Nutzer-Hinweis). Siehe GEFAHR in activeTheme.js.
+  const akzent = gefahr ? GEFAHR : T.blue;
   // Erste Zeile als Überschrift, der Rest als Erläuterung — window.confirm
   // trennte das per Leerzeile, das übernehmen wir.
   const zeilen = String(frage || "").split(/\n\s*\n/);
@@ -50,8 +53,14 @@ function BestaetigenDialog({ frage, jaLabel = "OK", ton, onJa, onAbbrechen }) {
           schmalen Geräten zu eng, und genau darum ging es hier. */}
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <button onClick={onJa}
-          style={{ width: "100%", minHeight: 48, borderRadius: 12, border: "none",
-            background: akzent, color: T.on_accent || "#fff", fontSize: 15, fontWeight: 800,
+          style={{ width: "100%", minHeight: 48, borderRadius: 12,
+            // Kante nur beim Gefahr-Knopf: auf mittelgrauen Karten hebt sich
+            // das Rot allein nicht genug ab (siehe GEFAHR in activeTheme.js).
+            border: gefahr ? `1.5px solid ${GEFAHR_KANTE}` : "none",
+            background: akzent,
+            // Auf dem Gefahr-Rot immer Weiß: T.on_accent ist in hellen Themes
+            // dunkel und waere dort auf dem roten Knopf kaum zu lesen.
+            color: gefahr ? "#fff" : (T.on_accent || "#fff"), fontSize: 15, fontWeight: 800,
             cursor: "pointer", fontFamily: "inherit" }}>
           {jaLabel}
         </button>
