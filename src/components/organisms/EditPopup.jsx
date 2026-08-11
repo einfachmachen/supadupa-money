@@ -39,7 +39,7 @@ function EditPopup() {
     moveAcc, accIconPick, setAccIconPick,
     addSplit,removeSplit,updSplit,splitTotal,splitDiff,txValid,saveTx,
     onTS,onTE,
-    setShowVormHub, setEditVormTx,
+    setShowVormHub, setEditVormTx, frageBestaetigung,
   } = useContext(AppCtx);
 
     // Tank-Erfassung: Fahrzeug-Schnellanlage braucht lokalen State — muss VOR
@@ -739,9 +739,16 @@ function EditPopup() {
                 {Li("target",11,T.gold)} Budget-Platzhalter
                 <div onClick={()=>{
                   const released = !editTx._releasedEarly;
-                  if(released&&!window.confirm("Rest-Vormerkung für diesen Monat jetzt freigeben?\nSie verschwindet aus den Vormerkungen, die Reservierung wird sofort aufgehoben.")) return;
-                  setTxs(p=>p.map(t=>t.id===editTx.id?{...t,_releasedEarly:released}:t));
-                  setEditTx(p=>({...p,_releasedEarly:released}));
+                  const uebernehmen = () => {
+                    setTxs(p=>p.map(t=>t.id===editTx.id?{...t,_releasedEarly:released}:t));
+                    setEditTx(p=>({...p,_releasedEarly:released}));
+                  };
+                  // Nur das FREIGEBEN wird nachgefragt — das Zuruecknehmen ist
+                  // harmlos und lief auch vorher ohne Rueckfrage durch.
+                  if(!released) return uebernehmen();
+                  frageBestaetigung(
+                    "Rest-Vormerkung für diesen Monat jetzt freigeben?\n\nSie verschwindet aus den Vormerkungen, die Reservierung wird sofort aufgehoben.",
+                    uebernehmen, {jaLabel:"Freigeben"});
                 }}
                   style={{marginLeft:"auto",background:editTx._releasedEarly?"rgba(170,204,0,0.12)":"rgba(245,166,35,0.12)",
                     border:`1px solid ${editTx._releasedEarly?T.pos:T.gold}55`,

@@ -36,6 +36,7 @@ function ManagementScreen({activeTab="kategorien"}) {
     setShowCsv, setShowBankWizard, setShowDataMgr, setShowCloudSetup, setShowFuelAnalysis,
     setShowMatching,
     setShowMobileKategorien,
+    frageBestaetigung,
   } = useContext(AppCtx);
   const [mergeTarget, setMergeTarget] = useState(null);
   const [showNewGroup, setShowNewGroup] = useState(false);
@@ -642,7 +643,8 @@ function ManagementScreen({activeTab="kategorien"}) {
                 </select>
               )}
               {(_cats).filter(c=>c.type===grp.type).length===0&&(
-                <button onClick={()=>{if(window.confirm(`Gruppe "${grp.label}" wirklich löschen?`)) setGroups(p=>p.filter(g=>g.id!==grp.id));}}
+                <button onClick={()=>frageBestaetigung(`Gruppe „${grp.label}" wirklich löschen?`,
+                  ()=>setGroups(p=>p.filter(g=>g.id!==grp.id)), {jaLabel:"Löschen", ton:"gefahr"})}
                   style={{background:"none",border:"none",color:T.neg,opacity:0.5,cursor:"pointer"}}>{Li("trash-2",14)}</button>
               )}
               <button onClick={()=>{ setInlineNewCat(inlineNewCat===grp.id?null:grp.id); setInlineCatName(""); }}

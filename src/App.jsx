@@ -338,6 +338,15 @@ export default function SupaDupaMoney() {
   // Rückfrage im App-Stil statt window.confirm — siehe BestaetigenDialog.jsx.
   // {frage, onJa, jaLabel, ton}
   const [bestaetigung, setBestaetigung] = useState(null);
+  // Dieselbe Funktion, die auch im Context steht — App.jsx selbst braucht sie
+  // schon weiter oben (deleteFromEdit, deleteCat), lange bevor das Context-
+  // Objekt gebaut wird.
+  const frageBestaetigung = (frage, onJa, opts) => setBestaetigung({ frage, onJa, ...(opts||{}) });
+  // Awaitbare Variante fuer Ablaeufe, die auf die Antwort WARTEN muessen —
+  // z.B. der Startvorgang, dessen naechster Schritt von der Entscheidung
+  // abhaengt. Genau das konnte bisher nur window.confirm, weil es blockiert.
+  const frageBestaetigungAsync = (frage, opts) => new Promise(antwort =>
+    setBestaetigung({ frage, onJa: ()=>antwort(true), onAbbrechen: ()=>antwort(false), ...(opts||{}) }));
   // Betrags-Sichtbarkeit (Augensymbol): 0 = unscharf + neutral, 1 = scharf +
   // neutral, 2 = scharf + farbig (wie bisher). Startet IMMER bei 0 (alle Beträge
   // unscharf & in Kategorie-Schriftfarbe) — bewusst nicht persistiert.
@@ -1280,15 +1289,18 @@ export default function SupaDupaMoney() {
         const local = await loadLocal();
         const localTs = local?.saved_at || 0;
         const hasData = !!(local && ((local.txs?.length||0) > 0 || (local.cats?.length||0) > 2));
-        const checkLocalNewer = (remoteTs, remoteName) => {
+        // Wartet auf die Antwort — der naechste Schritt haengt davon ab. Der
+        // Dialog kommt aus der App (BestaetigenDialog), nicht vom System: die
+        // Oberflaeche ist zu diesem Zeitpunkt laengst gerendert, und die
+        // Rueckfrage sieht damit auf allen Plattformen gleich aus.
+        const checkLocalNewer = async (remoteTs, remoteName) => {
           if(localTs > remoteTs + 5000) {
             const diff = Math.round((localTs-remoteTs)/1000);
-            return window.confirm(
-              `⚠️ Lokaler Stand ist ${diff}s neuer als ${remoteName}!
-
-OK = Lokalen Stand verwenden
-Abbrechen = ${remoteName}-Stand laden`
-            );
+            return await frageBestaetigungAsync(
+              `Lokaler Stand ist ${diff}s neuer als ${remoteName}!\n\n` +
+              `„Lokalen Stand behalten" verwirft den ${remoteName}-Stand, ` +
+              `„Abbrechen" laedt ihn stattdessen.`,
+              { jaLabel: "Lokalen Stand behalten" });
           }
           return false;
         };
@@ -1372,7 +1384,7 @@ Abbrechen = ${remoteName}-Stand laden`
           try {
             const jdata = await jsonbinLoad();
             const jTs = jdata.saved_at||0;
-            if(checkLocalNewer(jTs,"JSONBin")) {
+            if(await checkLocalNewer(jTs,"JSONBin")) {
               // lokal (bereits geprüft) den Vorzug geben — nichts zu tun
             } else if(jdata.cats?.length) {
               applyData(jdata);
@@ -2920,7 +2932,9 @@ Abbrechen = ${remoteName}-Stand laden`
     setEditTx(null);
   };
 
-  const deleteFromEdit = () => { if(!window.confirm("Diese Buchung wirklich löschen?")) return; recordDeletedTxs(editTx.id); setTxs(p=>p.filter(x=>x.id!==editTx.id)); setEditTx(null); };
+  const deleteFromEdit = () => frageBestaetigung("Diese Buchung wirklich löschen?",
+    () => { recordDeletedTxs(editTx.id); setTxs(p=>p.filter(x=>x.id!==editTx.id)); setEditTx(null); },
+    {jaLabel:"Löschen", ton:"gefahr"});
   const updEditSplit = (sid,f,v) => setEditTx(p=>({...p, splits:p.splits.map(s=>s.id===sid?{...s,[f]:v,...(f==="catId"?{subId:""}:{})}:s)}));
 
   const buildRows = (cs, gs=groups) => {
@@ -3012,7 +3026,10 @@ Abbrechen = ${remoteName}-Stand laden`
   // ── Category CRUD ─────────────────────────────────────────────────────────
   const saveNewCat  = () => { if(!newCat.name.trim())return; setCats(p=>[...p,{...newCat,id:"cat-"+uid(),subs:[]}]); setNewCat({name:"",icon:"",type:"expense",color:"#FFA07A"}); };
   const saveNewSub  = cid=> { if(!newSubName.trim())return; setCats(p=>p.map(c=>c.id===cid?{...c,subs:[...c.subs,{id:"sub-"+uid(),name:newSubName.trim()}]}:c)); setNewSubName(""); };
-  const deleteCat   = id => { if(!window.confirm("Kategorie wirklich löschen? Alle zugehörigen Buchungszuweisungen werden entfernt.")) return; setCats(p=>p.filter(c=>c.id!==id)); setTxs(p=>p.map(t=>({...t,splits:(t.splits||[]).filter(s=>s.catId!==id)}))); setMgmtCat(null); };
+  const deleteCat   = id => frageBestaetigung(
+    "Kategorie wirklich löschen?\n\nAlle zugehörigen Buchungszuweisungen werden entfernt.",
+    () => { setCats(p=>p.filter(c=>c.id!==id)); setTxs(p=>p.map(t=>({...t,splits:(t.splits||[]).filter(s=>s.catId!==id)}))); setMgmtCat(null); },
+    {jaLabel:"Löschen", ton:"gefahr"});
   const deleteSub   = (cid,sid)=> { setCats(p=>p.map(c=>c.id===cid?{...c,subs:(c.subs||[]).filter(s=>s.id!==sid)}:c)); };
   const renameCat   = (id,name) => setCats(p=>p.map(c=>c.id===id?{...c,name}:c));
   const renameSub   = (cid,sid,name) => setCats(p=>p.map(c=>c.id===cid?{...c,subs:(c.subs||[]).map(s=>s.id===sid?{...s,name}:s)}:c));
@@ -3231,7 +3248,7 @@ Abbrechen = ${remoteName}-Stand laden`
     // Rückfrage im App-Stil. Der native window.confirm-Dialog bestimmt seine
     // Breite selbst und ragte auf schmalen Fenstern rechts aus dem Bild
     // (Nutzer-Bild) — daran ist von außen nichts zu ändern.
-    frageBestaetigung: (frage, onJa, opts) => setBestaetigung({ frage, onJa, ...(opts||{}) }),
+    frageBestaetigung,
     cfSaveOnClose, setCfSaveOnClose,
     dashDrillOpen, setDashDrillOpen,
     amtMode, setAmtMode,
@@ -3548,7 +3565,7 @@ Abbrechen = ${remoteName}-Stand laden`
           jaLabel={bestaetigung.jaLabel}
           ton={bestaetigung.ton}
           onJa={()=>{ const f = bestaetigung.onJa; setBestaetigung(null); f?.(); }}
-          onAbbrechen={()=>setBestaetigung(null)}/>
+          onAbbrechen={()=>{ const f = bestaetigung.onAbbrechen; setBestaetigung(null); f?.(); }}/>
       )}
 
       {/* ── Offline-/Sync-Hinweis ──

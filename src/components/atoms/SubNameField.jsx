@@ -1,10 +1,12 @@
 // Auto-generated module (siehe app-src.jsx)
 
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
+import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { Li } from "../../utils/icons.jsx";
 
 function SubNameField({sub, cat, setCats, S, T}) {
+  const { frageBestaetigung } = useContext(AppCtx);
   const [focused, setFocused] = React.useState(false);
   return (
     <div style={{flex:1,display:"flex",alignItems:"center",gap:4,minWidth:0}}>
@@ -27,8 +29,9 @@ function SubNameField({sub, cat, setCats, S, T}) {
         <button
           onMouseDown={e=>{
             e.preventDefault();
-            if(window.confirm(`„${sub.name}" löschen?`))
-              setCats(p=>p.map(c=>c.id===cat.id?{...c,subs:c.subs.filter(s=>s.id!==sub.id)}:c));
+            frageBestaetigung(`„${sub.name}" löschen?`,
+              ()=>setCats(p=>p.map(c=>c.id===cat.id?{...c,subs:c.subs.filter(s=>s.id!==sub.id)}:c)),
+              {jaLabel:"Löschen", ton:"gefahr"});
           }}
           style={{background:"none",border:"none",color:T.neg,
             cursor:"pointer",padding:"2px 4px",flexShrink:0}}>

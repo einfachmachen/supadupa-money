@@ -22,7 +22,8 @@ const PRIO_OPTS = [
 function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert}) {
   const goBack = onBack || onClose; // zurück eine Ebene hoch (Mehr-Menü)
   const { cats, setCats, groups, setGroups, budgets, setBudgets, txs, setTxs, accounts,
-    getBudgetForMonth, getActualSum, year, setYear, month, setMonth, selAcc, csvRules, setCsvRules, setMasterOverride } = useContext(AppCtx);
+    getBudgetForMonth, getActualSum, year, setYear, month, setMonth, selAcc, csvRules, setCsvRules, setMasterOverride,
+    frageBestaetigung } = useContext(AppCtx);
   const S = {fs:26, pad:10, padL:14, radius:16, gap:14};
   const MONTHS = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
 
@@ -307,12 +308,10 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
           color:editName.trim()?"#fff":T.txt2,marginBottom:S.gap}}>
           ✓ Speichern
         </button>
-        <button onClick={()=>{
-          if(window.confirm(`"${selCat.name}" wirklich löschen?`)) {
-            setCats(p=>p.filter(c=>c.id!==selCat.id));
-            setView("list");
-          }
-        }} style={{...btnCenter,background:"transparent",
+        <button onClick={()=>frageBestaetigung(`„${selCat.name}" wirklich löschen?`, ()=>{
+          setCats(p=>p.filter(c=>c.id!==selCat.id));
+          setView("list");
+        }, {jaLabel:"Löschen", ton:"gefahr"})} style={{...btnCenter,background:"transparent",
           border:`1.5px solid ${T.cond_neg}44`,color:T.cond_neg,fontWeight:400}}>
           {Li("trash-2",S.fs-4,T.cond_neg)} Kategorie löschen
         </button>
@@ -478,20 +477,20 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
             const e = csvRules[v];
             return e && (e.catId !== detected[v].catId || (e.subId||"") !== (detected[v].subId||""));
           }).length;
-          if(window.confirm(
+          frageBestaetigung(
             `Aus ${(txs||[]).length} Buchungen erkannt: ${total} Händler-Zuordnungen.\n\n` +
             `Bestehende Regeln: ${existing}\n` +
             `Neu hinzufügen: ${newOnes}\n` +
             `Geänderte Regeln: ${changed}\n\n` +
-            `Fortfahren? (Bestehende Regeln werden überschrieben)`
-          )) {
-            const newRules = {};
-            Object.entries(detected).forEach(([v, d]) => {
-              newRules[v] = {catId:d.catId, subId:d.subId};
-            });
-            setCsvRules(p => ({...p, ...newRules}));
-            showToast(`✓ ${newOnes} neu, ${changed} aktualisiert`);
-          }
+            `Bestehende Regeln werden dabei überschrieben.`,
+            () => {
+              const newRules = {};
+              Object.entries(detected).forEach(([v, d]) => {
+                newRules[v] = {catId:d.catId, subId:d.subId};
+              });
+              setCsvRules(p => ({...p, ...newRules}));
+              showToast(`✓ ${newOnes} neu, ${changed} aktualisiert`);
+            }, {jaLabel:"Übernehmen", ton:"gefahr"});
         }} style={{...btnCenter,background:"rgba(74,159,212,0.06)",
           border:`1.5px dashed ${T.blue}66`,color:T.blue,marginBottom:S.gap,fontWeight:600,fontSize:S.fs-2}}>
           {Li("refresh-cw",S.fs-4,T.blue)} Zuordnungen aus Buchungen prüfen
@@ -651,10 +650,11 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
               };
 
               const doDeleteBudget = () => {
-                if(!window.confirm("Budget löschen?")) return;
-                setBudgets(p=>{const n={...p};delete n[eKey];delete n[mKey];return n;});
-                setTxs(p=>p.filter(t=>t._budgetSubId!==eKey&&t._budgetSubId!==mKey));
-                setBudgetOpen(p=>({...p,[sub.id]:false}));
+                frageBestaetigung("Budget löschen?", () => {
+                  setBudgets(p=>{const n={...p};delete n[eKey];delete n[mKey];return n;});
+                  setTxs(p=>p.filter(t=>t._budgetSubId!==eKey&&t._budgetSubId!==mKey));
+                  setBudgetOpen(p=>({...p,[sub.id]:false}));
+                }, {jaLabel:"Löschen", ton:"gefahr"});
               };
 
               return (

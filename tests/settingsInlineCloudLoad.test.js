@@ -29,14 +29,20 @@ function renderWithOverrides(overrides) {
   return { container, root };
 }
 
+// Die Rueckfrage kommt seit dem Umbau nicht mehr vom Browser (window.confirm),
+// sondern aus der App: `frageBestaetigung(frage, onJa, opts)` aus dem Context.
+// Der Test haelt beide Haelften fest — dass gefragt wird, UND dass ohne ein Ja
+// nichts passiert. Genau da kann beim Umbau von Rueckgabewert auf Callback eine
+// Absicherung verlorengehen, ohne dass es irgendwo auffaellt.
 describe("SettingsInline — 'Cloudflare → Lokal' delegiert an loadFromCloud", () => {
   it("ruft nach Bestätigung loadFromCloud() auf (statt cfLoad/applyData direkt)", async () => {
     const loadFromCloud = vi.fn(() => Promise.resolve());
     const setCfStatus = vi.fn();
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+    let gefragt = null;
+    const frageBestaetigung = vi.fn((frage, onJa) => { gefragt = { frage, onJa }; });
 
-    const { container, root } = renderWithOverrides({ cfActive: true, loadFromCloud, setCfStatus });
+    const { container, root } = renderWithOverrides({ cfActive: true, loadFromCloud, setCfStatus, frageBestaetigung });
 
     const btn = [...container.querySelectorAll("button")]
       .find(b => b.textContent.includes("Cloudflare → Lokal"));
@@ -44,26 +50,60 @@ describe("SettingsInline — 'Cloudflare → Lokal' delegiert an loadFromCloud",
 
     await act(async () => { btn.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
 
-    expect(confirmSpy).toHaveBeenCalled();
+    // Erst gefragt — und noch nichts geladen.
+    expect(frageBestaetigung).toHaveBeenCalled();
+    expect(gefragt.frage).toMatch(/überschrieben/);
+    expect(loadFromCloud).not.toHaveBeenCalled();
+
+    // Ja → jetzt wird geladen.
+    await act(async () => { await gefragt.onJa(); });
     expect(loadFromCloud).toHaveBeenCalledTimes(1);
 
-    confirmSpy.mockRestore();
     alertSpy.mockRestore();
     act(() => { root.unmount(); });
   });
 
   it("ruft loadFromCloud NICHT auf, wenn die Sicherheitsabfrage abgebrochen wird", async () => {
     const loadFromCloud = vi.fn(() => Promise.resolve());
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+    // Abbrechen = der onJa-Callback wird nie aufgerufen.
+    const frageBestaetigung = vi.fn(() => {});
 
-    const { container, root } = renderWithOverrides({ cfActive: true, loadFromCloud, setCfStatus: () => {} });
+    const { container, root } = renderWithOverrides({ cfActive: true, loadFromCloud, setCfStatus: () => {}, frageBestaetigung });
     const btn = [...container.querySelectorAll("button")]
       .find(b => b.textContent.includes("Cloudflare → Lokal"));
 
     await act(async () => { btn.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
 
+    expect(frageBestaetigung).toHaveBeenCalled();
     expect(loadFromCloud).not.toHaveBeenCalled();
-    confirmSpy.mockRestore();
     act(() => { root.unmount(); });
+  });
+
+  it("kein Bildschirm ruft noch window.confirm auf", async () => {
+    // Der native Dialog wird vom System gezeichnet und sieht auf jeder
+    // Plattform anders aus — im schmalen Firefox-Fenster ragte er sogar aus
+    // dem Bild (Nutzer-Bild). Deshalb: nirgends mehr.
+    const { readFileSync, readdirSync, statSync } = await import("node:fs");
+    const { fileURLToPath } = await import("node:url");
+    const { dirname, join } = await import("node:path");
+    const SRC = join(dirname(fileURLToPath(import.meta.url)), "..", "src");
+    const alle = (verz, treffer = []) => {
+      for (const name of readdirSync(verz)) {
+        const pfad = join(verz, name);
+        if (statSync(pfad).isDirectory()) alle(pfad, treffer);
+        else if (/\.jsx?$/.test(name)) treffer.push(pfad);
+      }
+      return treffer;
+    };
+    const funde = [];
+    for (const datei of alle(SRC)) {
+      readFileSync(datei, "utf8").split("\n").forEach((z, i) => {
+        // Kommentare duerfen den Namen nennen — sie erklaeren den Umbau.
+        if (/window\.confirm\s*\(/.test(z) && !/^\s*(\/\/|\*)/.test(z)) {
+          funde.push(`${datei.slice(SRC.length + 1)}:${i + 1}`);
+        }
+      });
+    }
+    expect(funde).toEqual([]);
   });
 });

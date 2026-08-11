@@ -46,6 +46,7 @@ function SettingsInline() {
     cats, setCats, groups, setGroups, txs, setTxs, yearData, setYearData,
     noBorders, setNoBorders,
     favIcons,
+    frageBestaetigung,
   } = useContext(AppCtx);
 
   const [showDebugExpand, setShowDebugExpand] = useState(false);
@@ -211,21 +212,22 @@ function SettingsInline() {
           </div>
         )}
         {cfActive&&(
-          <button onClick={async()=>{
-            // loadFromCloud() (App.jsx) übernimmt Laden + Anwenden UND setzt
-            // dabei kurz syncStatus "loading" — dadurch greift dieselbe
-            // Gnadenfrist wie beim Boot-Laden (useLocalSaveDebounce). Vorher
-            // rief dieser Button cfLoad()/applyData() direkt auf und markierte
-            // den frisch geladenen Cloud-Stand 300ms später fälschlich als
-            // "nicht synchronisiert", obwohl gerade erst synchronisiert wurde.
-            if(!window.confirm("Cloudflare → Lokal laden?\n\nAchtung: Lokale Änderungen werden überschrieben!")) return;
-            try{
-              setCfStatus("loading");
-              await loadFromCloud();
-              setCfStatus("ok");
-              alert("Daten erfolgreich geladen!");
-            }catch(e){setCfStatus("error");alert("Fehler: "+e.message);}
-          }} className="btn-solid" style={{width:"100%",padding:"10px 8px",borderRadius:9,marginBottom:6,
+          <button onClick={()=>frageBestaetigung(
+            "Cloudflare → Lokal laden?\n\nLokale Änderungen werden dabei überschrieben.",
+            async()=>{
+              // loadFromCloud() (App.jsx) übernimmt Laden + Anwenden UND setzt
+              // dabei kurz syncStatus "loading" — dadurch greift dieselbe
+              // Gnadenfrist wie beim Boot-Laden (useLocalSaveDebounce). Vorher
+              // rief dieser Button cfLoad()/applyData() direkt auf und markierte
+              // den frisch geladenen Cloud-Stand 300ms später fälschlich als
+              // "nicht synchronisiert", obwohl gerade erst synchronisiert wurde.
+              try{
+                setCfStatus("loading");
+                await loadFromCloud();
+                setCfStatus("ok");
+                alert("Daten erfolgreich geladen!");
+              }catch(e){setCfStatus("error");alert("Fehler: "+e.message);}
+            }, {jaLabel:"Laden", ton:"gefahr"})} className="btn-solid" style={{width:"100%",padding:"10px 8px",borderRadius:9,marginBottom:6,
             border:`2px solid ${T.blue}`,background:`${T.blue}11`,color:T.blue,
             fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
             display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
@@ -314,10 +316,10 @@ function SettingsInline() {
                       {hasOldSeries&&<span style={{color:T.gold,marginLeft:6,fontWeight:700}}>⚠ alt</span>}
                     </div>
                   </div>
-                  <button onClick={()=>{
-                    if(!window.confirm(`Alle ${entries.length} Budget-Platzhalter für „${label}" löschen?`)) return;
-                    setTxs(p=>p.filter(t=>!(t._budgetSubId===subId && t.pending)));
-                  }} style={{flexShrink:0,padding:"5px 10px",borderRadius:7,
+                  <button onClick={()=>frageBestaetigung(
+                    `Alle ${entries.length} Budget-Platzhalter für „${label}" löschen?`,
+                    ()=>setTxs(p=>p.filter(t=>!(t._budgetSubId===subId && t.pending))),
+                    {jaLabel:"Löschen", ton:"gefahr"})} style={{flexShrink:0,padding:"5px 10px",borderRadius:7,
                     border:`1px solid ${T.neg}44`,background:`${T.neg}08`,
                     color:T.neg,fontSize:11,fontWeight:700,cursor:"pointer",
                     fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
@@ -326,10 +328,10 @@ function SettingsInline() {
                 </div>
               );
             })}
-            <button onClick={()=>{
-              if(!window.confirm(`Wirklich ALLE ${allBudgetTxs.length} Budget-Platzhalter löschen (alle Kategorien)?`)) return;
-              setTxs(p=>p.filter(t=>!(t._budgetSubId && t.pending)));
-            }} style={{width:"100%",padding:"7px",borderRadius:9,marginTop:6,
+            <button onClick={()=>frageBestaetigung(
+              `Wirklich ALLE ${allBudgetTxs.length} Budget-Platzhalter löschen (alle Kategorien)?`,
+              ()=>setTxs(p=>p.filter(t=>!(t._budgetSubId && t.pending))),
+              {jaLabel:"Alle löschen", ton:"gefahr"})} style={{width:"100%",padding:"7px",borderRadius:9,marginTop:6,
               border:`1px solid ${T.neg}33`,background:`${T.neg}06`,
               color:T.neg,fontSize:11,fontWeight:600,cursor:"pointer",
               fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>

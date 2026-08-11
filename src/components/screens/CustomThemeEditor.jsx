@@ -9,7 +9,7 @@ import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { kvStore } from "../../utils/kvStore.js";
 
 function CustomThemeEditor() {
-  const { themeName, setThemeName, setThemeRev } = useContext(AppCtx);
+  const { themeName, setThemeName, setThemeRev, frageBestaetigung } = useContext(AppCtx);
 
   const FIELD_GROUPS = [
     { label:"Grundfarben", fields:[
@@ -186,16 +186,17 @@ function CustomThemeEditor() {
   };
 
   const deleteTheme = (key) => {
-    if(!window.confirm("Theme wirklich löschen?")) return;
-    delete THEMES[key];
-    const next = { ...saved };
-    delete next[key];
-    setSaved(next);
-    kvStore.setItem("mbt_custom_themes", JSON.stringify(next));
-    if (themeName === key) {
-      setThemeName("dark");
-      kvStore.setItem("mbt_theme", "dark");
-    }
+    frageBestaetigung("Theme wirklich löschen?", () => {
+      delete THEMES[key];
+      const next = { ...saved };
+      delete next[key];
+      setSaved(next);
+      kvStore.setItem("mbt_custom_themes", JSON.stringify(next));
+      if (themeName === key) {
+        setThemeName("dark");
+        kvStore.setItem("mbt_theme", "dark");
+      }
+    }, {jaLabel:"Löschen", ton:"gefahr"});
   };
 
   // Restore all saved custom themes into THEMES on mount

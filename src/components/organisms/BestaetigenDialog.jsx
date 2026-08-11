@@ -26,7 +26,12 @@ function BestaetigenDialog({ frage, jaLabel = "OK", ton, onJa, onAbbrechen }) {
   const rest = zeilen.slice(1).join("\n\n");
 
   return (
-    <Overlay onClose={onAbbrechen}>
+    // Ueber ALLEN anderen Ebenen: die Rueckfrage kommt fast immer aus einem
+    // bereits offenen Dialog (Bearbeiten zIndex 80, Modale bis 1100). Mit der
+    // Standard-Ebene lag sie dahinter — der Tipp auf "Löschen" sah aus, als
+    // passiere nichts. Der native window.confirm hatte das Problem nicht, weil
+    // ihn das System ueber die ganze Seite legte.
+    <Overlay onClose={onAbbrechen} zIndex={2000}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: rest ? 10 : 18 }}>
         <div style={{ width: 34, height: 34, borderRadius: 10, flexShrink: 0,
           background: `${akzent}1f`, display: "flex", alignItems: "center", justifyContent: "center" }}>

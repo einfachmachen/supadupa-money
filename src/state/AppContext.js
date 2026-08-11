@@ -31,6 +31,11 @@ const _ctxDefault = {
   splitTotal:0, splitDiff:0, txValid:false, saveTx:()=>{},
   onTS:()=>{}, onTE:()=>{}, csvRules:{}, setCsvRules:()=>{}, budgets:{}, setBudgets:()=>{},
   globalDrag: {current: null}, // {icon, color} während Drag aktiv
+  // Rueckfrage im App-Stil (BestaetigenDialog). Der Standard tut NICHTS —
+  // ausserhalb des Providers unterbleibt die Aktion damit, statt sie ohne
+  // Rueckfrage auszufuehren. Bei Loesch-Absicherungen ist das die richtige
+  // Richtung; ein fehlender Eintrag haette stattdessen geworfen.
+  frageBestaetigung: () => {},
 };
 const AppCtx = createContext(_ctxDefault);
 

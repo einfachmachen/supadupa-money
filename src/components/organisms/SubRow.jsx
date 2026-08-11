@@ -10,7 +10,7 @@ import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 
 function SubRow({sub, si, arr, cat}) {
-  const { moveSub, renameSub, deleteSub, updateSub, budgets, setBudgets, txs, setTxs, year, month, accounts } = useContext(AppCtx);
+  const { moveSub, renameSub, deleteSub, updateSub, budgets, setBudgets, txs, setTxs, year, month, accounts, frageBestaetigung } = useContext(AppCtx);
   const [subEdit, setSubEdit] = useState(false);
   const [budgetInput, setBudgetInput] = useState(()=>String(budgets[sub.id]?.amount||"").replace(".",","));
   const [budgetInputMitte, setBudgetInputMitte] = useState(()=>String(budgets[sub.id+"_mitte"]?.amount||"").replace(".",","));
@@ -247,7 +247,8 @@ function SubRow({sub, si, arr, cat}) {
             {Li("target",9,T.gold)} {betrag(budgets[sub.id].amount)} {budgets[sub.id].months===1?"mtl.":budgets[sub.id].months===3?"quartl.":budgets[sub.id].months===6?"halbj.":"jährl."}{budgets[sub.id].startDate?` · ${budgets[sub.id].startDate.split("-")[2]}.`:""}
           </span>
         )}
-        <button onClick={()=>{if(window.confirm(`"${sub.name}" wirklich löschen?`)) deleteSub(cat.id,sub.id);}} style={{background:"none",border:"none",color:T.neg,opacity:0.55,cursor:"pointer",fontSize:15,flexShrink:0,display:"flex",alignItems:"center"}}>{Li("trash-2",14)}</button>
+        <button onClick={()=>frageBestaetigung(`„${sub.name}" wirklich löschen?`,
+          ()=>deleteSub(cat.id,sub.id), {jaLabel:"Löschen",ton:"gefahr"})} style={{background:"none",border:"none",color:T.neg,opacity:0.55,cursor:"pointer",fontSize:15,flexShrink:0,display:"flex",alignItems:"center"}}>{Li("trash-2",14)}</button>
       </div>
       {subEdit==="budget"&&(
         <div style={{borderTop:`1px solid ${T.bd}`,padding:"10px 10px 12px",background:(isLightTheme())?"rgba(192,120,0,0.06)":"rgba(245,166,35,0.04)"}}>

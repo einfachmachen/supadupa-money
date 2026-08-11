@@ -24,7 +24,8 @@ import { isFuelSelection, checkOdometerPlausibility } from "../../utils/fuel.js"
 import { recordDeletedTxs } from "../../utils/txTombstones.js";
 
 function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
-  const { cats, groups, txs, setTxs, accounts, vehicles, setVehicles, year, month, getCat, getSub, setMasterOverride } = useContext(AppCtx);
+  const { cats, groups, txs, setTxs, accounts, vehicles, setVehicles, year, month, getCat, getSub, setMasterOverride,
+    frageBestaetigung } = useContext(AppCtx);
   // „+"-Button übernimmt: Tipp = Fertig/Schließen, Wisch ↓ = schließen.
   useEffect(() => {
     setMasterOverride?.({ label:"Fertig",
@@ -734,24 +735,29 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
   const handleDelete = () => {
     if(!isEdit||!editVorm) return;
     const seriesId = editVorm._seriesId;
-    if(!seriesId || editScope==="single") {
-      if(!window.confirm("Diese Vormerkung löschen?")) return;
-      recordDeletedTxs(editVorm.id);
-      setTxs(p=>p.filter(t=>t.id!==editVorm.id));
-    } else if(editScope==="from") {
-      if(!window.confirm("Diese und alle folgenden Vormerkungen löschen?")) return;
-      setTxs(prevTxs=>{
-        const seriesTxs=prevTxs.filter(t=>t._seriesId===seriesId).sort((a,b)=>a.date.localeCompare(b.date));
-        const toDelete=new Set(seriesTxs.filter(t=>t.date>=scopeFrom).map(t=>t.id));
-        recordDeletedTxs([...toDelete]);
-        return prevTxs.filter(t=>!toDelete.has(t.id));
-      });
-    } else {
-      if(!window.confirm("Alle Vormerkungen dieser Serie löschen?")) return;
-      recordDeletedTxs(txs.filter(t=>t._seriesId===seriesId).map(t=>t.id));
-      setTxs(p=>p.filter(t=>t._seriesId!==seriesId));
-    }
-    onClose();
+    // Frage UND Loeschung haengen am gewaehlten Umfang. onClose() gehoert in
+    // den Ja-Zweig: bei Abbrechen bleibt der Dialog offen — genau das hat
+    // vorher das `return` nach window.confirm erledigt.
+    const [frage, loeschen] = (!seriesId || editScope==="single")
+      ? ["Diese Vormerkung löschen?", () => {
+          recordDeletedTxs(editVorm.id);
+          setTxs(p=>p.filter(t=>t.id!==editVorm.id));
+        }]
+      : editScope==="from"
+        ? ["Diese und alle folgenden Vormerkungen löschen?", () => {
+            setTxs(prevTxs=>{
+              const seriesTxs=prevTxs.filter(t=>t._seriesId===seriesId).sort((a,b)=>a.date.localeCompare(b.date));
+              const toDelete=new Set(seriesTxs.filter(t=>t.date>=scopeFrom).map(t=>t.id));
+              recordDeletedTxs([...toDelete]);
+              return prevTxs.filter(t=>!toDelete.has(t.id));
+            });
+          }]
+        : ["Alle Vormerkungen dieser Serie löschen?", () => {
+            recordDeletedTxs(txs.filter(t=>t._seriesId===seriesId).map(t=>t.id));
+            setTxs(p=>p.filter(t=>t._seriesId!==seriesId));
+          }];
+    frageBestaetigung(frage, () => { loeschen(); onClose(); },
+      {jaLabel:"Löschen", ton:"gefahr"});
   };
 
   // SecToggle defined outside
@@ -1664,10 +1670,10 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                               fontSize:S.fs-6,"--btn-fs":(S.fs-6)+"px",cursor:"pointer",fontFamily:"inherit"}}>
                               {Li("edit-2",16,T.txt2)} Bearb.
                             </button>
-                            <button onClick={()=>{
-                              if(window.confirm("Alle Ausnahmen dieser eingebetteten Serie löschen?"))
-                                handleDeleteException(ex.id,"all","");
-                            }} style={{background:`${T.neg}11`,border:"none",
+                            <button onClick={()=>frageBestaetigung(
+                              "Alle Ausnahmen dieser eingebetteten Serie löschen?",
+                              ()=>handleDeleteException(ex.id,"all",""),
+                              {jaLabel:"Löschen", ton:"gefahr"})} style={{background:`${T.neg}11`,border:"none",
                               color:T.neg,borderRadius:7,padding:"4px 8px",
                               fontSize:S.fs-6,"--btn-fs":(S.fs-6)+"px",cursor:"pointer",fontFamily:"inherit"}}>
                               {Li("trash-2",16,T.neg)}

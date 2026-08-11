@@ -507,6 +507,28 @@ reservierten Prognosewert.
   `<CloudSaveModal>`** in `App.jsx` muss dazu existieren. Es fiel einmal beim
   Aufräumen eines anderen Menüs mit weg; der Hinweis war danach ein Knopf ohne
   jede Wirkung, ohne dass irgendetwas gemeldet hätte.
+- **Rückfragen kommen aus der App, nie vom System.** `window.confirm()` ist
+  **verboten** — der Browser zeichnet ihn selbst, er sieht auf jeder Plattform
+  anders aus, und im schmalen Firefox-Fenster ragte er sogar rechts aus dem
+  Bild (Nutzer-Bild). Stattdessen `frageBestaetigung(frage, onJa, {jaLabel,
+  ton})` aus dem Context → `organisms/BestaetigenDialog.jsx`. `ton:"gefahr"`
+  färbt den Ja-Knopf in `T.neg` (Löschen, Überschreiben). Erste Zeile = Titel,
+  ein Leerzeilen-Absatz danach = Erläuterung.
+  Regeln, die dabei zählen:
+  - **Der Rückgabewert wird zum Callback.** Aus `if(!confirm(x)) return; A;`
+    wird `frageBestaetigung(x, () => { A; })` — und **alles**, was nach dem
+    `return` stand, muss mit in den Callback, sonst läuft es auch beim
+    Abbrechen. `tests/settingsInlineCloudLoad.test.js` prüft beide Hälften.
+  - **Der Dialog liegt auf `zIndex: 2000`** (`Overlay`-Prop). Er wird fast immer
+    aus einem offenen Dialog heraus geöffnet (Bearbeiten 80, Modale bis 1100);
+    mit der Standard-Ebene 50 lag er dahinter und war unsichtbar — ein Tipp auf
+    „Löschen" sah aus, als passiere nichts.
+  - **Der Context-Standard ist eine leere Funktion**, kein fehlender Eintrag:
+    außerhalb des Providers unterbleibt die Aktion, statt ohne Rückfrage zu
+    laufen oder zu werfen.
+  - Muss ein Ablauf auf die Antwort **warten** (der Startvorgang entscheidet
+    daran, welcher Datenstand geladen wird), gibt es `frageBestaetigungAsync`
+    in `App.jsx` — dasselbe Fenster, nur als Promise.
 - **Einheitlicher Dialog-Header** (`atoms/MobileHeader.jsx`) — **verbindlich für
   alle 8 Daten-Tab-Dialoge** (CSV importieren, Bank verbinden, Daten-Manager,
   Cloud-Sync einrichten, Tankverbrauch, Konten, Budget, Einstellungen), damit

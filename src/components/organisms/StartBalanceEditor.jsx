@@ -9,7 +9,7 @@ import { Li } from "../../utils/icons.jsx";
 import { anchorValue, anchorDay } from "../../utils/anchors.js";
 
 function StartBalanceEditor() {
-  const { accounts, startBalances, setStartBalances, txs } = useContext(AppCtx);
+  const { accounts, startBalances, setStartBalances, txs, frageBestaetigung } = useContext(AppCtx);
   const [collapsed, setCollapsed] = React.useState(true);
   const [saved, setSaved] = React.useState(false);
   const [newYear,  setNewYear]  = React.useState(()=>new Date().getFullYear());
@@ -67,18 +67,19 @@ function StartBalanceEditor() {
   };
 
   const deleteAnchor = (anchor) => {
-    if(!window.confirm("Anker-Kontostand wirklich löschen?")) return;
-    const newSB = JSON.parse(JSON.stringify(startBalances||{}));
-    if(anchor.month === -1) {
-      if(newSB[anchor.year]) delete newSB[anchor.year]["acc-giro"];
-    } else {
-      if(newSB[anchor.year]?.[anchor.month]) {
-        delete newSB[anchor.year][anchor.month][anchor.accId];
-        if(Object.keys(newSB[anchor.year][anchor.month]).length === 0)
-          delete newSB[anchor.year][anchor.month];
+    frageBestaetigung("Anker-Kontostand wirklich löschen?", () => {
+      const newSB = JSON.parse(JSON.stringify(startBalances||{}));
+      if(anchor.month === -1) {
+        if(newSB[anchor.year]) delete newSB[anchor.year]["acc-giro"];
+      } else {
+        if(newSB[anchor.year]?.[anchor.month]) {
+          delete newSB[anchor.year][anchor.month][anchor.accId];
+          if(Object.keys(newSB[anchor.year][anchor.month]).length === 0)
+            delete newSB[anchor.year][anchor.month];
+        }
       }
-    }
-    setStartBalances(newSB);
+      setStartBalances(newSB);
+    }, {jaLabel:"Löschen", ton:"gefahr"});
   };
 
   return (

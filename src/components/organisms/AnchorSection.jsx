@@ -1,7 +1,8 @@
 // Auto-generated module (siehe app-src.jsx)
 
-import React, { useMemo, useState } from "react";
+import React, { useContext, useMemo, useState } from "react";
 import { NUM_FONT } from "../../utils/format.js";
+import { AppCtx } from "../../state/AppContext.js";
 import { KontostandImportButton } from "../buttons/KontostandImportButton.jsx";
 import { theme as T } from "../../theme/activeTheme.js";
 import { Li } from "../../utils/icons.jsx";
@@ -9,6 +10,7 @@ import { Li } from "../../utils/icons.jsx";
 import { anchorValue as readAnchorVal, anchorDay as readAnchorDay, makeAnchorEntry } from "../../utils/anchors.js";
 
 function AnchorSection({selAccId, accounts, startBalances, setStartBalances, mobileMode, MFSl}) {
+  const { frageBestaetigung } = useContext(AppCtx);
   const [anchorOpen,  setAnchorOpen]  = useState(false);
   const [anchorYear,  setAnchorYear]  = useState(()=>new Date().getFullYear());
   const [anchorMonth, setAnchorMonth] = useState(()=>new Date().getMonth());
@@ -66,16 +68,17 @@ function AnchorSection({selAccId, accounts, startBalances, setStartBalances, mob
   };
 
   const deleteAnchor = (anchor) => {
-    if(!window.confirm("Ankerpunkt wirklich löschen?")) return;
-    const newSB = JSON.parse(JSON.stringify(startBalances||{}));
-    if(anchor.month === -1) { if(newSB[anchor.year]) delete newSB[anchor.year]["acc-giro"]; }
-    else {
-      if(newSB[anchor.year]?.[anchor.month]) {
-        delete newSB[anchor.year][anchor.month][anchor.accId];
-        if(Object.keys(newSB[anchor.year][anchor.month]).length===0) delete newSB[anchor.year][anchor.month];
+    frageBestaetigung("Ankerpunkt wirklich löschen?", () => {
+      const newSB = JSON.parse(JSON.stringify(startBalances||{}));
+      if(anchor.month === -1) { if(newSB[anchor.year]) delete newSB[anchor.year]["acc-giro"]; }
+      else {
+        if(newSB[anchor.year]?.[anchor.month]) {
+          delete newSB[anchor.year][anchor.month][anchor.accId];
+          if(Object.keys(newSB[anchor.year][anchor.month]).length===0) delete newSB[anchor.year][anchor.month];
+        }
       }
-    }
-    setStartBalances(newSB);
+      setStartBalances(newSB);
+    }, {jaLabel:"Löschen", ton:"gefahr"});
   };
 
   const activeAcc = accounts.find(a=>a.id===selAccId);
