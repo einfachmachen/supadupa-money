@@ -11,7 +11,8 @@
 // Der Bereich rendert nur den KOPF (Karte, beide Zeilen, Trennstrich). Die
 // Einzelposten kommen als children, weil die Listen dort berechtigt
 // unterschiedlich sind: die Prognose zeigt Tag-Chips, die Aufrisse öffnen die
-// Buchung per Tipp.
+// Buchung per Tipp. Sie stehen eingeklappt hinter einem Tipp auf den
+// Kategorienamen — die Anzahl neben dem Chevron sagt, wie viele es sind.
 //
 // WICHTIG für die Aufrufer: `budget` und `genutzt` werden als fertige Zahlen
 // erwartet, nicht als Budget-Eintrag. In der Mitte-Ansicht gilt nur die
@@ -19,7 +20,7 @@
 // andere Summen als die ungefilterten Felder des Eintrags. Beides hat schon
 // einmal zu „genutzt"-Werten geführt, die nicht zu den Zeilen darunter passten.
 
-import React from "react";
+import React, { useState } from "react";
 import { theme as T, flaecheAbgesetzt } from "../../theme/activeTheme.js";
 import { fmt, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
@@ -33,7 +34,17 @@ const fmtTag = (iso) => {
   return d && m ? `${d}.${m}.` : "";
 };
 
-function BudgetBereich({ datum, name, budget, genutzt, isInc = false, children }) {
+// `seitenrand`: Abstand der Karte zum linken/rechten Listenrand. In der
+// Prognose kommt der Einzug schon vom Panel darum, dort bleibt er auf 0; die
+// Aufrisse setzen ihn selbst, sonst laufen die Karten von Kante zu Kante und
+// wirken neben den schmaleren Prognose-Karten unruhig (Nutzer-Hinweis).
+function BudgetBereich({ datum, name, budget, genutzt, isInc = false, seitenrand = 0, children }) {
+  // Die Einzelposten stehen erst nach einem Tipp auf den Kategorienamen — eine
+  // Budget-Kategorie mit acht Zahlungen schob sonst alles Weitere aus dem Bild
+  // (Nutzer-Wunsch). Der Kopf mit Budget, genutzt und offen bleibt immer da.
+  const [offenAufgeklappt, setOffenAufgeklappt] = useState(false);
+  const hatPosten = React.Children.count(children) > 0;
+  const zeigePosten = hatPosten && offenAufgeklappt;
   const budgetAbs = Math.abs(budget || 0);
   const genutztAbs = Math.abs(genutzt || 0);
   const offen = budgetAbs - genutztAbs;
@@ -45,17 +56,30 @@ function BudgetBereich({ datum, name, budget, genutzt, isInc = false, children }
   const farbe = isInc ? T.cell_inc : T.cell_exp;
 
   return (
-    <div style={{ marginBottom: 8, background: flaecheAbgesetzt(T.bg),
+    <div style={{ margin: `0 ${seitenrand}px 8px`, background: flaecheAbgesetzt(T.bg),
       borderRadius: 8, padding: "5px 0" }}>
 
       {/* Zeile 1: Datum · Symbol · Name | rechts „offen" bzw. die Überschreitung */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2, paddingLeft: 8, paddingRight: 8 }}>
+      <div onClick={hatPosten ? () => setOffenAufgeklappt(o => !o) : undefined}
+        style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2,
+          paddingLeft: 8, paddingRight: 8, cursor: hatPosten ? "pointer" : "default" }}>
         <span style={{ color: T.txt2, fontSize: FS_DETAIL, flexShrink: 0,
           fontFamily: NUM_FONT, width: 36 }}>{fmtTag(datum)}</span>
         {Li(drueber ? "alert-triangle" : "target", 12, drueber ? T.neg : farbe)}
-        <span style={{ flex: 1, minWidth: 0, color: drueber ? T.neg : T.txt,
-          fontSize: FS_TEXT, fontWeight: 700, overflow: "hidden",
-          textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+        <span style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 4,
+          color: drueber ? T.neg : T.txt, fontSize: FS_TEXT, fontWeight: 700 }}>
+          <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis",
+            whiteSpace: "nowrap" }}>{name}</span>
+          {/* Zeigt an, dass sich hier die Einzelposten auffaechern lassen —
+              ohne den Hinweis bliebe die Aufklapp-Moeglichkeit unentdeckt. */}
+          {hatPosten && (
+            <span style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 2,
+              color: T.txt2, fontSize: FS_DETAIL, fontWeight: 600 }}>
+              {Li(zeigePosten ? "chevron-up" : "chevron-down", 12, T.txt2)}
+              {!zeigePosten && React.Children.count(children)}
+            </span>
+          )}
+        </span>
         {drueber ? (
           <span style={{ color: T.neg, fontSize: FS_DETAIL, fontWeight: 700,
             fontFamily: NUM_FONT, flexShrink: 0 }}>um {fmt(-offen)} drüber</span>
@@ -81,7 +105,7 @@ function BudgetBereich({ datum, name, budget, genutzt, isInc = false, children }
         </span>
       </div>
 
-      {React.Children.count(children) > 0 && (
+      {zeigePosten && (
         <>
           <div style={{ borderTop: `1px solid ${T.bd}`, margin: "2px 8px 4px" }} />
           <div style={{ paddingLeft: 8, paddingRight: 8 }}>{children}</div>

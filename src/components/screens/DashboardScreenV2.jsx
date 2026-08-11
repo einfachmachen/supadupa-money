@@ -2133,7 +2133,7 @@ function DashboardScreenV2() {
                         ? Math.abs(pn(sp2.amount)) : Math.abs(t.totalAmount);
                     };
                     return (
-                      <BudgetBereich key={tx.id} datum={tx.date} name={name}
+                      <BudgetBereich key={tx.id} datum={tx.date} name={name} seitenrand={10}
                         budget={budgetFull} genutzt={spent} isInc={isInc}>
                         {posten.map(t=>(
                           <div key={t.id} onClick={()=>{setDashDrill(null);openEdit(t);}}
@@ -2200,7 +2200,7 @@ function DashboardScreenV2() {
                     // sind konto-gefiltert, die Summenfelder des Eintrags nicht —
                     // sonst passt der Kopf nicht zu den Zeilen darunter.
                     return (
-                      <BudgetBereich key={"grp-"+be2.baseSubId} datum={be2.date}
+                      <BudgetBereich key={"grp-"+be2.baseSubId} datum={be2.date} seitenrand={10}
                         name={gName} budget={be2.budget} genutzt={gSumme} isInc={gInc}>
                         {[...posten].sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(t=>{
                           const sp2 = (t.splits||[]).find(x=>x.subId===be2.baseSubId);

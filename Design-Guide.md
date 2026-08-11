@@ -387,7 +387,12 @@ reservierten Prognosewert.
   **`molecules/BudgetBereich.jsx`** — ein Baustein für alle. Karte
   (`flaecheAbgesetzt()`, §4.1), Zeile 1 = Datum · Symbol · Name | „offen",
   Zeile 2 = „Budget:" | „genutzt:", darunter ein dünner Trennstrich und die
-  Einzelposten als `children`. Die Posten bleiben bei den Aufrufern, weil sie
+  Einzelposten als `children` — **eingeklappt**, ein Tipp auf die Kopfzeile
+  fächert sie auf (Chevron + Anzahl neben dem Namen). Eine Kategorie mit acht
+  Zahlungen schob sonst alles Weitere aus dem Bild.
+  `seitenrand` steuert den Abstand zum Listenrand: in der Prognose 0 (der
+  Einzug kommt vom Panel darum), in den Aufrissen 10 — ohne ihn laufen die
+  Karten dort von Kante zu Kante. Die Posten bleiben bei den Aufrufern, weil sie
   sich berechtigt unterscheiden (Tag-Chips in der Prognose, Tipp-zum-Öffnen in
   den Aufrissen) — Kopf und Beträge sind dagegen überall identisch.
   Vorher hatte jeder Aufriss eine eigene Fassung (Prognose mit Datum + „offen",

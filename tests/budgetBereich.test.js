@@ -67,14 +67,50 @@ describe("BudgetBereich", () => {
     await act(async () => root.unmount());
   });
 
-  it("zeigt den Trennstrich nur, wenn Einzelposten folgen", async () => {
+  it("zeigt die Einzelposten NICHT von sich aus", async () => {
+    // Eine Kategorie mit acht Zahlungen schob sonst alles Weitere aus dem Bild.
+    const { el, root } = await zeichne(BASIS, React.createElement("div", null, "Penny"));
+    expect(el.textContent).not.toContain("Penny");
+    const striche = [...el.querySelectorAll("div")]
+      .filter(d => (d.getAttribute("style") || "").includes("border-top"));
+    expect(striche).toHaveLength(0);
+    await act(async () => root.unmount());
+  });
+
+  it("klappt die Einzelposten per Tipp auf den Namen auf und wieder zu", async () => {
+    const { el, root } = await zeichne(BASIS, React.createElement("div", null, "Penny"));
+    const kopf = el.firstChild.firstElementChild;      // Zeile 1 in der Karte
+    await act(async () => kopf.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+    expect(el.textContent).toContain("Penny");
+    await act(async () => kopf.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+    expect(el.textContent).not.toContain("Penny");
+    await act(async () => root.unmount());
+  });
+
+  it("nennt eingeklappt die Anzahl der Posten", async () => {
+    const { el, root } = await zeichne(BASIS, [
+      React.createElement("div", { key: "a" }, "Penny"),
+      React.createElement("div", { key: "b" }, "Netto"),
+      React.createElement("div", { key: "c" }, "Rewe"),
+    ]);
+    expect(el.textContent).toContain("3");
+    await act(async () => root.unmount());
+  });
+
+  it("ohne Posten bleibt der Kopf unklickbar", async () => {
+    const { el, root } = await zeichne(BASIS);
+    const kopf = el.firstChild.firstElementChild;
+    expect((kopf.getAttribute("style") || "")).toContain("cursor: default");
+    await act(async () => root.unmount());
+  });
+
+  it("haelt den Seitenrand ein, den der Aufrufer vorgibt", async () => {
+    // In der Prognose kommt der Einzug vom Panel (0), die Aufrisse setzen ihn
+    // selbst — sonst laufen die Karten dort von Kante zu Kante.
     const ohne = await zeichne(BASIS);
-    const mit = await zeichne(BASIS, React.createElement("div", null, "Penny"));
-    const striche = (el) => [...el.querySelectorAll("div")]
-      .filter(d => (d.getAttribute("style") || "").includes("border-top")).length;
-    expect(striche(ohne.el)).toBe(0);
-    expect(striche(mit.el)).toBe(1);
-    expect(mit.text).toContain("Penny");
+    const mit = await zeichne({ ...BASIS, seitenrand: 10 });
+    expect(ohne.el.firstChild.getAttribute("style")).toContain("margin: 0px 0px 8px");
+    expect(mit.el.firstChild.getAttribute("style")).toContain("margin: 0px 10px 8px");
     await act(async () => { ohne.root.unmount(); mit.root.unmount(); });
   });
 
