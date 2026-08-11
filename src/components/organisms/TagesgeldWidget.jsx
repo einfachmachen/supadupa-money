@@ -362,12 +362,12 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     const total = monate + 1;
     const CHUNK = 3; // Verarbeite mehrere Monate pro Frame
 
-    const addVS = (y, m, betrag, vs) => {
-      if(!betrag || betrag <= 0) return;
+    const addVS = (y, m, wert, vs) => {
+      if(!wert || wert <= 0) return;
       const pad2 = n=>String(n).padStart(2,"0");
       const lastDay = new Date(y, m+1, 0).getDate();
       const date = `${y}-${pad2(m+1)}-${pad2(lastDay)}`;
-      vs[date] = (vs[date]||0) - betrag;
+      vs[date] = (vs[date]||0) - wert;
     };
 
     const step = () => {

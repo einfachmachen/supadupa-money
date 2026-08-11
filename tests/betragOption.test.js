@@ -56,6 +56,28 @@ describe("Betrags-Option: Nachkommastellen drehen", () => {
     expect(typeof betragText("2.480,55")).toBe("object");
   });
 
+  it("betrag/betragText werden nirgends von einer lokalen Bindung verdeckt", () => {
+    // Der Name ist im deutschsprachigen Code naheliegend: in SweepBanner hiess
+    // ein Parameter so, in DashboardScreenV2 eine lokale Konstante. Nach dem
+    // Import wurde daraus `betrag(betrag)` — ein Aufruf auf eine Zahl, der die
+    // ganze Seite mit "is not a function" abgeschossen hat. Das faellt beim
+    // Bauen NICHT auf, weil es syntaktisch voellig in Ordnung ist.
+    const bindung = /\b(const|let|var|function)\s+(betrag|betragText)\b/;
+    const parameter = /[(,]\s*(betrag|betragText)\s*[,)]/;
+    const funde = [];
+    for (const datei of alleQuellen()) {
+      if (datei.endsWith("betrag.jsx")) continue;
+      const inhalt = readFileSync(datei, "utf8");
+      if (!/from "[^"]*utils\/betrag\.jsx"/.test(inhalt)) continue;
+      inhalt.split("\n").forEach((z, i) => {
+        if (bindung.test(z) || parameter.test(z)) {
+          funde.push(`${datei.slice(SRC.length + 1)}:${i + 1}`);
+        }
+      });
+    }
+    expect(funde).toEqual([]);
+  });
+
   it("betrag() steht in keinem SVG-<text>-Knoten", () => {
     // Bei aktiver Option ist das Ergebnis ein <span>; HTML-Elemente rendern
     // innerhalb von <svg> nicht (CategoryChart nutzt dort bewusst fmt()).

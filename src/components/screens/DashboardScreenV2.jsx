@@ -2282,7 +2282,7 @@ function DashboardScreenV2() {
                         name={gName} budget={be2.budget} genutzt={gSumme} isInc={gInc}>
                         {[...posten].sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(t=>{
                           const sp2 = (t.splits||[]).find(x=>x.subId===be2.baseSubId);
-                          const betrag = (sp2?.amount!=null && sp2.amount!==0)
+                          const zeilenBetrag = (sp2?.amount!=null && sp2.amount!==0)
                             ? Math.abs(pn(sp2.amount)) : Math.abs(t.totalAmount);
                           return (
                             <div key={t.id} onClick={()=>{setDashDrill(null);openEdit(t);}}
@@ -2298,7 +2298,7 @@ function DashboardScreenV2() {
                               </span>
                               <span style={{color:gInc?T.cond_pos:T.neg,fontFamily:NUM_FONT,fontSize:17,
                                 fontWeight:700,flexShrink:0}}>
-                                {gInc?"+":"−"}{betrag(betrag)}
+                                {gInc?"+":"−"}{betrag(zeilenBetrag)}
                               </span>
                             </div>
                           );

@@ -85,7 +85,7 @@ function SweepBanner() {
       && t.totalAmount > 0 && String(t.date) <= heuteIso)
     .sort((a, b) => String(a.date).localeCompare(String(b.date)))[0];
 
-  const box = (farbe, icon, titel, zeile, betrag) => (
+  const box = (farbe, icon, titel, zeile, wert) => (
     <div onClick={navigateToSparen}
       style={{ margin: "0 10px 6px", borderRadius: 10,
         cursor: navigateToSparen ? "pointer" : "default",
@@ -96,23 +96,23 @@ function SweepBanner() {
         <div style={{ color: farbe, fontSize: 12, fontWeight: 700 }}>{titel}</div>
         <div style={{ color: T.txt, fontSize: 11, lineHeight: 1.45 }}>{zeile}</div>
       </div>
-      {betrag !== null && betrag !== undefined && (
+      {wert !== null && wert !== undefined && (
         <div style={{ flexShrink: 0, color: farbe, fontSize: 15, fontWeight: 800,
-          fontFamily: NUM_FONT }}>{betrag(betrag)} €</div>
+          fontFamily: NUM_FONT }}>{betrag(wert)} €</div>
       )}
     </div>
   );
 
   // Zustand 1 hat Vorrang: heute ist der Tag, an dem gehandelt werden muss.
   if (istZinstermin) {
-    const betrag = vorgemerkt ? Math.abs(vorgemerkt.totalAmount) : (liveSweep && liveSweep.hin);
+    const wert = vorgemerkt ? Math.abs(vorgemerkt.totalAmount) : (liveSweep && liveSweep.hin);
     const bis = vorgemerkt
       ? sweepFenster(heuteIso).bis
       : (liveSweep && liveSweep.bis);
-    if (betrag > 0) {
+    if (wert > 0) {
       return box(T.gold, "zap", "Heute ist Zinstermin",
         `${vorgemerkt ? "vorgemerkt" : "aktuell möglich"} — aufs Tagesgeld, zurück am ${kurzDat(bis)}`,
-        betrag);
+        wert);
     }
     // Kein Spielraum (oder noch am Rechnen): trotzdem an den Tag erinnern.
     return box(T.gold, "zap", "Heute ist Zinstermin",
