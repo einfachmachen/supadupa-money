@@ -1,6 +1,7 @@
 // Auto-generated module (siehe app-src.jsx)
 
 import React, { useState } from "react";
+import { tagMonat } from "../../utils/date.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
@@ -65,7 +66,7 @@ function VerknuepfenPanel({editTx, txs, setTxs, setEditTx, setShowVormHub, setEd
                 background:isMatch?"rgba(74,159,212,0.1)":"rgba(255,255,255,0.04)",border:`1px solid ${isMatch?T.blue:T.bd}`}}>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{color:T.txt,fontSize:11,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tx.desc||"—"}</div>
-                <div style={{color:T.txt2,fontSize:9}}>{tx.date}</div>
+                <div style={{color:T.txt2,fontSize:9}}>{tagMonat(tx.date)}</div>
               </div>
               <span style={{color:isMatch?T.pos:T.txt,fontFamily:NUM_FONT,fontSize:11,fontWeight:700,flexShrink:0}}>{fmt(tx.totalAmount)}</span>
               {Li("link",10,T.blue)}
@@ -119,7 +120,7 @@ function VerknuepfenPanel({editTx, txs, setTxs, setEditTx, setShowVormHub, setEd
                 background:isMatch?"rgba(245,166,35,0.1)":"rgba(255,255,255,0.04)",border:`1px solid ${isMatch?T.gold:T.bd}`}}>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{color:T.txt,fontSize:11,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pend.desc||"—"}</div>
-                <div style={{color:T.txt2,fontSize:9}}>{pend.date}</div>
+                <div style={{color:T.txt2,fontSize:9}}>{tagMonat(pend.date)}</div>
               </div>
               <span style={{color:isMatch?T.gold:T.txt,fontFamily:NUM_FONT,fontSize:11,fontWeight:700,flexShrink:0}}>{fmt(pend.totalAmount)}</span>
               {Li("link",10,T.gold)}

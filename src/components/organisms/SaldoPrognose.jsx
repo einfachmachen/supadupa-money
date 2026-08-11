@@ -6,6 +6,7 @@ import { theme as T, flaecheAbgesetzt } from "../../theme/activeTheme.js";
 import { fmt, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 import { BudgetBereich } from "../molecules/BudgetBereich.jsx";
+import { tagKurz } from "../../utils/date.js";
 
 function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, saldoEnde, getCat, getSub, initialOpen=null}) {
   if(window.MBT_DEBUG?.disable_drilldown) return null;
@@ -17,7 +18,7 @@ function SaldoPrognose({year, month, txs, detailMitte, detailEnde, saldoMitte, s
   // der Drilldown weiter den alten Wert, während der Hero den neuen hervorhebt.
   React.useEffect(()=>{ if(initialOpen) setDrillOpen(initialOpen); }, [initialOpen]);
   const drill = drillOpen==="Mitte" ? detailMitte : drillOpen==="Ende" ? detailEnde : null;
-  const fmtD = iso=>{const[,m,d]=iso.split("-");return `${d}.${m}.`;};
+  const fmtD = tagKurz;   // Aufriss zeigt genau einen Monat
   return (
     <div style={{borderTop:`1px solid ${T.bd}`,paddingTop:0,marginTop:0}}>
       {/* Toggle-Header nur zeigen wenn nicht direkt aus Hero aufgerufen */}
@@ -88,7 +89,7 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
             : (isInc ? T.cond_pos : T.neg);
           return (
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:1,paddingLeft:indent?10:8,paddingRight:8,opacity:dimmed?0.65:1}}>
-              <span style={{color:T.txt2,fontSize:FS_DETAIL,flexShrink:0,fontFamily:NUM_FONT,width:36}}>{fmtD(t.date)}</span>
+              <span style={{color:T.txt2,fontSize:FS_DETAIL,flexShrink:0,fontFamily:NUM_FONT,width:30}}>{fmtD(t.date)}</span>
               {icon&&Li(icon,12,iconCol||T.txt2)}
               <span style={{color:dimmed?T.txt2:T.txt,flex:1,fontSize:FS_TEXT,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.desc||cat?.name||"—"}</span>
               {(t.tags||[]).map(tg=>(

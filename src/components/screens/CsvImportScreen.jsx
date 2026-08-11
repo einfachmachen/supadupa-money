@@ -1,6 +1,7 @@
 // Auto-generated module (siehe app-src.jsx)
 
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { tagVoll } from "../../utils/date.js";
 import { CatPicker } from "../molecules/CatPicker.jsx";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { AnchorSection } from "../organisms/AnchorSection.jsx";
@@ -1715,7 +1716,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{color:T.txt,fontSize:MFSl,fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{r.desc}</div>
                           <div style={{color:T.txt2,fontSize:10,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-                            <span>{r.isoDate}</span>
+                            <span>{tagVoll(r.isoDate)}</span>
                             {r._paypalRows>1&&<span style={{color:T.gold,fontSize:9,fontWeight:700,
                               background:(isLightTheme())?"rgba(192,120,0,0.18)":"rgba(245,166,35,0.15)",borderRadius:4,padding:"0 4px"}}>
                               {r._paypalRows} Zeilen zusammengefasst{r._paypalTypes?" · "+r._paypalTypes:""}

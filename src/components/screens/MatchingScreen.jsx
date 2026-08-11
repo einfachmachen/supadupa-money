@@ -1,6 +1,7 @@
 // Auto-generated module (siehe app-src.jsx)
 
 import React, { useContext, useState } from "react";
+import { tagMonat } from "../../utils/date.js";
 import { CatPicker } from "../molecules/CatPicker.jsx";
 import { AccountChips } from "../molecules/AccountChips.jsx";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
@@ -407,7 +408,7 @@ function MatchingScreen({onClose, onBack}) {
                     {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex"}}>{Li("sticky-note",9,T.gold)}</span>}
                   </div>
                   <div style={{color:T.txt2,fontSize:9}}>
-                    {tx.date} · {isUncat?"unkategorisiert":cat?.name||""}
+                    {tagMonat(tx.date)} · {isUncat?"unkategorisiert":cat?.name||""}
                   </div>
                 </div>
               </div>

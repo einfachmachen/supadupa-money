@@ -11,6 +11,7 @@ import { SweepBanner } from "../organisms/SweepBanner.jsx";
 import { PendingList } from "../organisms/PendingList.jsx";
 import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
 import { BudgetBereich } from "../molecules/BudgetBereich.jsx";
+import { tagKurz } from "../../utils/date.js";
 import { BankFetchPanel } from "../organisms/BankFetchPanel.jsx";
 import { TagesgeldWidget } from "../organisms/TagesgeldWidget.jsx";
 import { AutoMatchReview } from "../organisms/AutoMatchReview.jsx";
@@ -935,7 +936,7 @@ function DashboardScreenV2() {
                       <div style={{color:T.txt2,fontSize:9,marginBottom:3}}>Gleicher Fingerprint: {key.slice(0,40)}</div>
                       {group.map(t=>(
                         <div key={t.id} style={{display:"flex",gap:8,alignItems:"center",padding:"2px 0",borderTop:"1px solid rgba(255,255,255,0.05)"}}>
-                          <span style={{color:T.txt2,fontSize:9,flexShrink:0}}>{t.date}</span>
+                          <span style={{color:T.txt2,fontSize:9,flexShrink:0}}>{tagKurz(t.date)}</span>
                           <span style={{color:T.txt,fontSize:10,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.desc}</span>
                           {t._csvSource&&<span style={{color:T.gold,fontSize:9,flexShrink:0,background:"rgba(245,166,35,0.1)",borderRadius:3,padding:"0 3px"}}>
                             📄 {t._csvSource}
@@ -1318,7 +1319,7 @@ function DashboardScreenV2() {
                       style={{display:"flex",gap:8,alignItems:"center",padding:"5px 6px",
                         borderRadius:6,cursor:"pointer",marginBottom:2,
                         background:(isLightTheme())?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)"}}>
-                      <span style={{color:T.txt2,fontSize:9,flexShrink:0}}>{t.date}</span>
+                      <span style={{color:T.txt2,fontSize:9,flexShrink:0}}>{tagKurz(t.date)}</span>
                       <span style={{color:T.gold,fontSize:9,flexShrink:0,
                         background:(isLightTheme())?"rgba(192,120,0,0.18)":"rgba(245,166,35,0.15)",
                         borderRadius:3,padding:"1px 4px",fontWeight:700}}>
@@ -1878,7 +1879,7 @@ function DashboardScreenV2() {
                           {/* Zeile 2: Datum + Status links, Betrag rechts (volle Breite) */}
                           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
                             <div style={{color:T.txt2,fontSize:12,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",minWidth:0}}>
-                              <span>{tx.date}</span>
+                              <span>{tagKurz(tx.date)}</span>
                               {tx.pending&&<span style={{background:tx._seriesId?"rgba(170,204,0,0.24)":"rgba(245,166,35,0.24)",
                                 border:`1px solid ${(tx._seriesId?T.pos:T.gold)}66`,color:T.txt,
                                 borderRadius:4,padding:"1px 6px",fontSize:11,fontWeight:700}}>{tx._seriesId?"wiederkehrend":"vorgemerkt"}</span>}
@@ -2049,7 +2050,7 @@ function DashboardScreenV2() {
                               {renderDesc(tx,{color:T.txt,size:15,weight:600,fallback:sub.name})}
                               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
                                 <div style={{color:T.txt2,fontSize:12,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",minWidth:0}}>
-                                  <span>{tx.date}</span>
+                                  <span>{tagKurz(tx.date)}</span>
                                   {tx.pending&&<span style={{background:tx._seriesId?"rgba(170,204,0,0.24)":"rgba(245,166,35,0.24)",
                                     border:`1px solid ${(tx._seriesId?T.pos:T.gold)}66`,color:T.txt,
                                     borderRadius:4,padding:"1px 6px",fontSize:11,fontWeight:700}}>
@@ -2139,8 +2140,8 @@ function DashboardScreenV2() {
                           <div key={t.id} onClick={()=>{setDashDrill(null);openEdit(t);}}
                             style={{display:"flex",alignItems:"center",gap:8,marginBottom:1,
                               paddingLeft:10,cursor:"pointer",opacity:0.75}}>
-                            <span style={{color:T.txt2,fontSize:12,flexShrink:0,fontFamily:NUM_FONT,width:36}}>
-                              {String(t.date).slice(8,10)}.{String(t.date).slice(5,7)}.
+                            <span style={{color:T.txt2,fontSize:12,flexShrink:0,fontFamily:NUM_FONT,width:30}}>
+                              {tagKurz(t.date)}
                             </span>
                             {Li(t._seriesId?"repeat":"calendar",12,isInc?T.cell_inc:T.cell_exp)}
                             <span style={{flex:1,minWidth:0,color:T.txt,fontSize:15,
@@ -2210,8 +2211,8 @@ function DashboardScreenV2() {
                             <div key={t.id} onClick={()=>{setDashDrill(null);openEdit(t);}}
                               style={{display:"flex",alignItems:"center",gap:8,marginBottom:1,
                                 paddingLeft:10,cursor:"pointer"}}>
-                              <span style={{color:T.txt2,fontSize:12,flexShrink:0,fontFamily:NUM_FONT,width:36}}>
-                                {String(t.date).slice(8,10)}.{String(t.date).slice(5,7)}.
+                              <span style={{color:T.txt2,fontSize:12,flexShrink:0,fontFamily:NUM_FONT,width:30}}>
+                                {tagKurz(t.date)}
                               </span>
                               {Li("check-circle",12,T.pos)}
                               <span style={{flex:1,minWidth:0,color:T.txt,fontSize:15,
@@ -2275,7 +2276,7 @@ function DashboardScreenV2() {
                         {/* Zeile 2: Datum + Status/Badges links, Betrag rechts (volle Breite) */}
                         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
                           <div style={{color:T.txt2,fontSize:12,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap",minWidth:0}}>
-                            <span>{tx.date}</span>
+                            <span>{tagKurz(tx.date)}</span>
                             {tx.pending&&(tx.date<_todayISOdrill ? (
                               // Buchungsdatum bereits vergangen, aber noch keine tatsächliche
                               // Buchung eingetroffen — bisher gar nicht hervorgehoben und dadurch

@@ -1,6 +1,7 @@
 // Auto-generated module (siehe app-src.jsx)
 
 import React, { useState } from "react";
+import { tagMonat } from "../../utils/date.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { fmt, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
@@ -86,7 +87,7 @@ function VormVerknuepfenPanel({editVorm, txs, setTxs, onClose}) {
                   borderRadius:4,padding:"1px 4px",fontWeight:800,marginRight:4,letterSpacing:0.2}}>VORGEMERKT</span>}
                 {tx.desc||"—"}
               </div>
-              <div style={{color:T.txt2,fontSize:9}}>{tx.date}</div>
+              <div style={{color:T.txt2,fontSize:9}}>{tagMonat(tx.date)}</div>
             </div>
             <span style={{color:isMatch?T.pos:T.txt,fontFamily:NUM_FONT,fontSize:11,fontWeight:700,flexShrink:0}}>{fmt(tx.totalAmount)}</span>
             {Li("link",10,T.blue)}

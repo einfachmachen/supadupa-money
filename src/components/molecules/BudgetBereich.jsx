@@ -24,15 +24,10 @@ import React, { useState } from "react";
 import { theme as T, flaecheAbgesetzt } from "../../theme/activeTheme.js";
 import { fmt, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
+import { tagKurz } from "../../utils/date.js";
 
 // Dieselben Stufen wie in den Aufriss-Listen selbst.
 const FS_TEXT = 15, FS_BETRAG = 17, FS_DETAIL = 12;
-
-const fmtTag = (iso) => {
-  if (!iso) return "";
-  const [, m, d] = String(iso).split("-");
-  return d && m ? `${d}.${m}.` : "";
-};
 
 // `seitenrand`: Abstand der Karte zum linken/rechten Listenrand. In der
 // Prognose kommt der Einzug schon vom Panel darum, dort bleibt er auf 0; die
@@ -64,7 +59,7 @@ function BudgetBereich({ datum, name, budget, genutzt, isInc = false, seitenrand
         style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2,
           paddingLeft: 8, paddingRight: 8, cursor: hatPosten ? "pointer" : "default" }}>
         <span style={{ color: T.txt2, fontSize: FS_DETAIL, flexShrink: 0,
-          fontFamily: NUM_FONT, width: 36 }}>{fmtTag(datum)}</span>
+          fontFamily: NUM_FONT, width: 30 }}>{tagKurz(datum)}</span>
         {Li(drueber ? "alert-triangle" : "target", 12, drueber ? T.neg : farbe)}
         <span style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 4,
           color: drueber ? T.neg : T.txt, fontSize: FS_TEXT, fontWeight: 700 }}>

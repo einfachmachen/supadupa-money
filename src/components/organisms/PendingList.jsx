@@ -1,6 +1,7 @@
 // Auto-generated module (siehe app-src.jsx)
 
 import React, { useMemo, useState } from "react";
+import { tagMonat } from "../../utils/date.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { dayOf, fmt, pn, NUM_FONT, lightenHex } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
@@ -132,7 +133,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
               <div style={{flex:1,minWidth:0}}>
                 <div style={{color:T.txt,fontSize:14,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tx.desc||cat?.name}</div>
                 <div style={{color:T.txt2,fontSize:11,display:"flex",alignItems:"center",gap:5}}>
-                  <span>{tx.date}{tx._seriesId&&tx._seriesTotal>1&&tx._seriesIdx&&tx._seriesTyp==="finanzierung"?` · ${tx._seriesIdx}/${tx._seriesTotal}`:""}</span>
+                  <span>{tagMonat(tx.date)}{tx._seriesId&&tx._seriesTotal>1&&tx._seriesIdx&&tx._seriesTyp==="finanzierung"?` · ${tx._seriesIdx}/${tx._seriesTotal}`:""}</span>
                   {/* Bank-Vormerkung (PDNG, egal ob per Enable Banking oder CSV
                       erkannt, auch bei älteren Importen ohne explizites Flag —
                       s. isBankPending) — von einer selbst angelegten Vormerkung

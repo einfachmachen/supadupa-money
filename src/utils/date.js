@@ -108,4 +108,31 @@ function pendingDebitDate(isoDate, todayIso) {
   return isoDate <= todayIso ? nextBankWorkday(isoDate) : isoDate;
 }
 
-export { isoAddMonths, isoAddDays, parseGermanDate, isBankWorkday, nextBankWorkday, pendingDebitDate, calcRecurringCount };
+// ── Datums-Ausgabe ───────────────────────────────────────────────────────
+// Drei Stufen, je nachdem wie viel aus dem Zusammenhang schon feststeht.
+// Regel (Nutzer-Wunsch): Steht Monat und Jahr bereits am + Button, reicht der
+// Tag. Rohe ISO-Werte ("2026-08-10") standen an mehreren Stellen ungefiltert
+// in der Oberflaeche und wirkten wie eine englische Datumsangabe.
+//
+//   tagKurz    "10."          — Liste zeigt genau EINEN Monat (Aufrisse,
+//                               Monatsliste, Kategorie-Karten)
+//   tagMonat   "10.08."       — Liste kann mehrere Monate umfassen
+//                               (Jahres-Aufriss, Verknuepfen-Vorschlaege)
+//   tagVoll    "10.08.2026"   — auch das Jahr ist offen (CSV-Vorschau,
+//                               Bank-Import, Suche ueber Jahre)
+const _teile = (iso) => String(iso || "").split("-");
+
+function tagKurz(iso) {
+  const [, , d] = _teile(iso);
+  return d ? `${d}.` : "";
+}
+function tagMonat(iso) {
+  const [, m, d] = _teile(iso);
+  return d && m ? `${d}.${m}.` : "";
+}
+function tagVoll(iso) {
+  const [y, m, d] = _teile(iso);
+  return d && m && y ? `${d}.${m}.${y}` : "";
+}
+
+export { isoAddMonths, isoAddDays, parseGermanDate, isBankWorkday, nextBankWorkday, pendingDebitDate, calcRecurringCount, tagKurz, tagMonat, tagVoll };

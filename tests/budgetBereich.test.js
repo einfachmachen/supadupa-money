@@ -28,7 +28,10 @@ const BASIS = { datum: "2026-08-14", name: "Essen & Trinken", budget: 125, genut
 describe("BudgetBereich", () => {
   it("zeigt Datum, Name, offen, Budget und genutzt", async () => {
     const { text, root } = await zeichne(BASIS);
-    expect(text).toContain("14.08.");
+    // Nur der Tag: Monat und Jahr stehen bereits am + Button (siehe
+    // utils/date.js). "14.08." waere hier doppelt gemoppelt.
+    expect(text).toContain("14.");
+    expect(text).not.toContain("14.08.");
     expect(text).toContain("Essen & Trinken");
     expect(text).toContain("offen:");
     expect(text).toContain("56,88");            // 125 − 68,12

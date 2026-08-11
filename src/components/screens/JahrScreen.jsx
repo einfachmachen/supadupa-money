@@ -1,6 +1,7 @@
 // Auto-generated module (siehe app-src.jsx)
 
 import React, { Fragment, useContext, useRef, useState } from "react";
+import { tagMonat } from "../../utils/date.js";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { getBC } from "../../theme/palette.js";
@@ -636,7 +637,7 @@ function JahrScreen({forceSingle=false}) {
                             {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex"}}>{Li("sticky-note",9,T.gold)}</span>}
                           </div>
                           <div style={{color:T.txt2,fontSize:10,marginTop:1,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-                            <span>{tx.date}</span>
+                            <span>{tagMonat(tx.date)}</span>
                             {tx.pending&&<span style={{background:(isLightTheme())?"rgba(192,120,0,0.18)":"rgba(245,166,35,0.15)",color:T.gold,
                               borderRadius:4,padding:"0 4px",fontSize:9,fontWeight:700}}>
                               {isSelectedPend?"✓ ausgewählt":"Vormerkung – antippen zum Verknüpfen"}
