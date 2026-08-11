@@ -9,7 +9,7 @@
 // Bewusst zukunftssicher: akzeptiert eine LISTE von Sessions, auch wenn der
 // Speicher heute nur eine hält — damit „mehrere Banken" später ohne Umbau geht.
 
-import { txFingerprint, txFingerprintNorm } from "./tx.js";
+import { txFingerprint, txFingerprintNorm, buildTxIdMap } from "./tx.js";
 import { createEnableBankingClient, mapEnableBankingTransactions } from "./enableBanking.js";
 import { loadEbCreds, loadEbAccountMap, loadEbSessionList } from "./enableBankingStore.js";
 
@@ -40,7 +40,54 @@ function fpsForTxs(txs) {
 // werden). Der Betrags-Index (amtIndex, s. u.) schließt Vormerkungen aus
 // demselben Grund schon länger aus — hier fehlte das Gegenstück.
 function buildKnownFps(txs) {
-  return fpsForTxs((txs || []).filter((t) => !t.pending));
+  const byId = buildTxIdMap(txs);
+  return fpsForTxs((txs || []).filter((t) => !t.pending && !istAbsorbierteVormerkung(t, byId)));
+}
+
+// Verknüpft man eine EIGENE Vormerkung mit einer BANK-Vormerkung
+// (linkPendingToPending in vormMatch.js), bekommt die eigene `pending:false`
+// und `_linkedTo` auf die Bank-Vormerkung — die Bank-Vormerkung ist danach der
+// einzige sichtbare Eintrag. Gebucht ist damit aber NICHTS: das Geld steht
+// weiterhin nur als Vormerkung im Konto.
+//
+// Für den Bankabruf ist das entscheidend. Ein solcher Eintrag sah bisher aus
+// wie eine echte Buchung (kein `pending`) und landete in beiden Indizes. Kam
+// die Bank später mit der tatsächlichen Buchung, stimmten Konto, Datum und
+// Betrag mit ihm überein — nur der Text nicht, denn dort steht die eigene
+// Beschreibung ("Fahrradhelm, 2er Lesebrille …") statt der der Bank
+// ("AMAZON +18002796620 LU"). Ergebnis: die echte Buchung wurde als
+// "mögliche Dublette" abgewählt statt importiert. Wer viel verknüpft, bekam so
+// bei jedem Abruf einen ganzen Stapel davon (Nutzer-Bericht).
+//
+// Erkennbar am Gegenstück: ist der Partner NOCH vorgemerkt, dann ist dieser
+// Eintrag eine absorbierte Vormerkung und keine Buchung.
+function istAbsorbierteVormerkung(t, byId) {
+  if (!t || t.pending || !t._linkedTo) return false;
+  const partner = byId && byId.get(t._linkedTo);
+  return !!(partner && partner.pending);
+}
+
+// Betrags-Index für die "maybe"-Einstufung: Konto + Datum + Betrag aller
+// wirklich gebuchten Umsätze.
+//
+// Konto-gebunden, NICHT global — sonst versteckt eine zufällig betragsgleiche
+// Buchung auf einem ANDEREN Konto (z. B. eine Tagesgeld-Zinsgutschrift vs. eine
+// unabhängige Giro-Rate am selben Tag) die echte neue Buchung fälschlich als
+// "vorhanden". Vormerkungen und absorbierte Vormerkungen (s. o.) bleiben
+// draußen: beide sind nicht gebucht.
+//
+// Bewusst hier und nicht zweimal inline: dieselbe Berechnung stand auch im
+// EnableBankingWizard, und der Fix für die absorbierten Vormerkungen hätte
+// dort sonst gefehlt.
+function buildAmtIndex(txs) {
+  const byId = buildTxIdMap(txs);
+  const idx = new Set();
+  (txs || []).forEach((t) => {
+    if (t.pending) return;
+    if (istAbsorbierteVormerkung(t, byId)) return;
+    idx.add(`${t.accountId}|${t.date}|${Math.round(Math.abs(t.totalAmount) * 100)}`);
+  });
+  return idx;
 }
 
 // Fingerprints NUR aus vorhandenen Vormerkungen (pending). Gegenstück zu
@@ -168,15 +215,7 @@ async function fetchNewBankTx({ txs, dateFrom, aspsp } = {}) {
 
   const known = buildKnownFps(txs);
   const knownPending = buildKnownPendingFps(txs);
-  // Konto-gebunden, NICHT global: zwei verschiedene Konten können zufällig am
-  // selben Tag denselben Betrag haben (z. B. eine Tagesgeld-Zinsgutschrift und
-  // eine unabhängige Giro-Ratenzahlung) — das darf die echte, neue Buchung
-  // nicht fälschlich als "vorhanden" auf dem falschen Konto verstecken.
-  const amtIndex = new Set();
-  (txs || []).forEach((t) => {
-    if (t.pending) return;
-    amtIndex.add(`${t.accountId}|${t.date}|${Math.round(Math.abs(t.totalAmount) * 100)}`);
-  });
+  const amtIndex = buildAmtIndex(txs);
 
   const cl = createEnableBankingClient({
     relayUrl: creds.relayUrl, appId: creds.appId, privateKeyPem: creds.privateKey,
@@ -239,6 +278,7 @@ export {
   listConnectedBanks,
   buildKnownFps,
   buildKnownPendingFps,
+  buildAmtIndex,
   fetchAllTransactions,
   loadEbSessions,
   sessionValid,

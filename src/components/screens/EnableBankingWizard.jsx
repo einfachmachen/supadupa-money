@@ -33,7 +33,7 @@ import {
   loadEbDiag,
   clearEbDiag,
 } from "../../utils/enableBankingStore.js";
-import { friendlyBankError, fetchAllTransactions, buildKnownFps, buildKnownPendingFps } from "../../utils/enableBankingFetch.js";
+import { friendlyBankError, fetchAllTransactions, buildKnownFps, buildKnownPendingFps, buildAmtIndex } from "../../utils/enableBankingFetch.js";
 
 // Vom Betreiber bereitgestellter Standard-Relay (datenlos, geteilt).
 const DEFAULT_RELAY = "https://enable-banking-proxy.relay-url-supadupa-money.workers.dev";
@@ -365,15 +365,10 @@ function EnableBankingWizard({ onClose, onBack }) {
       saveEbAccountMap(accMap);
       const known = buildKnownFps(txs);
       const knownPending = buildKnownPendingFps(txs);
-      // Konto-gebunden, NICHT global — sonst versteckt eine zufällig
-      // betragsgleiche Buchung auf einem ANDEREN Konto (z. B. eine
-      // Tagesgeld-Zinsgutschrift vs. eine unabhängige Giro-Rate am selben Tag)
-      // die echte neue Buchung fälschlich als "vorhanden".
-      const amtIndex = new Set();
-      (txs || []).forEach((t) => {
-        if (t.pending) return;
-        amtIndex.add(`${t.accountId}|${t.date}|${Math.round(Math.abs(t.totalAmount) * 100)}`);
-      });
+      // Gemeinsam mit fetchNewBankTx (enableBankingFetch.js) — die Berechnung
+      // stand hier frueher als zweite Kopie, wodurch Korrekturen an einer
+      // Stelle die andere nicht erreichten.
+      const amtIndex = buildAmtIndex(txs);
       const cl = client();
       const items = [];
       for (const a of sessionAccounts) {
