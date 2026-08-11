@@ -2332,6 +2332,12 @@ function DashboardScreenV2() {
                   const sp = dashDrill.cat ? (tx.splits||[]).find(s=>s.catId===dashDrill.cat.id) : (tx.splits||[])[0];
                   const sub = getSub(sp?.catId, sp?.subId);
                   const cat = getCat(sp?.catId);
+                  // Blass oder gesaettigt entscheidet die ZEILE, nicht der Aufriss
+                  // (§4.4: blass = vorgemerkt/geplant). `dashDrill.isPending` gilt
+                  // nur fuer den reinen Vormerkungs-Aufriss; ein Kategorie-Aufriss
+                  // mischt beides, und dort standen Vormerkungen deshalb in der
+                  // gesaettigten Farbe echter Buchungen (Nutzer-Hinweis).
+                  const istVm = !!tx.pending;
                   // Für Vormerkungsliste (kein Kategorie-Filter) immer Gesamtbetrag zeigen
                   const amt = dashDrill.cat ? (sp ? pn(sp.amount) : tx.totalAmount) : tx.totalAmount;
                   const isS = (tx.splits||[]).length>1;
@@ -2421,7 +2427,9 @@ function DashboardScreenV2() {
                               borderRadius:4,padding:"1px 6px",fontSize:11,fontWeight:700}}>unkategorisiert</span>}
                             <VormerkungSymbol tx={tx}/>
                           </div>
-                          <div style={{...amtStyle(dashDrill.isIncome?"pos":"neg", dashDrill.isPending?undefined:bookCol(dashDrill.isIncome,tx.date)),...(dashDrill.isPending?{color:dashDrill.isIncome?T.cell_inc:T.cell_exp}:{}),fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
+                          <div style={{...amtStyle(istVm?(dashDrill.isIncome?"cell_inc":"cell_exp"):(dashDrill.isIncome?"pos":"neg"),
+                            istVm?undefined:bookCol(dashDrill.isIncome,tx.date)),
+                            fontSize:17,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
                             {betrag(amt)}
                           </div>
                         </div>
@@ -2450,7 +2458,7 @@ function DashboardScreenV2() {
                                   display:"flex",alignItems:"center",gap:3}}>
                                   {Li("link",9,T.blue)} zugeordnet
                                 </span>}
-                                <span style={{color:isLinked?T.txt2:(dashDrill.isPending?(dashDrill.isIncome?T.cell_inc:T.cell_exp):bookCol(dashDrill.isIncome,tx.date)),
+                                <span style={{color:isLinked?T.txt2:(istVm?(dashDrill.isIncome?T.cell_inc:T.cell_exp):bookCol(dashDrill.isIncome,tx.date)),
                                   fontSize:11,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0,
                                   opacity:isLinked?0.5:1}}>
                                   {betrag(pn(s.amount))}
