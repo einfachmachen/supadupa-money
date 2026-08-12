@@ -210,12 +210,21 @@ function CategoryChart({catSums, maxSum, budgets, getBudgetForMonth, year, month
               <div style={{position:"absolute",left:0,top:0,width:tortenBreite,height:tortenBreite,
                 pointerEvents:"none"}}>
                 {betragsLabels.map(l => (
+                  // `--amt-neutral` MUSS hier mitgegeben werden: im neutralen
+                  // Betrags-Modus faerbt base.css jeden Betrag per
+                  // `color: var(--amt-neutral) !important` um. Die Auflage
+                  // haengt am Seitenhintergrund, erbt also dessen Textfarbe —
+                  // im Theme "Tastenhell" stand der Betrag in der Nabe damit
+                  // dunkel auf der dunklen Nabe (Nutzer-Bild). Mit der
+                  // Variablen kommt genau die Farbe heraus, die oben je
+                  // Segment bzw. fuer die Nabe gerechnet wurde.
                   <div key={l.key} style={{position:"absolute",
                     left: l.x * skala,
                     top: (l.y - GRUNDLINIE_ZU_MITTE * l.groesse) * skala,
                     transform:"translate(-50%,-50%)",
                     display:"flex",alignItems:"center",whiteSpace:"nowrap",
-                    color:l.farbe, fontSize:l.groesse * skala, fontWeight:l.fett,
+                    color:l.farbe, "--amt-neutral":l.farbe,
+                    fontSize:l.groesse * skala, fontWeight:l.fett,
                     fontFamily:NUM_FONT, lineHeight:1, opacity:l.opacity}}>
                     {betrag(l.wert)}
                   </div>

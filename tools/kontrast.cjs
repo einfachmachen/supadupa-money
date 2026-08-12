@@ -91,26 +91,38 @@ const SCAN = () => {
   const schlechtester = (fg, bgs) =>
     bgs.reduce((a, b) => (kon(ueber(fg, b), b) < kon(ueber(fg, a), a) ? b : a));
 
-  // In SVG liegt der Untergrund einer Beschriftung nicht ueber die
-  // Elternkette, sondern als GESCHWISTER darunter: das Tortensegment, die
-  // Nabe. bgVon kann das nicht sehen — deshalb wird hier direkt gefragt, was
-  // an der Stelle des Textes gemalt ist. Die Beschriftungen nehmen keine
-  // Tipps an (pointer-events:none), also liefert elementsFromPoint genau die
-  // Form darunter. Fuellung UND Deckkraft zaehlen (Segmente liegen je nach
-  // Auswahl bei 0,88 oder 0,35).
-  const svgGrund = (el, bgs) => {
+  // Der Untergrund liegt nicht immer in der Elternkette. Zwei Faelle in
+  // dieser App:
+  //   * SVG: das Tortensegment und die Nabe sind GESCHWISTER der
+  //     Beschriftung, keine Vorfahren.
+  //   * Auflagen: die Betraege der Torte liegen bei gedrehten
+  //     Nachkommastellen als HTML UEBER dem Diagramm (§4.6) — ihre Eltern
+  //     haengen am Seitenhintergrund, gemalt ist darunter aber die Nabe.
+  // Deshalb wird hier gefragt, was an dieser Stelle tatsaechlich liegt.
+  // Auflagen und Beschriftungen nehmen keine Tipps an (pointer-events:none),
+  // also liefert elementsFromPoint genau die Schichten darunter. Vorfahren
+  // sind schon in bgs enthalten und werden uebersprungen; Fuellung UND
+  // Deckkraft zaehlen (Segmente liegen je nach Auswahl bei 0,88 oder 0,35).
+  const grundAmPunkt = (el, bgs) => {
     const r = el.getBoundingClientRect();
     if (!r.width || !r.height) return bgs;
+    // Genommen werden NUR gemalte SVG-Formen, die im Dokument VOR dem Text
+    // stehen — die liegen zwangslaeufig darunter. Ohne diese beiden
+    // Einschraenkungen zaehlte auch mit, was ueber dem Text schwebt (der
+    // runde Datums-Knopf ueberlappt die Knoepfe im Bearbeiten-Blatt) — der
+    // Lauf meldete dann Unsinn wie "Löschen auf Gelbgruen".
     const unten = document.elementsFromPoint(r.x + r.width / 2, r.y + r.height / 2)
-      .filter(e => e !== el && !el.contains(e) && /^(path|circle|rect|ellipse|polygon)$/i.test(e.tagName));
+      .filter(e => e !== el && !el.contains(e) && !e.contains(el))
+      .filter(e => /^(path|circle|rect|ellipse|polygon)$/i.test(e.tagName))
+      .filter(e => el.compareDocumentPosition(e) & Node.DOCUMENT_POSITION_PRECEDING);
     if (!unten.length) return bgs;
-    // Von hinten nach vorn uebereinanderlegen.
     let grund = bgs;
     unten.reverse().forEach(form => {
       const fs = getComputedStyle(form);
+      if (fs.fill === "none") return;
       const f = parse(fs.fill);
-      if (!f || fs.fill === "none") return;
-      const deck = f[3] * (+fs.fillOpacity || 1) * (+fs.opacity || 1);
+      if (!f) return;
+      const deck = f[3] * (+fs.fillOpacity || 1) * (+fs.opacity === 0 ? 0 : (+fs.opacity || 1));
       if (deck <= 0) return;
       grund = grund.map(b => ueber([f[0], f[1], f[2], deck], b));
     });
@@ -143,7 +155,7 @@ const SCAN = () => {
       const rohFg = svgText && cs.fill && cs.fill !== "none" ? cs.fill : cs.color;
       const fg = parse(rohFg);
       if (fg && fg[3] > 0.15) {
-        const grund = svgText ? svgGrund(el, bgs) : bgs;
+        const grund = grundAmPunkt(el, bgs);
         const bg = schlechtester(fg, grund);
         const bgTxt = `rgb(${bg.map(Math.round).join(", ")})`;
         const gross = parseFloat(cs.fontSize) >= 24
@@ -218,7 +230,16 @@ async function stationen(page, merke) {
         .find(e => /^\s*Torte\s*$/.test(e.textContent || ""));
       if (!b) return false; b.click(); return true;
     });
-    if (torte) { await page.waitForTimeout(900); await merke("Home · Diagramm (Torte)"); }
+    if (torte) {
+      await page.waitForTimeout(900); await merke("Home · Diagramm (Torte)");
+      // Noch einmal im NEUTRALEN Betrags-Modus: dort faerbt base.css jeden
+      // Betrag per --amt-neutral um, und die Auflage der Torte haengt am
+      // Seitenhintergrund statt an der Nabe. Genau das war der Fehler, den
+      // der Lauf im farbigen Modus nicht sehen konnte.
+      await klickAuge(); await klickAuge();
+      await merke("Home · Diagramm (Torte) · Betraege neutral");
+      await klickAuge();
+    }
   }
 
   await tab(126); await merke("Monat");
@@ -292,7 +313,15 @@ async function stationen(page, merke) {
       await new Promise((res, rej) => { const tx = db.transaction("appdata", "readwrite");
         tx.objectStore("appdata").put(seedStr, "finanzapp_v9"); tx.oncomplete = res; tx.onerror = rej; });
       await new Promise((res, rej) => { const tx = db.transaction("kvstore", "readwrite");
-        tx.objectStore("kvstore").put(name, "mbt_theme"); tx.oncomplete = res; tx.onerror = rej; });
+        const st = tx.objectStore("kvstore");
+        st.put(name, "mbt_theme");
+        // Gedrehte Nachkommastellen EIN. Nicht Kosmetik: mit der Option
+        // rendern Hero, Torte & Co. die Betraege als HTML statt als
+        // <text>/Zahl — ein anderer Pfad mit anderen Farbregeln. Genau dort
+        // stand der Betrag in der Tortennabe dunkel auf dunkel, waehrend der
+        // Lauf ohne die Option sauber meldete.
+        st.put("1", "mbt_cents_gedreht");
+        tx.oncomplete = res; tx.onerror = rej; });
     }, [seed, th]);
     await page.reload(); await page.waitForTimeout(2300);
 

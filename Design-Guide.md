@@ -517,7 +517,18 @@ und Rückfrage ab und prüft:
   Das ist dort ein **Geschwister** — Segment oder Nabe —, kein Vorfahre; gefragt
   wird per `elementsFromPoint`, Füllung und Deckkraft zählen. Ohne das war der
   ganze Diagrammbereich blind, und genau dort standen weiße Beträge auf hellen
-  Pastelltönen (Nutzer-Bild).
+  Pastelltönen (Nutzer-Bild). Gezählt werden nur SVG-Formen, die im Dokument
+  **vor** dem Text stehen — sonst zählt mit, was *über* dem Text schwebt (der
+  runde Datums-Knopf überlappt die Knöpfe im Bearbeiten-Blatt).
+- **Gedrehte Nachkommastellen sind im Lauf EIN** (`mbt_cents_gedreht`). Das ist
+  keine Kosmetik: mit der Option rendern Hero und Torte ihre Beträge als **HTML
+  über** dem Diagramm statt als `<text>` (§4.6) — ein anderer Pfad mit anderen
+  Farbregeln. Genau dort stand der Betrag in der Tortennabe dunkel auf dunkel,
+  während der Lauf ohne die Option sauber meldete.
+- Der Diagrammbereich wird zusätzlich im **neutralen** Betrags-Modus geprüft:
+  dort färbt `base.css` jeden Betrag per `--amt-neutral` um, und eine Auflage
+  erbt diese Variable vom **Seitenhintergrund**, nicht von der Fläche, über der
+  sie liegt. Wer eine Auflage baut, muss `--amt-neutral` mitgeben.
 - Ein `<svg>`, das eigene gefüllte Formen oder `<text>` enthält, ist ein
   **Behälter** und wird nicht als Symbol gewertet — sonst meldet die Torte ihr
   SVG-Standardschwarz.
@@ -527,7 +538,7 @@ Gezählt wird jede Farbkombination **einmal pro Theme**, ausgegeben aber je
 Station. Vorher zählte jede Station eigenständig — der Hero steht auf jedem
 Bildschirm, und eine neue Station trieb die Zahl nach oben, ohne dass ein neues
 Problem dazugekommen wäre. Stand jetzt: **Tastenhell 0, Keyboard 0, Lime 16,
-Limehell 44** (die beiden letzten sind Altlasten, siehe §10).
+Limehell 43** (die beiden letzten sind Altlasten, siehe §10).
 
 Findings aus **Nutzerdaten** (selbst gewählte Kategorie- und Kontofarben) werden
 getrennt ausgewiesen und lassen den Lauf **nicht** fehlschlagen — sie sind vom
