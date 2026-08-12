@@ -367,6 +367,23 @@ und die schafft das satte Rot nur gegen reines Weiß. Es gibt deshalb je einen
 Ton für dunkle (`#FFB3A8`) und für **helle** Karten (`#9E1B0E`) — auf den
 hellgrauen Tasten von „Tastenhell" kam `GEFAHR` selbst nur auf 3,0:1.
 
+**Schrift auf einer beliebigen Fläche: `schriftAuf()`** (`theme/amtPill.js`).
+Überall, wo Text auf einer Farbe liegt, die **nicht** aus dem Theme kommt —
+Tortenbeschriftungen (Kategoriefarbe), gefüllte Akzent-Pillen („Eigene",
+„Pegel", „Balken"/„Torte") —, entscheidet die **Rechnung**: `schriftAuf(grund,
+wunsch)` lässt `wunsch` stehen, solange er 4,5:1 erreicht, sonst nimmt es Weiß
+oder Fast-Schwarz — was auf diesem Grund besser trägt.
+- `readableOn()` bleibt für **Pillen** richtig, reicht für Text aber nicht: es
+  entscheidet über die YIQ-Helligkeit (Schwelle 150) und hält ein mittleres Rot
+  für „dunkel" — die Beschriftung blieb weiß und lag bei 3,17:1.
+- Gerechnet wird gegen die **gemalte** Farbe. Tortensegmente liegen bei 88 %
+  Deckkraft auf dem Seitenhintergrund und sind damit je nach Theme heller oder
+  dunkler als der reine Kategorieton.
+- Auf einem **Mittelton** erreicht weder Weiß noch Schwarz 4,5:1 (zwei Themes:
+  `obsidian`, `softecotech`, Maximum 4,3:1). Das ist eine Eigenschaft der Farbe,
+  kein Fehler der Funktion — `tests/schriftAuf.test.js` hält die Liste fest,
+  damit sie nicht still wächst.
+
 **Blass = heller gilt nur auf dunklem Grund.** Für „noch nicht erreicht"
 (Prognose Mitte/Ende, ruhende Kacheln) gibt es `blasserAkzent()` in
 `activeTheme.js`. Vorher stand an vier Stellen fest `lightenHex(T.blue, 0.35)` —
@@ -482,8 +499,9 @@ npm run kontrast -- --alle       # alle 34
 npm run kontrast -- --bilder     # zusätzlich Screenshots nach .kontrast/
 ```
 
-Der Lauf fährt Home (in **allen drei Betrags-Modi**), Monat, Trend, Daten,
-Kategorie-Aufriss, Bearbeiten-Dialog und Rückfrage ab und prüft:
+Der Lauf fährt Home (in **allen drei Betrags-Modi**), den **Diagrammbereich
+(Balken und Torte)**, Monat, Trend, Daten, Kategorie-Aufriss, Bearbeiten-Dialog
+und Rückfrage ab und prüft:
 - **Text** gegen seinen tatsächlichen Untergrund — alle gemalten Ebenen
   übereinandergelegt, halbtransparente Chips zählen mit (der „nächste
   undurchsichtige Vorfahre" lag falsch, sobald eine getönte Fläche dazwischenlag).
@@ -494,7 +512,22 @@ Kategorie-Aufriss, Bearbeiten-Dialog und Rückfrage ab und prüft:
   fast alle haben dort einen Verlauf. Da ein Verlauf mehrere Farben hat, wird
   gegen **jede Stufe** gerechnet und die schlechteste gemeldet („Lime" verlor
   dadurch 10 Scheinfunde, „Limehell" bekam einen echten dazu).
+- **SVG-Beschriftungen** (Tortendiagramm): Farbe aus `fill` (in SVG ist `color`
+  nur geerbt), Untergrund aus der Form, die an dieser Stelle **darunter** liegt.
+  Das ist dort ein **Geschwister** — Segment oder Nabe —, kein Vorfahre; gefragt
+  wird per `elementsFromPoint`, Füllung und Deckkraft zählen. Ohne das war der
+  ganze Diagrammbereich blind, und genau dort standen weiße Beträge auf hellen
+  Pastelltönen (Nutzer-Bild).
+- Ein `<svg>`, das eigene gefüllte Formen oder `<text>` enthält, ist ein
+  **Behälter** und wird nicht als Symbol gewertet — sonst meldet die Torte ihr
+  SVG-Standardschwarz.
 - Schwellen: 4,5:1 Text, 3:1 großer Text und Symbole.
+
+Gezählt wird jede Farbkombination **einmal pro Theme**, ausgegeben aber je
+Station. Vorher zählte jede Station eigenständig — der Hero steht auf jedem
+Bildschirm, und eine neue Station trieb die Zahl nach oben, ohne dass ein neues
+Problem dazugekommen wäre. Stand jetzt: **Tastenhell 0, Keyboard 0, Lime 16,
+Limehell 44** (die beiden letzten sind Altlasten, siehe §10).
 
 Findings aus **Nutzerdaten** (selbst gewählte Kategorie- und Kontofarben) werden
 getrennt ausgewiesen und lassen den Lauf **nicht** fehlschlagen — sie sind vom

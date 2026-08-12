@@ -17,7 +17,7 @@ import { TagesgeldWidget } from "../organisms/TagesgeldWidget.jsx";
 import { AutoMatchReview } from "../organisms/AutoMatchReview.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme, flaecheAbgesetzt, blasserAkzent } from "../../theme/activeTheme.js";
-import { amtStyle, readableOn, isLightColor } from "../../theme/amtPill.js";
+import { amtStyle, readableOn, isLightColor, schriftAuf } from "../../theme/amtPill.js";
 import { groupBudgetPairs, budgetOpenRestFor } from "../../utils/budgets.js";
 import { dayOf, drillSort, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { betrag, betragText } from "../../utils/betrag.jsx";
@@ -1427,7 +1427,7 @@ function DashboardScreenV2() {
                 {[["custom","\u270e Eigene"],["desc","\u2193"],["asc","\u2191"]].map(([mode,lbl])=>(
                   <button key={mode} onClick={()=>setCatSortMode(mode)}
                     style={{background:catSortMode===mode?T.blue:"transparent",
-                      color:catSortMode===mode?T.on_accent||"#000":T.txt2,
+                      color:catSortMode===mode?schriftAuf(T.blue,T.on_accent):T.txt2,
                       border:`1px solid ${catSortMode===mode?T.blue:T.bd}`,
                       borderRadius:14,padding:"3px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>
                     {lbl}
@@ -1440,7 +1440,7 @@ function DashboardScreenV2() {
                 {[["pillen","Pillen"],["pegel","Pegel"]].map(([mode,lbl])=>(
                   <button key={mode} onClick={()=>setSubViewMode(mode)}
                     style={{background:subViewMode===mode?T.blue:"transparent",
-                      color:subViewMode===mode?T.on_accent||"#000":T.txt2,
+                      color:subViewMode===mode?schriftAuf(T.blue,T.on_accent):T.txt2,
                       border:`1px solid ${subViewMode===mode?T.blue:T.bd}`,
                       borderRadius:14,padding:"3px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>
                     {lbl}

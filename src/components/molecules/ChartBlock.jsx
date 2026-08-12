@@ -19,7 +19,11 @@ function ChartBlock({catSums, maxSum, budgets, getBudgetForMonth, year, month}) 
   const _hb = (String(T.hero_bg||T.bg||"").match(/#([0-9a-fA-F]{6})/)||[])[1];
   const _L = _hb ? (0.299*parseInt(_hb.slice(0,2),16)+0.587*parseInt(_hb.slice(2,4),16)+0.114*parseInt(_hb.slice(4,6),16))/255 : 0.2;
   const onHero    = _L>0.5 ? "rgba(0,0,0,0.88)" : "rgba(255,255,255,0.92)";
-  const onHeroMut = _L>0.5 ? "rgba(0,0,0,0.60)" : "rgba(255,255,255,0.66)";
+  // 0,76 statt 0,66: auf einem MITTELGRAUEN Hero (Theme "Tastenhell",
+  // #525252) lag die gedaempfte Schrift bei 4,49:1 und der Zaehler-Knopf —
+  // der auf der zusaetzlich aufgehellten Spurfarbe sitzt — bei 4,06:1.
+  // Auf dunklen und hellen Heros aendert der Schritt kaum etwas sichtbar.
+  const onHeroMut = _L>0.5 ? "rgba(0,0,0,0.72)" : "rgba(255,255,255,0.76)";
   const trackBg  = "rgba(128,128,128,0.18)";
   const trackBud = "rgba(128,128,128,0.30)";
   // Kein eigener Seitenrand: der Block soll exakt so breit sein wie die

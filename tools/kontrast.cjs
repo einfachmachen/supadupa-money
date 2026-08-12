@@ -26,6 +26,8 @@
 //   - Text gegen seinen tatsaechlichen Untergrund (alle gemalten Ebenen
 //     uebereinandergelegt, halbtransparente Chips zaehlen mit)
 //   - SVG-Symbole (haben keinen Textknoten und fielen frueher durch)
+//   - SVG-Beschriftungen (Torte): Farbe aus `fill`, Untergrund aus der Form,
+//     die an dieser Stelle darunter liegt (Segment/Nabe sind Geschwister)
 //   - Schwellen nach WCAG: 4,5:1 fuer Text, 3:1 fuer grossen Text und Symbole
 
 const { chromium } = require("playwright-core");
@@ -88,6 +90,32 @@ const SCAN = () => {
   // Schlechtester Untergrund fuer eine Vordergrundfarbe (siehe bgVon).
   const schlechtester = (fg, bgs) =>
     bgs.reduce((a, b) => (kon(ueber(fg, b), b) < kon(ueber(fg, a), a) ? b : a));
+
+  // In SVG liegt der Untergrund einer Beschriftung nicht ueber die
+  // Elternkette, sondern als GESCHWISTER darunter: das Tortensegment, die
+  // Nabe. bgVon kann das nicht sehen — deshalb wird hier direkt gefragt, was
+  // an der Stelle des Textes gemalt ist. Die Beschriftungen nehmen keine
+  // Tipps an (pointer-events:none), also liefert elementsFromPoint genau die
+  // Form darunter. Fuellung UND Deckkraft zaehlen (Segmente liegen je nach
+  // Auswahl bei 0,88 oder 0,35).
+  const svgGrund = (el, bgs) => {
+    const r = el.getBoundingClientRect();
+    if (!r.width || !r.height) return bgs;
+    const unten = document.elementsFromPoint(r.x + r.width / 2, r.y + r.height / 2)
+      .filter(e => e !== el && !el.contains(e) && /^(path|circle|rect|ellipse|polygon)$/i.test(e.tagName));
+    if (!unten.length) return bgs;
+    // Von hinten nach vorn uebereinanderlegen.
+    let grund = bgs;
+    unten.reverse().forEach(form => {
+      const fs = getComputedStyle(form);
+      const f = parse(fs.fill);
+      if (!f || fs.fill === "none") return;
+      const deck = f[3] * (+fs.fillOpacity || 1) * (+fs.opacity || 1);
+      if (deck <= 0) return;
+      grund = grund.map(b => ueber([f[0], f[1], f[2], deck], b));
+    });
+    return grund;
+  };
   const sichtbar = el => {
     const r = el.getBoundingClientRect();
     if (r.width < 4 || r.height < 4 || r.bottom < 0 || r.top > innerHeight) return false;
@@ -108,22 +136,33 @@ const SCAN = () => {
 
     const txt = [...el.childNodes].filter(n => n.nodeType === 3 && n.textContent.trim());
     if (txt.length) {
-      const fg = parse(cs.color);
+      // In SVG steht die Schriftfarbe in `fill`; `color` ist dort nur geerbt
+      // und haette die Tortenbeschriftungen mit der falschen Farbe gemessen.
+      // Der Untergrund kommt dort aus svgGrund (Geschwister-Formen), s. o.
+      const svgText = el.namespaceURI && el.namespaceURI.includes("svg");
+      const rohFg = svgText && cs.fill && cs.fill !== "none" ? cs.fill : cs.color;
+      const fg = parse(rohFg);
       if (fg && fg[3] > 0.15) {
-        const bg = schlechtester(fg, bgs);
+        const grund = svgText ? svgGrund(el, bgs) : bgs;
+        const bg = schlechtester(fg, grund);
         const bgTxt = `rgb(${bg.map(Math.round).join(", ")})`;
         const gross = parseFloat(cs.fontSize) >= 24
           || (parseFloat(cs.fontSize) >= 18.66 && +cs.fontWeight >= 700);
         const soll = gross ? 3 : 4.5;
         const k = kon(ueber(fg, bg), bg);
         if (k < soll) funde.push({ art: "Text", was: txt.map(n => n.textContent.trim()).join(" ").slice(0, 34),
-          k: +k.toFixed(2), soll, fg: cs.color, bg: bgTxt });
+          k: +k.toFixed(2), soll, fg: rohFg, bg: bgTxt });
       }
     }
 
     // Symbole: Strich- bzw. Fuellfarbe. Ohne diesen Zweig blieben genau die
     // Warn-/Spar-/VM-Symbole unentdeckt, die der Nutzer gemeldet hat.
     if (el.tagName.toLowerCase() === "svg") {
+      // Nur echte Symbole. Ein <svg>, das eigene gefuellte Formen oder
+      // Beschriftungen enthaelt (Tortendiagramm), ist ein BEHAELTER — seine
+      // eigene Fuellung ist dann das SVG-Standardschwarz und malt nichts.
+      // Ohne diese Ausnahme meldete der Lauf die Torte als schwarzes Symbol.
+      if (el.querySelector("text, [fill]:not([fill='none'])")) return;
       const roh = cs.stroke && cs.stroke !== "none" ? cs.stroke : cs.fill;
       const fg = parse(roh);
       if (fg && fg[3] > 0.15) {
@@ -162,6 +201,25 @@ async function stationen(page, merke) {
   await merke("Home · Betraege neutral");
   await page.mouse.click(210, 92); await page.waitForTimeout(700);
   await merke("Home · Betraege farbig + Details");
+
+  // Diagramm-Bereich. Er war bis hierher NIE Teil des Laufs — der Umschalter
+  // "Balken/Torte" und die Tortenbeschriftungen existieren nur im
+  // aufgeklappten Zustand. Genau dort stand die Akzentfarbe als Text auf einer
+  // 9%-Toenung derselben Farbe (Nutzer-Bild: "Balken" kaum zu sehen).
+  const auf = await page.evaluate(() => {
+    const el = [...document.querySelectorAll("span")]
+      .find(e => /Ausgaben nach Kategorie/.test(e.textContent || ""));
+    if (!el) return false; el.parentElement.click(); return true;
+  });
+  if (auf) {
+    await page.waitForTimeout(800); await merke("Home · Diagramm (Balken)");
+    const torte = await page.evaluate(() => {
+      const b = [...document.querySelectorAll("button")]
+        .find(e => /^\s*Torte\s*$/.test(e.textContent || ""));
+      if (!b) return false; b.click(); return true;
+    });
+    if (torte) { await page.waitForTimeout(900); await merke("Home · Diagramm (Torte)"); }
+  }
 
   await tab(126); await merke("Monat");
   await tab(294); await merke("Trend");
@@ -240,12 +298,21 @@ async function stationen(page, merke) {
 
     console.log(`\n=== ${th} (${THEMES[th].name || th}) ===`);
     let n = 0;
+    // Gezaehlt wird jede Farbkombination EINMAL pro Theme, nicht einmal pro
+    // Station: der Hero steht auf jedem Bildschirm, und eine neue Station
+    // haette die Zahl sonst nach oben getrieben, ohne dass ein neues Problem
+    // dazugekommen waere. Ausgegeben wird weiter je Station — dort sieht man,
+    // WO es auffaellt.
+    const gezaehlt = new Set();
     const merke = async (wo) => {
       const funde = await page.evaluate(SCAN);
       if (BILDER) await page.screenshot({ path: path.join(ORDNER, `${th}-${String(++n).padStart(2, "0")}.png`) });
       const vomTheme = funde.filter(f => !nutzerRgb.has(f.fg));
       const vonDaten = funde.filter(f => nutzerRgb.has(f.fg));
-      themeFunde += vomTheme.length; datenFunde += vonDaten.length;
+      const neu = (f) => { const k = `${f.art}|${f.was}|${f.fg}|${f.bg}`;
+        if (gezaehlt.has(k)) return false; gezaehlt.add(k); return true; };
+      themeFunde += vomTheme.filter(neu).length;
+      datenFunde += vonDaten.filter(neu).length;
       if (vomTheme.length) {
         console.log(`  ${wo}:`);
         vomTheme.forEach(f => console.log(
