@@ -278,7 +278,7 @@ und **gelbgrüner** Zweitbelegung, auf der **helleren Tastatur-Platte**
 
 **`tastenhell`** („Tastenhell") ist dieselbe Vorlage bei Tageslicht — und das
 **erste ausgelieferte Theme mit gegensätzlichen Flächen**: helle Platte
-(`bg` `#ECECE4`), **dunkle Tasten** (`surf` `#3C3C3C`), **weiße**
+(`bg` `#ECECE4`), **dunklere Tasten** (`surf` `#525252`), **weiße**
 Hauptbeschriftung, **gelbgrüne** Zweitbelegung. Es ist damit der erste Nutzer
 des Zwei-Textfarben-Mechanismus aus §4.7. Drei Dinge müssen dafür zusammen
 passen:
@@ -304,6 +304,15 @@ Funde).
 > kontrastfrei sauber, aber nicht die Vorlage („die Schriftfarbe soll wie im
 > Screenshot weiß bzw. Lime sein"). Weiße Schrift braucht eine dunkle Taste —
 > beides zusammen geht nicht.
+>
+> **Wie hell die Taste höchstens sein darf, ist gerechnet, nicht geschätzt.**
+> Bindend ist die *dunkelste Betragsfarbe*, das Ausgaben-Cyan `#00D9FF`: bei
+> `#525252` erreicht es 4,57:1, eine Stufe heller fällt es durch. Die Vorlage
+> selbst ist heller — dort sind die Beschriftungen aber nur Buchstaben, hier
+> sind es Beträge. Wer die Tasten wirklich auf Foto-Helligkeit
+> (etwa `#6E6E6E`) will, muss die Akzente pastellig machen
+> (Cyan → `#B4F4FF`, Lime → `#E2FF8C`); dann trägt die Taste, aber die
+> Zweitbelegung ist nicht mehr das satte Gelbgrün der Vorlage.
 
 Zusätzlich **nutzerdefinierte** Themes aus `mbt_custom_themes` (`CustomThemeEditor`,
 §4.3) — diese kommen **on top**, nicht in `themes.js`.

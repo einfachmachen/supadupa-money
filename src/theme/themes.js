@@ -943,10 +943,16 @@ THEMES.tastenhell = {
   ...THEMES.keyboard,
   hell:false,                  // helle Platte, aber dunkle Karten (s. o.)
   bg:"#ECECE4",                // Tastatur-Platte, heller Cremeton der Vorlage
-  surf:"#3C3C3C",              // Keycap — Grafit wie auf dem Foto
-  surf2:"#333333",             // Dialoge/Modale
-  surf3:"#2C2C2C",
-  cat_bg:"#3C3C3C",
+  // Keycap-Grau: die HELLSTE Taste, auf der noch jede Betragsfarbe 4,5:1
+  // erreicht. Der Wert ist gerechnet, nicht geschaetzt (der erste Anlauf mit
+  // #3C3C3C war geschaetzt und wirkte deutlich dunkler als die Vorlage):
+  // bindend ist das Ausgaben-Cyan #00D9FF mit 4,57:1 — eine Stufe heller und
+  // es faellt durch. Die Vorlage selbst ist heller, aber dort sind die
+  // Beschriftungen nur Buchstaben; hier sind es Betraege.
+  surf:"#525252",              // Keycap
+  surf2:"#4A4A4A",             // Dialoge/Modale — eine Stufe tiefer
+  surf3:"#444444",
+  cat_bg:"#525252",
   bd:"rgba(40,40,36,0.30)", bds:"rgba(40,40,36,0.55)",
   // Text auf der PLATTE (Wurzel) …
   txt:"#1E1E1C",
@@ -956,18 +962,18 @@ THEMES.tastenhell = {
   txt_card:"#FFFFFF",
   txt2_card:"rgba(255,255,255,0.86)",
   lbl_card:"rgba(255,255,255,0.78)",
-  hero_bg:"linear-gradient(135deg,#3C3C3C,#2E2E2E)",
+  hero_bg:"linear-gradient(135deg,#525252,#464646)",
   // Jede Flaeche, die Akzentfarben zeigt, muss eine Taste sein (Grund s. o.).
   // Das sind ausser den Karten selbst: Hero, Drei-Symbol-Zeile, der Kopf des
   // Aufrisses und das bildschirmfuellende Blatt "Buchung bearbeiten" — dort
   // stehen Notiz-, Tag- und Verknuepfungssymbole in Gold bzw. Gelbgruen. Die
   // Menuezeilen im Daten-Bildschirm tragen je ein farbiges Symbolfeld.
   flaechen_extra:{
-    ".hero-flaeche":"linear-gradient(135deg,#3C3C3C,#2E2E2E)",
-    ".symbolzeile":"#3C3C3C",
-    ".aufriss-blatt":"#3C3C3C",
-    ".formular-blatt":"#3C3C3C",
-    ".menue-kachel":"#3C3C3C",
+    ".hero-flaeche":"linear-gradient(135deg,#525252,#464646)",
+    ".symbolzeile":"#525252",
+    ".aufriss-blatt":"#525252",
+    ".formular-blatt":"#525252",
+    ".menue-kachel":"#525252",
   },
   // Keine helle Fuge wie beim Keyboard-Theme: hier IST die Platte die Fuge.
   // Die Taste liegt mit einem weichen Schatten darauf.

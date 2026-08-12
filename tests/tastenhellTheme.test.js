@@ -48,7 +48,11 @@ const kontrast = (a, b) => {
 };
 
 const t = THEMES.tastenhell;
-const TASTEN = [t.surf, t.surf2, t.surf3, t.cat_bg, "#3C3C3C", "#2E2E2E"];
+// Die Tasten samt beider Stufen des Hero-Verlaufs. Der Verlauf zaehlt mit:
+// seine dunkle Haelfte ist die strengste Flaeche fuer weissen Text, seine
+// helle die strengste fuer die Akzente.
+const TASTEN = [t.surf, t.surf2, t.surf3, t.cat_bg,
+  ...(String(t.hero_bg).match(/#[0-9a-fA-F]{6}/g) || [])];
 
 describe("Theme Tastenhell", () => {
   beforeEach(() => setActiveTheme("tastenhell", t));
@@ -61,7 +65,7 @@ describe("Theme Tastenhell", () => {
     expect(t.hell).toBe(false);
     expect(isLightTheme("tastenhell")).toBe(false);
     expect(lum(t.bg)).toBeGreaterThan(0.5);
-    expect(lum(t.surf)).toBeLessThan(0.1);
+    expect(lum(t.surf)).toBeLessThan(0.15);
   });
 
   it("faerbt Platte und Tasten gegensaetzlich", () => {
