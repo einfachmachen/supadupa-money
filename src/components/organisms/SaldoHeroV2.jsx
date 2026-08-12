@@ -11,9 +11,9 @@ import { SaldoPrognose } from "./SaldoPrognose.jsx";
 import { RotatedCents } from "../atoms/RotatedCents.jsx";
 import { SyncStatusBadge } from "./SyncStatusBadge.jsx";
 import { AppCtx } from "../../state/AppContext.js";
-import { theme as T } from "../../theme/activeTheme.js";
+import { theme as T, blasserAkzent } from "../../theme/activeTheme.js";
 import { amtStyle } from "../../theme/amtPill.js";
-import { fmt, NUM_FONT, darkenHex, lightenHex } from "../../utils/format.js";
+import { fmt, NUM_FONT, darkenHex } from "../../utils/format.js";
 import { betrag } from "../../utils/betrag.jsx";
 import { phaseStillReachable } from "../../utils/saldo.js";
 import { Li } from "../../utils/icons.jsx";
@@ -162,7 +162,7 @@ function SaldoHeroV2({
   // Mitte/Ende-Prognose: Varianten der Akzentfarbe (dieselbe wie der aktuelle
   // Kontostand) — kräftiger sobald das jeweilige Datum erreicht ist, sonst
   // blasser. Negativ bleibt die eigene Warnfarbe.
-  const saldoCol = (v, abg) => v==null ? T.txt2 : v<0 ? T.warn_icon : (abg ? darkenHex(T.blue, 0.15) : lightenHex(T.blue, 0.35));
+  const saldoCol = (v, abg) => v==null ? T.txt2 : v<0 ? T.warn_icon : (abg ? darkenHex(T.blue, 0.15) : blasserAkzent());
 
   // mitteAbgHero/endeAbgHero: nur noch für die Mitte/Ende-Prognose (saldoCol)
   // gebraucht — eine reale Buchung ist immer abgeschlossen (s. bookColHero).

@@ -16,10 +16,10 @@ import { BankFetchPanel } from "../organisms/BankFetchPanel.jsx";
 import { TagesgeldWidget } from "../organisms/TagesgeldWidget.jsx";
 import { AutoMatchReview } from "../organisms/AutoMatchReview.jsx";
 import { AppCtx } from "../../state/AppContext.js";
-import { theme as T, isLightTheme, flaecheAbgesetzt } from "../../theme/activeTheme.js";
+import { theme as T, isLightTheme, flaecheAbgesetzt, blasserAkzent } from "../../theme/activeTheme.js";
 import { amtStyle, readableOn, isLightColor } from "../../theme/amtPill.js";
 import { groupBudgetPairs, budgetOpenRestFor } from "../../utils/budgets.js";
-import { dayOf, drillSort, fmt, pn, uid, NUM_FONT, lightenHex } from "../../utils/format.js";
+import { dayOf, drillSort, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { betrag, betragText } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
@@ -1249,7 +1249,7 @@ function DashboardScreenV2() {
             // Hintergrund optisch weiterhin dunkel; readableOn würde die reine
             // Basisfarbe ohne Alpha auswerten und ggf. fälschlich ein dunkles
             // Icon auf dunklem Grund wählen.
-            const bg = activeBg || lightenHex(T.blue, 0.35);
+            const bg = activeBg || blasserAkzent();
             const iconCol = (panel && isActive && activeBgSolid) ? readableOn(bg, color) : color;
             return (
               <div onClick={onClick || (()=>togglePanel(panel))} data-tour={tourId}
@@ -1309,7 +1309,7 @@ function DashboardScreenV2() {
                   selbst ist inzwischen ebenfalls in dieser Farbe). */}
               {!isPastMonth && <Card panel="warnings"     icon="shield-check" badge={warnCount}   color={warnCount>0 ? T.warn_icon : T.pos} activeBg={`${T.neg}18`} hasContent={warnCount>0} tourId="panel-warnings"/>}
               {!isPastMonth && <Card panel="sparen"       icon="piggy-bank"   badge={null}        color={T.blue} activeBg={T.surf2} activeBgSolid tourId="panel-sparen"/>}
-              <Card panel="vormerkungen" icon="clock"        badge={visiblePTxs.length} color={lightenHex(T.blue, 0.35)} activeBg={lightenHex(T.blue, 0.35)} activeBgSolid hasContent={visiblePTxs.length>0}/>
+              <Card panel="vormerkungen" icon="clock"        badge={visiblePTxs.length} color={blasserAkzent()} activeBg={blasserAkzent()} activeBgSolid hasContent={visiblePTxs.length>0}/>
             </div>
           );
         })()}
@@ -1852,8 +1852,12 @@ function DashboardScreenV2() {
                   // Farbwechsel auf T.txt2 in manchen Themes kaum Kontrast zu
                   // Weiß hat (Nutzer-Feedback: Unterschied nicht erkennbar).
                   const segOpacity = (seg) => (dashDrillSeg===null||dashDrillSeg===seg) ? 1 : 0.35;
+                  // Textfarbe des Themes statt eines festen Weiss: der Kopf
+                  // liegt auf dem Hintergrund, und der ist in hellen Themes
+                  // hell — dort standen die Zaehler weiss auf fast weiss
+                  // (1,2:1, Kontrast-Lauf "Tastenhell").
                   const countStyle = (seg) => ({display:"inline-flex",alignItems:"center",gap:2,
-                    color:"#fff",opacity:segOpacity(seg),fontSize:12,fontWeight:700,fontFamily:NUM_FONT});
+                    color:T.txt,opacity:segOpacity(seg),fontSize:12,fontWeight:700,fontFamily:NUM_FONT});
                   return (
                     <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",flexShrink:0}}>
                       <div style={{color:dashDrillColor(dashDrill,dashDrillSeg),fontWeight:800,fontSize:26,
@@ -1861,8 +1865,8 @@ function DashboardScreenV2() {
                         {betrag(dashDrillTotal)}
                       </div>
                       <div style={{display:"flex",gap:8,marginTop:3}}>
-                        <span title="Gebucht" style={countStyle("buch")}>{Li("check",12,"#fff")}{dashDrillCounts.buch}</span>
-                        <span title="Vorgemerkt" style={countStyle("vm")}>{Li("clock",12,"#fff")}{dashDrillCounts.vm}</span>
+                        <span title="Gebucht" style={countStyle("buch")}>{Li("check",12,"currentColor")}{dashDrillCounts.buch}</span>
+                        <span title="Vorgemerkt" style={countStyle("vm")}>{Li("clock",12,"currentColor")}{dashDrillCounts.vm}</span>
                         <span title="Unkategorisiert" style={countStyle("unkat")}>
                           <span style={{fontSize:12,fontWeight:800,lineHeight:1}}>?</span>{dashDrillCounts.unkat}
                         </span>

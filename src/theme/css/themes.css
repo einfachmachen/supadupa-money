@@ -128,11 +128,13 @@
     border-radius: 0 !important;
   }
 
-  /* ── Keyboard-Theme ──
+  /* ── Tastatur-Themes (Keyboard dunkel, Tastenhell hell) ──
      Fuge und Kartenflaechen kommen aus dem Theme selbst (card_shadow,
      flaechen_extra in themes.js) — hier steht nur noch die Form. */
   .theme-keyboard .hero-flaeche,
-  .theme-keyboard .symbolzeile {
+  .theme-keyboard .symbolzeile,
+  .theme-tastenhell .hero-flaeche,
+  .theme-tastenhell .symbolzeile {
     border-radius: 14px;
     padding: 6px 8px;
     margin: 6px 8px 2px;

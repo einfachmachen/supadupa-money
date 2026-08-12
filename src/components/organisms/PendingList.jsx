@@ -3,14 +3,14 @@
 import React, { useMemo, useState } from "react";
 import { tagMonat } from "../../utils/date.js";
 import { theme as T } from "../../theme/activeTheme.js";
-import { dayOf, fmt, pn, NUM_FONT, lightenHex } from "../../utils/format.js";
+import { dayOf, fmt, pn, NUM_FONT } from "../../utils/format.js";
 import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { matchAmount, matchSearch } from "../../utils/search.js";
 import { budgetPlaceholderActive } from "../../utils/saldo.js";
 import { isBankPending } from "../../utils/vormMatch.js";
 import { isLightColor, readableOn } from "../../theme/amtPill.js";
-import { isLightTheme } from "../../theme/activeTheme.js";
+import { isLightTheme, blasserAkzent } from "../../theme/activeTheme.js";
 
 function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub, budgetOpenRest, initialCollapsed=true, noCollapse=false, onOpenMatching}) {
   const _pendOpenAmt = pendOpenAmt || (t=>t.totalAmount);
@@ -41,7 +41,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
   // die BLASSE Variante (Akzentfarbe ist hier "statisch", nicht an ein
   // bestimmtes Fälligkeitsdatum gebunden) — dieselbe Farbe wie die Fläche
   // hinter dem aktiven Symbol in der Icon-Zeile darüber.
-  const paleAccent = lightenHex(T.blue, 0.35);
+  const paleAccent = blasserAkzent();
   // Helle Themes behalten ihre bisherige (helle) Fläche unverändert bei.
   // Kopfzeile, Icon und Suchfeld leiten ihre Farbe aus der Helligkeit der
   // Fläche ab — sonst goldene Schrift auf hellem Grund.

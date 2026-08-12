@@ -36,6 +36,9 @@ const LIGHT_THEMES = new Set([
   // (weisse Beschriftung, gelbgrüne Zweitbelegung), ist es ein DUNKLES Theme
   // und gehört nicht mehr in diese Liste.
   "abenteuergruen", "zirkustaschenrechner",
+  // "Tastenhell" ist der helle Zwilling von "Keyboard": helle Platte,
+  // hellgraue Tasten, dunkle Schrift und dunkle Akzente.
+  "tastenhell",
 ]);
 
 // Sicherheitsnetz hinter der Liste: ein Theme mit hellem Hintergrund IST
@@ -127,11 +130,30 @@ export const GEFAHR_KANTE = "#FF7A6B";
 
 // Gefahr-Rot als TEXT/Symbol (Loesch-Knoepfe, Symbolkachel der Rueckfrage).
 // Anders als die FLAECHE traegt Text die volle Kontrastschwelle von 4,5:1 —
-// deshalb ein eigener, deutlich hellerer Ton fuer dunkle Karten. Das satte
-// GEFAHR erreicht dort nur 1,9:1, die Kantenfarbe 3,3:1 (Kontrast-Lauf,
-// tools/kontrast.cjs). Auf hellen Karten bleibt es beim satten Rot.
+// deshalb je ein eigener Ton fuer dunkle und fuer helle Karten. Das satte
+// GEFAHR erreicht auf dunklen Karten nur 1,9:1, die Kantenfarbe 3,3:1
+// (Kontrast-Lauf, tools/kontrast.cjs).
+//
+// Auf HELLEN Karten stand hier bis zuletzt das satte GEFAHR selbst — das
+// reicht aber nur gegen reines Weiss (4,8:1) und faellt schon auf leicht
+// getoenten Karten durch: im Theme "Tastenhell" (hellgraue Tasten) sind es
+// 3,0:1. Der dunklere Ton traegt auf jeder hellen Flaeche der App (>= 4,7:1)
+// und verbessert nebenbei die uebrigen hellen Themes.
 const GEFAHR_TEXT_DUNKEL = "#FFB3A8";
-export const gefahrText = () => (isLightTheme() ? GEFAHR : GEFAHR_TEXT_DUNKEL);
+const GEFAHR_TEXT_HELL = "#9E1B0E";
+export const gefahrText = () => (isLightTheme() ? GEFAHR_TEXT_HELL : GEFAHR_TEXT_DUNKEL);
+
+// ── Blasse Variante eines Akzents ───────────────────────────────────────
+// Für "noch nicht erreicht" (Prognose Mitte/Ende) und ruhende Kacheln. An
+// vier Stellen stand dafür fest `lightenHex(T.blue, 0.35)` — auf dunklem
+// Grund richtig, auf hellem genau falsch herum: dort NIMMT Aufhellen den
+// Kontrast weg. Im Theme "Tastenhell" landeten die Prognose-Beträge damit
+// bei 2,1:1 (soll 3), und weißer Text auf derselben Farbe als Kachel-
+// Hintergrund bei 3,6:1 (soll 4,5).
+// Auf hellen Themes wird deshalb nur leicht aufgehellt: sichtbar blasser,
+// aber noch über der Schwelle.
+export const blasserAkzent = (farbe = _state.current.blue) =>
+  lightenHex(farbe, isLightTheme() ? 0.12 : 0.35);
 
 // Ergebnis pro Theme + Untergrund gemerkt: die Funktion läuft sonst in jeder
 // Budget-Zeile jedes Renders durch die Suche.

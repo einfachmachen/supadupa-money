@@ -204,7 +204,7 @@ er selbst vom Untergrund ab — heller bei dunklen, dunkler bei hellen Themes,
 bis **`ZIEL_KONTRAST` (1,52 : 1)** erreicht ist. Den Mischanteil sucht eine
 kurze Binärsuche statt einer geschlossenen Formel, damit der **Farbton des
 Untergrunds erhalten bleibt** (ein blaustichiges Grau bleibt blaustichig).
-Ergebnis über alle 33 Themes: 1,50–1,54 : 1.
+Ergebnis über alle 34 Themes: 1,50–1,54 : 1.
 
 > **Gemessen wird WCAG-Kontrast, nicht Helligkeit.** Zwei frühere Fassungen
 > nutzten eine schlichte Kanal-Mischung (`0,299·R + 0,587·G + 0,114·B`). Die ist
@@ -232,7 +232,7 @@ System-UIs. Deshalb entscheidet die Richtung `isLightTheme()` und nicht ein
 fester Weiß-Schleier.
 
 ### 4.2 Verfügbare Themes
-33 fest in `themes.js` ausgelieferte Themes (kein Nutzer-Content!), in zwei
+34 fest in `themes.js` ausgelieferte Themes (kein Nutzer-Content!), in zwei
 Gruppen:
 - **Basis-Set** (Objekt-Literal): `dark` (Default), `light`, `firetv`, `xbox`,
   `ps5`, `disneyplus`, `netflix`, `magenta`, `ios`, `material`, `paper`, `dkb`,
@@ -240,7 +240,8 @@ Gruppen:
 - **Nachträglich ergänzt** (`THEMES.x = {...spread}`): `hellgrau`,
   `kontrastdunkel`, `kontrasthell`, `mitternacht`, `creme`, `modernslate`,
   `cleancorporate`, `deepocean`, `softecotech`, `abenteuergruen`,
-  `weltraumtaschengeld`, `zirkustaschenrechner`, `kloetzchenwelt`, `magazin`.
+  `weltraumtaschengeld`, `zirkustaschenrechner`, `kloetzchenwelt`, `magazin`,
+  `tastenhell`.
 
 > **Schlüssel ≠ Anzeigename.** Die Schlüssel sind bewusst eingefroren
 > (gespeicherte Auswahl in `mbt_theme`), die `name`-Felder wurden mehrfach
@@ -259,17 +260,39 @@ Den früheren farbigen Deko-Außenrand (`frame_border`/`frame_ring`) gibt es
 nicht mehr (§10).
 
 **`keyboard`** bildet die Tastatur aus dem CachyOS-Installationsprogramm nach
-(Nutzer-Foto): **dunkle Keycaps** (`surf` `#333333`) mit **weißer**
-Hauptbeschriftung und **gelbgrüner** Zweitbelegung, auf der **fast weißen
-Tastatur-Platte** (`bg` `#ECECE4`). Es ist damit das einzige Theme mit
-**gegensätzlichen Flächen** — und der Grund für §4.7:
+(Nutzer-Foto): **Keycaps** (`surf` `#4E4E4E`) mit **weißer** Hauptbeschriftung
+und **gelbgrüner** Zweitbelegung, auf der **helleren Tastatur-Platte**
+(`bg` `#52524C`):
 - Es war einmal umgekehrt gebaut (helle Tasten, schwarzer Text) und damit
   „meilenweit" von der Vorlage entfernt.
 - Die **Fuge** zwischen den Keycaps kann **nicht** aus `bd` kommen: „Rahmen
   aus" ist der Standard und setzt per `.no-borders *` jede `border-color` auf
-  transparent. Sie kommt als `box-shadow` aus `.theme-keyboard` (themes.css).
-- Der **Hero** ist ein großer Keycap (`hero_surface`) — er trägt Akzentfarben
-  (Kontostand, Prognose), die auf der hellen Platte durchfallen würden.
+  transparent. Sie kommt als `box-shadow` aus dem Token `card_shadow`.
+- Hero und Drei-Symbol-Zeile sind im Markup **keine** Karten, tragen aber
+  Akzentfarben — sie bekommen über `flaechen_extra` je eine eigene Fläche.
+- Die Platte ist **nicht** fast weiß, obwohl die Vorlage das ist: gemessen
+  (`npm run kontrast`) riss `#ECECE4` **23** Stellen unter die Schwelle, weil
+  die hellen Akzente der App darauf nicht tragen und sich nicht flächen-
+  abhängig machen lassen (§4.7). `#52524C` ist die hellste Platte mit **0**
+  Funden.
+
+**`tastenhell`** („Tastenhell") ist der **helle Zwilling**: die helle Platte der
+Vorlage (`bg` `#ECECE4`) mit **hellgrauen Tasten** (`surf` `#CECEC6`). Möglich
+wird sie nicht durch eine dunklere Platte, sondern durch eine **dunkle
+Akzentfamilie** — Gelbgrün → Dunkeloliv `#3A4600`, Cyan → Dunkelpetrol
+`#00434E`, Gold → `#664A00`. Zwei Dinge liegen dort anders als in jedem anderen
+hellen Theme:
+- Die **Karten sind dunkler als der Hintergrund** (Taste auf Platte).
+  `surf2`/`surf3` (Dialoge) sind trotzdem **heller** als `surf`: die dunkelste
+  Kartenfläche bestimmt, wie hell ein Akzent höchstens sein darf, und das soll
+  die Taste selbst sein.
+- **„Vorgemerkt" ist entsättigt, nicht aufgehellt** (§4.4). Auf hellem Grund
+  kostet Aufhellen sofort Kontrast; ein grauer Petrol-/Oliv-Ton bleibt bei
+  gleicher Helligkeit lesbar und liest sich trotzdem als „noch nicht gebucht".
+
+`tests/tastenhellTheme.test.js` rechnet die ganze Palette gegen alle Flächen
+nach, `npm run kontrast tastenhell` misst sie an der echten Oberfläche (0
+theme-eigene Funde).
 
 Zusätzlich **nutzerdefinierte** Themes aus `mbt_custom_themes` (`CustomThemeEditor`,
 §4.3) — diese kommen **on top**, nicht in `themes.js`.
@@ -317,6 +340,20 @@ Auf mittelgrauen Karten ist es rechnerisch unmöglich, gleichzeitig 3:1 gegen di
 Karte und 4,5:1 gegen weißen Text zu erreichen — deshalb trägt dort die hellere
 Kante die Abgrenzung (`tests/gefahrFarbe.test.js` rechnet beides über alle
 Themes nach).
+
+Als **Text/Symbol** (Löschen-Knopf, Symbolkachel der Rückfrage) gilt `GEFAHR`
+nicht direkt, sondern `gefahrText()`: Text trägt die volle Schwelle von 4,5:1,
+und die schafft das satte Rot nur gegen reines Weiß. Es gibt deshalb je einen
+Ton für dunkle (`#FFB3A8`) und für **helle** Karten (`#9E1B0E`) — auf den
+hellgrauen Tasten von „Tastenhell" kam `GEFAHR` selbst nur auf 3,0:1.
+
+**Blass = heller gilt nur auf dunklem Grund.** Für „noch nicht erreicht"
+(Prognose Mitte/Ende, ruhende Kacheln) gibt es `blasserAkzent()` in
+`activeTheme.js`. Vorher stand an vier Stellen fest `lightenHex(T.blue, 0.35)` —
+auf hellem Grund genau falsch herum, dort **nimmt** Aufhellen den Kontrast weg
+(„Tastenhell": 2,1:1 statt 3:1, und weißer Text auf derselben Farbe als
+Kachelfläche 3,6:1 statt 4,5:1). Der Helfer hellt auf hellen Themes deshalb nur
+leicht auf.
 
 **Blass heißt geplant, gesättigt heißt geflossen.** Daraus folgt für jedes
 Gegensatzpaar in den Aufrissen: „genutzt" (bereits ausgegeben) steht

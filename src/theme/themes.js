@@ -908,6 +908,82 @@ THEMES.magazin = {
   name:"Magazin (Editorial)",
 };
 
+// ════════════════════════════════════════════════════════════════════════
+//  Tastenhell — die Tastatur bei Tageslicht.
+//
+//  Gegenstueck zu "Keyboard": dort die dunklen Keycaps auf mittelheller
+//  Platte, hier die HELLE Platte der Vorlage (#ECECE4) mit hellgrauen
+//  Tasten darauf. Genau das war beim ersten Anlauf gescheitert — eine fast
+//  weisse Platte riss 23 Stellen unter die Kontrastschwelle, weil die
+//  hellen Akzente der App (Gelbgruen, Cyan, Gold) darauf nicht tragen.
+//
+//  Der Ausweg ist nicht eine dunklere Platte, sondern eine ANDERE
+//  Akzentfamilie: alle Signalfarben sind hier dunkle Fassungen derselben
+//  Toene (Gelbgruen -> Dunkeloliv, Cyan -> Dunkelpetrol, Gold -> Dunkles
+//  Bernstein). Damit tragen sie sowohl auf der Platte als auch auf den
+//  Tasten. Gemessen mit tools/kontrast.cjs; der schlechteste Wert der
+//  ganzen Palette liegt bei 4,7:1 gegen die dunkelste Kartenflaeche
+//  (#C8C8C0, die dunklere Haelfte des Hero-Verlaufs).
+//
+//  Zwei Dinge liegen deshalb anders als bei einem gewoehnlichen hellen
+//  Theme:
+//
+//  1. Die Kartenflaechen sind DUNKLER als der Hintergrund (Tasten auf der
+//     Platte), nicht heller. surf2/surf3 sind trotzdem HELLER als surf —
+//     die dunkelste Kartenflaeche bestimmt, wie hell ein Akzent hoechstens
+//     sein darf, und die soll die Taste selbst sein, nicht ein Dialog.
+//  2. "Vorgemerkt" ist hier nicht heller, sondern ENTSAETTIGT (§4.4). Auf
+//     hellem Grund kostet Aufhellen sofort Kontrast; ein grauer Petrol-
+//     bzw. Oliv-Ton bleibt bei gleicher Helligkeit lesbar und liest sich
+//     trotzdem eindeutig als "noch nicht gebucht".
+//
+//  Die Fuge zwischen den Tasten ist hier eine DUNKLE Kante (card_shadow) —
+//  spiegelbildlich zu "Keyboard", wo die helle Platte die Fuge bildete.
+// ════════════════════════════════════════════════════════════════════════
+THEMES.tastenhell = {
+  ...THEMES.light,
+  bg:"#ECECE4",                // Tastatur-Platte, heller Cremeton der Vorlage
+  surf:"#CECEC6",              // Keycap — helles Grau, klar von der Platte abgesetzt
+  surf2:"#D8D8D0",             // Dialog-/Modalflaechen: heller als die Taste (s. o.)
+  surf3:"#E0E0D8",
+  cat_bg:"#CECEC6",            // Kategorien-Karten = Tasten
+  bd:"rgba(40,40,36,0.26)", bds:"rgba(40,40,36,0.48)",
+  txt:"#1E1E1C",
+  txt2:"rgba(30,30,28,0.80)",
+  lbl:"rgba(30,30,28,0.70)",   // dunkler als sonst ueblich: auf der grauen
+                               // Taste traegt ein blasseres Grau nicht mehr
+  blue:"#3A4600",              // Zweitbelegung der Vorlage, ins Dunkle gewendet
+  pos:"#3A4600",
+  neg:"#00434E",               // Ausgaben-Petrol (dunkles Cyan)
+  gold:"#664A00",
+  mid:"#2B4C8C",               // "Mitte" — eigene Blaufamilie, nicht mit Petrol verwechselbar
+  cf:"#7A3D0A",
+  warn:"#7A3D0A", override:"#5A3600",
+  on_accent:"#F4F4EC",         // heller Text auf den dunklen Akzentflaechen
+  disabled:"#9A9A92",
+  err:"#8C2A1E", err_bg:"#F0DAD6",
+  vorm_bg:"#E6E2C6", vorm_bd:"#664A00",
+  tab_exp:"#E2DAD8", tab_inc:"#DFE4CE", tab_pend:"#EBE4CC",
+  cell_inc_bg:"#E2E6D2", cell_inc_bd:"#A8B078",
+  pal_inc_bg:"#E4E8D4", pal_inc_bd:"#A8B078", pal_inc_hdr:"#3A4600", pal_inc_fld:"#ECEEE0", pal_inc_val:"#3A4600",
+  pal_exp_bg:"#DEE4E4", pal_exp_bd:"#8FA0A4", pal_exp_fld:"#E8ECEC",
+  pal_tg_bg:"#DEE6EC", pal_tg_bd:"#93A8BC", pal_tg_hdr:"#2B4C8C", pal_tg_fld:"#E8EEF4", pal_tg_val:"#26437C",
+  // Der Verlauf bleibt innerhalb der Tastenhelligkeit — seine dunklere
+  // Haelfte (#C8C8C0) ist die strengste Flaeche der ganzen Palette.
+  hero_bg:"linear-gradient(135deg,#D4D4CC,#C8C8C0)",
+  // Hero und Symbolzeile sind im Markup keine Karten, tragen aber Akzent-
+  // farben — sie brauchen deshalb eine eigene Flaeche (siehe Keyboard).
+  flaechen_extra:{".hero-flaeche":"#C8C8C0",".symbolzeile":"#CECEC6"},
+  // Dunkle Fuge + weiche Auflage: die Taste liegt AUF der Platte.
+  card_shadow:"0 0 0 1px rgba(40,40,36,0.32), 0 1px 2px rgba(0,0,0,0.16)",
+  logo_c1:"#3A4600", logo_c2:"#00434E",
+  cond_neg:"#00434E", neg_aktuell:"#004F5C", neg_vm:"#42545A",
+  cond_pos:"#3A4600", pos_aktuell:"#455200", pos_vm:"#4E5240",
+  warn_bold:"#7A3D0A", warn_icon:"#664A00",
+  cond_warn:"#7A3D0A", cond_gold:"#664A00",
+  name:"Tastenhell",
+};
+
 // Globales T — wird von getAppTheme() überschrieben, initialisiert mit dark — wird von getAppTheme() überschrieben, initialisiert mit dark
 function getTheme(name) {
   const t = THEMES[name] || THEMES.dark;
