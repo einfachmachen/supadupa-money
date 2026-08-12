@@ -376,7 +376,8 @@ Ein Theme kann jetzt zusätzlich `txt_card` / `txt2_card` / `lbl_card` angeben:
 |---|---|
 | `txt`, `txt2`, `lbl` | Text direkt auf `bg` |
 | `txt_card`, `txt2_card`, `lbl_card` | Text auf `surf`/`surf2`/`surf3`/`cat_bg` |
-| `hero_surface` | gibt dem Hero eine eigene Kartenfläche (`.hero-flaeche`) |
+| `flaechen_extra` | `{Selektor: Fläche}` — Bereiche, die im Markup keine Karte sind, hier aber eine sein müssen (`.hero-flaeche`, `.symbolzeile`) |
+| `card_shadow` | Dekoration der Kartenkante (beim Keyboard-Theme die Fuge zwischen zwei Keycaps) |
 
 Mechanik (`activeTheme.js`): sobald `txt_card` gesetzt ist, liefern `T.txt` & Co.
 `var(--txt, <Hintergrund-Farbe>)` statt eines Festwerts. Die Wurzel setzt die
@@ -392,10 +393,22 @@ Regeln dazu:
 - **Icons müssen die Farbe über die CSS-Eigenschaft `color` bekommen**, nicht
   über das SVG-Attribut. `Li()` setzt deshalb `color="currentColor"` und die
   Farbe im `style` — sonst käme die Variable dort nicht an.
+- **`--amt-neutral` gehört in BEIDE Sätze.** Ein `var()` innerhalb einer Custom
+  Property wird dort aufgelöst, wo die Property **deklariert** ist — nicht dort,
+  wo sie benutzt wird. Auf der Wurzel als `var(--txt)` deklariert erbte jede
+  Karte den Hintergrund-Wert: weiße Kategorienamen, aber fast schwarze Beträge
+  daneben.
 - **Nicht auf Akzentfarben übertragbar.** `T.blue`/`pos`/`neg`/`gold` werden an
   über 200 Stellen mit angehängtem Hex-Alpha benutzt (`${T.blue}18`); an einer
-  `var()` scheitert das. Wer Akzente flächenabhängig machen will, muss diese
-  Stellen zuerst auf `color-mix()` o. Ä. umstellen.
+  `var()` scheitert das. Konsequenz: **jeder Bereich, der Akzentfarben zeigt,
+  muss eine Kartenfläche sein** — dafür ist `flaechen_extra` da. Wer Akzente
+  wirklich flächenabhängig machen will, muss diese Stellen zuerst auf
+  `color-mix()` o. Ä. umstellen.
+- **Was das NICHT löst: selbst gewählte Kategorie- und Kontofarben.** Die kommen
+  aus den Nutzerdaten und können auf jeder Fläche danebenliegen — ein
+  Browser-Kontrastlauf findet sie im Standard-Theme genauso wie im Keyboard-
+  Theme. Das wäre ein eigener Schritt (Kategoriefarben pro Fläche nachziehen,
+  wie es `readableOn()` für Beträge schon tut).
 
 ### 4.8 Budget-Ampel
 Budget-Auslastung färbt nach **tatsächlichem Verbrauch (Ist)**, nicht nach dem

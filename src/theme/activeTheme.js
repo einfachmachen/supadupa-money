@@ -185,9 +185,16 @@ const _TEXT_KEYS = { txt: "--txt", txt2: "--txt2", lbl: "--lbl" };
 export const hatKartenText = (t = _state.current) => !!(t && t.txt_card);
 
 // Werte für die Wurzel: die Farben für Text, der direkt auf `bg` liegt.
+//
+// `--amt-neutral` muss hier MIT hinein und darf nicht als `var(--txt)` auf der
+// Wurzel stehen: ein `var()` innerhalb einer Custom Property wird schon dort
+// aufgelöst, wo die Property DEKLARIERT ist — nicht dort, wo sie benutzt wird.
+// Auf der Wurzel deklariert hätte jede Karte den Hintergrund-Wert geerbt, und
+// genau das war zu sehen: weiße Kategorienamen, aber fast schwarze Beträge
+// daneben (Nutzer-Hinweis).
 export function wurzelTextVars(t = _state.current) {
   if (!hatKartenText(t)) return null;
-  return { "--txt": t.txt, "--txt2": t.txt2, "--lbl": t.lbl };
+  return { "--txt": t.txt, "--txt2": t.txt2, "--lbl": t.lbl, "--amt-neutral": t.txt };
 }
 
 // Farbwert → so, wie ihn der Browser ins style-Attribut zurückschreibt.
@@ -215,13 +222,18 @@ export function kartenTextRegel(t = _state.current) {
   if (!flaechen.length) return "";
   const sel = flaechen.map(c => `[style*="${c}"]`).join(",");
   const txt2 = t.txt2_card || t.txt_card;
-  const kartenVars = `--txt:${t.txt_card};--txt2:${txt2};--lbl:${t.lbl_card || txt2};`;
-  let css = `${sel}{${kartenVars}}`;
-  // `hero_surface`: gibt dem Hero eine eigene Flaeche. Noetig, sobald
-  // Hintergrund und Karten gegensaetzlich sind — der Hero traegt Akzentfarben
-  // (Kontostand, Prognose), die auf einer hellen Platte durchfallen wuerden.
-  // Er zaehlt dann als Karte und bekommt deren Textfarben mit.
-  if (t.hero_surface) css += `.hero-flaeche{background:${t.hero_surface};${kartenVars}}`;
+  const kartenVars = `--txt:${t.txt_card};--txt2:${txt2};--lbl:${t.lbl_card || txt2};`
+    + `--amt-neutral:${t.txt_card};`;
+  const deko = t.card_shadow ? `box-shadow:${t.card_shadow};` : "";
+  let css = `${sel}{${kartenVars}${deko}}`;
+  // `flaechen_extra`: Bereiche, die im Markup KEINE Karte sind, in einem
+  // gegensätzlichen Theme aber eine sein müssen — Hero und Symbolzeile tragen
+  // Akzentfarben (Kontostand, Prognose, Warn-/Spar-/VM-Symbole), die auf einer
+  // hellen Platte durchfallen. Sie zählen dann als Karte, bekommen deren
+  // Textfarben mit und heben sich ab. Form: {"<Selektor>": "<Fläche>"}.
+  Object.entries(t.flaechen_extra || {}).forEach(([sel2, flaeche]) => {
+    css += `${sel2}{background:${flaeche};${kartenVars}${deko}}`;
+  });
   return css;
 }
 

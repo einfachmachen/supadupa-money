@@ -1288,7 +1288,12 @@ function DashboardScreenV2() {
             );
           };
           return (
-            <div style={{margin:"2px 10px 0",display:"flex",gap:6}}>
+            // `symbolzeile`: Haken fuer Themes, die diesen Bereich als Flaeche
+            // brauchen (siehe flaechen_extra in activeTheme.js). Die drei
+            // Symbole tragen Akzentfarben und wuerden auf einem hellen
+            // Hintergrund sonst kaum sichtbar sein. Ohne ein solches Theme hat
+            // die Klasse keinerlei Wirkung.
+            <div className="symbolzeile" style={{margin:"2px 10px 0",display:"flex",gap:6}}>
               {/* Solange der Erststart nicht abgeschlossen ist, zusätzlich
                   direkte Kurzwege zu Konten und Kategorien & Budget — sobald
                   eingerichtet, verschwinden sie wieder aus dieser Zeile

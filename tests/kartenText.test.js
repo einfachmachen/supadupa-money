@@ -60,19 +60,32 @@ describe("Karten-Textfarbe", () => {
     [THEMES.keyboard.surf, THEMES.keyboard.surf2, THEMES.keyboard.surf3, THEMES.keyboard.cat_bg]
       .forEach(f => expect(regel).toContain(alsRgb(f)));
     expect(regel).toContain(THEMES.keyboard.txt_card);
-    // Der Hero traegt Akzentfarben und braucht deshalb ebenfalls eine Flaeche.
-    expect(regel).toContain(".hero-flaeche");
+    // Hero und Symbolzeile tragen Akzentfarben und brauchen ebenfalls eine
+    // Flaeche — sonst stehen Kontostand, Prognose und die Warn-/Spar-/VM-
+    // Symbole auf der hellen Platte und fallen durch.
+    Object.keys(THEMES.keyboard.flaechen_extra).forEach(sel => {
+      expect(regel).toContain(sel);
+    });
+    // Die Fuge zwischen zwei Keycaps kommt aus dem Theme, nicht aus der
+    // CSS-Datei — sonst kann sie von der Kartenfarbe abgekoppelt werden.
+    expect(regel).toContain("box-shadow");
   });
 
   it("Keyboard: beide Textfarben sitzen lesbar auf ihrer Flaeche", () => {
     const t = THEMES.keyboard;
-    // Karten-Text auf jeder Kartenflaeche …
-    [t.surf, t.surf2, t.surf3, t.cat_bg, t.hero_surface].forEach(f => {
+    // Karten-Text auf jeder Kartenflaeche — auch auf den Extra-Flaechen …
+    [t.surf, t.surf2, t.surf3, t.cat_bg, ...Object.values(t.flaechen_extra)].forEach(f => {
       expect(kontrast(t.txt_card, f)).toBeGreaterThanOrEqual(4.5);
     });
     // … und Hintergrund-Text auf der Platte.
     expect(kontrast(t.txt, t.bg)).toBeGreaterThanOrEqual(4.5);
     // Und beide sind wirklich verschieden — sonst braeuchte es den Umbau nicht.
     expect(t.txt_card).not.toBe(t.txt);
+    // Die Akzente muessen auf den KARTEN sitzen (dort stehen sie auch): auf der
+    // hellen Platte erreicht keiner von ihnen 3:1 — genau deshalb bekommen
+    // Hero und Symbolzeile eine eigene Flaeche.
+    [t.blue, t.neg, t.gold].forEach(a => {
+      expect(kontrast(a, t.surf)).toBeGreaterThanOrEqual(3);
+    });
   });
 });

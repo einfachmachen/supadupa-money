@@ -493,16 +493,16 @@ const THEMES = {
   keyboard: {
     name:"Keyboard",
     bg:"#ECECE4",                // die fast weisse Tastatur-Platte
-    surf:"#333333",              // Keycap-Flaeche
-    surf2:"#2C2C2C",             // etwas tiefer (Modale, Dialogkarten)
-    surf3:"#262626",             // dunkelste Stufe (Trennungen)
-    cat_bg:"#333333",            // Kategorien-Karten = Keycaps
+    surf:"#4E4E4E",              // Keycap-Flaeche — mittleres Grau wie in der Vorlage
+    surf2:"#464646",             // etwas tiefer (Modale, Dialogkarten)
+    surf3:"#3C3C3C",             // dunkelste Stufe (Trennungen)
+    cat_bg:"#4E4E4E",            // Kategorien-Karten = Keycaps
     bd:"rgba(238,238,230,0.55)",   // helle Platte als Fuge zwischen den Tasten
     bds:"rgba(238,238,230,0.92)",  // staerker (Umriss der ganzen Tastatur)
     txt:"#1E1E1C",               // Text auf der Platte: fast schwarz
     txt_card:"#FFFFFF",          // Text auf den Keycaps: reinweiss (Hauptbeschriftung)
     txt2:"rgba(30,30,28,0.66)",
-    txt2_card:"rgba(255,255,255,0.72)",
+    txt2_card:"rgba(255,255,255,0.80)",
     lbl:"rgba(30,30,28,0.50)",
     lbl_card:"rgba(255,255,255,0.55)",
     blue:"#C8DC2E",              // Zweitbelegung: leuchtendes Gelbgruen
@@ -512,7 +512,8 @@ const THEMES = {
     warn:"#F59E0B", override:"#B45309",
     on_accent:"#1A1E00",         // dunkler Text auf dem hellen Gelbgruen
     disabled:"#2A2A2A",
-    mid:"#67E8F9",
+    mid:"#A8EFFA",               // heller als im Standard: die "Mitte"-Pille liegt
+                                 // auf einer eigenen, mittelhellen Flaeche.
     cf:"#F6821F",
     vorm_bg:"#FFD700", vorm_bd:"#FFD700",
     cell_inc:"#9CB336", cell_inc_bg:"#141A00", cell_inc_bd:"#4A6600", cell_exp:"#FFD24D", over:"#FF7EB6",
@@ -521,10 +522,15 @@ const THEMES = {
     pal_inc_bg:"#161900", pal_inc_bd:"#3A4800", pal_inc_hdr:"#C8D400", pal_inc_fld:"#1A1E00", pal_inc_val:"#D4E040",
     pal_exp_bg:"#1F0608", pal_exp_bd:"#5C1018", pal_exp_fld:"#240408",
     pal_tg_bg:"#071820",  pal_tg_bd:"#1A3A48",  pal_tg_hdr:"#4A9FC0",  pal_tg_fld:"#091E2A",  pal_tg_val:"#80C8E0",
-    hero_bg:"linear-gradient(135deg,#333333,#242424)",
-    hero_surface:"#333333",      // der Hero ist ein grosser Keycap auf der Platte —
-                                 // sonst stuenden Kontostand und Prognose in
-                                 // Gelbgruen/Cyan auf fast weissem Grund.
+    hero_bg:"linear-gradient(135deg,#4E4E4E,#3A3A3A)",
+    // Hero und Symbolzeile sind im Markup keine Karten, muessen hier aber
+    // welche sein: sie tragen Akzentfarben (Kontostand, Prognose, Warn-/
+    // Spar-/VM-Symbol), die auf der hellen Platte durchfallen wuerden.
+    flaechen_extra:{".hero-flaeche":"#4E4E4E",".symbolzeile":"#4E4E4E"},
+    // Die Fuge zwischen zwei Keycaps plus deren untere Kante. Steht hier und
+    // nicht in der CSS-Datei, damit sie nicht von der Kartenfarbe abgekoppelt
+    // werden kann.
+    card_shadow:"0 0 0 1.5px rgba(238,238,230,0.85), 0 2px 3px rgba(0,0,0,0.35)",
     logo_c1:"#7E8F1A",     logo_c2:"#C8DC2E",
     cond_neg:"#00D9FF", neg_aktuell:"#59E6FF", neg_vm:"#8CEEFF", warn_bold:"#FF8800", warn_icon:"#FFD24D",
     cond_warn:"#E67E22", cond_gold:"#F1C40F", cond_pos:"#BFFF00", pos_aktuell:"#D5FF59", pos_vm:"#E2FF8C",
