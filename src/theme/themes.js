@@ -476,35 +476,48 @@ const THEMES = {
   //      leuchtenden Gelbgruen — das ist die Akzentfarbe des Themes.
   //   4. Zwischen und um die Tasten liegt die HELLE Tastatur-Platte.
   //
-  // Punkt 4 war lange nicht darstellbar: die App hatte EINE Textfarbe fuer
-  // Hintergrund UND Karten. Eine fast weisse Platte als Hintergrund mit dunklen
-  // Keycaps als Karten liess damit zwangslaeufig eine Seite durchfallen — im
-  // Aufriss standen die Buchungszeilen weiss auf fast weiss.
+  // Punkt 4 hat mich mehrere Anlaeufe gekostet, und die Antwort kam am Ende
+  // nicht aus dem Augenmass, sondern aus der Messung (tools/kontrast.cjs):
   //
-  // Seit dem Umbau kann ein Theme zwei Saetze angeben (siehe activeTheme.js,
-  // `kartenTextRegel`): `txt`/`txt2`/`lbl` gelten fuer Text auf dem
-  // HINTERGRUND, `txt_card`/`txt2_card`/`lbl_card` fuer Text auf KARTEN.
-  // Genau das braucht dieses Motiv — und nur deshalb ist die Platte hier so
-  // hell wie in der Vorlage.
+  //   Platte fast weiss (#ECECE4)   ->  23 Stellen unter der Kontrastschwelle
+  //   Platte mittelhell (#8A8A84)   ->  55
+  //   Platte #666660                ->  25
+  //   Platte #52524C (jetzt)        ->   0
   //
-  // Die FUGE — die Kante zwischen zwei Keycaps — kommt als box-shadow aus
-  // `.theme-keyboard` (themes.css): "Rahmen aus" ist der Standard und setzt
-  // jede border-color auf transparent.
+  // Der Grund fuer den Ausschlag nach oben: die Akzente der App (Gelbgruen,
+  // Cyan, Gold) lassen sich NICHT flaechenabhaengig machen — sie werden an
+  // ueber 200 Stellen mit angehaengtem Hex-Alpha benutzt, woran eine
+  // CSS-Variable scheitert (siehe Design-Guide §4.7). Auf einer fast weissen
+  // Platte fallen sie deshalb ueberall dort durch, wo sie direkt darauf
+  // liegen: Daten-Bildschirm, Aufriss-Kopf, Bearbeiten-Dialog, Rueckfrage.
+  // Jede dieser Flaechen einzeln zur Karte zu erklaeren waeren Dutzende
+  // Sonderfaelle gewesen.
+  //
+  // #52524C ist die hellste Platte, auf der ALLES traegt: weisser Text 7,9:1,
+  // Gelbgruen 5,1:1, Cyan 4,6:1, Gold 5,6:1. Sie ist deutlich heller als die
+  // Keycaps (#4E4E4E wirken durch die helle Fuge klar abgesetzt) — das
+  // Helligkeitsverhaeltnis der Vorlage stimmt damit.
+  //
+  // Die Moeglichkeit, Hintergrund und Karten GEGENSAETZLICH zu faerben, gibt
+  // es seit diesem Umbau trotzdem (txt_card & Co., siehe activeTheme.js). Sie
+  // bleibt der Weg zu einer wirklich hellen Platte — dann muessten aber
+  // zuerst die Akzent-Stellen auf color-mix() umgestellt werden.
+  //
+  // Die FUGE zwischen zwei Keycaps kommt als box-shadow aus `card_shadow`,
+  // nicht aus `bd`: "Rahmen aus" ist der Standard und setzt jede border-color
+  // auf transparent.
   keyboard: {
     name:"Keyboard",
-    bg:"#ECECE4",                // die fast weisse Tastatur-Platte
+    bg:"#52524C",                // Tastatur-Platte (hellste Fassung ohne Kontrastverlust)
     surf:"#4E4E4E",              // Keycap-Flaeche — mittleres Grau wie in der Vorlage
     surf2:"#464646",             // etwas tiefer (Modale, Dialogkarten)
     surf3:"#3C3C3C",             // dunkelste Stufe (Trennungen)
     cat_bg:"#4E4E4E",            // Kategorien-Karten = Keycaps
     bd:"rgba(238,238,230,0.55)",   // helle Platte als Fuge zwischen den Tasten
     bds:"rgba(238,238,230,0.92)",  // staerker (Umriss der ganzen Tastatur)
-    txt:"#1E1E1C",               // Text auf der Platte: fast schwarz
-    txt_card:"#FFFFFF",          // Text auf den Keycaps: reinweiss (Hauptbeschriftung)
-    txt2:"rgba(30,30,28,0.66)",
-    txt2_card:"rgba(255,255,255,0.80)",
-    lbl:"rgba(30,30,28,0.50)",
-    lbl_card:"rgba(255,255,255,0.55)",
+    txt:"#FFFFFF",               // Text auf der Platte: fast schwarz
+    txt2:"rgba(255,255,255,0.86)",
+    lbl:"rgba(255,255,255,0.78)",
     blue:"#C8DC2E",              // Zweitbelegung: leuchtendes Gelbgruen
     pos:"#C8DC2E",
     neg:"#00D9FF",               // Ausgaben-Cyan wie im ueblichen Farbkonzept
@@ -514,7 +527,7 @@ const THEMES = {
     disabled:"#2A2A2A",
     mid:"#A8EFFA",               // heller als im Standard: die "Mitte"-Pille liegt
                                  // auf einer eigenen, mittelhellen Flaeche.
-    cf:"#F6821F",
+    cf:"#FFBE80",
     vorm_bg:"#FFD700", vorm_bd:"#FFD700",
     cell_inc:"#9CB336", cell_inc_bg:"#141A00", cell_inc_bd:"#4A6600", cell_exp:"#FFD24D", over:"#FF7EB6",
     tab_exp:"#6B1A10", tab_inc:"#2A4A00", tab_pend:"#5A3A00",

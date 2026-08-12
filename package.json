@@ -9,7 +9,8 @@
     "deploy:cf": "vite build && npx --yes wrangler@4 pages deploy dist --project-name=supadupa-money --branch=main --commit-dirty=true",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "kontrast": "node tools/kontrast.cjs"
   },
   "dependencies": {
     "lucide-react": "^0.395.0",

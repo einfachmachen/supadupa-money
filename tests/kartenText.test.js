@@ -38,19 +38,37 @@ describe("Karten-Textfarbe", () => {
       ["txt", "txt2", "lbl"].forEach(k => {
         if (String(T[k]).includes("var(")) mitVariable.push(`${name}.${k}`);
       });
-      if (kartenTextRegel()) mitVariable.push(`${name}: Regel nicht leer`);
+      // Die Regel darf da sein (Themes koennen Flaechen/Deko setzen, ohne die
+      // Textfarben zu trennen) — nur Text-Variablen duerfen NICHT darin stehen.
+      if (/--txt|--lbl|--amt-neutral/.test(kartenTextRegel())) {
+        mitVariable.push(`${name}: Text-Variablen in der Regel`);
+      }
       if (wurzelTextVars()) mitVariable.push(`${name}: Wurzel-Variablen gesetzt`);
     });
     expect(mitVariable).toEqual([]);
   });
 
   it("liefert bei einem Theme MIT txt_card Variablen samt Rueckfallwert", () => {
-    setActiveTheme("keyboard", THEMES.keyboard);
+    // Kein ausgeliefertes Theme braucht die zwei Saetze derzeit: das
+    // Keyboard-Theme, fuer das der Mechanismus gebaut wurde, kam am Ende mit
+    // einer mittelhellen Platte aus (siehe tools/kontrast.cjs — eine fast
+    // weisse Platte riss 23 Stellen auf). Der Mechanismus bleibt trotzdem: er
+    // ist die einzige Moeglichkeit, Hintergrund und Karten gegensaetzlich zu
+    // faerben. Geprueft wird er deshalb an einem gestellten Theme.
+    const gegensaetzlich = { ...THEMES.keyboard, txt: "#1E1E1C", txt_card: "#FFFFFF",
+      txt2: "rgba(30,30,28,0.66)", txt2_card: "rgba(255,255,255,0.80)" };
+    setActiveTheme("probe", gegensaetzlich);
     expect(hatKartenText()).toBe(true);
     // Der Rueckfallwert ist die Hintergrund-Farbe: kaeme die Variable irgendwo
     // nicht an, stuende dort dieselbe Farbe wie vor dem Umbau.
-    expect(T.txt).toBe(`var(--txt, ${THEMES.keyboard.txt})`);
-    expect(wurzelTextVars()["--txt"]).toBe(THEMES.keyboard.txt);
+    expect(T.txt).toBe("var(--txt, #1E1E1C)");
+    expect(wurzelTextVars()["--txt"]).toBe("#1E1E1C");
+    // --amt-neutral gehoert in BEIDE Saetze: ein var() in einer Custom Property
+    // wird dort aufgeloest, wo sie DEKLARIERT ist. Auf der Wurzel als
+    // var(--txt) deklariert erbte jede Karte den Hintergrund-Wert — weisse
+    // Namen, aber fast schwarze Betraege daneben (Nutzer-Hinweis).
+    expect(wurzelTextVars()["--amt-neutral"]).toBe("#1E1E1C");
+    expect(kartenTextRegel()).toContain("--amt-neutral:#FFFFFF");
   });
 
   it("nennt in der Regel JEDE Kartenflaeche des Themes", () => {
@@ -59,10 +77,8 @@ describe("Karten-Textfarbe", () => {
     const alsRgb = (h) => { const [r, g, b] = rgb(h); return `rgb(${r}, ${g}, ${b})`; };
     [THEMES.keyboard.surf, THEMES.keyboard.surf2, THEMES.keyboard.surf3, THEMES.keyboard.cat_bg]
       .forEach(f => expect(regel).toContain(alsRgb(f)));
-    expect(regel).toContain(THEMES.keyboard.txt_card);
-    // Hero und Symbolzeile tragen Akzentfarben und brauchen ebenfalls eine
-    // Flaeche — sonst stehen Kontostand, Prognose und die Warn-/Spar-/VM-
-    // Symbole auf der hellen Platte und fallen durch.
+    // Hero, Drei-Symbol-Zeile und Werkzeuge-Zeile tragen Akzentfarben und
+    // brauchen ebenfalls eine Flaeche — sonst fallen die Symbole durch.
     Object.keys(THEMES.keyboard.flaechen_extra).forEach(sel => {
       expect(regel).toContain(sel);
     });
@@ -71,21 +87,17 @@ describe("Karten-Textfarbe", () => {
     expect(regel).toContain("box-shadow");
   });
 
-  it("Keyboard: beide Textfarben sitzen lesbar auf ihrer Flaeche", () => {
+  it("Keyboard: Text und Akzente sitzen lesbar auf Platte UND Keycaps", () => {
     const t = THEMES.keyboard;
-    // Karten-Text auf jeder Kartenflaeche — auch auf den Extra-Flaechen …
-    [t.surf, t.surf2, t.surf3, t.cat_bg, ...Object.values(t.flaechen_extra)].forEach(f => {
-      expect(kontrast(t.txt_card, f)).toBeGreaterThanOrEqual(4.5);
+    const flaechen = [t.bg, t.surf, t.surf2, t.surf3, t.cat_bg, ...Object.values(t.flaechen_extra)];
+    // Weisser Text traegt auf allen Flaechen …
+    flaechen.forEach(f => expect(kontrast(t.txt, f)).toBeGreaterThanOrEqual(4.5));
+    // … und die Akzente erreichen ueberall die Schwelle fuer Symbole/grossen
+    // Text. Genau daran ist die fast weisse Platte gescheitert.
+    [t.blue, t.neg, t.gold, t.mid].forEach(a => {
+      flaechen.forEach(f => expect(kontrast(a, f)).toBeGreaterThanOrEqual(3));
     });
-    // … und Hintergrund-Text auf der Platte.
-    expect(kontrast(t.txt, t.bg)).toBeGreaterThanOrEqual(4.5);
-    // Und beide sind wirklich verschieden — sonst braeuchte es den Umbau nicht.
-    expect(t.txt_card).not.toBe(t.txt);
-    // Die Akzente muessen auf den KARTEN sitzen (dort stehen sie auch): auf der
-    // hellen Platte erreicht keiner von ihnen 3:1 — genau deshalb bekommen
-    // Hero und Symbolzeile eine eigene Flaeche.
-    [t.blue, t.neg, t.gold].forEach(a => {
-      expect(kontrast(a, t.surf)).toBeGreaterThanOrEqual(3);
-    });
+    // Vorgemerkt bleibt vom Gebuchten unterscheidbar (§4.4).
+    expect(kontrast(t.neg, t.neg_vm)).toBeGreaterThan(1.25);
   });
 });

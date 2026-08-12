@@ -7,7 +7,7 @@ import { VerknuepfenPanel } from "./VerknuepfenPanel.jsx";
 import { TagInput } from "../atoms/TagInput.jsx";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { AppCtx } from "../../state/AppContext.js";
-import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
+import { theme as T, GEFAHR, gefahrText, isLightTheme } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
 import { isoAddMonths } from "../../utils/date.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
@@ -1013,12 +1013,21 @@ function EditPopup() {
                 </button>
               </div>
             </>) : (
+              /* Loeschen traegt die GEFAHR-Farbe, nicht T.neg: T.neg ist die
+                 AUSGABEN-Farbe des Themes (in den meisten Themes cyan) und sagt
+                 ueber eine Loeschung nichts aus. Nebenbei loest das ein
+                 Kontrastproblem — cyan auf der roetlichen Toenung lag unter der
+                 Schwelle (Kontrast-Lauf, tools/kontrast.cjs). */
               <button onClick={deleteFromEdit}
-                style={{padding:"11px",borderRadius:12,border:`1px solid ${T.neg}44`,
-                  background:`${T.neg}12`,color:T.neg,fontSize:13,fontWeight:700,
+                style={{padding:"11px",borderRadius:12,border:`1px solid ${GEFAHR}66`,
+                  // Kartenflaeche statt einer 7%-Toenung: die Toenung nimmt die
+                  // Helligkeit des Untergrunds an, und auf einem mittelhellen
+                  // Hintergrund blieb die Gefahr-Farbe darauf unter der Schwelle
+                  // (Kontrast-Lauf, tools/kontrast.cjs).
+                  background:T.surf,color:gefahrText(),fontSize:13,fontWeight:700,
                   cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6,
                   fontFamily:"inherit"}}>
-                {Li("trash-2",14,T.neg)} Löschen
+                {Li("trash-2",14,gefahrText())} Löschen
               </button>
             )}
 

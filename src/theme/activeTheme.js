@@ -125,6 +125,14 @@ const _kontrast = (a, b) => {
 export const GEFAHR = "#D93025";
 export const GEFAHR_KANTE = "#FF7A6B";
 
+// Gefahr-Rot als TEXT/Symbol (Loesch-Knoepfe, Symbolkachel der Rueckfrage).
+// Anders als die FLAECHE traegt Text die volle Kontrastschwelle von 4,5:1 —
+// deshalb ein eigener, deutlich hellerer Ton fuer dunkle Karten. Das satte
+// GEFAHR erreicht dort nur 1,9:1, die Kantenfarbe 3,3:1 (Kontrast-Lauf,
+// tools/kontrast.cjs). Auf hellen Karten bleibt es beim satten Rot.
+const GEFAHR_TEXT_DUNKEL = "#FFB3A8";
+export const gefahrText = () => (isLightTheme() ? GEFAHR : GEFAHR_TEXT_DUNKEL);
+
 // Ergebnis pro Theme + Untergrund gemerkt: die Funktion läuft sonst in jeder
 // Budget-Zeile jedes Renders durch die Suche.
 const _flaechenCache = new Map();
@@ -216,14 +224,18 @@ function _alsRgbText(c) {
 // dem Theme selbst, die Regel ist also nicht auf ein bestimmtes Theme fest
 // verdrahtet.
 export function kartenTextRegel(t = _state.current) {
-  if (!hatKartenText(t)) return "";
+  // Auch ohne eigene Karten-Textfarbe kann ein Theme etwas zu sagen haben:
+  // `flaechen_extra` (Bereiche zu Karten erklaeren) und `card_shadow`
+  // (Kartenkante) stehen fuer sich.
+  if (!hatKartenText(t) && !t.flaechen_extra && !t.card_shadow) return "";
   const flaechen = [...new Set([t.surf, t.surf2, t.surf3, t.cat_bg]
     .map(_alsRgbText).filter(Boolean))];
   if (!flaechen.length) return "";
   const sel = flaechen.map(c => `[style*="${c}"]`).join(",");
   const txt2 = t.txt2_card || t.txt_card;
-  const kartenVars = `--txt:${t.txt_card};--txt2:${txt2};--lbl:${t.lbl_card || txt2};`
-    + `--amt-neutral:${t.txt_card};`;
+  const kartenVars = hatKartenText(t)
+    ? `--txt:${t.txt_card};--txt2:${txt2};--lbl:${t.lbl_card || txt2};--amt-neutral:${t.txt_card};`
+    : "";
   const deko = t.card_shadow ? `box-shadow:${t.card_shadow};` : "";
   let css = `${sel}{${kartenVars}${deko}}`;
   // `flaechen_extra`: Bereiche, die im Markup KEINE Karte sind, in einem

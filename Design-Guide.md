@@ -410,7 +410,39 @@ Regeln dazu:
   Theme. Das wäre ein eigener Schritt (Kategoriefarben pro Fläche nachziehen,
   wie es `readableOn()` für Beträge schon tut).
 
-### 4.8 Budget-Ampel
+### 4.8 Kontrast messen statt schätzen (`tools/kontrast.cjs`)
+Farbprobleme fallen weder beim Bauen noch in den Unit-Tests auf: sie entstehen
+erst aus **Theme × Fläche × Betrags-Modus × Nutzerdaten**. Genau deshalb war
+jede improvisierte Prüfung zu kurz — sie sah zwei Bildschirme in einem Zustand
+und meldete „keine Funde", während der Daten-Tab und die Dialoge voller
+unlesbarer Stellen waren.
+
+```
+npm run build && npx vite preview --port 5199 --strictPort &
+npm run kontrast                 # Standard-Auswahl an Themes
+npm run kontrast -- keyboard     # ein Theme
+npm run kontrast -- --alle       # alle 33
+npm run kontrast -- --bilder     # zusätzlich Screenshots nach .kontrast/
+```
+
+Der Lauf fährt Home (in **allen drei Betrags-Modi**), Monat, Trend, Daten,
+Kategorie-Aufriss, Bearbeiten-Dialog und Rückfrage ab und prüft:
+- **Text** gegen seinen tatsächlichen Untergrund — alle gemalten Ebenen
+  übereinandergelegt, halbtransparente Chips zählen mit (der „nächste
+  undurchsichtige Vorfahre" lag falsch, sobald eine getönte Fläche dazwischenlag).
+- **SVG-Symbole** — die haben keinen Textknoten und fielen vorher komplett durch.
+- Schwellen: 4,5:1 Text, 3:1 großer Text und Symbole.
+
+Findings aus **Nutzerdaten** (selbst gewählte Kategorie- und Kontofarben) werden
+getrennt ausgewiesen und lassen den Lauf **nicht** fehlschlagen — sie sind vom
+Theme aus nicht behebbar. Alles andere ergibt Rückgabewert 1.
+
+Stand der Messung (Standard-Auswahl): `keyboard` 0, `kontrastdunkel` 0,
+`terminal` 6, `kontrasthell` 12, `dark` 39, `light` 106. Die hohen Zahlen bei
+`light`/`dark` sind **Altlasten**, nicht neu — vor allem Gold auf Weiß und
+`txt2` mit zu wenig Deckkraft.
+
+### 4.9 Budget-Ampel
 Budget-Auslastung färbt nach **tatsächlichem Verbrauch (Ist)**, nicht nach dem
 reservierten Prognosewert.
 

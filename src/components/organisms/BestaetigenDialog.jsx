@@ -13,7 +13,7 @@
 
 import React from "react";
 import { Overlay } from "../atoms/Overlay.jsx";
-import { theme as T, GEFAHR, GEFAHR_KANTE } from "../../theme/activeTheme.js";
+import { theme as T, GEFAHR, GEFAHR_KANTE, gefahrText } from "../../theme/activeTheme.js";
 import { Li } from "../../utils/icons.jsx";
 
 function BestaetigenDialog({ frage, jaLabel = "OK", ton, onJa, onAbbrechen }) {
@@ -38,7 +38,10 @@ function BestaetigenDialog({ frage, jaLabel = "OK", ton, onJa, onAbbrechen }) {
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: rest ? 10 : 18 }}>
         <div style={{ width: 34, height: 34, borderRadius: 10, flexShrink: 0,
           background: `${akzent}1f`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          {Li(gefahr ? "alert-triangle" : "help-circle", 18, akzent)}
+          {/* Auf der 12%-Toenung der Kachel ist das satte Gefahr-Rot zu dunkel
+              (1,9:1 auf dunklen Karten). Das Symbol nimmt deshalb die hellere
+              Kanten-Variante — dieselbe Farbfamilie, aber lesbar. */}
+          {Li(gefahr ? "alert-triangle" : "help-circle", 18, gefahr ? gefahrText() : akzent)}
         </div>
         <div style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 16, fontWeight: 700,
           lineHeight: 1.35, whiteSpace: "pre-line" }}>{titel}</div>
