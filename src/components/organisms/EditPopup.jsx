@@ -101,7 +101,7 @@ function EditPopup() {
       setShowNewVehicle(true);
     };
     return (
-      <div style={{position:"fixed",inset:0,background:T.bg,zIndex:80,display:"flex",flexDirection:"column"}}>
+      <div className="formular-blatt" style={{position:"fixed",inset:0,background:T.bg,zIndex:80,display:"flex",flexDirection:"column"}}>
         <MobileHeader
           title={editTx.pending ? "Vormerkung bearbeiten" : "Buchung bearbeiten"}
           onBack={()=>setEditTx(null)}/>

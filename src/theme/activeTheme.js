@@ -36,9 +36,6 @@ const LIGHT_THEMES = new Set([
   // (weisse Beschriftung, gelbgrüne Zweitbelegung), ist es ein DUNKLES Theme
   // und gehört nicht mehr in diese Liste.
   "abenteuergruen", "zirkustaschenrechner",
-  // "Tastenhell" ist der helle Zwilling von "Keyboard": helle Platte,
-  // hellgraue Tasten, dunkle Schrift und dunkle Akzente.
-  "tastenhell",
 ]);
 
 // Sicherheitsnetz hinter der Liste: ein Theme mit hellem Hintergrund IST
@@ -47,12 +44,20 @@ const LIGHT_THEMES = new Set([
 // entscheidet die Grenzfälle, in denen ein Theme trotz mittlerer Helligkeit
 // bewusst als hell oder dunkel gelten soll. Ergebnis pro Name gemerkt, weil
 // isLightTheme in jedem Render dutzendfach aufgerufen wird.
+//
+// Über beidem steht das Token `hell` im Theme selbst. Es gibt genau einen
+// Fall, den weder Liste noch Helligkeit richtig entscheiden können:
+// „Tastenhell" hat eine helle Platte (`bg`), aber DUNKLE Karten. Fast jede
+// Abfrage von isLightTheme() betrifft eine Karte, einen Dialog oder ein
+// Eingabefeld — die sind dort dunkel. Nur der Hintergrund ist hell, und den
+// bedient der Zwei-Textfarben-Mechanismus (§4.7), nicht diese Abfrage.
 const _hellCache = new Map();
 export const isLightTheme = (name = _state.current.themeName) => {
+  const th = name === _state.current.themeName ? _state.current : THEMES[name];
+  if (th && typeof th.hell === "boolean") return th.hell;
   if (LIGHT_THEMES.has(name)) return true;
   if (_hellCache.has(name)) return _hellCache.get(name);
-  const t = name === _state.current.themeName ? _state.current : THEMES[name];
-  const l = _luma(t && t.bg);
+  const l = _luma(th && th.bg);
   const hell = l != null && l >= 0.5;
   _hellCache.set(name, hell);
   return hell;
@@ -265,8 +270,14 @@ export function kartenTextRegel(t = _state.current) {
   // Akzentfarben (Kontostand, Prognose, Warn-/Spar-/VM-Symbole), die auf einer
   // hellen Platte durchfallen. Sie zählen dann als Karte, bekommen deren
   // Textfarben mit und heben sich ab. Form: {"<Selektor>": "<Fläche>"}.
+  //
+  // `!important` ist hier nicht Bequemlichkeit, sondern Notwendigkeit: diese
+  // Bereiche malen ihre Fläche als INLINE-Style (`style={{background:T.bg}}`
+  // bei den bildschirmfüllenden Blättern), und ein Stylesheet verliert gegen
+  // inline. Betroffen sind nur Themes, die `flaechen_extra` überhaupt
+  // angeben — für alle anderen entsteht die Regel gar nicht erst.
   Object.entries(t.flaechen_extra || {}).forEach(([sel2, flaeche]) => {
-    css += `${sel2}{background:${flaeche};${kartenVars}${deko}}`;
+    css += `${sel2}{background:${flaeche} !important;${kartenVars}${deko}}`;
   });
   return css;
 }

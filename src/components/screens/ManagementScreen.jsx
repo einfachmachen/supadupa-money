@@ -239,7 +239,10 @@ function ManagementScreen({activeTab="kategorien"}) {
         {mgrTab==="daten"&&(
           <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 14px 24px"}}>
             <div style={{color:T.lbl||T.txt2,fontSize:11,fontWeight:600,display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
-              {Li("database",13,T.blue)} Daten &amp; Verbindungen
+              {/* Symbol folgt der Beschriftung (currentColor): es steht direkt
+                  auf dem Hintergrund, wo eine helle Akzentfarbe in hellen
+                  Themes durchfaellt. */}
+              {Li("database",13,"currentColor")} Daten &amp; Verbindungen
             </div>
             {(()=>{
               const kontenRow   = {icon:"credit-card",color:T.blue,         label:"Konten",                sub:"Verwalten, Reihenfolge, Puffer",  onClick:()=>setMgrTab("konten"), tourId:"row-konten"};
@@ -271,7 +274,7 @@ function ManagementScreen({activeTab="kategorien"}) {
                 ? [bankRow, dataMgrRow, cloudRow, fuelRow, kontenRow, budgetRow, csvRow, matchingRow, settingsRow]
                 : [kontenRow, budgetRow, csvRow, bankRow, dataMgrRow, cloudRow, fuelRow, matchingRow, settingsRow];
             })().map((it,i)=>(
-              <button key={i} onClick={it.onClick} data-tour={it.tourId}
+              <button key={i} onClick={it.onClick} data-tour={it.tourId} className="menue-kachel"
                 style={{display:"flex",alignItems:"center",gap:12,width:"100%",textAlign:"left",
                   background:"rgba(255,255,255,0.04)",border:`1px solid ${T.bd}`,borderRadius:14,
                   padding:"14px 14px",marginBottom:10,cursor:"pointer",fontFamily:"inherit"}}>

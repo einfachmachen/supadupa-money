@@ -58,16 +58,36 @@ const SCAN = () => {
   // Untergrund = ALLE gemalten Ebenen von der Wurzel nach unten uebereinander.
   // Der frueherere "naechster undurchsichtiger Vorfahre" lag falsch, sobald eine
   // halbtransparente Flaeche dazwischenlag (Chips, getoente Karten).
+  //
+  // VERLAEUFE zaehlen mit. Ein `background-image: linear-gradient(...)` hat
+  // eine `backgroundColor` von `transparent` — bis hierher fiel der Scan
+  // deshalb durch den Verlauf hindurch auf die Seitenfarbe und mass gegen den
+  // falschen Grund. Betroffen war der Hero JEDES Themes (fast alle haben dort
+  // einen Verlauf). Weil ein Verlauf mehrere Farben hat, liefert bgVon eine
+  // LISTE moeglicher Untergruende — geprueft wird spaeter der schlechteste.
   const bgVon = el => {
     const kette = []; let n = el;
     while (n && n !== document.documentElement) { kette.push(n); n = n.parentElement; }
-    let bg = [255, 255, 255];
+    let bgs = [[255, 255, 255]];
     kette.reverse().forEach(k => {
-      const c = parse(getComputedStyle(k).backgroundColor);
-      if (c && c[3] > 0) bg = ueber(c, bg);
+      const cs = getComputedStyle(k);
+      const c = parse(cs.backgroundColor);
+      if (c && c[3] > 0) bgs = bgs.map(b => ueber(c, b));
+      const stufen = (cs.backgroundImage || "").match(/rgba?\([^)]+\)/g);
+      if (stufen && /gradient/.test(cs.backgroundImage)) {
+        const farben = stufen.map(parse).filter(f => f && f[3] > 0);
+        if (farben.length) {
+          const neu = [];
+          bgs.forEach(b => farben.forEach(f => neu.push(ueber(f, b))));
+          bgs = neu;
+        }
+      }
     });
-    return bg;
+    return bgs;
   };
+  // Schlechtester Untergrund fuer eine Vordergrundfarbe (siehe bgVon).
+  const schlechtester = (fg, bgs) =>
+    bgs.reduce((a, b) => (kon(ueber(fg, b), b) < kon(ueber(fg, a), a) ? b : a));
   const sichtbar = el => {
     const r = el.getBoundingClientRect();
     if (r.width < 4 || r.height < 4 || r.bottom < 0 || r.top > innerHeight) return false;
@@ -84,13 +104,14 @@ const SCAN = () => {
   document.querySelectorAll("*").forEach(el => {
     if (!sichtbar(el)) return;
     const cs = getComputedStyle(el);
-    const bg = bgVon(el);
-    const bgTxt = `rgb(${bg.map(Math.round).join(", ")})`;
+    const bgs = bgVon(el);
 
     const txt = [...el.childNodes].filter(n => n.nodeType === 3 && n.textContent.trim());
     if (txt.length) {
       const fg = parse(cs.color);
       if (fg && fg[3] > 0.15) {
+        const bg = schlechtester(fg, bgs);
+        const bgTxt = `rgb(${bg.map(Math.round).join(", ")})`;
         const gross = parseFloat(cs.fontSize) >= 24
           || (parseFloat(cs.fontSize) >= 18.66 && +cs.fontWeight >= 700);
         const soll = gross ? 3 : 4.5;
@@ -106,6 +127,8 @@ const SCAN = () => {
       const roh = cs.stroke && cs.stroke !== "none" ? cs.stroke : cs.fill;
       const fg = parse(roh);
       if (fg && fg[3] > 0.15) {
+        const bg = schlechtester(fg, bgs);
+        const bgTxt = `rgb(${bg.map(Math.round).join(", ")})`;
         const k = kon(ueber(fg, bg), bg);
         if (k < 3) funde.push({ art: "Symbol", was: (el.getAttribute("class") || "svg").replace(/lucide\s*/g, "").slice(0, 34),
           k: +k.toFixed(2), soll: 3, fg: roh, bg: bgTxt });

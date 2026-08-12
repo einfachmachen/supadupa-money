@@ -276,23 +276,34 @@ und **gelbgrüner** Zweitbelegung, auf der **helleren Tastatur-Platte**
   abhängig machen lassen (§4.7). `#52524C` ist die hellste Platte mit **0**
   Funden.
 
-**`tastenhell`** („Tastenhell") ist der **helle Zwilling**: die helle Platte der
-Vorlage (`bg` `#ECECE4`) mit **hellgrauen Tasten** (`surf` `#CECEC6`). Möglich
-wird sie nicht durch eine dunklere Platte, sondern durch eine **dunkle
-Akzentfamilie** — Gelbgrün → Dunkeloliv `#3A4600`, Cyan → Dunkelpetrol
-`#00434E`, Gold → `#664A00`. Zwei Dinge liegen dort anders als in jedem anderen
-hellen Theme:
-- Die **Karten sind dunkler als der Hintergrund** (Taste auf Platte).
-  `surf2`/`surf3` (Dialoge) sind trotzdem **heller** als `surf`: die dunkelste
-  Kartenfläche bestimmt, wie hell ein Akzent höchstens sein darf, und das soll
-  die Taste selbst sein.
-- **„Vorgemerkt" ist entsättigt, nicht aufgehellt** (§4.4). Auf hellem Grund
-  kostet Aufhellen sofort Kontrast; ein grauer Petrol-/Oliv-Ton bleibt bei
-  gleicher Helligkeit lesbar und liest sich trotzdem als „noch nicht gebucht".
+**`tastenhell`** („Tastenhell") ist dieselbe Vorlage bei Tageslicht — und das
+**erste ausgelieferte Theme mit gegensätzlichen Flächen**: helle Platte
+(`bg` `#ECECE4`), **dunkle Tasten** (`surf` `#3C3C3C`), **weiße**
+Hauptbeschriftung, **gelbgrüne** Zweitbelegung. Es ist damit der erste Nutzer
+des Zwei-Textfarben-Mechanismus aus §4.7. Drei Dinge müssen dafür zusammen
+passen:
+- **`hell:false`.** Das Token schlägt Liste *und* Helligkeitsnetz in
+  `isLightTheme()`. Fast jede Abfrage dort betrifft eine Karte, einen Dialog
+  oder ein Eingabefeld — die sind hier dunkel. Ohne das Token entschiede die
+  Helligkeit der *Platte* und die App legte helle Dialoge in ein dunkles Theme.
+- **Jede Fläche, die Akzente zeigt, ist eine Taste.** Die Akzente lassen sich
+  nicht flächenabhängig machen (§4.7), also stehen Hero, Drei-Symbol-Zeile,
+  das Aufriss-Blatt, das Blatt „Buchung bearbeiten" und die Menüzeilen des
+  Daten-Bildschirms in `flaechen_extra`.
+- **`flaechen_extra` setzt seine Fläche mit `!important`.** Die
+  bildschirmfüllenden Blätter malen ihren Grund *inline*
+  (`style={{background:T.bg}}`), und dagegen verliert ein Stylesheet. Betroffen
+  sind nur Themes, die `flaechen_extra` überhaupt angeben.
 
-`tests/tastenhellTheme.test.js` rechnet die ganze Palette gegen alle Flächen
-nach, `npm run kontrast tastenhell` misst sie an der echten Oberfläche (0
-theme-eigene Funde).
+`tests/tastenhellTheme.test.js` rechnet beides nach — auch, ob es die in
+`flaechen_extra` genannten CSS-Klassen im Quelltext **wirklich gibt**;
+`npm run kontrast tastenhell` misst an der echten Oberfläche (0 theme-eigene
+Funde).
+
+> Ein Zwischenstand mit **hellgrauen** Tasten und dunklen Akzenten war
+> kontrastfrei sauber, aber nicht die Vorlage („die Schriftfarbe soll wie im
+> Screenshot weiß bzw. Lime sein"). Weiße Schrift braucht eine dunkle Taste —
+> beides zusammen geht nicht.
 
 Zusätzlich **nutzerdefinierte** Themes aus `mbt_custom_themes` (`CustomThemeEditor`,
 §4.3) — diese kommen **on top**, nicht in `themes.js`.
@@ -458,7 +469,7 @@ unlesbarer Stellen waren.
 npm run build && npx vite preview --port 5199 --strictPort &
 npm run kontrast                 # Standard-Auswahl an Themes
 npm run kontrast -- keyboard     # ein Theme
-npm run kontrast -- --alle       # alle 33
+npm run kontrast -- --alle       # alle 34
 npm run kontrast -- --bilder     # zusätzlich Screenshots nach .kontrast/
 ```
 
@@ -468,6 +479,12 @@ Kategorie-Aufriss, Bearbeiten-Dialog und Rückfrage ab und prüft:
   übereinandergelegt, halbtransparente Chips zählen mit (der „nächste
   undurchsichtige Vorfahre" lag falsch, sobald eine getönte Fläche dazwischenlag).
 - **SVG-Symbole** — die haben keinen Textknoten und fielen vorher komplett durch.
+- **Verläufe** zählen als Untergrund. Ein `background-image: linear-gradient(…)`
+  hat eine `backgroundColor` von `transparent`; der Scan fiel dadurch glatt
+  hindurch auf die Seitenfarbe — betroffen war der **Hero jedes Themes**, denn
+  fast alle haben dort einen Verlauf. Da ein Verlauf mehrere Farben hat, wird
+  gegen **jede Stufe** gerechnet und die schlechteste gemeldet („Lime" verlor
+  dadurch 10 Scheinfunde, „Limehell" bekam einen echten dazu).
 - Schwellen: 4,5:1 Text, 3:1 großer Text und Symbole.
 
 Findings aus **Nutzerdaten** (selbst gewählte Kategorie- und Kontofarben) werden

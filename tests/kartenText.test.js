@@ -49,12 +49,10 @@ describe("Karten-Textfarbe", () => {
   });
 
   it("liefert bei einem Theme MIT txt_card Variablen samt Rueckfallwert", () => {
-    // Kein ausgeliefertes Theme braucht die zwei Saetze derzeit: das
-    // Keyboard-Theme, fuer das der Mechanismus gebaut wurde, kam am Ende mit
-    // einer mittelhellen Platte aus (siehe tools/kontrast.cjs — eine fast
-    // weisse Platte riss 23 Stellen auf). Der Mechanismus bleibt trotzdem: er
-    // ist die einzige Moeglichkeit, Hintergrund und Karten gegensaetzlich zu
-    // faerben. Geprueft wird er deshalb an einem gestellten Theme.
+    // Ausgeliefert nutzt ihn "Tastenhell" (helle Platte, dunkle Tasten,
+    // siehe tests/tastenhellTheme.test.js). Hier wird der Mechanismus selbst
+    // an einem gestellten Theme geprueft, damit der Test nicht mitwandert,
+    // wenn sich die Farben eines echten Themes aendern.
     const gegensaetzlich = { ...THEMES.keyboard, txt: "#1E1E1C", txt_card: "#FFFFFF",
       txt2: "rgba(30,30,28,0.66)", txt2_card: "rgba(255,255,255,0.80)" };
     setActiveTheme("probe", gegensaetzlich);
@@ -89,7 +87,11 @@ describe("Karten-Textfarbe", () => {
 
   it("Keyboard: Text und Akzente sitzen lesbar auf Platte UND Keycaps", () => {
     const t = THEMES.keyboard;
-    const flaechen = [t.bg, t.surf, t.surf2, t.surf3, t.cat_bg, ...Object.values(t.flaechen_extra)];
+    // In `flaechen_extra` darf auch ein Verlauf stehen (der Hero hat einen) —
+    // dann zaehlt jede seiner Farben als eigene Flaeche.
+    const farbenAus = (wert) => String(wert).match(/#[0-9a-fA-F]{3,6}/g) || [];
+    const flaechen = [t.bg, t.surf, t.surf2, t.surf3, t.cat_bg,
+      ...Object.values(t.flaechen_extra).flatMap(farbenAus)];
     // Weisser Text traegt auf allen Flaechen …
     flaechen.forEach(f => expect(kontrast(t.txt, f)).toBeGreaterThanOrEqual(4.5));
     // … und die Akzente erreichen ueberall die Schwelle fuer Symbole/grossen
