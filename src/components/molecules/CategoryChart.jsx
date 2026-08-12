@@ -88,14 +88,14 @@ function CategoryChart({catSums, maxSum, budgets, getBudgetForMonth, year, month
   return (
     <div style={{margin:"0 0 4px",borderRadius:12,overflow:"hidden",border:`1px solid ${T.bd}`}}>
       <div onClick={()=>setChartOpen(v=>!v)}
-        style={{display:"flex",alignItems:"center",gap:6,padding:"7px 10px",
+        style={{display:"flex",alignItems:"center",gap:6,padding:"7px 2px",
           cursor:"pointer",background:"rgba(255,255,255,0.03)"}}>
         {Li("bar-chart-2",13,T.txt2)}
         <span style={{flex:1,color:T.txt2,fontSize:11,fontWeight:600}}>Ausgaben nach Kategorie</span>
         {Li(chartOpen?"chevron-up":"chevron-down",12,T.txt2)}
       </div>
       {chartOpen&&<>
-        <div style={{display:"flex",gap:6,padding:"6px 10px 2px",borderTop:`1px solid ${T.bd}`}}>
+        <div style={{display:"flex",gap:6,padding:"6px 2px 2px",borderTop:`1px solid ${T.bd}`}}>
           {[["bar","bar-chart-2","Balken"],["pie","pie-chart","Torte"]].map(([v,icon,label])=>(
             <button key={v} onClick={()=>setView(v)}
               style={{display:"flex",alignItems:"center",gap:4,padding:"3px 10px",

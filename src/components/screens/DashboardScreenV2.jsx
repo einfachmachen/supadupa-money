@@ -1419,8 +1419,10 @@ function DashboardScreenV2() {
         {/* ── V2: Sort-Buttons — nur sichtbar, wenn die Details (Hero-Chevron)
               ausgeklappt sind. Datum entfernt (Tag steht jetzt im + Button). ── */}
         {detailsOpen && (incomeTotals.length>0||catTotals.length>0)&&(()=>{
+          // 10px wie die Kategoriefelder darunter — die Zeile gehoert zu ihnen
+          // und stand vorher 2px weiter innen.
           return (
-            <div style={{padding:"6px 12px 4px",display:"flex",alignItems:"center",gap:8}}>
+            <div style={{padding:"6px 10px 4px",display:"flex",alignItems:"center",gap:8}}>
               <div style={{display:"flex",gap:6,flex:1,minWidth:0,alignItems:"center"}}>
                 {[["custom","\u270e Eigene"],["desc","\u2193"],["asc","\u2191"]].map(([mode,lbl])=>(
                   <button key={mode} onClick={()=>setCatSortMode(mode)}
@@ -1613,7 +1615,7 @@ function DashboardScreenV2() {
           };
 
           return (
-            <div style={{padding:"0 10px 4px",display:"flex",flexDirection:"column",gap:2}}>
+            <div className="kategorie-liste" style={{padding:"0 10px 4px",display:"flex",flexDirection:"column",gap:2}}>
               {allCatsToShow.map(cat => {
                 const isIncome = _isCatIncomeOrTagesgeld(cat);
                 // Ist (real + konkrete VM) — auch Basis für die Ampelfarbe

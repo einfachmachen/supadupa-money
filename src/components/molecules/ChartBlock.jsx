@@ -22,8 +22,11 @@ function ChartBlock({catSums, maxSum, budgets, getBudgetForMonth, year, month}) 
   const onHeroMut = _L>0.5 ? "rgba(0,0,0,0.60)" : "rgba(255,255,255,0.66)";
   const trackBg  = "rgba(128,128,128,0.18)";
   const trackBud = "rgba(128,128,128,0.30)";
+  // Kein eigener Seitenrand: der Block soll exakt so breit sein wie die
+  // Kategoriefelder darunter (Nutzer-Wunsch). Der Abstand zum Bildschirmrand
+  // kommt vom umgebenden Bereich, damit beides nicht auseinanderlaeuft.
   return (
-    <div style={{margin:"0 10px 6px",background:T.hero_bg,borderRadius:20,padding:"10px 12px 8px"}}>
+    <div style={{margin:"0 0 6px",background:T.hero_bg,borderRadius:20,padding:"10px 12px 8px"}}>
       <div style={{display:"flex",alignItems:"center",marginBottom:6}}>
         <div style={{color:onHeroMut,fontSize:10,fontWeight:700,letterSpacing:0.5,textTransform:"uppercase",flex:1}}>Top Ausgaben</div>
         <button onClick={nextMode}

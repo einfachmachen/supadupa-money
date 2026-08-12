@@ -140,6 +140,24 @@
     margin: 6px 8px 2px;
   }
 
+  /* Tastenhell: die Platte soll zwischen den Tasten SICHTBAR bleiben. Auf dem
+     Foto sind die Tasten kleine Kacheln mit hellen Fugen dazwischen; in der
+     App sind es grosse Flaechen, und dieselbe Farbe wirkt grossflaechig
+     deutlich dunkler (Nutzer-Hinweis). Deshalb hier mehr Luft zwischen den
+     Kategoriefeldern — und der Hero liegt als Taste mittendrin statt als
+     randloser Balken oben (gleiche Breite wie die Kategoriefelder). */
+  .theme-tastenhell .kategorie-liste {
+    /* `!important`, weil der Abstand als Inline-Style am Container haengt
+       (`gap:2`) — dagegen verliert ein Stylesheet. */
+    gap: 8px !important;
+  }
+  .theme-tastenhell .hero-flaeche,
+  .theme-tastenhell .symbolzeile {
+    border-radius: 16px;
+    margin-left: 10px;
+    margin-right: 10px;
+  }
+
   /* ── „+"-Button (.plus-master-btn): in den eckigen Spezial-Themes wieder
      rund. Der zentrale Aktionsknopf soll überall kreisförmig bleiben. ── */
   .theme-brutalist .plus-master-btn,

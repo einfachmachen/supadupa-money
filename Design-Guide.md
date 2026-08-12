@@ -513,6 +513,25 @@ reservierten Prognosewert.
 
 ## 5. Layout & Navigation
 
+- **Eine Kante für die ganze Home-Spalte: 10 px.** Kategoriefelder, die
+  Sortier-/Pegel-Zeile, „Ausgaben nach Kategorie" samt Balken-/Torten-Umschalter
+  und der Diagrammblock (`ChartBlock`) beginnen alle bei **10 px** vom Rand
+  (Nutzer-Wunsch: „so breit wie die Kategoriefelder"). Der Abstand kommt vom
+  **umgebenden Bereich**, nicht von jedem Baustein selbst — `ChartBlock` hatte
+  zusätzlich `margin: 0 10px` und stand dadurch als einziger Block eingerückt.
+  Wer einen neuen Block dort einhängt: **keinen eigenen Seitenrand** setzen.
+- **Theme-Klasse am Wurzel-Container** heißt immer `theme-<schlüssel>` und
+  entsteht **allgemein aus dem Namen** (`App.jsx`). Vorher stand dort eine Kette
+  aus Einzelvergleichen, in die jedes neue Theme von Hand eingetragen werden
+  musste — bei „Tastenhell" wurde das vergessen, und sämtliche Regeln aus
+  `themes.css` griffen still nicht. `tests/theme.test.js` hält beides fest:
+  dass die Kette nicht zurückkommt und dass jede `.theme-*`-Klasse in der
+  CSS-Datei zu einem echten Theme gehört.
+
+  > **Inline schlägt Stylesheet.** Wer aus einem Theme heraus Layout ändern
+  > will, muss `!important` setzen, sobald die Stelle ihren Wert inline malt
+  > (Fläche, `gap`) — das gilt für `flaechen_extra` genauso wie für den
+  > Kartenabstand in „Tastenhell".
 - **Bottom-Tabbar** (`NAV_TABS` in `App.jsx`, visuell mit dem Master-Button in
   der Mitte): **Home · Monat · [+] · Trend · Daten**. Die drei Render-Stellen
   greifen positionsbasiert zu (`[NAV_TABS[0], NAV_TABS[1], "plus",

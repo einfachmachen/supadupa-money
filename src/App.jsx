@@ -3324,9 +3324,13 @@ export default function SupaDupaMoney() {
   return (
   <AppCtx.Provider value={cx}>
     <>
-    <div className={[noBorders?"no-borders":null, themeName==="clean"?"theme-clean":null, themeName==="brutalist"?"theme-brutalist":null, themeName==="terminal"?"theme-terminal":null, themeName==="swiss"?"theme-swiss":null,
-      themeName==="kloetzchenwelt"?"theme-kloetzchenwelt":null,
-      themeName==="keyboard"?"theme-keyboard":null,
+    {/* Theme-Klasse allgemein aus dem Namen — vorher stand hier
+        eine Kette aus Einzelvergleichen, in die jedes neue Theme von Hand
+        eingetragen werden musste. Genau das wurde bei "Tastenhell" vergessen:
+        die Regeln in themes.css griffen nie, der Hero blieb eckig und
+        randlos. Die Kette kann nicht mehr veralten, wenn sie keine ist. */}
+    <div className={[noBorders?"no-borders":null,
+      themeName?`theme-${themeName}`:null,
       amtMode===0?"amts-blur":null, amtMode<2?"amts-neutral":null,
       amtFont?`amtfont-${amtFont}`:null].filter(Boolean).join(" ")||undefined}
       style={{background:T.bg,height:"100vh",maxHeight:"100vh",
