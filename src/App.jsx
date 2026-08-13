@@ -4125,56 +4125,37 @@ export default function SupaDupaMoney() {
 
         const navTab = (t) => {
           const isActive = activeNavTab===t.id;
-          // Vergrößerter + Button: die 4 Tabs sind tappbar und heben sich ab —
-          // volle Deckkraft, groesseres Symbol, aktiver Reiter hinterlegt.
-          // Die Beschriftung steht auch hier unter dem Symbol (Nutzer-Wunsch):
-          // ohne sie musste man die Reiter genau in dem Moment aus dem Symbol
-          // erraten, in dem sie ueberhaupt erst bedienbar werden. Die Leiste ist
-          // 57px hoch (abzueglich 5px unten), deshalb ruecken Kachel und
-          // Abstaende zusammen, statt das Symbol auf 33px zu belassen.
-          if(plusArretiert) {
-            return (
-              <div key={t.id} onClick={()=>onTap(t)} className="nav-tab"
-                style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",
-                  justifyContent:"center",gap:1,cursor:"pointer",padding:"2px 0",
-                  minWidth:0,WebkitTapHighlightColor:"transparent"}}>
-                <div style={{width:52,height:30,borderRadius:11,
-                  display:"flex",alignItems:"center",justifyContent:"center",
-                  background:isActive?"rgba(74,159,212,0.18)":"transparent",transition:"all 0.2s"}}>
-                  {Li(t.icon,26,isActive?T.blue:T.txt,isActive?2.6:2)}
-                </div>
-                <span style={{fontSize:11,fontWeight:isActive?700:600,
-                  color:isActive?T.blue:T.txt,whiteSpace:"nowrap"}}>{t.label}</span>
-              </div>
-            );
-          }
-          // Kleiner Zustand: die 4 Tabs sind NUR Anzeige — sie lösen KEINE
-          // Navigation aus (kein onClick). Aktiv (tappbar) UND die Symbole voll
-          // sichtbar werden sie erst nach Doppel-Tap auf den + Button
-          // (plusArretiert). Die Beschriftung bleibt hier jedoch klar sichtbar,
-          // nur die Symbole sind blass (Hinweis auf den noch inaktiven Zustand).
-          // Antippen navigiert weiterhin NICHT — es beantwortet nur die Frage,
-          // warum nichts passiert (Hinweis + Pulsieren des + Knopfes).
+          // EINE Geometrie fuer beide Zustaende. Vorher hatte der arretierte
+          // Zustand groessere Symbole (26 statt 22), eine andere Kachel
+          // (52x30 statt 44x32) und eine getoente Flaeche hinter dem aktiven
+          // Reiter — beim Vergroessern des + Knopfes sprang die ganze Leiste
+          // also in eine andere Form. Gewuenscht ist: die Form bleibt wie im
+          // Startzustand, nur die POSITION ruecken die Reiter nach
+          // (Nutzer-Wunsch). Unterschieden werden die Zustaende weiterhin —
+          // aber nur ueber die FARBE des aktiven Reiters, nicht ueber Groesse:
+          // im kleinen Zustand sind die Reiter ohnehin noch nicht bedienbar.
+          const KACHEL = { width:44, height:32, borderRadius:12,
+            display:"flex", alignItems:"center", justifyContent:"center" };
+          const farbe = (plusArretiert && isActive) ? T.blue : T.txt;
           return (
-            <div key={t.id} onClick={()=>setNavHinweis(true)} className="nav-tab"
+            <div key={t.id} className="nav-tab"
+              onClick={plusArretiert ? ()=>onTap(t) : ()=>setNavHinweis(true)}
               style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",
                 justifyContent:"center",gap:2,cursor:"pointer",padding:"6px 0px 4px",minWidth:0,
                 WebkitTapHighlightColor:"transparent"}}>
               {/* Symbole in Textfarbe und voll deckend — vorher grau (T.txt2)
                   und zusaetzlich auf 35% abgeblendet, was sie auf dem dunklen
-                  Balken kaum erkennbar machte. Dass die Reiter hier noch nicht
-                  tappbar sind, zeigt weiterhin der Vergleich zum vergroesserten
-                  Zustand: dort sind die Symbole groesser und der aktive Reiter
-                  ist hinterlegt und blau beschriftet. */}
-              <div style={{width:44,height:32,borderRadius:12,
-                display:"flex",alignItems:"center",justifyContent:"center",
-                background:"transparent"}}>
-                {Li(t.icon,22,T.txt,1.5)}
+                  Balken kaum erkennbar machte. Dass die Reiter im kleinen
+                  Zustand noch nicht tappbar sind, zeigt der fehlende farbige
+                  Reiter: erst nach Doppel-Tap auf den + Knopf ist der aktive
+                  Reiter eingefaerbt. */}
+              <div style={KACHEL}>
+                {Li(t.icon,22,farbe,plusArretiert && isActive ? 2 : 1.5)}
               </div>
               {/* T.txt statt T.txt2: die Beschriftung der inaktiven Reiter
                   war auf dem dunklen Balken kaum lesbar. */}
-              <span style={{fontSize:11,fontWeight:600,
-                color:T.txt,whiteSpace:"nowrap"}}>{t.label}</span>
+              <span style={{fontSize:11,fontWeight:(plusArretiert && isActive)?700:600,
+                color:farbe,whiteSpace:"nowrap"}}>{t.label}</span>
             </div>
           );
         };

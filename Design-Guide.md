@@ -600,6 +600,14 @@ reservierten Prognosewert.
   „Monde" erreichbar, s. u. — jetzt gleichwertige Zeilen; „Einstellungen" hat
   wie „Konten" einen eigenen Zurück-Pfeil zu „Daten"). Der Bottom-Tab ist der
   direkteste, immer sichtbare Weg zu diesen Werkzeugen.
+- **Die Reiter behalten ihre Form**, wenn der + Knopf wächst. Vorher hatte der
+  arretierte Zustand größere Symbole (26 statt 22 px), eine andere Kachel
+  (52×30 statt 44×32) und eine getönte Fläche hinter dem aktiven Reiter — beim
+  Doppel-Tap sprang die ganze Leiste in eine andere Form. Jetzt gibt es **eine**
+  Geometrie; unterschieden werden die Zustände nur noch über die **Farbe** des
+  aktiven Reiters (`T.blue`, fette Beschriftung), die es im kleinen Zustand
+  nicht gibt — dort sind die Reiter ohnehin noch nicht bedienbar. Gilt für alle
+  Themes.
 - **Zentraler Master-Button** (runder „+"/Monats-Knopf) — **Einzel-Tipp öffnet
   direkt die Vormerken-Erfassung** (`MobileVormerkenModal`), sowohl im
   Kleinzustand (Ruheposition in der Bottom-Bar) als auch im vergrößerten

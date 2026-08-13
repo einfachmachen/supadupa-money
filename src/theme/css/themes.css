@@ -174,13 +174,18 @@
        ganze Breite. */
     border-top-color: transparent !important;
     box-shadow: none !important;
-    gap: 6px;
-    padding-left: 8px;
-    padding-right: 8px;
+    /* Abstand ueber MARGIN, nicht ueber `gap`: der Platz des + Knopfes ist im
+       vergroesserten Zustand ein Flex-Element der Breite 0 — mit `gap` bekaeme
+       es trotzdem links UND rechts eine Luecke, und in der Mitte klaffte
+       doppelt so viel wie zwischen den uebrigen Reitern. Mit Rand am Reiter
+       selbst stehen alle Fugen gleich (Nutzer-Wunsch: gleichmaessig verteilt).
+       7 + 3 = 10px aussen — dieselbe Kante wie die Kategoriefelder (§5). */
+    padding-left: 7px;
+    padding-right: 7px;
   }
   .theme-tastenhell .nav-tab {
     border-radius: 14px;
-    margin: 4px 0 2px;
+    margin: 4px 3px 2px;
   }
 
   /* ── „+"-Button (.plus-master-btn): in den eckigen Spezial-Themes wieder
