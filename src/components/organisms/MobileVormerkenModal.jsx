@@ -10,7 +10,8 @@ import { MobileCatStep } from "../molecules/MobileCatStep.jsx";
 import { MobileNewAccOverlay } from "../molecules/MobileNewAccOverlay.jsx";
 import { AccountChips } from "../molecules/AccountChips.jsx";
 import { AppCtx } from "../../state/AppContext.js";
-import { theme as T } from "../../theme/activeTheme.js";
+import { schriftAuf } from "../../theme/amtPill.js";
+import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { betrag } from "../../utils/betrag.jsx";
@@ -135,8 +136,17 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
   // rendert <input type="date"> sonst höher als type="text", egal welches Padding
   // — daher feste Höhe + appearance:none statt padding-basierter Höhe.
   const INPUT_H = S.fs + S.padL*2; // 54px
+  // Feldflaeche UND Feldkante. Beides war vorher nur ein heller Schleier plus
+  // ein `border`, und "Rahmen aus" (Standard) faerbt jede border-color
+  // transparent — auf einer hellen Flaeche blieb damit gar nichts uebrig, die
+  // Felder waren nicht als Felder zu erkennen (Nutzer-Hinweis). Der Ring als
+  // INNERER Schatten ueberlebt das, und `currentColor` laesst ihn der
+  // Schriftfarbe folgen: dunkel auf hell, hell auf dunkel.
+  const feldRing = "inset 0 0 0 1.5px color-mix(in srgb, currentColor 32%, transparent)";
   const inpBase = {boxSizing:"border-box", height:INPUT_H, padding:`0 ${S.padL}px`,
-    borderRadius:S.radius, background:"rgba(255,255,255,0.06)", color:T.txt,
+    borderRadius:S.radius, color:T.txt,
+    background:(isLightTheme())?"rgba(0,0,0,0.06)":"rgba(255,255,255,0.07)",
+    boxShadow:feldRing,
     fontSize:S.fs, fontFamily:"inherit", outline:"none",
     WebkitAppearance:"none", appearance:"none"};
   const recInp = {...inpBase, width:"100%", border:`2px solid ${T.bd}`};
@@ -453,11 +463,20 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
                     if(!dateTouched) { setDate(nextBankWorkday(today)); setValueDate(today); }
                   }
                 }}
+                  // Aktiv = GEFUELLT in der Typfarbe, nicht nur getoent: die
+                  // 13%-Toenung war auf Anhieb kaum vom Rest zu unterscheiden
+                  // (Nutzer-Hinweis "fast nicht zu erkennen"), und die
+                  // Akzentschrift darauf erreichte nur 3,8:1. Die Kante der
+                  // inaktiven Knoepfe kommt als INNERER Schatten statt als
+                  // `border` — "Rahmen aus" ist der Standard und faerbt jede
+                  // border-color transparent, womit die Knopfform verschwand.
                   style={{...btnCenter, padding:`${S.padL}px ${S.pad}px`,
                     minWidth:0,
-                    background:active?c+"22":"rgba(255,255,255,0.06)",
+                    background:active?c:"rgba(255,255,255,0.06)",
                     border:`2px solid ${active?c:T.bd}`,
-                    color:active?c:T.txt2, borderRadius:S.radius,
+                    boxShadow:active?"none":"inset 0 0 0 1.5px color-mix(in srgb, currentColor 38%, transparent)",
+                    color:active?schriftAuf(c):T.txt, borderRadius:S.radius,
+                    fontWeight:active?700:600,
                     fontSize:S.fs-4}}>
                   {l}
                 </button>
@@ -516,10 +535,11 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
           <div style={{color:T.txt2,fontSize:S.fs-4,fontWeight:600,marginBottom:6}}>verursacht (optional)</div>
           <div style={{display:"flex",gap:S.gap/2,marginBottom:S.gap}}>
             <input type="date" value={valueDate} onChange={e=>setValueDate(e.target.value)}
-              style={{...inpBase, flex:1, border:`2px solid ${valueDate?T.blue:T.bd}`, colorScheme:"dark"}}/>
+              style={{...inpBase, flex:1, border:`2px solid ${valueDate?T.blue:T.bd}`, colorScheme:(isLightTheme())?"light":"dark"}}/>
             <button onClick={()=>setValueDate(valueDate?"":today)}
               style={{flexShrink:0,padding:`0 ${S.padL}px`,borderRadius:S.radius,
-                border:`2px solid ${T.bd}`,background:"rgba(255,255,255,0.06)",
+                border:`2px solid ${T.bd}`,boxShadow:feldRing,
+                background:(isLightTheme())?"rgba(0,0,0,0.06)":"rgba(255,255,255,0.07)",
                 color:T.blue,fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
               {valueDate?"löschen":"heute"}
             </button>
@@ -538,10 +558,11 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
           </div>
           <div style={{display:"flex",gap:S.gap/2,marginBottom:S.gap}}>
             <input type="date" value={date} onChange={e=>{setDate(e.target.value);setDateTouched(true);setDayMode(null);}}
-              style={{...inpBase, flex:1, border:`2px solid ${date?T.blue:T.bd}`, colorScheme:"dark"}}/>
+              style={{...inpBase, flex:1, border:`2px solid ${date?T.blue:T.bd}`, colorScheme:(isLightTheme())?"light":"dark"}}/>
             <button onClick={()=>{ setDate(date?"":today); setDateTouched(true); setDayMode(null); }}
               style={{flexShrink:0,padding:`0 ${S.padL}px`,borderRadius:S.radius,
-                border:`2px solid ${T.bd}`,background:"rgba(255,255,255,0.06)",
+                border:`2px solid ${T.bd}`,boxShadow:feldRing,
+                background:(isLightTheme())?"rgba(0,0,0,0.06)":"rgba(255,255,255,0.07)",
                 color:T.blue,fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
               {date?"löschen":"heute"}
             </button>
@@ -580,7 +601,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
                   {fieldLabel("Enddatum")}
                   <input type="date" value={endDate}
                     onChange={e=>{setEndDate(e.target.value);setCount("");}}
-                    style={{...recInp,colorScheme:"dark"}}/>
+                    style={{...recInp,colorScheme:(isLightTheme())?"light":"dark"}}/>
                 </div>
               </div>
 

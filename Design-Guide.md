@@ -378,6 +378,23 @@ und die schafft das satte Rot nur gegen reines Weiß. Es gibt deshalb je einen
 Ton für dunkle (`#FFB3A8`) und für **helle** Karten (`#9E1B0E`) — auf den
 hellgrauen Tasten von „Tastenhell" kam `GEFAHR` selbst nur auf 3,0:1.
 
+**Feldkanten kommen als innerer Schatten, nicht als `border`.** „Rahmen aus"
+ist der **Standard** der App (`.no-borders *` setzt jede `border-color` auf
+transparent) — von einem Eingabefeld blieb damit nur ein 5-%-Schleier übrig,
+und der ist auf einer hellen Fläche unsichtbar: die Felder waren nicht als
+Felder zu erkennen (Nutzer-Hinweis). `INP` (`theme/palette.js`) und der
+Vormerken-Dialog setzen deshalb
+`box-shadow: inset 0 0 0 1.5px color-mix(in srgb, currentColor 32%, transparent)`.
+`currentColor` statt einer Theme-Farbe: der Ring folgt der **Schriftfarbe des
+Feldes** — dunkel auf hell, hell auf dunkel, auch dort, wo die Karten-Textregel
+(§4.7) umschaltet. Wer ein neues Feld baut: Fläche **und** Ring setzen, nie nur
+einen Rahmen.
+
+**Aktiv heißt gefüllt, nicht getönt.** Ein Umschalter, dessen aktiver Zustand
+nur eine 13-%-Tönung derselben Farbe trägt, ist kaum zu erkennen — und die
+Akzentschrift darauf erreicht die Schwelle nicht (Ausgabe/Einnahme/Umbuchung:
+3,8:1). Aktiv = volle Akzentfläche + `schriftAuf()`; inaktiv = Ring (s. o.).
+
 **Schrift auf einer beliebigen Fläche: `schriftAuf()`** (`theme/amtPill.js`).
 Überall, wo Text auf einer Farbe liegt, die **nicht** aus dem Theme kommt —
 Tortenbeschriftungen (Kategoriefarbe), gefüllte Akzent-Pillen („Eigene",
@@ -511,8 +528,9 @@ npm run kontrast -- --bilder     # zusätzlich Screenshots nach .kontrast/
 ```
 
 Der Lauf fährt Home (in **allen drei Betrags-Modi**), den **Diagrammbereich
-(Balken und Torte)**, Monat, Trend, Daten, Kategorie-Aufriss, Bearbeiten-Dialog
-und Rückfrage ab und prüft:
+(Balken und Torte)**, den Dialog **„neue Vormerkung"** (Ausgabe und Einnahme),
+Monat, Trend, Daten, Kategorie-Aufriss, Bearbeiten-Dialog und Rückfrage ab und
+prüft:
 - **Text** gegen seinen tatsächlichen Untergrund — alle gemalten Ebenen
   übereinandergelegt, halbtransparente Chips zählen mit (der „nächste
   undurchsichtige Vorfahre" lag falsch, sobald eine getönte Fläche dazwischenlag).
@@ -543,13 +561,19 @@ und Rückfrage ab und prüft:
 - Ein `<svg>`, das eigene gefüllte Formen oder `<text>` enthält, ist ein
   **Behälter** und wird nicht als Symbol gewertet — sonst meldet die Torte ihr
   SVG-Standardschwarz.
+- Die Punktprobe endet am **deckenden Vorfahren**: was nicht unter ihm hängt,
+  ist von ihm verdeckt. Ohne diese Schranke griff sie durch einen
+  bildschirmfüllenden Dialog hindurch auf das Tortendiagramm der Seite darunter
+  („Banktag auf Lachsrot").
 - Schwellen: 4,5:1 Text, 3:1 großer Text und Symbole.
 
 Gezählt wird jede Farbkombination **einmal pro Theme**, ausgegeben aber je
 Station. Vorher zählte jede Station eigenständig — der Hero steht auf jedem
 Bildschirm, und eine neue Station trieb die Zahl nach oben, ohne dass ein neues
-Problem dazugekommen wäre. Stand jetzt: **Tastenhell 0, Keyboard 0, Lime 16,
-Limehell 43** (die beiden letzten sind Altlasten, siehe §10).
+Problem dazugekommen wäre. Stand jetzt: **Tastenhell 0, Keyboard 0, Lime 18,
+Limehell 48** (die beiden letzten sind Altlasten: „Limehell" hat mit
+`txt2 rgba(60,80,40,0.55)` eine zu schwache Zweitschrift — 2,68:1 —, und sein
+`gold` #FFC107 trägt auf Weiß nur 1,47:1).
 
 Findings aus **Nutzerdaten** (selbst gewählte Kategorie- und Kontofarben) werden
 getrennt ausgewiesen und lassen den Lauf **nicht** fehlschlagen — sie sind vom

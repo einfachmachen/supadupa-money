@@ -1,7 +1,19 @@
 // Live-Paletten: INP (Input-Style), PAL (per Transaktionstyp), getBC/gs (Jahresplan-Farben)
 import { theme as T, isLightTheme } from "./activeTheme.js";
 
-const _INP_BASE = ()=>({width:"100%",background:(isLightTheme())?"rgba(0,0,0,0.05)":"rgba(255,255,255,0.05)",border:`1px solid ${T.bd}`,borderRadius:11,padding:"6px 10px",color:T.txt,fontSize:14,outline:"none",marginBottom:9,boxSizing:"border-box"});
+// Eingabefeld-Grundstil.
+//
+// Die Kante kommt als INNERER Schatten, nicht (nur) als `border`: "Rahmen aus"
+// ist der Standard der App und setzt per `.no-borders *` jede border-color auf
+// transparent — damit blieb von einem Feld nur ein 5%-Schleier uebrig, und der
+// ist auf einer hellen Flaeche praktisch unsichtbar. Genau das war der
+// Nutzer-Hinweis: "es ist nicht zu erkennen, was Eingabefelder sind".
+//
+// `currentColor` statt einer Theme-Farbe: der Ring folgt damit automatisch der
+// Schriftfarbe des Feldes — dunkel auf hellem Grund, hell auf dunklem, auch
+// dort, wo die Karten-Textregel (§4.7) die Farbe umschaltet. Versteht ein
+// Browser `color-mix` nicht, faellt nur der Ring weg.
+const _INP_BASE = ()=>({width:"100%",background:(isLightTheme())?"rgba(0,0,0,0.06)":"rgba(255,255,255,0.07)",border:`1px solid ${T.bd}`,boxShadow:"inset 0 0 0 1px color-mix(in srgb, currentColor 30%, transparent)",borderRadius:11,padding:"6px 10px",color:T.txt,fontSize:14,outline:"none",marginBottom:9,boxSizing:"border-box"});
 const INP = new Proxy({}, { get:(_,k)=>_INP_BASE()[k] });
 
 

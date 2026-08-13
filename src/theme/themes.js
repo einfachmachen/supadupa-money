@@ -978,6 +978,14 @@ THEMES.tastenhell = {
     // Die Leiste selbst wird dafuer durchsichtig (themes.css), damit die
     // Platte zwischen den Tasten steht.
     ".nav-tab":"#525252",
+    // Die bildschirmfuellenden Dialoge (neue Vormerkung, Kategorien, Daten-
+    // Manager) malen ebenfalls den Hintergrund. Auf der hellen Platte fielen
+    // dort saemtliche Eingabefelder durch: sie setzen sich mit einem hellen
+    // Schleier ab, und der ist auf Hell unsichtbar (Nutzer-Hinweis).
+    // Eine Stufe tiefer als die Tasten: die Felder darin setzen sich mit einem
+    // hellen Schleier ab, und der braucht einen dunkleren Grund, um selbst
+    // genug Kontrast zu behalten.
+    ".mobile-modal":"#4A4A4A",
   },
   // Keine helle Fuge wie beim Keyboard-Theme: hier IST die Platte die Fuge.
   // Die Taste liegt mit einem weichen Schatten darauf.

@@ -103,9 +103,24 @@ const SCAN = () => {
   // also liefert elementsFromPoint genau die Schichten darunter. Vorfahren
   // sind schon in bgs enthalten und werden uebersprungen; Fuellung UND
   // Deckkraft zaehlen (Segmente liegen je nach Auswahl bei 0,88 oder 0,35).
+  // Tiefster Vorfahre, der selbst deckend malt. Alles, was NICHT unter ihm
+  // haengt, ist von ihm verdeckt und darf nicht als Untergrund zaehlen. Ohne
+  // diese Schranke griff die Punktprobe unten durch einen bildschirmfuellenden
+  // Dialog hindurch auf das Tortendiagramm der Seite darunter — der Lauf
+  // meldete dann "Banktag auf Lachsrot".
+  const deckenderVorfahre = (el) => {
+    let n = el, treffer = null;
+    while (n && n !== document.documentElement) {
+      const c = parse(getComputedStyle(n).backgroundColor);
+      if (c && c[3] >= 1 && !treffer) treffer = n;
+      n = n.parentElement;
+    }
+    return treffer;
+  };
   const grundAmPunkt = (el, bgs) => {
     const r = el.getBoundingClientRect();
     if (!r.width || !r.height) return bgs;
+    const deckend = deckenderVorfahre(el);
     // Genommen werden NUR gemalte SVG-Formen, die im Dokument VOR dem Text
     // stehen — die liegen zwangslaeufig darunter. Ohne diese beiden
     // Einschraenkungen zaehlte auch mit, was ueber dem Text schwebt (der
@@ -114,7 +129,8 @@ const SCAN = () => {
     const unten = document.elementsFromPoint(r.x + r.width / 2, r.y + r.height / 2)
       .filter(e => e !== el && !el.contains(e) && !e.contains(el))
       .filter(e => /^(path|circle|rect|ellipse|polygon)$/i.test(e.tagName))
-      .filter(e => el.compareDocumentPosition(e) & Node.DOCUMENT_POSITION_PRECEDING);
+      .filter(e => el.compareDocumentPosition(e) & Node.DOCUMENT_POSITION_PRECEDING)
+      .filter(e => !deckend || deckend.contains(e));
     if (!unten.length) return bgs;
     let grund = bgs;
     unten.reverse().forEach(form => {
@@ -239,6 +255,44 @@ async function stationen(page, merke) {
       await klickAuge(); await klickAuge();
       await merke("Home · Diagramm (Torte) · Betraege neutral");
       await klickAuge();
+    }
+  }
+
+  // Dialog "neue Vormerkung" — Einzel-Tipp auf den + Knopf. Bis hierher war
+  // der komplette Erfassungs-Dialog nie Teil des Laufs; genau dort waren die
+  // Eingabefelder nicht als solche zu erkennen (Nutzer-Bild).
+  const plus = await page.evaluate(() => {
+    const b = document.querySelector(".plus-master-btn");
+    if (!b) return null; const r = b.getBoundingClientRect();
+    return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) };
+  });
+  if (plus) {
+    // Der Dialog haengt an einem Einzel-Tipp im VERGROESSERTEN Zustand: erst
+    // Doppel-Tipp (arretiert den Knopf), dann ein einzelner — und der wartet
+    // seinerseits das Doppel-Tipp-Fenster von 350 ms ab.
+    await page.mouse.click(plus.x, plus.y); await page.waitForTimeout(80);
+    await page.mouse.click(plus.x, plus.y); await page.waitForTimeout(700);
+    const plus2 = await page.evaluate(() => {
+      const b = document.querySelector(".plus-master-btn");
+      if (!b) return null; const r = b.getBoundingClientRect();
+      return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) };
+    });
+    await page.mouse.click((plus2 || plus).x, (plus2 || plus).y); await page.waitForTimeout(1400);
+    const offen = await page.evaluate(() => !!document.querySelector(".mobile-modal"));
+    if (offen) {
+      await merke("Neue Vormerkung (Betrag & Typ)");
+      await page.evaluate(() => {
+        const b = [...document.querySelectorAll("button")].find(e => /^\s*Einnahme\s*$/.test(e.textContent || ""));
+        if (b) b.click();
+      });
+      await page.waitForTimeout(500); await merke("Neue Vormerkung (Einnahme)");
+      // Zurueck-Pfeil links oben schliesst den Dialog wieder.
+      await page.evaluate(() => {
+        const m = document.querySelector(".mobile-modal");
+        const b = m && m.querySelector("button");
+        if (b) b.click();
+      });
+      await page.waitForTimeout(800);
     }
   }
 
