@@ -4342,10 +4342,20 @@ function plusBtnColors(T) {
 function plusWrapperShell(plusArretiert) {
   return {
     flex:"0 0 auto", display:"flex", alignItems:"center", justifyContent:"center",
-    overflow:"visible", WebkitTapHighlightColor:"transparent", position:"relative",
+    overflow:"visible", WebkitTapHighlightColor:"transparent",
     transition:"width 0.25s",
     // Vergrößert (schwebt nach oben): Slot auf 0 → die 4 Tabs füllen die Bar.
     width: plusArretiert ? 0 : 90,
+    // … und er verlässt dabei den Fluss. Ein Flex-Element der Breite 0 ist
+    // trotzdem eines: es bekommt weiterhin `gap` bzw. den Anteil aus
+    // `justify-content` auf BEIDEN Seiten, wodurch in der Mitte doppelt so
+    // viel Platz klafft wie sonst. Absolut positioniert (mittig, die Leiste
+    // ist `position:fixed`) zählt er gar nicht mehr mit, und die Reiter
+    // können den frei gewordenen Platz gleichmäßig unter sich aufteilen.
+    // Der Knopf selbst schwebt ohnehin über der Leiste (restingTransform).
+    ...(plusArretiert
+      ? { position:"absolute", left:"50%", top:0, bottom:0 }
+      : { position:"relative" }),
   };
 }
 function plusBtnShell(SIZE) {

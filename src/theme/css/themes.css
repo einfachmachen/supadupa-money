@@ -182,10 +182,21 @@
        7 + 3 = 10px aussen — dieselbe Kante wie die Kategoriefelder (§5). */
     padding-left: 7px;
     padding-right: 7px;
+    /* Wächst der + Knopf, verlässt sein Platz den Fluss (App.jsx) — der frei
+       werdende Raum geht in die LÜCKEN, nicht in die Reiter: die behalten
+       ihre Breite und rücken nur auseinander (Nutzer-Wunsch). */
+    justify-content: space-between;
   }
   .theme-tastenhell .nav-tab {
     border-radius: 14px;
     margin: 4px 3px 2px;
+    /* Feste Breite statt `flex:1` — sonst dehnen sich die Reiter auf den
+       Platz des + Knopfes aus und ändern ihre Form. Der Wert ist genau die
+       Breite aus dem Startzustand: Leistenbreite abzüglich Knopf-Slot (90),
+       geteilt durch vier, abzüglich der eigenen Ränder (2 × 3). */
+    /* `!important`, weil `flex:1` als Inline-Style am Reiter haengt — dagegen
+       verliert ein Stylesheet (derselbe Fallstrick wie beim Kartenabstand). */
+    flex: 0 0 calc((100% - 90px) / 4 - 6px) !important;
   }
 
   /* ── „+"-Button (.plus-master-btn): in den eckigen Spezial-Themes wieder

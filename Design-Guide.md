@@ -608,6 +608,15 @@ reservierten Prognosewert.
   aktiven Reiters (`T.blue`, fette Beschriftung), die es im kleinen Zustand
   nicht gibt — dort sind die Reiter ohnehin noch nicht bedienbar. Gilt für alle
   Themes.
+- **Der Platz des + Knopfes verlässt im vergrößerten Zustand den Fluss**
+  (`position:absolute`, mittig). Vorher blieb er als Flex-Element der Breite 0
+  stehen — und ein solches bekommt weiterhin auf **beiden** Seiten `gap` bzw.
+  seinen Anteil aus `justify-content`, wodurch in der Mitte doppelt so viel
+  klaffte wie sonst. In „Tastenhell" behalten die Reiter dadurch ihre Breite
+  (`flex: 0 0 calc((100% - 90px)/4 - 6px)`, `justify-content: space-between`):
+  der frei werdende Platz geht in die **Lücken**, nicht in die Reiter. Gemessen:
+  4 × 73 px in beiden Zuständen, Lücken 6 px → 36 px. Alle anderen Themes
+  behalten ihr `flex:1` und füllen die Leiste wie bisher.
 - **Zentraler Master-Button** (runder „+"/Monats-Knopf) — **Einzel-Tipp öffnet
   direkt die Vormerken-Erfassung** (`MobileVormerkenModal`), sowohl im
   Kleinzustand (Ruheposition in der Bottom-Bar) als auch im vergrößerten
