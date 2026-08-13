@@ -1205,7 +1205,7 @@ function MonatScreen() {
       <div ref={listRef} onScroll={onListScroll} style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",position:"relative"}} onTouchStart={onListTouchStart} onTouchEnd={onTE}>
 
         {/* Hero — SaldoHeroV2 (gemeinsamer Hero mit dem Dashboard) */}
-        <div ref={stickyRef} style={window.MBT_DEBUG?.disable_sticky?{}:{position:"sticky",top:0,zIndex:10,background:T.bg}}>
+        <div ref={stickyRef} className="hero-sticky" style={window.MBT_DEBUG?.disable_sticky?{}:{position:"sticky",top:0,zIndex:10,background:T.bg}}>
         {(()=>{
           const _tb=new Date(),_todayY=_tb.getFullYear(),_todayM=_tb.getMonth(),_todayD=_tb.getDate();
           const _isCurS=year===_todayY&&month===_todayM,_isPastS=year<_todayY||(year===_todayY&&month<_todayM);

@@ -326,14 +326,20 @@ Flächen holen sich `color-scheme: dark` per CSS zurück. Zu beachten: **der
 Kontrast-Lauf findet so etwas nicht** — weiße Schrift auf schwarzem Feld ist
 kontrastreich, nur eben falsch.
 
-**Wo die Liste unter dem Hero verschwindet, läuft sie weich aus.** In der
-Monatsansicht scrollt die Liste hinter einen `position:sticky`-Block, und der
-ist mit `T.bg` **deckend** gemalt (`MonatScreen.jsx`) — der Inhalt wurde dort an
-einer harten Kante abgeschnitten, sichtbar direkt neben der runden Ecke der
-Hero-Karte. Der Block endet jetzt mit einem 46 px hohen Verlauf
-(`T.bg` → transparent, negativer Rand, `pointer-events:none`), der über die
-Liste ragt: der Inhalt löst sich auf, statt gekappt zu werden. Gilt für alle
-Themes, die Farbe kommt aus dem Theme.
+**Die Liste läuft als Schicht direkt hinter dem Hero** (`.hero-sticky`,
+`MonatScreen.jsx`). Der sticky-Block malt normalerweise `T.bg` **deckend**; in
+den runden Ecken der Hero-Karte stand dadurch Hell gegen Dunkel, und der Inhalt
+verschwand an einer harten Kante. In „Tastenhell" ist der Block durchsichtig —
+dort läuft **Grau in Grau**, die Karten der Liste schieben sich sichtbar hinter
+der Hero-Karte durch. Der Hero selbst bleibt deckend, es scheint also kein Text
+durch ihn hindurch; sichtbar wird die Liste nur in den Fugen ringsum.
+
+> **Zwei Sackgassen davor, beide aus demselben Denkfehler:** ein Glas-Hero
+> (`backdrop-filter`) unschärfte nur diesen deckenden Block, nicht die Liste.
+> Und ein Verlauf am unteren Ende des Blocks malte auch am **Listenanfang**,
+> wo nichts darunter liegt — dort lag er als heller Balken auf der ersten
+> Karte. Wer hier etwas ändert, muss **beide** Zustände ansehen: oben und
+> gescrollt.
 
 > **Ein Glas-Hero half hier NICHT** — und das ist die Lehre: hinter dem Hero
 > liegt gar nicht die Liste, sondern genau dieser deckende Block. Eine

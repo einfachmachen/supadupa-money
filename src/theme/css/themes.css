@@ -157,6 +157,17 @@
     margin-left: 10px;
     margin-right: 10px;
   }
+  /* Die Liste laeuft als Schicht DIREKT hinter dem Hero (Nutzer-Wunsch):
+     der sticky-Block der Monatsansicht malt sonst die Plattenfarbe deckend,
+     und in den runden Ecken der Hero-Karte stand dadurch Hell gegen Dunkel.
+     Durchsichtig laeuft dort Grau in Grau — die Karten der Liste schieben
+     sich sichtbar hinter der Karte durch.
+     Der Hero selbst bleibt deckend, es scheint also kein Text durch ihn
+     hindurch; sichtbar wird die Liste nur in den Fugen ringsum. */
+  .theme-tastenhell .hero-sticky {
+    background: transparent !important;
+  }
+
   /* Systemfarbschema: die Wurzel steht auf "light" (helle Platte, siehe
      `farbschema` im Theme). Alles, was DUNKEL gemalt ist, dreht es hier
      zurueck — sonst zeichnet der Browser Felder, Kalender und Auswahllisten
