@@ -120,7 +120,11 @@ function CategoryChart({catSums, maxSum, budgets, getBudgetForMonth, year, month
   ].filter(Boolean);
 
   return (
-    <div style={{margin:"0 0 4px",borderRadius:12,overflow:"hidden",border:`1px solid ${T.bd}`}}>
+    // `diagramm-flaeche`: ein Inhaltsblock wie Hero und Kategorienkarten. Ohne
+    // eigene Flaeche stand die Torte als grosser heller Fleck zwischen zwei
+    // Tasten (Nutzer-Hinweis "wirkt inkonsistent").
+    <div className="diagramm-flaeche"
+      style={{margin:"0 0 4px",borderRadius:12,overflow:"hidden",border:`1px solid ${T.bd}`}}>
       <div onClick={()=>setChartOpen(v=>!v)}
         style={{display:"flex",alignItems:"center",gap:6,padding:"7px 2px",
           cursor:"pointer",background:"rgba(255,255,255,0.03)"}}>
@@ -137,7 +141,7 @@ function CategoryChart({catSums, maxSum, budgets, getBudgetForMonth, year, month
               // Farbe; auf hellem Grund ergab das Lime auf fast Weiss.
               style={{display:"flex",alignItems:"center",gap:4,padding:"3px 10px",
                 borderRadius:8,border:`1px solid ${view===v?T.blue:T.bd}`,
-                background:view===v?T.blue:"transparent",
+                background:view===v?T.blue:"rgba(255,255,255,0.06)",
                 color:view===v?aufAkzent:T.txt2,fontSize:11,cursor:"pointer",fontFamily:"inherit"}}>
               {Li(icon,11,view===v?aufAkzent:T.txt2)} {label}
             </button>

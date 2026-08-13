@@ -17,7 +17,7 @@
 import React from "react";
 import { theme as T } from "../../theme/activeTheme.js";
 import { Li } from "../../utils/icons.jsx";
-import { schriftAuf, mischen } from "../../theme/amtPill.js";
+import { schriftAuf } from "../../theme/amtPill.js";
 
 const DEFAULT_S = { fs: 26, radius: 16, gap: 14 };
 
@@ -31,16 +31,17 @@ function AccountChips({
   const cols = Math.max(minCols, list.length + (allowAll ? 1 : 0) + (onAddAccount ? 1 : 0));
   if (cols === 0) return null;
 
-  // Die gewaehlte Kachel traegt die Kontofarbe als 13%-Toenung. Symbol und
-  // Text darauf muessen gegen DIESE Flaeche geprueft werden — auf heller
-  // Platte kam das Lime der "Alle"-Kachel sonst auf 1,24:1 (Kontrastlauf).
-  const gewaehltGrund = (color) => mischen(color || T.blue, 0x22 / 255, T.bg);
-  const aufChip = (color, schwelle) => schriftAuf(gewaehltGrund(color), color || T.blue, schwelle);
+  // GEWAEHLT heisst gefuellt, nicht getoent (§4.4). Die 13%-Toenung war auf
+  // der hellen Platte blasser als die nicht gewaehlten Kacheln daneben — die
+  // Auswahl sah damit schwaecher aus als der Rest (Nutzer-Hinweis
+  // "inkonsistent"). Jetzt traegt die gewaehlte Kachel ihre Kontofarbe voll,
+  // die uebrigen sind Tasten.
+  const aufChip = (color, schwelle) => schriftAuf(color || T.blue, T.on_accent, schwelle);
   const chipStyle = (selected, color) => ({
     aspectRatio: "1", borderRadius: S.radius, padding: 4,
-    background: selected ? color + "22" : "rgba(255,255,255,0.06)",
+    background: selected ? (color || T.blue) : "rgba(255,255,255,0.06)",
     border: `2px solid ${selected ? (color || T.blue) : T.bd}`,
-    color: selected ? T.txt : T.txt2,
+    color: selected ? aufChip(color) : T.txt2,
     cursor: "pointer", fontFamily: "inherit", position: "relative",
     display: "flex", flexDirection: "column", alignItems: "center",
     justifyContent: "center", gap: 2, minWidth: 0, overflow: "hidden",
@@ -65,17 +66,17 @@ function AccountChips({
         const col = acc.color || T.blue;
         return (
           // Nicht gewaehlte Kacheln sind Tasten (Nutzer-Wunsch) — die gewaehlte
-          // behaelt ihre Kontofarbe als Toenung.
+          // traegt ihre Kontofarbe voll.
           <button key={acc.id} onClick={() => onChange(acc.id)} className={sel ? undefined : "wahl-taste"}
             style={chipStyle(sel, col)}>
             {acc.delayDays > 0 && (
               <span style={{ position: "absolute", top: 3, right: 3, fontSize: S.fs - 16,
-                color: T.gold, fontWeight: 700, background: T.gold + "22", borderRadius: 4,
+                color: schriftAuf(T.gold, T.on_accent), fontWeight: 700, background: T.gold, borderRadius: 4,
                 padding: "0 3px", lineHeight: 1.3, letterSpacing: "-0.5px" }}>
                 +{acc.delayDays}
               </span>
             )}
-            {Li(acc.icon || "landmark", S.fs, sel ? col : T.txt2)}
+            {Li(acc.icon || "landmark", S.fs, sel ? aufChip(col, 3) : T.txt2)}
             <span style={nameStyle(sel)}>{acc.name || acc.id}</span>
           </button>
         );

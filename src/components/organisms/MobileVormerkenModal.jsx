@@ -906,6 +906,14 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
         <div style={{flex:1,padding:S.padL,paddingBottom:140,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
           <SchieflageVorwarnung draftTxs={draftTxs}
             kind={isTransfer?"umbuchung":(recurring?(isFinanz?"finanzierung":"serie"):"vormerkung")} style={{marginBottom:S.gap}}/>
+          {/* Die Uebersicht steht auf einer KARTE, nicht nackt auf der Flaeche.
+              Ohne sie schwebten die Zeilen im Modus "Randlos" voellig ohne
+              Kante unter dem Warnkasten — als einziger Bildschirm des Ablaufs
+              (Nutzer-Hinweis "wirkt inkonsistent"). `T.surf` ist dieselbe
+              Kartenfarbe wie ueberall; die Kartenregel (§4.7) erkennt sie am
+              Farbwert und gibt ihr in gegensaetzlichen Themes die
+              Karten-Textfarben mit. */}
+          <div style={{background:T.surf,borderRadius:12,padding:`2px ${S.padL}px`}}>
           {[
             ["Typ",            isTransfer?"Umbuchung":(recurring?(isFinanz?"Finanzierung":"wiederkehrend"):(csvType==="expense"?"Ausgabe":"Einnahme"))],
             [isTransfer?"Quelle":"Konto",  (accounts||[]).find(a=>a.id===accId)?.name||accId],
@@ -932,15 +940,17 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
               ["€/Liter",  fuelPricePerL ? fuelPricePerL+" €" : "—"],
               ["km-Stand", odometer ? odometer+" km" : "—"],
             ] : []),
-          ].map(([k,v])=>(
+          ].map(([k,v],i,alle)=>(
             <div key={k} style={{display:"flex",justifyContent:"space-between",
               padding:`${S.gap}px 0`,
-              borderBottom:`1px solid ${T.bd}`,alignItems:"flex-start",gap:16}}>
+              borderBottom:i===alle.length-1?"none":`1px solid ${T.bd}`,
+              alignItems:"flex-start",gap:16}}>
               <span style={{color:T.txt2,fontSize:S.fs,flexShrink:0}}>{k}</span>
               <span style={{color:T.txt,fontSize:S.fs,fontWeight:600,
                 textAlign:"right",flex:1,wordBreak:"break-word"}}>{v}</span>
             </div>
           ))}
+          </div>
 
         </div>
       </>}

@@ -1427,7 +1427,7 @@ function DashboardScreenV2() {
               <div style={{display:"flex",gap:6,flex:1,minWidth:0,alignItems:"center"}}>
                 {[["custom","\u270e Eigene"],["desc","\u2193"],["asc","\u2191"]].map(([mode,lbl])=>(
                   <button key={mode} onClick={()=>setCatSortMode(mode)}
-                    style={{background:catSortMode===mode?T.blue:"transparent",
+                    style={{background:catSortMode===mode?T.blue:"rgba(255,255,255,0.06)",
                       color:catSortMode===mode?schriftAuf(T.blue,T.on_accent):T.txt2,
                       border:`1px solid ${catSortMode===mode?T.blue:T.bd}`,
                       borderRadius:14,padding:"3px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>
@@ -1440,7 +1440,7 @@ function DashboardScreenV2() {
                 <span style={{color:T.txt2,fontSize:10,fontWeight:600}}>Unterkat.:</span>
                 {[["pillen","Pillen"],["pegel","Pegel"]].map(([mode,lbl])=>(
                   <button key={mode} onClick={()=>setSubViewMode(mode)}
-                    style={{background:subViewMode===mode?T.blue:"transparent",
+                    style={{background:subViewMode===mode?T.blue:"rgba(255,255,255,0.06)",
                       color:subViewMode===mode?schriftAuf(T.blue,T.on_accent):T.txt2,
                       border:`1px solid ${subViewMode===mode?T.blue:T.bd}`,
                       borderRadius:14,padding:"3px 10px",fontSize:11,fontWeight:600,cursor:"pointer"}}>

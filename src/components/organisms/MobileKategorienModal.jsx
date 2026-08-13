@@ -10,7 +10,7 @@ import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
-import { schriftAuf, mischen } from "../../theme/amtPill.js";
+import { schriftAuf, mischen, toenungsGrund } from "../../theme/amtPill.js";
 import { suggestBudget } from "../../utils/budgetSuggest.js";
 
 // Kategorie-Priorität (steuert die Treiber-Reihenfolge im Money-Mood-Schieflage-Panel).
@@ -527,22 +527,24 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
           // (Nutzer-Feedback). cond_pos/cond_neg sind für genau diesen Zweck (große,
           // farbkräftige Flächen) gedacht, schon genutzt in SaldoHeroV2.
           const dispColor = cat.color || (isInc ? T.cond_pos : T.cond_neg);
-          // Die Kopfzeile toent sich mit der Kategoriefarbe (18 %) und traegt
-          // darauf Symbol und Typ-Zeichen in Akzentfarben — auf heller Platte
-          // schrumpft das auf 1,3:1 (Kontrastlauf). Deshalb gegen die
-          // WIRKLICH gemalte Flaeche pruefen (§4.4).
-          const bandGrund = mischen(dispColor, 0x18 / 255, T.bg);
+          // Die Kopfzeile ist eine Taste wie alles andere in diesem Blatt; die
+          // Kategoriefarbe steht als Kante links und im Symbolfeld. Vorher war
+          // sie eine 18%-Toenung — auf der hellen Platte ein blasses Band
+          // zwischen lauter dunklen Zeilen, und Symbol wie Typ-Zeichen kamen
+          // darauf nur auf 1,3:1 (Kontrastlauf, Nutzer-Hinweis "inkonsistent").
+          const bandGrund = toenungsGrund(dispColor, 0x18 / 255, ".wahl-taste");
           const aufBand = (farbe, schwelle) => schriftAuf(bandGrund, farbe, schwelle);
-          // (Die Kopfzeile ist in keinem Theme eine Karte — hier reicht die
-          //  Mischung ueber der Platte.)
           return (
           <div key={cat.id} style={{marginBottom:4}}>
 
             {/* Kategorie-Header */}
-            <div style={{display:"flex",alignItems:"center",gap:8,
+            <div className="wahl-taste" style={{display:"flex",alignItems:"center",gap:8,
               padding:"2px 10px",borderRadius:S.radius/2,
               background:dispColor+"18",
               border:`2px solid ${dispColor}44`,
+              // Die Farbkante als INNENSCHATTEN, nicht als Rahmen: im Modus
+              // "Randlos" sind alle Rahmen durchsichtig, ein Schatten bleibt.
+              boxShadow:`inset 5px 0 0 0 ${dispColor}`,
               marginBottom:2}}>
               {/* Icon — antippen öffnet Icon-Picker (mit Farb-Picker integriert) */}
               <button onClick={()=>setIconPickFor({type:"cat", id:cat.id})}

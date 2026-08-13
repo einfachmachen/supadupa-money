@@ -939,6 +939,20 @@ THEMES.magazin = {
 //  (Nutzer-Hinweis: „die Schriftfarbe soll wie im Screenshot weiss bzw. Lime
 //  sein"). Gemessen wird beides gleich: `npm run kontrast tastenhell`.
 // ════════════════════════════════════════════════════════════════════════
+
+// Der blasse Weiss-Schleier, mit dem die App seit jeher "hier ist etwas"
+// malt — als Attribut-Selektor. Beide Schreibweisen, weil manche Stellen
+// `background` und andere `backgroundColor` setzen.
+const SCHLEIER = [
+  '[style*="background: rgba(255, 255, 255, 0."]',
+  '[style*="background-color: rgba(255, 255, 255, 0."]',
+];
+// Flaechen, die selbst schon Tasten sind. Ein Schleier DARIN wird nicht zur
+// Taste (die waere unsichtbar), sondern zur vertieften Stufe.
+const VERTIEFT = [".hero-flaeche", ".symbolzeile", ".aufriss-blatt",
+  ".menue-kachel", ".nav-tab", ".tages-karte", ".diagramm-flaeche",
+  ".warn-karte", ".hinweis-karte", ".wahl-taste"];
+
 THEMES.tastenhell = {
   ...THEMES.keyboard,
   hell:false,                  // helle Platte, aber dunkle Karten (s. o.)
@@ -998,22 +1012,30 @@ THEMES.tastenhell = {
     ".formular-blatt input":"#525252",
     ".formular-blatt select":"#525252",
     ".formular-blatt textarea":"#525252",
-    // ALLES, was in einem Dialog zur Auswahl steht, ist eine Taste
-    // (Nutzer-Wunsch: "So wie aktuell sieht es verloren und belanglos aus").
+    // ── Der blasse Weiss-Schleier — ueberall, nicht nur im Dialog ──────────
     //
-    // Die App malt solche Flaechen seit jeher als blassen Weiss-Schleier
-    // (`rgba(255,255,255,0.04…0.1)`) — in einem dunklen Theme ein leichtes
-    // Aufhellen, auf der hellen Platte praktisch nichts. Sie einzeln
-    // auszuzeichnen hiesse rund 270 Stellen in 40 Dateien anzufassen und
-    // jede kuenftige zu vergessen; stattdessen greift der Selektor den
-    // Schleier direkt im style-Attribut ab — dieselbe Mechanik, mit der
+    // Die App malt "hier ist etwas" seit jeher als
+    // `rgba(255,255,255,0.03…0.15)`: Eingabefelder, Auswahlzeilen, Reiter,
+    // Werkzeugleisten, das Diagramm-Dach. In einem dunklen Theme ist das ein
+    // leichtes Aufhellen, auf der hellen Platte praktisch nichts. Sie einzeln
+    // auszuzeichnen hiesse rund 270 Stellen in 40 Dateien anzufassen und jede
+    // kuenftige zu vergessen; stattdessen greift der Selektor den Schleier
+    // direkt im style-Attribut ab — dieselbe Mechanik, mit der
     // `kartenTextRegel()` die Karten an ihrer Flaechenfarbe erkennt.
     // (Nachgemessen: der Browser schreibt `background: rgba(255, 255, 255,
     // 0.04);` — Kurzform und Abstaende bleiben erhalten.)
-    [[".mobile-modal", ".formular-blatt"].flatMap(d => [
-      `${d} [style*="background: rgba(255, 255, 255, 0."]:not(.kopf-taste)`,
-      `${d} [style*="background-color: rgba(255, 255, 255, 0."]:not(.kopf-taste)`,
-    ]).join(",")]:"#525252",
+    //
+    // Erst als die Regel nur in Dialogen galt, sah die App uneinheitlich aus:
+    // Suchfeld und Filterreiter der Monatsansicht, die Sortierzeile und das
+    // Diagramm blieben als einzige blass (Nutzer-Hinweis). Sie gilt deshalb
+    // fuer die ganze Oberflaeche.
+    [SCHLEIER.join(",")]:"#525252",
+    // … und ZWEI Stufen, weil ein Schleier auch auf einer Taste liegen kann
+    // (der Knopf im Dialogkopf, die "GESAMT"-Pille im Hero, die Umschalter im
+    // Diagramm). Taste auf Taste waere unsichtbar; die vertiefte Stufe ist
+    // dunkler statt heller, damit die Akzente darauf eher BESSER tragen.
+    [[...VERTIEFT.flatMap(c => SCHLEIER.map(s => `${c} ${s}`)),
+      ".kopf-taste"].join(",")]:"#464646",
     // Auswahlknoepfe in den Dialogen sind ebenfalls Tasten (Nutzer-Wunsch):
     // Ausgabe/Einnahme/Umbuchung (nur solange NICHT gewaehlt — die gewaehlte
     // traegt ihre volle Typfarbe), die Nebenknoepfe "loeschen"/"heute" und die
@@ -1026,6 +1048,10 @@ THEMES.tastenhell = {
     // ("Betrag gesperrt", "Splitbuchung") tragen Akzentschrift auf ihrer
     // eigenen Toenung.
     ".hinweis-karte":"#525252",
+    // Das Diagramm ist ein Inhaltsblock wie Hero und Kategorienkarten — ohne
+    // eigene Flaeche stand die Torte als grosser heller Fleck zwischen zwei
+    // Tasten.
+    ".diagramm-flaeche":"#525252",
   },
   // Keine helle Fuge wie beim Keyboard-Theme: hier IST die Platte die Fuge.
   // Die Taste liegt mit einem weichen Schatten darauf.

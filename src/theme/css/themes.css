@@ -88,10 +88,21 @@
     outline: none !important;
   }
   /* Alle generischen Buttons im Terminal: kein sichtbarer Rahmen.
-     AUSNAHMEN: der zentrale + Button (.plus-master-btn) und solide Aktions-
-     Buttons (.btn-solid) — die definieren ihre Fläche inline (Akzentfarbe)
-     und würden sonst mit dunklem Text auf dunklem Grund unsichtbar. */
-  .theme-terminal button:not(.plus-master-btn):not(.btn-solid) {
+     AUSNAHMEN: der zentrale + Button (.plus-master-btn), ausdrücklich solide
+     Aktions-Buttons (.btn-solid) — und JEDER Knopf, der seine Fläche inline
+     als DECKENDE Farbe malt.
+
+     Der letzte Punkt war eine stille Falle: sobald ein Umschalter im aktiven
+     Zustand die volle Akzentfläche trägt (§4.4), rechnet er seine Schriftfarbe
+     gegen DIESE Fläche — nimmt das Theme sie weg, steht dunkle Schrift auf
+     dunklem Grund (gemessen 1:1 an „Speichern", „Torte", der gewählten
+     Konto-Kachel). Statt jeden dieser Knöpfe einzeln zu markieren und den
+     nächsten zu vergessen, erkennt der Selektor die deckende Fläche selbst:
+     der Browser schreibt sie als `rgb(…)` ins style-Attribut, ein Schleier
+     dagegen als `rgba(…)` — und "rgb(" trifft "rgba(" NICHT, weil dort ein
+     `a` vor der Klammer steht. Getönte und durchsichtige Knöpfe bleiben also
+     flach, wie es das Theme will. */
+  .theme-terminal button:not(.plus-master-btn):not(.btn-solid):not([style*="background: rgb("]):not([style*="background-color: rgb("]) {
     border: none !important;
     background: transparent !important;
   }

@@ -453,6 +453,24 @@ nur eine 13-%-Tönung derselben Farbe trägt, ist kaum zu erkennen — und die
 Akzentschrift darauf erreicht die Schwelle nicht (Ausgabe/Einnahme/Umbuchung:
 3,8:1). Aktiv = volle Akzentfläche + `schriftAuf()`; inaktiv = Ring (s. o.).
 
+Sobald die **inaktiven** Zustände Tasten sind (§4.7), wird daraus eine Pflicht:
+auf einer hellen Platte ist eine 13-%-Tönung **blasser** als die dunklen
+Nachbarn — die Auswahl sah damit schwächer aus als das Nicht-Gewählte
+(Nutzer-Hinweis „inkonsistent"). Betroffen waren die Konto-Kacheln, die Reiter
+des Daten-Managers und die Kategorie-Kopfzeilen. Die Kopfzeilen behalten ihre
+Kategoriefarbe als **Kante** (`box-shadow: inset` — ein Rahmen verschwindet im
+Modus „Randlos"), die Kacheln tragen sie voll.
+
+**Wer eine Fläche füllt, rechnet gegen sie — also darf kein Theme sie
+wegnehmen.** Das „Terminal"-Theme entfernte pauschal die Fläche **jedes**
+Knopfes (`background: transparent !important`), Ausnahmen nur per
+`.btn-solid`. Jeder gefüllte Umschalter stand dort mit dunkler Schrift auf
+dunklem Grund — gemessen 1:1 an „Speichern", „Torte" und der gewählten
+Konto-Kachel. Die Regel erkennt die deckende Fläche jetzt selbst: der Browser
+schreibt sie als `rgb(…)` ins style-Attribut, einen Schleier dagegen als
+`rgba(…)`, und `"rgb("` trifft `"rgba("` **nicht**. Wer künftig ein Theme baut,
+das Flächen wegnimmt, nimmt nur die getönten weg.
+
 **Akzent direkt auf dem Seitenhintergrund: `aufGrund()`.** Kurzform für
 `schriftAuf(T.bg, farbe)`. In den meisten Themes trägt die Akzentfarbe dort; in
 „Tastenhell" (helle Platte) fallen Gelbgrün und Gold durch — dann kommt der
@@ -593,9 +611,9 @@ Regeln dazu:
   muss eine Kartenfläche sein** — dafür ist `flaechen_extra` da. Wer Akzente
   wirklich flächenabhängig machen will, muss diese Stellen zuerst auf
   `color-mix()` o. Ä. umstellen.
-- **In Dialogen ist jede blasse Fläche eine Taste.** Die App malt „hier ist
-  etwas, das du antippen kannst" seit jeher als Weiß-Schleier
-  (`rgba(255,255,255,0.03…0.1)`) — in einem dunklen Theme ein leichtes
+- **Jede blasse Fläche ist eine Taste — überall, nicht nur im Dialog.** Die App
+  malt „hier ist etwas" seit jeher als Weiß-Schleier
+  (`rgba(255,255,255,0.03…0.15)`) — in einem dunklen Theme ein leichtes
   Aufhellen, auf einer hellen Platte praktisch nichts. Die Kategorieliste sah
   dadurch „verloren und belanglos" aus (Nutzer-Bild). Statt rund 270 Stellen in
   40 Dateien einzeln auszuzeichnen, greift ein Selektor den Schleier direkt im
@@ -603,12 +621,29 @@ Regeln dazu:
   dazu `background-color`) — dieselbe Mechanik, mit der `kartenTextRegel()` die
   Karten an ihrer Flächenfarbe erkennt. Nachgemessen: der Browser schreibt
   `background: rgba(255, 255, 255, 0.04);`, Kurzform und Abstände bleiben.
-  Zwei Dinge gehören dazu:
-  - **`.kopf-taste`** am Knopf im `MobileHeader` nimmt ihn aus der Regel — der
-    Kopf **ist** schon eine Taste, sonst stünde Taste auf Taste.
-  - **Blätter, die keine Dialoge sind, brauchen die Klasse trotzdem.**
-    „Einstellungen" und „Konten" liegen im Daten-Tab, nicht in einem Modal, und
-    blieben als einzige hell. Sie tragen jetzt `formular-blatt`.
+
+  Der erste Anlauf beschränkte die Regel auf `.mobile-modal`/`.formular-blatt`
+  — und genau **das** wirkte uneinheitlich (Nutzer-Hinweis): Suchfeld und
+  Filterreiter der Monatsansicht, die Sortierzeile und das Diagramm blieben als
+  einzige blass. Die Regel gilt deshalb für die ganze Oberfläche. Dazu gehören:
+  - **Zwei Stufen.** Ein Schleier kann selbst auf einer Taste liegen (Knopf im
+    Dialogkopf, „GESAMT"-Pille im Hero, Umschalter im Diagramm). Taste auf
+    Taste wäre unsichtbar, deshalb wird ein Schleier **innerhalb** einer Taste
+    zur vertieften Stufe `#464646`. Sie ist **dunkler**, nicht heller: auf einer
+    helleren Fläche fielen die Akzente durch (Cyan auf `#5E5E5E` = 3,8:1).
+    Die Liste der Taste-Container steht als `VERTIEFT` in `themes.js`.
+  - **`.kopf-taste`** am Knopf im `MobileHeader` — er hat keinen Container aus
+    der Liste über sich und wird deshalb direkt genannt.
+  - **Blätter, die keine Dialoge sind, brauchen eine Klasse trotzdem.**
+    „Einstellungen" und „Konten" liegen im Daten-Tab, nicht in einem Modal;
+    sie tragen `formular-blatt`, das Diagramm `diagramm-flaeche`.
+  - **`transparent` ist keine Fläche.** Umschalter, deren inaktiver Zustand
+    `background:"transparent"` war (Sortierzeile, Balken/Torte), tragen jetzt
+    denselben Schleier wie alles andere — sonst kann kein Theme sie erkennen,
+    und im Modus „Randlos" blieb nackter Text übrig.
+  - **Die Ausnahme:** der **Kategorie-Aufriss** bleibt ein einziges dunkles
+    Blatt (`aufriss-blatt`). Er ist kein Formular, sondern eine Vertiefung über
+    dem abgedunkelten Bildschirm; seine Zeilen haben gar keine eigene Fläche.
 - **Die Fläche sagt „antippbar", den Zustand trägt das Bedienelement.** Wo
   bisher der gewählte Zustand eine Tönung war und der ungewählte ein Schleier,
   drehte sich das Bild auf heller Platte um: der **inaktive** Reiter war die
@@ -707,12 +742,13 @@ getrennt ausgewiesen und lassen den Lauf **nicht** fehlschlagen — sie sind vom
 Theme aus nicht behebbar. Alles andere ergibt Rückgabewert 1.
 
 Stand der Messung (Standard-Auswahl, theme-eigene Stellen — Nutzerdaten zählen
-getrennt): `keyboard` 0, `kontrastdunkel` 1, `kontrasthell` 2, `terminal` 16,
-`dark` 36, `light` 80; dazu `tastenhell` 0. Die hohen Zahlen bei `light`/`dark`
+getrennt): `keyboard` 0, `kontrastdunkel` 1, `kontrasthell` 2, `terminal` 3,
+`dark` 39, `light` 80; dazu `tastenhell` 0. Die hohen Zahlen bei `light`/`dark`
 sind **Altlasten**, nicht neu — vor allem Gold auf Weiß und `txt2` mit zu wenig
 Deckkraft. In `light` tragen 115 von 138 gemeldeten Zeilen dieselbe Farbe
-(`rgba(60,80,40,0.55)`); zwei Token anzuheben würde dort den größten Teil der
-Liste auf einmal räumen.
+(`rgba(60,80,40,0.55)`), in `dark` trägt **jeder** theme-eigene Fund
+`rgba(200,210,220,0.6)`; zwei Token anzuheben würde beide Listen auf einmal
+räumen.
 
 ### 4.9 Budget-Ampel
 Budget-Auslastung färbt nach **tatsächlichem Verbrauch (Ist)**, nicht nach dem
