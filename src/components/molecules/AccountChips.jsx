@@ -16,7 +16,6 @@
 
 import React from "react";
 import { theme as T } from "../../theme/activeTheme.js";
-import { aufGrund } from "../../theme/amtPill.js";
 import { Li } from "../../utils/icons.jsx";
 
 const DEFAULT_S = { fs: 26, radius: 16, gap: 14 };
@@ -49,7 +48,8 @@ function AccountChips({
   return (
     <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: S.gap / 2 }}>
       {allowAll && (
-        <button onClick={() => onChange(null)} style={chipStyle(value == null, T.blue)}>
+        <button onClick={() => onChange(null)} className={value == null ? undefined : "wahl-taste"}
+          style={chipStyle(value == null, T.blue)}>
           {Li("layers", S.fs, value == null ? T.blue : T.txt2)}
           <span style={nameStyle(value == null)}>{allLabel}</span>
         </button>
@@ -58,7 +58,10 @@ function AccountChips({
         const sel = value === acc.id;
         const col = acc.color || T.blue;
         return (
-          <button key={acc.id} onClick={() => onChange(acc.id)} style={chipStyle(sel, col)}>
+          // Nicht gewaehlte Kacheln sind Tasten (Nutzer-Wunsch) — die gewaehlte
+          // behaelt ihre Kontofarbe als Toenung.
+          <button key={acc.id} onClick={() => onChange(acc.id)} className={sel ? undefined : "wahl-taste"}
+            style={chipStyle(sel, col)}>
             {acc.delayDays > 0 && (
               <span style={{ position: "absolute", top: 3, right: 3, fontSize: S.fs - 16,
                 color: T.gold, fontWeight: 700, background: T.gold + "22", borderRadius: 4,
@@ -74,10 +77,12 @@ function AccountChips({
       {onAddAccount && (
         // Die Kachel liegt direkt auf dem Seitenhintergrund — dort traegt die
         // Akzentfarbe nicht in jedem Theme (helle Platte, siehe aufGrund).
-        <button onClick={onAddAccount} style={{ ...chipStyle(false, T.blue),
-          background: "rgba(74,159,212,0.06)", border: `1.5px dashed ${T.blue}66`, color: aufGrund(T.blue) }}>
-          {Li("plus", S.fs, aufGrund(T.blue, 3))}
-          <span style={{ ...nameStyle(false), color: aufGrund(T.blue) }}>{addLabel}</span>
+        // Auf der Taste traegt die Akzentfarbe wieder — deshalb hier kein
+        // aufGrund() mehr, sondern schlicht T.blue.
+        <button onClick={onAddAccount} className="wahl-taste" style={{ ...chipStyle(false, T.blue),
+          background: "rgba(74,159,212,0.06)", border: `1.5px dashed ${T.blue}66`, color: T.blue }}>
+          {Li("plus", S.fs, T.blue)}
+          <span style={{ ...nameStyle(false), color: T.blue }}>{addLabel}</span>
         </button>
       )}
     </div>

@@ -199,7 +199,8 @@
   .theme-tastenhell .mobile-modal textarea,
   .theme-tastenhell .formular-blatt input,
   .theme-tastenhell .formular-blatt select,
-  .theme-tastenhell .formular-blatt textarea {
+  .theme-tastenhell .formular-blatt textarea,
+  .theme-tastenhell .wahl-taste {
     color-scheme: dark;
   }
 

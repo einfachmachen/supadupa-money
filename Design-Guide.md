@@ -302,6 +302,11 @@ Eingabe- und Auswahlfelder sind Tasten (`flaechen_extra`:
 `".mobile-modal input"` usw., inklusive `color-scheme: dark` für Kalender und
 Auswahllisten). Der Preis: jede Akzentfarbe, die dort **frei** auf der Platte
 liegt, muss durch `aufGrund()` — der Lauf hat acht solche Stellen gefunden.
+Dasselbe gilt für die **Auswahlknöpfe**: Ausgabe/Einnahme/Umbuchung,
+„löschen"/„heute" und die Konto-Schnellwahl tragen die Klasse `.wahl-taste`
+und sind damit ebenfalls Tasten — **außer der jeweils gewählte**, der seine
+volle Typ- bzw. Kontofarbe behält. Auf der Taste trägt die Akzentfarbe wieder,
+dort steht deshalb kein `aufGrund()`.
 
 In diesem Theme ist auch die **untere Leiste** aufgelöst: jeder Reiter ist eine
 eigene Taste (`.nav-tab`), die Leiste selbst durchsichtig — darunter liegt der

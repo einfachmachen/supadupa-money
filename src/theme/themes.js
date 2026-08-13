@@ -998,6 +998,11 @@ THEMES.tastenhell = {
     ".formular-blatt input":"#525252",
     ".formular-blatt select":"#525252",
     ".formular-blatt textarea":"#525252",
+    // Auswahlknoepfe in den Dialogen sind ebenfalls Tasten (Nutzer-Wunsch):
+    // Ausgabe/Einnahme/Umbuchung (nur solange NICHT gewaehlt — die gewaehlte
+    // traegt ihre volle Typfarbe), die Nebenknoepfe "loeschen"/"heute" und die
+    // Konto-Schnellwahl.
+    ".wahl-taste":"#525252",
   },
   // Keine helle Fuge wie beim Keyboard-Theme: hier IST die Platte die Fuge.
   // Die Taste liegt mit einem weichen Schatten darauf.

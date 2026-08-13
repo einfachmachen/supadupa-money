@@ -10,7 +10,7 @@ import { MobileCatStep } from "../molecules/MobileCatStep.jsx";
 import { MobileNewAccOverlay } from "../molecules/MobileNewAccOverlay.jsx";
 import { AccountChips } from "../molecules/AccountChips.jsx";
 import { AppCtx } from "../../state/AppContext.js";
-import { schriftAuf, aufGrund } from "../../theme/amtPill.js";
+import { schriftAuf } from "../../theme/amtPill.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
@@ -447,7 +447,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
             ].map(([t,l,c,trans])=>{
               const active = trans ? isTransfer : (!isTransfer && csvType===t);
               return (
-                <button key={t} onClick={()=>{
+                <button key={t} className={active ? undefined : "wahl-taste"} onClick={()=>{
                   if(trans) {
                     setIsTransfer(true);
                     setCsvType("expense");
@@ -537,6 +537,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
             <input type="date" value={valueDate} onChange={e=>setValueDate(e.target.value)}
               style={{...inpBase, flex:1, border:`2px solid ${valueDate?T.blue:T.bd}`, colorScheme:(isLightTheme())?"light":"dark"}}/>
             <button onClick={()=>setValueDate(valueDate?"":today)}
+              className="wahl-taste"
               style={{flexShrink:0,padding:`0 ${S.padL}px`,borderRadius:S.radius,
                 border:`2px solid ${T.bd}`,boxShadow:feldRing,
                 // Ohne Schleier: der Ring reicht als Form, und die
@@ -545,7 +546,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
                 // aufgehellten Schleier waren es nur 4,26:1 (Kontrast-Lauf,
                 // Theme "Keyboard").
                 background:"transparent",
-                color:aufGrund(T.blue),fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
+                color:T.blue,fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
               {valueDate?"löschen":"heute"}
             </button>
           </div>
@@ -565,6 +566,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
             <input type="date" value={date} onChange={e=>{setDate(e.target.value);setDateTouched(true);setDayMode(null);}}
               style={{...inpBase, flex:1, border:`2px solid ${date?T.blue:T.bd}`, colorScheme:(isLightTheme())?"light":"dark"}}/>
             <button onClick={()=>{ setDate(date?"":today); setDateTouched(true); setDayMode(null); }}
+              className="wahl-taste"
               style={{flexShrink:0,padding:`0 ${S.padL}px`,borderRadius:S.radius,
                 border:`2px solid ${T.bd}`,boxShadow:feldRing,
                 // Ohne Schleier: der Ring reicht als Form, und die
@@ -573,7 +575,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
                 // aufgehellten Schleier waren es nur 4,26:1 (Kontrast-Lauf,
                 // Theme "Keyboard").
                 background:"transparent",
-                color:aufGrund(T.blue),fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
+                color:T.blue,fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
               {date?"löschen":"heute"}
             </button>
           </div>
