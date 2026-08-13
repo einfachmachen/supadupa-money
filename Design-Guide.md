@@ -295,6 +295,17 @@ passen:
   (`style={{background:T.bg}}`), und dagegen verliert ein Stylesheet. Betroffen
   sind nur Themes, die `flaechen_extra` überhaupt angeben.
 
+In diesem Theme ist auch die **untere Leiste** aufgelöst: jeder Reiter ist eine
+eigene Taste (`.nav-tab`), die Leiste selbst durchsichtig — darunter liegt der
+Seitenhintergrund, also die Platte, und die steht als Fuge zwischen den Tasten.
+Die Reiter behalten ihr `flex:1` und rücken deshalb weiterhin mit dem + Knopf
+mit; im Theme steht nur Form und Fläche. Zwei Fallen dabei: die Leiste malt
+ihre Fläche **inline in der Tastenfarbe**, weshalb die Kartenregel (§4.7) sie
+über den Farbwert im `style`-Attribut mitnahm und ihr den Kartenschatten gab —
+sichtbar als feiner Strich quer über die ganze Breite (`box-shadow: none`
+dagegen). Und die Trennlinie der Leiste musste weg, sie hätte über der Platte
+gestanden.
+
 `tests/tastenhellTheme.test.js` rechnet beides nach — auch, ob es die in
 `flaechen_extra` genannten CSS-Klassen im Quelltext **wirklich gibt**;
 `npm run kontrast tastenhell` misst an der echten Oberfläche (0 theme-eigene

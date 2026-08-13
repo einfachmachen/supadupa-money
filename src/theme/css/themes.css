@@ -158,6 +158,31 @@
     margin-right: 10px;
   }
 
+  /* Untere Leiste: jeder Reiter eine eigene Taste. Die Leiste selbst wird
+     durchsichtig — darunter liegt der Seitenhintergrund, also die Platte, und
+     die steht damit als Fuge zwischen den Tasten. Ihre Farbe kommt so weiter
+     aus dem Theme und nicht aus dieser Datei.
+     Die Reiter behalten ihr `flex:1` und rücken deshalb weiterhin mit dem
+     + Knopf mit; hier stehen nur Form und Abstand. */
+  .theme-tastenhell .nav-bottom {
+    background: transparent !important;
+    /* Ohne Leiste keine Kante: die Trennlinie haette ueber der Platte
+       gestanden, quer durch die Fugen zwischen den Tasten. Der Schatten muss
+       ebenfalls weg — die Leiste malt ihre Flaeche inline in der Tastenfarbe,
+       und die Kartenregel (§4.7) erkennt sie an genau diesem Farbwert im
+       style-Attribut. Sichtbar war das als feiner Strich quer ueber die
+       ganze Breite. */
+    border-top-color: transparent !important;
+    box-shadow: none !important;
+    gap: 6px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .theme-tastenhell .nav-tab {
+    border-radius: 14px;
+    margin: 4px 0 2px;
+  }
+
   /* ── „+"-Button (.plus-master-btn): in den eckigen Spezial-Themes wieder
      rund. Der zentrale Aktionsknopf soll überall kreisförmig bleiben. ── */
   .theme-brutalist .plus-master-btn,

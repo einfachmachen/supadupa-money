@@ -4134,7 +4134,7 @@ export default function SupaDupaMoney() {
           // Abstaende zusammen, statt das Symbol auf 33px zu belassen.
           if(plusArretiert) {
             return (
-              <div key={t.id} onClick={()=>onTap(t)}
+              <div key={t.id} onClick={()=>onTap(t)} className="nav-tab"
                 style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",
                   justifyContent:"center",gap:1,cursor:"pointer",padding:"2px 0",
                   minWidth:0,WebkitTapHighlightColor:"transparent"}}>
@@ -4156,7 +4156,7 @@ export default function SupaDupaMoney() {
           // Antippen navigiert weiterhin NICHT — es beantwortet nur die Frage,
           // warum nichts passiert (Hinweis + Pulsieren des + Knopfes).
           return (
-            <div key={t.id} onClick={()=>setNavHinweis(true)}
+            <div key={t.id} onClick={()=>setNavHinweis(true)} className="nav-tab"
               style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",
                 justifyContent:"center",gap:2,cursor:"pointer",padding:"6px 0px 4px",minWidth:0,
                 WebkitTapHighlightColor:"transparent"}}>

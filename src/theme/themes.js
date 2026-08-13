@@ -974,6 +974,10 @@ THEMES.tastenhell = {
     ".aufriss-blatt":"#525252",
     ".formular-blatt":"#525252",
     ".menue-kachel":"#525252",
+    // Jeder Reiter der unteren Leiste ist eine eigene Taste (Nutzer-Wunsch).
+    // Die Leiste selbst wird dafuer durchsichtig (themes.css), damit die
+    // Platte zwischen den Tasten steht.
+    ".nav-tab":"#525252",
   },
   // Keine helle Fuge wie beim Keyboard-Theme: hier IST die Platte die Fuge.
   // Die Taste liegt mit einem weichen Schatten darauf.
