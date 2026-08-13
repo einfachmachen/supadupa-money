@@ -229,7 +229,11 @@ function ManagementScreen({activeTab="kategorien"}) {
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
         {/* Tab-Navigation jetzt in Bottom-Bar — keine interne Tab-Bar nötig */}
         {mgrTab==="einstellungen"&&(
-          <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+          // `formular-blatt`: Die Einstellungen sind kein eigener Dialog,
+          // sondern ein Blatt IM Daten-Tab — fuer die Themes ist es aber
+          // dasselbe (Felder und Auswahl gehoeren auf eine Taste, §4.7).
+          // Ohne die Klasse blieb genau dieses Blatt als einziges hell.
+          <div className="formular-blatt" style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
             <MobileHeader title="Einstellungen" subtitle="Theme, Beträge, Sicherheit …"
               icon="settings" iconColor={T.txt2} safeAreaTop={false}
               onBack={()=>setMgrTab("daten")}/>
@@ -292,7 +296,9 @@ function ManagementScreen({activeTab="kategorien"}) {
           </div>
         )}
         {mgrTab==="konten"&&(
-          <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+          // Wie die Einstellungen: ein Blatt IM Daten-Tab, fuer die Themes
+          // aber ein Formular — Konto-Zeilen und Felder gehoeren auf Tasten.
+          <div className="formular-blatt" style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
             <MobileHeader title="Konten" subtitle="Verwalten, Reihenfolge, Puffer"
               icon="credit-card" iconColor={T.blue} safeAreaTop={false}
               onBack={()=>setMgrTab("daten")}/>

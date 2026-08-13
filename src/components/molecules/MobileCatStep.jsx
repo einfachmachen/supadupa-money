@@ -7,6 +7,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
+import { aufGrund } from "../../theme/amtPill.js";
 
 // startSub: direkt bei der Unterkategorie der bereits gewaehlten Kategorie
 // beginnen, statt bei der Kategorie-Liste. Gedacht fuer Formulare, die Haupt-
@@ -85,7 +86,10 @@ function MobileCatStep({csvType, catId, subId, accountId, onSelect, S, btnBase, 
     <div>
       <button onClick={()=>{setNewMode(null);setNewName("");}}
         style={{...btnBase,justifyContent:"flex-start",padding:`${S.pad}px 0`,
-          background:"none",border:"none",color:T.blue,fontWeight:400,
+          // Der Zurueck-Verweis steht OHNE Flaeche direkt auf der Platte —
+          // in hellen Themes traegt der Akzent dort nicht (gemessen 1,29:1
+          // auf "Tastenhell"). Deshalb ueber aufGrund() (§4.4).
+          background:"none",border:"none",color:aufGrund(T.blue),fontWeight:400,
           marginBottom:S.gap,width:"auto"}}>
         ← zurück
       </button>
@@ -123,7 +127,10 @@ function MobileCatStep({csvType, catId, subId, accountId, onSelect, S, btnBase, 
     <div>
       <button onClick={()=>setCatStep("cat")}
         style={{...btnBase,justifyContent:"flex-start",padding:`${S.pad}px 0`,
-          background:"none",border:"none",color:T.blue,fontWeight:400,
+          // Der Zurueck-Verweis steht OHNE Flaeche direkt auf der Platte —
+          // in hellen Themes traegt der Akzent dort nicht (gemessen 1,29:1
+          // auf "Tastenhell"). Deshalb ueber aufGrund() (§4.4).
+          background:"none",border:"none",color:aufGrund(T.blue),fontWeight:400,
           marginBottom:S.gap,width:"auto"}}>
         ← {selCat.name}
       </button>
@@ -140,7 +147,7 @@ function MobileCatStep({csvType, catId, subId, accountId, onSelect, S, btnBase, 
           <span style={{color:T.txt2,fontSize:S.fs,marginLeft:"auto"}}>›</span>
         </button>
       ))}
-      <button onClick={()=>setNewMode("sub")}
+      <button onClick={()=>setNewMode("sub")} className="wahl-taste"
         style={{...btnBase,marginTop:S.gap/2,
           background:"rgba(74,159,212,0.06)",
           border:`1.5px dashed ${T.blue}66`,color:T.blue,fontWeight:400}}>
@@ -171,7 +178,7 @@ function MobileCatStep({csvType, catId, subId, accountId, onSelect, S, btnBase, 
           <span style={{color:T.txt2,fontSize:S.fs,marginLeft:"auto"}}>›</span>
         </button>
       ))}
-      <button onClick={()=>setNewMode("cat")}
+      <button onClick={()=>setNewMode("cat")} className="wahl-taste"
         style={{...btnBase,marginTop:S.gap/2,
           background:"rgba(74,159,212,0.06)",
           border:`1.5px dashed ${T.blue}66`,color:T.blue,fontWeight:400}}>

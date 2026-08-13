@@ -128,8 +128,12 @@ describe("Theme Tastenhell", () => {
     // (`style={{background:T.bg}}`) — ein Stylesheet verliert dagegen ohne
     // `!important`, und genau daran fiel der erste Versuch durch.
     const regel = kartenTextRegel();
+    // Ein Selektor darf inzwischen Sonderzeichen enthalten (Attribut-Selektoren
+    // fuer den blassen Weiss-Schleier), deshalb wird er fuer die Suche
+    // maskiert statt eingesetzt.
+    const maskiert = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     Object.keys(t.flaechen_extra).forEach(sel => {
-      expect(regel).toMatch(new RegExp(`\\${sel}\\{background:[^;]+ !important`));
+      expect(regel).toMatch(new RegExp(`${maskiert(sel)}\\{background:[^;]+ !important`));
     });
   });
 

@@ -424,7 +424,7 @@ function EditPopup() {
             <div style={{flex:1,minWidth:0}}>
               <div style={{color:T.txt2,fontSize:11,marginBottom:2}}>Betrag (€)</div>
               {editTx._readOnlyAmount&&(
-                <div style={{background:"rgba(74,159,212,0.08)",border:`1px solid ${T.blue}44`,
+                <div className="hinweis-karte" style={{background:"rgba(74,159,212,0.08)",border:`1px solid ${T.blue}44`,
                   borderRadius:9,padding:"6px 10px",marginBottom:6,
                   color:T.txt2,fontSize:10,lineHeight:1.5}}>
                   <span style={{display:"inline-flex",alignItems:"center",gap:4}}>{Li("lock",12,T.blue)}Betrag gesperrt</span> – nur Kategorie &amp; Split änderbar
@@ -442,7 +442,7 @@ function EditPopup() {
           {/* Splits */}
           <div style={{color:T.txt2,fontSize:11,marginBottom:6}}>Kategorie{isMulti?" & Aufteilung":""}</div>
           {isMulti&&(
-            <div style={{background:"rgba(74,159,212,0.08)",border:`1px solid ${T.blue}33`,
+            <div className="hinweis-karte" style={{background:"rgba(74,159,212,0.08)",border:`1px solid ${T.blue}33`,
               borderRadius:10,padding:"8px 12px",marginBottom:10,
               display:"flex",alignItems:"flex-start",gap:8}}>
               {Li("arrow-left-right",13,T.blue)}

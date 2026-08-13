@@ -998,6 +998,22 @@ THEMES.tastenhell = {
     ".formular-blatt input":"#525252",
     ".formular-blatt select":"#525252",
     ".formular-blatt textarea":"#525252",
+    // ALLES, was in einem Dialog zur Auswahl steht, ist eine Taste
+    // (Nutzer-Wunsch: "So wie aktuell sieht es verloren und belanglos aus").
+    //
+    // Die App malt solche Flaechen seit jeher als blassen Weiss-Schleier
+    // (`rgba(255,255,255,0.04…0.1)`) — in einem dunklen Theme ein leichtes
+    // Aufhellen, auf der hellen Platte praktisch nichts. Sie einzeln
+    // auszuzeichnen hiesse rund 270 Stellen in 40 Dateien anzufassen und
+    // jede kuenftige zu vergessen; stattdessen greift der Selektor den
+    // Schleier direkt im style-Attribut ab — dieselbe Mechanik, mit der
+    // `kartenTextRegel()` die Karten an ihrer Flaechenfarbe erkennt.
+    // (Nachgemessen: der Browser schreibt `background: rgba(255, 255, 255,
+    // 0.04);` — Kurzform und Abstaende bleiben erhalten.)
+    [[".mobile-modal", ".formular-blatt"].flatMap(d => [
+      `${d} [style*="background: rgba(255, 255, 255, 0."]:not(.kopf-taste)`,
+      `${d} [style*="background-color: rgba(255, 255, 255, 0."]:not(.kopf-taste)`,
+    ]).join(",")]:"#525252",
     // Auswahlknoepfe in den Dialogen sind ebenfalls Tasten (Nutzer-Wunsch):
     // Ausgabe/Einnahme/Umbuchung (nur solange NICHT gewaehlt — die gewaehlte
     // traegt ihre volle Typfarbe), die Nebenknoepfe "loeschen"/"heute" und die
@@ -1006,6 +1022,10 @@ THEMES.tastenhell = {
     // Hinweis-/Warnkasten im Bestaetigen-Schritt: seine Ueberschrift und die
     // Betraege sind Akzentfarben und brauchen deshalb eine Taste unter sich.
     ".warn-karte":"#525252",
+    // Dieselbe Bauart, nur ohne Warnton: die Merkkaesten im Bearbeiten-Blatt
+    // ("Betrag gesperrt", "Splitbuchung") tragen Akzentschrift auf ihrer
+    // eigenen Toenung.
+    ".hinweis-karte":"#525252",
   },
   // Keine helle Fuge wie beim Keyboard-Theme: hier IST die Platte die Fuge.
   // Die Taste liegt mit einem weichen Schatten darauf.

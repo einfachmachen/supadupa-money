@@ -17,23 +17,16 @@ import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { MONTHS_S } from "../../utils/constants.js";
 import { schieflagePreview } from "../../utils/schieflagePreview.js";
-import { schriftAuf, mischen } from "../../theme/amtPill.js";
+import { aufToenung } from "../../theme/amtPill.js";
 
 // Der Kasten tönt sich mit seiner eigenen Warnfarbe ein UND schreibt die
 // Überschrift in derselben Farbe. Auf einem Grund, der aus genau diesem Ton
 // gemischt ist, schrumpft der Kontrast — im Theme "Keyboard" (Ausgaben-Cyan)
-// gemessene 3,86:1. Deshalb wird die Überschrift gegen den WIRKLICHEN
-// Untergrund geprüft und weicht auf Weiß bzw. Fast-Schwarz aus, wenn die
-// Warnfarbe dort nicht mehr trägt. Rahmen und Symbol bleiben farbig, der
-// Kasten also weiterhin als Warnung erkennbar.
+// gemessene 3,86:1. `aufToenung()` prüft deshalb gegen die WIRKLICH gemalte
+// Fläche und weicht auf Weiß bzw. Fast-Schwarz aus, wenn die Warnfarbe dort
+// nicht mehr trägt. Rahmen und Symbol bleiben farbig, der Kasten also
+// weiterhin als Warnung erkennbar.
 const TOENUNG = 0x1f / 255; // = die "1f"-Deckkraft der Fläche unten
-function warnGrund() {
-  // Erklärt ein Theme den Kasten zur Karte (Tastenhell, §4.7), gewinnt dessen
-  // Fläche per !important gegen die Tönung — dann ist SIE der Untergrund.
-  const karte = T.flaechen_extra?.[".warn-karte"];
-  if (typeof karte === "string" && karte[0] === "#") return karte;
-  return mischen(T.neg, TOENUNG, T.bg);
-}
 
 export function SchieflageVorwarnung({ draftTxs, kind = "vormerkung", style }) {
   const { txs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth, budgets } = useContext(AppCtx);
@@ -74,8 +67,7 @@ export function SchieflageVorwarnung({ draftTxs, kind = "vormerkung", style }) {
   // JEDE Akzentfarbe in diesem Kasten liegt auf der Tönung, nicht auf der
   // Platte — sie läuft deshalb durch `auf()`. Symbole dürfen dabei die
   // niedrigere Schwelle nutzen (3:1, WCAG 1.4.11).
-  const grund = warnGrund();
-  const auf = (farbe, schwelle) => schriftAuf(grund, farbe, schwelle);
+  const auf = (farbe, schwelle) => aufToenung(farbe, TOENUNG, ".warn-karte", schwelle);
   const saldoColor = res.saldoVal < 0 ? auf(T.neg) : T.txt; // nur negativer Kontostand rot, sonst normal (weiß)
 
   return (

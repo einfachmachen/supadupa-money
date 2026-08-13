@@ -55,7 +55,12 @@ function MobileHeader({ title, subtitle, icon, iconColor, onBack, onClose, title
       // die vollen 12px, sonst waere der Titel dort zu dicht am Rand.
       padding:`${safeAreaTop ? `max(${H_PAD_V}px, calc(env(safe-area-inset-top, 0px) + 2px))` : `${H_PAD_V}px`} ${H_PAD_H}px ${H_PAD_V}px`,
       display:"flex", alignItems:"center", gap:12, flexShrink:0}}>
+      {/* `kopf-taste`: Der Kopf IST schon eine Taste (`T.surf`). Themes, die
+          jede blasse Fläche im Dialog zur Taste erklären (§4.7), müssen diesen
+          Knopf deshalb auslassen — sonst stünde Taste auf Taste und er wäre
+          nicht mehr zu sehen. */}
       <button onClick={handler} aria-label={isBack ? "Zurück" : "Schließen"}
+        className="kopf-taste"
         style={{background:"rgba(255,255,255,0.08)", border:"none", color:T.txt2,
           width:BTN, height:BTN, borderRadius:BTN_R, cursor:"pointer", fontSize:20,
           display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0,

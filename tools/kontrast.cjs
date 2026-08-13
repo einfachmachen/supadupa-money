@@ -318,7 +318,23 @@ async function stationen(page, merke) {
       await page.waitForTimeout(400);
       await setzeFeld("betrag", "5000,00"); await page.waitForTimeout(400);
       await plusKlick();                       // -> Kategorie
-      await plusKlick();                       // -> Details
+      // Die beiden Auswahllisten sind eigene Stationen: hier steht NICHTS auf
+      // einer Karte, sondern alles direkt auf der Platte — auf hellem Grund
+      // sah die Liste dadurch "verloren und belanglos" aus (Nutzer-Bild).
+      await merke("Neue Vormerkung (Kategorie-Liste)");
+      const tippeAuf = (muster) => page.evaluate((m) => {
+        const b = [...document.querySelectorAll(".mobile-modal button")]
+          .find(e => new RegExp(m).test(e.textContent || ""));
+        if (b) { b.click(); return true; } return false;
+      }, muster);
+      if (await tippeAuf("Lebenshaltung")) {
+        await page.waitForTimeout(600);
+        await merke("Neue Vormerkung (Unterkategorie-Liste)");
+        await tippeAuf("Essen & Trinken");     // -> Details
+        await page.waitForTimeout(900);
+      } else {
+        await plusKlick();                     // -> Details
+      }
       await setzeFeld("beschreibung", "Kontrastlauf"); await page.waitForTimeout(400);
       await plusKlick();                       // -> bestaetigen
       if (await page.evaluate(() => !!document.querySelector(".warn-karte"))) {
@@ -337,6 +353,33 @@ async function stationen(page, merke) {
   await tab(126); await merke("Monat");
   await tab(294); await merke("Trend");
   await tab(373); await merke("Daten");
+
+  // Die vier Blaetter hinter dem Daten-Tab. Sie waren nie Teil des Laufs,
+  // bestehen aber fast nur aus Feldern, Haken und Reitern — genau dem, was
+  // auf einer hellen Platte ohne eigene Flaeche verloren aussieht.
+  const kachel = (muster) => page.evaluate((m) => {
+    const el = [...document.querySelectorAll(".menue-kachel")]
+      .find(e => new RegExp(m).test(e.textContent || ""));
+    if (!el) return false;
+    el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    return true;
+  }, muster);
+  const zurueck = async () => {
+    await page.evaluate(() => { const b = document.querySelector(".kopf-taste"); if (b) b.click(); });
+    await page.waitForTimeout(800);
+  };
+  for (const [muster, name] of [
+    ["^Kategorien & Budget", "Kategorien & Budget"],
+    ["^Konten", "Konten"],
+    ["^Einstellungen", "Einstellungen"],
+    ["^Daten-Manager", "Daten-Manager"],
+  ]) {
+    await zurueck();
+    await tab(373); await page.waitForTimeout(600);
+    if (await kachel(muster)) { await page.waitForTimeout(1400); await merke(name); }
+  }
+  await zurueck();
+
   await tab(47);  await page.waitForTimeout(400);
 
   // Kategorie-Aufriss (Text steht dort direkt auf dem Hintergrund)

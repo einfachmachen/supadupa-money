@@ -7,6 +7,11 @@ import { THEMES, getTheme } from "../../theme/themes.js";
 import { Li } from "../../utils/icons.jsx";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { kvStore } from "../../utils/kvStore.js";
+import { aufGrund, aufToenung } from "../../theme/amtPill.js";
+
+// Die Schrift des Knopfes liegt auf SEINER eigenen 13%-Toenung, nicht auf der
+// Platte — dort schrumpft der Akzent (Theme "Keyboard": 3,99:1). §4.4
+const aufKnopf = (farbe, schwelle) => aufToenung(farbe, 0x22 / 255, ".wahl-taste", schwelle);
 
 function CustomThemeEditor() {
   const { themeName, setThemeName, setThemeRev, frageBestaetigung } = useContext(AppCtx);
@@ -224,12 +229,12 @@ function CustomThemeEditor() {
       {/* Header row */}
       <div style={{color:T.txt2,fontSize:11,fontWeight:600,marginBottom:8,display:"flex",alignItems:"center",gap:6,justifyContent:"space-between"}}>
         <span style={{display:"flex",alignItems:"center",gap:6}}>
-          {Li("sliders",13,T.blue)} Eigenes Farbschema
+          {Li("sliders",13,aufGrund(T.blue,3))} Eigenes Farbschema
         </span>
-        <button onClick={handleOpen}
+        <button onClick={handleOpen} className="wahl-taste"
           style={{padding:"5px 12px",borderRadius:10,border:`1px solid ${T.blue}`,background:`${T.blue}22`,
-            color:T.blue,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
-          {Li("pencil",11,T.blue)} Editor öffnen
+            color:aufKnopf(T.blue),fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+          {Li("pencil",11,aufKnopf(T.blue,3))} Editor öffnen
         </button>
       </div>
 

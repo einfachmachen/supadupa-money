@@ -11,7 +11,8 @@
 // `T.on_accent`, das in hellen Themes weiss ist — auf deren Lime 3,4:1.
 
 import { describe, it, expect } from "vitest";
-import { schriftAuf, kontrastWert, mischen, HELL, DUNKEL } from "../src/theme/amtPill.js";
+import { schriftAuf, kontrastWert, mischen, aufToenung, toenungsGrund, HELL, DUNKEL } from "../src/theme/amtPill.js";
+import { setActiveTheme } from "../src/theme/activeTheme.js";
 import { THEMES } from "../src/theme/themes.js";
 
 describe("schriftAuf", () => {
@@ -105,5 +106,36 @@ describe("mischen", () => {
     const karte = THEMES.tastenhell.flaechen_extra[".warn-karte"];
     expect(karte).toBe("#525252");
     expect(schriftAuf(karte, THEMES.tastenhell.neg)).toBe(THEMES.tastenhell.neg);
+  });
+});
+
+// aufToenung(): dieselbe Rechnung als Einzeiler — samt der Frage, ob das
+// Theme die Flaeche ueberhaupt noch toent.
+describe("aufToenung", () => {
+  const TOENUNG = 0x1f / 255;
+
+  it("rechnet gegen die Toenung, wo das Theme nichts anderes sagt", () => {
+    setActiveTheme("keyboard", THEMES.keyboard);
+    const t = THEMES.keyboard;
+    expect(toenungsGrund(t.neg, TOENUNG, ".warn-karte"))
+      .toBe(mischen(t.neg, TOENUNG, t.bg));
+    expect(aufToenung(t.neg, TOENUNG, ".warn-karte")).toBe(HELL);
+  });
+
+  it("rechnet gegen die KARTE, wo das Theme die Flaeche dazu erklaert", () => {
+    setActiveTheme("tastenhell", THEMES.tastenhell);
+    const t = THEMES.tastenhell;
+    expect(toenungsGrund(t.neg, TOENUNG, ".warn-karte")).toBe("#525252");
+    // Dort traegt der Akzent — und genau deshalb darf hier NICHT die
+    // Toenung gerechnet werden: die waere hell, die Antwort waere dunkle
+    // Schrift auf einer dunklen Taste.
+    expect(aufToenung(t.neg, TOENUNG, ".warn-karte")).toBe(t.neg);
+    expect(schriftAuf(mischen(t.neg, TOENUNG, t.bg), t.neg)).toBe(DUNKEL);
+  });
+
+  it("kommt ohne Klassenangabe aus", () => {
+    setActiveTheme("tastenhell", THEMES.tastenhell);
+    const t = THEMES.tastenhell;
+    expect(toenungsGrund(t.gold, 0x18 / 255)).toBe(mischen(t.gold, 0x18 / 255, t.bg));
   });
 });

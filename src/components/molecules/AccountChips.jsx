@@ -17,6 +17,7 @@
 import React from "react";
 import { theme as T } from "../../theme/activeTheme.js";
 import { Li } from "../../utils/icons.jsx";
+import { schriftAuf, mischen } from "../../theme/amtPill.js";
 
 const DEFAULT_S = { fs: 26, radius: 16, gap: 14 };
 
@@ -30,6 +31,11 @@ function AccountChips({
   const cols = Math.max(minCols, list.length + (allowAll ? 1 : 0) + (onAddAccount ? 1 : 0));
   if (cols === 0) return null;
 
+  // Die gewaehlte Kachel traegt die Kontofarbe als 13%-Toenung. Symbol und
+  // Text darauf muessen gegen DIESE Flaeche geprueft werden — auf heller
+  // Platte kam das Lime der "Alle"-Kachel sonst auf 1,24:1 (Kontrastlauf).
+  const gewaehltGrund = (color) => mischen(color || T.blue, 0x22 / 255, T.bg);
+  const aufChip = (color, schwelle) => schriftAuf(gewaehltGrund(color), color || T.blue, schwelle);
   const chipStyle = (selected, color) => ({
     aspectRatio: "1", borderRadius: S.radius, padding: 4,
     background: selected ? color + "22" : "rgba(255,255,255,0.06)",
@@ -50,7 +56,7 @@ function AccountChips({
       {allowAll && (
         <button onClick={() => onChange(null)} className={value == null ? undefined : "wahl-taste"}
           style={chipStyle(value == null, T.blue)}>
-          {Li("layers", S.fs, value == null ? T.blue : T.txt2)}
+          {Li("layers", S.fs, value == null ? aufChip(T.blue, 3) : T.txt2)}
           <span style={nameStyle(value == null)}>{allLabel}</span>
         </button>
       )}

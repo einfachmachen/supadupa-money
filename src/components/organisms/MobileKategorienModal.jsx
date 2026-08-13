@@ -10,6 +10,7 @@ import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
+import { schriftAuf, mischen } from "../../theme/amtPill.js";
 import { suggestBudget } from "../../utils/budgetSuggest.js";
 
 // Kategorie-Priorität (steuert die Treiber-Reihenfolge im Money-Mood-Schieflage-Panel).
@@ -403,7 +404,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",touchAction:"pan-y",WebkitOverflowScrolling:"touch",
         padding:`${S.gap}px ${S.pad}px 140px`}}>
 
-        <button onClick={openNewCat}
+        <button onClick={openNewCat} className="wahl-taste"
           style={{...btnCenter,background:"rgba(74,159,212,0.1)",
             border:`2px dashed ${T.blue}`,color:T.blue,marginBottom:S.gap}}>
           {Li("plus",S.fs,T.blue)} neue Kategorie
@@ -491,7 +492,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
               setCsvRules(p => ({...p, ...newRules}));
               showToast(`✓ ${newOnes} neu, ${changed} aktualisiert`);
             }, {jaLabel:"Übernehmen", ton:"gefahr"});
-        }} style={{...btnCenter,background:"rgba(74,159,212,0.06)",
+        }} className="wahl-taste" style={{...btnCenter,background:"rgba(74,159,212,0.06)",
           border:`1.5px dashed ${T.blue}66`,color:T.blue,marginBottom:S.gap,fontWeight:600,fontSize:S.fs-2}}>
           {Li("refresh-cw",S.fs-4,T.blue)} Zuordnungen aus Buchungen prüfen
         </button>
@@ -526,6 +527,14 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
           // (Nutzer-Feedback). cond_pos/cond_neg sind für genau diesen Zweck (große,
           // farbkräftige Flächen) gedacht, schon genutzt in SaldoHeroV2.
           const dispColor = cat.color || (isInc ? T.cond_pos : T.cond_neg);
+          // Die Kopfzeile toent sich mit der Kategoriefarbe (18 %) und traegt
+          // darauf Symbol und Typ-Zeichen in Akzentfarben — auf heller Platte
+          // schrumpft das auf 1,3:1 (Kontrastlauf). Deshalb gegen die
+          // WIRKLICH gemalte Flaeche pruefen (§4.4).
+          const bandGrund = mischen(dispColor, 0x18 / 255, T.bg);
+          const aufBand = (farbe, schwelle) => schriftAuf(bandGrund, farbe, schwelle);
+          // (Die Kopfzeile ist in keinem Theme eine Karte — hier reicht die
+          //  Mischung ueber der Platte.)
           return (
           <div key={cat.id} style={{marginBottom:4}}>
 
@@ -542,14 +551,14 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                 background:dispColor+"33",border:`1.5px solid ${dispColor}66`,
                 display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
                 cursor:"pointer",fontFamily:"inherit",padding:0,lineHeight:0}}>
-                {cat.icon ? Li(cat.icon,18,dispColor) : null}
+                {cat.icon ? Li(cat.icon,18,schriftAuf(mischen(dispColor,0x33/255,bandGrund),dispColor,3)) : null}
               </button>
               <span style={{flex:1,minWidth:0,color:T.txt,fontSize:20,fontWeight:600,
                 overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{cat.name}</span>
               {/* cond_pos/cond_neg statt pos/neg (s.o.) — sonst wirkt dieses reine
                   Typ-Zeichen (bewusst UNABHÄNGIG von einer evtl. eigenen
                   Kategorie-Farbe) neben dem jetzt kräftigeren Icon wieder blass. */}
-              <span style={{color:isInc?T.cond_pos:T.cond_neg,fontSize:18,fontWeight:800,
+              <span style={{color:aufBand(isInc?T.cond_pos:T.cond_neg),fontSize:18,fontWeight:800,
                 flexShrink:0,lineHeight:1,padding:"0 2px"}}>
                 {isInc ? "+" : "−"}
               </span>
@@ -722,7 +731,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                           <div onClick={()=>{
                             setBudgetEdits(p=>({...p,[sub.id+"_G"]:String(sugAmt).replace(".",","),[sub.id+"_M"]:""}));
                             setBudgetRhythm(p=>({...p,[sub.id]:sug.interval}));
-                          }}
+                          }} className="wahl-taste"
                             style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",
                               marginBottom:8,borderRadius:12,border:`1px solid ${T.blue}55`,
                               background:"rgba(74,159,212,0.10)",cursor:"pointer"}}>

@@ -1,41 +1,220 @@
 {
-  "saved_at": 1786000000000,
-  "startBalances": { "2026": { "acc-giro": 2500 } },
-  "accounts": [
-    { "id": "acc-giro", "name": "Giro", "icon": "wallet", "color": "#6B9900" },
-    { "id": "acc-tg", "name": "Tagesgeld", "icon": "piggy-bank", "color": "#4a9fd4" }
-  ],
-  "groups": [
-    { "id": "g-exp", "label": "Ausgaben", "type": "expense" },
-    { "id": "g-inc", "label": "Einnahmen", "type": "income" }
-  ],
-  "cats": [
-    { "id": "cat-wohnen", "name": "Wohnen & Kind", "type": "expense", "icon": "home", "color": "#e05c5c",
-      "subs": [{ "id": "sub-miete", "name": "Miete" }] },
-    { "id": "cat-leben", "name": "Lebenshaltung", "type": "expense", "icon": "shopping-cart", "color": "#e8a838",
-      "subs": [{ "id": "sub-essen", "name": "Essen & Trinken" }, { "id": "sub-mittag", "name": "Mittag Lieferdienste" }] },
-    { "id": "cat-auto", "name": "Auto", "type": "expense", "icon": "truck", "color": "#8A5A00",
-      "subs": [{ "id": "sub-tanken", "name": "Tanken" }] },
-    { "id": "cat-einkommen", "name": "Einkommen", "type": "income", "icon": "euro", "color": "#6B9900",
-      "subs": [{ "id": "sub-gehalt", "name": "Gehalt" }] }
-  ],
-  "budgets": { "sub-essen": { "amount": "250" }, "sub-tanken": { "amount": "100" } },
-  "txs": [
-    { "id": "t0", "date": "2026-08-01", "totalAmount": 2922.42, "desc": "Stadtverwaltung Koblenz", "pending": false, "accountId": "acc-giro",
-      "splits": [{ "id": "s0", "catId": "cat-einkommen", "subId": "sub-gehalt", "amount": 2922.42 }] },
-    { "id": "t1", "date": "2026-08-02", "totalAmount": -934.45, "desc": "Miete August", "pending": false, "accountId": "acc-giro",
-      "splits": [{ "id": "s1", "catId": "cat-wohnen", "subId": "sub-miete", "amount": -934.45 }] },
-    { "id": "t2", "date": "2026-08-04", "totalAmount": -150.75, "desc": "REWE SAGT DANKE", "pending": false, "accountId": "acc-giro",
-      "splits": [{ "id": "s2", "catId": "cat-leben", "subId": "sub-essen", "amount": -150.75 }] },
-    { "id": "t3", "date": "2026-08-20", "totalAmount": -12.90, "desc": "Netto Marken-Discount", "pending": true, "accountId": "acc-giro",
-      "splits": [{ "id": "s3", "catId": "cat-leben", "subId": "sub-mittag", "amount": -12.90 }] },
-    { "id": "t4", "date": "2026-08-06", "totalAmount": -59.98, "desc": "Aral Tankstelle", "pending": false, "accountId": "acc-giro",
-      "splits": [{ "id": "s4", "catId": "cat-auto", "subId": "sub-tanken", "amount": -59.98 }] },
-    { "id": "bp-essen-m", "date": "2026-08-14", "totalAmount": -125.0, "desc": "Budget Essen", "pending": true,
-      "accountId": "acc-giro", "_budgetSubId": "sub-essen_mitte",
-      "splits": [{ "id": "sbm", "catId": "cat-leben", "subId": "sub-essen", "amount": -125.0 }] },
-    { "id": "bp-essen-e", "date": "2026-08-31", "totalAmount": -125.0, "desc": "Budget Essen", "pending": true,
-      "accountId": "acc-giro", "_budgetSubId": "sub-essen",
-      "splits": [{ "id": "sbe", "catId": "cat-leben", "subId": "sub-essen", "amount": -125.0 }] }
-  ]
+ "saved_at": 1786000000000,
+ "startBalances": {
+  "2026": {
+   "acc-giro": 2500
+  }
+ },
+ "accounts": [
+  {
+   "id": "acc-giro",
+   "name": "Giro",
+   "icon": "wallet",
+   "color": "#6B9900"
+  },
+  {
+   "id": "acc-tg",
+   "name": "Tagesgeld",
+   "icon": "piggy-bank",
+   "color": "#4a9fd4"
+  }
+ ],
+ "groups": [
+  {
+   "id": "g-exp",
+   "label": "Ausgaben",
+   "type": "expense",
+   "accountId": "acc-giro",
+   "behavior": "expense"
+  },
+  {
+   "id": "g-inc",
+   "label": "Einnahmen",
+   "type": "income",
+   "accountId": "acc-giro",
+   "behavior": "income"
+  }
+ ],
+ "cats": [
+  {
+   "id": "cat-wohnen",
+   "name": "Wohnen & Kind",
+   "type": "expense",
+   "icon": "home",
+   "color": "#e05c5c",
+   "subs": [
+    {
+     "id": "sub-miete",
+     "name": "Miete"
+    }
+   ]
+  },
+  {
+   "id": "cat-leben",
+   "name": "Lebenshaltung",
+   "type": "expense",
+   "icon": "shopping-cart",
+   "color": "#e8a838",
+   "subs": [
+    {
+     "id": "sub-essen",
+     "name": "Essen & Trinken"
+    },
+    {
+     "id": "sub-mittag",
+     "name": "Mittag Lieferdienste"
+    }
+   ]
+  },
+  {
+   "id": "cat-auto",
+   "name": "Auto",
+   "type": "expense",
+   "icon": "truck",
+   "color": "#8A5A00",
+   "subs": [
+    {
+     "id": "sub-tanken",
+     "name": "Tanken"
+    }
+   ]
+  },
+  {
+   "id": "cat-einkommen",
+   "name": "Einkommen",
+   "type": "income",
+   "icon": "euro",
+   "color": "#6B9900",
+   "subs": [
+    {
+     "id": "sub-gehalt",
+     "name": "Gehalt"
+    }
+   ]
+  }
+ ],
+ "budgets": {
+  "sub-essen": {
+   "amount": "250"
+  },
+  "sub-tanken": {
+   "amount": "100"
+  }
+ },
+ "txs": [
+  {
+   "id": "t0",
+   "date": "2026-08-01",
+   "totalAmount": 2922.42,
+   "desc": "Stadtverwaltung Koblenz",
+   "pending": false,
+   "accountId": "acc-giro",
+   "splits": [
+    {
+     "id": "s0",
+     "catId": "cat-einkommen",
+     "subId": "sub-gehalt",
+     "amount": 2922.42
+    }
+   ]
+  },
+  {
+   "id": "t1",
+   "date": "2026-08-02",
+   "totalAmount": -934.45,
+   "desc": "Miete August",
+   "pending": false,
+   "accountId": "acc-giro",
+   "splits": [
+    {
+     "id": "s1",
+     "catId": "cat-wohnen",
+     "subId": "sub-miete",
+     "amount": -934.45
+    }
+   ]
+  },
+  {
+   "id": "t2",
+   "date": "2026-08-04",
+   "totalAmount": -150.75,
+   "desc": "REWE SAGT DANKE",
+   "pending": false,
+   "accountId": "acc-giro",
+   "splits": [
+    {
+     "id": "s2",
+     "catId": "cat-leben",
+     "subId": "sub-essen",
+     "amount": -150.75
+    }
+   ]
+  },
+  {
+   "id": "t3",
+   "date": "2026-08-20",
+   "totalAmount": -12.9,
+   "desc": "Netto Marken-Discount",
+   "pending": true,
+   "accountId": "acc-giro",
+   "splits": [
+    {
+     "id": "s3",
+     "catId": "cat-leben",
+     "subId": "sub-mittag",
+     "amount": -12.9
+    }
+   ]
+  },
+  {
+   "id": "t4",
+   "date": "2026-08-06",
+   "totalAmount": -59.98,
+   "desc": "Aral Tankstelle",
+   "pending": false,
+   "accountId": "acc-giro",
+   "splits": [
+    {
+     "id": "s4",
+     "catId": "cat-auto",
+     "subId": "sub-tanken",
+     "amount": -59.98
+    }
+   ]
+  },
+  {
+   "id": "bp-essen-m",
+   "date": "2026-08-14",
+   "totalAmount": -125.0,
+   "desc": "Budget Essen",
+   "pending": true,
+   "accountId": "acc-giro",
+   "_budgetSubId": "sub-essen_mitte",
+   "splits": [
+    {
+     "id": "sbm",
+     "catId": "cat-leben",
+     "subId": "sub-essen",
+     "amount": -125.0
+    }
+   ]
+  },
+  {
+   "id": "bp-essen-e",
+   "date": "2026-08-31",
+   "totalAmount": -125.0,
+   "desc": "Budget Essen",
+   "pending": true,
+   "accountId": "acc-giro",
+   "_budgetSubId": "sub-essen",
+   "splits": [
+    {
+     "id": "sbe",
+     "catId": "cat-leben",
+     "subId": "sub-essen",
+     "amount": -125.0
+    }
+   ]
+  }
+ ]
 }

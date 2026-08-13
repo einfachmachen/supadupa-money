@@ -7,11 +7,17 @@ import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { INP } from "../../theme/palette.js";
 import { THEMES } from "../../theme/themes.js";
 import { Li } from "../../utils/icons.jsx";
+import { schriftAuf, aufToenung } from "../../theme/amtPill.js";
 import { kvStore } from "../../utils/kvStore.js";
 import { exportEbForSync, importEbFromSync } from "../../utils/enableBankingStore.js";
 import { encryptJSON, decryptJSON, isEncrypted, combineSecrets, randomRecoveryCode } from "../../utils/syncCrypto.js";
 import { dropTxsAndUnlink } from "../../utils/links.js";
 import { useEffect } from "react";
+
+// Der Hinweisbalken oben im Export faerbt sich mit SEINER eigenen Meldefarbe
+// (7 %) und schreibt darauf denselben Ton — gegen die Platte gerechnet sieht
+// das gut aus, gemalt sind es 4,5:1 knapp darunter (§4.4).
+const aufBanner = (farbe, schwelle) => aufToenung(farbe, 0x12 / 255, ".hinweis-karte", schwelle);
 
 function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   const { cats, groups, accounts, vehicles, setVehicles, txs, setTxs, csvRules, startBalances,
@@ -590,13 +596,17 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
           {[["export","download","Exportieren",T.pos],
             ["import","upload","importieren",T.blue],
             ["delete","trash-2","Löschen",T.neg]].map(([v,ic,lb,col])=>(
-            <button key={v} onClick={()=>setTab(v)}
+            // Aktiv heisst GEFUELLT, nicht getoent (§4.4): eine 13%-Toenung
+            // ist von der Taste daneben kaum zu unterscheiden, und auf heller
+            // Platte kehrte sich das Bild sogar um (der inaktive Reiter war
+            // die kraeftige Flaeche). Inaktiv bleibt Taste.
+            <button key={v} onClick={()=>setTab(v)} className={tab===v?undefined:"wahl-taste"}
               style={{flex:1,padding:"7px 4px",borderRadius:9,border:"none",cursor:"pointer",
                 fontFamily:"inherit",fontSize:11,fontWeight:700,
-                background:tab===v?col+"22":"rgba(255,255,255,0.05)",
-                color:tab===v?col:T.txt2,
+                background:tab===v?col:"rgba(255,255,255,0.05)",
+                color:tab===v?schriftAuf(col,T.on_accent):T.txt2,
                 borderBottom:tab===v?`2px solid ${col}`:"2px solid transparent"}}>
-              {Li(ic,11,tab===v?col:T.txt2)} {lb}
+              {Li(ic,11,tab===v?schriftAuf(col,T.on_accent):T.txt2)} {lb}
             </button>
           ))}
         </div>
@@ -614,21 +624,22 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
           {/* ── EXPORT ── */}
           {tab==="export"&&(<>
             {/* Vollständigkeits-Hinweis: ehrlich anzeigen, ob es ein 100%-Backup ist */}
-            <div style={{display:"flex",alignItems:"flex-start",gap:8,padding:"8px 10px",marginBottom:10,
+            <div className="hinweis-karte"
+              style={{display:"flex",alignItems:"flex-start",gap:8,padding:"8px 10px",marginBottom:10,
               borderRadius:9,border:`1px solid ${isComplete?T.pos:T.gold}55`,
               background:`${isComplete?T.pos:T.gold}12`}}>
-              {Li(isComplete?"shield-check":"shield",13,isComplete?T.pos:T.gold)}
+              {Li(isComplete?"shield-check":"shield",13,aufBanner(isComplete?T.pos:T.gold,3))}
               <div style={{flex:1,color:T.txt,fontSize:10.5,lineHeight:1.5}}>
                 {isComplete
-                  ? <><b style={{color:T.pos}}>Vollständige Sicherung (100 %)</b> — alle Bereiche + ganzer Zeitraum{hasEbKey?<> inkl. <b>verschlüsseltem Bank-Schlüssel</b></>:""}.</>
-                  : <><b style={{color:T.gold}}>Teil-Sicherung</b> — für 100 % alle Haken setzen, bei den Buchungen „Alles" als Zeitraum{hasEbKey&&!ebOk?<> und den <b>Bank-Schlüssel</b> mit Passphrase aufnehmen</>:""}.</>}
+                  ? <><b style={{color:aufBanner(T.pos)}}>Vollständige Sicherung (100 %)</b> — alle Bereiche + ganzer Zeitraum{hasEbKey?<> inkl. <b>verschlüsseltem Bank-Schlüssel</b></>:""}.</>
+                  : <><b style={{color:aufBanner(T.gold)}}>Teil-Sicherung</b> — für 100 % alle Haken setzen, bei den Buchungen „Alles" als Zeitraum{hasEbKey&&!ebOk?<> und den <b>Bank-Schlüssel</b> mit Passphrase aufnehmen</>:""}.</>}
                 <br/>Wieder einspielen über den Reiter <b style={{color:T.txt}}>„importieren"</b> hier im Daten-Manager.
               </div>
             </div>
             {rangeSelector}
             <div style={{color:T.txt2,fontSize:10,marginBottom:8}}>Bereiche auswählen (Zeitraum gilt nur für Buchungen):</div>
             {SEL_ITEMS.map(({key,label,icon,count,hasRange})=>(
-              <div key={key} onClick={()=>toggleSel(key)}
+              <div key={key} onClick={()=>toggleSel(key)} className="wahl-taste"
                 style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",
                   borderRadius:9,marginBottom:4,cursor:"pointer",
                   background:sel[key]?"rgba(170,204,0,0.08)":"rgba(255,255,255,0.03)",
@@ -652,7 +663,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                 angezeigt, NIRGENDS gespeichert, muss selbst gesichert werden).
                 Beides zusammen wird zum Schlüssel kombiniert (combineSecrets) —
                 keiner der beiden allein reicht zum Entschlüsseln. */}
-            <div style={{marginTop:10,padding:"8px 10px",borderRadius:9,
+            <div className="wahl-taste" style={{marginTop:10,padding:"8px 10px",borderRadius:9,
               border:`1px solid ${encryptExport?T.blue:T.bd}`,
               background:encryptExport?`${T.blue}10`:"rgba(255,255,255,0.03)"}}>
               <div onClick={()=>setEncryptExport(v=>!v)}

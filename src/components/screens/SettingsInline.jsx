@@ -12,6 +12,7 @@ import { INP } from "../../theme/palette.js";
 import { Li } from "../../utils/icons.jsx";
 import { makeYearData } from "../../utils/yearData.js";
 import { kvStore } from "../../utils/kvStore.js";
+import { aufGrund } from "../../theme/amtPill.js";
 import { cloudFingerprint } from "../../utils/cloudFingerprint.js";
 import WORKER_CODE from "../../../worker-data/data-store-worker.js?raw";
 
@@ -23,7 +24,9 @@ function SectionHeader({ icon, color, label, right }) {
   return (
     <div style={{color:T.lbl||T.txt2,fontSize:12,fontWeight:700,marginBottom:12,
       display:"flex",alignItems:"center",gap:7}}>
-      {Li(icon,14,color)} <span style={{flex:1}}>{label}</span> {right}
+      {/* Das Symbol steht ohne eigene Flaeche auf dem Hintergrund — in hellen
+          Themes traegt der Akzent dort nicht (§4.4). 3:1 genuegt fuer Symbole. */}
+      {Li(icon,14,aufGrund(color,3))} <span style={{flex:1}}>{label}</span> {right}
     </div>
   );
 }
@@ -73,6 +76,7 @@ function SettingsInline() {
         <SectionHeader icon="eye" color={T.blue} label="Anzeige"/>
 
         <div onClick={()=>{const v=!noBorders;setNoBorders(v);kvStore.setItem("mbt_noborders",v?"1":"0");}}
+          className="wahl-taste"
           style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",borderRadius:10,
             cursor:"pointer",background:noBorders?`${T.blue}18`:"rgba(255,255,255,0.04)",
             border:`1px solid ${noBorders?T.blue:T.bd}`,marginBottom:14}}>
@@ -120,7 +124,7 @@ function SettingsInline() {
             </span>
           }/>
         <div style={{color:T.txt2,fontSize:11,marginBottom:10,lineHeight:1.5}}>
-          <b style={{color:T.gold}}>Empfohlen</b> — kostenlos, kein Limit, kein CORS-Problem.
+          <b style={{color:aufGrund(T.gold)}}>Empfohlen</b> — kostenlos, kein Limit, kein CORS-Problem.
           Einrichtung: siehe Anleitung <b style={{color:T.txt}}>Cloudflare-Setup.md</b>.
         </div>
         {/* GitHub-freie Einrichtung: Worker-Code kopieren und im Dashboard einfügen */}
@@ -167,7 +171,7 @@ function SettingsInline() {
           placeholder="leer = Daten unverschlüsselt in der Cloud" locked={false} type="password"/>
         <div style={{color:T.txt2,fontSize:11,marginTop:-2,marginBottom:10,lineHeight:1.5,
           display:"flex",alignItems:"flex-start",gap:5}}>
-          {Li(syncEncActive?"lock":"unlock",12,syncEncActive?T.pos:T.gold)}
+          {Li(syncEncActive?"lock":"unlock",12,aufGrund(syncEncActive?T.pos:T.gold,3))}
           <span>
             {syncEncActive
               ? <>Aktiv: Deine Daten werden <b style={{color:T.pos}}>vor dem Hochladen verschlüsselt</b> — der Server sieht nur Chiffrat. Die Passphrase verlässt das Gerät nie. <b style={{color:T.gold}}>Auf jedem Gerät identisch eingeben.</b> Geht sie verloren, sind die Cloud-Daten nicht mehr lesbar.</>

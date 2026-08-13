@@ -481,15 +481,23 @@ oder Fast-Schwarz — was auf diesem Grund besser trägt.
 **Eine Fläche aus dem eigenen Akzent trägt diesen Akzent nicht mehr.** Wer einen
 Kasten mit `${T.neg}1f` tönt und die Überschrift in `T.neg` schreibt, prüft
 leicht gegen den Ton **vor** der Tönung — die Tönung hebt den Untergrund aber
-genau in Richtung der Schrift, und der Kontrast schrumpft. In der
-Schieflage-Vorwarnung stand Cyan auf Cyan-Tönung bei 3,86:1 (Theme „Keyboard",
-Kontrastlauf-Station „bestätigen"); gerechnet gegen `T.bg` wären es 4,5:1
-gewesen. Dafür gibt es `mischen(farbe, anteil, grund)` in `theme/amtPill.js` —
-das JS-Gegenstück zum Hex-Alpha. Regel: **jeder Akzent auf einer getönten Fläche
-läuft durch `schriftAuf(mischen(…), akzent)`**, Symbole mit Schwelle 3.
-Erklärt ein Theme den Kasten per `flaechen_extra` zur Karte („Tastenhell":
-`.warn-karte`), gewinnt dessen Fläche per `!important` gegen die Tönung — dann
-ist **sie** der Untergrund, und der Akzent bleibt meist stehen.
+genau in Richtung der Schrift, und der Kontrast schrumpft. Gemessen: 3,86:1 in
+der Schieflage-Vorwarnung, 3,99:1 auf „Editor öffnen", 4,50:1 im
+Export-Hinweisbalken, 1,24:1 auf der Kategorie-Kopfzeile und der gewählten
+Konto-Kachel — alles Stellen, die gegen `T.bg` gerechnet sauber aussahen.
+
+Dafür gibt es zwei Helfer in `theme/amtPill.js`:
+- `mischen(farbe, anteil, grund)` — das JS-Gegenstück zum Hex-Alpha.
+- `aufToenung(farbe, anteil, klasse?, schwelle?)` — die fertige Antwort:
+  Schriftfarbe auf einer Fläche, die sich mit **farbe** selbst getönt hat.
+
+Regel: **jeder Akzent auf einer getönten Fläche läuft durch `aufToenung()`**,
+Symbole mit Schwelle 3. Der Parameter `klasse` ist wichtig: erklärt ein Theme
+diese Fläche per `flaechen_extra` zur Karte („Tastenhell": `.warn-karte`,
+`.hinweis-karte`, `.wahl-taste`), gewinnt deren Farbe per `!important` gegen die
+Tönung — dann ist **sie** der Untergrund. Ohne die Angabe rechnete man dort
+gegen eine helle Tönung, die es gar nicht gibt, und bekäme dunkle Schrift auf
+einer dunklen Taste.
 
 **Blass = heller gilt nur auf dunklem Grund.** Für „noch nicht erreicht"
 (Prognose Mitte/Ende, ruhende Kacheln) gibt es `blasserAkzent()` in
@@ -585,6 +593,32 @@ Regeln dazu:
   muss eine Kartenfläche sein** — dafür ist `flaechen_extra` da. Wer Akzente
   wirklich flächenabhängig machen will, muss diese Stellen zuerst auf
   `color-mix()` o. Ä. umstellen.
+- **In Dialogen ist jede blasse Fläche eine Taste.** Die App malt „hier ist
+  etwas, das du antippen kannst" seit jeher als Weiß-Schleier
+  (`rgba(255,255,255,0.03…0.1)`) — in einem dunklen Theme ein leichtes
+  Aufhellen, auf einer hellen Platte praktisch nichts. Die Kategorieliste sah
+  dadurch „verloren und belanglos" aus (Nutzer-Bild). Statt rund 270 Stellen in
+  40 Dateien einzeln auszuzeichnen, greift ein Selektor den Schleier direkt im
+  style-Attribut ab (`[style*="background: rgba(255, 255, 255, 0."]`,
+  dazu `background-color`) — dieselbe Mechanik, mit der `kartenTextRegel()` die
+  Karten an ihrer Flächenfarbe erkennt. Nachgemessen: der Browser schreibt
+  `background: rgba(255, 255, 255, 0.04);`, Kurzform und Abstände bleiben.
+  Zwei Dinge gehören dazu:
+  - **`.kopf-taste`** am Knopf im `MobileHeader` nimmt ihn aus der Regel — der
+    Kopf **ist** schon eine Taste, sonst stünde Taste auf Taste.
+  - **Blätter, die keine Dialoge sind, brauchen die Klasse trotzdem.**
+    „Einstellungen" und „Konten" liegen im Daten-Tab, nicht in einem Modal, und
+    blieben als einzige hell. Sie tragen jetzt `formular-blatt`.
+- **Die Fläche sagt „antippbar", den Zustand trägt das Bedienelement.** Wo
+  bisher der gewählte Zustand eine Tönung war und der ungewählte ein Schleier,
+  drehte sich das Bild auf heller Platte um: der **inaktive** Reiter war die
+  kräftige Fläche. Deshalb: Auswahlzeilen und Reiter sind Tasten (`wahl-taste`),
+  den Zustand zeigen Haken, Schalter oder — bei Reitern — die **volle**
+  Akzentfläche (§4.4 „Aktiv heißt gefüllt"). `wahl-taste` wirkt nur in Themes
+  mit `flaechen_extra`; alle anderen bleiben unverändert.
+- **`.hinweis-karte`** ist die Schwester von `.warn-karte` ohne Warnton: die
+  Merkkästen mit Akzentschrift auf eigener Tönung („Betrag gesperrt",
+  „Splitbuchung", der Vollständigkeits-Balken im Export).
 - **Was das NICHT löst: selbst gewählte Kategorie- und Kontofarben.** Die kommen
   aus den Nutzerdaten und können auf jeder Fläche danebenliegen — ein
   Browser-Kontrastlauf findet sie im Standard-Theme genauso wie im Keyboard-
@@ -607,9 +641,11 @@ npm run kontrast -- --bilder     # zusätzlich Screenshots nach .kontrast/
 ```
 
 Der Lauf fährt Home (in **allen drei Betrags-Modi**), den **Diagrammbereich
-(Balken und Torte)**, den Dialog **„neue Vormerkung"** (Ausgabe, Einnahme und
-den Schritt **„bestätigen"** mit ausgelöster Schieflage-Vorwarnung), Monat,
-Trend, Daten, Kategorie-Aufriss, Bearbeiten-Dialog und Rückfrage ab und prüft:
+(Balken und Torte)**, den Dialog **„neue Vormerkung"** (Ausgabe, Einnahme, die
+**Kategorie- und Unterkategorie-Liste** und den Schritt **„bestätigen"** mit
+ausgelöster Schieflage-Vorwarnung), Monat, Trend, Daten, die vier Blätter
+dahinter (**Kategorien & Budget, Konten, Einstellungen, Daten-Manager**),
+Kategorie-Aufriss, Bearbeiten-Dialog und Rückfrage ab und prüft:
 - **Text** gegen seinen tatsächlichen Untergrund — alle gemalten Ebenen
   übereinandergelegt, halbtransparente Chips zählen mit (der „nächste
   undurchsichtige Vorfahre" lag falsch, sobald eine getönte Fläche dazwischenlag).
@@ -649,28 +685,34 @@ Trend, Daten, Kategorie-Aufriss, Bearbeiten-Dialog und Rückfrage ab und prüft:
 Gezählt wird jede Farbkombination **einmal pro Theme**, ausgegeben aber je
 Station. Vorher zählte jede Station eigenständig — der Hero steht auf jedem
 Bildschirm, und eine neue Station trieb die Zahl nach oben, ohne dass ein neues
-Problem dazugekommen wäre. Stand jetzt: **Tastenhell 0, Keyboard 0, Lime 19,
-Limehell 47** (die beiden letzten sind Altlasten: „Limehell" hat mit
+Problem dazugekommen wäre. Stand jetzt: **Tastenhell 0, Keyboard 0, Lime 36,
+Limehell 80** (die beiden letzten sind Altlasten: „Limehell" hat mit
 `txt2 rgba(60,80,40,0.55)` eine zu schwache Zweitschrift — 2,68:1 —, und sein
-`gold` #FFC107 trägt auf Weiß nur 1,47:1).
+`gold` #FFC107 trägt auf Weiß nur 1,47:1; bei „Lime" ist es
+`txt2 rgba(200,210,220,0.6)`, das je nach Fläche zwischen 3,4:1 und 4,4:1
+landet).
 
 Eine **neue Station kann die Zahl trotzdem bewegen** — nicht weil etwas kaputt
 ging, sondern weil sie Flächen zeigt, die vorher niemand gemessen hat. Die
-Station „bestätigen" hat bei „Lime"/„Limehell" genau diese Altlasten an einer
-weiteren Stelle sichtbar gemacht (dieselbe zu schwache Zweitschrift, dasselbe
-Gold) — und bei „Keyboard" einen echten Fehler gefunden: den Akzent auf seiner
-eigenen Tönung (§4.4).
+sechs Stationen aus diesem Durchgang haben bei „Lime"/„Limehell"
+ausschließlich diese Altlasten an weiteren Stellen sichtbar gemacht (in „Lime"
+trägt **jeder** neue Fund dieselbe Zweitschrift), bei „Tastenhell" elf und bei
+„Keyboard" zwei echte Fehler gefunden — durchweg Akzente ohne eigene Fläche
+oder auf ihrer eigenen Tönung (§4.4). Deshalb gilt: **eine neue Station wird
+immer zusammen mit der Frage gelesen, welche Farbe die Funde tragen.** Sind es
+die bekannten Token, ist es Altlast; ist es ein Akzent, ist es neu.
 
 Findings aus **Nutzerdaten** (selbst gewählte Kategorie- und Kontofarben) werden
 getrennt ausgewiesen und lassen den Lauf **nicht** fehlschlagen — sie sind vom
 Theme aus nicht behebbar. Alles andere ergibt Rückgabewert 1.
 
 Stand der Messung (Standard-Auswahl, theme-eigene Stellen — Nutzerdaten zählen
-getrennt): `keyboard` 0, `kontrastdunkel` 1, `kontrasthell` 1, `terminal` 11,
-`dark` 19, `light` 47; dazu `tastenhell` 0. Die hohen Zahlen bei `light`/`dark`
+getrennt): `keyboard` 0, `kontrastdunkel` 1, `kontrasthell` 2, `terminal` 16,
+`dark` 36, `light` 80; dazu `tastenhell` 0. Die hohen Zahlen bei `light`/`dark`
 sind **Altlasten**, nicht neu — vor allem Gold auf Weiß und `txt2` mit zu wenig
-Deckkraft. Die beiden Einer sind Grenzfälle knapp unter der Schwelle (4,48:1
-bzw. 4,50:1 gerundet).
+Deckkraft. In `light` tragen 115 von 138 gemeldeten Zeilen dieselbe Farbe
+(`rgba(60,80,40,0.55)`); zwei Token anzuheben würde dort den größten Teil der
+Liste auf einmal räumen.
 
 ### 4.9 Budget-Ampel
 Budget-Auslastung färbt nach **tatsächlichem Verbrauch (Ist)**, nicht nach dem

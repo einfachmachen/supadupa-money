@@ -85,6 +85,23 @@ export function schriftAuf(grund, wunsch, schwelle = 4.5) {
   return kontrastWert(HELL, grund) >= kontrastWert(DUNKEL, grund) ? HELL : DUNKEL;
 }
 
+// ── Flächen, die sich mit ihrer EIGENEN Akzentfarbe tönen ───────────────
+// Warnkasten, Hinweisbalken, Kategorie-Kopfzeile, „Editor öffnen": alle malen
+// `${farbe}1f` und schreiben denselben Ton darauf. Gegen die Platte gerechnet
+// sieht das sauber aus — gemalt ist der Untergrund aber genau in Richtung der
+// Schrift verschoben, und der Kontrast schrumpft (gemessen 3,86:1 / 3,99:1).
+//
+// `klasse` (optional): Erklärt ein Theme diese Fläche per `flaechen_extra` zur
+// Karte („Tastenhell"), gewinnt deren Farbe per `!important` gegen die Tönung
+// — dann ist SIE der Untergrund, und der Akzent bleibt meist stehen.
+export function toenungsGrund(farbe, anteil, klasse) {
+  const karte = klasse && T.flaechen_extra && T.flaechen_extra[klasse];
+  if (typeof karte === "string" && karte[0] === "#") return karte;
+  return mischen(farbe, anteil, T.bg);
+}
+export const aufToenung = (farbe, anteil, klasse, schwelle = 4.5) =>
+  schriftAuf(toenungsGrund(farbe, anteil, klasse), farbe, schwelle);
+
 // Kurzform für den häufigsten Fall: Text oder Symbol liegt direkt auf dem
 // SEITENHINTERGRUND. In den meisten Themes trägt die Akzentfarbe dort; in
 // "Tastenhell" (helle Platte) fallen Gelbgrün und Gold durch — dann liefert
