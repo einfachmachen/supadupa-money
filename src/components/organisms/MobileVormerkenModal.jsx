@@ -10,7 +10,7 @@ import { MobileCatStep } from "../molecules/MobileCatStep.jsx";
 import { MobileNewAccOverlay } from "../molecules/MobileNewAccOverlay.jsx";
 import { AccountChips } from "../molecules/AccountChips.jsx";
 import { AppCtx } from "../../state/AppContext.js";
-import { schriftAuf } from "../../theme/amtPill.js";
+import { schriftAuf, aufGrund } from "../../theme/amtPill.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
@@ -545,7 +545,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
                 // aufgehellten Schleier waren es nur 4,26:1 (Kontrast-Lauf,
                 // Theme "Keyboard").
                 background:"transparent",
-                color:T.blue,fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
+                color:aufGrund(T.blue),fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
               {valueDate?"löschen":"heute"}
             </button>
           </div>
@@ -573,7 +573,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
                 // aufgehellten Schleier waren es nur 4,26:1 (Kontrast-Lauf,
                 // Theme "Keyboard").
                 background:"transparent",
-                color:T.blue,fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
+                color:aufGrund(T.blue),fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
               {date?"löschen":"heute"}
             </button>
           </div>

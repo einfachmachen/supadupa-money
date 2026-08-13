@@ -16,6 +16,7 @@
 
 import React from "react";
 import { theme as T } from "../../theme/activeTheme.js";
+import { aufGrund } from "../../theme/amtPill.js";
 import { Li } from "../../utils/icons.jsx";
 
 const DEFAULT_S = { fs: 26, radius: 16, gap: 14 };
@@ -71,10 +72,12 @@ function AccountChips({
         );
       })}
       {onAddAccount && (
+        // Die Kachel liegt direkt auf dem Seitenhintergrund — dort traegt die
+        // Akzentfarbe nicht in jedem Theme (helle Platte, siehe aufGrund).
         <button onClick={onAddAccount} style={{ ...chipStyle(false, T.blue),
-          background: "rgba(74,159,212,0.06)", border: `1.5px dashed ${T.blue}66`, color: T.blue }}>
-          {Li("plus", S.fs, T.blue)}
-          <span style={{ ...nameStyle(false), color: T.blue }}>{addLabel}</span>
+          background: "rgba(74,159,212,0.06)", border: `1.5px dashed ${T.blue}66`, color: aufGrund(T.blue) }}>
+          {Li("plus", S.fs, aufGrund(T.blue, 3))}
+          <span style={{ ...nameStyle(false), color: aufGrund(T.blue) }}>{addLabel}</span>
         </button>
       )}
     </div>

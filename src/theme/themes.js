@@ -983,20 +983,21 @@ THEMES.tastenhell = {
     ".hero-flaeche":"linear-gradient(135deg,#525252,#464646)",
     ".symbolzeile":"#525252",
     ".aufriss-blatt":"#525252",
-    ".formular-blatt":"#525252",
     ".menue-kachel":"#525252",
     // Jeder Reiter der unteren Leiste ist eine eigene Taste (Nutzer-Wunsch).
     // Die Leiste selbst wird dafuer durchsichtig (themes.css), damit die
     // Platte zwischen den Tasten steht.
     ".nav-tab":"#525252",
-    // Die bildschirmfuellenden Dialoge (neue Vormerkung, Kategorien, Daten-
-    // Manager) malen ebenfalls den Hintergrund. Auf der hellen Platte fielen
-    // dort saemtliche Eingabefelder durch: sie setzen sich mit einem hellen
-    // Schleier ab, und der ist auf Hell unsichtbar (Nutzer-Hinweis).
-    // Eine Stufe tiefer als die Tasten: die Felder darin setzen sich mit einem
-    // hellen Schleier ab, und der braucht einen dunkleren Grund, um selbst
-    // genug Kontrast zu behalten.
-    ".mobile-modal":"#4A4A4A",
+    // Die bildschirmfuellenden Dialoge zeigen die PLATTE (Nutzer-Wunsch:
+    // "leicht und luftig"). Dunkel sind darin nur die Eingabe- und
+    // Auswahlfelder — die werden hier einzeln zu Tasten erklaert, damit sie
+    // sich auf dem hellen Grund abheben und weisse Schrift tragen.
+    ".mobile-modal input":"#525252",
+    ".mobile-modal select":"#525252",
+    ".mobile-modal textarea":"#525252",
+    ".formular-blatt input":"#525252",
+    ".formular-blatt select":"#525252",
+    ".formular-blatt textarea":"#525252",
   },
   // Keine helle Fuge wie beim Keyboard-Theme: hier IST die Platte die Fuge.
   // Die Taste liegt mit einem weichen Schatten darauf.

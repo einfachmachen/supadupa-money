@@ -7,6 +7,7 @@ import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
+import { aufGrund } from "../../theme/amtPill.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
@@ -155,10 +156,13 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
         {onSplit&&curCat&&(
           <button onClick={()=>{setOpen(true);initSplit();}}
             title="Buchung splitten"
+            // Der Knopf traegt nur eine 15%-Toenung und liegt damit praktisch
+            // auf dem Seitenhintergrund — dort traegt die Akzentfarbe nicht in
+            // jedem Theme (helle Platte, siehe aufGrund).
             style={{background:"rgba(74,159,212,0.15)",border:`1px solid ${T.blue}44`,
-              borderRadius:10,padding:"0 10px",color:T.blue,cursor:"pointer",flexShrink:0,
+              borderRadius:10,padding:"0 10px",color:aufGrund(T.blue),cursor:"pointer",flexShrink:0,
               display:"flex",alignItems:"center",justifyContent:"center"}}>
-            {Li("split",15,T.blue)}
+            {Li("split",15,aufGrund(T.blue,3))}
           </button>
         )}
       </div>

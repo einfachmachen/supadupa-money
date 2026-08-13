@@ -187,12 +187,19 @@
      `farbschema` im Theme). Alles, was DUNKEL gemalt ist, dreht es hier
      zurueck — sonst zeichnet der Browser Felder, Kalender und Auswahllisten
      darin fuer einen hellen Grund. */
-  .theme-tastenhell .mobile-modal,
-  .theme-tastenhell .formular-blatt,
   .theme-tastenhell .aufriss-blatt,
   .theme-tastenhell .hero-flaeche,
   .theme-tastenhell .nav-tab,
-  .theme-tastenhell .menue-kachel {
+  .theme-tastenhell .menue-kachel,
+  /* Die Dialoge selbst zeigen die Platte und bleiben deshalb hell; nur ihre
+     Felder sind Tasten — und die brauchen das dunkle Schema fuer Kalender
+     und Auswahllisten. */
+  .theme-tastenhell .mobile-modal input,
+  .theme-tastenhell .mobile-modal select,
+  .theme-tastenhell .mobile-modal textarea,
+  .theme-tastenhell .formular-blatt input,
+  .theme-tastenhell .formular-blatt select,
+  .theme-tastenhell .formular-blatt textarea {
     color-scheme: dark;
   }
 

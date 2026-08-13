@@ -108,12 +108,19 @@ describe("Theme Tastenhell", () => {
     });
     sammeln(wurzel);
     const quelltext = dateien.join("\n");
-    const fehlend = Object.keys(t.flaechen_extra)
-      .map(s => s.replace(/^\./, ""))
-      .filter(k => !quelltext.includes(`"${k}"`));
+    // Ein Selektor kann zusammengesetzt sein (".mobile-modal input") — geprueft
+    // wird jede darin genannte KLASSE.
+    const klassen = [...new Set(Object.keys(t.flaechen_extra)
+      .flatMap(sel => (sel.match(/\.[a-z0-9-]+/g) || []))
+      .map(k => k.slice(1)))];
+    const fehlend = klassen.filter(k => !quelltext.includes(`"${k}"`));
     expect(fehlend).toEqual([]);
-    // Hero, Symbolzeile, Aufriss-Blatt, Bearbeiten-Blatt, Daten-Menuezeilen.
+    // Hero, Symbolzeile, Aufriss-Blatt, Daten-Menuezeilen, Reiter, Felder.
     expect(Object.keys(t.flaechen_extra).length).toBeGreaterThanOrEqual(5);
+    // Die Dialoge selbst sind KEINE Taste mehr: sie zeigen die Platte, dunkel
+    // sind nur ihre Felder (Nutzer-Wunsch "leicht und luftig").
+    expect(Object.keys(t.flaechen_extra)).not.toContain(".mobile-modal");
+    expect(Object.keys(t.flaechen_extra)).not.toContain(".formular-blatt");
   });
 
   it("setzt die zusaetzlichen Flaechen gegen Inline-Styles durch", () => {

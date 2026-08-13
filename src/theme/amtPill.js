@@ -68,6 +68,12 @@ export function schriftAuf(grund, wunsch, schwelle = 4.5) {
   return kontrastWert(HELL, grund) >= kontrastWert(DUNKEL, grund) ? HELL : DUNKEL;
 }
 
+// Kurzform für den häufigsten Fall: Text oder Symbol liegt direkt auf dem
+// SEITENHINTERGRUND. In den meisten Themes trägt die Akzentfarbe dort; in
+// "Tastenhell" (helle Platte) fallen Gelbgrün und Gold durch — dann liefert
+// die Funktion den lesbaren Ersatz. Für Symbole reicht 3:1 (WCAG 1.4.11).
+export const aufGrund = (farbe, schwelle = 4.5) => schriftAuf(T.bg, farbe, schwelle);
+
 // Stil für einen Betrag. kind: "pos" | "neg" | "gold" | "txt" | "txt2" oder
 // eine konkrete Farbe. `plain` überschreibt optional die Farbe im Nicht-Pill-
 // Modus (für Stellen, die bisher eine Palette-Farbe statt T[kind] nutzten).

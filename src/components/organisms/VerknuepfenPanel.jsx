@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { tagMonat } from "../../utils/date.js";
 import { theme as T } from "../../theme/activeTheme.js";
+import { aufGrund } from "../../theme/amtPill.js";
 import { fmt, NUM_FONT } from "../../utils/format.js";
 import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
@@ -92,10 +93,10 @@ function VerknuepfenPanel({editTx, txs, setTxs, setEditTx, setShowVormHub, setEd
       <div style={{marginBottom:6}}>
         <button onClick={()=>setShowLink(v=>!v)}
           style={{width:"100%",padding:"8px 10px",borderRadius:10,border:`1px solid ${T.gold}44`,
-            background:`${T.gold}08`,color:T.gold,fontSize:12,fontWeight:700,cursor:"pointer",
+            background:`${T.gold}08`,color:aufGrund(T.gold),fontSize:12,fontWeight:700,cursor:"pointer",
             fontFamily:"inherit",display:"flex",alignItems:"center",gap:6,marginBottom:showLink?6:0}}>
-          {Li("link",13,T.gold)} Vormerkung zuordnen ({candidates.length})
-          {Li(showLink?"chevron-up":"chevron-down",11,T.gold)}
+          {Li("link",13,aufGrund(T.gold,3))} Vormerkung zuordnen ({candidates.length})
+          {Li(showLink?"chevron-up":"chevron-down",11,aufGrund(T.gold,3))}
         </button>
         {showLink&&candidates.map(pend=>{
           const isMatch=Math.abs(pend.totalAmount-editTx.totalAmount)<0.01;

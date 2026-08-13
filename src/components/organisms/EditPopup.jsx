@@ -8,6 +8,7 @@ import { TagInput } from "../atoms/TagInput.jsx";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, GEFAHR, gefahrText, isLightTheme } from "../../theme/activeTheme.js";
+import { aufGrund } from "../../theme/amtPill.js";
 import { INP } from "../../theme/palette.js";
 import { isoAddMonths } from "../../utils/date.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
@@ -362,7 +363,7 @@ function EditPopup() {
           )}
           {/* Notiz */}
           <div style={{color:T.txt2,fontSize:11,marginBottom:2,display:"flex",alignItems:"center",gap:4}}>
-            {Li("sticky-note",11,T.gold)} Notiz
+            {Li("sticky-note",11,aufGrund(T.gold,3))} Notiz
           </div>
           <textarea ref={autoGrow} value={editTx.note||""}
             onChange={e=>{autoGrow(e.target);setEditTx(p=>({...p,note:e.target.value}));}}
@@ -374,7 +375,7 @@ function EditPopup() {
               lineHeight:1.5}}/>
           {/* Tags — quer über Kategorien hinweg durchsuchbar (z.B. "#aida"), s. utils/search.js */}
           <div style={{color:T.txt2,fontSize:11,marginBottom:2,display:"flex",alignItems:"center",gap:4}}>
-            {Li("hash",11,T.blue)} Tags
+            {Li("hash",11,aufGrund(T.blue,3))} Tags
           </div>
           <TagInput value={editTx.tags||[]} onChange={t=>setEditTx(p=>({...p,tags:t}))} suggestions={allTags}/>
           {/* Datum + Betrag */}
@@ -1052,11 +1053,11 @@ function EditPopup() {
               }}
                 style={{padding:"10px",borderRadius:12,
                   border:`1px solid ${T.gold}44`,
-                  background:`${T.gold}08`,color:T.gold,
+                  background:`${T.gold}08`,color:aufGrund(T.gold),
                   fontSize:13,fontWeight:700,cursor:"pointer",
                   display:"flex",alignItems:"center",justifyContent:"center",gap:8,
                   fontFamily:"inherit",marginTop:4}}>
-                {Li("calendar-plus",15,T.gold)} Im Vormerkungsdialog öffnen
+                {Li("calendar-plus",15,aufGrund(T.gold,3))} Im Vormerkungsdialog öffnen
               </button>
             )}
           </div>

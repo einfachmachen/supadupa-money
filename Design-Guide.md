@@ -295,6 +295,14 @@ passen:
   (`style={{background:T.bg}}`), und dagegen verliert ein Stylesheet. Betroffen
   sind nur Themes, die `flaechen_extra` überhaupt angeben.
 
+**Die Dialoge zeigen die Platte, dunkel sind nur die Felder.** Bildschirm-
+füllende Dialoge waren zwischenzeitlich ganz als Taste gemalt — das war
+lesbar, aber schwer. Jetzt steht die helle Platte im Hintergrund und nur
+Eingabe- und Auswahlfelder sind Tasten (`flaechen_extra`:
+`".mobile-modal input"` usw., inklusive `color-scheme: dark` für Kalender und
+Auswahllisten). Der Preis: jede Akzentfarbe, die dort **frei** auf der Platte
+liegt, muss durch `aufGrund()` — der Lauf hat acht solche Stellen gefunden.
+
 In diesem Theme ist auch die **untere Leiste** aufgelöst: jeder Reiter ist eine
 eigene Taste (`.nav-tab`), die Leiste selbst durchsichtig — darunter liegt der
 Seitenhintergrund, also die Platte, und die steht als Fuge zwischen den Tasten.
@@ -439,6 +447,14 @@ einen Rahmen.
 nur eine 13-%-Tönung derselben Farbe trägt, ist kaum zu erkennen — und die
 Akzentschrift darauf erreicht die Schwelle nicht (Ausgabe/Einnahme/Umbuchung:
 3,8:1). Aktiv = volle Akzentfläche + `schriftAuf()`; inaktiv = Ring (s. o.).
+
+**Akzent direkt auf dem Seitenhintergrund: `aufGrund()`.** Kurzform für
+`schriftAuf(T.bg, farbe)`. In den meisten Themes trägt die Akzentfarbe dort; in
+„Tastenhell" (helle Platte) fallen Gelbgrün und Gold durch — dann kommt der
+lesbare Ersatz. Betroffen sind Symbole und Beschriftungen, die **nicht** auf
+einer Karte liegen: „+ Konto"-Kachel, „löschen"/„heute", Notiz-, Tag- und
+Split-Symbol, die Kopfzeilen der Verknüpfen-Panels. Für Symbole genügt 3:1
+(WCAG 1.4.11), dafür der zweite Parameter.
 
 **Schrift auf einer beliebigen Fläche: `schriftAuf()`** (`theme/amtPill.js`).
 Überall, wo Text auf einer Farbe liegt, die **nicht** aus dem Theme kommt —

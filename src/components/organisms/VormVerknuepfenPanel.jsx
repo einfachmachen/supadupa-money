@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { tagMonat } from "../../utils/date.js";
 import { theme as T } from "../../theme/activeTheme.js";
+import { aufGrund } from "../../theme/amtPill.js";
 import { fmt, NUM_FONT } from "../../utils/format.js";
 import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
@@ -57,7 +58,7 @@ function VormVerknuepfenPanel({editVorm, txs, setTxs, onClose}) {
         style={{width:"100%",padding:"8px 10px",borderRadius:10,border:`1px solid ${T.blue}44`,
           background:`${T.blue}08`,color:T.blue,fontSize:12,fontWeight:700,cursor:"pointer",
           fontFamily:"inherit",display:"flex",alignItems:"center",gap:6,marginBottom:showLink?6:0}}>
-        {Li("link",13,T.blue)} Buchung/Vormerkung zuordnen ({candidates.length})
+        {Li("link",13,aufGrund(T.blue,3))} Buchung/Vormerkung zuordnen ({candidates.length})
         {Li(showLink?"chevron-up":"chevron-down",11,T.blue)}
       </button>
       {showLink&&candidates.map(tx=>{
