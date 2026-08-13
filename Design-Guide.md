@@ -316,6 +316,16 @@ Funde).
 > Screenshot weiß bzw. Lime sein"). Weiße Schrift braucht eine dunkle Taste —
 > beides zusammen geht nicht.
 >
+**Das Systemfarbschema ist ein eigenes Token.** `colorScheme` entscheidet, wie
+der Browser Felder, Kalenderblätter und Auswahllisten malt. Normalerweise folgt
+es der Theme-Helligkeit — „Tastenhell" braucht beides: die **Seite** ist hell,
+seine **Karten und Dialoge** sind dunkel. Mit dem geerbten `dark` malte der
+Browser die Felder auf der hellen Platte fast schwarz (Nutzer-Bild
+„Einstellungen"). Das Theme setzt deshalb `farbschema:"light"`, und die dunklen
+Flächen holen sich `color-scheme: dark` per CSS zurück. Zu beachten: **der
+Kontrast-Lauf findet so etwas nicht** — weiße Schrift auf schwarzem Feld ist
+kontrastreich, nur eben falsch.
+
 **Der Hero ist Glas.** Die Liste klebt nicht unter ihm, sie **scrollt unter ihm
 durch** (`stickyRef` in `MonatScreen`) — eine deckende Fläche schnitt den Inhalt
 an seiner runden Kante hart ab. Er ist deshalb leicht durchsichtig

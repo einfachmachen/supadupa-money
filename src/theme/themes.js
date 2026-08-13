@@ -942,6 +942,10 @@ THEMES.magazin = {
 THEMES.tastenhell = {
   ...THEMES.keyboard,
   hell:false,                  // helle Platte, aber dunkle Karten (s. o.)
+  // … die Eingabefelder auf der PLATTE muessen aber hell bleiben: mit dem
+  // dunklen Systemfarbschema malt der Browser sie dort fast schwarz. Die
+  // dunklen Flaechen (Dialoge, Blaetter) holen sich "dark" per CSS zurueck.
+  farbschema:"light",
   bg:"#ECECE4",                // Tastatur-Platte, heller Cremeton der Vorlage
   // Keycap-Grau: die HELLSTE Taste, auf der noch jede Betragsfarbe 4,5:1
   // erreicht. Der Wert ist gerechnet, nicht geschaetzt (der erste Anlauf mit

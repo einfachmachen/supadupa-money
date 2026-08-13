@@ -168,6 +168,19 @@
     backdrop-filter: blur(18px) saturate(140%);
   }
 
+  /* Systemfarbschema: die Wurzel steht auf "light" (helle Platte, siehe
+     `farbschema` im Theme). Alles, was DUNKEL gemalt ist, dreht es hier
+     zurueck — sonst zeichnet der Browser Felder, Kalender und Auswahllisten
+     darin fuer einen hellen Grund. */
+  .theme-tastenhell .mobile-modal,
+  .theme-tastenhell .formular-blatt,
+  .theme-tastenhell .aufriss-blatt,
+  .theme-tastenhell .hero-flaeche,
+  .theme-tastenhell .nav-tab,
+  .theme-tastenhell .menue-kachel {
+    color-scheme: dark;
+  }
+
   /* Untere Leiste: jeder Reiter eine eigene Taste. Die Leiste selbst wird
      durchsichtig — darunter liegt der Seitenhintergrund, also die Platte, und
      die steht damit als Fuge zwischen den Tasten. Ihre Farbe kommt so weiter

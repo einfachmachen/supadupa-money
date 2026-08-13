@@ -3334,7 +3334,14 @@ export default function SupaDupaMoney() {
       amtMode===0?"amts-blur":null, amtMode<2?"amts-neutral":null,
       amtFont?`amtfont-${amtFont}`:null].filter(Boolean).join(" ")||undefined}
       style={{background:T.bg,height:"100vh",maxHeight:"100vh",
-      colorScheme:(isLightTheme())?"light":"dark",
+      // Systemfarbschema der Eingabefelder. Normalerweise folgt es der
+      // Theme-Helligkeit; ein Theme kann es aber ausdruecklich setzen. Genau
+      // das braucht "Tastenhell": die SEITE ist hell, nur seine Karten und
+      // Dialoge sind dunkel. Mit dem geerbten "dark" malte der Browser die
+      // Felder auf dem hellen Grund fast schwarz (Nutzer-Bild
+      // "Einstellungen"). Die dunklen Flaechen holen sich ihr "dark" per CSS
+      // zurueck (themes.css).
+      colorScheme:T.farbschema || ((isLightTheme())?"light":"dark"),
       "--amt-neutral":T.txt,  // Neutral-Schriftfarbe für Beträge (= Kategorie-Text)
       // Themes mit eigener Karten-Textfarbe (z.B. Keyboard): hier stehen die
       // Werte für Text, der direkt auf dem HINTERGRUND liegt. Auf den Karten
