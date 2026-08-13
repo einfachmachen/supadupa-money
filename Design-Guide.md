@@ -326,8 +326,8 @@ Flächen holen sich `color-scheme: dark` per CSS zurück. Zu beachten: **der
 Kontrast-Lauf findet so etwas nicht** — weiße Schrift auf schwarzem Feld ist
 kontrastreich, nur eben falsch.
 
-**Die Liste läuft als Schicht direkt hinter dem Hero** (`.hero-sticky`,
-`MonatScreen.jsx`). Der sticky-Block malt normalerweise `T.bg` **deckend**; in
+**Die Liste läuft als Schicht direkt hinter dem Hero** (`.hero-sticky` — in
+`MonatScreen.jsx` **und** `DashboardScreenV2.jsx`). Der sticky-Block malt normalerweise `T.bg` **deckend**; in
 den runden Ecken der Hero-Karte stand dadurch Hell gegen Dunkel, und der Inhalt
 verschwand an einer harten Kante. In „Tastenhell" ist der Block durchsichtig —
 dort läuft **Grau in Grau**, die Karten der Liste schieben sich sichtbar hinter
@@ -637,6 +637,13 @@ reservierten Prognosewert.
 
 ## 5. Layout & Navigation
 
+- **Inhalte laufen unter der Reiterleiste durch** (nur „Tastenhell"). Der
+  Inhaltsbereich (`.app-content`) reserviert sonst 57 px für die Leiste, und
+  die Liste endet an deren Oberkante. Dort fällt die Reservierung weg, und der
+  Scrollbereich (`.screen-scroll`) bekommt die 57 px als **eigenen**
+  Innenabstand zurück — die Karten schieben sich zwischen den Reitern hindurch,
+  die letzte Zeile kommt trotzdem über der Leiste zum Stehen (gemessen:
+  `scrollTop` erreicht das Maximum).
 - **Eine Kante für die ganze Home-Spalte: 10 px.** Kategoriefelder, die
   Sortier-/Pegel-Zeile, „Ausgaben nach Kategorie" samt Balken-/Torten-Umschalter
   und der Diagrammblock (`ChartBlock`) beginnen alle bei **10 px** vom Rand
@@ -644,6 +651,8 @@ reservierten Prognosewert.
   **umgebenden Bereich**, nicht von jedem Baustein selbst — `ChartBlock` hatte
   zusätzlich `margin: 0 10px` und stand dadurch als einziger Block eingerückt.
   Wer einen neuen Block dort einhängt: **keinen eigenen Seitenrand** setzen.
+  Die **Tageskarten der Monatsansicht** (`.tages-karte`) standen als einzige auf
+  8 px und damit sichtbar versetzt unter dem Hero — jetzt ebenfalls 10 px.
 - **Theme-Klasse am Wurzel-Container** heißt immer `theme-<schlüssel>` und
   entsteht **allgemein aus dem Namen** (`App.jsx`). Vorher stand dort eine Kette
   aus Einzelvergleichen, in die jedes neue Theme von Hand eingetragen werden

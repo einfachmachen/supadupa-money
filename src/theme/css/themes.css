@@ -168,6 +168,21 @@
     background: transparent !important;
   }
 
+  /* Inhalte laufen UNTER der Reiterleiste durch (Nutzer-Wunsch). Der
+     Inhaltsbereich reserviert sonst 57px fuer die Leiste, und die Liste endet
+     genau an deren Oberkante. Ohne die Reservierung reicht der Scrollbereich
+     bis zum unteren Rand — die Karten schieben sich zwischen den Reitern
+     hindurch, und weil die Leiste selbst durchsichtig ist, laeuft auch dort
+     Grau in Grau.
+     Damit die letzte Zeile trotzdem ueber der Leiste zum Stehen kommt, bekommt
+     der Scrollbereich die 57px als eigenen Innenabstand zurueck. */
+  .theme-tastenhell .app-content {
+    padding-bottom: 0 !important;
+  }
+  .theme-tastenhell .screen-scroll {
+    padding-bottom: 57px;
+  }
+
   /* Systemfarbschema: die Wurzel steht auf "light" (helle Platte, siehe
      `farbschema` im Theme). Alles, was DUNKEL gemalt ist, dreht es hier
      zurueck — sonst zeichnet der Browser Felder, Kalender und Auswahllisten

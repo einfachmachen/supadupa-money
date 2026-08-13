@@ -1202,7 +1202,7 @@ function MonatScreen() {
     };
 
     return (<>
-      <div ref={listRef} onScroll={onListScroll} style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",position:"relative"}} onTouchStart={onListTouchStart} onTouchEnd={onTE}>
+      <div ref={listRef} onScroll={onListScroll} className="screen-scroll" style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",position:"relative"}} onTouchStart={onListTouchStart} onTouchEnd={onTE}>
 
         {/* Hero — SaldoHeroV2 (gemeinsamer Hero mit dem Dashboard) */}
         <div ref={stickyRef} className="hero-sticky" style={window.MBT_DEBUG?.disable_sticky?{}:{position:"sticky",top:0,zIndex:10,background:T.bg}}>
@@ -1658,7 +1658,11 @@ function MonatScreen() {
               // eine angedockte Zeile von unten ab, sobald die Tageskarte selbst
               // weiter nach oben scrollt, als "Fläche schiebt sich von unten zu"
               // sichtbar (genau das gemeldete Problem).
-              <div key={date} data-month={date.slice(0,7)} style={{margin:"14px 8px 0",border:`1px solid ${T.bd}`,borderRadius:12,background:T.surf||"rgba(255,255,255,0.03)"}}>
+              // 10px Seitenrand — dieselbe Kante wie Hero, Kategoriefelder und
+              // Reiterleiste (§5). Vorher 8px: in Themes mit randlosem Hero
+              // faellt das nicht auf, in "Tastenhell" standen Hero (10) und
+              // Tageskarte (8) sichtbar versetzt uebereinander (Nutzer-Hinweis).
+              <div key={date} data-month={date.slice(0,7)} className="tages-karte" style={{margin:"14px 10px 0",border:`1px solid ${T.bd}`,borderRadius:12,background:T.surf||"rgba(255,255,255,0.03)"}}>
                 {/* Eigener leerer Wrapper NUR um die Kopfzeile (nicht um den
                     ganzen Tages-Block!) für den Dokumentfluss-Platz — siehe
                     ausführlichen Kommentar bei der Einnahmen-Zeile weiter unten. */}

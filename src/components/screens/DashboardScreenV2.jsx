@@ -977,6 +977,7 @@ function DashboardScreenV2() {
       )}
       <div ref={dashScrollRef}
         onTouchStart={onPullStart} onTouchMove={onPullMove} onTouchEnd={onPullEnd}
+        className="screen-scroll"
         style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch"}}>
         {/* Pull-to-Refresh-Indikator wird unterhalb des fixierten Hero
             gerendert (zwischen Hero und erster Kategorie) — siehe unten. */}
@@ -1038,7 +1039,7 @@ function DashboardScreenV2() {
             </button>
           </div>
         )}
-        <div style={window.MBT_DEBUG?.disable_sticky?{}:{position:"sticky",top:0,zIndex:10,background:T.bg}}>
+        <div className="hero-sticky" style={window.MBT_DEBUG?.disable_sticky?{}:{position:"sticky",top:0,zIndex:10,background:T.bg}}>
         {(()=>{
           // ── Prognose: Vormonatssaldo + Einnahmen - Ausgaben ──
 

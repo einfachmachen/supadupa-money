@@ -3600,7 +3600,7 @@ export default function SupaDupaMoney() {
       {showGuidedTour && <GuidedFeatureTour onClose={()=>setShowGuidedTour(false)}/>}
 
       {/* ── CONTENT ── */}
-      <div style={{flex:1,minHeight:0,overflow:"hidden",display:"flex",flexDirection:"column",
+      <div className="app-content" style={{flex:1,minHeight:0,overflow:"hidden",display:"flex",flexDirection:"column",
         touchAction:"pan-y",paddingBottom:57}}
         onTouchStart={onTS} onTouchEnd={onTE}>
         {/* Hinweis: year/month im Context sind frozenYear/frozenMonth, solange das
