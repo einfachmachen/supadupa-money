@@ -286,6 +286,44 @@ async function stationen(page, merke) {
         if (b) b.click();
       });
       await page.waitForTimeout(500); await merke("Neue Vormerkung (Einnahme)");
+
+      // Bis zum BESTAETIGEN-Schritt durchspielen. Der Kasten mit der
+      // Schieflage-Warnung steht nur dort, und er hat seine eigene Flaeche —
+      // in "Tastenhell" lag die Akzent-Ueberschrift auf ihrer eigenen
+      // 12%-Toenung und war auf hellem Grund nicht zu lesen (Nutzer-Bild).
+      // Der Betrag ist bewusst gross, damit die Warnung ueberhaupt erscheint.
+      const setzeFeld = (suche, wert) => page.evaluate(([such, w]) => {
+        const felder = [...document.querySelectorAll(".mobile-modal input, .mobile-modal textarea")];
+        const el = such === "betrag"
+          ? felder.find(e => e.inputMode === "decimal" || e.getAttribute("inputmode") === "decimal")
+          : felder.find(e => /Beschreibung/i.test(e.placeholder || ""));
+        if (!el) return false;
+        const proto = el.tagName === "TEXTAREA" ? window.HTMLTextAreaElement : window.HTMLInputElement;
+        Object.getOwnPropertyDescriptor(proto.prototype, "value").set.call(el, w);
+        el.dispatchEvent(new Event("input", { bubbles: true }));
+        return true;
+      }, [suche, wert]);
+      const plusKlick = async () => {
+        const b2 = await page.evaluate(() => {
+          const el = document.querySelector(".plus-master-btn");
+          if (!el) return null; const r = el.getBoundingClientRect();
+          return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) };
+        });
+        if (b2) { await page.mouse.click(b2.x, b2.y); await page.waitForTimeout(1100); }
+      };
+      await page.evaluate(() => {
+        const b3 = [...document.querySelectorAll("button")].find(e => /^\s*Ausgabe\s*$/.test(e.textContent || ""));
+        if (b3) b3.click();
+      });
+      await page.waitForTimeout(400);
+      await setzeFeld("betrag", "5000,00"); await page.waitForTimeout(400);
+      await plusKlick();                       // -> Kategorie
+      await plusKlick();                       // -> Details
+      await setzeFeld("beschreibung", "Kontrastlauf"); await page.waitForTimeout(400);
+      await plusKlick();                       // -> bestaetigen
+      if (await page.evaluate(() => !!document.querySelector(".warn-karte"))) {
+        await merke("Neue Vormerkung (bestaetigen, Schieflage)");
+      }
       // Zurueck-Pfeil links oben schliesst den Dialog wieder.
       await page.evaluate(() => {
         const m = document.querySelector(".mobile-modal");

@@ -478,6 +478,19 @@ oder Fast-Schwarz — was auf diesem Grund besser trägt.
   kein Fehler der Funktion — `tests/schriftAuf.test.js` hält die Liste fest,
   damit sie nicht still wächst.
 
+**Eine Fläche aus dem eigenen Akzent trägt diesen Akzent nicht mehr.** Wer einen
+Kasten mit `${T.neg}1f` tönt und die Überschrift in `T.neg` schreibt, prüft
+leicht gegen den Ton **vor** der Tönung — die Tönung hebt den Untergrund aber
+genau in Richtung der Schrift, und der Kontrast schrumpft. In der
+Schieflage-Vorwarnung stand Cyan auf Cyan-Tönung bei 3,86:1 (Theme „Keyboard",
+Kontrastlauf-Station „bestätigen"); gerechnet gegen `T.bg` wären es 4,5:1
+gewesen. Dafür gibt es `mischen(farbe, anteil, grund)` in `theme/amtPill.js` —
+das JS-Gegenstück zum Hex-Alpha. Regel: **jeder Akzent auf einer getönten Fläche
+läuft durch `schriftAuf(mischen(…), akzent)`**, Symbole mit Schwelle 3.
+Erklärt ein Theme den Kasten per `flaechen_extra` zur Karte („Tastenhell":
+`.warn-karte`), gewinnt dessen Fläche per `!important` gegen die Tönung — dann
+ist **sie** der Untergrund, und der Akzent bleibt meist stehen.
+
 **Blass = heller gilt nur auf dunklem Grund.** Für „noch nicht erreicht"
 (Prognose Mitte/Ende, ruhende Kacheln) gibt es `blasserAkzent()` in
 `activeTheme.js`. Vorher stand an vier Stellen fest `lightenHex(T.blue, 0.35)` —
@@ -544,7 +557,7 @@ Ein Theme kann jetzt zusätzlich `txt_card` / `txt2_card` / `lbl_card` angeben:
 |---|---|
 | `txt`, `txt2`, `lbl` | Text direkt auf `bg` |
 | `txt_card`, `txt2_card`, `lbl_card` | Text auf `surf`/`surf2`/`surf3`/`cat_bg` |
-| `flaechen_extra` | `{Selektor: Fläche}` — Bereiche, die im Markup keine Karte sind, hier aber eine sein müssen (`.hero-flaeche`, `.symbolzeile`) |
+| `flaechen_extra` | `{Selektor: Fläche}` — Bereiche, die im Markup keine Karte sind, hier aber eine sein müssen (`.hero-flaeche`, `.symbolzeile`, `.warn-karte`) |
 | `card_shadow` | Dekoration der Kartenkante (beim Keyboard-Theme die Fuge zwischen zwei Keycaps) |
 
 Mechanik (`activeTheme.js`): sobald `txt_card` gesetzt ist, liefern `T.txt` & Co.
@@ -594,9 +607,9 @@ npm run kontrast -- --bilder     # zusätzlich Screenshots nach .kontrast/
 ```
 
 Der Lauf fährt Home (in **allen drei Betrags-Modi**), den **Diagrammbereich
-(Balken und Torte)**, den Dialog **„neue Vormerkung"** (Ausgabe und Einnahme),
-Monat, Trend, Daten, Kategorie-Aufriss, Bearbeiten-Dialog und Rückfrage ab und
-prüft:
+(Balken und Torte)**, den Dialog **„neue Vormerkung"** (Ausgabe, Einnahme und
+den Schritt **„bestätigen"** mit ausgelöster Schieflage-Vorwarnung), Monat,
+Trend, Daten, Kategorie-Aufriss, Bearbeiten-Dialog und Rückfrage ab und prüft:
 - **Text** gegen seinen tatsächlichen Untergrund — alle gemalten Ebenen
   übereinandergelegt, halbtransparente Chips zählen mit (der „nächste
   undurchsichtige Vorfahre" lag falsch, sobald eine getönte Fläche dazwischenlag).
@@ -636,19 +649,28 @@ prüft:
 Gezählt wird jede Farbkombination **einmal pro Theme**, ausgegeben aber je
 Station. Vorher zählte jede Station eigenständig — der Hero steht auf jedem
 Bildschirm, und eine neue Station trieb die Zahl nach oben, ohne dass ein neues
-Problem dazugekommen wäre. Stand jetzt: **Tastenhell 0, Keyboard 0, Lime 18,
-Limehell 48** (die beiden letzten sind Altlasten: „Limehell" hat mit
+Problem dazugekommen wäre. Stand jetzt: **Tastenhell 0, Keyboard 0, Lime 19,
+Limehell 47** (die beiden letzten sind Altlasten: „Limehell" hat mit
 `txt2 rgba(60,80,40,0.55)` eine zu schwache Zweitschrift — 2,68:1 —, und sein
 `gold` #FFC107 trägt auf Weiß nur 1,47:1).
+
+Eine **neue Station kann die Zahl trotzdem bewegen** — nicht weil etwas kaputt
+ging, sondern weil sie Flächen zeigt, die vorher niemand gemessen hat. Die
+Station „bestätigen" hat bei „Lime"/„Limehell" genau diese Altlasten an einer
+weiteren Stelle sichtbar gemacht (dieselbe zu schwache Zweitschrift, dasselbe
+Gold) — und bei „Keyboard" einen echten Fehler gefunden: den Akzent auf seiner
+eigenen Tönung (§4.4).
 
 Findings aus **Nutzerdaten** (selbst gewählte Kategorie- und Kontofarben) werden
 getrennt ausgewiesen und lassen den Lauf **nicht** fehlschlagen — sie sind vom
 Theme aus nicht behebbar. Alles andere ergibt Rückgabewert 1.
 
-Stand der Messung (Standard-Auswahl): `keyboard` 0, `kontrastdunkel` 0,
-`terminal` 6, `kontrasthell` 12, `dark` 39, `light` 106. Die hohen Zahlen bei
-`light`/`dark` sind **Altlasten**, nicht neu — vor allem Gold auf Weiß und
-`txt2` mit zu wenig Deckkraft.
+Stand der Messung (Standard-Auswahl, theme-eigene Stellen — Nutzerdaten zählen
+getrennt): `keyboard` 0, `kontrastdunkel` 1, `kontrasthell` 1, `terminal` 11,
+`dark` 19, `light` 47; dazu `tastenhell` 0. Die hohen Zahlen bei `light`/`dark`
+sind **Altlasten**, nicht neu — vor allem Gold auf Weiß und `txt2` mit zu wenig
+Deckkraft. Die beiden Einer sind Grenzfälle knapp unter der Schwelle (4,48:1
+bzw. 4,50:1 gerundet).
 
 ### 4.9 Budget-Ampel
 Budget-Auslastung färbt nach **tatsächlichem Verbrauch (Ist)**, nicht nach dem

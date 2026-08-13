@@ -39,8 +39,8 @@ export function readableOn(bg, wanted) {
 // hier die echte Rechnung: es gewinnt der Ton, der auf diesem Grund den
 // höheren Kontrast erreicht.
 const _lin = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
-function _luminanz(c) {
-  if (!c || typeof c !== "string") return 0;
+function _rgb(c) {
+  if (!c || typeof c !== "string") return null;
   let r, g, b;
   if (c[0] === "#") {
     const h = c.slice(1);
@@ -48,11 +48,28 @@ function _luminanz(c) {
     r = parseInt(f.slice(0, 2), 16); g = parseInt(f.slice(2, 4), 16); b = parseInt(f.slice(4, 6), 16);
   } else {
     const m = c.match(/rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
-    if (!m) return 0;
+    if (!m) return null;
     r = +m[1]; g = +m[2]; b = +m[3];
   }
-  if (Number.isNaN(r + g + b)) return 0;
-  return 0.2126 * _lin(r) + 0.7152 * _lin(g) + 0.0722 * _lin(b);
+  return Number.isNaN(r + g + b) ? null : [r, g, b];
+}
+function _luminanz(c) {
+  const p = _rgb(c);
+  if (!p) return 0;
+  return 0.2126 * _lin(p[0]) + 0.7152 * _lin(p[1]) + 0.0722 * _lin(p[2]);
+}
+
+// `farbe` mit dem Anteil `anteil` (0–1) über `grund` gelegt — das JS-Gegenstück
+// zu einer Fläche mit Hex-Alpha (`${T.neg}1f`). Gebraucht überall dort, wo eine
+// so getönte Fläche selbst wieder Untergrund für schriftAuf() ist: sonst prüft
+// man gegen den Ton VOR der Tönung und misst 4,5:1, wo auf dem Bildschirm 3,9:1
+// stehen.
+export function mischen(farbe, anteil, grund) {
+  const a = _rgb(farbe), b = _rgb(grund);
+  if (!a || !b) return grund;
+  const t = Math.min(1, Math.max(0, anteil));
+  const v = [0, 1, 2].map(i => Math.round(a[i] * t + b[i] * (1 - t)));
+  return `#${v.map(x => x.toString(16).padStart(2, "0")).join("")}`;
 }
 export function kontrastWert(a, b) {
   const l1 = _luminanz(a), l2 = _luminanz(b);

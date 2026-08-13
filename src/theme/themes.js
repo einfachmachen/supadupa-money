@@ -1003,6 +1003,9 @@ THEMES.tastenhell = {
     // traegt ihre volle Typfarbe), die Nebenknoepfe "loeschen"/"heute" und die
     // Konto-Schnellwahl.
     ".wahl-taste":"#525252",
+    // Hinweis-/Warnkasten im Bestaetigen-Schritt: seine Ueberschrift und die
+    // Betraege sind Akzentfarben und brauchen deshalb eine Taste unter sich.
+    ".warn-karte":"#525252",
   },
   // Keine helle Fuge wie beim Keyboard-Theme: hier IST die Platte die Fuge.
   // Die Taste liegt mit einem weichen Schatten darauf.

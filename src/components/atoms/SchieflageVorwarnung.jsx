@@ -17,6 +17,23 @@ import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { MONTHS_S } from "../../utils/constants.js";
 import { schieflagePreview } from "../../utils/schieflagePreview.js";
+import { schriftAuf, mischen } from "../../theme/amtPill.js";
+
+// Der Kasten tönt sich mit seiner eigenen Warnfarbe ein UND schreibt die
+// Überschrift in derselben Farbe. Auf einem Grund, der aus genau diesem Ton
+// gemischt ist, schrumpft der Kontrast — im Theme "Keyboard" (Ausgaben-Cyan)
+// gemessene 3,86:1. Deshalb wird die Überschrift gegen den WIRKLICHEN
+// Untergrund geprüft und weicht auf Weiß bzw. Fast-Schwarz aus, wenn die
+// Warnfarbe dort nicht mehr trägt. Rahmen und Symbol bleiben farbig, der
+// Kasten also weiterhin als Warnung erkennbar.
+const TOENUNG = 0x1f / 255; // = die "1f"-Deckkraft der Fläche unten
+function warnGrund() {
+  // Erklärt ein Theme den Kasten zur Karte (Tastenhell, §4.7), gewinnt dessen
+  // Fläche per !important gegen die Tönung — dann ist SIE der Untergrund.
+  const karte = T.flaechen_extra?.[".warn-karte"];
+  if (typeof karte === "string" && karte[0] === "#") return karte;
+  return mischen(T.neg, TOENUNG, T.bg);
+}
 
 export function SchieflageVorwarnung({ draftTxs, kind = "vormerkung", style }) {
   const { txs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth, budgets } = useContext(AppCtx);
@@ -54,34 +71,46 @@ export function SchieflageVorwarnung({ draftTxs, kind = "vormerkung", style }) {
     : kind === "serie" ? "Diese wiederkehrende Vormerkung"
     : "Diese Vormerkung";
   const saldoStr = `${res.saldoVal < 0 ? "−" : ""}${fmt(Math.abs(res.saldoVal))} €`;
-  const saldoColor = res.saldoVal < 0 ? T.neg : T.txt; // nur negativer Kontostand rot, sonst normal (weiß)
+  // JEDE Akzentfarbe in diesem Kasten liegt auf der Tönung, nicht auf der
+  // Platte — sie läuft deshalb durch `auf()`. Symbole dürfen dabei die
+  // niedrigere Schwelle nutzen (3:1, WCAG 1.4.11).
+  const grund = warnGrund();
+  const auf = (farbe, schwelle) => schriftAuf(grund, farbe, schwelle);
+  const saldoColor = res.saldoVal < 0 ? auf(T.neg) : T.txt; // nur negativer Kontostand rot, sonst normal (weiß)
 
   return (
-    <div style={{ display: "flex", alignItems: "flex-start", gap: 10,
+    // `warn-karte`: In Themes mit gegensaetzlichen Flaechen ("Tastenhell")
+    // erklaert das Theme diesen Kasten zur Karte — sonst laege die
+    // Akzentfarbe der Ueberschrift auf ihrer eigenen 12%-Toenung, und das
+    // ist auf hellem Grund nicht zu lesen (Nutzer-Bild "bestaetigen").
+    <div className="warn-karte" style={{ display: "flex", alignItems: "flex-start", gap: 10,
       background: T.neg + "1f", border: `1.5px solid ${T.neg}`, borderRadius: 12,
       padding: "11px 13px", lineHeight: 1.4, ...style }}>
-      {Li("alert-triangle", 18, T.neg)}
+      {Li("alert-triangle", 18, auf(T.neg, 3))}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 800, color: T.neg, fontSize: 14, marginBottom: 2 }}>
+        <div style={{ fontWeight: 800, color: auf(T.neg), fontSize: 14, marginBottom: 2 }}>
           {res.isNew ? "Achtung: führt zu einer Schieflage" : "Achtung: verschärft eine Schieflage"}
         </div>
         <div style={{ fontSize: 13, color: T.txt }}>
           {subj} drückt das Giro-Konto ab <b>{label}</b> auf{" "}
           <b style={{ color: saldoColor }}>{saldoStr}</b> —{" "}
-          <b style={{ color: T.gold }}>{betrag(res.deficit)} €</b> unter deinen Puffer ({betrag(res.buffer)} €).
+          <b style={{ color: auf(T.gold) }}>{betrag(res.deficit)} €</b> unter deinen Puffer ({betrag(res.buffer)} €).
           {res.count > 1 ? ` Betroffen: ${res.count} Monate.` : ""}
         </div>
         {res.sparAdjust && (
           <div style={{ fontSize: 13, color: T.txt, marginTop: 4 }}>
-            {Li("arrow-down", 13, T.pos)}{" "}
+            {Li("arrow-down", 13, auf(T.pos, 3))}{" "}
             Durch Reduzierung der Tagesgeld-Sparrate im{" "}
             {MONTHS_S[res.sparAdjust.month]} {res.sparAdjust.year} von{" "}
             <b>{betrag(res.sparAdjust.oldAmount)} €</b> auf{" "}
-            <b style={{ color: T.pos }}>{betrag(res.sparAdjust.safeAmount)} €</b>{" "}
+            <b style={{ color: auf(T.pos) }}>{betrag(res.sparAdjust.safeAmount)} €</b>{" "}
             wird die Schieflage vermieden.
           </div>
         )}
-        <div style={{ fontSize: 11.5, color: T.txt2, marginTop: 3 }}>
+        {/* Bewusst `txt` statt `txt2`: die Zeile steht auf der GETÖNTEN Fläche,
+            nicht auf der Platte — der abgeschwächte Ton fiel dort in mehreren
+            Themes unter 4,5:1. Zurückgenommen wirkt sie schon über die Größe. */}
+        <div style={{ fontSize: 11.5, color: T.txt, marginTop: 3 }}>
           Du kannst trotzdem speichern — dies ist nur ein Hinweis.
         </div>
       </div>
