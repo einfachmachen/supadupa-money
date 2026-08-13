@@ -157,17 +157,6 @@
     margin-left: 10px;
     margin-right: 10px;
   }
-  /* Glas: die Liste scrollt unter dem Hero durch (er klebt oben). Deckend
-     schnitt seine runde Kante den Inhalt hart ab; mit Durchsicht und
-     Rückseiten-Unschärfe verläuft der Übergang weich. Die Tönung selbst
-     kommt aus dem Theme (`flaechen_extra`), damit die Farbe an EINER Stelle
-     steht. Kann ein Browser `backdrop-filter` nicht, bleibt die getönte
-     Fläche — nur eben ohne Unschärfe. */
-  .theme-tastenhell .hero-flaeche {
-    -webkit-backdrop-filter: blur(18px) saturate(140%);
-    backdrop-filter: blur(18px) saturate(140%);
-  }
-
   /* Systemfarbschema: die Wurzel steht auf "light" (helle Platte, siehe
      `farbschema` im Theme). Alles, was DUNKEL gemalt ist, dreht es hier
      zurueck — sonst zeichnet der Browser Felder, Kalender und Auswahllisten

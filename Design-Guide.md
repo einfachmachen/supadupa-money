@@ -326,15 +326,20 @@ Flächen holen sich `color-scheme: dark` per CSS zurück. Zu beachten: **der
 Kontrast-Lauf findet so etwas nicht** — weiße Schrift auf schwarzem Feld ist
 kontrastreich, nur eben falsch.
 
-**Der Hero ist Glas.** Die Liste klebt nicht unter ihm, sie **scrollt unter ihm
-durch** (`stickyRef` in `MonatScreen`) — eine deckende Fläche schnitt den Inhalt
-an seiner runden Kante hart ab. Er ist deshalb leicht durchsichtig
-(`rgba(48,48,48,0.86)`) und legt `backdrop-filter: blur(18px) saturate(140%)`
-darüber. Wie viel Durchsicht möglich ist, entscheidet der **schlechteste**
-Untergrund — die helle Platte: bindend ist das Ausgaben-Cyan `#00D9FF`, das
-einen Grund unter Helligkeit 83 verlangt. Mit der Tastenfarbe `#525252` wären
-nur **4 %** drin gewesen, mit der dunkleren Glastönung `#303030` sind es
-**14 %**. Der erste Versuch mit 18 % ergab gemessene 4,07:1.
+**Wo die Liste unter dem Hero verschwindet, läuft sie weich aus.** In der
+Monatsansicht scrollt die Liste hinter einen `position:sticky`-Block, und der
+ist mit `T.bg` **deckend** gemalt (`MonatScreen.jsx`) — der Inhalt wurde dort an
+einer harten Kante abgeschnitten, sichtbar direkt neben der runden Ecke der
+Hero-Karte. Der Block endet jetzt mit einem 46 px hohen Verlauf
+(`T.bg` → transparent, negativer Rand, `pointer-events:none`), der über die
+Liste ragt: der Inhalt löst sich auf, statt gekappt zu werden. Gilt für alle
+Themes, die Farbe kommt aus dem Theme.
+
+> **Ein Glas-Hero half hier NICHT** — und das ist die Lehre: hinter dem Hero
+> liegt gar nicht die Liste, sondern genau dieser deckende Block. Eine
+> halbdurchsichtige Hero-Fläche mit `backdrop-filter` unschärft also die
+> Hintergrundfarbe, sonst nichts. Wer Glas einsetzt, muss zuerst prüfen, **was
+> tatsächlich dahinter liegt**.
 
 > **Wie hell die Taste höchstens sein darf, ist gerechnet, nicht geschätzt.**
 > Bindend ist die *dunkelste Betragsfarbe*, das Ausgaben-Cyan `#00D9FF`: bei
