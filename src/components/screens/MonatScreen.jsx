@@ -1319,18 +1319,13 @@ function MonatScreen() {
           );
         })()}
         {/* "Ausgaben nach Kategorie" wurde ins Dashboard (Home) verschoben. */}
-        {/* Weicher Auslauf UNTER dem Hero: die Liste scrollt hinter diesen
-            sticky-Block, und der ist mit T.bg deckend gemalt — der Inhalt
-            verschwand dadurch an einer harten Kante, direkt an der runden
-            Ecke der Hero-Karte (Nutzer-Bild).
-            Der Streifen gehoert in den sticky-Block, wandert also immer mit
-            dem Hero mit, und ragt per negativem Rand ueber dessen Unterkante
-            hinaus: der Inhalt loest sich in die Hintergrundfarbe auf, statt
-            abgeschnitten zu werden. Er nimmt keine Tipps an.
-            (Durchsichtigkeit des Hero half hier NICHT: hinter ihm liegt nicht
-            die Liste, sondern genau dieser deckende Block.) */}
-        <div aria-hidden="true" style={{height:46,marginBottom:-46,pointerEvents:"none",
-          background:`linear-gradient(to bottom, ${T.bg} 0%, ${T.bg} 52%, ${T.bg}00 100%)`}}/>
+        {/* HIER STAND EIN WEICHER AUSLAUF (Verlauf T.bg -> transparent), der
+            die harte Kante aufloesen sollte, an der die Liste unter dem
+            sticky-Block verschwindet. Zurueckgenommen: der Streifen malt
+            IMMER — auch am Listenanfang, wo gar nichts darunter liegt. Dort
+            legte er sich als heller Balken ueber die erste Karte
+            (Nutzer-Bild). Richtig waere er nur, solange tatsaechlich
+            gescrollt ist (scrollTop > 0); das ist offen. */}
         </div>
 
         {/* Budget-Schnellzugriff entfernt — Budgets werden über Mehr →
