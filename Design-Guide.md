@@ -316,6 +316,16 @@ Funde).
 > Screenshot weiß bzw. Lime sein"). Weiße Schrift braucht eine dunkle Taste —
 > beides zusammen geht nicht.
 >
+**Der Hero ist Glas.** Die Liste klebt nicht unter ihm, sie **scrollt unter ihm
+durch** (`stickyRef` in `MonatScreen`) — eine deckende Fläche schnitt den Inhalt
+an seiner runden Kante hart ab. Er ist deshalb leicht durchsichtig
+(`rgba(48,48,48,0.86)`) und legt `backdrop-filter: blur(18px) saturate(140%)`
+darüber. Wie viel Durchsicht möglich ist, entscheidet der **schlechteste**
+Untergrund — die helle Platte: bindend ist das Ausgaben-Cyan `#00D9FF`, das
+einen Grund unter Helligkeit 83 verlangt. Mit der Tastenfarbe `#525252` wären
+nur **4 %** drin gewesen, mit der dunkleren Glastönung `#303030` sind es
+**14 %**. Der erste Versuch mit 18 % ergab gemessene 4,07:1.
+
 > **Wie hell die Taste höchstens sein darf, ist gerechnet, nicht geschätzt.**
 > Bindend ist die *dunkelste Betragsfarbe*, das Ausgaben-Cyan `#00D9FF`: bei
 > `#525252` erreicht es 4,57:1, eine Stufe heller fällt es durch. Die Vorlage
