@@ -14,7 +14,19 @@ import { theme as T, isLightTheme } from "./activeTheme.js";
 // dort, wo die Karten-Textregel (§4.7) die Farbe umschaltet. Versteht ein
 // Browser `color-mix` nicht, faellt nur der Ring weg.
 const _INP_BASE = ()=>({width:"100%",background:(isLightTheme())?"rgba(0,0,0,0.06)":"rgba(255,255,255,0.07)",border:`1px solid ${T.bd}`,boxShadow:"inset 0 0 0 1px color-mix(in srgb, currentColor 30%, transparent)",borderRadius:11,padding:"6px 10px",color:T.txt,fontSize:14,outline:"none",marginBottom:9,boxSizing:"border-box"});
-const INP = new Proxy({}, { get:(_,k)=>_INP_BASE()[k] });
+// Der Proxy liefert die Werte LIVE (Theme-Wechsel wirkt sofort). Bis hierher
+// hatte er nur einen `get`-Trap — und damit ergab `{...INP}` ein LEERES Objekt:
+// der Spread fragt `ownKeys`/`getOwnPropertyDescriptor` ab, und die gingen an
+// das leere Ziel. An allen 71 Stellen im Code, die `{...INP}` schreiben, kam
+// also NICHTS an; die Felder trugen nur, was daneben stand. Genau deshalb war
+// nicht zu erkennen, was ein Eingabefeld ist (Nutzer-Hinweis) — der Grundstil
+// existierte, wurde aber nie angewandt.
+const INP = new Proxy({}, {
+  get:(_,k)=>_INP_BASE()[k],
+  has:(_,k)=>k in _INP_BASE(),
+  ownKeys:()=>Reflect.ownKeys(_INP_BASE()),
+  getOwnPropertyDescriptor:(_,k)=>({value:_INP_BASE()[k], enumerable:true, configurable:true}),
+});
 
 
 // ── Lucide SVG Icons ──────────────────────────────────────────────────────────

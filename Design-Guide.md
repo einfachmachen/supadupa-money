@@ -398,6 +398,15 @@ und die schafft das satte Rot nur gegen reines Weiß. Es gibt deshalb je einen
 Ton für dunkle (`#FFB3A8`) und für **helle** Karten (`#9E1B0E`) — auf den
 hellgrauen Tasten von „Tastenhell" kam `GEFAHR` selbst nur auf 3,0:1.
 
+**`INP` ist ein Proxy — und der muss sich spreaden lassen.** Der Grundstil für
+Eingabefelder (`theme/palette.js`) liefert seine Werte live, damit ein
+Theme-Wechsel sofort wirkt. Er hatte lange nur einen `get`-Trap; `{...INP}`
+fragt aber `ownKeys` und `getOwnPropertyDescriptor`, und die gingen ans leere
+Ziel. An **allen 71 Stellen** mit `{...INP}` kam damit ein **leeres Objekt** an:
+der Grundstil existierte, wurde aber nie angewandt. Das ist die eigentliche
+Ursache dafür, dass Felder in der ganzen App nicht als Felder zu erkennen waren.
+`tests/inpStil.test.js` hält den Spread fest.
+
 **Feldkanten kommen als innerer Schatten, nicht als `border`.** „Rahmen aus"
 ist der **Standard** der App (`.no-borders *` setzt jede `border-color` auf
 transparent) — von einem Eingabefeld blieb damit nur ein 5-%-Schleier übrig,
@@ -409,6 +418,11 @@ Vormerken-Dialog setzen deshalb
 Feldes** — dunkel auf hell, hell auf dunkel, auch dort, wo die Karten-Textregel
 (§4.7) umschaltet. Wer ein neues Feld baut: Fläche **und** Ring setzen, nie nur
 einen Rahmen.
+
+> **„Randlos" meint die Deko-Linien, nicht die Erkennbarkeit eines Feldes.**
+> `.no-borders input` entfernte bis zuletzt auch `box-shadow` — und damit genau
+> die Kante, die das Feld überhaupt sichtbar macht. Äußere Schatten fallen
+> weiterhin weg, der innere Ring bleibt.
 
 **Aktiv heißt gefüllt, nicht getönt.** Ein Umschalter, dessen aktiver Zustand
 nur eine 13-%-Tönung derselben Farbe trägt, ist kaum zu erkennen — und die

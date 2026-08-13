@@ -320,9 +320,15 @@
     border-color: transparent !important;
     outline-color: transparent !important;
   }
+  /* Eingabefelder: kein Rahmen — aber die Feldkante bleibt. Sie kommt als
+     INNERER Schatten (siehe `INP` in theme/palette.js) und wurde hier bis
+     zuletzt mitentfernt; uebrig blieb ein kaum sichtbarer Schleier, und auf
+     hellem Grund gar nichts: "es ist nicht zu erkennen, was Eingabefelder
+     sind" (Nutzer-Hinweis, mit eingeschaltetem Randlos-Modus). "Randlos"
+     meint die DEKO-Linien der App, nicht die Erkennbarkeit eines Feldes.
+     Aeussere Schatten (Schlagschatten) fallen weiterhin weg. */
   .no-borders input, .no-borders select, .no-borders textarea {
     border: none !important;
-    box-shadow: none !important;
   }
   .no-borders button {
     border: none !important;
