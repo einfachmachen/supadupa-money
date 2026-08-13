@@ -3,9 +3,9 @@ const THEMES = {
   dark: {
     bg:"#2C3035", surf:"#363B42", surf2:"#3D4349",
     bd:"rgba(200,210,220,0.15)", bds:"rgba(200,210,220,0.28)",
-    txt:"#F0F2F4", txt2:"rgba(200,210,220,0.60)",
+    txt:"#F0F2F4", txt2:"rgba(200,210,220,0.80)",
     blue:"#AACC00", pos:"#AACC00", neg:"#00D9FF", gold:"#FFD700",
-    lbl:"rgba(200,210,220,0.45)",  // Sekundärtext auf Hintergrund (bg)
+    lbl:"rgba(200,210,220,0.60)",  // Sekundärtext auf Hintergrund (bg)
     vorm_bg:"#FFD700", vorm_bd:"#FFD700",  // Offene Vormerkungen Bar
     cf:"#F6821F",      // Cloudflare-Akzent
     mid:"#67E8F9",     // "Mitte"-Label Farbe
@@ -28,12 +28,12 @@ const THEMES = {
     surf2:"#EAEDE6", // Leicht getönt
     bd:"rgba(60,80,40,0.15)", bds:"rgba(60,80,40,0.28)",
     txt:"#1E2418",   // Fast Schwarz
-    txt2:"rgba(60,80,40,0.55)",
+    txt2:"rgba(60,80,40,0.75)",
     blue:"#6B9900",  // Dunkleres Limegreen (leserlich auf hell)
     pos:"#6B9900",   // Einnahmen
     neg:"#0097A7",   // Etwas gedämpftes Rot
-    gold:"#FFC107",  // Dunkleres Amber
-    lbl:"rgba(60,80,40,0.42)",     // Sekundärtext auf Hintergrund (bg)
+    gold:"#C4860A",  // Dunkleres Amber für besseren Kontrast
+    lbl:"rgba(60,80,40,0.60)",     // Sekundärtext auf Hintergrund (bg)
     vorm_bg:"#FFF3CC", vorm_bd:"#FFD700",  // Offene Vormerkungen Bar
     cf:"#D4601A",      // Cloudflare-Akzent (dunkler für hell)
     mid:"#2A90B8",     // "Mitte"-Label Farbe (dunkler für hell)
@@ -54,9 +54,9 @@ const THEMES = {
   firetv: {
     bg:"#161616", surf:"#232323", surf2:"#2C2C2C",
     bd:"rgba(255,165,0,0.18)", bds:"rgba(255,165,0,0.35)",
-    txt:"#F0F0F0", txt2:"rgba(220,200,160,0.55)",
+    txt:"#F0F0F0", txt2:"rgba(220,200,160,0.75)",
     blue:"#FF9900", pos:"#67C15E", neg:"#00D9FF", gold:"#FF9900",
-    lbl:"rgba(220,200,160,0.45)",
+    lbl:"rgba(220,200,160,0.60)",
     vorm_bg:"#6B5D00", vorm_bd:"#FFD700",
     cf:"#FF9900", mid:"#67C15E",
     on_accent:"#111111", disabled:"#333333",
@@ -75,9 +75,9 @@ const THEMES = {
   xbox: {
     bg:"#0A0A0A", surf:"#141414", surf2:"#1E1E1E",
     bd:"rgba(16,124,16,0.25)", bds:"rgba(16,124,16,0.50)",
-    txt:"#FFFFFF", txt2:"rgba(180,220,180,0.55)",
+    txt:"#FFFFFF", txt2:"rgba(180,220,180,0.75)",
     blue:"#107C10", pos:"#5EC95E", neg:"#00D9FF", gold:"#FFB900",
-    lbl:"rgba(180,220,180,0.45)",
+    lbl:"rgba(180,220,180,0.60)",
     vorm_bg:"#0A1A0A", vorm_bd:"#FFD700",
     cf:"#107C10", mid:"#5EC95E",
     on_accent:"#FFFFFF", disabled:"#2A2A2A",
@@ -96,9 +96,9 @@ const THEMES = {
   ps5: {
     bg:"#050914", surf:"#0D1526", surf2:"#152038",
     bd:"rgba(0,160,214,0.20)", bds:"rgba(0,160,214,0.40)",
-    txt:"#E8F0FF", txt2:"rgba(160,190,230,0.55)",
+    txt:"#E8F0FF", txt2:"rgba(160,190,230,0.75)",
     blue:"#00A0D6", pos:"#00CC88", neg:"#00D9FF", gold:"#F0C040",
-    lbl:"rgba(160,190,230,0.45)",
+    lbl:"rgba(160,190,230,0.60)",
     vorm_bg:"#0A0818", vorm_bd:"#FFD700",
     cf:"#00A0D6", mid:"#00CC88",
     on_accent:"#FFFFFF", disabled:"#1A2A3A",
@@ -117,9 +117,9 @@ const THEMES = {
   disneyplus: {
     bg:"#040B1C", surf:"#0B1A38", surf2:"#122248",
     bd:"rgba(20,100,214,0.25)", bds:"rgba(20,100,214,0.48)",
-    txt:"#F0F4FF", txt2:"rgba(160,185,230,0.55)",
+    txt:"#F0F4FF", txt2:"rgba(160,185,230,0.75)",
     blue:"#1464D6", pos:"#1AC8A0", neg:"#00D9FF", gold:"#F5C518",
-    lbl:"rgba(160,185,230,0.45)",
+    lbl:"rgba(160,185,230,0.60)",
     vorm_bg:"#08102A", vorm_bd:"#FFD700",
     cf:"#1464D6", mid:"#1AC8A0",
     on_accent:"#FFFFFF", disabled:"#1A2840",
@@ -138,9 +138,9 @@ const THEMES = {
   netflix: {
     bg:"#141414", surf:"#1F1F1F", surf2:"#2A2A2A",
     bd:"rgba(229,9,20,0.20)", bds:"rgba(229,9,20,0.40)",
-    txt:"#FFFFFF", txt2:"rgba(200,200,200,0.55)",
+    txt:"#FFFFFF", txt2:"rgba(200,200,200,0.75)",
     blue:"#E50914", pos:"#46D369", neg:"#00D9FF", gold:"#FFD700",
-    lbl:"rgba(200,200,200,0.45)",
+    lbl:"rgba(200,200,200,0.60)",
     vorm_bg:"#2A0808", vorm_bd:"#FFD700",
     cf:"#E50914", mid:"#46D369",
     on_accent:"#FFFFFF", disabled:"#333333",
@@ -159,9 +159,9 @@ const THEMES = {
   magenta: {
     bg:"#1A0018", surf:"#280028", surf2:"#340038",
     bd:"rgba(226,0,116,0.22)", bds:"rgba(226,0,116,0.44)",
-    txt:"#FFE8F8", txt2:"rgba(255,180,240,0.55)",
+    txt:"#FFE8F8", txt2:"rgba(255,180,240,0.75)",
     blue:"#E20074", pos:"#60D080", neg:"#00D9FF", gold:"#FFB800",
-    lbl:"rgba(255,180,240,0.45)",
+    lbl:"rgba(255,180,240,0.60)",
     vorm_bg:"#200018", vorm_bd:"#FFD700",
     cf:"#E20074", mid:"#60D080",
     on_accent:"#FFFFFF", disabled:"#3A003A",
@@ -180,9 +180,9 @@ const THEMES = {
   ios: {
     bg:"#F2F2F7", surf:"#FFFFFF", surf2:"#E5E5EA",
     bd:"rgba(60,60,67,0.12)", bds:"rgba(60,60,67,0.25)",
-    txt:"#000000", txt2:"rgba(60,60,67,0.55)",
-    blue:"#007AFF", pos:"#1D7A36", neg:"#FF3B30", gold:"#FF9500",
-    lbl:"rgba(60,60,67,0.45)",
+    txt:"#000000", txt2:"rgba(60,60,67,0.75)",
+    blue:"#007AFF", pos:"#1D7A36", neg:"#FF3B30", gold:"#C47A00",
+    lbl:"rgba(60,60,67,0.60)",
     vorm_bg:"#FFF3E0", vorm_bd:"#FFD700",
     cf:"#FF6B00", mid:"#007AFF",
     on_accent:"#FFFFFF", disabled:"#C7C7CC",
@@ -201,9 +201,9 @@ const THEMES = {
   material: {
     bg:"#FAFAFA", surf:"#FFFFFF", surf2:"#F5F5F5",
     bd:"rgba(0,0,0,0.10)", bds:"rgba(0,0,0,0.22)",
-    txt:"#212121", txt2:"rgba(0,0,0,0.50)",
-    blue:"#1976D2", pos:"#388E3C", neg:"#D32F2F", gold:"#B85C00",
-    lbl:"rgba(0,0,0,0.42)",
+    txt:"#212121", txt2:"rgba(0,0,0,0.70)",
+    blue:"#1976D2", pos:"#388E3C", neg:"#D32F2F", gold:"#8A4A00",
+    lbl:"rgba(0,0,0,0.60)",
     vorm_bg:"#FFF8E1", vorm_bd:"#FFD700",
     cf:"#E64A19", mid:"#0288D1",
     on_accent:"#FFFFFF", disabled:"#BDBDBD",
@@ -222,9 +222,9 @@ const THEMES = {
   paper: {
     bg:"#F8F4EE", surf:"#FFFDF8", surf2:"#F0EBE0",
     bd:"rgba(80,60,30,0.12)", bds:"rgba(80,60,30,0.25)",
-    txt:"#2C1F0E", txt2:"rgba(80,60,30,0.50)",
-    blue:"#5C4A1E", pos:"#3A7A3A", neg:"#B03020", gold:"#A07010",
-    lbl:"rgba(80,60,30,0.42)",
+    txt:"#2C1F0E", txt2:"rgba(80,60,30,0.70)",
+    blue:"#5C4A1E", pos:"#3A7A3A", neg:"#B03020", gold:"#7A5C0A",
+    lbl:"rgba(80,60,30,0.60)",
     vorm_bg:"#FFF5DC", vorm_bd:"#FFD700",
     cf:"#C05C10", mid:"#4A7A9A",
     on_accent:"#FFFDF8", disabled:"#C8BEA8",
@@ -249,12 +249,12 @@ const THEMES = {
     bd:"#DDE6EF",        // Klare helle Rahmen
     bds:"#B8CAD8",       // Stärkerer Rahmen
     txt:"#0D1520",       // Fast Schwarz für Haupttext
-    txt2:"#5A6E80",      // Hellgrau für Sekundärtext
+    txt2:"#354354",      // Dunkleres Grau für besseren Kontrast
     blue:"#003F7E",      // Tiefes Primärblau
     pos:"#1A5C2A",       // Dunkelgrün
     neg:"#0097A7",       // Gedämpftes Rot
-    gold:"#8A6800",      // Gedämpftes Amber
-    lbl:"#7A8E9E",
+    gold:"#6A5000",      // Dunkleres Amber
+    lbl:"#5A6E80",
     vorm_bg:"#FFF8E0",   vorm_bd:"#C8960A",
     cf:"#003F7E",        mid:"#1A5C2A",
     on_accent:"#FFFFFF", disabled:"#C0CDD8",
@@ -321,8 +321,8 @@ const THEMES = {
     bd:"#DDD5C8",        // Warmer Sandton
     bds:"#C4B8A8",
     txt:"#1A1410",       // Tiefes Warmbraun
-    txt2:"#7A6E62",      // Gedimmtes Braun
-    lbl:"#9A8E82",
+    txt2:"#3A2E22",      // Dunkleres Braun für besseren Kontrast
+    lbl:"#5A4E42",
     blue:"#6B4FBF",      // Tiefes Violett — Akzent
     pos:"#1A7A4A",       // Sattgrün
     cell_inc:"#1A7A4A",  cell_inc_bg:"#E8F5EE", cell_inc_bd:"#A0CEB4",
@@ -352,12 +352,12 @@ const THEMES = {
     bd:"#CCCCCC",
     bds:"#999999",
     txt:"#000000",
-    txt2:"#555555",
-    lbl:"#777777",
+    txt2:"#333333",
+    lbl:"#555555",
     blue:"#0066CC",
     pos:"#006600",
     neg:"#CC0000",
-    gold:"#886600",
+    gold:"#664400",
     warn:"#886600",   override:"#664400",
     on_accent:"#FFFFFF", disabled:"#CCCCCC",
     cell_inc:"#006600",  cell_inc_bg:"#EEFFEE", cell_inc_bd:"#99CC99",
@@ -383,8 +383,8 @@ const THEMES = {
     bd:"#000000",
     bds:"#000000",
     txt:"#000000",
-    txt2:"#333333",
-    lbl:"#444444",
+    txt2:"#1A1A1A",
+    lbl:"#2A2A2A",
     blue:"#000000",
     pos:"#000000",
     neg:"#CC0000",
