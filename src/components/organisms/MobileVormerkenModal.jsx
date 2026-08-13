@@ -539,7 +539,12 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
             <button onClick={()=>setValueDate(valueDate?"":today)}
               style={{flexShrink:0,padding:`0 ${S.padL}px`,borderRadius:S.radius,
                 border:`2px solid ${T.bd}`,boxShadow:feldRing,
-                background:(isLightTheme())?"rgba(0,0,0,0.06)":"rgba(255,255,255,0.07)",
+                // Ohne Schleier: der Ring reicht als Form, und die
+                // Akzentschrift steht dann auf der Dialogflaeche selbst —
+                // dort garantiert das Theme den Kontrast. Auf dem
+                // aufgehellten Schleier waren es nur 4,26:1 (Kontrast-Lauf,
+                // Theme "Keyboard").
+                background:"transparent",
                 color:T.blue,fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
               {valueDate?"löschen":"heute"}
             </button>
@@ -562,7 +567,12 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
             <button onClick={()=>{ setDate(date?"":today); setDateTouched(true); setDayMode(null); }}
               style={{flexShrink:0,padding:`0 ${S.padL}px`,borderRadius:S.radius,
                 border:`2px solid ${T.bd}`,boxShadow:feldRing,
-                background:(isLightTheme())?"rgba(0,0,0,0.06)":"rgba(255,255,255,0.07)",
+                // Ohne Schleier: der Ring reicht als Form, und die
+                // Akzentschrift steht dann auf der Dialogflaeche selbst —
+                // dort garantiert das Theme den Kontrast. Auf dem
+                // aufgehellten Schleier waren es nur 4,26:1 (Kontrast-Lauf,
+                // Theme "Keyboard").
+                background:"transparent",
                 color:T.blue,fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
               {date?"löschen":"heute"}
             </button>

@@ -969,7 +969,17 @@ THEMES.tastenhell = {
   // stehen Notiz-, Tag- und Verknuepfungssymbole in Gold bzw. Gelbgruen. Die
   // Menuezeilen im Daten-Bildschirm tragen je ein farbiges Symbolfeld.
   flaechen_extra:{
-    ".hero-flaeche":"linear-gradient(135deg,#525252,#464646)",
+    // Der Hero ist GLAS: die Liste scrollt unter ihm durch (er klebt oben),
+    // und eine deckende Flaeche schneidet den Inhalt an seiner runden Kante
+    // hart ab (Nutzer-Hinweis). Halbdurchsichtig plus Rueckseiten-Unschaerfe
+    // (themes.css) loest sich die Kante auf.
+    // Die Toenung ist DUNKLER als die Tasten (#303030 statt #525252): nur so
+    // bleibt trotz 14 % Durchsicht genug Kontrast, wenn gerade die helle
+    // Platte darunter steht. Bindend ist das Ausgaben-Cyan #00D9FF — es
+    // verlangt einen Untergrund unter Helligkeit 83; mit der Tastenfarbe
+    // waeren nur 4 % Durchsicht drin gewesen (gerechnet UND im Lauf
+    // nachgemessen: 0,82 ergab 4,07:1).
+    ".hero-flaeche":"linear-gradient(135deg,rgba(48,48,48,0.86),rgba(40,40,40,0.88))",
     ".symbolzeile":"#525252",
     ".aufriss-blatt":"#525252",
     ".formular-blatt":"#525252",
