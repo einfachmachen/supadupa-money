@@ -4072,7 +4072,7 @@ export default function SupaDupaMoney() {
             <div className="nav-bottom" style={{
               background:"#0D0D0D",
               borderTop:`1px solid ${G}22`,
-              display:"flex", alignItems:"stretch", flexShrink:0, zIndex:10,
+              display:"flex", alignItems:"stretch", flexShrink:0, zIndex:200,
               fontFamily:"monospace",
               paddingLeft:0, paddingRight:0}}>
               {items.map((item,idx) => {
@@ -4111,7 +4111,7 @@ export default function SupaDupaMoney() {
             <div className="nav-bottom" style={{
               background:BY,
               borderTop:`3px solid ${BK}`,
-              display:"flex", alignItems:"stretch", flexShrink:0, zIndex:10,
+              display:"flex", alignItems:"stretch", flexShrink:0, zIndex:200,
               paddingLeft:0, paddingRight:0}}>
               {items.map((item,idx) => {
                 if(item==="plus") return renderMasterButton("master");
@@ -4175,7 +4175,7 @@ export default function SupaDupaMoney() {
         return (
           <div className="nav-bottom" style={{
             background:T.surf,
-            display:"flex", alignItems:"center", flexShrink:0, zIndex:10,
+            display:"flex", alignItems:"center", flexShrink:0, zIndex:200,
             paddingLeft:8, paddingRight:8,
             borderTop:`1px solid ${T.bds}`}}>
             {items.map(item => item==="plus" ? renderMasterButton("master") : navTab(item))}
