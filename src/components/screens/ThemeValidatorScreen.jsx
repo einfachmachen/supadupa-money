@@ -131,6 +131,28 @@ export default function ThemeValidatorScreen({ onThemeChange }) {
     handleThemeChange(newTheme);
   };
 
+  // Color labels with descriptions
+  const colorLabels = {
+    bg: { name: 'Haupthintergrund', desc: 'Gesamter App-Hintergrund' },
+    surf: { name: 'Kartenfläche', desc: 'Cards, Dialoge, Eingaben' },
+    txt: { name: 'Primärtext', desc: 'Überschriften, Haupttext' },
+    txt2: { name: 'Sekundärtext', desc: 'Hinweise, Labels, Untertitel' },
+    blue: { name: 'Akzentfarbe', desc: 'Links, Buttons, Highlights' },
+    pos: { name: 'Erfolg', desc: 'Positive Bestätigung' },
+    neg: { name: 'Fehler/Warnung', desc: 'Negative Aktionen, Fehler' },
+    gold: { name: 'Info-Warnung', desc: 'Leichte Warnungen, Info' },
+    bd: { name: 'Rahmen/Linien', desc: 'Borders, Trennlinien' },
+  };
+
+  // Check which colors have contrast problems
+  const colorProblems = new Map();
+  suggestions.forEach((sug) => {
+    const colorKey = sug.label.split(' + ')[1]?.split(' ')[0]?.toLowerCase();
+    if (colorKey) {
+      colorProblems.set(colorKey, sug);
+    }
+  });
+
   const generateExportCode = () => {
     const themeName = Object.keys(THEMES).find(
       (key) => THEMES[key].name === theme.name || key === selectedTheme
@@ -186,23 +208,49 @@ export default function ThemeValidatorScreen({ onThemeChange }) {
           </select>
         </div>
 
-        {/* Validation Status */}
+        {/* Validation Status - Detailed */}
         {suggestions.length > 0 ? (
           <div style={{ background: T.surf, border: `2px solid ${T.neg}`, borderRadius: '8px', padding: '1rem', marginBottom: '2rem' }}>
-            <div style={{ color: T.neg, fontWeight: 'bold', marginBottom: '0.75rem' }}>
-              ⚠️ {suggestions.length} Kontrast-Problem{suggestions.length !== 1 ? 'e' : ''}
+            <div style={{ color: T.neg, fontWeight: 'bold', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span>⚠️ {suggestions.length} Kontrast-Problem{suggestions.length !== 1 ? 'e' : ''}</span>
             </div>
-            <div style={{ fontSize: '0.9rem', color: T.txt2 }}>
-              {suggestions.map((s, i) => (
-                <div key={i} style={{ marginBottom: '0.5rem' }}>
-                  • {s.label}
-                </div>
-              ))}
+            <div style={{ fontSize: '0.85rem', color: T.txt2, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {suggestions.map((s, i) => {
+                const bgColor = s.label.split(' + ')[0].toLowerCase();
+                const fgColor = s.label.split(' + ')[1].split(' ')[0].toLowerCase();
+                const contrast = getContrastRatio(theme[bgColor], s.current);
+                const newContrast = getContrastRatio(theme[bgColor], s.suggested);
+                return (
+                  <div key={i} style={{ background: T.bg, padding: '0.75rem', borderRadius: '6px', border: `2px solid ${T.neg}` }}>
+                    <div style={{ fontWeight: 600, color: T.txt, marginBottom: '0.25rem' }}>
+                      {colorLabels[fgColor]?.name || fgColor} auf {colorLabels[bgColor]?.name || bgColor}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                      <span>Kontrast: {contrast.toFixed(2)}:1 → {newContrast.toFixed(2)}:1</span>
+                      <button
+                        onClick={() => applySuggestion(s)}
+                        style={{
+                          padding: '0.25rem 0.75rem',
+                          background: T.blue,
+                          color: '#FFF',
+                          border: 'none',
+                          borderRadius: '3px',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                        }}
+                      >
+                        ✓ Vorschlag übernehmen
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         ) : (
-          <div style={{ background: T.pos, color: '#000', padding: '1rem', borderRadius: '8px', marginBottom: '2rem', fontWeight: 'bold' }}>
-            ✅ Alle Kontraste OK!
+          <div style={{ background: T.pos, color: '#000', padding: '1rem', borderRadius: '8px', marginBottom: '2rem', fontWeight: 'bold', textAlign: 'center' }}>
+            ✅ Alle Kontraste sind korrekt!
           </div>
         )}
 
@@ -226,69 +274,131 @@ export default function ThemeValidatorScreen({ onThemeChange }) {
           </button>
         </div>
 
-        {/* Color Picker Grid */}
-        <h3 style={{ marginTop: 0, marginBottom: '1.5rem', fontSize: '1rem', fontWeight: 700 }}>Farben anpassen</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem', marginBottom: '2rem' }}>
+        {/* Color Picker Grid - 2 columns */}
+        <h3 style={{ marginTop: 0, marginBottom: '1.25rem', fontSize: '0.95rem', fontWeight: 700 }}>Farben bearbeiten</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
           {Object.entries(theme).map(([key, value]) => {
             if (typeof value !== 'string' || !value.startsWith('#')) return null;
             const hasChanged = originalThemeRef.current[key] !== value;
+            const hasProblem = colorProblems.has(key);
+            const label = colorLabels[key];
+
             return (
-              <div key={key} style={{ background: T.surf, padding: '1rem', borderRadius: '8px', border: `2px solid ${hasChanged ? T.blue : T.bd}` }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                  <div>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 600, color: T.txt, textTransform: 'uppercase' }}>
-                      {key}
-                    </div>
-                    <div style={{ fontSize: '0.75rem', color: T.txt2, marginTop: '0.25rem' }}>
-                      {value}
-                    </div>
+              <div
+                key={key}
+                style={{
+                  background: T.surf,
+                  padding: '0.75rem',
+                  borderRadius: '8px',
+                  border: `2px solid ${hasProblem ? T.neg : hasChanged ? T.blue : T.bd}`,
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Problem Indicator */}
+                {hasProblem && (
+                  <div style={{ position: 'absolute', top: 0, right: 0, background: T.neg, color: '#FFF', padding: '0.25rem 0.5rem', fontSize: '0.65rem', fontWeight: 'bold' }}>
+                    ⚠️ Problem
                   </div>
-                  {hasChanged && (
-                    <button
-                      onClick={() => handleResetColor(key)}
-                      style={{
-                        padding: '0.4rem 0.8rem',
-                        background: 'transparent',
-                        color: T.txt2,
-                        border: `1px solid ${T.bd}`,
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '0.75rem',
-                      }}
-                    >
-                      ↺ Zurücksetzen
-                    </button>
-                  )}
+                )}
+
+                {/* Label + Description */}
+                <div style={{ marginBottom: '0.75rem' }}>
+                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: T.txt, marginBottom: '0.15rem' }}>
+                    {label?.name || key}
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: T.txt2, lineHeight: '1.2' }}>
+                    {label?.desc || ''}
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
+
+                {/* Big Color Display */}
+                <div
+                  style={{
+                    width: '100%',
+                    height: '70px',
+                    background: value,
+                    borderRadius: '6px',
+                    marginBottom: '0.75rem',
+                    border: `2px solid ${T.bd}`,
+                    cursor: 'pointer',
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    justifyContent: 'flex-start',
+                    padding: '0.5rem',
+                    overflow: 'hidden',
+                  }}
+                  onClick={() => document.getElementById(`color-${key}`)?.click()}
+                  title="Klick zum Öffnen"
+                >
                   <input
+                    id={`color-${key}`}
                     type="color"
                     value={value}
                     onChange={(e) => handleColorChange(key, e.target.value)}
                     style={{
-                      width: '60px',
-                      height: '60px',
-                      border: `2px solid ${T.bd}`,
-                      borderRadius: '6px',
+                      width: '100%',
+                      height: '100%',
                       cursor: 'pointer',
-                      flexShrink: 0,
+                      border: 'none',
+                      position: 'absolute',
+                      opacity: 0,
+                      left: 0,
+                      top: 0,
                     }}
                   />
+                  {/* Hex-Text over Color */}
+                  <span style={{
+                    fontSize: '0.7rem',
+                    fontWeight: 'bold',
+                    fontFamily: 'monospace',
+                    background: 'rgba(0,0,0,0.3)',
+                    color: '#FFF',
+                    padding: '0.25rem 0.4rem',
+                    borderRadius: '3px',
+                    textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+                  }}>
+                    {value}
+                  </span>
+                </div>
+
+                {/* Hex Input + Reset */}
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <input
                     type="text"
                     value={value}
                     onChange={(e) => handleColorChange(key, e.target.value)}
+                    placeholder="#000000"
                     style={{
                       flex: 1,
-                      padding: '0.5rem',
+                      padding: '0.4rem',
                       background: T.bg,
                       color: T.txt,
                       border: `1px solid ${T.bd}`,
                       borderRadius: '4px',
                       fontFamily: 'monospace',
-                      fontSize: '0.85rem',
+                      fontSize: '0.75rem',
                     }}
                   />
+                  {hasChanged && (
+                    <button
+                      onClick={() => handleResetColor(key)}
+                      style={{
+                        padding: '0.4rem 0.6rem',
+                        background: 'transparent',
+                        color: T.txt2,
+                        border: `1px solid ${T.bd}`,
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '0.7rem',
+                        fontWeight: 600,
+                      }}
+                      title="Diese Farbe zurücksetzen"
+                    >
+                      ↺
+                    </button>
+                  )}
                 </div>
               </div>
             );
