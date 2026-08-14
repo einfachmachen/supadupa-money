@@ -28,12 +28,12 @@ const THEMES = {
     surf2:"#EAEDE6", // Leicht getönt
     bd:"rgba(60,80,40,0.15)", bds:"rgba(60,80,40,0.28)",
     txt:"#1E2418",   // Fast Schwarz
-    txt2:"rgba(60,80,40,0.55)",
-    blue:"#6B9900",  // Dunkleres Limegreen (leserlich auf hell)
-    pos:"#6B9900",   // Einnahmen
-    neg:"#0097A7",   // Etwas gedämpftes Rot
-    gold:"#FFC107",  // Dunkleres Amber
-    lbl:"rgba(60,80,40,0.42)",     // Sekundärtext auf Hintergrund (bg)
+    txt2:"#5A6E80",  // Feste Farbe statt rgba (besserer Kontrast auf hellem Grund)
+    blue:"#537600",  // Dunkler Grün für besseren Kontrast (3.07→4.79:1)
+    pos:"#537600",   // Einnahmen (dunkler für Kontrast)
+    neg:"#007B88",   // Teal für besseren Kontrast (3.17→4.53:1)
+    gold:"#AA8007",  // Dunkleres Amber (1.47→3.27:1)
+    lbl:"#7A8E9E",   // Feste Farbe statt rgba
     vorm_bg:"#FFF3CC", vorm_bd:"#FFD700",  // Offene Vormerkungen Bar
     cf:"#D4601A",      // Cloudflare-Akzent (dunkler für hell)
     mid:"#2A90B8",     // "Mitte"-Label Farbe (dunkler für hell)
@@ -180,9 +180,11 @@ const THEMES = {
   ios: {
     bg:"#F2F2F7", surf:"#FFFFFF", surf2:"#E5E5EA",
     bd:"rgba(60,60,67,0.12)", bds:"rgba(60,60,67,0.25)",
-    txt:"#000000", txt2:"rgba(60,60,67,0.55)",
-    blue:"#007AFF", pos:"#1D7A36", neg:"#FF3B30", gold:"#FF9500",
-    lbl:"rgba(60,60,67,0.45)",
+    txt:"#000000", txt2:"#555555",  // Feste Farbe statt rgba
+    blue:"#0069DB",   // Dunkler Blau für besseren Kontrast (3.60→4.65:1)
+    pos:"#1D7A36", neg:"#D03028",   // Dunkler Rot (3.18→4.55:1)
+    gold:"#C67400",   // Dunkler Orange (1.97→3.19:1)
+    lbl:"#777777",    // Feste Farbe statt rgba
     vorm_bg:"#FFF3E0", vorm_bd:"#FFD700",
     cf:"#FF6B00", mid:"#007AFF",
     on_accent:"#FFFFFF", disabled:"#C7C7CC",
@@ -201,9 +203,11 @@ const THEMES = {
   material: {
     bg:"#FAFAFA", surf:"#FFFFFF", surf2:"#F5F5F5",
     bd:"rgba(0,0,0,0.10)", bds:"rgba(0,0,0,0.22)",
-    txt:"#212121", txt2:"rgba(0,0,0,0.50)",
-    blue:"#1976D2", pos:"#388E3C", neg:"#D32F2F", gold:"#B85C00",
-    lbl:"rgba(0,0,0,0.42)",
+    txt:"#212121", txt2:"#666666",  // Feste Farbe statt rgba
+    blue:"#1870C8",   // Dunklerer Blau (4.41→4.80:1)
+    pos:"#328036",    // Dunkler Grün (3.94→4.70:1)
+    neg:"#D32F2F", gold:"#B85C00",
+    lbl:"#888888",    // Feste Farbe statt rgba
     vorm_bg:"#FFF8E1", vorm_bd:"#FFD700",
     cf:"#E64A19", mid:"#0288D1",
     on_accent:"#FFFFFF", disabled:"#BDBDBD",
