@@ -10,6 +10,21 @@ export function setActiveTheme(name, extra = {}) {
   _state.current = { ...getTheme(name), themeName: name, ...extra };
 }
 
+export function setThemePreview(previewTheme) {
+  if (!previewTheme) {
+    // Restore original theme
+    const current = _state.current.themeName || 'dark';
+    _state.current = { ...getTheme(current), themeName: current };
+  } else {
+    // Apply preview changes to current theme
+    Object.entries(previewTheme).forEach(([key, value]) => {
+      if (value !== undefined) {
+        _state.current[key] = value;
+      }
+    });
+  }
+}
+
 const _luma = (c) => {
   const h = String(c||"").replace("#","");
   const f = h.length < 6 ? h.split("").map(x=>x+x).join("") : h;

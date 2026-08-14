@@ -43,7 +43,7 @@ const adjustColorLuminance = (hexColor, percent) => {
   );
 };
 
-export default function ThemeValidatorScreen() {
+export default function ThemeValidatorScreen({ onThemeChange }) {
   const [selectedTheme, setSelectedTheme] = useState('light');
   const [editedTheme, setEditedTheme] = useState(THEMES[selectedTheme]);
   const [hoveredColor, setHoveredColor] = useState(null);
@@ -76,10 +76,18 @@ export default function ThemeValidatorScreen() {
 
   const applySuggestion = (suggestion) => {
     const field = suggestion.label.split(' + ')[1].split(' ')[0].toLowerCase();
-    setEditedTheme({
+    const newTheme = {
       ...editedTheme,
       [field]: suggestion.suggested,
-    });
+    };
+    setEditedTheme(newTheme);
+    onThemeChange?.(newTheme);
+  };
+
+  const handleColorChange = (colorKey, value) => {
+    const newTheme = { ...editedTheme, [colorKey]: value };
+    setEditedTheme(newTheme);
+    onThemeChange?.(newTheme);
   };
 
   const generateExportCode = () => {
@@ -101,28 +109,29 @@ export default function ThemeValidatorScreen() {
   };
 
   return (
-    <div style={{ padding: '1rem', background: T.bg, color: T.txt, minHeight: '100vh' }}>
-      <h1 style={{ color: T.txt, marginBottom: '2rem' }}>🎨 Theme Validator & Fixer</h1>
-
+    <div style={{ padding: '1.5rem', background: T.bg, color: T.txt, minHeight: '100vh', overflow: 'auto' }}>
       {/* Theme-Auswahl */}
-      <div style={{ marginBottom: '2rem' }}>
-        <label style={{ display: 'block', marginBottom: '0.5rem', color: T.txt2 }}>
+      <div style={{ marginBottom: '2rem', maxWidth: '100%' }}>
+        <label style={{ display: 'block', marginBottom: '0.5rem', color: T.txt2, fontSize: '0.9rem', fontWeight: 600 }}>
           Theme wählen:
         </label>
         <select
           value={selectedTheme}
           onChange={(e) => {
             setSelectedTheme(e.target.value);
-            setEditedTheme(THEMES[e.target.value]);
+            const newTheme = THEMES[e.target.value];
+            setEditedTheme(newTheme);
+            onThemeChange?.(newTheme);
           }}
           style={{
-            padding: '0.5rem',
+            padding: '0.75rem',
             fontSize: '1rem',
             background: T.surf,
             color: T.txt,
-            border: `1px solid ${T.bd}`,
-            borderRadius: '4px',
+            border: `2px solid ${T.bd}`,
+            borderRadius: '6px',
             width: '100%',
+            cursor: 'pointer',
           }}
         >
           {Object.keys(THEMES)
@@ -257,32 +266,99 @@ export default function ThemeValidatorScreen() {
         </div>
       )}
 
+      {/* Farben direktbearbeiten */}
+      {editedTheme && (
+        <div
+          style={{
+            background: T.surf,
+            border: `2px solid ${T.bd}`,
+            borderRadius: '8px',
+            padding: '1.5rem',
+            marginTop: '2rem',
+            marginBottom: '2rem',
+          }}
+        >
+          <h3 style={{ marginTop: 0, marginBottom: '1.5rem' }}>🎨 Farben bearbeiten</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
+            {Object.entries(theme).map(([key, value]) => {
+              if (typeof value !== 'string' || !value.startsWith('#')) return null;
+              return (
+                <div key={key} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <label style={{ fontSize: '0.85rem', color: T.txt2, fontWeight: 600, textTransform: 'uppercase' }}>
+                    {key}
+                  </label>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <input
+                      type="color"
+                      value={value}
+                      onChange={(e) => handleColorChange(key, e.target.value)}
+                      style={{
+                        width: '50px',
+                        height: '50px',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                      }}
+                    />
+                    <input
+                      type="text"
+                      value={value}
+                      onChange={(e) => handleColorChange(key, e.target.value)}
+                      style={{
+                        flex: 1,
+                        padding: '0.5rem',
+                        background: T.bg,
+                        color: T.txt,
+                        border: `1px solid ${T.bd}`,
+                        borderRadius: '4px',
+                        fontFamily: 'monospace',
+                        fontSize: '0.9rem',
+                      }}
+                    />
+                  </div>
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '30px',
+                      background: value,
+                      borderRadius: '4px',
+                      border: `1px solid ${T.bd}`,
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Export */}
       {editedTheme && (
         <div
           style={{
             background: T.surf,
-            border: `1px solid ${T.bd}`,
+            border: `2px solid ${T.bd}`,
             borderRadius: '8px',
-            padding: '1rem',
+            padding: '1.5rem',
             marginTop: '2rem',
           }}
         >
-          <h3 style={{ marginTop: 0 }}>📋 Code exportieren</h3>
+          <h3 style={{ marginTop: 0, marginBottom: '1rem' }}>📋 Code exportieren</h3>
           <textarea
             readOnly
             value={generateExportCode()}
             style={{
               width: '100%',
-              height: '200px',
+              height: '180px',
               fontFamily: 'monospace',
-              fontSize: '0.85rem',
-              padding: '0.75rem',
-              background: T.bg,
-              color: T.txt,
-              border: `1px solid ${T.bd}`,
-              borderRadius: '4px',
+              fontSize: '0.8rem',
+              padding: '1rem',
+              background: '#1a1a1a',
+              color: '#e0e0e0',
+              border: `2px solid ${T.bd}`,
+              borderRadius: '6px',
               marginBottom: '1rem',
+              lineHeight: '1.5',
             }}
           />
           <button
@@ -292,21 +368,18 @@ export default function ThemeValidatorScreen() {
             }}
             style={{
               width: '100%',
-              padding: '0.75rem',
-              background: T.bd,
-              color: T.txt,
-              border: `2px solid ${T.txt}`,
-              borderRadius: '4px',
+              padding: '0.85rem',
+              background: T.pos,
+              color: '#000',
+              border: 'none',
+              borderRadius: '6px',
               cursor: 'pointer',
               fontWeight: 'bold',
               fontSize: '0.95rem',
             }}
           >
-            📋 In Zwischenablage kopieren
+            ✅ In Zwischenablage kopieren
           </button>
-          <div style={{ fontSize: '0.85rem', color: T.txt2, marginTop: '0.75rem' }}>
-            💡 Kopiere diesen Code in src/theme/themes.js und ersetze das alte Theme.
-          </div>
         </div>
       )}
     </div>

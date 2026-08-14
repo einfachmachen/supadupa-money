@@ -285,6 +285,35 @@ export default function SupaDupaMoney() {
   const [newSubName,    setNewSubName]   = useState("");
   const [showSettings,  setShowSettings] = useState(false);
   const [showThemeValidator, setShowThemeValidator] = useState(false);
+  const [previewTheme, setPreviewTheme] = useState(null);
+  const [themeVersion, setThemeVersion] = useState(0);
+
+  // Apply theme preview changes and trigger re-render
+  React.useEffect(() => {
+    if (previewTheme) {
+      // Store original theme values on first preview
+      if (!window._originalThemeValues) {
+        window._originalThemeValues = Object.keys(previewTheme).reduce((acc, key) => {
+          acc[key] = T[key];
+          return acc;
+        }, {});
+      }
+      // Apply preview changes
+      Object.entries(previewTheme).forEach(([key, value]) => {
+        if (value !== undefined) {
+          T[key] = value;
+        }
+      });
+    } else if (window._originalThemeValues) {
+      // Restore original theme when preview ends
+      Object.entries(window._originalThemeValues).forEach(([key, value]) => {
+        T[key] = value;
+      });
+      window._originalThemeValues = null;
+    }
+    // Trigger re-render by incrementing version
+    setThemeVersion(v => v + 1);
+  }, [previewTheme]);
   const [mobileMode, setMobileMode] = useState(false); // Großes Mobile-UI
   const [showMobileVormerken, setShowMobileVormerken] = useState(false);
   const [showMobileWiederkehrend, setShowMobileWiederkehrend] = useState(false);
@@ -4273,18 +4302,15 @@ export default function SupaDupaMoney() {
         </div>
       )}
       {showThemeValidator&&(
-        <div onClick={()=>setShowThemeValidator(false)}
-          style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",backdropFilter:"blur(4px)",zIndex:110,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
-          <div onClick={e=>e.stopPropagation()}
-            style={{background:T.bg,width:"100%",height:"90vh",borderRadius:"20px 20px 0 0",
-              border:`1px solid ${T.bds}`,boxShadow:"0 20px 60px rgba(0,0,0,0.8)",display:"flex",flexDirection:"column"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"16px 20px",borderBottom:`1px solid ${T.bd}`}}>
-              <div style={{color:T.txt,fontSize:16,fontWeight:700}}>{Li("palette",16,T.txt)} Theme Validator</div>
-              <button onClick={()=>setShowThemeValidator(false)}
-                style={{background:"rgba(255,255,255,0.07)",border:"none",color:"#888",borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:12}}>✕</button>
-            </div>
+        <div style={{position:"fixed",inset:0,background:T.bg,zIndex:110,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"16px 20px",borderBottom:`2px solid ${T.bd}`,background:T.surf,flexShrink:0}}>
+            <div style={{color:T.txt,fontSize:18,fontWeight:700}}>{Li("palette",18,T.txt)} Theme Validator & Fixer</div>
+            <button onClick={()=>{setShowThemeValidator(false);setPreviewTheme(null);}}
+              style={{background:"transparent",border:"none",color:T.txt2,cursor:"pointer",fontSize:24,padding:"0",width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+          </div>
+          <div style={{flex:1,overflow:"auto"}}>
             <Suspense fallback={<LazyFallback/>}>
-            <ThemeValidatorScreen/>
+            <ThemeValidatorScreen onThemeChange={setPreviewTheme}/>
             </Suspense>
           </div>
         </div>
