@@ -198,7 +198,7 @@ export default function ThemeValidatorScreen() {
 
                   {/* Vorschlag */}
                   <div>
-                    <div style={{ fontSize: '0.85rem', color: T.pos }}>💡 Besser:</div>
+                    <div style={{ fontSize: '0.85rem', color: T.txt2 }}>💡 Besser:</div>
                     <div
                       style={{
                         background: sug.suggested,
@@ -228,9 +228,9 @@ export default function ThemeValidatorScreen() {
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    background: T.blue,
-                    color: T.on_accent,
-                    border: 'none',
+                    background: T.bd,
+                    color: T.txt,
+                    border: `2px solid ${T.txt}`,
                     borderRadius: '4px',
                     cursor: 'pointer',
                     fontWeight: 'bold',
@@ -293,9 +293,9 @@ export default function ThemeValidatorScreen() {
             style={{
               width: '100%',
               padding: '0.75rem',
-              background: T.blue,
-              color: T.on_accent,
-              border: 'none',
+              background: T.bd,
+              color: T.txt,
+              border: `2px solid ${T.txt}`,
               borderRadius: '4px',
               cursor: 'pointer',
               fontWeight: 'bold',

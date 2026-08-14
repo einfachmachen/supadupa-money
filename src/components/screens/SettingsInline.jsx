@@ -75,11 +75,11 @@ function SettingsInline() {
       <div style={{marginTop:16,marginBottom:8}}>
         <button onClick={()=>setShowThemeValidator(true)}
           style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px",
-            borderRadius:10,cursor:"pointer",background:`${T.blue}12`,
-            border:`1px solid ${T.blue}44`,color:T.txt,fontFamily:"inherit",textAlign:"left"}}>
-          <div style={{width:36,height:36,borderRadius:9,background:`${T.blue}22`,flexShrink:0,
+            borderRadius:10,cursor:"pointer",background:`${T.bd}22`,
+            border:`1px solid ${T.bd}`,color:T.txt,fontFamily:"inherit",textAlign:"left"}}>
+          <div style={{width:36,height:36,borderRadius:9,background:`${T.bd}33`,flexShrink:0,
             display:"flex",alignItems:"center",justifyContent:"center"}}>
-            {Li("palette",18,T.blue)}
+            {Li("palette",18,T.txt2)}
           </div>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:12,fontWeight:600}}>Farben validieren</div>
