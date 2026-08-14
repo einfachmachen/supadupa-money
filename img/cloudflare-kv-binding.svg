@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600" font-family="-apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+  <rect width="600" height="600" rx="16" fill="#0b1120"/>
+  <rect x="16" y="16" width="568" height="568" rx="18" fill="#18243d" stroke="#3a4d75" stroke-width="2"/>
+
+  <text x="44" y="72" fill="#ffffff" font-size="34" font-weight="800">Bindung hinzufügen</text>
+  <text x="44" y="104" fill="#c3d2ee" font-size="22">Add binding</text>
+
+  <!-- Typ -->
+  <text x="44" y="152" fill="#c3d2ee" font-size="22" font-weight="600">Typ / Type</text>
+  <rect x="44" y="166" width="512" height="62" rx="12" fill="#0b1120" stroke="#3a4d75" stroke-width="2"/>
+  <text x="66" y="206" fill="#ffffff" font-size="27">KV namespace</text>
+  <text x="524" y="206" fill="#c3d2ee" font-size="22">&#9662;</text>
+
+  <!-- Variablenname (HIGHLIGHT) -->
+  <text x="44" y="276" fill="#7df09b" font-size="22" font-weight="800">Variablenname / Variable name</text>
+  <rect x="44" y="290" width="512" height="68" rx="12" fill="#14331f" stroke="#34d058" stroke-width="3"/>
+  <text x="66" y="335" fill="#7df09b" font-size="32" font-weight="800" font-family="monospace">SYNC_KV</text>
+  <text x="44" y="392" fill="#7df09b" font-size="23" font-weight="700">→ hier genau SYNC_KV eintragen</text>
+
+  <!-- KV-Namespace Auswahl -->
+  <text x="44" y="448" fill="#c3d2ee" font-size="22" font-weight="600">KV-Namespace / KV namespace</text>
+  <rect x="44" y="462" width="512" height="64" rx="12" fill="#0b1120" stroke="#3a4d75" stroke-width="2"/>
+  <text x="66" y="503" fill="#ffffff" font-size="26" font-family="monospace">supadupa-sync-kv</text>
+  <text x="524" y="503" fill="#c3d2ee" font-size="22">&#9662;</text>
+  <text x="44" y="560" fill="#c3d2ee" font-size="22">zuvor angelegten Namespace auswählen</text>
+</svg>
