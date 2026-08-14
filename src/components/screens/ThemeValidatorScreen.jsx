@@ -1,8 +1,7 @@
 import { useState, useMemo } from 'react';
 import { THEMES } from '../../theme/themes.js';
 import { validateTheme } from '../../theme/validateTheme.js';
-import { AppCtx } from '../../state/AppContext.js';
-import { useContext } from 'react';
+import { theme as T } from '../../theme/activeTheme.js';
 
 const getLuminance = (hexColor) => {
   const hex = hexColor.replace('#', '');
@@ -45,7 +44,6 @@ const adjustColorLuminance = (hexColor, percent) => {
 };
 
 export default function ThemeValidatorScreen() {
-  const { T } = useContext(AppCtx);
   const [selectedTheme, setSelectedTheme] = useState('light');
   const [editedTheme, setEditedTheme] = useState(THEMES[selectedTheme]);
   const [hoveredColor, setHoveredColor] = useState(null);
