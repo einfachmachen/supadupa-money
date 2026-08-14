@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { THEMES } from '../../theme/themes.js';
 import { validateTheme } from '../../theme/validateTheme.js';
 import { theme as T } from '../../theme/activeTheme.js';
@@ -25,29 +25,76 @@ const getContrastRatio = (color1, color2) => {
   return (lighter + 0.05) / (darker + 0.05);
 };
 
-const adjustColorLuminance = (hexColor, percent) => {
-  const hex = hexColor.replace('#', '');
-  let r = parseInt(hex.slice(0, 2), 16);
-  let g = parseInt(hex.slice(2, 4), 16);
-  let b = parseInt(hex.slice(4, 6), 16);
-
-  r = Math.min(255, Math.max(0, Math.round(r * (1 + percent))));
-  g = Math.min(255, Math.max(0, Math.round(g * (1 + percent))));
-  b = Math.min(255, Math.max(0, Math.round(b * (1 + percent))));
-
+// Preview UI Component
+function ThemePreview({ theme }) {
   return (
-    '#' +
-    [r, g, b]
-      .map((x) => x.toString(16).padStart(2, '0').toUpperCase())
-      .join('')
+    <div style={{ background: theme.bg, color: theme.txt, minHeight: '100%', padding: '1rem', overflowY: 'auto' }}>
+      {/* Header */}
+      <div style={{ background: theme.surf, padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderBottom: `3px solid ${theme.bd}` }}>
+        <h1 style={{ margin: 0, fontSize: '1.5rem', color: theme.txt }}>SupaDupa Money</h1>
+        <p style={{ margin: '0.5rem 0 0 0', color: theme.txt2, fontSize: '0.9rem' }}>Theme-Vorschau</p>
+      </div>
+
+      {/* Hero Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
+        <div style={{ background: theme.surf, padding: '1rem', borderRadius: '6px', border: `1px solid ${theme.bd}` }}>
+          <div style={{ color: theme.txt2, fontSize: '0.75rem' }}>Vermögen</div>
+          <div style={{ fontSize: '1.3rem', fontWeight: 'bold', color: theme.txt }}>€ 12.345</div>
+        </div>
+        <div style={{ background: theme.surf, padding: '1rem', borderRadius: '6px', border: `1px solid ${theme.bd}` }}>
+          <div style={{ color: theme.txt2, fontSize: '0.75rem' }}>Ausgaben</div>
+          <div style={{ fontSize: '1.3rem', fontWeight: 'bold', color: theme.neg }}>€ -89</div>
+        </div>
+      </div>
+
+      {/* Transaktionen */}
+      <div style={{ background: theme.surf, padding: '1rem', borderRadius: '6px', marginBottom: '1rem', border: `1px solid ${theme.bd}` }}>
+        <h4 style={{ margin: '0 0 0.75rem 0', color: theme.txt, fontSize: '0.95rem' }}>Transaktionen</h4>
+        {[
+          { name: 'Supermärkt', amount: '-45,99', color: theme.neg },
+          { name: 'Gehalt', amount: '+3.500', color: theme.pos },
+          { name: 'Nebenkosten', amount: '-120', color: theme.neg },
+        ].map((tx, i) => (
+          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0', borderBottom: i < 2 ? `1px solid ${theme.bd}` : 'none', alignItems: 'center' }}>
+            <span style={{ color: theme.txt, fontSize: '0.9rem' }}>{tx.name}</span>
+            <span style={{ color: tx.color, fontWeight: 'bold', fontSize: '0.9rem' }}>{tx.amount}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Buttons */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        <button style={{ padding: '0.6rem 1.2rem', background: theme.blue, color: '#FFF', border: 'none', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 600 }}>
+          Primär
+        </button>
+        <button style={{ padding: '0.6rem 1.2rem', background: theme.pos, color: '#000', border: 'none', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 600 }}>
+          Erfolg
+        </button>
+        <button style={{ padding: '0.6rem 1.2rem', background: theme.neg, color: '#FFF', border: 'none', borderRadius: '4px', fontSize: '0.85rem', fontWeight: 600 }}>
+          Löschen
+        </button>
+      </div>
+
+      {/* Status Boxes */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+        <div style={{ background: `${theme.pos}22`, border: `2px solid ${theme.pos}`, color: theme.txt, padding: '0.75rem', borderRadius: '4px', fontSize: '0.85rem' }}>
+          ✅ Erfolg - Kontrast OK
+        </div>
+        <div style={{ background: `${theme.gold}22`, border: `2px solid ${theme.gold}`, color: theme.txt, padding: '0.75rem', borderRadius: '4px', fontSize: '0.85rem' }}>
+          ⚠️ Warnung - 85% Budget
+        </div>
+        <div style={{ background: `${theme.neg}22`, border: `2px solid ${theme.neg}`, color: theme.txt, padding: '0.75rem', borderRadius: '4px', fontSize: '0.85rem' }}>
+          ❌ Fehler - Kontrast schlecht
+        </div>
+      </div>
+    </div>
   );
-};
+}
 
 export default function ThemeValidatorScreen({ onThemeChange }) {
   const [selectedTheme, setSelectedTheme] = useState('light');
   const [editedTheme, setEditedTheme] = useState(THEMES[selectedTheme]);
-  const [hoveredColor, setHoveredColor] = useState(null);
-  const [expandedSection, setExpandedSection] = useState(null);
+  const originalThemeRef = useRef(THEMES[selectedTheme]);
 
   const theme = editedTheme || THEMES[selectedTheme];
   const { issues, suggestions } = useMemo(
@@ -55,57 +102,36 @@ export default function ThemeValidatorScreen({ onThemeChange }) {
     [theme, selectedTheme]
   );
 
-  const isLight =
-    theme.txt === '#000000' ||
-    theme.txt === '#1E2418' ||
-    (theme.txt && theme.txt.startsWith('#1')) ||
-    (theme.txt && theme.txt.startsWith('#2'));
-
-  const criticalPairs = isLight
-    ? [
-        { bg: 'bg', fg: 'blue', minContrast: 4.5, label: 'Links/Buttons' },
-        { bg: 'bg', fg: 'pos', minContrast: 4.5, label: 'Positiv' },
-        { bg: 'bg', fg: 'neg', minContrast: 4.5, label: 'Negativ' },
-        { bg: 'bg', fg: 'gold', minContrast: 3.0, label: 'Warnungen' },
-        { bg: 'surf', fg: 'txt2', minContrast: 4.5, label: 'Sekundärtext' },
-      ]
-    : [
-        { bg: 'bg', fg: 'txt', minContrast: 4.5, label: 'Haupttext' },
-        { bg: 'bg', fg: 'txt2', minContrast: 4.5, label: 'Sekundärtext' },
-        { bg: 'bg', fg: 'blue', minContrast: 4.5, label: 'Akzent' },
-      ];
-
-  // Color usage reference
-  const colorUsage = {
-    bg: 'Haupthintergrund (ganze App)',
-    surf: 'Kartenflächen, Eingabefelder, Dialoge',
-    txt: 'Primärtext (Überschriften, Labels)',
-    txt2: 'Sekundärtext (Hinweise, Untertitel)',
-    blue: 'Links, Buttons, Akzente',
-    pos: 'Erfolg, Positive Bestätigung (grün)',
-    neg: 'Warnung, Negative Aktionen (rot)',
-    gold: 'Mittlere Warnungen, Info-Highlights',
-    bd: 'Borders, Trennlinien',
-  };
-
-  const applySuggestion = (suggestion) => {
-    const field = suggestion.label.split(' + ')[1].split(' ')[0].toLowerCase();
-    const newTheme = {
-      ...editedTheme,
-      [field]: suggestion.suggested,
-    };
+  const handleThemeChange = (newTheme) => {
     setEditedTheme(newTheme);
     onThemeChange?.(newTheme);
   };
 
   const handleColorChange = (colorKey, value) => {
     const newTheme = { ...editedTheme, [colorKey]: value };
+    handleThemeChange(newTheme);
+  };
+
+  const handleResetAll = () => {
+    const originalTheme = THEMES[selectedTheme];
+    setEditedTheme(originalTheme);
+    onThemeChange?.(originalTheme);
+  };
+
+  const handleResetColor = (colorKey) => {
+    const newTheme = { ...editedTheme, [colorKey]: originalThemeRef.current[colorKey] };
+    handleThemeChange(newTheme);
+  };
+
+  const handleSelectTheme = (themeName) => {
+    const newTheme = THEMES[themeName];
+    setSelectedTheme(themeName);
     setEditedTheme(newTheme);
-    onThemeChange?.(newTheme);
+    originalThemeRef.current = newTheme;
+    handleThemeChange(newTheme);
   };
 
   const generateExportCode = () => {
-    const theme = editedTheme || THEMES[selectedTheme];
     const themeName = Object.keys(THEMES).find(
       (key) => THEMES[key].name === theme.name || key === selectedTheme
     );
@@ -123,87 +149,30 @@ export default function ThemeValidatorScreen({ onThemeChange }) {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100%', background: T.bg, color: T.txt }}>
-      {/* LEFT: App Preview */}
-      <div style={{ flex: '1 1 40%', borderRight: `2px solid ${T.bd}`, overflowY: 'auto', padding: '1.5rem' }}>
-        <h3 style={{ marginTop: 0, marginBottom: '1.5rem' }}>App-Vorschau</h3>
-
-        {/* Preview Komponenten */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          {/* Header */}
-          <div style={{ background: T.surf, padding: '1rem', borderRadius: '8px', borderBottom: `3px solid ${T.bd}` }}>
-            <h2 style={{ margin: '0 0 0.5rem 0', color: T.txt, fontSize: '1.5rem' }}>SupaDupa Money</h2>
-            <p style={{ margin: '0', color: T.txt2, fontSize: '0.9rem' }}>Theme Preview</p>
-          </div>
-
-          {/* Buttons */}
-          <div style={{ background: T.surf, padding: '1rem', borderRadius: '8px' }}>
-            <h4 style={{ margin: '0 0 1rem 0', color: T.txt2 }}>Buttons</h4>
-            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-              <button style={{ padding: '0.75rem 1.5rem', background: T.blue, color: '#FFF', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}>
-                Primär
-              </button>
-              <button style={{ padding: '0.75rem 1.5rem', background: T.pos, color: '#000', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}>
-                Erfolg
-              </button>
-              <button style={{ padding: '0.75rem 1.5rem', background: T.neg, color: '#FFF', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}>
-                Gefahr
-              </button>
-            </div>
-          </div>
-
-          {/* Text Variations */}
-          <div style={{ background: T.surf, padding: '1rem', borderRadius: '8px' }}>
-            <h4 style={{ margin: '0 0 1rem 0', color: T.txt2 }}>Text</h4>
-            <h3 style={{ margin: '0.5rem 0', color: T.txt, fontSize: '1.2rem' }}>Haupttext (txt)</h3>
-            <p style={{ margin: '0.5rem 0', color: T.txt2, fontSize: '0.9rem' }}>Sekundärtext (txt2)</p>
-            <p style={{ margin: '0.5rem 0', color: T.blue, fontSize: '0.9rem', fontWeight: 600 }}>Link / Akzent (blue)</p>
-          </div>
-
-          {/* Card Example */}
-          <div style={{ background: T.surf, padding: '1rem', borderRadius: '8px', border: `2px solid ${T.bd}` }}>
-            <h4 style={{ margin: '0 0 0.75rem 0', color: T.txt }}>Card / Surface</h4>
-            <div style={{ background: T.bg, padding: '0.75rem', borderRadius: '6px', marginBottom: '0.75rem' }}>
-              <p style={{ margin: 0, color: T.txt }}>Innerhalb einer Card</p>
-            </div>
-            <p style={{ margin: '0', color: T.txt2, fontSize: '0.85rem' }}>Hinweis-Text</p>
-          </div>
-
-          {/* Status Indicators */}
-          <div style={{ background: T.surf, padding: '1rem', borderRadius: '8px' }}>
-            <h4 style={{ margin: '0 0 1rem 0', color: T.txt2 }}>Status-Indikatoren</h4>
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-              <div style={{ padding: '0.75rem 1rem', background: T.pos, color: '#000', borderRadius: '6px', fontWeight: 600, fontSize: '0.9rem' }}>✓ Positiv</div>
-              <div style={{ padding: '0.75rem 1rem', background: T.neg, color: '#FFF', borderRadius: '6px', fontWeight: 600, fontSize: '0.9rem' }}>✕ Negativ</div>
-              <div style={{ padding: '0.75rem 1rem', background: T.gold, color: '#000', borderRadius: '6px', fontWeight: 600, fontSize: '0.9rem' }}>⚠ Warnung</div>
-            </div>
-          </div>
-        </div>
+    <div style={{ display: 'flex', height: '100%', background: T.bg }}>
+      {/* LEFT: Live Preview der echten UI */}
+      <div style={{ flex: '1 1 50%', borderRight: `2px solid ${T.bd}`, overflowY: 'auto', background: theme.bg }}>
+        <ThemePreview theme={theme} />
       </div>
 
-      {/* RIGHT: Controls & Validation */}
-      <div style={{ flex: '1 1 60%', overflowY: 'auto', padding: '1.5rem' }}>
-        {/* Theme-Auswahl */}
+      {/* RIGHT: Controls */}
+      <div style={{ flex: '1 1 50%', overflowY: 'auto', padding: '1.5rem', background: T.bg, color: T.txt }}>
+        {/* Theme Selector */}
         <div style={{ marginBottom: '2rem' }}>
-          <label style={{ display: 'block', marginBottom: '0.5rem', color: T.txt2, fontSize: '0.9rem', fontWeight: 600 }}>
-            Theme wählen:
+          <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 600, color: T.txt2 }}>
+            Theme:
           </label>
           <select
             value={selectedTheme}
-            onChange={(e) => {
-              setSelectedTheme(e.target.value);
-              const newTheme = THEMES[e.target.value];
-              setEditedTheme(newTheme);
-              onThemeChange?.(newTheme);
-            }}
+            onChange={(e) => handleSelectTheme(e.target.value)}
             style={{
+              width: '100%',
               padding: '0.75rem',
-              fontSize: '1rem',
               background: T.surf,
               color: T.txt,
               border: `2px solid ${T.bd}`,
               borderRadius: '6px',
-              width: '100%',
+              fontSize: '1rem',
               cursor: 'pointer',
             }}
           >
@@ -217,52 +186,88 @@ export default function ThemeValidatorScreen({ onThemeChange }) {
           </select>
         </div>
 
-        {/* Validierungs-Status */}
+        {/* Validation Status */}
         {suggestions.length > 0 ? (
           <div style={{ background: T.surf, border: `2px solid ${T.neg}`, borderRadius: '8px', padding: '1rem', marginBottom: '2rem' }}>
-            <h3 style={{ color: T.neg, marginTop: 0, marginBottom: '1rem' }}>⚠️ {suggestions.length} Kontrast-Problem(e)</h3>
+            <div style={{ color: T.neg, fontWeight: 'bold', marginBottom: '0.75rem' }}>
+              ⚠️ {suggestions.length} Kontrast-Problem{suggestions.length !== 1 ? 'e' : ''}
+            </div>
             <div style={{ fontSize: '0.9rem', color: T.txt2 }}>
               {suggestions.map((s, i) => (
                 <div key={i} style={{ marginBottom: '0.5rem' }}>
-                  • {s.label.split(' + ')[1]} hat unzureichenden Kontrast
+                  • {s.label}
                 </div>
               ))}
             </div>
           </div>
         ) : (
-          <div style={{ background: T.pos, color: '#000', padding: '1rem', borderRadius: '8px', marginBottom: '2rem', fontWeight: 600 }}>
-            ✅ Alle Kontraste sind korrekt!
+          <div style={{ background: T.pos, color: '#000', padding: '1rem', borderRadius: '8px', marginBottom: '2rem', fontWeight: 'bold' }}>
+            ✅ Alle Kontraste OK!
           </div>
         )}
 
-        {/* Farben Live Bearbeiten */}
-        <h3 style={{ marginTop: 0, marginBottom: '1rem' }}>🎨 Farben anpassen</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1.25rem', marginBottom: '2rem' }}>
+        {/* Reset Buttons */}
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem' }}>
+          <button
+            onClick={handleResetAll}
+            style={{
+              flex: 1,
+              padding: '0.75rem',
+              background: T.surf,
+              color: T.txt,
+              border: `2px solid ${T.bd}`,
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+            }}
+          >
+            🔄 Alle zurücksetzen
+          </button>
+        </div>
+
+        {/* Color Picker Grid */}
+        <h3 style={{ marginTop: 0, marginBottom: '1.5rem', fontSize: '1rem', fontWeight: 700 }}>Farben anpassen</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem', marginBottom: '2rem' }}>
           {Object.entries(theme).map(([key, value]) => {
             if (typeof value !== 'string' || !value.startsWith('#')) return null;
+            const hasChanged = originalThemeRef.current[key] !== value;
             return (
-              <div key={key} style={{ background: T.surf, padding: '1rem', borderRadius: '8px', border: `1px solid ${T.bd}` }}>
+              <div key={key} style={{ background: T.surf, padding: '1rem', borderRadius: '8px', border: `2px solid ${hasChanged ? T.blue : T.bd}` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                   <div>
-                    <div style={{ fontSize: '0.85rem', color: T.txt2, fontWeight: 600, textTransform: 'uppercase' }}>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 600, color: T.txt, textTransform: 'uppercase' }}>
                       {key}
                     </div>
                     <div style={{ fontSize: '0.75rem', color: T.txt2, marginTop: '0.25rem' }}>
-                      {colorUsage[key] || 'Theme-Farbe'}
+                      {value}
                     </div>
                   </div>
-                  <div style={{ fontSize: '0.9rem', color: T.txt, fontFamily: 'monospace', fontWeight: 600 }}>
-                    {value}
-                  </div>
+                  {hasChanged && (
+                    <button
+                      onClick={() => handleResetColor(key)}
+                      style={{
+                        padding: '0.4rem 0.8rem',
+                        background: 'transparent',
+                        color: T.txt2,
+                        border: `1px solid ${T.bd}`,
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '0.75rem',
+                      }}
+                    >
+                      ↺ Zurücksetzen
+                    </button>
+                  )}
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <input
                     type="color"
                     value={value}
                     onChange={(e) => handleColorChange(key, e.target.value)}
                     style={{
-                      width: '50px',
-                      height: '50px',
+                      width: '60px',
+                      height: '60px',
                       border: `2px solid ${T.bd}`,
                       borderRadius: '6px',
                       cursor: 'pointer',
@@ -281,7 +286,7 @@ export default function ThemeValidatorScreen({ onThemeChange }) {
                       border: `1px solid ${T.bd}`,
                       borderRadius: '4px',
                       fontFamily: 'monospace',
-                      fontSize: '0.9rem',
+                      fontSize: '0.85rem',
                     }}
                   />
                 </div>
@@ -290,93 +295,46 @@ export default function ThemeValidatorScreen({ onThemeChange }) {
           })}
         </div>
 
-        {/* Details für Probleme */}
-        {suggestions.length > 0 && (
-          <div style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: `2px solid ${T.bd}` }}>
-            <h3 style={{ marginTop: 0, marginBottom: '1rem' }}>📊 Kontrast-Details</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {suggestions.slice(0, 3).map((sug, idx) => {
-                const contrast = getContrastRatio(theme[sug.label.split(' + ')[0].toLowerCase()], sug.current);
-                const newContrast = getContrastRatio(theme[sug.label.split(' + ')[0].toLowerCase()], sug.suggested);
-                return (
-                  <div key={idx} style={{ fontSize: '0.9rem', background: T.bg, padding: '0.75rem', borderRadius: '4px' }}>
-                    <div style={{ fontWeight: 600, marginBottom: '0.25rem' }}>{sug.label}</div>
-                    <div style={{ color: T.txt2, fontSize: '0.85rem' }}>
-                      Kontrast: {contrast.toFixed(2)}:1 → {newContrast.toFixed(2)}:1
-                    </div>
-                    <button
-                      onClick={() => applySuggestion(sug)}
-                      style={{
-                        marginTop: '0.5rem',
-                        padding: '0.5rem 1rem',
-                        background: T.blue,
-                        color: '#FFF',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                      }}
-                    >
-                      Übernehmen
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-      {/* Export */}
-      {editedTheme && (
-        <div
-          style={{
-            background: T.surf,
-            border: `2px solid ${T.bd}`,
-            borderRadius: '8px',
-            padding: '1.5rem',
-            marginTop: '2rem',
-          }}
-        >
-          <h3 style={{ marginTop: 0, marginBottom: '1rem' }}>📋 Code exportieren</h3>
+        {/* Export Code */}
+        <div style={{ background: T.surf, border: `2px solid ${T.bd}`, borderRadius: '8px', padding: '1.5rem' }}>
+          <h3 style={{ marginTop: 0, marginBottom: '1rem', fontSize: '0.95rem', fontWeight: 700 }}>📋 Code exportieren</h3>
           <textarea
             readOnly
             value={generateExportCode()}
             style={{
               width: '100%',
-              height: '180px',
+              height: '150px',
               fontFamily: 'monospace',
-              fontSize: '0.8rem',
-              padding: '1rem',
+              fontSize: '0.75rem',
+              padding: '0.75rem',
               background: '#1a1a1a',
               color: '#e0e0e0',
               border: `2px solid ${T.bd}`,
               borderRadius: '6px',
-              marginBottom: '1rem',
-              lineHeight: '1.5',
+              marginBottom: '0.75rem',
+              lineHeight: '1.4',
             }}
           />
           <button
             onClick={() => {
               navigator.clipboard.writeText(generateExportCode());
-              alert('✅ Code in Zwischenablage kopiert!');
+              alert('✅ Code kopiert!');
             }}
             style={{
               width: '100%',
-              padding: '0.85rem',
+              padding: '0.75rem',
               background: T.pos,
               color: '#000',
               border: 'none',
               borderRadius: '6px',
               cursor: 'pointer',
               fontWeight: 'bold',
-              fontSize: '0.95rem',
+              fontSize: '0.9rem',
             }}
           >
             ✅ In Zwischenablage kopieren
           </button>
         </div>
-      )}
       </div>
     </div>
   );
