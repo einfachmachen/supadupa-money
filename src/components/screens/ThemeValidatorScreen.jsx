@@ -4,6 +4,11 @@ import { validateTheme } from '../../theme/validateTheme.js';
 import { theme as T } from '../../theme/activeTheme.js';
 
 const getContrastRatio = (color1, color2) => {
+  // Ignoriere rgba/rgb Farben (können nicht validiert werden)
+  if (color1?.includes('rgba') || color1?.includes('rgb(') || color2?.includes('rgba') || color2?.includes('rgb(')) {
+    return null;
+  }
+
   const getLuminance = (hexColor) => {
     const hex = hexColor.replace('#', '');
     const r = parseInt(hex.slice(0, 2), 16) / 255;
@@ -26,6 +31,8 @@ const getContrastRatio = (color1, color2) => {
 const colorLabels = {
   bg: 'Haupthintergrund',
   surf: 'Kartenfläche',
+  surf2: 'Kartenfläche 2',
+  surf3: 'Kartenfläche 3',
   txt: 'Primärtext',
   txt2: 'Sekundärtext',
   blue: 'Akzentfarbe',
@@ -33,6 +40,41 @@ const colorLabels = {
   neg: 'Fehler',
   gold: 'Warnung',
   bd: 'Rahmen',
+  bds: 'Rahmen stark',
+  mid: 'Mitte',
+  cf: 'Kategorie-Farbe',
+  on_accent: 'Text auf Akzent',
+  disabled: 'Deaktiviert',
+};
+
+// Erzeuge alle wichtigen Farbkombinationen aus der aktuellen Theme
+function generateAllPairs(theme) {
+  const backgrounds = ['bg', 'surf', 'surf2', 'surf3'];
+  const foregrounds = ['txt', 'txt2', 'blue', 'pos', 'neg', 'gold', 'bd', 'mid', 'cf', 'on_accent'];
+
+  const pairs = [];
+
+  // Alle möglichen Kombinationen
+  backgrounds.forEach(bg => {
+    if (!theme[bg]) return;
+    foregrounds.forEach(fg => {
+      if (!theme[fg]) return;
+      const bgColor = theme[bg];
+      const fgColor = theme[fg];
+
+      // Ignoriere rgba/rgb
+      if (bgColor?.includes('rgba') || bgColor?.includes('rgb(')) return;
+      if (fgColor?.includes('rgba') || fgColor?.includes('rgb(')) return;
+
+      pairs.push({
+        bg,
+        fg,
+        label: `${colorLabels[fg]} auf ${colorLabels[bg]}`,
+      });
+    });
+  });
+
+  return pairs;
 };
 
 function ColorEditor({ colorKey, currentValue, label, onClose, onChange, onReset, hasChanged }) {
@@ -204,18 +246,8 @@ export default function ThemeValidatorScreen({ onThemeChange }) {
       .join('\n    ')}\n  },`;
   };
 
-  // Clickable color combinations with inline editing
-  const pairs = [
-    { bg: 'bg', fg: 'txt', label: 'Haupttext' },
-    { bg: 'bg', fg: 'txt2', label: 'Sekundärtext' },
-    { bg: 'bg', fg: 'blue', label: 'Links/Akzent' },
-    { bg: 'bg', fg: 'pos', label: 'Erfolg' },
-    { bg: 'bg', fg: 'neg', label: 'Fehler' },
-    { bg: 'bg', fg: 'gold', label: 'Warnung' },
-    { bg: 'surf', fg: 'txt', label: 'Text auf Karte' },
-    { bg: 'surf', fg: 'txt2', label: 'Hint auf Karte' },
-    { bg: 'surf', fg: 'blue', label: 'Button auf Karte' },
-  ];
+  // Dynamisch: Alle echten Farbkombinationen aus dem Theme
+  const pairs = useMemo(() => generateAllPairs(theme), [theme]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: theme.bg }}>
@@ -288,151 +320,173 @@ export default function ThemeValidatorScreen({ onThemeChange }) {
       <div style={{ flex: 1, overflowY: 'auto', padding: '0.8rem', background: theme.bg, color: theme.txt }}>
         <h2 style={{ margin: '0 0 0.8rem 0', fontSize: '1.2rem' }}>SupaDupa Money</h2>
 
-        {/* Clickable Color Combinations Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.6rem', marginBottom: '1.2rem' }}>
-          {pairs.map((pair, i) => {
-            const bgColor = theme[pair.bg];
-            const fgColor = theme[pair.fg];
-            const contrast = getContrastRatio(bgColor, fgColor);
-            const isGood = contrast >= 4.5;
-            const hasProblem = colorProblems.has(pair.fg);
+        {/* Clickable Color Combinations Grid - Grouped by Background */}
+        {['bg', 'surf', 'surf2', 'surf3'].map(bgKey => {
+          const bgPairs = pairs.filter(p => p.bg === bgKey);
+          if (bgPairs.length === 0) return null;
 
-            return (
-              <div
-                key={i}
-                onClick={() => setEditingColor(pair.fg)}
-                style={{
-                  background: bgColor,
-                  padding: '0.8rem',
-                  borderRadius: '6px',
-                  border: `2px solid ${hasProblem ? theme.neg : contrast < 4.5 ? theme.gold : 'transparent'}`,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  transform: 'scale(1)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'scale(1.05)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.25)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'scale(1)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                <div style={{ color: fgColor, fontWeight: 'bold', marginBottom: '0.4rem', fontSize: '0.95rem' }}>
-                  {pair.label}
-                </div>
-                <div style={{ color: fgColor, fontSize: '0.75rem', opacity: 0.85 }}>
-                  {contrast.toFixed(2)}:1
-                </div>
+          return (
+            <div key={bgKey} style={{ marginBottom: '1rem' }}>
+              <h4 style={{ margin: '0.6rem 0 0.4rem 0', color: theme.txt2, fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase' }}>
+                auf {colorLabels[bgKey] || bgKey}
+              </h4>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.5rem' }}>
+                {bgPairs.map((pair, i) => {
+                  const bgColor = theme[pair.bg];
+                  const fgColor = theme[pair.fg];
+                  const contrast = getContrastRatio(bgColor, fgColor);
+                  const isGood = contrast && contrast >= 4.5;
+                  const hasProblem = colorProblems.has(pair.fg);
+
+                  // Ignoriere rgba Kombinationen
+                  if (contrast === null) return null;
+
+                  return (
+                    <div
+                      key={i}
+                      onClick={() => setEditingColor(pair.fg)}
+                      style={{
+                        background: bgColor,
+                        padding: '0.7rem',
+                        borderRadius: '5px',
+                        border: `2px solid ${hasProblem ? theme.neg : contrast < 4.5 ? theme.gold : 'transparent'}`,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        transform: 'scale(1)',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'scale(1.05)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.25)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
+                      <div style={{ color: fgColor, fontWeight: 'bold', marginBottom: '0.3rem', fontSize: '0.85rem' }}>
+                        {colorLabels[pair.fg] || pair.fg}
+                      </div>
+                      <div style={{ color: fgColor, fontSize: '0.7rem', opacity: 0.85 }}>
+                        {contrast.toFixed(2)}:1
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
 
-        {/* Full UI Preview */}
-        <h3 style={{ fontSize: '0.9rem', marginTop: '1rem', marginBottom: '0.6rem', color: theme.txt2 }}>Vorschau</h3>
+        {/* Full UI Preview - alle Farben */}
+        <h3 style={{ fontSize: '0.9rem', marginTop: '1rem', marginBottom: '0.6rem', color: theme.txt2 }}>Alle Farben</h3>
 
         <div style={{ background: theme.surf, padding: '0.8rem', borderRadius: '6px', border: `1px solid ${theme.bd}` }}>
-          <div style={{ marginBottom: '0.8rem' }}>
-            <h4 style={{ margin: '0 0 0.5rem 0', color: theme.txt, fontSize: '0.85rem' }}>Buttons</h4>
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <button
-                onClick={() => setEditingColor('blue')}
-                style={{
-                  padding: '0.5rem 1rem',
-                  background: theme.blue,
-                  color: '#FFF',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                }}
-                title="Klick zum Bearbeiten (blue)"
-              >
-                Primär
-              </button>
-              <button
-                onClick={() => setEditingColor('pos')}
-                style={{
-                  padding: '0.5rem 1rem',
-                  background: theme.pos,
-                  color: '#000',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                }}
-                title="Klick zum Bearbeiten (pos)"
-              >
-                ✅ Erfolg
-              </button>
-              <button
-                onClick={() => setEditingColor('neg')}
-                style={{
-                  padding: '0.5rem 1rem',
-                  background: theme.neg,
-                  color: '#FFF',
-                  border: 'none',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                  fontWeight: 600,
-                }}
-                title="Klick zum Bearbeiten (neg)"
-              >
-                ❌ Fehler
-              </button>
+          {/* Buttons */}
+          {(theme.blue || theme.pos || theme.neg || theme.gold) && (
+            <div style={{ marginBottom: '0.8rem' }}>
+              <h4 style={{ margin: '0 0 0.4rem 0', color: theme.txt, fontSize: '0.8rem', fontWeight: 600 }}>Buttons</h4>
+              <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                {theme.blue && (
+                  <button
+                    onClick={() => setEditingColor('blue')}
+                    style={{
+                      padding: '0.4rem 0.8rem',
+                      background: theme.blue,
+                      color: getContrastRatio(theme.blue, '#FFF') > 1.5 ? '#FFF' : '#000',
+                      border: 'none',
+                      borderRadius: '3px',
+                      cursor: 'pointer',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    Primär
+                  </button>
+                )}
+                {theme.pos && (
+                  <button
+                    onClick={() => setEditingColor('pos')}
+                    style={{
+                      padding: '0.4rem 0.8rem',
+                      background: theme.pos,
+                      color: getContrastRatio(theme.pos, '#FFF') > 1.5 ? '#FFF' : '#000',
+                      border: 'none',
+                      borderRadius: '3px',
+                      cursor: 'pointer',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    ✅
+                  </button>
+                )}
+                {theme.neg && (
+                  <button
+                    onClick={() => setEditingColor('neg')}
+                    style={{
+                      padding: '0.4rem 0.8rem',
+                      background: theme.neg,
+                      color: getContrastRatio(theme.neg, '#FFF') > 1.5 ? '#FFF' : '#000',
+                      border: 'none',
+                      borderRadius: '3px',
+                      cursor: 'pointer',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    ❌
+                  </button>
+                )}
+                {theme.gold && (
+                  <button
+                    onClick={() => setEditingColor('gold')}
+                    style={{
+                      padding: '0.4rem 0.8rem',
+                      background: theme.gold,
+                      color: getContrastRatio(theme.gold, '#FFF') > 1.5 ? '#FFF' : '#000',
+                      border: 'none',
+                      borderRadius: '3px',
+                      cursor: 'pointer',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    ⚠️
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
+          {/* Farb-Palette */}
           <div>
-            <h4 style={{ margin: '0 0 0.5rem 0', color: theme.txt, fontSize: '0.85rem' }}>Status</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <div
-                style={{
-                  background: `${theme.pos}22`,
-                  border: `1px solid ${theme.pos}`,
-                  color: theme.txt,
-                  padding: '0.6rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '0.8rem',
-                }}
-                onClick={() => setEditingColor('pos')}
-              >
-                ✅ Erfolg
-              </div>
-              <div
-                style={{
-                  background: `${theme.gold}22`,
-                  border: `1px solid ${theme.gold}`,
-                  color: theme.txt,
-                  padding: '0.6rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '0.8rem',
-                }}
-                onClick={() => setEditingColor('gold')}
-              >
-                ⚠️ Warnung
-              </div>
-              <div
-                style={{
-                  background: `${theme.neg}22`,
-                  border: `1px solid ${theme.neg}`,
-                  color: theme.txt,
-                  padding: '0.6rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '0.8rem',
-                }}
-                onClick={() => setEditingColor('neg')}
-              >
-                ❌ Fehler
-              </div>
+            <h4 style={{ margin: '0 0 0.4rem 0', color: theme.txt, fontSize: '0.8rem', fontWeight: 600 }}>Palette</h4>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(60px, 1fr))', gap: '0.4rem' }}>
+              {Object.entries({ txt: theme.txt, txt2: theme.txt2, blue: theme.blue, pos: theme.pos, neg: theme.neg, gold: theme.gold, bd: theme.bd, mid: theme.mid }).map(
+                ([key, color]) => {
+                  if (!color || color.includes('rgba') || color.includes('rgb(')) return null;
+                  return (
+                    <div
+                      key={key}
+                      onClick={() => setEditingColor(key)}
+                      style={{
+                        background: color,
+                        padding: '0.4rem',
+                        borderRadius: '3px',
+                        cursor: 'pointer',
+                        fontSize: '0.65rem',
+                        color: getContrastRatio(color, '#FFF') > 1.5 ? '#FFF' : '#000',
+                        textAlign: 'center',
+                        fontWeight: 600,
+                        border: `1px solid ${theme.bd}`,
+                      }}
+                      title={`Klick: ${key}`}
+                    >
+                      {key}
+                    </div>
+                  );
+                }
+              )}
             </div>
           </div>
         </div>
