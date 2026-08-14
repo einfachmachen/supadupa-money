@@ -50,6 +50,7 @@ const FuelAnalysisScreen    = lazyNamed(() => import("./components/screens/FuelA
 const MatchingScreen        = lazyNamed(() => import("./components/screens/MatchingScreen.jsx"), "MatchingScreen");
 const RecurringDetectionScreen = lazyNamed(() => import("./components/screens/RecurringDetectionScreen.jsx"), "RecurringDetectionScreen");
 const VormerkungHub         = lazyNamed(() => import("./components/screens/VormerkungHub.jsx"), "VormerkungHub");
+const ThemeValidatorScreen  = lazyNamed(() => import("./components/screens/ThemeValidatorScreen.jsx"), "default");
 
 // Fallback während ein Lazy-Chunk lädt — dezenter Spinner statt hartem
 // Leerstand, falls die Verbindung mal langsamer ist.
@@ -283,6 +284,7 @@ export default function SupaDupaMoney() {
   const [newCat,        setNewCat]       = useState({name:"",type:"expense",icon:"tag",color:T.blue,subs:[]});
   const [newSubName,    setNewSubName]   = useState("");
   const [showSettings,  setShowSettings] = useState(false);
+  const [showThemeValidator, setShowThemeValidator] = useState(false);
   const [mobileMode, setMobileMode] = useState(false); // Großes Mobile-UI
   const [showMobileVormerken, setShowMobileVormerken] = useState(false);
   const [showMobileWiederkehrend, setShowMobileWiederkehrend] = useState(false);
@@ -3228,6 +3230,7 @@ export default function SupaDupaMoney() {
     // saveToCloudDirect removed — use manual upload button only
     reviewQueue, setReviewQueue,
     showSettings, setShowSettings,
+    showThemeValidator, setShowThemeValidator,
     showVormHub, setShowVormHub, editVormTx, setEditVormTx,
     showMatching, setShowMatching,
     customIcons, setCustomIcons,
@@ -3270,7 +3273,7 @@ export default function SupaDupaMoney() {
     csvRules, budgets, startBalances,
     jsonbinActive, jsonbinStatus, jsonbinKey, jsonbinId,
     gistActive, gistStatus, gistToken, gistId,
-    reviewQueue, showSettings, showVormHub, editVormTx, showMatching,
+    reviewQueue, showSettings, showThemeValidator, showVormHub, editVormTx, showMatching,
     customIcons, themeName, themeSlideshow, hideEmptyRows, handedness, debugFlags,
     cfActive, cfStatus, cfUrl, cfSecret,
     syncPass, syncEncActive, showCloudSetup, showFuelAnalysis, showGuidedTour,
@@ -4266,6 +4269,23 @@ export default function SupaDupaMoney() {
             </div>
             <SettingsPanel/>
             <PBtn onClick={()=>setShowSettings(false)}>Schließen</PBtn>
+          </div>
+        </div>
+      )}
+      {showThemeValidator&&(
+        <div onClick={()=>setShowThemeValidator(false)}
+          style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.4)",backdropFilter:"blur(4px)",zIndex:110,display:"flex",alignItems:"flex-end",justifyContent:"center"}}>
+          <div onClick={e=>e.stopPropagation()}
+            style={{background:T.bg,width:"100%",height:"90vh",borderRadius:"20px 20px 0 0",
+              border:`1px solid ${T.bds}`,boxShadow:"0 20px 60px rgba(0,0,0,0.8)",display:"flex",flexDirection:"column"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"16px 20px",borderBottom:`1px solid ${T.bd}`}}>
+              <div style={{color:T.txt,fontSize:16,fontWeight:700}}>{Li("palette",16,T.txt)} Theme Validator</div>
+              <button onClick={()=>setShowThemeValidator(false)}
+                style={{background:"rgba(255,255,255,0.07)",border:"none",color:"#888",borderRadius:8,padding:"5px 10px",cursor:"pointer",fontSize:12}}>✕</button>
+            </div>
+            <Suspense fallback={<LazyFallback/>}>
+            <ThemeValidatorScreen/>
+            </Suspense>
           </div>
         </div>
       )}

@@ -42,7 +42,7 @@ function SettingsInline() {
     cfActive, cfSave, loadFromCloud, cfStatus, setCfStatus, cfUrl, cfSecret, setCfUrl, setCfSecret,
     syncPass, setSyncPass, syncEncActive,
     syncStatus, setSyncStatus, syncError,
-    themeName, setThemeName, setThemeRev,
+    themeName, setThemeName, setThemeRev, setShowThemeValidator,
     handedness, setHandedness,
     debugFlags, setDebugFlag, setDebugFlags,
     confirmReset, setConfirmReset,
@@ -70,6 +70,24 @@ function SettingsInline() {
 
       {/* ── Design (eigenes Farbschema) ─────────────────── */}
       <CustomThemeEditor/>
+
+      {/* ── Theme Validator ── */}
+      <div style={{marginTop:16,marginBottom:8}}>
+        <button onClick={()=>setShowThemeValidator(true)}
+          style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"12px",
+            borderRadius:10,cursor:"pointer",background:`${T.blue}12`,
+            border:`1px solid ${T.blue}44`,color:T.txt,fontFamily:"inherit",textAlign:"left"}}>
+          <div style={{width:36,height:36,borderRadius:9,background:`${T.blue}22`,flexShrink:0,
+            display:"flex",alignItems:"center",justifyContent:"center"}}>
+            {Li("palette",18,T.blue)}
+          </div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:12,fontWeight:600}}>Farben validieren</div>
+            <div style={{color:T.txt2,fontSize:10,marginTop:1}}>Kontrastwerte prüfen & korrigieren</div>
+          </div>
+          {Li("chevron-right",15,T.txt2)}
+        </button>
+      </div>
 
       {/* ── Anzeige: Rahmen & 3. Spalte ── */}
       <div style={SECTION}>
