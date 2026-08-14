@@ -219,28 +219,29 @@ export default function ThemeValidatorScreen({ onThemeChange }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: theme.bg }}>
-      {/* Header Bar */}
+      {/* Header Bar - Compact */}
       <div
         style={{
           background: theme.surf,
-          borderBottom: `2px solid ${theme.bd}`,
-          padding: '1rem',
+          borderBottom: `1px solid ${theme.bd}`,
+          padding: '0.6rem 0.8rem',
           display: 'flex',
-          gap: '1rem',
+          gap: '0.6rem',
           alignItems: 'center',
           flexShrink: 0,
+          flexWrap: 'wrap',
         }}
       >
         <select
           value={selectedTheme}
           onChange={(e) => handleSelectTheme(e.target.value)}
           style={{
-            padding: '0.5rem 0.75rem',
+            padding: '0.4rem 0.5rem',
             background: theme.bg,
             color: theme.txt,
             border: `1px solid ${theme.bd}`,
-            borderRadius: '4px',
-            fontSize: '0.9rem',
+            borderRadius: '3px',
+            fontSize: '0.85rem',
             cursor: 'pointer',
           }}
         >
@@ -256,38 +257,39 @@ export default function ThemeValidatorScreen({ onThemeChange }) {
         <button
           onClick={handleResetAll}
           style={{
-            padding: '0.5rem 1rem',
+            padding: '0.4rem 0.8rem',
             background: theme.bg,
             color: theme.txt,
             border: `1px solid ${theme.bd}`,
-            borderRadius: '4px',
+            borderRadius: '3px',
             cursor: 'pointer',
             fontWeight: 600,
-            fontSize: '0.9rem',
+            fontSize: '0.85rem',
+            whiteSpace: 'nowrap',
           }}
         >
-          🔄 Alle zurücksetzen
+          🔄 Reset
         </button>
 
         {suggestions.length > 0 && (
-          <div style={{ marginLeft: 'auto', fontSize: '0.85rem', color: theme.neg, fontWeight: 'bold' }}>
-            ⚠️ {suggestions.length} Problem{suggestions.length !== 1 ? 'e' : ''}
+          <div style={{ fontSize: '0.8rem', color: theme.neg, fontWeight: 'bold' }}>
+            ⚠️ {suggestions.length}
           </div>
         )}
 
         {suggestions.length === 0 && (
-          <div style={{ marginLeft: 'auto', fontSize: '0.85rem', color: theme.pos, fontWeight: 'bold' }}>
-            ✅ Kontraste OK
+          <div style={{ fontSize: '0.8rem', color: theme.pos, fontWeight: 'bold' }}>
+            ✅ OK
           </div>
         )}
       </div>
 
       {/* Main Content */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', background: theme.bg, color: theme.txt }}>
-        <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.5rem' }}>SupaDupa Money</h2>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0.8rem', background: theme.bg, color: theme.txt }}>
+        <h2 style={{ margin: '0 0 0.8rem 0', fontSize: '1.2rem' }}>SupaDupa Money</h2>
 
         {/* Clickable Color Combinations Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.6rem', marginBottom: '1.2rem' }}>
           {pairs.map((pair, i) => {
             const bgColor = theme[pair.bg];
             const fgColor = theme[pair.fg];
@@ -301,38 +303,27 @@ export default function ThemeValidatorScreen({ onThemeChange }) {
                 onClick={() => setEditingColor(pair.fg)}
                 style={{
                   background: bgColor,
-                  padding: '1.5rem',
-                  borderRadius: '8px',
-                  border: `3px solid ${hasProblem ? theme.neg : contrast < 4.5 ? theme.gold : 'transparent'}`,
+                  padding: '0.8rem',
+                  borderRadius: '6px',
+                  border: `2px solid ${hasProblem ? theme.neg : contrast < 4.5 ? theme.gold : 'transparent'}`,
                   cursor: 'pointer',
                   transition: 'all 0.2s',
                   transform: 'scale(1)',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'scale(1.05)';
-                  e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.3)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.25)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'scale(1)';
                   e.currentTarget.style.boxShadow = 'none';
                 }}
               >
-                <div style={{ color: fgColor, fontWeight: 'bold', marginBottom: '0.75rem', fontSize: '1.1rem' }}>
+                <div style={{ color: fgColor, fontWeight: 'bold', marginBottom: '0.4rem', fontSize: '0.95rem' }}>
                   {pair.label}
                 </div>
-                <div style={{ color: fgColor, fontSize: '0.85rem', opacity: 0.9 }}>
-                  Kontrast: {contrast.toFixed(2)}:1
-                </div>
-                <div
-                  style={{
-                    color: fgColor,
-                    fontSize: '0.75rem',
-                    marginTop: '0.5rem',
-                    opacity: 0.7,
-                    fontStyle: 'italic',
-                  }}
-                >
-                  Klick zum Bearbeiten
+                <div style={{ color: fgColor, fontSize: '0.75rem', opacity: 0.85 }}>
+                  {contrast.toFixed(2)}:1
                 </div>
               </div>
             );
@@ -340,22 +331,22 @@ export default function ThemeValidatorScreen({ onThemeChange }) {
         </div>
 
         {/* Full UI Preview */}
-        <h3 style={{ fontSize: '1rem', marginTop: '2rem', marginBottom: '1rem', color: theme.txt2 }}>Volle Vorschau</h3>
+        <h3 style={{ fontSize: '0.9rem', marginTop: '1rem', marginBottom: '0.6rem', color: theme.txt2 }}>Vorschau</h3>
 
-        <div style={{ background: theme.surf, padding: '1.5rem', borderRadius: '8px', border: `1px solid ${theme.bd}` }}>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <h4 style={{ margin: '0 0 1rem 0', color: theme.txt }}>Buttons</h4>
-            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <div style={{ background: theme.surf, padding: '0.8rem', borderRadius: '6px', border: `1px solid ${theme.bd}` }}>
+          <div style={{ marginBottom: '0.8rem' }}>
+            <h4 style={{ margin: '0 0 0.5rem 0', color: theme.txt, fontSize: '0.85rem' }}>Buttons</h4>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
               <button
                 onClick={() => setEditingColor('blue')}
                 style={{
-                  padding: '0.75rem 1.5rem',
+                  padding: '0.5rem 1rem',
                   background: theme.blue,
                   color: '#FFF',
                   border: 'none',
-                  borderRadius: '6px',
+                  borderRadius: '4px',
                   cursor: 'pointer',
-                  fontSize: '0.95rem',
+                  fontSize: '0.85rem',
                   fontWeight: 600,
                 }}
                 title="Klick zum Bearbeiten (blue)"
@@ -365,83 +356,80 @@ export default function ThemeValidatorScreen({ onThemeChange }) {
               <button
                 onClick={() => setEditingColor('pos')}
                 style={{
-                  padding: '0.75rem 1.5rem',
+                  padding: '0.5rem 1rem',
                   background: theme.pos,
                   color: '#000',
                   border: 'none',
-                  borderRadius: '6px',
+                  borderRadius: '4px',
                   cursor: 'pointer',
-                  fontSize: '0.95rem',
+                  fontSize: '0.85rem',
                   fontWeight: 600,
                 }}
                 title="Klick zum Bearbeiten (pos)"
               >
-                Erfolg
+                ✅ Erfolg
               </button>
               <button
                 onClick={() => setEditingColor('neg')}
                 style={{
-                  padding: '0.75rem 1.5rem',
+                  padding: '0.5rem 1rem',
                   background: theme.neg,
                   color: '#FFF',
                   border: 'none',
-                  borderRadius: '6px',
+                  borderRadius: '4px',
                   cursor: 'pointer',
-                  fontSize: '0.95rem',
+                  fontSize: '0.85rem',
                   fontWeight: 600,
                 }}
                 title="Klick zum Bearbeiten (neg)"
               >
-                Löschen
+                ❌ Fehler
               </button>
             </div>
           </div>
 
           <div>
-            <h4 style={{ margin: '0 0 1rem 0', color: theme.txt }}>Status-Boxen</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <h4 style={{ margin: '0 0 0.5rem 0', color: theme.txt, fontSize: '0.85rem' }}>Status</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <div
                 style={{
                   background: `${theme.pos}22`,
-                  border: `2px solid ${theme.pos}`,
+                  border: `1px solid ${theme.pos}`,
                   color: theme.txt,
-                  padding: '1rem',
-                  borderRadius: '6px',
+                  padding: '0.6rem',
+                  borderRadius: '4px',
                   cursor: 'pointer',
-                  fontSize: '0.95rem',
+                  fontSize: '0.8rem',
                 }}
                 onClick={() => setEditingColor('pos')}
-                title="Klick zum Bearbeiten (pos)"
               >
                 ✅ Erfolg
               </div>
               <div
                 style={{
                   background: `${theme.gold}22`,
-                  border: `2px solid ${theme.gold}`,
+                  border: `1px solid ${theme.gold}`,
                   color: theme.txt,
-                  padding: '1rem',
-                  borderRadius: '6px',
+                  padding: '0.6rem',
+                  borderRadius: '4px',
                   cursor: 'pointer',
-                  fontSize: '0.95rem',
+                  fontSize: '0.8rem',
                 }}
                 onClick={() => setEditingColor('gold')}
-                title="Klick zum Bearbeiten (gold)"
               >
                 ⚠️ Warnung
               </div>
               <div
                 style={{
                   background: `${theme.neg}22`,
-                  border: `2px solid ${theme.neg}`,
+                  border: `1px solid ${theme.neg}`,
                   color: theme.txt,
-                  padding: '1rem',
-                  borderRadius: '6px',
+                  padding: '0.6rem',
+                  borderRadius: '4px',
                   cursor: 'pointer',
-                  fontSize: '0.95rem',
+                  fontSize: '0.8rem',
                 }}
                 onClick={() => setEditingColor('neg')}
-                title="Klick zum Bearbeiten (neg)"
               >
                 ❌ Fehler
               </div>
@@ -450,43 +438,44 @@ export default function ThemeValidatorScreen({ onThemeChange }) {
         </div>
 
         {/* Export */}
-        <div style={{ marginTop: '2rem', background: theme.surf, padding: '1rem', borderRadius: '8px', border: `1px solid ${theme.bd}` }}>
-          <h4 style={{ margin: '0 0 0.75rem 0', color: theme.txt, fontSize: '0.95rem' }}>📋 Code exportieren</h4>
+        <div style={{ marginTop: '0.8rem', background: theme.surf, padding: '0.8rem', borderRadius: '6px', border: `1px solid ${theme.bd}` }}>
+          <h4 style={{ margin: '0 0 0.4rem 0', color: theme.txt, fontSize: '0.85rem' }}>📋 Export</h4>
           <textarea
             readOnly
             value={generateExportCode()}
             style={{
               width: '100%',
-              height: '120px',
+              height: '80px',
               fontFamily: 'monospace',
-              fontSize: '0.8rem',
-              padding: '0.75rem',
+              fontSize: '0.75rem',
+              padding: '0.5rem',
               background: '#1a1a1a',
               color: '#e0e0e0',
               border: `1px solid ${theme.bd}`,
-              borderRadius: '4px',
-              marginBottom: '0.75rem',
-              lineHeight: '1.4',
+              borderRadius: '3px',
+              marginBottom: '0.5rem',
+              lineHeight: '1.3',
+              boxSizing: 'border-box',
             }}
           />
           <button
             onClick={() => {
               navigator.clipboard.writeText(generateExportCode());
-              alert('✅ Code kopiert!');
+              alert('✅ Kopiert!');
             }}
             style={{
               width: '100%',
-              padding: '0.75rem',
+              padding: '0.5rem',
               background: theme.pos,
               color: '#000',
               border: 'none',
-              borderRadius: '6px',
+              borderRadius: '4px',
               cursor: 'pointer',
               fontWeight: 'bold',
-              fontSize: '0.9rem',
+              fontSize: '0.8rem',
             }}
           >
-            ✓ In Zwischenablage kopieren
+            ✓ Kopieren
           </button>
         </div>
       </div>
