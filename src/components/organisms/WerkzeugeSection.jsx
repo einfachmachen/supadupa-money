@@ -13,9 +13,16 @@ function WerkzeugeSection() {
     // `symbolzeile`: derselbe Haken wie bei der Drei-Symbol-Zeile im Dashboard
     // (siehe flaechen_extra in activeTheme.js). Die Zeile fuehrt ein
     // Akzent-Symbol, das auf einem hellen Hintergrund sonst kaum sichtbar ist.
-    <div className="symbolzeile" style={{borderBottom:`1px solid ${T.bd}`,flexShrink:0}}>
+    // `werkzeuge-zeile`: zusaetzlicher Haken NUR fuer diese Zeile. Themes, die
+    // `symbolzeile` zu einer Taste mit eigenem Innenpolster machen, wuerden die
+    // Zeile sonst hoeher malen als Suchfeld und Filter-Pillen daneben — das
+    // Polster kaeme zur Zeilenhoehe hinzu.
+    <div className="symbolzeile werkzeuge-zeile" style={{borderBottom:`1px solid ${T.bd}`,flexShrink:0}}>
+      {/* Dieselbe Hoehe wie Suchfeld und Filter-Pillen (ZEILE_H in
+          MonatScreen.jsx — dort nicht importierbar, das ergaebe einen
+          Ringschluss; beide Werte zusammen aendern). */}
       <div onClick={()=>setOpen(v=>!v)}
-        style={{padding:"8px 14px",display:"flex",alignItems:"center",gap:6,
+        style={{minHeight:38,boxSizing:"border-box",padding:"0 14px",display:"flex",alignItems:"center",gap:6,
           cursor:"pointer",userSelect:"none"}}>
         {Li("tag",12,T.acc_gold)}
         <span style={{color:T.txt2,fontSize:11,fontWeight:600,flex:1}}>Werkzeuge</span>

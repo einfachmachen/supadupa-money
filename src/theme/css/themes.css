@@ -171,6 +171,15 @@
        also keine doppelte Luecke. */
     margin-top: 8px;
   }
+  /* Die Werkzeuge-Zeile ist zwar eine Taste wie die Symbolzeile, soll aber
+     exakt so hoch sein wie Suchfeld und Filter-Pillen daneben. Das
+     Innenpolster der Taste kaeme zu ihrer Zeilenhoehe hinzu — hier deshalb
+     oben/unten abgeraeumt; die Hoehe traegt die Zeile selbst. */
+  .theme-keyboard .werkzeuge-zeile,
+  .theme-tastenhell .werkzeuge-zeile {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
   .theme-tastenhell .hero-flaeche,
   .theme-tastenhell .symbolzeile {
     border-radius: 16px;

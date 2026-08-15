@@ -21,6 +21,14 @@ import { RotatedCents } from "../atoms/RotatedCents.jsx";
 //   FS_DETAIL  Zusaetze in der Kopfzeile ("ohne Budget …", "inkl. N Vorm.")
 const FS_ZEILE = 17, FS_BETRAG = 17, FS_SUB = 12,
       FS_KOPF = 14, FS_SALDO = 20, FS_DETAIL = 12;
+// Gemeinsame Hoehe der drei Bedienzeilen oberhalb der Liste: Suchfeld,
+// Filter-Pillen (Ausgaben/Einnahmen/vorgemerkt/?) und Werkzeuge. Massgebend
+// ist das Suchfeld — es kann nicht flacher werden, weil eine globale Regel
+// (themes.css, iOS-Zoomsperre) seine Schrift auf 16px zwingt. Die beiden
+// anderen waren mit ~23px bzw. ~30px sichtbar niedriger.
+// ACHTUNG: derselbe Wert steht in WerkzeugeSection.jsx (dort nicht
+// importierbar, das ergaebe einen Ringschluss) — beide zusammen aendern.
+const ZEILE_H = 38;
 import { MitteEndeFields } from "../molecules/MitteEndeFields.jsx";
 import { BudgetEditorModal } from "../organisms/BudgetEditorModal.jsx";
 import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
@@ -65,7 +73,8 @@ const MonthSearchBox = React.memo(function MonthSearchBox({ committed, onSubmit,
   return (
     <div style={{flex:1,minWidth:0,position:"relative"}}>
       <div style={{display:"flex",alignItems:"center",background:"rgba(255,255,255,0.06)",
-        border:`1px solid ${(v||committed)?T.blue:T.bds}`,borderRadius:11,padding:"8px 10px",gap:6}}>
+        border:`1px solid ${(v||committed)?T.blue:T.bds}`,borderRadius:11,padding:"0 10px",gap:6,
+        minHeight:ZEILE_H,boxSizing:"border-box"}}>
         <button onClick={()=>submit()} title="Suchen (Enter)"
           style={{background:"none",border:"none",padding:0,cursor:"pointer",display:"inline-flex",flexShrink:0}}>
           {Li("search",14,T.txt2)}
@@ -1429,7 +1438,8 @@ function MonatScreen() {
                 <button key={v} onClick={()=>{setFiltMitte(false);setFilt(f=>f===v?"all":v);}}
                   style={{
                     flex:1,minWidth:0,
-                    padding:"5px 4px",
+                    padding:"0 4px",
+                    minHeight:ZEILE_H,boxSizing:"border-box",
                     borderRadius:12,
                     cursor:"pointer",
                     fontFamily:"inherit",
