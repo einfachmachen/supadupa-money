@@ -1333,7 +1333,9 @@ function MonatScreen() {
             zeigen den Stand. */}
 
         {/* Suche */}
-        <div style={{padding:"6px 10px 4px",display:"flex",gap:6,alignItems:"center"}}>
+        {/* `such-zeile`: Haken fuer Themes mit eigenem Abstands-Rhythmus
+            (siehe Tastenhell). Ohne solches Theme ohne Wirkung. */}
+        <div className="such-zeile" style={{padding:"6px 10px 4px",display:"flex",gap:6,alignItems:"center"}}>
           {/* minWidth:0 auf Box+Input: Inputs haben in Flex-Layouts eine
               intrinsische Mindestbreite und schoben sonst den Kategorien-
               Schalter rechts aus dem Bild. */}
@@ -1406,7 +1408,8 @@ function MonatScreen() {
         )}
 
         {/* Filter-Tabs — alle in einer Zeile, dynamisch gleich breit (flex:1) */}
-        <div style={{display:"flex",gap:6,padding:"0 10px 6px"}}>
+        {/* `filter-zeile`: siehe such-zeile oben. */}
+        <div className="filter-zeile" style={{display:"flex",gap:6,padding:"0 10px 6px"}}>
           {(()=>{
             const chips = [
               ["expense","Ausgaben",  T.cond_neg,    T.tab_exp],

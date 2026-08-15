@@ -195,16 +195,24 @@
      beim Diagramm vom umgebenden Block, bei der Symbolzeile aus ihrem eigenen
      Inline-Rand — beides soll unangetastet bleiben.
      Angrenzende Raender verschmelzen im Blockfluss, aus 8 + 8 wird also 8. */
+     Dieselbe Rechnung gilt in der Monatsansicht fuer Suchzeile und
+     Filterzeile (Ausgaben/Einnahmen/vorgemerkt/?): auch sie brachten je
+     eigene Polster mit (6px/4px bzw. 0/6px). Die Werkzeuge-Zeile darunter
+     traegt bereits die Klasse symbolzeile und ist damit schon dabei. */
   .theme-tastenhell .diagramm-flaeche,
   .theme-tastenhell .symbolzeile,
-  .theme-tastenhell .sortier-zeile {
+  .theme-tastenhell .sortier-zeile,
+  .theme-tastenhell .such-zeile,
+  .theme-tastenhell .filter-zeile {
     margin-top: 8px !important;
     margin-bottom: 8px !important;
   }
-  /* Die Sortierzeile trug ihren Abstand als Innenpolster (6px/4px). Das kaeme
-     zu den 8px oben hinzu — hier abgeraeumt, der Abstand kommt jetzt allein
-     aus dem Rand. Seitlich bleiben die 10px. */
-  .theme-tastenhell .sortier-zeile {
+  /* Diese Zeilen trugen ihren Abstand als Innenpolster (6px/4px bzw. 0/6px).
+     Das kaeme zu den 8px Rand hinzu — hier abgeraeumt, der Abstand kommt
+     jetzt allein aus dem Rand. Seitlich bleiben die 10px. */
+  .theme-tastenhell .sortier-zeile,
+  .theme-tastenhell .such-zeile,
+  .theme-tastenhell .filter-zeile {
     padding-top: 0;
     padding-bottom: 0;
   }
@@ -274,6 +282,19 @@
        ganze Breite. */
     border-top-color: transparent !important;
     box-shadow: none !important;
+    /* Der Inhalt laeuft in diesem Theme UNTER der Leiste durch (s.o.), und die
+       Leiste selbst ist durchsichtig — die Zeilen schoben sich dadurch scharf
+       und voll lesbar zwischen den Tasten hindurch. Ein Weichzeichner nimmt
+       ihnen die Aufmerksamkeit, ohne die Platte als Fuge zu verlieren.
+       -webkit- ist auf iOS/Safari zwingend, ohne das Praefix passiert dort
+       schlicht nichts.
+       Unbedenklich fuer den +-Knopf: backdrop-filter erzeugt zwar einen
+       Bezugsrahmen fuer position:fixed-Nachfahren — der Knopf ist im
+       vergroesserten Zustand aber position:absolute (App.jsx,
+       plusWrapperShell), und die Leiste ist als position:fixed ohnehin
+       laengst sein Bezugsrahmen. Es aendert sich also nichts an seiner Lage. */
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
     /* Abstand ueber MARGIN, nicht ueber `gap`: der Platz des + Knopfes ist im
        vergroesserten Zustand ein Flex-Element der Breite 0 — mit `gap` bekaeme
        es trotzdem links UND rechts eine Luecke, und in der Mitte klaffte
