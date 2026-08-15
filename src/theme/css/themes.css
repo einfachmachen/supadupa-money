@@ -537,8 +537,21 @@
     height: 100vh !important;
     height: 100svh !important;
     height: calc(var(--app-vvh, 100svh) - var(--overdue-space, 0px)) !important;
-    padding-bottom: 57px !important;
     box-sizing: border-box;
+  }
+  /* Platz fuer die Reiterleiste — NUR fuer Ansichten, die tatsaechlich unter
+     ihr liegen. Das ist heute allein der CSV/PDF-Import (z-Index 15); alle
+     uebrigen Vollbild-Dialoge liegen mit 300 bzw. 320 DARUEBER und verdecken
+     die Leiste vollstaendig.
+     Bis eben stand die Reservierung pauschal auf `.mobile-modal`. Sie stammt
+     aus der Zeit, als die Leiste z-Index 9999 hatte und wirklich ueber allem
+     lag; seit deren Absenkung auf 50 hielt sie in den uebrigen Dialogen Platz
+     fuer etwas frei, das dort gar nicht mehr liegt — sichtbar als heller
+     Streifen am unteren Rand (Nutzer-Hinweis "unsinniger heller Balken").
+     64px statt 57: in den Tastatur-Themes ist die Leiste um ihren
+     Aussenabstand hoeher (52 + 12). */
+  .mobile-modal.unter-leiste {
+    padding-bottom: 64px !important;
   }
   /* 18px als Vorgabe, aber ueberschreibbar: Dialoge mit eigener Groessen-
      skala setzen --btn-fs am Knopf. Ohne das schlug diese Regel per

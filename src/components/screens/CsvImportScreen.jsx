@@ -986,7 +986,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
 
   // ── RENDER ──────────────────────────────────────────────────────────────────
   return (
-    <div className={mobileMode?"mobile-modal":""} style={embedded
+    <div className={mobileMode?"mobile-modal unter-leiste":""} style={embedded
       ? {display:"flex",flexDirection:"column",fontFamily:"'SF Pro Text',-apple-system,sans-serif",minHeight:300}
       : {position:"fixed",inset:0,background:T.bg,zIndex:15,display:"flex",flexDirection:"column",
          fontFamily:"'SF Pro Text',-apple-system,sans-serif",
