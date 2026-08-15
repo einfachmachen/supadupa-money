@@ -365,9 +365,9 @@ function AddTxModal() {
                       {sub.icon&&Li(sub.icon,13,cat.color||T.blue)}
                       <span style={{flex:1,color:T.txt,fontSize:13}}>{sub.name}</span>
                       {hasBudget?(
-                        <span style={{color:T.gold,fontSize:10,fontWeight:700,
+                        <span style={{color:T.acc_gold,fontSize:10,fontWeight:700,
                           background:"rgba(245,166,35,0.12)",borderRadius:5,padding:"2px 6px"}}>
-                          {Li("target",9,T.gold)} {betrag(totalBudget)} {budgets[sub.id].months===1?"mtl.":budgets[sub.id].months===3?"quartl.":budgets[sub.id].months===6?"halbj.":"jährl."}
+                          {Li("target",9,T.acc_gold)} {betrag(totalBudget)} {budgets[sub.id].months===1?"mtl.":budgets[sub.id].months===3?"quartl.":budgets[sub.id].months===6?"halbj.":"jährl."}
                         </span>
                       ):(
                         <span style={{color:T.txt2,fontSize:10}}>{Li("plus",10,T.txt2)} Budget</span>
@@ -470,7 +470,7 @@ function AddTxModal() {
                   onChange={e=>{setEndDate(e.target.value);setCount("");}}
                   style={{...INP,marginBottom:0,flex:1,colorScheme:isLight?"light":"dark"}}/>
                 <button onClick={()=>setEndDate("")}
-                  style={{background:"none",border:"none",color:T.neg,cursor:"pointer",padding:"4px"}}>
+                  style={{background:"none",border:"none",color:T.acc_neg,cursor:"pointer",padding:"4px"}}>
                   {Li("x",11)}
                 </button>
               </div>
@@ -575,7 +575,7 @@ function AddTxModal() {
         {(typ==="wiederkehrend"||typ==="finanzierung")&&(
           <div style={{background:"rgba(0,0,0,0.2)",borderRadius:9,padding:"8px 10px",
             marginBottom:8,fontSize:10,color:T.txt2,lineHeight:1.6}}>
-            <span style={{color:T.pos,fontWeight:700}}>
+            <span style={{color:T.acc_pos,fontWeight:700}}>
               {totalCount>=84&&!count&&typ==="wiederkehrend"
                 ?"Unbegrenzt (7 Jahre)"
                 :`${totalCount} ${typ==="finanzierung"?"Rate":"Buchung"}${totalCount!==1?"en":""}`}
@@ -593,8 +593,8 @@ function AddTxModal() {
         {typ==="sofort"&&pn(amount)>0&&(
           <button onClick={addSplit}
             style={{background:"transparent",border:`1px solid ${T.bds}`,borderRadius:7,
-              padding:"2px 9px",color:T.blue,fontSize:11,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
-            {Li("plus",11,T.blue)}Split
+              padding:"2px 9px",color:T.acc,fontSize:11,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
+            {Li("plus",11,T.acc)}Split
           </button>
         )}
       </div>
@@ -635,7 +635,7 @@ function AddTxModal() {
       {_showFuelFields&&(
         <div style={{background:"rgba(255,255,255,0.04)",borderRadius:11,padding:"10px 12px",marginBottom:8,border:`1px solid ${T.bd}`}}>
           <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8,color:T.txt,fontSize:12,fontWeight:700}}>
-            {Li("fuel",13,T.gold)} Tank-Erfassung
+            {Li("fuel",13,T.acc_gold)} Tank-Erfassung
           </div>
           <div style={{color:T.txt2,fontSize:10,marginBottom:4}}>Fahrzeug</div>
           <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:8}}>
@@ -723,8 +723,8 @@ function AddTxModal() {
             <div style={{display:"flex",alignItems:"flex-start",gap:6,marginBottom:8,
               background:`${T.gold}14`,border:`1px solid ${T.gold}55`,
               borderRadius:8,padding:"6px 8px"}}>
-              {Li("alert-triangle",11,T.gold)}
-              <span style={{color:T.gold,fontSize:10,lineHeight:1.4}}>{odometerWarning.message}</span>
+              {Li("alert-triangle",11,T.acc_gold)}
+              <span style={{color:T.acc_gold,fontSize:10,lineHeight:1.4}}>{odometerWarning.message}</span>
             </div>
           )}
           {fuelComputedTotal!=null && (
@@ -754,7 +754,7 @@ function AddTxModal() {
       <Lbl>Tags (optional)</Lbl>
       <TagInput value={tags} onChange={setTags} suggestions={allTags}/>
 
-      {error&&<div style={{color:T.neg,fontSize:11,marginBottom:8}}>{error}</div>}
+      {error&&<div style={{color:T.acc_neg,fontSize:11,marginBottom:8}}>{error}</div>}
 
       {/* Speichern */}
       <PBtn onClick={handleSave}

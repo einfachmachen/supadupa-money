@@ -250,8 +250,10 @@ const _TEXT_KEYS = { txt: "--txt", txt2: "--txt2", lbl: "--lbl" };
 // der Karte]. Fehlt die themeeigene Angabe, steht ueberall der bisherige
 // Farbwert — solche Themes aendern sich um kein Zeichen.
 const _ACC_KEYS = {
-  acc:     { varName: "--acc",     platte: (t) => t.acc     || t.blue, karte: (t) => t.acc_card     || t.blue },
-  acc_neg: { varName: "--acc-neg", platte: (t) => t.acc_neg || t.neg,  karte: (t) => t.acc_neg_card || t.neg  },
+  acc:      { varName: "--acc",      platte: (t) => t.acc      || t.blue, karte: (t) => t.acc_card      || t.blue },
+  acc_pos:  { varName: "--acc-pos",  platte: (t) => t.acc_pos  || t.pos,  karte: (t) => t.acc_pos_card  || t.pos  },
+  acc_neg:  { varName: "--acc-neg",  platte: (t) => t.acc_neg  || t.neg,  karte: (t) => t.acc_neg_card  || t.neg  },
+  acc_gold: { varName: "--acc-gold", platte: (t) => t.acc_gold || t.gold, karte: (t) => t.acc_gold_card || t.gold },
 };
 
 export const hatKartenText = (t = _state.current) => !!(t && t.txt_card);

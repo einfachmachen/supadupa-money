@@ -133,7 +133,7 @@ function QuickBtnsBarWithColor({onSelectIcon, onSelectColor, _onDragStart, _onDr
   return (
     <div>
       <Lbl>Icon {colorTarget
-        ? <span style={{color:T.gold,fontWeight:600}}>→ jetzt Farbe antippen</span>
+        ? <span style={{color:T.acc_gold,fontWeight:600}}>→ jetzt Farbe antippen</span>
         : _cols.length>0 ? <span style={{color:T.txt2,fontWeight:400}}>antippen zum Einfärben</span> : ""}
       </Lbl>
       <QuickBtnsBar onSelect={onBtnClick} _colorTarget={colorTarget} _noDelete={!!colorTarget} _onDragStart={(icon, color)=>{_onDragStart&&_onDragStart(icon, color);}} _onDragEnd={_onDragEnd} />

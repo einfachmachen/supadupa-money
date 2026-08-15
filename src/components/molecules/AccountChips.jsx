@@ -87,9 +87,9 @@ function AccountChips({
         // Auf der Taste traegt die Akzentfarbe wieder — deshalb hier kein
         // aufGrund() mehr, sondern schlicht T.blue.
         <button onClick={onAddAccount} className="wahl-taste" style={{ ...chipStyle(false, T.blue),
-          background: "rgba(74,159,212,0.06)", border: `1.5px dashed ${T.blue}66`, color: T.blue }}>
-          {Li("plus", S.fs, T.blue)}
-          <span style={{ ...nameStyle(false), color: T.blue }}>{addLabel}</span>
+          background: "rgba(74,159,212,0.06)", border: `1.5px dashed ${T.blue}66`, color: T.acc }}>
+          {Li("plus", S.fs, T.acc)}
+          <span style={{ ...nameStyle(false), color: T.acc }}>{addLabel}</span>
         </button>
       )}
     </div>

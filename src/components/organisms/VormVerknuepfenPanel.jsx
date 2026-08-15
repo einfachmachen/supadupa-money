@@ -56,10 +56,10 @@ function VormVerknuepfenPanel({editVorm, txs, setTxs, onClose}) {
     <div style={{marginBottom:8}}>
       <button onClick={()=>setShowLink(v=>!v)}
         style={{width:"100%",padding:"8px 10px",borderRadius:10,border:`1px solid ${T.blue}44`,
-          background:`${T.blue}08`,color:T.blue,fontSize:12,fontWeight:700,cursor:"pointer",
+          background:`${T.blue}08`,color:T.acc,fontSize:12,fontWeight:700,cursor:"pointer",
           fontFamily:"inherit",display:"flex",alignItems:"center",gap:6,marginBottom:showLink?6:0}}>
         {Li("link",13,aufGrund(T.blue,3))} Buchung/Vormerkung zuordnen ({candidates.length})
-        {Li(showLink?"chevron-up":"chevron-down",11,T.blue)}
+        {Li(showLink?"chevron-up":"chevron-down",11,T.acc)}
       </button>
       {showLink&&candidates.map(tx=>{
         const isMatch=isVormAmountMatch(tx,editVorm);
@@ -85,14 +85,14 @@ function VormVerknuepfenPanel({editVorm, txs, setTxs, onClose}) {
               background:isMatch?"rgba(74,159,212,0.1)":"rgba(255,255,255,0.04)",border:`1px solid ${isMatch?T.blue:T.bd}`}}>
             <div style={{flex:1,minWidth:0}}>
               <div style={{color:T.txt,fontSize:11,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                {bankPend&&<span style={{fontSize:8,background:"rgba(245,166,35,0.18)",color:T.gold,
+                {bankPend&&<span style={{fontSize:8,background:"rgba(245,166,35,0.18)",color:T.acc_gold,
                   borderRadius:4,padding:"1px 4px",fontWeight:800,marginRight:4,letterSpacing:0.2}}>VORGEMERKT</span>}
                 {tx.desc||"—"}
               </div>
               <div style={{color:T.txt2,fontSize:9}}>{tagMonat(tx.date)}</div>
             </div>
             <span style={{color:isMatch?T.pos:T.txt,fontFamily:NUM_FONT,fontSize:11,fontWeight:700,flexShrink:0}}>{betrag(tx.totalAmount)}</span>
-            {Li("link",10,T.blue)}
+            {Li("link",10,T.acc)}
           </div>
         );
       })}

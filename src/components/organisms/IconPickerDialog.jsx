@@ -51,13 +51,13 @@ function IconPickerDialog({selectedIcon, selectedColor, onSelect, onSelectColor,
       <div onClick={e=>e.stopPropagation()} style={{background:T.surf2,borderRadius:20,padding:"14px 12px 12px",width:"100%",maxWidth:480,height:"70vh",display:"flex",flexDirection:"column",gap:10}}>
         {/* Titelzeile: Titel | Kategorie-Dropdown | Seitennavigation | ✕ */}
         <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
-          <span style={{color:T.blue,fontSize:15,fontWeight:700,flexShrink:0}}>Icon wählen</span>
+          <span style={{color:T.acc,fontSize:15,fontWeight:700,flexShrink:0}}>Icon wählen</span>
           {/* Favoriten-Swipe-Picker öffnen (Tinder-artige Icon-Kuratierung) */}
           <button onClick={()=>setShowSwipePicker(true)} title="Icon-Favoriten pflegen"
             style={{background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bd}`,borderRadius:8,
-              color:T.gold,cursor:"pointer",padding:"4px 7px",display:"flex",alignItems:"center",
+              color:T.acc_gold,cursor:"pointer",padding:"4px 7px",display:"flex",alignItems:"center",
               gap:4,fontSize:11,fontWeight:700,flexShrink:0,fontFamily:"inherit"}}>
-            {Li("star",13,T.gold)} {favIcons.length>0?favIcons.length:""}
+            {Li("star",13,T.acc_gold)} {favIcons.length>0?favIcons.length:""}
           </button>
           {/* Aktuelle Farbe — antippen öffnet Farb-Picker */}
           {onSelectColor && (
@@ -102,7 +102,7 @@ function IconPickerDialog({selectedIcon, selectedColor, onSelect, onSelectColor,
           <div style={{flexShrink:0}}>
             <div style={{color:T.txt2,fontSize:10,fontWeight:600,marginBottom:4,opacity:0.7,
               display:"flex",alignItems:"center",gap:4}}>
-              {Li("star",10,T.gold)} Favoriten ({favIcons.length})
+              {Li("star",10,T.acc_gold)} Favoriten ({favIcons.length})
             </div>
             <div style={{display:"flex",flexWrap:"wrap",gap:5,maxHeight:80,overflowY:"auto"}}>
               {favIcons.map((ic,i)=>{

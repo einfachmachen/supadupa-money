@@ -7,7 +7,7 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { ALL_LUCIDE_ICONS, Li } from "../../utils/icons.jsx";
 
 function QuickNewDialog({onClose, onSave}) {
-  const [draft, setDraft] = React.useState({label:"",icon:"star",color:T.blue});
+  const [draft, setDraft] = React.useState({label:"",icon:"star",color:T.acc});
   const [search, setSearch] = React.useState("");
   const COLORS = [T.blue,"#4A9FD4","#F5A623","#FF5F5F","#B066CC","#2ECC71","#E67E22","#E91E8C","#00BCD4","#ffffff"];
   // icons paginiert via PagedIconGrid
@@ -16,7 +16,7 @@ function QuickNewDialog({onClose, onSave}) {
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",zIndex:90,display:"flex",alignItems:"center",justifyContent:"center"}}>
       <div onClick={e=>e.stopPropagation()} style={{background:T.surf2,borderRadius:20,padding:"16px 14px 28px",width:"100%",maxWidth:480,maxHeight:"85vh",display:"flex",flexDirection:"column",gap:10,overflowY:"auto"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <span style={{color:T.blue,fontSize:15,fontWeight:700}}>Schnellwahl anlegen</span>
+          <span style={{color:T.acc,fontSize:15,fontWeight:700}}>Schnellwahl anlegen</span>
           <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:T.txt2}}>{Li("x",16)}</button>
         </div>
 

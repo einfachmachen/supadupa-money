@@ -119,7 +119,7 @@ function SettingsInline() {
             border:`1px solid ${T.bd}`,color:T.txt,fontFamily:"inherit",textAlign:"left"}}>
           <div style={{width:32,height:32,borderRadius:9,background:`${T.gold}22`,flexShrink:0,
             display:"flex",alignItems:"center",justifyContent:"center"}}>
-            {Li("star",16,T.gold)}
+            {Li("star",16,T.acc_gold)}
           </div>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:12,fontWeight:600}}>Icon-Favoriten pflegen</div>
@@ -192,7 +192,7 @@ function SettingsInline() {
           {Li(syncEncActive?"lock":"unlock",12,aufGrund(syncEncActive?T.pos:T.gold,3))}
           <span>
             {syncEncActive
-              ? <>Aktiv: Deine Daten werden <b style={{color:T.pos}}>vor dem Hochladen verschlüsselt</b> — der Server sieht nur Chiffrat. Die Passphrase verlässt das Gerät nie. <b style={{color:T.gold}}>Auf jedem Gerät identisch eingeben.</b> Geht sie verloren, sind die Cloud-Daten nicht mehr lesbar.</>
+              ? <>Aktiv: Deine Daten werden <b style={{color:T.acc_pos}}>vor dem Hochladen verschlüsselt</b> — der Server sieht nur Chiffrat. Die Passphrase verlässt das Gerät nie. <b style={{color:T.acc_gold}}>Auf jedem Gerät identisch eingeben.</b> Geht sie verloren, sind die Cloud-Daten nicht mehr lesbar.</>
               : <>Leer = die Cloud speichert deine Daten im Klartext. Setze eine Passphrase, damit selbst bei einem Einbruch in den Store niemand mitlesen kann.</>}
           </span>
         </div>
@@ -250,10 +250,10 @@ function SettingsInline() {
                 alert("Daten erfolgreich geladen!");
               }catch(e){setCfStatus("error");alert("Fehler: "+e.message);}
             }, {jaLabel:"Laden", ton:"gefahr"})} className="btn-solid" style={{width:"100%",padding:"10px 8px",borderRadius:9,marginBottom:6,
-            border:`2px solid ${T.blue}`,background:`${T.blue}11`,color:T.blue,
+            border:`2px solid ${T.blue}`,background:`${T.blue}11`,color:T.acc,
             fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
             display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-            {Li("download-cloud",14,T.blue)} Cloudflare → Lokal
+            {Li("download-cloud",14,T.acc)} Cloudflare → Lokal
           </button>
         )}
         {/* Sync-Status + Fehleranzeige */}
@@ -335,7 +335,7 @@ function SettingsInline() {
                     </div>
                     <div style={{color:T.txt2,fontSize:10,marginTop:1}}>
                       {entries.length} Einträge · {minDate} – {maxDate}
-                      {hasOldSeries&&<span style={{color:T.gold,marginLeft:6,fontWeight:700}}>⚠ alt</span>}
+                      {hasOldSeries&&<span style={{color:T.acc_gold,marginLeft:6,fontWeight:700}}>⚠ alt</span>}
                     </div>
                   </div>
                   <button onClick={()=>frageBestaetigung(
@@ -343,9 +343,9 @@ function SettingsInline() {
                     ()=>setTxs(p=>p.filter(t=>!(t._budgetSubId===subId && t.pending))),
                     {jaLabel:"Löschen", ton:"gefahr"})} style={{flexShrink:0,padding:"5px 10px",borderRadius:7,
                     border:`1px solid ${T.neg}44`,background:`${T.neg}08`,
-                    color:T.neg,fontSize:11,fontWeight:700,cursor:"pointer",
+                    color:T.acc_neg,fontSize:11,fontWeight:700,cursor:"pointer",
                     fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
-                    {Li("trash-2",11,T.neg)} Löschen
+                    {Li("trash-2",11,T.acc_neg)} Löschen
                   </button>
                 </div>
               );
@@ -378,7 +378,7 @@ function SettingsInline() {
               {Li("trash-2",14)} alle Daten zurücksetzen
             </button>
           : <div style={{background:"rgba(224,80,96,0.12)",border:`1px solid ${T.neg}`,borderRadius:11,padding:14}}>
-              <div style={{color:T.neg,fontSize:13,fontWeight:700,marginBottom:6}}>{Li("alert-circle",14,T.neg)} Wirklich alles löschen?</div>
+              <div style={{color:T.acc_neg,fontSize:13,fontWeight:700,marginBottom:6}}>{Li("alert-circle",14,T.acc_neg)} Wirklich alles löschen?</div>
               <div style={{color:T.txt2,fontSize:11,marginBottom:12,lineHeight:1.5}}>
                 Kategorien, Gruppen, Buchungen, Jahresplan und Zahlungsarten werden unwiderruflich entfernt.
               </div>
@@ -411,7 +411,7 @@ function SettingsInline() {
           <span style={{flex:1}}>
             Performance-Debug
             {Object.values(debugFlags||{}).some(v=>v) && (
-              <span style={{color:T.gold,marginLeft:6,fontSize:10,fontWeight:700}}>
+              <span style={{color:T.acc_gold,marginLeft:6,fontSize:10,fontWeight:700}}>
                 ({Object.values(debugFlags).filter(v=>v).length} aktiv)
               </span>
             )}
@@ -444,7 +444,7 @@ function SettingsInline() {
                   style={{cursor:"pointer"}}/>
                 <span style={{flex:1}}>{label}</span>
                 {debugFlags?.[key] && (
-                  <span style={{color:T.gold,fontSize:10,fontWeight:700}}>AUS</span>
+                  <span style={{color:T.acc_gold,fontSize:10,fontWeight:700}}>AUS</span>
                 )}
               </label>
             ))}

@@ -75,9 +75,9 @@ function AutoMatchReview({ matches, txs, setTxs, getAcc, onClose }) {
             </div>
             <button onClick={() => setTxs(p => unlinkPendingFromReal(p, pend.id, real.id))}
               style={{ width: "100%", padding: "6px", borderRadius: 8, border: `1px solid ${T.neg}44`,
-                background: "rgba(234,64,37,0.10)", color: T.neg, fontSize: 11, fontWeight: 700, cursor: "pointer",
+                background: "rgba(234,64,37,0.10)", color: T.acc_neg, fontSize: 11, fontWeight: 700, cursor: "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontFamily: "inherit" }}>
-              {Li("unlink", 12, T.neg)} Verknüpfung lösen
+              {Li("unlink", 12, T.acc_neg)} Verknüpfung lösen
             </button>
           </div>
           );

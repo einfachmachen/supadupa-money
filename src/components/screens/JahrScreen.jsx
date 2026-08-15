@@ -373,7 +373,7 @@ function JahrScreen({forceSingle=false}) {
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
                 <div>
                   <div style={{color:T.txt2,fontSize:10,marginBottom:2}}>{popup.row?.label||""}</div>
-                  <div style={{color:T.blue,fontSize:15,fontWeight:700}}>{popup.label}</div>
+                  <div style={{color:T.acc,fontSize:15,fontWeight:700}}>{popup.label}</div>
                 </div>
                 <button onClick={()=>setPopup(null)}
                   style={{background:"rgba(255,255,255,0.07)",border:"none",color:T.txt2,borderRadius:8,width:28,height:28,cursor:"pointer",fontSize:13,flexShrink:0}}>{Li("x",13)}</button>
@@ -424,7 +424,7 @@ function JahrScreen({forceSingle=false}) {
               <div style={{display:"flex",gap:8}}>
                 <button onClick={()=>{setPopup(p=>({...p,val:""}));setJV(popup.mi,popup.id,popup.sub,"");setPopup(null);}}
                   style={{flex:1,padding:"11px",borderRadius:11,border:"1px solid rgba(255,80,80,0.3)",
-                    background:"rgba(224,80,96,0.08)",color:T.neg,fontSize:13,fontWeight:600,cursor:"pointer"}}>
+                    background:"rgba(224,80,96,0.08)",color:T.acc_neg,fontSize:13,fontWeight:600,cursor:"pointer"}}>
                   Löschen
                 </button>
                 <button onClick={commitPopup}
@@ -449,7 +449,7 @@ function JahrScreen({forceSingle=false}) {
               {/* Header */}
               <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px 8px",flexShrink:0}}>
                 <div style={{flex:1}}>
-                  <div style={{color:T.blue,fontSize:15,fontWeight:700}}>{drilldown.label}</div>
+                  <div style={{color:T.acc,fontSize:15,fontWeight:700}}>{drilldown.label}</div>
                   <div style={{color:T.txt2,fontSize:11}}>
                     {(()=>{
                       const list = drilldown.txList||[];
@@ -501,11 +501,11 @@ function JahrScreen({forceSingle=false}) {
               {drilldown.linkPendId&&(
                 <div style={{background:(isLightTheme())?"rgba(192,120,0,0.15)":"rgba(245,166,35,0.12)",border:`1px solid ${T.gold}44`,
                   borderRadius:10,margin:"0 12px 8px",padding:"8px 12px",
-                  color:T.gold,fontSize:11,display:"flex",alignItems:"center",gap:8}}>
-                  {Li("link",12,T.gold)}
+                  color:T.acc_gold,fontSize:11,display:"flex",alignItems:"center",gap:8}}>
+                  {Li("link",12,T.acc_gold)}
                   <span style={{flex:1}}>Vormerkung ausgewählt — jetzt die zugehörige <b>echte Buchung</b> antippen zum Verknüpfen</span>
                   <button onClick={()=>setDrilldown(p=>({...p,linkPendId:null}))}
-                    style={{background:"none",border:"none",color:T.gold,cursor:"pointer",fontSize:11,fontWeight:700}}>Abbrechen</button>
+                    style={{background:"none",border:"none",color:T.acc_gold,cursor:"pointer",fontSize:11,fontWeight:700}}>Abbrechen</button>
                 </div>
               )}
               {/* Saldo-Aufstellung */}
@@ -569,7 +569,7 @@ function JahrScreen({forceSingle=false}) {
                           <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
                             <span style={{color:T.mid,fontSize:10}}>Mitte</span>
                             <span style={{...amtStyle("neg",col2),fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>−{betrag(tx._mitteAmt)}</span>
-                            <span style={{color:T.gold,fontSize:10}}>Gesamt</span>
+                            <span style={{color:T.acc_gold,fontSize:10}}>Gesamt</span>
                             <span style={{...amtStyle("neg",col2),fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>−{betrag(tx._mitteAmt+tx._endeAmt)}</span>
                           </div>
                         </div>
@@ -629,23 +629,23 @@ function JahrScreen({forceSingle=false}) {
                         <div style={{width:36,height:36,borderRadius:11,flexShrink:0,
                           background:(cat?.color||"#888")+"33",display:"flex",alignItems:"center",
                           justifyContent:"center",fontSize:17}}>
-                          {tx.pending ? (tx._seriesTyp==="finanzierung"?Li("credit-card",16,T.gold):tx._seriesId?Li("repeat",16,T.pos):Li("calendar",16,T.blue)) : Li(cat?.icon||"tag",16,cat?.color||T.txt2)||"?"}
+                          {tx.pending ? (tx._seriesTyp==="finanzierung"?Li("credit-card",16,T.acc_gold):tx._seriesId?Li("repeat",16,T.acc_pos):Li("calendar",16,T.acc)) : Li(cat?.icon||"tag",16,cat?.color||T.txt2)||"?"}
                         </div>
                         {/* Text */}
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{color:T.txt,fontSize:12,fontWeight:600,
                             overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                            {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex"}}>{Li("sticky-note",9,T.gold)}</span>}
+                            {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex"}}>{Li("sticky-note",9,T.acc_gold)}</span>}
                           </div>
                           <div style={{color:T.txt2,fontSize:10,marginTop:1,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
                             <span>{tagMonat(tx.date)}</span>
-                            {tx.pending&&<span style={{background:(isLightTheme())?"rgba(192,120,0,0.18)":"rgba(245,166,35,0.15)",color:T.gold,
+                            {tx.pending&&<span style={{background:(isLightTheme())?"rgba(192,120,0,0.18)":"rgba(245,166,35,0.15)",color:T.acc_gold,
                               borderRadius:4,padding:"0 4px",fontSize:9,fontWeight:700}}>
                               {isSelectedPend?"✓ ausgewählt":"Vormerkung – antippen zum Verknüpfen"}
                             </span>}
-                            {canLinkTo&&<span style={{background:"rgba(74,159,212,0.15)",color:T.blue,
+                            {canLinkTo&&<span style={{background:"rgba(74,159,212,0.15)",color:T.acc,
                               borderRadius:4,padding:"0 4px",fontSize:9,fontWeight:700}}>antippen zum Verknüpfen</span>}
-                            {isS&&<span style={{background:"rgba(137,196,244,0.15)",color:T.blue,
+                            {isS&&<span style={{background:"rgba(137,196,244,0.15)",color:T.acc,
                               borderRadius:4,padding:"0 4px",fontSize:9,fontWeight:700}}>Split</span>}
                             <span style={{color:(cat?.color||T.txt2),fontSize:10}}>
                               {sub?.name||cat?.name||"unkategorisiert"}
@@ -660,8 +660,8 @@ function JahrScreen({forceSingle=false}) {
                               return (
                                 <span key={lid} style={{display:"inline-flex",alignItems:"center",gap:3,
                                   background:"rgba(74,159,212,0.12)",border:`1px solid ${T.blue}33`,
-                                  borderRadius:5,padding:"1px 5px",fontSize:9,color:T.blue}}>
-                                  {Li("link",9,T.blue)}
+                                  borderRadius:5,padding:"1px 5px",fontSize:9,color:T.acc}}>
+                                  {Li("link",9,T.acc)}
                                   {lt.desc||"Vormerkung"}
                                   {sTotal>1&&` · ${sIdx}/${sTotal}`}
                                 </span>
@@ -677,7 +677,7 @@ function JahrScreen({forceSingle=false}) {
                           {isS&&(
                             <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1,marginTop:2}}>
                               <div style={{color:T.txt2,fontSize:9,fontFamily:NUM_FONT,whiteSpace:"nowrap"}}>
-                                {Li("arrow-left-right",8,T.blue)} Gesamt: {betrag(tx.totalAmount)}
+                                {Li("arrow-left-right",8,T.acc)} Gesamt: {betrag(tx.totalAmount)}
                               </div>
                               {(tx.splits||[]).filter(sp=>sp.catId&&sp.subId!==drilldown.subId).map(sp=>{
                                 const oCat=getCat(sp.catId), oSub=getSub(sp.catId,sp.subId);
@@ -690,7 +690,7 @@ function JahrScreen({forceSingle=false}) {
                             </div>
                           )}
                         </div>
-                        {canLinkTo && <span style={{flexShrink:0}}>{Li("link",16,T.blue)}</span>}
+                        {canLinkTo && <span style={{flexShrink:0}}>{Li("link",16,T.acc)}</span>}
                       </div>
                     );
                   })
@@ -748,9 +748,9 @@ function JahrScreen({forceSingle=false}) {
         {!hasSetup&&(
           <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,padding:32,color:T.txt2}}>
             <div style={{marginBottom:4,opacity:0.4}}>{Li("calendar-range",40,T.txt2,1)}</div>
-            <div style={{color:T.blue,fontSize:16,fontWeight:700,textAlign:"center"}}>Noch keine Kategorien</div>
+            <div style={{color:T.acc,fontSize:16,fontWeight:700,textAlign:"center"}}>Noch keine Kategorien</div>
             <div style={{fontSize:13,textAlign:"center",lineHeight:1.6}}>
-              Lege zuerst unter <b style={{color:T.blue}}>Erfassen → Kategorien</b> deine Gruppen und Kategorien an.<br/>
+              Lege zuerst unter <b style={{color:T.acc}}>Erfassen → Kategorien</b> deine Gruppen und Kategorien an.<br/>
               Danach erscheinen hier die Jahreszeilen automatisch.
             </div>
           </div>

@@ -89,7 +89,7 @@ function StartBalanceEditor() {
       <div onClick={()=>setCollapsed(v=>!v)}
         style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",
           padding:"4px 0",userSelect:"none"}}>
-        {Li("landmark",14,T.blue)}
+        {Li("landmark",14,T.acc)}
         <span style={{color:T.txt,fontSize:13,fontWeight:700,flex:1}}>
           Kontostand-Ankerpunkte
           {allAnchors.length>0&&<span style={{color:T.txt2,fontSize:10,fontWeight:400,marginLeft:6}}>
@@ -111,11 +111,11 @@ function StartBalanceEditor() {
               background:"rgba(255,255,255,0.04)",borderRadius:8,padding:"5px 8px",marginBottom:3,
               border:`1px solid ${T.bd}`}}>
               <span style={{color:T.txt2,fontSize:10,flex:1}}>{a.label}</span>
-              <span style={{color:T.pos,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>
+              <span style={{color:T.acc_pos,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>
                 {a.value>=0?"+":""}{a.value.toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})} €
               </span>
               <button onClick={()=>deleteAnchor(a)}
-                style={{background:"none",border:"none",color:T.neg,opacity:0.6,cursor:"pointer",padding:"2px"}}>
+                style={{background:"none",border:"none",color:T.acc_neg,opacity:0.6,cursor:"pointer",padding:"2px"}}>
                 {Li("trash-2",12)}
               </button>
             </div>
@@ -193,7 +193,7 @@ function StartBalanceEditor() {
           </button>
         </div>
       </div>
-      {saved&&<div style={{color:T.pos,fontSize:11,textAlign:"center",marginTop:8}}>✓ Gespeichert & in Supabase übertragen</div>}
+      {saved&&<div style={{color:T.acc_pos,fontSize:11,textAlign:"center",marginTop:8}}>✓ Gespeichert & in Supabase übertragen</div>}
       </>}
     </div>
   );

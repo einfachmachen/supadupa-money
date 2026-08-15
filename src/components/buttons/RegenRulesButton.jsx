@@ -39,8 +39,8 @@ function RegenRulesButton() {
         color:result!==null?T.pos:T.blue,fontSize:12,fontWeight:600,
         cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
       {result!==null
-        ? <>{Li("check",13,T.pos)} {result} Regeln regeneriert & gespeichert</>
-        : <>{Li("refresh-cw",13,T.blue)} Jetzt aus Buchungen regenerieren</>
+        ? <>{Li("check",13,T.acc_pos)} {result} Regeln regeneriert & gespeichert</>
+        : <>{Li("refresh-cw",13,T.acc)} Jetzt aus Buchungen regenerieren</>
       }
     </button>
   );

@@ -970,9 +970,9 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
               {isEdit&&seriesDeviations.length>0&&typ==="finanzierung"&&(
                 <div style={{background:"rgba(74,159,212,0.08)",border:`1px solid ${T.blue}44`,
                   borderRadius:9,padding:"8px 10px",marginBottom:10}}>
-                  <div style={{color:T.blue,fontSize:S.fs-6,fontWeight:700,marginBottom:6,
+                  <div style={{color:T.acc,fontSize:S.fs-6,fontWeight:700,marginBottom:6,
                     display:"flex",alignItems:"center",gap:4}}>
-                    {Li("edit-3",16,T.blue)} Abweichende Beträge mittendrin ({seriesDeviations.length}):
+                    {Li("edit-3",16,T.acc)} Abweichende Beträge mittendrin ({seriesDeviations.length}):
                   </div>
                   {seriesDeviations.map(e=>{
                     const [y,m,d]=e.date.split("-");
@@ -1143,7 +1143,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
               {_showFuelFields&&(
                 <div style={{background:"rgba(255,255,255,0.04)",borderRadius:11,padding:"10px 12px",marginBottom:8,border:`1px solid ${T.bd}`}}>
                   <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8,color:T.txt,fontSize:S.fs-10,fontWeight:700}}>
-                    {Li("fuel",16,T.gold)} Tank-Erfassung
+                    {Li("fuel",16,T.acc_gold)} Tank-Erfassung
                   </div>
                   <div style={{color:T.txt2,fontSize:S.fs-6,marginBottom:4}}>Fahrzeug</div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:8}}>
@@ -1234,8 +1234,8 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                     <div style={{display:"flex",alignItems:"flex-start",gap:6,marginBottom:8,
                       background:`${T.gold}14`,border:`1px solid ${T.gold}55`,
                       borderRadius:8,padding:"6px 8px"}}>
-                      {Li("alert-triangle",16,T.gold)}
-                      <span style={{color:T.gold,fontSize:S.fs-6,lineHeight:1.4}}>{odometerWarning.message}</span>
+                      {Li("alert-triangle",16,T.acc_gold)}
+                      <span style={{color:T.acc_gold,fontSize:S.fs-6,lineHeight:1.4}}>{odometerWarning.message}</span>
                     </div>
                   )}
                   {fuelComputedTotal!=null && (
@@ -1340,7 +1340,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                         style={{...INP_GROSS,marginBottom:0,flex:1,minWidth:0,
                           padding:`0 ${S.pad}px`,colorScheme:(isLightTheme())?"light":"dark"}}/>
                       <button onClick={()=>setEndDate("")}
-                        style={{background:"none",border:"none",color:T.neg,cursor:"pointer",padding:"4px"}}>
+                        style={{background:"none",border:"none",color:T.acc_neg,cursor:"pointer",padding:"4px"}}>
                         {Li("x",16)}
                       </button>
                     </div>
@@ -1468,7 +1468,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
               {typ!=="einmalig"&&(
                 <div style={{background:"rgba(0,0,0,0.2)",borderRadius:9,padding:"8px 10px",
                   marginBottom:10,fontSize:S.fs-6,color:T.txt,lineHeight:1.6}}>
-                  <span style={{color:T.pos,fontWeight:700}}>
+                  <span style={{color:T.acc_pos,fontWeight:700}}>
                     {isEdit&&seriesCount
                       ? `${seriesCount} ${typ==="finanzierung"?"Rate":"Buchung"}${seriesCount!==1?"n":""} in der Serie`
                       : totalCount>=84&&!count?"Unbegrenzt (7 Jahre)"
@@ -1531,7 +1531,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                           {s.count>1&&sections.length>1&&
                             <span style={{color:T.txt2,opacity:0.6}}> ({s.count}×)</span>}
                         </span>
-                        <span style={{color:T.pos,fontWeight:700,fontFamily:NUM_FONT}}>
+                        <span style={{color:T.acc_pos,fontWeight:700,fontFamily:NUM_FONT}}>
                           {betrag(s.amt)} €
                         </span>
                       </div>
@@ -1539,13 +1539,13 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                     {Object.values(exGroups).map(ex=>(
                       <div key={ex.id} style={{display:"flex",justifyContent:"space-between",
                         padding:"3px 0",borderBottom:`1px solid ${T.bd}`,alignItems:"center"}}>
-                        <span style={{color:T.gold,display:"flex",alignItems:"center",gap:4}}>
-                          {Li("star",16,T.gold)}
+                        <span style={{color:T.acc_gold,display:"flex",alignItems:"center",gap:4}}>
+                          {Li("star",16,T.acc_gold)}
                           {ex.dates.length===1
                             ? fmtMY(ex.dates[0])
                             : `${fmtMY(ex.dates[0])} · ${ex.dates.length}×`}
                         </span>
-                        <span style={{color:T.gold,fontWeight:700,fontFamily:NUM_FONT}}>
+                        <span style={{color:T.acc_gold,fontWeight:700,fontFamily:NUM_FONT}}>
                           {betrag(ex.amt)} €
                         </span>
                       </div>
@@ -1554,7 +1554,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                 );
               })()}
 
-              {error&&<div style={{color:T.neg,fontSize:S.fs-6,marginBottom:8}}>{error}</div>}
+              {error&&<div style={{color:T.acc_neg,fontSize:S.fs-6,marginBottom:8}}>{error}</div>}
 
               {/* ── Verknüpfen: Vormerkung → Buchung ── */}
               {isEdit&&editVorm&&<VormVerknuepfenPanel editVorm={editVorm} txs={txs} setTxs={setTxs} onClose={onClose}/>}
@@ -1590,7 +1590,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                   {/* Datumfelder je nach Scope */}
                   {editScope==="single"&&(
                     <div style={{color:T.txt2,fontSize:S.fs-6,padding:"4px 0",opacity:0.8}}>
-                      Buchung im gewählten Monat <strong style={{color:T.blue}}>{MONTHS_F[month]} {year}</strong> wird geändert.
+                      Buchung im gewählten Monat <strong style={{color:T.acc}}>{MONTHS_F[month]} {year}</strong> wird geändert.
                     </div>
                   )}
                   {editScope==="range"&&(
@@ -1651,7 +1651,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                             padding:"6px 10px",marginBottom:4,
                             display:"flex",alignItems:"center",gap:8}}>
                             <div style={{flex:1}}>
-                              <div style={{color:T.gold,fontSize:S.fs-6,fontWeight:700}}>
+                              <div style={{color:T.acc_gold,fontSize:S.fs-6,fontWeight:700}}>
                                 {betrag(ex.amount)} · {intervalLabel} · {ex.items.length}×
                               </div>
                               <div style={{color:T.txt2,fontSize:S.fs-10}}>
@@ -1674,9 +1674,9 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                               "Alle Ausnahmen dieser eingebetteten Serie löschen?",
                               ()=>handleDeleteException(ex.id,"all",""),
                               {jaLabel:"Löschen", ton:"gefahr"})} style={{background:`${T.neg}11`,border:"none",
-                              color:T.neg,borderRadius:7,padding:"4px 8px",
+                              color:T.acc_neg,borderRadius:7,padding:"4px 8px",
                               fontSize:S.fs-6,"--btn-fs":(S.fs-6)+"px",cursor:"pointer",fontFamily:"inherit"}}>
-                              {Li("trash-2",16,T.neg)}
+                              {Li("trash-2",16,T.acc_neg)}
                             </button>
                           </div>
                         );
@@ -1700,10 +1700,10 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                     }} style={{width:"100%",padding:"7px 10px",borderRadius:9,
                       border:`1px dashed ${T.gold}66`,
                       background:"rgba(245,166,35,0.06)",
-                      color:T.gold,fontSize:S.fs-10,"--btn-fs":(S.fs-10)+"px",fontWeight:700,
+                      color:T.acc_gold,fontSize:S.fs-10,"--btn-fs":(S.fs-10)+"px",fontWeight:700,
                       cursor:"pointer",fontFamily:"inherit",
                       display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-                      {Li("plus-circle",16,T.gold)} Eingebettete Ausnahme-Serie
+                      {Li("plus-circle",16,T.acc_gold)} Eingebettete Ausnahme-Serie
                     </button>
                   )}
 
@@ -1711,9 +1711,9 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                   {showExForm&&(
                     <div style={{background:"rgba(245,166,35,0.06)",border:`1px solid ${T.gold}44`,
                       borderRadius:10,padding:"10px 12px",marginBottom:4}}>
-                      <div style={{color:T.gold,fontSize:S.fs-10,fontWeight:700,marginBottom:8,
+                      <div style={{color:T.acc_gold,fontSize:S.fs-10,fontWeight:700,marginBottom:8,
                         display:"flex",alignItems:"center",gap:6}}>
-                        {Li("git-branch",16,T.gold)}
+                        {Li("git-branch",16,T.acc_gold)}
                         {exEditId ? "ausnahme bearbeiten" : "abweichenden Betrag setzen"}
                       </div>
 
@@ -1761,7 +1761,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                           const md=(d.getFullYear()-s.getFullYear())*12+(d.getMonth()-s.getMonth());
                           return md>=0 && md%exInterval===0;
                         }).slice(0,n);
-                        if(!matches.length) return <div style={{color:T.neg,fontSize:S.fs-6,marginBottom:6}}>
+                        if(!matches.length) return <div style={{color:T.acc_neg,fontSize:S.fs-6,marginBottom:6}}>
                           Keine passenden Monate in der Serie gefunden.
                         </div>;
                         const pad2=n=>String(n).padStart(2,"0");
@@ -1769,7 +1769,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                         const last=new Date(matches[matches.length-1].date);
                         return <div style={{background:"rgba(0,0,0,0.2)",borderRadius:7,
                           padding:"6px 8px",marginBottom:8,fontSize:S.fs-6,color:T.txt2}}>
-                          <span style={{color:T.gold,fontWeight:700}}>{matches.length}× wird geändert</span>
+                          <span style={{color:T.acc_gold,fontWeight:700}}>{matches.length}× wird geändert</span>
                           {" · "}{pad2(first.getDate())}.{pad2(first.getMonth()+1)}.{first.getFullYear()}
                           {matches.length>1&&<> – {pad2(last.getDate())}.{pad2(last.getMonth()+1)}.{last.getFullYear()}</>}
                           <div style={{color:T.txt2,marginTop:3,fontSize:S.fs-10}}>
@@ -1806,7 +1806,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
 
               {/* Tags — quer über Kategorien hinweg durchsuchbar (z.B. "#aida") */}
               <div style={{color:T.txt2,fontSize:S.fs-6,marginBottom:3,display:"flex",alignItems:"center",gap:4}}>
-                {Li("hash",16,T.blue)} Tags (optional)
+                {Li("hash",16,T.acc)} Tags (optional)
               </div>
               <TagInput value={tags} onChange={setTags} suggestions={allTags}/>
 
@@ -1826,9 +1826,9 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                 {isEdit&&(
                   <button onClick={handleDelete}
                     style={{padding:`${S.padL}px ${S.padL}px`,borderRadius:S.radius,border:`1px solid ${T.neg}44`,
-                      background:`${T.neg}11`,color:T.neg,fontSize:S.fs-6,"--btn-fs":(S.fs-6)+"px",cursor:"pointer",fontFamily:"inherit",
+                      background:`${T.neg}11`,color:T.acc_neg,fontSize:S.fs-6,"--btn-fs":(S.fs-6)+"px",cursor:"pointer",fontFamily:"inherit",
                       display:"flex",alignItems:"center",justifyContent:"center"}}>
-                    {Li("trash-2",20,T.neg)}
+                    {Li("trash-2",20,T.acc_neg)}
                   </button>
                 )}
               </div>

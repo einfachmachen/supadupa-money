@@ -290,7 +290,7 @@ function SaldoHeroV2({
                   color:active?T.blue:T.txt,fontSize:13,fontWeight:active?700:500,whiteSpace:"nowrap"}}>
                 {id===null ? Li("layers",14,active?T.blue:T.txt2) : Li(a?.icon||"wallet",14,a?.color||T.txt2)}
                 <span style={{flex:1}}>{label}</span>
-                {active && Li("check",14,T.blue)}
+                {active && Li("check",14,T.acc)}
                 {/* Stern = "damit starten". Eigene Trefferflaeche mit
                     stopPropagation, damit das Antippen NUR das Startkonto
                     setzt und nicht zugleich die Auswahl umschaltet und das
@@ -421,7 +421,7 @@ function SaldoHeroV2({
             style={{display:"flex",alignItems:"baseline",gap:6,cursor:"pointer",
               borderRadius:8,padding:"2px 8px 3px",
               background: progDrill==="Ende" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
-            <span style={{color:T.gold||T.txt2,fontSize:9,fontWeight:700,letterSpacing:2,opacity:0.7}}>ENDE</span>
+            <span style={{color:T.acc_gold||T.txt2,fontSize:9,fontWeight:700,letterSpacing:2,opacity:0.7}}>ENDE</span>
             <span className="heroAmt" style={{color: saldoCol(prognoseEnde, endeAbgHero),
               fontSize:19,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
               {prognoseEnde>=0?"":"−"}{fmtMoney(Math.abs(prognoseEnde||0))}
@@ -507,7 +507,7 @@ function SaldoHeroV2({
           <div onClick={()=>setProgDrill(v=>v==="Ende"?null:"Ende")}
             style={{display:"inline-block",cursor:"pointer",borderRadius:8,padding:"0 10px",
               background: progDrill==="Ende" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
-            <div style={{color:T.gold||T.txt2,fontSize:9,fontWeight:700,
+            <div style={{color:T.acc_gold||T.txt2,fontSize:9,fontWeight:700,
               letterSpacing:2,opacity:0.7,marginBottom:2}}>ENDE</div>
             <div className="heroAmt" style={{color: saldoCol(prognoseEnde, endeAbgHero),
               fontSize:20,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>

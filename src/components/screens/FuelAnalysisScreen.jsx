@@ -165,7 +165,7 @@ function FuelAnalysisScreen({onClose, onBack, mobileMode=false}) {
             {/* Verbrauch-Chart */}
             <div style={{marginBottom:16}}>
               <div style={{color:T.txt2,fontSize:11,fontWeight:600,marginBottom:6,display:"flex",alignItems:"center",gap:5}}>
-                {Li("activity",12,T.gold)} Verbrauch (l/100km) je Tankvorgang
+                {Li("activity",12,T.acc_gold)} Verbrauch (l/100km) je Tankvorgang
               </div>
               <div style={{background:"rgba(255,255,255,0.03)",border:`1px solid ${T.bd}`,borderRadius:11,padding:"8px"}}>
                 {barChart(withConsumption, t=>t._consumption, T.gold,
@@ -176,7 +176,7 @@ function FuelAnalysisScreen({onClose, onBack, mobileMode=false}) {
             {/* Preis-Chart */}
             <div style={{marginBottom:16}}>
               <div style={{color:T.txt2,fontSize:11,fontWeight:600,marginBottom:6,display:"flex",alignItems:"center",gap:5}}>
-                {Li("trending-up",12,T.blue)} Preisentwicklung (€/Liter)
+                {Li("trending-up",12,T.acc)} Preisentwicklung (€/Liter)
               </div>
               <div style={{background:"rgba(255,255,255,0.03)",border:`1px solid ${T.bd}`,borderRadius:11,padding:"8px"}}>
                 {barChart(pricedEntries, t=>t._fuelPricePerL, T.blue,
@@ -213,7 +213,7 @@ function FuelAnalysisScreen({onClose, onBack, mobileMode=false}) {
                 {(t._consumption!=null||t._costPerKm!=null)&&(
                   <div style={{textAlign:"right",flexShrink:0}}>
                     {t._consumption!=null&&(
-                      <div style={{color:T.gold,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>
+                      <div style={{color:T.acc_gold,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>
                         {t._consumption.toFixed(1)} l/100km
                       </div>
                     )}

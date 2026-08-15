@@ -49,9 +49,9 @@ function BankIconsGrid({selectedIcon, selectedColor, onSelect}) {
         onMouseLeave={e=>e.currentTarget.style.background="rgba(74,159,212,0.05)"}>
         <input ref={fileRef} type="file" accept="image/svg+xml,image/png,image/jpeg,image/webp"
           multiple onChange={handleUpload} style={{display:"none"}}/>
-        {Li("upload",20,T.blue)}
+        {Li("upload",20,T.acc)}
         <div>
-          <div style={{color:T.blue,fontSize:12,fontWeight:700}}>SVG oder PNG hochladen</div>
+          <div style={{color:T.acc,fontSize:12,fontWeight:700}}>SVG oder PNG hochladen</div>
           <div style={{color:T.txt2,fontSize:10,marginTop:2}}>Banklogos, eigene Icons — nur lokal gespeichert</div>
         </div>
       </div>
@@ -72,7 +72,7 @@ function BankIconsGrid({selectedIcon, selectedColor, onSelect}) {
               <span style={{fontSize:8,color:T.txt2,textAlign:"center",overflow:"hidden",
                 textOverflow:"ellipsis",whiteSpace:"nowrap",width:"100%",padding:"0 2px"}}>{label}</span>
               <span onClick={e=>deleteIcon(slug,e)}
-                style={{position:"absolute",top:2,right:2,color:T.neg,opacity:0.5,fontSize:10,
+                style={{position:"absolute",top:2,right:2,color:T.acc_neg,opacity:0.5,fontSize:10,
                   lineHeight:1,cursor:"pointer",padding:2}}
                 onMouseEnter={e=>e.currentTarget.style.opacity=1}
                 onMouseLeave={e=>e.currentTarget.style.opacity=0.5}>✕</span>

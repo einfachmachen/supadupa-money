@@ -13,13 +13,13 @@ function QuickPicker({onClose}) {
   const {quickBtns, setQuickBtns, cats} = useContext(AppCtx);
   const [search, setSearch] = React.useState("");
   const [editBtn, setEditBtn] = React.useState(null);
-  const [draft, setDraft] = React.useState({icon:"star",label:"",catId:"",color:T.blue});
+  const [draft, setDraft] = React.useState({icon:"star",label:"",catId:"",color:T.acc});
   const [showQBIconPicker, setShowQBIconPicker] = React.useState(false);
   const COLORS = [T.blue,"#4A9FD4","#F5A623","#FF5F5F","#B066CC","#2ECC71","#E67E22","#E91E8C","#00BCD4","#ccc"];
 
   // filteredIcons paginiert via PagedIconGrid
 
-  const openNew = () => { setDraft({icon:"star",label:"",catId:"",color:T.blue}); setEditBtn("new"); };
+  const openNew = () => { setDraft({icon:"star",label:"",catId:"",color:T.acc}); setEditBtn("new"); };
   const openEdit = (btn) => { setDraft({...btn}); setEditBtn(btn); };
   const saveBtn = () => {
     if(editBtn==="new") setQuickBtns(p=>[...p,{...draft,id:"q"+Date.now()}]);
@@ -32,7 +32,7 @@ function QuickPicker({onClose}) {
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:90,display:"flex",alignItems:"center",justifyContent:"center"}}>
       <div onClick={e=>e.stopPropagation()} style={{background:T.surf2,borderRadius:20,padding:"16px 14px 28px",width:"100%",maxWidth:480,maxHeight:"88vh",display:"flex",flexDirection:"column",gap:10,overflowY:"auto"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <span style={{color:T.blue,fontSize:15,fontWeight:700}}>{editBtn==="new"?"schnellwahl anlegen":"schnellwahl bearbeiten"}</span>
+          <span style={{color:T.acc,fontSize:15,fontWeight:700}}>{editBtn==="new"?"schnellwahl anlegen":"schnellwahl bearbeiten"}</span>
           <button onClick={()=>setEditBtn(null)} style={{background:"none",border:"none",cursor:"pointer",color:T.txt2}}>{Li("x",16)}</button>
         </div>
 
@@ -108,7 +108,7 @@ function QuickPicker({onClose}) {
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",zIndex:90,display:"flex",alignItems:"center",justifyContent:"center"}}>
       <div onClick={e=>e.stopPropagation()} style={{background:T.surf2,borderRadius:20,padding:"16px 14px 28px",width:"100%",maxWidth:480}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
-          <span style={{color:T.blue,fontSize:15,fontWeight:700}}>Schnellwahlen</span>
+          <span style={{color:T.acc,fontSize:15,fontWeight:700}}>Schnellwahlen</span>
           <button onClick={onClose} style={{background:"none",border:"none",cursor:"pointer",color:T.txt2}}>{Li("x",16)}</button>
         </div>
         <QuickBtnsBar onSelect={btn => openEdit(btn)} />

@@ -59,8 +59,8 @@ function ReviewQueueModal({queue, setQueue}) {
           {queue.mode==="typfix"&&item.wrongCatName&&(
             <div style={{marginTop:6,padding:"4px 8px",borderRadius:7,
               background:"rgba(224,80,96,0.15)",border:`1px solid ${T.neg}44`,
-              color:T.neg,fontSize:11,display:"flex",alignItems:"center",gap:6}}>
-              {Li("x-circle",11,T.neg)} aktuell falsch: <b>{item.wrongCatName}</b>
+              color:T.acc_neg,fontSize:11,display:"flex",alignItems:"center",gap:6}}>
+              {Li("x-circle",11,T.acc_neg)} aktuell falsch: <b>{item.wrongCatName}</b>
               {item.tx._csvType==="income"
                 ? " (ist Ausgaben-Kategorie, aber CSV zeigt Einnahme)"
                 : " (ist Einnahmen-Kategorie, aber CSV zeigt Ausgabe)"}
@@ -102,16 +102,16 @@ function ReviewQueueModal({queue, setQueue}) {
               </button>
               <button onClick={()=>setShowPicker(true)}
                 style={{flex:1,padding:"8px",borderRadius:9,border:`1px solid ${T.blue}44`,
-                  background:"rgba(74,159,212,0.08)",color:T.blue,fontSize:11,
+                  background:"rgba(74,159,212,0.08)",color:T.acc,fontSize:11,
                   cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-                {Li("list",11,T.blue)} Andere Kategorie
+                {Li("list",11,T.acc)} Andere Kategorie
               </button>
             </div>
           </>) : (<>
             <div style={{color:T.txt2,fontSize:11,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
               <button onClick={()=>setShowPicker(false)}
-                style={{background:"none",border:"none",color:T.blue,cursor:"pointer",padding:0,display:"flex"}}>
-                {Li("arrow-left",13,T.blue)}
+                style={{background:"none",border:"none",color:T.acc,cursor:"pointer",padding:0,display:"flex"}}>
+                {Li("arrow-left",13,T.acc)}
               </button>
               Kategorie wählen:
             </div>

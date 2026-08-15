@@ -11,7 +11,7 @@ function MonthPickerModal({year, month, setYear, setMonth, onClose, onSwitchToMo
   const arrowBtn = {
     background: lightT?"#fff":T.surf3,
     border: lightT?`1px solid ${T.bds}`:"none",
-    color:T.blue,
+    color:T.acc,
     borderRadius:10, width:36, height:36, fontSize:16, cursor:"pointer",
     display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
     fontFamily:"inherit"

@@ -127,16 +127,16 @@ function ManagementScreen({activeTab="kategorien"}) {
               </button>
             )}
             <div style={{flex:1}}>
-              <div style={{color:T.blue,fontSize:16,fontWeight:700}}>{cat.name}</div>
+              <div style={{color:T.acc,fontSize:16,fontWeight:700}}>{cat.name}</div>
               <div style={{color:T.txt2,fontSize:11}}>{grp?.label||cat.type} · {(cat.subs||[]).length} Unterkategorien</div>
             </div>
             <button onClick={()=>setMergeTarget(mergeTarget===cat.id?null:cat.id)}
               style={{background:mergeTarget===cat.id?"rgba(74,159,212,0.25)":"rgba(74,159,212,0.1)",
-                border:"none",color:T.blue,borderRadius:10,padding:"7px 12px",
+                border:"none",color:T.acc,borderRadius:10,padding:"7px 12px",
                 cursor:"pointer",fontSize:12,fontWeight:600,marginRight:4}}>
-              {Li("git-merge",12,T.blue)} Zusammenführen
+              {Li("git-merge",12,T.acc)} Zusammenführen
             </button>
-            <button onClick={()=>deleteCat(cat.id)} style={{background:"rgba(224,80,96,0.12)",border:"none",color:T.neg,borderRadius:10,padding:"7px 12px",cursor:"pointer",fontSize:12,fontWeight:600}}>Löschen</button>
+            <button onClick={()=>deleteCat(cat.id)} style={{background:"rgba(224,80,96,0.12)",border:"none",color:T.acc_neg,borderRadius:10,padding:"7px 12px",cursor:"pointer",fontSize:12,fontWeight:600}}>Löschen</button>
           </div>
 
           {/* Name */}
@@ -151,9 +151,9 @@ function ManagementScreen({activeTab="kategorien"}) {
           {/* Zusammenführen */}
           {mergeTarget===cat.id&&(
             <div style={{background:"rgba(74,159,212,0.08)",borderRadius:16,padding:14,margin:"8px 14px",border:`1px solid ${T.blue}44`}}>
-              <div style={{color:T.blue,fontSize:12,fontWeight:700,marginBottom:2}}>{Li("git-merge",12,T.blue)} In welche Kategorie zusammenführen?</div>
+              <div style={{color:T.acc,fontSize:12,fontWeight:700,marginBottom:2}}>{Li("git-merge",12,T.acc)} In welche Kategorie zusammenführen?</div>
               <div style={{color:T.txt2,fontSize:11,marginBottom:10,lineHeight:1.5}}>
-                Alle Buchungen von <b style={{color:T.txt}}>{cat.name}</b> werden zur gewählten Kategorie verschoben. <b style={{color:T.neg}}>Diese Kategorie wird danach gelöscht.</b>
+                Alle Buchungen von <b style={{color:T.txt}}>{cat.name}</b> werden zur gewählten Kategorie verschoben. <b style={{color:T.acc_neg}}>Diese Kategorie wird danach gelöscht.</b>
               </div>
               {(cats||[]).filter(c=>c.id!==cat.id&&c.type===cat.type).length===0
                 ? <div style={{color:T.txt2,fontSize:12}}>Keine anderen Kategorien gleicher Gruppe vorhanden.</div>
@@ -179,7 +179,7 @@ function ManagementScreen({activeTab="kategorien"}) {
                     </div>
                     <span style={{flex:1,textAlign:"left"}}>{tc.name}</span>
                     <span style={{color:T.txt2,fontSize:11}}>{(tc.subs||[]).length} Unterkategorien</span>
-                    <span style={{color:T.blue,fontSize:13}}>→</span>
+                    <span style={{color:T.acc,fontSize:13}}>→</span>
                   </button>
                 ))
               }
@@ -249,14 +249,14 @@ function ManagementScreen({activeTab="kategorien"}) {
               {Li("database",13,"currentColor")} Daten &amp; Verbindungen
             </div>
             {(()=>{
-              const kontenRow   = {icon:"credit-card",color:T.blue,         label:"Konten",                sub:"Verwalten, Reihenfolge, Puffer",  onClick:()=>setMgrTab("konten"), tourId:"row-konten"};
+              const kontenRow   = {icon:"credit-card",color:T.acc,         label:"Konten",                sub:"Verwalten, Reihenfolge, Puffer",  onClick:()=>setMgrTab("konten"), tourId:"row-konten"};
               const budgetRow   = {icon:"target",     color:T.mid,          label:"Kategorien & Budget",   sub:"Budgets je Kategorie festlegen",  onClick:()=>setShowMobileKategorien?.(true), tourId:"row-budget"};
-              const csvRow      = {icon:"download",   color:T.pos,          label:"csv importieren",       sub:"Buchungen aus Banking-App",       onClick:()=>setShowCsv?.(true), tourId:"row-csv"};
-              const bankRow     = {icon:"landmark",   color:T.gold,         label:"Bank verbinden",        sub:"Schritt für Schritt · Enable Banking", onClick:()=>setShowBankWizard?.(true), tourId:"row-bank"};
-              const dataMgrRow  = {icon:"database",   color:T.pos,          label:"Daten-Manager",         sub:"Export / Import / Löschen",       onClick:()=>setShowDataMgr?.(true)};
+              const csvRow      = {icon:"download",   color:T.acc_pos,          label:"csv importieren",       sub:"Buchungen aus Banking-App",       onClick:()=>setShowCsv?.(true), tourId:"row-csv"};
+              const bankRow     = {icon:"landmark",   color:T.acc_gold,         label:"Bank verbinden",        sub:"Schritt für Schritt · Enable Banking", onClick:()=>setShowBankWizard?.(true), tourId:"row-bank"};
+              const dataMgrRow  = {icon:"database",   color:T.acc_pos,          label:"Daten-Manager",         sub:"Export / Import / Löschen",       onClick:()=>setShowDataMgr?.(true)};
               const cloudRow    = {icon:"cloud",      color:T.cf||T.blue,   label:"Cloud-Sync einrichten", sub:"Eigene Cloud-DB · geführt",       onClick:()=>setShowCloudSetup?.(true), tourId:"row-cloudsync"};
-              const fuelRow     = {icon:"fuel",       color:T.gold,         label:"Tankverbrauch",         sub:"Verbrauch & Preisentwicklung",    onClick:()=>setShowFuelAnalysis?.(true)};
-              const matchingRow = {icon:"git-merge",  color:T.blue,         label:"Vormerkungen zuordnen", sub:"Eigene mit Bank-Buchungen verknüpfen", onClick:()=>setShowMatching?.(true), tourId:"row-matching"};
+              const fuelRow     = {icon:"fuel",       color:T.acc_gold,         label:"Tankverbrauch",         sub:"Verbrauch & Preisentwicklung",    onClick:()=>setShowFuelAnalysis?.(true)};
+              const matchingRow = {icon:"git-merge",  color:T.acc,         label:"Vormerkungen zuordnen", sub:"Eigene mit Bank-Buchungen verknüpfen", onClick:()=>setShowMatching?.(true), tourId:"row-matching"};
               // "Suche & Summe" wurde als eigene, zu versteckte Ansicht entfernt —
               // dieselbe (globale) Suche samt Zeitraum und Summen-Anzeige lebt jetzt
               // direkt in der Monatsansicht (dort gab es schon eine Suche).
@@ -319,7 +319,7 @@ function ManagementScreen({activeTab="kategorien"}) {
                   onSelect={ic=>{setAccounts(p=>p.map(a=>a.id===acc.id?{...a,icon:ic}:a));setAccIconPick(null);}}
                   onClose={()=>setAccIconPick(null)}/>}
                 <span style={{flex:1,color:T.txt,fontSize:19,fontWeight:700,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                  {acc.name}{acc.delayDays>0&&<span style={{color:T.gold,fontSize:"0.6em",fontWeight:700,marginLeft:2}}>+{acc.delayDays}d</span>}
+                  {acc.name}{acc.delayDays>0&&<span style={{color:T.acc_gold,fontSize:"0.6em",fontWeight:700,marginLeft:2}}>+{acc.delayDays}d</span>}
                 </span>
                 {/* Mindest-Puffer */}
                 <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0}}
@@ -338,7 +338,7 @@ function ManagementScreen({activeTab="kategorien"}) {
                   <span style={{color:T.txt2,fontSize:14}}>€</span>
                 </div>
                 <button onClick={()=>{ setDelTarget(null); setDelAccPrompt(acc); }}
-                  style={{background:"none",border:"none",color:T.neg,opacity:0.6,cursor:"pointer",fontSize:17}}>{Li("trash-2",17)}</button>
+                  style={{background:"none",border:"none",color:T.acc_neg,opacity:0.6,cursor:"pointer",fontSize:17}}>{Li("trash-2",17)}</button>
               </div>
             ))}
             <ErrorBoundary name="AddAccountForm"><AddAccountForm setAccounts={setAccounts}/></ErrorBoundary>
@@ -355,7 +355,7 @@ function ManagementScreen({activeTab="kategorien"}) {
                 <div onClick={()=>setDelAccPrompt(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",zIndex:400,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
                   <div onClick={e=>e.stopPropagation()} style={{background:T.surf,borderRadius:18,padding:16,width:"100%",maxWidth:420,border:`1px solid ${T.bds}`,boxShadow:"0 12px 48px rgba(0,0,0,0.6)",maxHeight:"85vh",overflowY:"auto"}}>
                     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                      {Li("alert-triangle",18,T.neg)}
+                      {Li("alert-triangle",18,T.acc_neg)}
                       <div style={{color:T.txt,fontSize:15,fontWeight:800}}>Konto löschen: {acc.name}</div>
                     </div>
                     {hasRefs ? (<>
@@ -364,7 +364,7 @@ function ManagementScreen({activeTab="kategorien"}) {
                         Damit <b style={{color:T.txt}}>nichts verloren geht</b>, werden sie beim Löschen auf ein anderes Konto umgehängt. Bitte Ziel-Konto wählen:
                       </div>
                       {blocked ? (
-                        <div style={{color:T.neg,fontSize:12,padding:"8px 10px",borderRadius:8,background:`${T.neg}12`,border:`1px solid ${T.neg}44`,marginBottom:12}}>
+                        <div style={{color:T.acc_neg,fontSize:12,padding:"8px 10px",borderRadius:8,background:`${T.neg}12`,border:`1px solid ${T.neg}44`,marginBottom:12}}>
                           Es gibt kein anderes Konto, auf das umgehängt werden könnte. Lege zuerst ein weiteres Konto an.
                         </div>
                       ) : (
@@ -415,7 +415,7 @@ function ManagementScreen({activeTab="kategorien"}) {
         {/* ── Kategorie-Zuordnungen ── */}
         <div style={{padding:"10px 14px 6px",borderBottom:`1px solid ${T.bd}`}}>
           <div style={{color:T.txt2,fontSize:11,fontWeight:600,marginBottom:4,display:"flex",alignItems:"center",gap:5}}>
-            {Li("refresh-cw",12,T.blue)} Kategorie-Zuordnungen
+            {Li("refresh-cw",12,T.acc)} Kategorie-Zuordnungen
           </div>
           <div style={{color:T.txt2,fontSize:10,marginBottom:6,lineHeight:1.5}}>
             Regeneriert alle Händler-Regeln aus den bereits kategorisierten Buchungen.
@@ -449,7 +449,7 @@ function ManagementScreen({activeTab="kategorien"}) {
 
           <div style={{color:T.txt2,fontSize:10,fontWeight:700,textTransform:"uppercase",
             letterSpacing:"0.05em",marginBottom:8,marginTop:4,display:"flex",alignItems:"center",gap:5}}>
-            {Li("plus-circle",11,T.blue)} Neue Hauptkategorie
+            {Li("plus-circle",11,T.acc)} Neue Hauptkategorie
           </div>
 
           {/* Schritt 1: Konto */}
@@ -474,7 +474,7 @@ function ManagementScreen({activeTab="kategorien"}) {
                       const sel=newGroup.accountId===a.id; const col=a.color||T.blue;
                       return (
                         <button key={a.id} onClick={()=>setNewGroup(p=>({...p,accountId:a.id}))} style={chip(sel,col)}>
-                          {a.delayDays>0 && (<span style={{position:"absolute",top:3,right:3,fontSize:9,color:T.gold,fontWeight:700,background:T.gold+"22",borderRadius:4,padding:"0 3px",lineHeight:1.3,letterSpacing:"-0.5px"}}>+{a.delayDays}</span>)}
+                          {a.delayDays>0 && (<span style={{position:"absolute",top:3,right:3,fontSize:9,color:T.acc_gold,fontWeight:700,background:T.gold+"22",borderRadius:4,padding:"0 3px",lineHeight:1.3,letterSpacing:"-0.5px"}}>+{a.delayDays}</span>)}
                           {Li(a.icon||"landmark",22,sel?col:T.txt2)}
                           <span style={nm(sel)}>{a.name}</span>
                         </button>
@@ -569,7 +569,7 @@ function ManagementScreen({activeTab="kategorien"}) {
                   <span style={{color:acc.color||T.blue,fontSize:13,fontWeight:800,flex:1}}>
                     {acc.name}
                   </span>
-                  {acc.delayDays>0&&<span style={{color:T.gold,fontSize:9,fontWeight:700,
+                  {acc.delayDays>0&&<span style={{color:T.acc_gold,fontSize:9,fontWeight:700,
                     background:T.gold+"22",borderRadius:4,padding:"1px 5px"}}>+{acc.delayDays}d</span>}
                 </>) : (<>
                   {Li("layers",13,T.txt2)}
@@ -624,7 +624,7 @@ function ManagementScreen({activeTab="kategorien"}) {
               ) : (
                 <span onClick={()=>{setEditGrpLabel(grp.id);setEditGrpLabelVal(grp.label);}}
                   title="Klicken zum Umbenennen"
-                  style={{color:T.pos,fontSize:14,fontWeight:700,cursor:"text",
+                  style={{color:T.acc_pos,fontSize:14,fontWeight:700,cursor:"text",
                     borderBottom:`1px dashed transparent`,
                     transition:"border-color 0.15s"}}
                   onMouseEnter={e=>e.target.style.borderBottomColor=T.txt2}
@@ -654,7 +654,7 @@ function ManagementScreen({activeTab="kategorien"}) {
               {(_cats).filter(c=>c.type===grp.type).length===0&&(
                 <button onClick={()=>frageBestaetigung(`Gruppe „${grp.label}" wirklich löschen?`,
                   ()=>setGroups(p=>p.filter(g=>g.id!==grp.id)), {jaLabel:"Löschen", ton:"gefahr"})}
-                  style={{background:"none",border:"none",color:T.neg,opacity:0.5,cursor:"pointer"}}>{Li("trash-2",14)}</button>
+                  style={{background:"none",border:"none",color:T.acc_neg,opacity:0.5,cursor:"pointer"}}>{Li("trash-2",14)}</button>
               )}
               <button onClick={()=>{ setInlineNewCat(inlineNewCat===grp.id?null:grp.id); setInlineCatName(""); }}
                 style={{background:inlineNewCat===grp.id?"rgba(224,80,96,0.15)":"rgba(255,255,255,0.06)",

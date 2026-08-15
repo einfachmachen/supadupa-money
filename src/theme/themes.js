@@ -1004,6 +1004,14 @@ THEMES.tastenhell = {
   // Platte 5,16:1 und bleibt erkennbar derselbe Farbton.
   acc_neg:"#006C7A",
   acc_neg_card:"#00D9FF",
+  // pos traegt in diesem Theme denselben Limeton wie blue — auf der Platte
+  // 1,29:1, also unlesbar; auf der Taste 5,11:1.
+  acc_pos:"#5C7000",
+  acc_pos_card:"#C8DC2E",
+  // Gold #FFD700 ist der schlimmste Fall: auf der Platte 1,18:1 (auf der
+  // Taste dagegen saubere 5,57:1). #7E6300 schafft auf der Platte 4,82:1.
+  acc_gold:"#7E6300",
+  acc_gold_card:"#FFD700",
   hero_bg:"linear-gradient(135deg,#525252,#464646)",
   // Jede Flaeche, die Akzentfarben zeigt, muss eine Taste sein (Grund s. o.).
   // Das sind ausser den Karten selbst: Hero, Drei-Symbol-Zeile, der Kopf des

@@ -416,7 +416,7 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
           ) : (
             <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0,
               background: `${T.blue}1f`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              {Li(step.icon, 18, T.blue)}
+              {Li(step.icon, 18, T.acc)}
             </div>
           )}
           <div style={{ flex: 1, minWidth: 0, color: T.txt,
@@ -458,7 +458,7 @@ function GuidedFeatureTour({ onClose, initialStage=0 }) {
               )}
               <button onClick={expandLevel<2 ? expandMore : collapseExpand}
                 style={{ marginTop: 8, background: "transparent", border: "none", cursor: "pointer",
-                  color: T.blue, fontSize: 12, fontWeight: 700, fontFamily: "inherit", padding: 0 }}>
+                  color: T.acc, fontSize: 12, fontWeight: 700, fontFamily: "inherit", padding: 0 }}>
                 {expandLevel===0 ? "mehr …" : expandLevel===1 ? "noch mehr …" : "▲ weniger anzeigen"}
               </button>
             </div>

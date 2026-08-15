@@ -10,13 +10,13 @@ import { uid } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
 
 function AddAccountForm({setAccounts}) {
-  const [na, setNa] = useState({name:"", icon:"credit-card", color:T.blue, delayDays:0});
+  const [na, setNa] = useState({name:"", icon:"credit-card", color:T.acc, delayDays:0});
   const [showIconPick, setShowIconPick] = useState(false);
   const { globalDrag } = useContext(AppCtx);
   const save = () => {
     if(!na.name.trim()) return;
     setAccounts(p=>[...p,{id:"acc-"+uid(),name:na.name.trim(),icon:na.icon,color:na.color||T.blue,delayDays:na.delayDays}]);
-    setNa({name:"",icon:"credit-card",color:T.blue,delayDays:0});
+    setNa({name:"",icon:"credit-card",color:T.acc,delayDays:0});
   };
   return (
     <div style={{marginBottom:4}}>

@@ -86,7 +86,7 @@ function BudgetBereich({ datum, name, budget, genutzt, isInc = false, seitenrand
           )}
         </span>
         {drueber ? (
-          <span style={{ color: T.neg, fontSize: FS_DETAIL, fontWeight: 700,
+          <span style={{ color: T.acc_neg, fontSize: FS_DETAIL, fontWeight: 700,
             fontFamily: NUM_FONT, flexShrink: 0 }}>um {betrag(-offen)} drüber</span>
         ) : (
           <span style={{ display: "inline-flex", alignItems: "baseline", gap: 5, flexShrink: 0 }}>

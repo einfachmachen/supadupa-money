@@ -33,9 +33,9 @@ function SubNameField({sub, cat, setCats, S, T}) {
               ()=>setCats(p=>p.map(c=>c.id===cat.id?{...c,subs:c.subs.filter(s=>s.id!==sub.id)}:c)),
               {jaLabel:"Löschen", ton:"gefahr"});
           }}
-          style={{background:"none",border:"none",color:T.neg,
+          style={{background:"none",border:"none",color:T.acc_neg,
             cursor:"pointer",padding:"2px 4px",flexShrink:0}}>
-          {Li("trash-2",S.fs-4,T.neg)}
+          {Li("trash-2",S.fs-4,T.acc_neg)}
         </button>
       )}
     </div>

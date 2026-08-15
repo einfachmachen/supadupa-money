@@ -230,7 +230,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
               onChange={e=>{ if(e.target.value) setPlus30Date(d=>({...d,[i]:e.target.value})); }}
               style={{background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bd}`,borderRadius:6,
                 padding:"2px 6px",color:T.txt,fontSize:MFSl,fontFamily:"inherit"}}/>
-            <span style={{color:T.gold,fontWeight:700}}>→ Giro-Vormerkung am {dshort(giroDate)} (1 Werktag danach)</span>
+            <span style={{color:T.acc_gold,fontWeight:700}}>→ Giro-Vormerkung am {dshort(giroDate)} (1 Werktag danach)</span>
           </div>
         )}
       </div>
@@ -536,9 +536,9 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
     if(mg) {
       return (
         <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <div style={{flex:1,minWidth:0,color:T.pos,fontSize:autoSuggFull?14:12,fontWeight:800,
+          <div style={{flex:1,minWidth:0,color:T.acc_pos,fontSize:autoSuggFull?14:12,fontWeight:800,
             display:"flex",alignItems:"center",gap:5}}>
-            {Li("link",12,T.pos)} manuell verknüpft
+            {Li("link",12,T.acc_pos)} manuell verknüpft
           </div>
           <button onClick={()=>removeLink(i)}
             style={{flexShrink:0,background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bd}`,
@@ -554,9 +554,9 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
         <button onClick={()=>{setPickFor(i);setPickSearch("");}}
           style={{alignSelf:"flex-start",marginTop:2,display:"inline-flex",alignItems:"center",gap:5,
             background:"rgba(255,255,255,0.05)",border:`1px solid ${T.bd}`,borderRadius:8,
-            padding:"4px 10px",fontSize:11,fontWeight:700,color:T.blue,
+            padding:"4px 10px",fontSize:11,fontWeight:700,color:T.acc,
             cursor:"pointer",fontFamily:"inherit"}}>
-          {Li("link",11,T.blue)} Giro-Buchung manuell wählen…
+          {Li("link",11,T.acc)} Giro-Buchung manuell wählen…
         </button>
       );
     }
@@ -1077,7 +1077,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                 <div style={{padding:"0 14px 12px",borderTop:`1px solid ${T.gold}22`}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4,marginTop:8}}>
                     <span style={{color:T.txt2,fontSize:10}}>Zeitspanne</span>
-                    <span style={{color:T.gold,fontSize:MFSl,fontWeight:700}}>{linkDays} Tage</span>
+                    <span style={{color:T.acc_gold,fontSize:MFSl,fontWeight:700}}>{linkDays} Tage</span>
                   </div>
                   <input type="range" min={1} max={90} value={linkDays}
                     onChange={e=>setLinkDays(Number(e.target.value))}
@@ -1106,7 +1106,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
             setStartBalances={setStartBalances} mobileMode={mobileMode} MFSl={MFSl}/>
 
           <label style={{display:"block",padding:"11px 14px",borderRadius:11,border:`1px solid ${T.bds}`,
-            background:"rgba(137,196,244,0.08)",color:T.blue,fontSize:MFS,fontWeight:600,
+            background:"rgba(137,196,244,0.08)",color:T.acc,fontSize:MFS,fontWeight:600,
             cursor:"pointer",marginBottom:10,textAlign:"left"}}>
             {Li("folder-open",14)} CSV- oder PDF-Datei auswählen
             <input type="file" accept=".csv,.txt,text/csv,.pdf,application/pdf" multiple style={{display:"none"}}
@@ -1144,8 +1144,8 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
           <div style={{color:T.txt2,fontSize:MFSd,marginBottom:10,marginTop:-4}}>
             PDF: Wirecard/N26-Kontoauszüge
           </div>
-          {pdfBusy && <div style={{color:T.blue,fontSize:MFSd,fontWeight:600,marginBottom:10}}>PDF wird analysiert…</div>}
-          {pdfError && <div style={{color:T.neg,fontSize:MFSd,marginBottom:10}}>PDF-Import: {pdfError}</div>}
+          {pdfBusy && <div style={{color:T.acc,fontSize:MFSd,fontWeight:600,marginBottom:10}}>PDF wird analysiert…</div>}
+          {pdfError && <div style={{color:T.acc_neg,fontSize:MFSd,marginBottom:10}}>PDF-Import: {pdfError}</div>}
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
             <div style={{flex:1,height:1,background:T.bd}}/>
             <span style={{color:T.txt2,fontSize:MFSd}}>oder Text einfügen</span>
@@ -1174,9 +1174,9 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
           {!suggFull&&(parsed.headerRepeats||0)>0&&(
             <div style={{background:"rgba(74,159,212,0.10)",borderBottom:`1px solid ${T.blue}44`,
               padding:"7px 16px",flexShrink:0,fontSize:MFSl,color:T.txt2,display:"flex",gap:8,alignItems:"flex-start"}}>
-              <span style={{flexShrink:0,marginTop:1}}>{Li("info",13,T.blue)}</span>
+              <span style={{flexShrink:0,marginTop:1}}>{Li("info",13,T.acc)}</span>
               <div>
-                <b style={{color:T.blue}}>{parsed.headerRepeats} wiederholte Kopfzeile{parsed.headerRepeats!==1?"n":""}</b> übersprungen
+                <b style={{color:T.acc}}>{parsed.headerRepeats} wiederholte Kopfzeile{parsed.headerRepeats!==1?"n":""}</b> übersprungen
                 {" "}— entstehen, wenn mehrere Export-Dateien zusammengefügt werden. <b style={{color:T.txt}}>Kein Datenverlust.</b>
               </div>
             </div>
@@ -1184,8 +1184,8 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
           {/* Warnung: Zeilen mit WIRKLICH unlesbarem Datum/Betrag (echter Datenverlust) */}
           {!suggFull&&(parsed.skipped||[]).length>0&&(
             <div style={{background:"rgba(245,166,35,0.12)",borderBottom:`1px solid ${T.gold}55`,
-              padding:"8px 16px",flexShrink:0,fontSize:MFSl,color:T.gold,display:"flex",gap:8,alignItems:"flex-start"}}>
-              <span style={{flexShrink:0,marginTop:1}}>{Li("alert-triangle",13,T.gold)}</span>
+              padding:"8px 16px",flexShrink:0,fontSize:MFSl,color:T.acc_gold,display:"flex",gap:8,alignItems:"flex-start"}}>
+              <span style={{flexShrink:0,marginTop:1}}>{Li("alert-triangle",13,T.acc_gold)}</span>
               <div>
                 <b>{parsed.skipped.length} Zeile{parsed.skipped.length!==1?"n":""} nicht importiert</b>
                 {" "}— Datum oder Betrag war unlesbar:
@@ -1203,7 +1203,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
           {!suggFull&&(
           <div style={{background:T.surf2,padding:"10px 16px",borderBottom:`1px solid ${T.bd}`,flexShrink:0,display:"flex",gap:10,flexWrap:"wrap"}}>
             <div style={{textAlign:"center"}}>
-              <div style={{color:T.pos,fontSize:18,fontWeight:800}}>{notImportedCount}</div>
+              <div style={{color:T.acc_pos,fontSize:18,fontWeight:800}}>{notImportedCount}</div>
               <div style={{color:T.txt2,fontSize:10}}>Neu</div>
             </div>
             <div style={{textAlign:"center"}}>
@@ -1211,15 +1211,15 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
               <div style={{color:T.txt2,fontSize:10}}>Duplikate</div>
             </div>
             <div style={{textAlign:"center"}}>
-              <div style={{color:T.blue,fontSize:18,fontWeight:700}}>{parsed.rows.length}</div>
+              <div style={{color:T.acc,fontSize:18,fontWeight:700}}>{parsed.rows.length}</div>
               <div style={{color:T.txt2,fontSize:10}}>Gesamt</div>
             </div>
             <div style={{textAlign:"center"}}>
-              <div style={{color:T.pos,fontSize:18,fontWeight:800}}>{flowStats.income}</div>
+              <div style={{color:T.acc_pos,fontSize:18,fontWeight:800}}>{flowStats.income}</div>
               <div style={{color:T.txt2,fontSize:10}}>Einnahmen</div>
             </div>
             <div style={{textAlign:"center"}}>
-              <div style={{color:T.neg,fontSize:18,fontWeight:800}}>{flowStats.expense}</div>
+              <div style={{color:T.acc_neg,fontSize:18,fontWeight:800}}>{flowStats.expense}</div>
               <div style={{color:T.txt2,fontSize:10}}>Ausgaben</div>
             </div>
             {(parsed.droppedCounter>0)&&(
@@ -1230,7 +1230,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
             )}
             {parsed.rows.some(r=>r._paypalRows>1)&&(
               <div style={{textAlign:"center"}}>
-                <div style={{color:T.gold,fontSize:18,fontWeight:800}}>
+                <div style={{color:T.acc_gold,fontSize:18,fontWeight:800}}>
                   {parsed.rows.filter(r=>r._paypalRows>1).reduce((s,r)=>s+(r._paypalRows||1),0)}→{parsed.rows.filter(r=>r._paypalRows>1).length}
                 </div>
                 <div style={{color:T.txt2,fontSize:10}}>PayPal gruppiert</div>
@@ -1243,8 +1243,8 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
             {/* Toggle: Auto-Vorschläge Vergleich */}
             {(parsed.autoSuggestions||[]).length>0&&(
               <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
-                <span style={{color:T.gold,fontSize:MFSl}}>
-                  {Li("git-compare",12,T.gold)} {parsed.autoSuggestions.length} Vorschläge
+                <span style={{color:T.acc_gold,fontSize:MFSl}}>
+                  {Li("git-compare",12,T.acc_gold)} {parsed.autoSuggestions.length} Vorschläge
                 </span>
                 <div onClick={()=>setShowAutoSugg(v=>!v)}
                   style={{width:40,height:24,borderRadius:12,cursor:"pointer",
@@ -1281,8 +1281,8 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                 margin:"-10px -16px 8px",padding:"10px 16px 8px",zIndex:1,
                 // Im Vollbild scrollt der Kopf mit (nur Vorschläge sichtbar); sonst sticky.
                 ...(autoSuggFull?{}:{position:"sticky",top:-10})}}>
-                <span style={{color:T.gold,fontSize:MFSl,fontWeight:700,display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0}}>
-                  {Li("git-compare",13,T.gold)}
+                <span style={{color:T.acc_gold,fontSize:MFSl,fontWeight:700,display:"flex",alignItems:"center",gap:6,flex:1,minWidth:0}}>
+                  {Li("git-compare",13,T.acc_gold)}
                   <span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                     {onlyUnmatched
                         ? (suggType==="einnahmen" ? `${incomeShown.length} Einnahmen ohne Giro`
@@ -1307,8 +1307,8 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                   <button onClick={()=>acceptBulk(["mittel"])}
                     style={{flexShrink:0,display:"flex",alignItems:"center",gap:5,cursor:"pointer",
                       background:"rgba(245,166,35,0.18)",border:`1px solid ${T.gold}`,borderRadius:8,padding:"5px 11px",
-                      color:T.gold,fontSize:MFSl,fontWeight:700,fontFamily:"inherit"}}>
-                    {Li("check",13,T.gold)} Alle mittel ({bulkCounts.mittel})
+                      color:T.acc_gold,fontSize:MFSl,fontWeight:700,fontFamily:"inherit"}}>
+                    {Li("check",13,T.acc_gold)} Alle mittel ({bulkCounts.mittel})
                   </button>
                 )}
                 {showExpenses&&!onlyUnmatched&&bulkCounts.hoch===0&&bulkCounts.mittel===0&&bulkCounts.niedrig>0&&(
@@ -1385,7 +1385,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
               <div style={{display:"flex",flexDirection:"column"}}>
               {showIncomeList&&(
                 <div style={{order:showBoth?2:1}}>
-                  {showBoth&&<div style={{color:T.pos,fontSize:MFSl,fontWeight:800,letterSpacing:"0.04em",textTransform:"uppercase",opacity:0.85,padding:"6px 2px 3px"}}>Einnahmen ({incomeShown.length})</div>}
+                  {showBoth&&<div style={{color:T.acc_pos,fontSize:MFSl,fontWeight:800,letterSpacing:"0.04em",textTransform:"uppercase",opacity:0.85,padding:"6px 2px 3px"}}>Einnahmen ({incomeShown.length})</div>}
                   {incomeShown.length===0&&(
                     <div style={{color:T.txt2,fontSize:MFSl,padding:"10px 2px"}}>Keine Einnahmen für die aktuelle Auswahl.</div>
                   )}
@@ -1404,7 +1404,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                         padding:autoSuggFull?"11px 2px":"8px 2px",borderBottom:`1px solid rgba(255,255,255,0.06)`,
                         background:accepted?"rgba(34,197,94,0.07)":"transparent"}}>
                         <div style={{display:"flex",alignItems:"baseline",gap:8}}>
-                          <div style={{flex:1,minWidth:0,color:T.pos,fontSize:autoSuggFull?(mobileMode?22:17):(mobileMode?17:13.5),
+                          <div style={{flex:1,minWidth:0,color:T.acc_pos,fontSize:autoSuggFull?(mobileMode?22:17):(mobileMode?17:13.5),
                             fontWeight:800,fontFamily:NUM_FONT}}>+ {betrag(amt)}</div>
                           <div style={{flexShrink:0,color:T.txt2,fontSize:metaFS}}>
                             {linkedGiro?`Giro ${dshort(linkedGiro.date)} · `:""}PayPal {dshort(r.isoDate)}
@@ -1441,22 +1441,22 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                         {r._isRefund&&(
                           <div style={{display:"inline-flex",alignSelf:"flex-start",alignItems:"center",gap:5,
                             background:"rgba(245,166,35,0.15)",border:`1px solid ${T.gold}66`,borderRadius:7,
-                            padding:"2px 8px",color:T.gold,fontSize:metaFS,fontWeight:700}}>
-                            {Li("corner-up-left",11,T.gold)} {r._partialRefund?"Teilerstattung":"Erstattung"}{r._refundOf?` zu ${(r._refundOf.merchant||"Ausgabe").split(" ")[0]} ${fmt(Math.abs(r._refundOf.amount))} · ${dshort(r._refundOf.date)}`:""}
+                            padding:"2px 8px",color:T.acc_gold,fontSize:metaFS,fontWeight:700}}>
+                            {Li("corner-up-left",11,T.acc_gold)} {r._partialRefund?"Teilerstattung":"Erstattung"}{r._refundOf?` zu ${(r._refundOf.merchant||"Ausgabe").split(" ")[0]} ${fmt(Math.abs(r._refundOf.amount))} · ${dshort(r._refundOf.date)}`:""}
                           </div>
                         )}
                         {r._enrichedWithdrawal&&r._enrichedMerchant&&(
-                          <div style={{color:T.blue,fontSize:metaFS,fontWeight:700,...wrap}}>
-                            {Li("corner-down-right",11,T.blue)} Auszahlung von: {r._enrichedMerchant}
+                          <div style={{color:T.acc,fontSize:metaFS,fontWeight:700,...wrap}}>
+                            {Li("corner-down-right",11,T.acc)} Auszahlung von: {r._enrichedMerchant}
                           </div>
                         )}
                         {linkedGiro&&(
                           <div style={{color:T.txt,fontSize:descFS,fontWeight:600,...wrap}}>
-                            <span style={{color:T.blue,fontWeight:700}}>Giro:</span> {linkedGiro.desc}
+                            <span style={{color:T.acc,fontWeight:700}}>Giro:</span> {linkedGiro.desc}
                           </div>
                         )}
                         <div style={{color:T.txt2,fontSize:descFS,...wrap}}>
-                          <span style={{color:T.gold,fontWeight:700}}>PayPal:</span> {r.desc}
+                          <span style={{color:T.acc_gold,fontWeight:700}}>PayPal:</span> {r.desc}
                         </div>
                         {/* Verknüpfte Quell-Erstattungen (interne Legs): werden beim
                             Import an dieselbe Giro-Buchung gehängt → hier als Detail
@@ -1474,12 +1474,12 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                                   {lr._isRefund&&(
                                     <div style={{display:"inline-flex",alignSelf:"flex-start",alignItems:"center",gap:5,
                                       background:"rgba(245,166,35,0.15)",border:`1px solid ${T.gold}66`,borderRadius:7,
-                                      padding:"2px 8px",color:T.gold,fontSize:metaFS,fontWeight:700}}>
-                                      {Li("corner-up-left",11,T.gold)} {lr._partialRefund?"Teilerstattung":"Erstattung"}{lr._refundOf?` zu ${(lr._refundOf.merchant||"Ausgabe").split(" ")[0]} ${fmt(Math.abs(lr._refundOf.amount))} · ${dshort(lr._refundOf.date)}`:""}
+                                      padding:"2px 8px",color:T.acc_gold,fontSize:metaFS,fontWeight:700}}>
+                                      {Li("corner-up-left",11,T.acc_gold)} {lr._partialRefund?"Teilerstattung":"Erstattung"}{lr._refundOf?` zu ${(lr._refundOf.merchant||"Ausgabe").split(" ")[0]} ${fmt(Math.abs(lr._refundOf.amount))} · ${dshort(lr._refundOf.date)}`:""}
                                     </div>
                                   )}
                                   <div style={{color:T.txt2,fontSize:descFS,...wrap}}>
-                                    <span style={{color:T.gold,fontWeight:700}}>PayPal {dshort(lr.isoDate)}:</span> {lr.desc}
+                                    <span style={{color:T.acc_gold,fontWeight:700}}>PayPal {dshort(lr.isoDate)}:</span> {lr.desc}
                                   </div>
                                 </div>
                               );
@@ -1493,7 +1493,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
               )}
               {showExpenses&&(
               <div style={{order:1}}>
-                {showBoth&&<div style={{color:T.neg,fontSize:MFSl,fontWeight:800,letterSpacing:"0.04em",textTransform:"uppercase",opacity:0.85,padding:"6px 2px 3px"}}>Ausgaben ({onlyUnmatched?expenseUnmatched.length:shownSuggs.length}{!onlyUnmatched&&expenseUnmatched.length?` + ${expenseUnmatched.length} ohne Giro`:""})</div>}
+                {showBoth&&<div style={{color:T.acc_neg,fontSize:MFSl,fontWeight:800,letterSpacing:"0.04em",textTransform:"uppercase",opacity:0.85,padding:"6px 2px 3px"}}>Ausgaben ({onlyUnmatched?expenseUnmatched.length:shownSuggs.length}{!onlyUnmatched&&expenseUnmatched.length?` + ${expenseUnmatched.length} ohne Giro`:""})</div>}
                 {!onlyUnmatched && shownSuggs.length===0 && expenseUnmatched.length===0 && (
                 <div style={{color:T.txt2,fontSize:MFSl,padding:"10px 2px"}}>
                   Keine Vorschläge für die aktuelle Auswahl{suggSearch?` (Suche „${suggSearch}")`:""}.
@@ -1556,11 +1556,11 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                     </div>
                     {/* Zeile 3: Giro-Buchung = „die Wahrheit" */}
                     <div style={{color:T.txt,fontSize:descFS,fontWeight:600,...wrapStyle}}>
-                      <span style={{color:T.blue,fontWeight:700}}>Giro:</span> {s.giroTx.desc}
+                      <span style={{color:T.acc,fontWeight:700}}>Giro:</span> {s.giroTx.desc}
                     </div>
                     {/* Zeile 4: PayPal-Buchung = Detail-Infos */}
                     <div style={{color:T.txt2,fontSize:descFS,...wrapStyle}}>
-                      <span style={{color:T.gold,fontWeight:700}}>PayPal:</span>{" "}
+                      <span style={{color:T.acc_gold,fontWeight:700}}>PayPal:</span>{" "}
                       {(r._enrichedMerchant||payPalMerchant(r))?`${r._enrichedMerchant||payPalMerchant(r)}${r._enrichedPlus30?" · via +30":""} — `:""}{r.desc}
                     </div>
                     {/* Empfänger/Zweck explizit zeigen — gerade bei hohen Buchungen
@@ -1597,7 +1597,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                       padding:autoSuggFull?"11px 2px":"8px 2px",borderBottom:`1px solid rgba(255,255,255,0.06)`,
                       background:mg?"rgba(34,197,94,0.07)":"transparent"}}>
                       <div style={{display:"flex",alignItems:"baseline",gap:8}}>
-                        <div style={{flex:1,minWidth:0,color:T.neg,fontSize:amtFS,fontWeight:800,fontFamily:NUM_FONT}}>− {betrag(exAmt)}</div>
+                        <div style={{flex:1,minWidth:0,color:T.acc_neg,fontSize:amtFS,fontWeight:800,fontFamily:NUM_FONT}}>− {betrag(exAmt)}</div>
                         <div style={{flexShrink:0,color:T.txt2,fontSize:metaFS}}>
                           {mg?`Giro ${dshort(mg.date)} · `:""}PayPal {dshort(r.isoDate)}
                         </div>
@@ -1607,11 +1607,11 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                       {renderGiroLink(i, r, autoSuggFull)}
                       {mg && (
                         <div style={{color:T.txt,fontSize:descFS,fontWeight:600,...wrapS}}>
-                          <span style={{color:T.blue,fontWeight:700}}>Giro:</span> {mg.desc}
+                          <span style={{color:T.acc,fontWeight:700}}>Giro:</span> {mg.desc}
                         </div>
                       )}
                       <div style={{color:T.txt2,fontSize:descFS,...wrapS}}>
-                        <span style={{color:T.gold,fontWeight:700}}>PayPal:</span> {r.desc}
+                        <span style={{color:T.acc_gold,fontWeight:700}}>PayPal:</span> {r.desc}
                       </div>
                     </div>
                   );
@@ -1625,8 +1625,8 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
 
           {parsed.newRows.length===0?(
             <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,padding:24}}>
-              {Li("check-circle",40,T.pos)}
-              <div style={{color:T.blue,fontSize:MFS,fontWeight:700}}>Alles bereits importiert</div>
+              {Li("check-circle",40,T.acc_pos)}
+              <div style={{color:T.acc,fontSize:MFS,fontWeight:700}}>Alles bereits importiert</div>
               <div style={{color:T.txt2,fontSize:MFS,textAlign:"center"}}>Alle {parsed.dupRows.length} Buchungen sind bereits in deiner App vorhanden.</div>
               <button onClick={onClose} style={{padding:"12px 32px",borderRadius:11,border:"none",background:T.blue,color:T.on_accent,fontSize:MFS,fontWeight:700,cursor:"pointer",marginTop:8,fontFamily:"inherit"}}>Schließen</button>
             </div>
@@ -1657,7 +1657,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                 return (
                   <div style={{padding:"6px 16px 8px",flexShrink:0,background:"rgba(74,159,212,0.08)",
                     borderBottom:`1px solid ${T.bd}`,display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-                    <span style={{color:T.blue,fontSize:MFSl,fontWeight:600,flexShrink:0}}>
+                    <span style={{color:T.acc,fontSize:MFSl,fontWeight:600,flexShrink:0}}>
                       {matchIdx.length} Treffer – alle auf einmal:
                     </span>
                     <div style={{flex:1,minWidth:120}}>
@@ -1718,11 +1718,11 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                           <div style={{color:T.txt,fontSize:MFSl,fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{r.desc}</div>
                           <div style={{color:T.txt2,fontSize:10,display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
                             <span>{tagVoll(r.isoDate)}</span>
-                            {r._paypalRows>1&&<span style={{color:T.gold,fontSize:9,fontWeight:700,
+                            {r._paypalRows>1&&<span style={{color:T.acc_gold,fontSize:9,fontWeight:700,
                               background:(isLightTheme())?"rgba(192,120,0,0.18)":"rgba(245,166,35,0.15)",borderRadius:4,padding:"0 4px"}}>
                               {r._paypalRows} Zeilen zusammengefasst{r._paypalTypes?" · "+r._paypalTypes:""}
                             </span>}
-                            {r._detailNote&&<span style={{color:T.blue,fontSize:9,fontWeight:600,
+                            {r._detailNote&&<span style={{color:T.acc,fontSize:9,fontWeight:600,
                               background:"rgba(74,159,212,0.1)",borderRadius:4,padding:"0 4px"}}>
                               📋 {r._detailNote.slice(0,60)}{r._detailNote.length>60?"…":""}
                             </span>}
@@ -1754,7 +1754,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
               </div>
               {plus30.size>0&&(
                 <div style={{padding:"8px 16px 10px",flexShrink:0,borderTop:`1px solid ${T.bd}`,background:"rgba(245,166,35,0.08)"}}>
-                  <div style={{color:T.gold,fontSize:MFSl,fontWeight:700,marginBottom:6,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                  <div style={{color:T.acc_gold,fontSize:MFSl,fontWeight:700,marginBottom:6,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                     📅 {plus30.size} PayPal-{plus30.size===1?"Zahlung wird":"Zahlungen werden"} als Vormerkung auf dieses Konto gelegt:
                   </div>
                   <AccountChips accounts={accounts} value={plus30Acc} onChange={setPlus30AccId}/>
@@ -1762,15 +1762,15 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
               )}
               <div style={{padding:"8px 16px 0",flexShrink:0}}>
                 <div style={{color:T.txt2,fontSize:MFSl,fontWeight:600,marginBottom:4,display:"flex",alignItems:"center",gap:5}}>
-                  {Li("hash",12,T.blue)} Tag für diesen Import (optional, z.B. #aida)
+                  {Li("hash",12,T.acc)} Tag für diesen Import (optional, z.B. #aida)
                 </div>
                 <TagInput value={importTags} onChange={setImportTags} suggestions={allTags}
                   placeholder="Tag für alle importierten Buchungen…"/>
               </div>
               {stagedInfo&&(
                 <div style={{padding:"8px 16px",flexShrink:0,display:"flex",alignItems:"center",gap:8,
-                  background:"rgba(34,197,94,0.10)",borderTop:`1px solid ${T.pos}44`,color:T.pos,fontSize:MFSl,fontWeight:600}}>
-                  {Li("check-circle",14,T.pos)} {stagedInfo.imported} importiert · {stagedInfo.remaining} übrig — weiter filtern und erneut importieren.
+                  background:"rgba(34,197,94,0.10)",borderTop:`1px solid ${T.pos}44`,color:T.acc_pos,fontSize:MFSl,fontWeight:600}}>
+                  {Li("check-circle",14,T.acc_pos)} {stagedInfo.imported} importiert · {stagedInfo.remaining} übrig — weiter filtern und erneut importieren.
                 </div>
               )}
               <div style={{padding:"12px 16px",flexShrink:0,borderTop:`1px solid ${T.bd}`,display:"flex",gap:8}}>
@@ -1794,7 +1794,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
       {/* STEP: DONE */}
       {step==="done"&&(
         <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,padding:24,overflowY:"auto"}}>
-          {Li("check-circle",48,T.pos)}
+          {Li("check-circle",48,T.acc_pos)}
           <div style={{color:T.txt,fontSize:20,fontWeight:800}}>{doneCount} Buchungen importiert!</div>
           <div style={{color:T.txt2,fontSize:MFS,textAlign:"center"}}>Die Buchungen sind jetzt in deiner App. Kategorieregeln wurden für zukünftige Importe gespeichert.</div>
 
@@ -1808,9 +1808,9 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
             return (
               <div style={{background:"rgba(170,204,0,0.10)",border:"1px solid rgba(170,204,0,0.35)",
                 borderRadius:11,padding:MPad,width:"100%",maxWidth:380,display:"flex",gap:10,alignItems:"flex-start"}}>
-                {Li("landmark",16,T.pos)}
+                {Li("landmark",16,T.acc_pos)}
                 <div style={{flex:1}}>
-                  <div style={{color:T.pos,fontSize:MFSl,fontWeight:700,marginBottom:2}}>
+                  <div style={{color:T.acc_pos,fontSize:MFSl,fontWeight:700,marginBottom:2}}>
                     {isMulti ? `${dbs.length} Kontostand-Ankerpunkte gesetzt` : "Kontostand-Ankerpunkt gesetzt"}
                   </div>
                   <div style={{color:T.txt2,fontSize:MFSl,lineHeight:1.5}}>
@@ -1819,7 +1819,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                       <span style={{color:T.txt,fontWeight:700}}>
                         {dbs[0].date.split("-").reverse().join(".")}
                       </span>{" "}
-                      (<span style={{color:T.pos,fontFamily:NUM_FONT,fontWeight:700}}>
+                      (<span style={{color:T.acc_pos,fontFamily:NUM_FONT,fontWeight:700}}>
                         {dbs[0].saldo.toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})} €
                       </span>) automatisch als Ankerpunkt gespeichert.
                     </>)}
@@ -1829,7 +1829,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                       {dbs.map((db,i)=>(
                         <div key={i} style={{display:"flex",justifyContent:"space-between",gap:8,fontSize:MFSl}}>
                           <span style={{color:T.txt,fontWeight:600}}>{db.date.split("-").reverse().join(".")}</span>
-                          <span style={{color:T.pos,fontFamily:NUM_FONT,fontWeight:700}}>
+                          <span style={{color:T.acc_pos,fontFamily:NUM_FONT,fontWeight:700}}>
                             {db.saldo.toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})} €
                           </span>
                         </div>
@@ -1845,11 +1845,11 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
           {anchorWarning && (
             <div style={{background:"rgba(245,166,35,0.10)",border:"1px solid rgba(245,166,35,0.4)",
               borderRadius:11,padding:MPad,width:"100%",maxWidth:380,display:"flex",gap:10,alignItems:"flex-start"}}>
-              {Li("alert-triangle",16,T.gold)}
+              {Li("alert-triangle",16,T.acc_gold)}
               <div style={{flex:1}}>
-                <div style={{color:T.gold,fontSize:MFSl,fontWeight:700,marginBottom:3}}>
+                <div style={{color:T.acc_gold,fontSize:MFSl,fontWeight:700,marginBottom:3}}>
                   Kontostand für Vormonat fehlt
-                  {anchorWarning.accName&&<span style={{color:T.gold,fontWeight:400,marginLeft:4,fontSize:10}}>({anchorWarning.accName})</span>}
+                  {anchorWarning.accName&&<span style={{color:T.acc_gold,fontWeight:400,marginLeft:4,fontSize:10}}>({anchorWarning.accName})</span>}
                 </div>
                 <div style={{color:T.txt2,fontSize:MFSl,lineHeight:1.6}}>
                   Die früheste importierte Buchung stammt aus{" "}
@@ -1865,16 +1865,16 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                 </div>
                 <div style={{marginTop:6,display:"flex",flexDirection:"column",gap:4}}>
                   <div style={{color:T.txt2,fontSize:MFSd,display:"flex",gap:6,alignItems:"flex-start"}}>
-                    <span style={{color:T.gold,flexShrink:0}}>①</span>
+                    <span style={{color:T.acc_gold,flexShrink:0}}>①</span>
                     <span>Den Endkontostand von{" "}
                       <span style={{color:T.txt,fontWeight:600}}>
                         {["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"][anchorWarning.prevMonth]} {anchorWarning.prevYear}
                       </span>{" "}
-                      oben unter <span style={{color:T.blue,fontWeight:600}}>Kontostand-Ankerpunkte</span> eintragen (Konto: {anchorWarning.accName||"gewähltes Konto"}).
+                      oben unter <span style={{color:T.acc,fontWeight:600}}>Kontostand-Ankerpunkte</span> eintragen (Konto: {anchorWarning.accName||"gewähltes Konto"}).
                     </span>
                   </div>
                   <div style={{color:T.txt2,fontSize:MFSd,display:"flex",gap:6,alignItems:"flex-start"}}>
-                    <span style={{color:T.gold,flexShrink:0}}>②</span>
+                    <span style={{color:T.acc_gold,flexShrink:0}}>②</span>
                     <span>Oder: Den CSV-Export für{" "}
                       <span style={{color:T.txt,fontWeight:600}}>
                         {["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"][anchorWarning.prevMonth]} {anchorWarning.prevYear}
@@ -1893,9 +1893,9 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
           {matchedVorm.length > 0 && (
             <div style={{background:"rgba(34,197,94,0.10)",border:`1px solid ${T.pos}44`,
               borderRadius:11,padding:MPad,width:"100%",maxWidth:380,display:"flex",gap:10,alignItems:"flex-start"}}>
-              {Li("link",16,T.pos)}
+              {Li("link",16,T.acc_pos)}
               <div style={{flex:1}}>
-                <div style={{color:T.pos,fontSize:MFSl,fontWeight:700,marginBottom:3}}>
+                <div style={{color:T.acc_pos,fontSize:MFSl,fontWeight:700,marginBottom:3}}>
                   {matchedVorm.length===1 ? "1 Vormerkung automatisch zugeordnet" : `${matchedVorm.length} Vormerkungen automatisch zugeordnet`}
                 </div>
                 <div style={{marginTop:2,display:"flex",flexDirection:"column",gap:3}}>
@@ -1916,7 +1916,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
           )}
 
           <button onClick={()=>{setCsvText("");setParsed(null);setStep("input");setAnchorWarning(null);}}
-            style={{padding:"12px 24px",borderRadius:11,border:`1px solid ${T.bds}`,background:"transparent",color:T.blue,fontSize:MFS,fontWeight:600,cursor:"pointer"}}>
+            style={{padding:"12px 24px",borderRadius:11,border:`1px solid ${T.bds}`,background:"transparent",color:T.acc,fontSize:MFS,fontWeight:600,cursor:"pointer"}}>
             Weiteren Import
           </button>
           <button onClick={onClose}

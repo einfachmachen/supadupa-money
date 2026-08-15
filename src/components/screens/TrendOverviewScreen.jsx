@@ -421,9 +421,9 @@ function TrendOverviewScreen() {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                 <button onClick={() => setMetric(null)}
                   style={{ display: "flex", alignItems: "center", gap: 6,
-                    background: "transparent", border: "none", color: T.blue, fontSize: 13, fontWeight: 700,
+                    background: "transparent", border: "none", color: T.acc, fontSize: 13, fontWeight: 700,
                     cursor: "pointer", fontFamily: "inherit", padding: 0 }}>
-                  {Li("chevron-left", 15, T.blue)} Übersicht
+                  {Li("chevron-left", 15, T.acc)} Übersicht
                 </button>
                 <button onClick={() => setLayout(l => l === "vertical" ? "horizontal" : "vertical")}
                   title="Ausrichtung wechseln"

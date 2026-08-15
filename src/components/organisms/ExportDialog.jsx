@@ -38,7 +38,7 @@ function ExportDialog({title, defaultName, data, onClose, onDone=()=>{}}) {
         {/* Header */}
         <div style={{padding:"14px 16px 10px",flexShrink:0}}>
           <div style={{color:T.txt,fontSize:14,fontWeight:700,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
-            {Li("download",14,T.blue)} {title}
+            {Li("download",14,T.acc)} {title}
           </div>
           <div style={{display:"flex",alignItems:"center",gap:6}}>
             <input autoFocus value={fileName}
@@ -67,9 +67,9 @@ function ExportDialog({title, defaultName, data, onClose, onDone=()=>{}}) {
           <button onClick={doCopy}
             style={{flex:2,padding:"9px",borderRadius:10,border:`1px solid ${T.blue}`,
               background:copied?"rgba(74,159,212,0.3)":"rgba(74,159,212,0.1)",
-              color:T.blue,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
+              color:T.acc,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit",
               display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
-            {copied?<>{Li("check",12,T.blue)} kopiert</>:<>{Li("copy",12,T.blue)} kopieren</>}
+            {copied?<>{Li("check",12,T.acc)} kopiert</>:<>{Li("copy",12,T.acc)} kopieren</>}
           </button>
           <button onClick={doDownload}
             style={{flex:2,padding:"9px",borderRadius:10,border:"none",

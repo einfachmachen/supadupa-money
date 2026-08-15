@@ -30,7 +30,7 @@ function Row({ t, accName, setRowCat, removeRow, setRowNote, setRowTags, allTags
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{ color: T.txt2, fontSize: 12, flexShrink: 0 }}>{t.date.slice(8)}.{t.date.slice(5, 7)}.</span>
         {t.pending && (
-          <span style={{ fontSize: 9, background: "rgba(245,166,35,0.18)", color: T.gold,
+          <span style={{ fontSize: 9, background: "rgba(245,166,35,0.18)", color: T.acc_gold,
             borderRadius: 4, padding: "1px 5px", fontWeight: 800, border: `1px solid ${T.gold}55`,
             flexShrink: 0, letterSpacing: 0.3 }}>VORGEMERKT</span>
         )}
@@ -62,11 +62,11 @@ function Row({ t, accName, setRowCat, removeRow, setRowNote, setRowTags, allTags
             triggerStyle={{fontSize:16}}
           />
         </div>
-        {categorized && Li("check-circle", 18, T.pos)}
+        {categorized && Li("check-circle", 18, T.acc_pos)}
         <button onClick={() => removeRow(t.id)} title="Eintrag löschen"
           style={{ background: "transparent", border: "none", cursor: "pointer", padding: 4,
             display: "inline-flex", alignItems: "center", flexShrink: 0 }}>
-          {Li("trash-2", 16, T.neg)}
+          {Li("trash-2", 16, T.acc_neg)}
         </button>
       </div>
       <input value={t.note || ""} onChange={(e) => setRowNote(t.id, e.target.value)}
@@ -155,7 +155,7 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm, 
   const Header = ({ title, right }) => (
     <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px",
       background: T.blue + "14", borderBottom: `1px solid ${T.bd}` }}>
-      {Li("download-cloud", 18, T.blue)}
+      {Li("download-cloud", 18, T.acc)}
       <div style={{ flex: 1, color: T.txt, fontSize: 14, fontWeight: 800 }}>{title}</div>
       {right}
       <button onClick={onClose} title="Schließen"
@@ -172,7 +172,7 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm, 
         <Header title={state.aspsp ? `${state.aspsp} abrufen…` : "Buchungen abrufen…"} />
         <BankChips />
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 12px", color: T.txt }}>
-          {Li("loader", 18, T.blue)}
+          {Li("loader", 18, T.acc)}
           <span style={{ fontSize: 14, fontWeight: 700 }}>Buchungen werden abgerufen…</span>
         </div>
       </>
@@ -194,7 +194,7 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm, 
         <Header title="Buchungen abrufen" />
         <BankChips />
         <div style={{ padding: "12px", color: T.txt, fontSize: 13.5, lineHeight: 1.5 }}>
-          {Li("alert-triangle", 15, T.gold)} {hint}
+          {Li("alert-triangle", 15, T.acc_gold)} {hint}
           {(state.reason === "error" || state.reason === "expired") && (
             <button onClick={() => onRefetch?.(state.aspsp)}
               style={{ display: "block", marginTop: 10, padding: "9px 12px", borderRadius: 10, border: "none",
@@ -243,7 +243,7 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm, 
   const UnmappedWarning = () => unmapped.length > 0 && (
     <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "10px 12px",
       borderTop: `1px solid ${T.bd}`, background: T.gold + "14", color: T.txt, fontSize: 12.5, lineHeight: 1.5 }}>
-      {Li("alert-triangle", 15, T.gold)}
+      {Li("alert-triangle", 15, T.acc_gold)}
       <span>
         {unmapped.length} Konto{unmapped.length !== 1 ? "en" : ""} noch <b>nicht zugeordnet</b> ({unmapped.join(", ")})
         — deren Umsätze wurden übersprungen. Bitte unter <b>Daten → Bank verbinden → Konten zuordnen</b> zuweisen.
@@ -282,7 +282,7 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm, 
       {maybeDupes.length > 0 && (
         <div style={{ borderTop: `1px solid ${T.bd}`, background: T.gold + "14" }}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "10px 12px 6px" }}>
-            {Li("alert-triangle", 15, T.gold)}
+            {Li("alert-triangle", 15, T.acc_gold)}
             <span style={{ color: T.txt, fontSize: 12.5, lineHeight: 1.5 }}>
               <b>{maybeDupes.length} mögliche Dublette{maybeDupes.length !== 1 ? "n" : ""}</b> — Konto, Datum und
               Betrag stimmen mit einer bestehenden Buchung überein, Text/Gegenpartei aber nicht. Bitte prüfen: eigene,
@@ -305,7 +305,7 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm, 
               </span>
               <button onClick={() => onPromoteDupe?.(it)} title="Als neue, eigenständige Buchung übernehmen"
                 style={{ flexShrink: 0, background: "transparent", border: `1px solid ${T.gold}88`, borderRadius: 6,
-                  color: T.gold, fontSize: 10.5, fontWeight: 800, padding: "2px 6px", cursor: "pointer",
+                  color: T.acc_gold, fontSize: 10.5, fontWeight: 800, padding: "2px 6px", cursor: "pointer",
                   fontFamily: "inherit" }}>
                 als neu übernehmen
               </button>
@@ -316,14 +316,14 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm, 
       {newTxs.length > 0 && (
         <div style={{ padding: "7px 12px", borderTop: `1px solid ${T.bd}`, color: T.txt2,
           fontSize: 11.5, lineHeight: 1.4, display: "flex", alignItems: "center", gap: 6 }}>
-          {Li("info", 13, T.blue)}
+          {Li("info", 13, T.acc)}
           <span>Noch nicht importiert — prüfen, ggf. kategorisieren oder löschen, dann <b style={{ color: T.txt }}>Übernehmen</b>.</span>
         </div>
       )}
       {newTxs.length > 1 && (
         <div style={{ padding: "0 12px 8px", borderTop: `1px solid ${T.bd}`, paddingTop: 8 }}>
           <div style={{ color: T.txt2, fontSize: 11.5, fontWeight: 600, marginBottom: 4, display: "flex", alignItems: "center", gap: 5 }}>
-            {Li("hash", 12, T.blue)} Tag auf alle anwenden
+            {Li("hash", 12, T.acc)} Tag auf alle anwenden
           </div>
           <TagInput value={[]} onChange={(tags) => tags.forEach(applyTagToAll)}
             suggestions={allTags}

@@ -202,7 +202,7 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
                       textAlign:"right",outline:"none"}}/>
                   {splits.length>1&&(
                     <button onClick={()=>setSplits(p=>p.filter(s=>s.id!==sp.id))}
-                      style={{background:"none",border:"none",color:T.neg,cursor:"pointer",fontSize:16,flexShrink:0}}>{Li("x",15)}</button>
+                      style={{background:"none",border:"none",color:T.acc_neg,cursor:"pointer",fontSize:16,flexShrink:0}}>{Li("x",15)}</button>
                   )}
                 </div>
                 <CatPicker value={sp.catId+"|"+sp.subId}
@@ -213,7 +213,7 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
             ))}
             <button onClick={()=>setSplits(p=>[...p,{id:uid(),catId:"",subId:"",amount:""}])}
               style={{width:"100%",padding:"9px",borderRadius:10,border:`1px dashed ${T.bds}`,
-                background:"transparent",color:T.blue,fontSize:13,cursor:"pointer",marginBottom:10}}>
+                background:"transparent",color:T.acc,fontSize:13,cursor:"pointer",marginBottom:10}}>
               + Weiterer Split
             </button>
             {totalAmount>0&&(
@@ -252,7 +252,7 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
             <div>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
                 <button onClick={()=>{setNewMode(null);setNewName("");}}
-                  style={{background:"none",border:"none",color:T.blue,cursor:"pointer",fontSize:12}}>{Li("arrow-left",11,T.blue)} zurück</button>
+                  style={{background:"none",border:"none",color:T.acc,cursor:"pointer",fontSize:12}}>{Li("arrow-left",11,T.acc)} zurück</button>
                 <span style={{color:T.txt,fontSize:12,fontWeight:700,flex:1}}>
                   {newMode==="grp"?"neue Hauptkategorie":newMode==="cat"?"neue Kategorie":"neue Unterkategorie"}
                 </span>
@@ -304,7 +304,7 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
               {step>0&&(
                 <div style={{display:"flex",alignItems:"center",gap:4,marginBottom:6,color:T.txt2,fontSize:10}}>
                   <button onClick={()=>{setStep(0);setSelGrp(null);setSelCat(null);}}
-                    style={{background:"none",border:"none",color:T.blue,cursor:"pointer",fontSize:10,padding:0}}>Gruppen</button>
+                    style={{background:"none",border:"none",color:T.acc,cursor:"pointer",fontSize:10,padding:0}}>Gruppen</button>
                   {step>=1&&<><span>{Li("chevron-right",14)}</span>
                     <button onClick={()=>{if(step>1){setStep(1);setSelCat(null);}}}
                       style={{background:"none",border:"none",color:step>1?T.blue:T.txt,
@@ -373,7 +373,7 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
                   });
                 })()}
                 <button onClick={()=>setNewMode("grp")}
-                  style={{...btnS(false),border:`1px dashed ${T.bds}`,color:T.blue,marginTop:4}}>
+                  style={{...btnS(false),border:`1px dashed ${T.bds}`,color:T.acc,marginTop:4}}>
                   <span>＋</span><span>neue Kategorie anlegen</span>
                 </button>
                 {/* Kategorien von anderem Konto übernehmen — nur im Konto-Kontext */}
@@ -416,7 +416,7 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
                   </button>
                 ))}
                 <button onClick={()=>setNewMode("cat")}
-                  style={{...btnS(false),border:`1px dashed ${T.bds}`,color:T.blue,marginTop:4}}>
+                  style={{...btnS(false),border:`1px dashed ${T.bds}`,color:T.acc,marginTop:4}}>
                   <span>＋</span><span>neue Kategorie in „{selGrp?.label}"</span>
                 </button>
               </>}
@@ -428,11 +428,11 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
                     style={{...btnS(curSubId===sub.id,selCat.color)}}>
                     <span style={{display:"flex",alignItems:"center",justifyContent:"center",width:20,flexShrink:0}}>{Li(sub.icon,13,selCat.color||T.txt2)||<span style={{opacity:0.3}}>·</span>}</span>
                     <span style={{flex:1}}>{sub.name}</span>
-                    {curSubId===sub.id&&<span style={{display:"inline-flex"}}>{Li("check",11,T.blue)}</span>}
+                    {curSubId===sub.id&&<span style={{display:"inline-flex"}}>{Li("check",11,T.acc)}</span>}
                   </button>
                 ))}
                 <button onClick={()=>setNewMode("sub")}
-                  style={{...btnS(false),border:`1px dashed ${T.bds}`,color:T.blue,marginTop:4}}>
+                  style={{...btnS(false),border:`1px dashed ${T.bds}`,color:T.acc,marginTop:4}}>
                   <span>＋</span><span>neue Unterkategorie in „{selCat?.name}"</span>
                 </button>
               </>}
@@ -441,7 +441,7 @@ function CatPicker({value, onChange, placeholder="Kategorie wählen…", totalAm
               {curCat&&(
                 <button onClick={()=>{onChange("","");close();}}
                   style={{width:"100%",textAlign:"left",padding:"4px 8px",borderRadius:8,
-                    border:"none",background:"none",color:T.neg,fontSize:11,cursor:"pointer",marginTop:4}}>
+                    border:"none",background:"none",color:T.acc_neg,fontSize:11,cursor:"pointer",marginTop:4}}>
                   ✕ Auswahl entfernen
                 </button>
               )}

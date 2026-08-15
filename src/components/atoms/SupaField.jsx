@@ -83,7 +83,7 @@ function SupaField({value, onChange, placeholder, locked, type="text"}) {
               {Li(showPw?"eye-off":"eye", 13, showPw?T.blue:T.txt2)}
             </button>
           )}
-          {locked&&!unlocked ? Li("check-circle",13,T.pos) : unlocked ? Li("unlock",13,T.gold) : null}
+          {locked&&!unlocked ? Li("check-circle",13,T.acc_pos) : unlocked ? Li("unlock",13,T.acc_gold) : null}
         </div>
       </div>
       {isLocked&&(
@@ -92,8 +92,8 @@ function SupaField({value, onChange, placeholder, locked, type="text"}) {
         </div>
       )}
       {unlocked&&(
-        <div style={{color:T.gold,fontSize:9,marginTop:2,display:"flex",alignItems:"center",gap:3}}>
-          {Li("unlock",8,T.gold)} Entsperrt — nach Speichern wieder gesperrt
+        <div style={{color:T.acc_gold,fontSize:9,marginTop:2,display:"flex",alignItems:"center",gap:3}}>
+          {Li("unlock",8,T.acc_gold)} Entsperrt — nach Speichern wieder gesperrt
           <button onClick={()=>setUnlocked(false)}
             style={{marginLeft:"auto",background:"none",border:"none",color:T.txt2,fontSize:9,cursor:"pointer",padding:0}}>
             sperren

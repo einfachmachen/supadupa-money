@@ -148,9 +148,9 @@ function KontostandImportButton({year, accId: importAccId, onImport}) {
       <button onClick={()=>fileRef.current?.click()}
         style={{width:"100%",padding:"7px",borderRadius:8,
           border:`1px solid ${T.blue}44`,background:"rgba(74,159,212,0.08)",
-          color:T.blue,fontSize:11,fontWeight:600,cursor:"pointer",
+          color:T.acc,fontSize:11,fontWeight:600,cursor:"pointer",
           display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-        {Li("upload",12,T.blue)} Eine oder mehrere CSVs importieren (Endkontostände)
+        {Li("upload",12,T.acc)} Eine oder mehrere CSVs importieren (Endkontostände)
       </button>
       {statuses.map((s,i)=>(
         <div key={i} style={{fontSize:10,marginTop:3,

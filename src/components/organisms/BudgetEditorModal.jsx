@@ -206,11 +206,11 @@ function BudgetEditorModal({sub, cat, accountId="acc-giro", onClose}) {
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
           <div style={{width:34,height:34,borderRadius:9,background:T.gold+"22",
             display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            {Li("target",16,T.gold)}
+            {Li("target",16,T.acc_gold)}
           </div>
           <div style={{flex:1}}>
-            <div style={{color:T.gold,fontSize:14,fontWeight:700}}>Budget: {sub.name}</div>
-            <div style={{color:T.blue,fontSize:11}}>
+            <div style={{color:T.acc_gold,fontSize:14,fontWeight:700}}>Budget: {sub.name}</div>
+            <div style={{color:T.acc,fontSize:11}}>
               Aktiver Monat: {year}-{pad(month+1)} · über Wähler oben ändern
             </div>
           </div>
@@ -251,14 +251,14 @@ function BudgetEditorModal({sub, cat, accountId="acc-giro", onClose}) {
               marginBottom:8,borderRadius:10,border:`1px solid ${T.blue}55`,
               background:"rgba(74,159,212,0.10)",color:T.txt,cursor:"pointer",
               fontFamily:"inherit",textAlign:"left"}}>
-            {Li("bar-chart-2",16,T.blue)}
+            {Li("bar-chart-2",16,T.acc)}
             <span style={{flex:1,minWidth:0,lineHeight:1.3}}>
-              <span style={{fontSize:12.5}}>Vorschlag: <b style={{color:T.blue}}>{betrag(suggestAmt)} €</b>/Monat</span>
+              <span style={{fontSize:12.5}}>Vorschlag: <b style={{color:T.acc}}>{betrag(suggestAmt)} €</b>/Monat</span>
               <span style={{display:"block",color:T.txt2,fontSize:10.5,marginTop:1}}>
                 Schnitt aus {suggestion.months} Mon. ({suggestion.actualMonths} gebucht · {suggestion.pendingMonths} geplant)
               </span>
             </span>
-            <span style={{color:T.blue,fontSize:11,fontWeight:800,flexShrink:0}}>übernehmen</span>
+            <span style={{color:T.acc,fontSize:11,fontWeight:800,flexShrink:0}}>übernehmen</span>
           </button>
         )}
 
@@ -274,7 +274,7 @@ function BudgetEditorModal({sub, cat, accountId="acc-giro", onClose}) {
               <span style={{color:T.txt,fontWeight:700}}>{betrag(amtG)}</span></span>
             <span style={{color:T.txt2}}>·</span>
             <span><span style={{color:T.txt2,fontFamily:"inherit",fontSize:11}}>Ende: </span>
-              <span style={{color:T.pos,fontWeight:700}}>{betrag(amtE)}</span></span>
+              <span style={{color:T.acc_pos,fontWeight:700}}>{betrag(amtE)}</span></span>
           </div>
         )}
 
@@ -302,11 +302,11 @@ function BudgetEditorModal({sub, cat, accountId="acc-giro", onClose}) {
 
         {/* Buttons */}
         {saved?(
-          <div style={{textAlign:"center",color:T.pos,fontWeight:700,padding:"12px"}}>
+          <div style={{textAlign:"center",color:T.acc_pos,fontWeight:700,padding:"12px"}}>
             ✓ Gespeichert!
           </div>
         ):hasBudget?(<>
-          <div style={{color:T.gold,fontSize:10,fontWeight:700,
+          <div style={{color:T.acc_gold,fontSize:10,fontWeight:700,
             textAlign:"center",marginBottom:6}}>
             Welche Monate ändern?
           </div>
@@ -333,8 +333,8 @@ function BudgetEditorModal({sub, cat, accountId="acc-giro", onClose}) {
                 fontSize:11,fontWeight:700,cursor:"pointer",
                 border:`1px solid ${T.neg}44`,
                 background:"rgba(234,64,37,0.10)",
-                color:T.neg}}>
-                {Li("trash-2",10,T.neg)} {lbl}
+                color:T.acc_neg}}>
+                {Li("trash-2",10,T.acc_neg)} {lbl}
               </button>
             ))}
           </div>

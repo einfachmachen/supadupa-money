@@ -28,9 +28,9 @@ const RANGE = 12;
 // = Pflicht (zuletzt, gedämpft). Default „normal" in der Mitte.
 const PRIO_RANK = { flex: 0, normal: 1, essential: 2 };
 const PRIO_META = {
-  flex:      { label: "Flexibel",   short: "kürzbar",    color: T.gold, icon: "scissors" },
+  flex:      { label: "Flexibel",   short: "kürzbar",    color: T.acc_gold, icon: "scissors" },
   normal:    { label: "Normal",     short: "",           color: T.txt2, icon: "minus" },
-  essential: { label: "Essentiell", short: "Pflicht",    color: T.pos,  icon: "lock" },
+  essential: { label: "Essentiell", short: "Pflicht",    color: T.acc_pos,  icon: "lock" },
 };
 const PRIO_ORDER = ["essential", "normal", "flex"];
 // Schwellen für die Abweichung vom 12-Monats-Schnitt (dev = Ist / Schnitt).
@@ -320,8 +320,8 @@ function MoneyMoodScreen() {
         ))}
       </div>
       <div style={{ color: T.txt2, fontSize: 11, padding: "4px 14px 6px", lineHeight: 1.45 }}>
-        <b style={{ color: T.gold }}>Gelb</b>/<b style={{ color: T.neg }}>rot</b> nur in Monaten, in denen insgesamt mehr aus- als einging –
-        {" "}und diese Kategorie auffällig dazu beitrug. Sonst <b style={{ color: T.pos }}>grün</b>.
+        <b style={{ color: T.acc_gold }}>Gelb</b>/<b style={{ color: T.acc_neg }}>rot</b> nur in Monaten, in denen insgesamt mehr aus- als einging –
+        {" "}und diese Kategorie auffällig dazu beitrug. Sonst <b style={{ color: T.acc_pos }}>grün</b>.
         {" "}Die Balken zeigen die <b style={{ color: T.txt }}>Vorschau</b>: gebucht + Vormerkungen, damit künftige Belastungen früh sichtbar werden.
       </div>
     </>
@@ -338,8 +338,8 @@ function MoneyMoodScreen() {
       {activeStrain && (
         <div style={{ margin: "8px 10px 2px", background: T.neg + "1A", border: `1px solid ${T.neg}66`, borderRadius: 12, padding: "9px 11px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-            {Li("alert-triangle", 16, T.neg)}
-            <span style={{ color: T.neg, fontWeight: 700, fontSize: 13.5 }}>
+            {Li("alert-triangle", 16, T.acc_neg)}
+            <span style={{ color: T.acc_neg, fontWeight: 700, fontSize: 13.5 }}>
               {strainMonths.length > 1 ? `Liquiditäts-Engpass in ${strainMonths.length} Monaten` : `Liquiditäts-Engpass ab ${MONTHS_F[activeStrain.mi]} ${year}`}
             </span>
           </div>
@@ -361,7 +361,7 @@ function MoneyMoodScreen() {
           )}
 
           <div style={{ color: T.txt, fontSize: 12.5, lineHeight: 1.4, marginBottom: activeStrain.drivers.length ? 7 : 0 }}>
-            <b>{MONTHS_F[activeStrain.mi]}:</b> Konto fällt auf <b style={{ color: T.neg }}>{activeStrain.saldoVal < 0 ? "−" : ""}{betrag(activeStrain.saldoVal)} €</b> — <b style={{ color: T.gold }}>{betrag(activeStrain.deficit)} €</b> unter Puffer ({betrag(buffer)} €).
+            <b>{MONTHS_F[activeStrain.mi]}:</b> Konto fällt auf <b style={{ color: T.acc_neg }}>{activeStrain.saldoVal < 0 ? "−" : ""}{betrag(activeStrain.saldoVal)} €</b> — <b style={{ color: T.acc_gold }}>{betrag(activeStrain.deficit)} €</b> unter Puffer ({betrag(buffer)} €).
           </div>
 
           {activeStrain.drivers.length > 0 && (
@@ -377,7 +377,7 @@ function MoneyMoodScreen() {
                     {Li(d.row.icon || "folder", 12, d.row.color || T.neg)}
                     <span style={{ color: T.txt, fontSize: 11.5, fontWeight: flex ? 700 : 600 }}>{d.row.name}</span>
                     <span style={{ color: T.txt2, fontSize: 11, fontFamily: NUM_FONT }}>{betrag(d.val)} €</span>
-                    {d.fromBudget && <span style={{ background: T.gold + "22", color: T.gold, borderRadius: 4, padding: "0 4px", fontSize: 9.5, fontWeight: 700, flexShrink: 0 }}>Budget</span>}
+                    {d.fromBudget && <span style={{ background: T.gold + "22", color: T.acc_gold, borderRadius: 4, padding: "0 4px", fontSize: 9.5, fontWeight: 700, flexShrink: 0 }}>Budget</span>}
                   </button>
                 );
               })}
@@ -385,7 +385,7 @@ function MoneyMoodScreen() {
           )}
           {activeStrain.drivers.some(d => d.fromBudget) && (
             <div style={{ marginTop: 7, color: T.txt2, fontSize: 10.5, lineHeight: 1.45 }}>
-              <b style={{ color: T.gold }}>„Budget"</b>-Posten werden über die geplanten Budgets gehalten, nicht über Buchungen — gelöschte Vormerkungen senken sie nicht. Zum Reduzieren das <b>Budget der Kategorie</b> anpassen.
+              <b style={{ color: T.acc_gold }}>„Budget"</b>-Posten werden über die geplanten Budgets gehalten, nicht über Buchungen — gelöschte Vormerkungen senken sie nicht. Zum Reduzieren das <b>Budget der Kategorie</b> anpassen.
             </div>
           )}
         </div>
@@ -555,7 +555,7 @@ function MoodDetail({ row, isSub, isIncome, focusMi, year, txs, getAcc, recentId
             {bookings.length === 0 ? (
               bkBudget > 0 ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 8px", borderRadius: 6, background: "rgba(255,255,255,0.04)" }}>
-                  <span style={{ background: "rgba(245,166,35,0.15)", color: T.gold, borderRadius: 4, padding: "0 5px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>Budget</span>
+                  <span style={{ background: "rgba(245,166,35,0.15)", color: T.acc_gold, borderRadius: 4, padding: "0 5px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>Budget</span>
                   <span style={{ flex: 1, color: T.txt2, fontSize: 12 }}>geplant, noch keine Buchungen</span>
                   <span style={{ color: T.txt, fontSize: 15, fontWeight: 700, fontFamily: NUM_FONT }}>{betrag(bkBudget)}</span>
                 </div>
@@ -577,7 +577,7 @@ function MoodDetail({ row, isSub, isIncome, focusMi, year, txs, getAcc, recentId
                           <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8 }}>
                             {Li(open ? "chevron-down" : "chevron-right", 16, T.txt2)}
                             <span style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 15, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
-                            {it.pending && <span style={{ background: "rgba(245,166,35,0.15)", color: T.gold, borderRadius: 4, padding: "0 5px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>VM</span>}
+                            {it.pending && <span style={{ background: "rgba(245,166,35,0.15)", color: T.acc_gold, borderRadius: 4, padding: "0 5px", fontSize: 10, fontWeight: 700, flexShrink: 0 }}>VM</span>}
                             <span style={{ color: T.txt2, fontSize: 12, flexShrink: 0, whiteSpace: "nowrap" }}>{it.dateStr}</span>
                             <span style={{ color: T.txt, fontSize: 16, fontWeight: 700, fontFamily: NUM_FONT, flexShrink: 0, whiteSpace: "nowrap" }}>{betrag(it.val)}</span>
                           </div>

@@ -162,8 +162,8 @@ function DashboardScreenV2() {
           style={{display:"inline-flex",alignItems:"center",gap:1,flexShrink:0,cursor:"pointer",
             background:`${T.blue}26`,border:`1px solid ${T.blue}66`,borderRadius:5,
             padding:"3px 6px",lineHeight:1}}>
-          {Li("link",11,T.blue)}
-          {Li(offen?"chevron-up":"chevron-down",10,T.blue)}
+          {Li("link",11,T.acc)}
+          {Li(offen?"chevron-up":"chevron-down",10,T.acc)}
         </span>
       );
     };
@@ -178,7 +178,7 @@ function DashboardScreenV2() {
           {infos.map(i=>(
             <div key={i.id} style={{display:"flex",alignItems:"flex-start",gap:5,
               color:T.txt,fontSize:12,lineHeight:1.35,minWidth:0}}>
-              <span style={{flexShrink:0,display:"inline-flex",paddingTop:1}}>{Li("link",11,T.blue)}</span>
+              <span style={{flexShrink:0,display:"inline-flex",paddingTop:1}}>{Li("link",11,T.acc)}</span>
               <span style={{minWidth:0}}>{i.text}</span>
             </div>
           ))}
@@ -346,7 +346,7 @@ function DashboardScreenV2() {
             ...(exp?{whiteSpace:"normal",wordBreak:"break-word"}:{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"})}}>
             {full}
           </div>
-          <span style={{flexShrink:0,display:"inline-flex"}}>{Li(exp?"chevron-up":"chevron-down",12,T.blue)}</span>
+          <span style={{flexShrink:0,display:"inline-flex"}}>{Li(exp?"chevron-up":"chevron-down",12,T.acc)}</span>
         </div>
       );
     };
@@ -966,7 +966,7 @@ function DashboardScreenV2() {
         <div style={{ flexShrink: 0, margin: "6px 10px 0", padding: "10px 12px", borderRadius: 12,
           background: T.gold + "18", border: `1px solid ${T.gold}55`,
           display: "flex", alignItems: "center", gap: 10 }}>
-          {Li("alert-triangle", 18, T.gold)}
+          {Li("alert-triangle", 18, T.acc_gold)}
           <div style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 12.5, lineHeight: 1.4 }}>
             {unmappedEbAccounts.length} Bank-Konto{unmappedEbAccounts.length !== 1 ? "en" : ""} noch{" "}
             <b>nicht zugeordnet</b> ({unmappedEbAccounts.map((a) => a.label).join(", ")}) —
@@ -989,11 +989,11 @@ function DashboardScreenV2() {
         {/* Duplikat-Warnung */}
         {dupCount>0&&(
           <div style={{margin:"6px 10px",background:T.err_bg,border:`2px solid ${T.neg}`,borderRadius:12,padding:"10px 12px"}}>
-            <div style={{color:T.neg,fontWeight:700,fontSize:12,marginBottom:4,display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}
+            <div style={{color:T.acc_neg,fontWeight:700,fontSize:12,marginBottom:4,display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}
               onClick={()=>setShowDupDetail(p=>!p)}>
-              {Li("alert-triangle",13,T.neg)} {dupCount} mögliche Duplikate
+              {Li("alert-triangle",13,T.acc_neg)} {dupCount} mögliche Duplikate
               <span style={{color:T.txt2,fontSize:10,fontWeight:400,flex:1}}>diesen Monat</span>
-              {Li(showDupDetail?"chevron-up":"chevron-down",12,T.neg)}
+              {Li(showDupDetail?"chevron-up":"chevron-down",12,T.acc_neg)}
             </div>
             {showDupDetail&&(
               <div style={{marginBottom:8}}>
@@ -1006,7 +1006,7 @@ function DashboardScreenV2() {
                         <div key={t.id} style={{display:"flex",gap:8,alignItems:"center",padding:"2px 0",borderTop:"1px solid rgba(255,255,255,0.05)"}}>
                           <span style={{color:T.txt2,fontSize:9,flexShrink:0}}>{tagKurz(t.date)}</span>
                           <span style={{color:T.txt,fontSize:10,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.desc}</span>
-                          {t._csvSource&&<span style={{color:T.gold,fontSize:9,flexShrink:0,background:"rgba(245,166,35,0.1)",borderRadius:3,padding:"0 3px"}}>
+                          {t._csvSource&&<span style={{color:T.acc_gold,fontSize:9,flexShrink:0,background:"rgba(245,166,35,0.1)",borderRadius:3,padding:"0 3px"}}>
                             📄 {t._csvSource}
                           </span>}
                           <span style={{color:(t.splits||[]).some(s=>s.catId)?T.pos:T.txt2,fontSize:9,flexShrink:0}}>
@@ -1164,9 +1164,9 @@ function DashboardScreenV2() {
               style={{margin:"8px 16px",padding:"10px 14px",borderRadius:11,cursor:"pointer",
               background:"rgba(34,197,94,0.10)",border:`1px solid ${T.pos}44`,
               display:"flex",gap:10,alignItems:"flex-start"}}>
-              {Li("link",16,T.pos)}
+              {Li("link",16,T.acc_pos)}
               <div style={{flex:1}}>
-                <div style={{color:T.pos,fontSize:13,fontWeight:700,marginBottom:2}}>
+                <div style={{color:T.acc_pos,fontSize:13,fontWeight:700,marginBottom:2}}>
                   {activeMatches.length===1 ? "1 Vormerkung automatisch zugeordnet" : `${activeMatches.length} Vormerkungen automatisch zugeordnet`}
                 </div>
                 <div style={{color:T.txt2,fontSize:12,lineHeight:1.6}}>
@@ -1175,7 +1175,7 @@ function DashboardScreenV2() {
                     return `${m.desc||"(ohne Bezeichnung)"} · ${fmt(Math.abs(m.totalAmount||0))} € · ${d}.${mo}.${y}`;
                   }).join(" — ")}
                 </div>
-                <div style={{color:T.pos,fontSize:10,marginTop:4,fontWeight:700}}>
+                <div style={{color:T.acc_pos,fontSize:10,marginTop:4,fontWeight:700}}>
                   Antippen zum Prüfen/Lösen
                 </div>
               </div>
@@ -1354,14 +1354,14 @@ function DashboardScreenV2() {
           <div style={{margin:"6px 10px",background:T.tab_pend,
             border:`2px solid ${T.gold}`,borderRadius:12,padding:"8px 12px"}}>
             <div onClick={()=>setShowMismatch(v=>!v)}
-              style={{color:T.gold,fontWeight:700,fontSize:12,
+              style={{color:T.acc_gold,fontWeight:700,fontSize:12,
                 display:"flex",alignItems:"center",gap:6,cursor:"pointer"}}>
-              {Li("alert-triangle",13,T.gold)}
+              {Li("alert-triangle",13,T.acc_gold)}
               <span style={{flex:1}}>
                 {mismatchTxs.length} Fehlzuordnung{mismatchTxs.length!==1?"en":""}
               </span>
               <span style={{color:T.txt2,fontSize:10,fontWeight:400}}>Kategorie-Typ falsch</span>
-              {Li(showMismatch?"chevron-up":"chevron-down",12,T.gold)}
+              {Li(showMismatch?"chevron-up":"chevron-down",12,T.acc_gold)}
             </div>
             {!showMismatch&&showAllMismatch&&setShowAllMismatch(false)||null}
             {showMismatch&&(<>
@@ -1397,7 +1397,7 @@ function DashboardScreenV2() {
                         borderRadius:6,cursor:"pointer",marginBottom:2,
                         background:(isLightTheme())?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)"}}>
                       <span style={{color:T.txt2,fontSize:9,flexShrink:0}}>{tagKurz(t.date)}</span>
-                      <span style={{color:T.gold,fontSize:9,flexShrink:0,
+                      <span style={{color:T.acc_gold,fontSize:9,flexShrink:0,
                         background:(isLightTheme())?"rgba(192,120,0,0.18)":"rgba(245,166,35,0.15)",
                         borderRadius:3,padding:"1px 4px",fontWeight:700}}>
                         {t.totalAmount<0?"−":"+"} → {cat?.type==="income"?"Einnahme":"Ausgabe"}
@@ -1413,7 +1413,7 @@ function DashboardScreenV2() {
                 })}
                 {mismatchTxs.length>10&&!showAllMismatch&&(
                   <div onClick={()=>setShowAllMismatch(true)}
-                    style={{color:T.blue,fontSize:11,fontWeight:700,textAlign:"center",
+                    style={{color:T.acc,fontSize:11,fontWeight:700,textAlign:"center",
                       padding:"6px 0",cursor:"pointer"}}>
                     +{mismatchTxs.length-10} weitere anzeigen
                   </div>
@@ -2003,7 +2003,7 @@ function DashboardScreenV2() {
                               {sub.name}
                             </div>
                             {pend>0&&<div style={{color:T.txt,fontSize:11,marginTop:1,fontWeight:600}}>
-                              {Li("clock",10,T.gold)} {betrag(pend)} vorgemerkt
+                              {Li("clock",10,T.acc_gold)} {betrag(pend)} vorgemerkt
                             </div>}
                           </div>
                           {/* Budget-Button */}
@@ -2123,8 +2123,8 @@ function DashboardScreenV2() {
                                   <span style={{color:T.txt2}}> / {cat.type==="income"?"+":"−"}{betrag(budget)}</span>
                                 </div>
                                 {ueber>0
-                                  ? <span style={{fontSize:9,color:T.neg,fontWeight:700}}>
-                                      {Li("alert-circle",9,T.neg)} −{betrag(ueber)} über Budget
+                                  ? <span style={{fontSize:9,color:T.acc_neg,fontWeight:700}}>
+                                      {Li("alert-circle",9,T.acc_neg)} −{betrag(ueber)} über Budget
                                     </span>
                                   : <span style={{fontSize:9,color:rest>0?T.pos:T.txt2,fontWeight:700}}>
                                       {rest>0?`${fmt(rest)} frei`:"aufgebraucht"}
@@ -2333,7 +2333,7 @@ function DashboardScreenV2() {
                               <span style={{color:T.txt2,fontSize:12,flexShrink:0,fontFamily:NUM_FONT}}>
                                 {tagKurz(t.date)}
                               </span>
-                              {Li("check-circle",12,T.pos)}
+                              {Li("check-circle",12,T.acc_pos)}
                               <span style={{flex:1,minWidth:0,color:T.txt,fontSize:15,
                                 overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                                 {t.desc||gName}
@@ -2408,10 +2408,10 @@ function DashboardScreenV2() {
                               // leicht übersehen (Nutzer-Feedback), deshalb eigener Warn-Stil statt
                               // der sonst nach Serientyp eingefärbten Badge.
                               <span title="Buchungsdatum bereits vergangen, aber noch nicht als tatsächliche Buchung eingetroffen" style={{
-                                background:"rgba(245,166,35,0.28)",border:`1px solid ${T.gold}88`,color:T.gold,
+                                background:"rgba(245,166,35,0.28)",border:`1px solid ${T.gold}88`,color:T.acc_gold,
                                 borderRadius:4,padding:"2px 6px",fontSize:11,fontWeight:800,
                                 display:"inline-flex",alignItems:"center",gap:4}}>
-                                {Li("alert-triangle",10,T.gold)}
+                                {Li("alert-triangle",10,T.acc_gold)}
                                 vorgemerkt · überfällig
                               </span>
                             ) : (
@@ -2421,7 +2421,7 @@ function DashboardScreenV2() {
                                 color:T.txt,
                                 borderRadius:4,padding:"2px 6px",fontSize:11,fontWeight:700,
                                 display:"inline-flex",alignItems:"center",gap:4}}>
-                                {tx._seriesTyp==="finanzierung"?Li("credit-card",10,T.gold):tx._seriesId?Li("repeat",10,T.pos):Li("calendar",10,T.blue)}
+                                {tx._seriesTyp==="finanzierung"?Li("credit-card",10,T.acc_gold):tx._seriesId?Li("repeat",10,T.acc_pos):Li("calendar",10,T.acc)}
                                 {tx._seriesTyp==="finanzierung"?"Finanzierung":tx._seriesId?"wiederkehrend":"vorgemerkt"}
                               </span>
                             ))}
@@ -2447,7 +2447,7 @@ function DashboardScreenV2() {
                             {tx._potSubId&&<span style={{background:"rgba(245,166,35,0.24)",border:`1px solid ${T.gold}66`,color:T.txt,
                               borderRadius:4,padding:"2px 6px",fontSize:11,fontWeight:700,
                               display:"inline-flex",alignItems:"center",gap:4}}>
-                              {Li("corner-up-right",10,T.gold)} aus Unvorh.
+                              {Li("corner-up-right",10,T.acc_gold)} aus Unvorh.
                             </span>}
                             {isS&&<span style={{background:"rgba(137,196,244,0.24)",border:`1px solid ${T.blue}66`,color:T.txt,
                               borderRadius:4,padding:"1px 6px",fontSize:11,fontWeight:700}}>Split</span>}
@@ -2483,9 +2483,9 @@ function DashboardScreenV2() {
                                   overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                                   {sSub?.name||sCat?.name||"?"}
                                 </span>
-                                {isLinked&&<span style={{color:T.blue,fontSize:9,flexShrink:0,
+                                {isLinked&&<span style={{color:T.acc,fontSize:9,flexShrink:0,
                                   display:"flex",alignItems:"center",gap:3}}>
-                                  {Li("link",9,T.blue)} zugeordnet
+                                  {Li("link",9,T.acc)} zugeordnet
                                 </span>}
                                 <span style={{color:isLinked?T.txt2:(istVm?(dashDrill.isIncome?T.cell_inc:T.cell_exp):bookCol(dashDrill.isIncome,tx.date)),
                                   fontSize:11,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0,
@@ -2497,9 +2497,9 @@ function DashboardScreenV2() {
                           })}
                           <button onClick={()=>{setDashDrill(null);openEdit(tx);}}
                             style={{marginTop:2,padding:"5px",borderRadius:7,border:`1px solid ${T.bds}`,
-                              background:"transparent",color:T.blue,fontSize:10,cursor:"pointer",
+                              background:"transparent",color:T.acc,fontSize:10,cursor:"pointer",
                               display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-                            {Li("edit",10,T.blue)} Bearbeiten
+                            {Li("edit",10,T.acc)} Bearbeiten
                           </button>
                         </div>
                       )}

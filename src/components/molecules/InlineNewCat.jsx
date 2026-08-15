@@ -19,8 +19,8 @@ function InlineNewCat({s, isIncome, groups, cats, setCats, set_, setNewCatPanel}
   const availCats = cats.filter(c=>c.type===(availGroups.find(g=>g.id===ncGroup)?.type||""));
   return (
     <div style={{background:"rgba(170,204,0,0.06)",border:`1px solid ${T.pos}33`,borderRadius:10,padding:"10px 12px",marginTop:6}}>
-      <div style={{color:T.pos,fontSize:11,fontWeight:700,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
-        {Li("plus",11,T.pos)} Neue Kategorie anlegen
+      <div style={{color:T.acc_pos,fontSize:11,fontWeight:700,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
+        {Li("plus",11,T.acc_pos)} Neue Kategorie anlegen
       </div>
       <div style={{display:"flex",gap:6,marginBottom:8}}>
         {["income","expense"].map(t=>(

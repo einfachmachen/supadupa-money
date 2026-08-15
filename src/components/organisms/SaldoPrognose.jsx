@@ -94,7 +94,7 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
               {icon&&Li(icon,12,iconCol||T.txt2)}
               <span style={{color:dimmed?T.txt2:T.txt,flex:1,fontSize:FS_TEXT,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.desc||cat?.name||"—"}</span>
               {(t.tags||[]).map(tg=>(
-                <span key={tg} style={{background:`${T.blue}1a`,color:T.blue,
+                <span key={tg} style={{background:`${T.blue}1a`,color:T.acc,
                   borderRadius:5,padding:"1px 5px",fontSize:FS_MARKER,fontWeight:700,flexShrink:0}}>
                   #{tg}
                 </span>
@@ -140,8 +140,8 @@ const TxRow = ({t,isInc,indent,dimmed,icon,iconCol,subId,isPending}) => {
             </div>
             {hasAny&&(drill.realIn+drill.pendIn+drill.realOut+drill.pendOut)>0&&(
               <div style={{display:"flex",gap:14,justifyContent:"flex-end",marginTop:0,marginBottom:6,paddingBottom:4,borderBottom:`1px solid ${T.bd}`}}>
-                <span style={{color:T.pos,fontSize:FS_DETAIL,fontFamily:NUM_FONT}}>+{betrag(drill.realIn+drill.pendIn)}</span>
-                <span style={{color:T.neg,fontSize:FS_DETAIL,fontFamily:NUM_FONT}}>−{betrag(drill.realOut+drill.pendOut)}</span>
+                <span style={{color:T.acc_pos,fontSize:FS_DETAIL,fontFamily:NUM_FONT}}>+{betrag(drill.realIn+drill.pendIn)}</span>
+                <span style={{color:T.acc_neg,fontSize:FS_DETAIL,fontFamily:NUM_FONT}}>−{betrag(drill.realOut+drill.pendOut)}</span>
               </div>
             )}
             {/* ── Buchungen/Budgets — scrollbar ── */}

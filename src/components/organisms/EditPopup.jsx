@@ -150,11 +150,11 @@ function EditPopup() {
                   borderRadius:11,padding:"10px 12px",marginBottom:12}}>
                   {/* Header */}
                   <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
-                    {Li("link",12,T.blue)}
-                    <span style={{color:T.blue,fontSize:11,fontWeight:700}}>{linkLabel}</span>
-                    {total>1&&pend._seriesIdx&&pend._seriesTyp==="finanzierung"&&<span style={{color:T.gold,fontSize:10,background:(isLightTheme())?"rgba(192,120,0,0.15)":"rgba(245,166,35,0.12)",
+                    {Li("link",12,T.acc)}
+                    <span style={{color:T.acc,fontSize:11,fontWeight:700}}>{linkLabel}</span>
+                    {total>1&&pend._seriesIdx&&pend._seriesTyp==="finanzierung"&&<span style={{color:T.acc_gold,fontSize:10,background:(isLightTheme())?"rgba(192,120,0,0.15)":"rgba(245,166,35,0.12)",
                       borderRadius:4,padding:"1px 6px",fontWeight:700,marginLeft:"auto"}}>
-                      {Li("repeat",9,T.gold)} Zahlung {thisIdx+1} von {total}
+                      {Li("repeat",9,T.acc_gold)} Zahlung {thisIdx+1} von {total}
                     </span>}
                     <button onClick={()=>{
                       // Alle Verknüpfungen lösen — auch einzelne Vormerkungen ohne Serie
@@ -188,9 +188,9 @@ function EditPopup() {
                         return { ...p, linkedIds: newLinkedIds };
                       });
                     }} style={{marginLeft: total>1?"4px":"auto",background:"rgba(234,64,37,0.12)",border:`1px solid ${T.neg}33`,
-                      borderRadius:6,padding:"2px 7px",color:T.neg,fontSize:10,cursor:"pointer",
+                      borderRadius:6,padding:"2px 7px",color:T.acc_neg,fontSize:10,cursor:"pointer",
                       display:"flex",alignItems:"center",gap:3,fontFamily:"inherit"}}>
-                      {Li("unlink",10,T.neg)} Alle entknüpfen
+                      {Li("unlink",10,T.acc_neg)} Alle entknüpfen
                     </button>
                   </div>
                   {/* Beschreibung + Notiz */}
@@ -209,21 +209,21 @@ function EditPopup() {
               <div style={{background:"rgba(245,166,35,0.10)",border:`1px solid ${T.gold}55`,
                 borderRadius:11,padding:"10px 12px",marginBottom:12,
                 display:"flex",alignItems:"flex-start",gap:8}}>
-                {Li("alert-triangle",14,T.gold)}
+                {Li("alert-triangle",14,T.acc_gold)}
                 <div style={{flex:1}}>
-                  <div style={{color:T.gold,fontSize:12,fontWeight:700,marginBottom:3}}>
+                  <div style={{color:T.acc_gold,fontSize:12,fontWeight:700,marginBottom:3}}>
                     Betrag stimmt nicht überein
                   </div>
                   <div style={{color:T.txt2,fontSize:11,lineHeight:1.5}}>
                     Vormerkung: <b style={{color:T.txt}}>{betrag(mm.pendAmt)}</b>
                     {" · "}Buchung: <b style={{color:T.txt}}>{betrag(mm.realAmt)}</b>
-                    {" · "}Differenz: <b style={{color:T.neg}}>{betrag(Math.abs(mm.pendAmt-mm.realAmt))}</b>
+                    {" · "}Differenz: <b style={{color:T.acc_neg}}>{betrag(Math.abs(mm.pendAmt-mm.realAmt))}</b>
                   </div>
                   {pend&&<button onClick={()=>{ setEditTx(null); setTimeout(()=>setEditTx(pend),50); }}
                     style={{marginTop:6,background:(isLightTheme())?"rgba(192,120,0,0.18)":"rgba(245,166,35,0.15)",border:`1px solid ${T.gold}44`,
-                      color:T.gold,borderRadius:7,padding:"4px 10px",fontSize:10,fontWeight:700,
+                      color:T.acc_gold,borderRadius:7,padding:"4px 10px",fontSize:10,fontWeight:700,
                       cursor:"pointer",display:"flex",alignItems:"center",gap:4,fontFamily:"inherit"}}>
-                    {Li("edit",10,T.gold)} Vormerkung bearbeiten
+                    {Li("edit",10,T.acc_gold)} Vormerkung bearbeiten
                   </button>}
                 </div>
               </div>
@@ -316,15 +316,15 @@ function EditPopup() {
           })()}
           {getAcc(editTx.accountId).delayDays>0&&(
             <div style={{background:"rgba(255,213,128,0.07)",border:"1px solid rgba(255,213,128,0.25)",borderRadius:11,padding:"10px 13px",marginBottom:12}}>
-              <div style={{color:T.gold,fontSize:11,fontWeight:700,marginBottom:6}}>
-                <span style={{display:"inline-flex",alignItems:"center",gap:4}}>{Li("clock",11,T.gold)}Abbuchung vom Giro-Konto vorgemerkt</span>
+              <div style={{color:T.acc_gold,fontSize:11,fontWeight:700,marginBottom:6}}>
+                <span style={{display:"inline-flex",alignItems:"center",gap:4}}>{Li("clock",11,T.acc_gold)}Abbuchung vom Giro-Konto vorgemerkt</span>
               </div>
               <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <div style={{color:T.txt2,fontSize:11,flexShrink:0}}>Fällig am:</div>
                 <input type="date" value={editTx.pendingDate}
                   onChange={e=>setEditTx(p=>({...p,pendingDate:e.target.value}))}
                   style={{flex:1,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,213,128,0.3)",
-                    borderRadius:8,padding:"7px 10px",color:T.gold,fontSize:13,outline:"none",colorScheme:"dark"}}/>
+                    borderRadius:8,padding:"7px 10px",color:T.acc_gold,fontSize:13,outline:"none",colorScheme:"dark"}}/>
               </div>
               <div style={{color:T.txt2,fontSize:10,marginTop:5}}>
                 Wird automatisch als Vormerkung für das Abbuchungsdatum angelegt.
@@ -427,7 +427,7 @@ function EditPopup() {
                 <div className="hinweis-karte" style={{background:"rgba(74,159,212,0.08)",border:`1px solid ${T.blue}44`,
                   borderRadius:9,padding:"6px 10px",marginBottom:6,
                   color:T.txt2,fontSize:10,lineHeight:1.5}}>
-                  <span style={{display:"inline-flex",alignItems:"center",gap:4}}>{Li("lock",12,T.blue)}Betrag gesperrt</span> – nur Kategorie &amp; Split änderbar
+                  <span style={{display:"inline-flex",alignItems:"center",gap:4}}>{Li("lock",12,T.acc)}Betrag gesperrt</span> – nur Kategorie &amp; Split änderbar
                 </div>
               )}
               <input value={editTx.totalAmount}
@@ -445,9 +445,9 @@ function EditPopup() {
             <div className="hinweis-karte" style={{background:"rgba(74,159,212,0.08)",border:`1px solid ${T.blue}33`,
               borderRadius:10,padding:"8px 12px",marginBottom:10,
               display:"flex",alignItems:"flex-start",gap:8}}>
-              {Li("arrow-left-right",13,T.blue)}
+              {Li("arrow-left-right",13,T.acc)}
               <div style={{flex:1}}>
-                <div style={{color:T.blue,fontSize:11,fontWeight:700,marginBottom:4}}>Splitbuchung · Gesamtbetrag {betrag(pn(editTx.totalAmount))}</div>
+                <div style={{color:T.acc,fontSize:11,fontWeight:700,marginBottom:4}}>Splitbuchung · Gesamtbetrag {betrag(pn(editTx.totalAmount))}</div>
                 <div style={{display:"flex",flexDirection:"column",gap:3}}>
                   {(editTx.splits||[]).map((sp,si)=>{
                     const spCat=getCat(sp.catId), spSub=getSub(sp.catId,sp.subId);
@@ -516,8 +516,8 @@ function EditPopup() {
                 {linkedPend&&(editTx.splits||[]).length>1&&(
                   <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,
                     background:"rgba(74,159,212,0.07)",borderRadius:7,padding:"4px 8px"}}>
-                    {Li("link",10,T.blue)}
-                    <span style={{color:T.blue,fontSize:10,flex:1,fontWeight:600}}>
+                    {Li("link",10,T.acc)}
+                    <span style={{color:T.acc,fontSize:10,flex:1,fontWeight:600}}>
                       {linkedPend.desc||"Vormerkung"}
                       {splitSub||splitCat
                         ? <span style={{color:T.txt2,fontWeight:400}}> · {splitSub?.name||splitCat?.name}</span>
@@ -526,10 +526,10 @@ function EditPopup() {
                     <button onClick={doUnlinkSplit}
                       title="nur diesen Split entknüpfen"
                       style={{background:"rgba(234,64,37,0.12)",border:`1px solid ${T.neg}33`,
-                        color:T.neg,borderRadius:5,padding:"2px 6px",fontSize:9,
+                        color:T.acc_neg,borderRadius:5,padding:"2px 6px",fontSize:9,
                         cursor:"pointer",display:"flex",alignItems:"center",gap:3,
                         fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>
-                      {Li("unlink",9,T.neg)} entknüpfen
+                      {Li("unlink",9,T.acc_neg)} entknüpfen
                     </button>
                   </div>
                 )}
@@ -567,7 +567,7 @@ function EditPopup() {
                         padding:"6px 8px",color:T.txt,fontSize:13,fontFamily:NUM_FONT,textAlign:"right",outline:"none"}}
                       inputMode="decimal" placeholder="0,00"/>
                     <button onClick={()=>setEditTx(p=>({...p,splits:p.splits.filter(s=>s.id!==sp.id)}))}
-                      style={{background:"rgba(224,80,96,0.12)",border:"1px solid rgba(239,68,68,0.25)",color:T.neg,borderRadius:7,width:28,height:28,cursor:"pointer",fontSize:14,flexShrink:0}}>−</button>
+                      style={{background:"rgba(224,80,96,0.12)",border:"1px solid rgba(239,68,68,0.25)",color:T.acc_neg,borderRadius:7,width:28,height:28,cursor:"pointer",fontSize:14,flexShrink:0}}>−</button>
                   </div>
                 )}
               </div>
@@ -619,7 +619,7 @@ function EditPopup() {
           {/* Tank-Erfassung (nur bei Kategorie "Tanken") */}
           {_showFuelFields&&(<div style={{background:"rgba(255,255,255,0.04)",borderRadius:11,padding:"10px 12px",marginBottom:16,border:`1px solid ${T.bd}`}}>
             <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8,color:T.txt,fontSize:12,fontWeight:700}}>
-              {Li("fuel",13,T.gold)} Tank-Erfassung
+              {Li("fuel",13,T.acc_gold)} Tank-Erfassung
             </div>
             <div style={{color:T.txt2,fontSize:10,marginBottom:4}}>Fahrzeug</div>
             <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:8}}>
@@ -716,8 +716,8 @@ function EditPopup() {
               <div style={{display:"flex",alignItems:"flex-start",gap:6,marginTop:8,
                 background:`${T.gold}14`,border:`1px solid ${T.gold}55`,
                 borderRadius:8,padding:"6px 8px"}}>
-                {Li("alert-triangle",11,T.gold)}
-                <span style={{color:T.gold,fontSize:10,lineHeight:1.4}}>{odometerWarning.message}</span>
+                {Li("alert-triangle",11,T.acc_gold)}
+                <span style={{color:T.acc_gold,fontSize:10,lineHeight:1.4}}>{odometerWarning.message}</span>
               </div>
             )}
           </div>)}
@@ -736,8 +736,8 @@ function EditPopup() {
             const gesamtAmt = mitteAmt + endeAmt;
             return (
             <div style={{background:(isLightTheme())?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)",borderRadius:11,padding:"6px 10px",marginBottom:8,border:`1px solid ${T.gold}33`}}>
-              <div style={{color:T.gold,fontSize:11,fontWeight:700,marginBottom:6,display:"flex",alignItems:"center",gap:5}}>
-                {Li("target",11,T.gold)} Budget-Platzhalter
+              <div style={{color:T.acc_gold,fontSize:11,fontWeight:700,marginBottom:6,display:"flex",alignItems:"center",gap:5}}>
+                {Li("target",11,T.acc_gold)} Budget-Platzhalter
                 <div onClick={()=>{
                   const released = !editTx._releasedEarly;
                   const uebernehmen = () => {
@@ -755,7 +755,7 @@ function EditPopup() {
                     border:`1px solid ${editTx._releasedEarly?T.pos:T.gold}55`,
                     color:editTx._releasedEarly?T.pos:T.gold,borderRadius:6,padding:"2px 8px",fontSize:10,cursor:"pointer",
                     display:"flex",alignItems:"center",gap:3,fontFamily:"inherit",fontWeight:700}}>
-                  {editTx._releasedEarly ? <>{Li("check",9,T.pos)} Freigegeben</> : <>{Li("unlock",9,T.gold)} Jetzt freigeben</>}
+                  {editTx._releasedEarly ? <>{Li("check",9,T.acc_pos)} Freigegeben</> : <>{Li("unlock",9,T.acc_gold)} Jetzt freigeben</>}
                 </div>
               </div>
               <div style={{color:T.txt2,fontSize:9,lineHeight:1.4,marginBottom:6,marginTop:-2}}>
@@ -800,14 +800,14 @@ function EditPopup() {
                           }
                         }}
                         style={{width:"100%",background:"rgba(255,255,255,0.06)",border:`1px solid ${T.gold}44`,
-                          borderRadius:8,padding:"6px 8px",color:T.gold,fontSize:13,fontWeight:700,
+                          borderRadius:8,padding:"6px 8px",color:T.acc_gold,fontSize:13,fontWeight:700,
                           fontFamily:NUM_FONT,textAlign:"right",outline:"none",boxSizing:"border-box"}}
                         inputMode="decimal" placeholder="0,00"/>
                     </div>
                   </div>
                   <div style={{color:T.txt2,fontSize:9,textAlign:"right"}}>
-                    2. Hälfte: <b style={{color:T.gold}}>{betrag(Math.max(0,gesamtAmt-mitteAmt))}</b>
-                    {" · "}Gesamt: <b style={{color:T.gold}}>{betrag(gesamtAmt)}</b>
+                    2. Hälfte: <b style={{color:T.acc_gold}}>{betrag(Math.max(0,gesamtAmt-mitteAmt))}</b>
+                    {" · "}Gesamt: <b style={{color:T.acc_gold}}>{betrag(gesamtAmt)}</b>
                   </div>
                 </>
               ) : (
@@ -836,9 +836,9 @@ function EditPopup() {
               <div style={{background:"rgba(245,166,35,0.08)",border:`1px solid ${T.gold}44`,borderRadius:12,
                 padding:"10px 12px",marginBottom:12}}>
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                  {Li("repeat",13,T.gold)}
+                  {Li("repeat",13,T.acc_gold)}
                   <div style={{flex:1}}>
-                    <span style={{color:T.gold,fontSize:12,fontWeight:700}}>
+                    <span style={{color:T.acc_gold,fontSize:12,fontWeight:700}}>
                       {editTx._seriesTyp==="finanzierung"&&editTx._seriesIdx&&editTx._seriesTotal
                         ? `Rate ${thisIdx+1} von ${total}`
                         : "Wiederkehrende Zahlung"}
@@ -849,7 +849,7 @@ function EditPopup() {
                   </div>
                   {/* x/y nur bei Finanzierungen anzeigen (typ==="finanzierung") */}
                   {editTx._seriesTyp==="finanzierung"&&editTx._seriesIdx&&editTx._seriesTotal&&(
-                    <span style={{color:T.gold,fontSize:10,fontWeight:700,
+                    <span style={{color:T.acc_gold,fontSize:10,fontWeight:700,
                       background:"rgba(245,166,35,0.15)",borderRadius:5,padding:"2px 7px"}}>
                       {thisIdx+1}/{total}
                     </span>
@@ -865,7 +865,7 @@ function EditPopup() {
                       value={String(Math.round(totalAmt*100)/100).replace(".",",")}
                       readOnly
                       style={{width:90,background:"rgba(255,255,255,0.06)",border:`1px solid ${T.bds}`,
-                        borderRadius:7,padding:"4px 8px",color:T.gold,fontSize:12,fontWeight:700,
+                        borderRadius:7,padding:"4px 8px",color:T.acc_gold,fontSize:12,fontWeight:700,
                         fontFamily:NUM_FONT,textAlign:"right",outline:"none"}}/>
                     <span style={{color:T.txt2,fontSize:10}}>€</span>
                   </div>
@@ -881,13 +881,13 @@ function EditPopup() {
                     <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
                       {paid>0&&<div style={{flex:1,background:"rgba(170,204,0,0.08)",border:`1px solid ${T.pos}33`,
                         borderRadius:8,padding:"5px 8px",textAlign:"center"}}>
-                        <div style={{color:T.pos,fontSize:10,fontWeight:700}}>{paid} bezahlt</div>
-                        <div style={{color:T.pos,fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>{betrag(paidAmt)}</div>
+                        <div style={{color:T.acc_pos,fontSize:10,fontWeight:700}}>{paid} bezahlt</div>
+                        <div style={{color:T.acc_pos,fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>{betrag(paidAmt)}</div>
                       </div>}
                       {open>0&&<div style={{flex:1,background:"rgba(234,64,37,0.08)",border:`1px solid ${T.neg}33`,
                         borderRadius:8,padding:"5px 8px",textAlign:"center"}}>
-                        <div style={{color:T.neg,fontSize:10,fontWeight:700}}>{open} offen</div>
-                        <div style={{color:T.neg,fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>{betrag(openAmt)}</div>
+                        <div style={{color:T.acc_neg,fontSize:10,fontWeight:700}}>{open} offen</div>
+                        <div style={{color:T.acc_neg,fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>{betrag(openAmt)}</div>
                       </div>}
                     </div>
                   );
@@ -950,19 +950,19 @@ function EditPopup() {
           <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:4}}>
             {/* Speichern */}
             {editTx?.pending && (editTx?._seriesId || editTx?._budgetSubId) ? (<>
-              <div style={{color:T.gold,fontSize:10,fontWeight:700,textAlign:"center"}}>Welche Vormerkungen speichern?</div>
+              <div style={{color:T.acc_gold,fontSize:10,fontWeight:700,textAlign:"center"}}>Welche Vormerkungen speichern?</div>
               <div style={{display:"flex",gap:4}}>
                 <button onClick={()=>saveEdit("single")}
                   style={{flex:1,padding:"9px 4px",borderRadius:10,border:`1px solid ${T.gold}44`,
-                    background:"rgba(245,166,35,0.1)",color:T.gold,fontSize:11,fontWeight:700,
+                    background:"rgba(245,166,35,0.1)",color:T.acc_gold,fontSize:11,fontWeight:700,
                     cursor:"pointer",fontFamily:"inherit"}}>
-                  {Li("check",11,T.gold)} Nur diese
+                  {Li("check",11,T.acc_gold)} Nur diese
                 </button>
                 <button onClick={()=>saveEdit("from")}
                   style={{flex:1,padding:"9px 4px",borderRadius:10,border:`1px solid ${T.blue}44`,
-                    background:"rgba(74,159,212,0.1)",color:T.blue,fontSize:11,fontWeight:700,
+                    background:"rgba(74,159,212,0.1)",color:T.acc,fontSize:11,fontWeight:700,
                     cursor:"pointer",fontFamily:"inherit"}}>
-                  {Li("check",11,T.blue)} Ab dieser
+                  {Li("check",11,T.acc)} Ab dieser
                 </button>
                 <button onClick={()=>saveEdit("all")}
                   style={{flex:1,padding:"9px 4px",borderRadius:10,border:"none",
@@ -982,13 +982,13 @@ function EditPopup() {
             )}
             {/* Löschen */}
             {editTx?.pending && (editTx?._seriesId || editTx?._budgetSubId) ? (<>
-              <div style={{color:T.neg,fontSize:10,fontWeight:700,textAlign:"center",marginTop:4}}>Welche Vormerkungen löschen?</div>
+              <div style={{color:T.acc_neg,fontSize:10,fontWeight:700,textAlign:"center",marginTop:4}}>Welche Vormerkungen löschen?</div>
               <div style={{display:"flex",gap:4}}>
                 <button onClick={()=>{ recordDeletedTxs(editTx.id); setTxs(p=>p.filter(x=>x.id!==editTx.id)); setEditTx(null); }}
                   style={{flex:1,padding:"8px 4px",borderRadius:10,border:`1px solid ${T.neg}44`,
-                    background:`${T.neg}10`,color:T.neg,fontSize:11,fontWeight:700,
+                    background:`${T.neg}10`,color:T.acc_neg,fontSize:11,fontWeight:700,
                     cursor:"pointer",fontFamily:"inherit"}}>
-                  {Li("trash-2",11,T.neg)} Nur diese
+                  {Li("trash-2",11,T.acc_neg)} Nur diese
                 </button>
                 <button onClick={()=>{
                   const sid=editTx._seriesId, bid=editTx._budgetSubId, thisDate=editTx.date;
@@ -997,9 +997,9 @@ function EditPopup() {
                   setTxs(p=>p.filter(t=>!match(t)));
                   setEditTx(null);
                 }} style={{flex:1,padding:"8px 4px",borderRadius:10,border:`1px solid ${T.neg}44`,
-                    background:`${T.neg}10`,color:T.neg,fontSize:11,fontWeight:700,
+                    background:`${T.neg}10`,color:T.acc_neg,fontSize:11,fontWeight:700,
                     cursor:"pointer",fontFamily:"inherit"}}>
-                  {Li("trash-2",11,T.neg)} Ab dieser
+                  {Li("trash-2",11,T.acc_neg)} Ab dieser
                 </button>
                 <button onClick={()=>{
                   const sid=editTx._seriesId, bid=editTx._budgetSubId;
@@ -1008,9 +1008,9 @@ function EditPopup() {
                   setTxs(p=>p.filter(t=>!match(t)));
                   setEditTx(null);
                 }} style={{flex:1,padding:"8px 4px",borderRadius:10,border:`1px solid ${T.neg}44`,
-                    background:`${T.neg}18`,color:T.neg,fontSize:11,fontWeight:700,
+                    background:`${T.neg}18`,color:T.acc_neg,fontSize:11,fontWeight:700,
                     cursor:"pointer",fontFamily:"inherit"}}>
-                  {Li("trash-2",11,T.neg)} Alle
+                  {Li("trash-2",11,T.acc_neg)} Alle
                 </button>
               </div>
             </>) : (

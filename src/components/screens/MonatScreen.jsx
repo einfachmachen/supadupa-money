@@ -78,7 +78,7 @@ const MonthSearchBox = React.memo(function MonthSearchBox({ committed, onSubmit,
           placeholder="suchen… (Enter) oder #tag"
           style={{flex:1,minWidth:0,background:"transparent",border:"none",color:T.txt,fontSize:12,outline:"none"}}/>
         {v.trim() && v.trim()!==committed && (
-          <span onClick={()=>submit()} style={{color:T.blue,fontSize:10,fontWeight:700,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>Enter ↵</span>
+          <span onClick={()=>submit()} style={{color:T.acc,fontSize:10,fontWeight:700,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>Enter ↵</span>
         )}
         {(v||committed)&&<button onClick={()=>{ setV(""); onClear(); }}
           style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",fontSize:13,flexShrink:0}}>{Li("x",13)}</button>}
@@ -1459,8 +1459,8 @@ function MonatScreen() {
           <div style={{margin:"0 10px 4px",padding:"8px 12px",borderRadius:10,
             background:"rgba(245,166,35,0.1)",border:`1px solid ${T.gold}44`,
             display:"flex",alignItems:"center",gap:8}}>
-            <div style={{flex:1,color:T.gold,fontSize:11}}>
-              {Li("alert-triangle",13,T.gold)} {mTxs.length} Buchung{mTxs.length!==1?"en":""} mit falschem Vorzeichen laut CSV — Kategorie{mTxs.length!==1?"n":""} entfernen und neu zuweisen?
+            <div style={{flex:1,color:T.acc_gold,fontSize:11}}>
+              {Li("alert-triangle",13,T.acc_gold)} {mTxs.length} Buchung{mTxs.length!==1?"en":""} mit falschem Vorzeichen laut CSV — Kategorie{mTxs.length!==1?"n":""} entfernen und neu zuweisen?
             </div>
             <button onClick={()=>{
               setTxs(p=>p.map(t=>{
@@ -1488,8 +1488,8 @@ function MonatScreen() {
             <button onClick={toggleAll}
               style={{background:allSel?"rgba(74,159,212,0.3)":"rgba(255,255,255,0.08)",
                 border:`1px solid ${T.blue}`,borderRadius:8,padding:"4px 8px",
-                color:T.blue,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>
-              {Li(allSel?"check-square":"square",12,T.blue)} Alle ({mTxs.length})
+                color:T.acc,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>
+              {Li(allSel?"check-square":"square",12,T.acc)} Alle ({mTxs.length})
             </button>
             {/* Verwendungszweck (Beschreibung/Kategorie/Tags) ist im Suchmodus
                 standardmäßig zugeklappt — hier alle Treffer auf einmal
@@ -1500,8 +1500,8 @@ function MonatScreen() {
                 <button onClick={()=>setExpandedSearchTx(allExpanded?new Set():new Set(mTxs.map(t=>t.id)))}
                   style={{background:allExpanded?"rgba(74,159,212,0.3)":"rgba(255,255,255,0.08)",
                     border:`1px solid ${T.blue}`,borderRadius:8,padding:"4px 8px",
-                    color:T.blue,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>
-                  {Li(allExpanded?"chevron-up":"chevron-down",12,T.blue)} Details
+                    color:T.acc,fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>
+                  {Li(allExpanded?"chevron-up":"chevron-down",12,T.acc)} Details
                 </button>
               );
             })()}
@@ -1557,9 +1557,9 @@ function MonatScreen() {
                 <button onClick={()=>{setSelected(new Set());setBulkTags([]);}}
                   style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",fontSize:11}}>{Li("x",13)}</button>
                 {bulkMode==="cat"&&mixed&&(
-                  <div style={{flexBasis:"100%",color:T.gold,fontSize:10,lineHeight:1.4,
+                  <div style={{flexBasis:"100%",color:T.acc_gold,fontSize:10,lineHeight:1.4,
                     display:"flex",alignItems:"flex-start",gap:5,paddingTop:2}}>
-                    <span style={{flexShrink:0,marginTop:1}}>{Li("alert-triangle",12,T.gold)}</span>
+                    <span style={{flexShrink:0,marginTop:1}}>{Li("alert-triangle",12,T.acc_gold)}</span>
                     <span>Auswahl enthält Einnahmen UND Ausgaben — die gewählte Kategorie wird nur auf den passenden Typ angewendet; der Rest bleibt markiert (separat zuordnen).</span>
                   </div>
                 )}
@@ -1620,20 +1620,20 @@ function MonatScreen() {
                       <div onClick={()=>openEdit(tx)} style={{padding:"0 10px 8px 22px",cursor:"pointer"}}>
                         <ExpandableLine data-role="tx-desc" style={{fontSize:13,fontWeight:700,color:T.txt}}>
                           {tx.desc||cat?.name||"Buchung"}
-                          {tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.gold)}</span>}
+                          {tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.acc_gold)}</span>}
                         </ExpandableLine>
                         <ExpandableLine data-role="tx-subline" style={{fontSize:10,color:cat?.color||T.txt2,fontWeight:600,marginTop:1}}>
                           {tx.pending && (_isOverduePending(tx)
-                            ? <span style={{color:T.gold,fontWeight:800,display:"inline-flex",alignItems:"center",gap:2}}
+                            ? <span style={{color:T.acc_gold,fontWeight:800,display:"inline-flex",alignItems:"center",gap:2}}
                                 title="Buchungsdatum bereits vergangen, aber noch nicht als tatsächliche Buchung eingetroffen">
-                                {Li("alert-triangle",9,T.gold)}Vorgemerkt · überfällig ·{" "}
+                                {Li("alert-triangle",9,T.acc_gold)}Vorgemerkt · überfällig ·{" "}
                               </span>
                             : "Vorgemerkt · ")}{sub0?.name||cat?.name||""}
                           {tx.accountId&&tx.accountId!=="acc-giro"&&(()=>{const a=getAcc(tx.accountId);return a?(
                             <span style={{background:a.color+"22",color:a.color,borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>{Li(a.icon,9,a.color)} {a.name}</span>
                           ):null;})()}
                           {(tx.tags||[]).map(t=>(
-                            <span key={t} style={{background:`${T.blue}1a`,color:T.blue,borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>
+                            <span key={t} style={{background:`${T.blue}1a`,color:T.acc,borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>
                               #{t}
                             </span>
                           ))}
@@ -1725,7 +1725,7 @@ function MonatScreen() {
                             });
                             const n = pendUpToDay.length;
                             const todayPend = dayTxs.filter(t=>t.pending&&!t._budgetSubId);
-                            return <span data-role="tx-daydetail" style={{color:T.gold,fontSize:FS_DETAIL,whiteSpace:"nowrap",transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
+                            return <span data-role="tx-daydetail" style={{color:T.acc_gold,fontSize:FS_DETAIL,whiteSpace:"nowrap",transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                               inkl. {n} Vorm. ({todayPend.length} heute)
                             </span>;
                           })()}
@@ -1787,7 +1787,7 @@ function MonatScreen() {
                         </div>
                         <div style={{color:T.txt2,fontSize:10,marginTop:2,lineHeight:1.4}}>
                           {w.nextPos
-                            ? <>Fehlbetrag ausgleichen bis <span style={{color:T.gold,fontWeight:700}}>{nextLabel}</span>
+                            ? <>Fehlbetrag ausgleichen bis <span style={{color:T.acc_gold,fontWeight:700}}>{nextLabel}</span>
                               {w.nextPos.name&&<span> ({w.nextPos.name})</span>}
                               {" — mindestens "}<span style={{...amtStyle("neg",T.warn_icon),fontWeight:700,fontFamily:NUM_FONT}}>
                                 {betrag(w.deficit)} €
@@ -1862,18 +1862,18 @@ function MonatScreen() {
                           {txIconPickM===tx.id&&(<IconPickerDialog selectedIcon={involvedCats[0]?.icon||"help-circle"} selectedColor={involvedCats[0]?.color||T.txt2} onSelect={ic=>{if(involvedCats[0])setCats(p=>p.map(c=>c.id===involvedCats[0].id?{...c,icon:ic}:c));setTxIconPickM(null);}} onClose={()=>setTxIconPickM(null)}/>)}
                           <div onClick={()=>openEdit(tx)} style={{flex:1,minWidth:0,marginRight:6,cursor:"pointer"}}>
                             <ExpandableLine data-role="tx-desc" style={{color:T.txt,fontSize:FS_ZEILE,fontWeight:700,transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
-                              {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.gold)}</span>}
+                              {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.acc_gold)}</span>}
                             </ExpandableLine>
                             <ExpandableLine data-role="tx-subline" style={{color:cat?.color||T.txt2,fontSize:FS_SUB,marginTop:1,fontWeight:600,transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                               {tx.pending && (_isOverduePending(tx)
-                                ? <span style={{color:T.gold,fontWeight:800,display:"inline-flex",alignItems:"center",gap:2}}
+                                ? <span style={{color:T.acc_gold,fontWeight:800,display:"inline-flex",alignItems:"center",gap:2}}
                                     title="Buchungsdatum bereits vergangen, aber noch nicht als tatsächliche Buchung eingetroffen">
-                                    {Li("alert-triangle",9,T.gold)}Vorgemerkt · überfällig ·{" "}
+                                    {Li("alert-triangle",9,T.acc_gold)}Vorgemerkt · überfällig ·{" "}
                                   </span>
                                 : "Vorgemerkt · ")}{isS?involvedCats.map(c=>c.name).join(" · "):(()=>{const ss=getSub((tx.splits||[])[0]?.catId,(tx.splits||[])[0]?.subId);return ss?.name||cat?.name||"";})()}
                               {tx.accountId&&tx.accountId!=="acc-giro"&&(()=>{const a=getAcc(tx.accountId);return(<span style={{background:a.color+"22",color:a.color,borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>{Li(a.icon,9,a.color)} {a.name}</span>)})()}
                               {(tx.tags||[]).map(t=>(
-                                <span key={t} style={{background:`${T.blue}1a`,color:T.blue,
+                                <span key={t} style={{background:`${T.blue}1a`,color:T.acc,
                                   borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>
                                   #{t}
                                 </span>
@@ -1905,8 +1905,8 @@ function MonatScreen() {
                                 })}
                               </div>
                             )}
-                            {fulfilled&&<div style={{color:T.pos,fontSize:9}}>{Li("check",9,T.pos)} erfüllt</div>}
-                            {needsHatch&&<div style={{color:pal.hdr,fontSize:9}}>{Li("alert-circle",9,T.gold)} offen</div>}
+                            {fulfilled&&<div style={{color:T.acc_pos,fontSize:9}}>{Li("check",9,T.acc_pos)} erfüllt</div>}
+                            {needsHatch&&<div style={{color:pal.hdr,fontSize:9}}>{Li("alert-circle",9,T.acc_gold)} offen</div>}
                           </div>
                         </div>
                         {/* Fokus-Effekt: Notiz/Splits/Vormerkungs-Abgleich vollständig,
@@ -1944,12 +1944,12 @@ function MonatScreen() {
                                 <div style={{display:"flex",alignItems:"center",gap:8,fontSize:11,
                                   background:T.gold+"22", borderRadius:9,padding:"6px 9px",
                                   boxShadow:`inset 0 0 0 1px ${T.gold}55`}}>
-                                  {Li("alert-triangle",12,T.gold)}
+                                  {Li("alert-triangle",12,T.acc_gold)}
                                   <span style={{color:T.txt}}>
                                     Vormerkung{" "}
                                     <span style={{textDecoration:"line-through",color:T.txt2,fontFamily:NUM_FONT}}>{betrag(vormInfo.plannedAmt)} €</span>
                                     {" → "}
-                                    <span style={{fontWeight:700,color:T.gold,fontFamily:NUM_FONT}}>{betrag(vormInfo.actualAmt)} €</span>
+                                    <span style={{fontWeight:700,color:T.acc_gold,fontFamily:NUM_FONT}}>{betrag(vormInfo.actualAmt)} €</span>
                                   </span>
                                 </div>
                               ) : (
@@ -2168,7 +2168,7 @@ function MonatScreen() {
                                 "--icon-accent":displayColor,transition:_reduceMotion?"none":"width .3s cubic-bezier(0.16, 1, 0.3, 1), height .3s cubic-bezier(0.16, 1, 0.3, 1)"}}>
                               {involvedCats.length>0
                                 ? Li(displayIcon,16,displayColor)
-                                : tx.pending ? (tx._seriesTyp==="finanzierung"?Li("credit-card",16,T.gold):tx._seriesId?Li("repeat",16,T.pos):Li("calendar",16,T.gold)) : Li("help-circle",16,T.txt2)}
+                                : tx.pending ? (tx._seriesTyp==="finanzierung"?Li("credit-card",16,T.acc_gold):tx._seriesId?Li("repeat",16,T.acc_pos):Li("calendar",16,T.acc_gold)) : Li("help-circle",16,T.txt2)}
                             </div>
                           </div>
                           {txIconPickM===tx.id&&(
@@ -2184,13 +2184,13 @@ function MonatScreen() {
                           {/* Text — Klick öffnet Edit */}
                           <div onClick={()=>openEdit(tx)} style={{flex:1,minWidth:0,marginRight:6,cursor:"pointer"}}>
                             <ExpandableLine data-role="tx-desc" style={{color:T.txt,fontSize:FS_ZEILE,fontWeight:700,transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
-                              {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.gold)}</span>}
+                              {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex",flexShrink:0}}>{Li("sticky-note",9,T.acc_gold)}</span>}
                             </ExpandableLine>
                             <ExpandableLine data-role="tx-subline" style={{color:cat?.color||T.txt2,fontSize:FS_SUB,marginTop:1,fontWeight:600,transition:_reduceMotion?"none":"font-size .3s cubic-bezier(0.16, 1, 0.3, 1), color .15s ease"}}>
                               {tx.pending && (_isOverduePending(tx)
-                                ? <span style={{color:T.gold,fontWeight:800,display:"inline-flex",alignItems:"center",gap:2}}
+                                ? <span style={{color:T.acc_gold,fontWeight:800,display:"inline-flex",alignItems:"center",gap:2}}
                                     title="Buchungsdatum bereits vergangen, aber noch nicht als tatsächliche Buchung eingetroffen">
-                                    {Li("alert-triangle",9,T.gold)}Vorgemerkt · überfällig ·{" "}
+                                    {Li("alert-triangle",9,T.acc_gold)}Vorgemerkt · überfällig ·{" "}
                                   </span>
                                 : "Vorgemerkt · ")}{isS?involvedCats.map(c=>c.name).join(" · "):(()=>{const ss=getSub((tx.splits||[])[0]?.catId,(tx.splits||[])[0]?.subId);return ss?.name || cat?.name || "";})()}
                               {tx.valueDate&&(
@@ -2204,14 +2204,14 @@ function MonatScreen() {
                               )})()}
                             {/* Flexibler Topf: belastet nicht das Budget der eigenen Kategorie */}
                             {tx._potSubId&&(
-                              <span style={{background:"rgba(245,166,35,0.15)",color:T.gold,
+                              <span style={{background:"rgba(245,166,35,0.15)",color:T.acc_gold,
                                 borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0,
                                 display:"inline-flex",alignItems:"center",gap:3}}>
-                                {Li("corner-up-right",8,T.gold)} aus Unvorh.
+                                {Li("corner-up-right",8,T.acc_gold)} aus Unvorh.
                               </span>
                             )}
                             {(tx.tags||[]).map(t=>(
-                              <span key={t} style={{background:`${T.blue}1a`,color:T.blue,
+                              <span key={t} style={{background:`${T.blue}1a`,color:T.acc,
                                 borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>
                                 #{t}
                               </span>
@@ -2247,8 +2247,8 @@ function MonatScreen() {
                                 })}
                               </div>
                             )}
-                            {fulfilled&&<div style={{color:T.pos,fontSize:9}}>{Li("check",9,T.pos)} erfüllt</div>}
-                            {needsHatch&&<div style={{color:pal.hdr,fontSize:9}}>{Li("alert-circle",9,T.gold)} offen</div>}
+                            {fulfilled&&<div style={{color:T.acc_pos,fontSize:9}}>{Li("check",9,T.acc_pos)} erfüllt</div>}
+                            {needsHatch&&<div style={{color:pal.hdr,fontSize:9}}>{Li("alert-circle",9,T.acc_gold)} offen</div>}
                           </div>
                         </div>
 
@@ -2287,12 +2287,12 @@ function MonatScreen() {
                                 <div style={{display:"flex",alignItems:"center",gap:8,fontSize:11,
                                   background:T.gold+"22", borderRadius:9,padding:"6px 9px",
                                   boxShadow:`inset 0 0 0 1px ${T.gold}55`}}>
-                                  {Li("alert-triangle",12,T.gold)}
+                                  {Li("alert-triangle",12,T.acc_gold)}
                                   <span style={{color:T.txt}}>
                                     Vormerkung{" "}
                                     <span style={{textDecoration:"line-through",color:T.txt2,fontFamily:NUM_FONT}}>{betrag(vormInfo.plannedAmt)} €</span>
                                     {" → "}
-                                    <span style={{fontWeight:700,color:T.gold,fontFamily:NUM_FONT}}>{betrag(vormInfo.actualAmt)} €</span>
+                                    <span style={{fontWeight:700,color:T.acc_gold,fontFamily:NUM_FONT}}>{betrag(vormInfo.actualAmt)} €</span>
                                   </span>
                                 </div>
                               ) : (

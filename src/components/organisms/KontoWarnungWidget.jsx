@@ -59,8 +59,8 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
                   reichen als Kennzeichnung. Kein Platzhalter mehr: Text
                   beginnt jetzt bündig mit "offene VM" im Vormerkungen-Tab. */}
               <div style={{flex:1,minWidth:0}}>
-                <div style={{color:T.neg,fontSize:12,fontWeight:700,lineHeight:1.3}}>
-                  {isFuture&&<span style={{color:T.gold,fontSize:10,marginRight:6}}>{MONTHS_S[w.month]} {w.year}</span>}
+                <div style={{color:T.acc_neg,fontSize:12,fontWeight:700,lineHeight:1.3}}>
+                  {isFuture&&<span style={{color:T.acc_gold,fontSize:10,marginRight:6}}>{MONTHS_S[w.month]} {w.year}</span>}
                   {hasMultiple
                     ? (w.minPuffer>0
                       ? <>{(w.allDays||[]).length}× unter Puffer ({betrag(w.minPuffer)} €) — schlimmste: {betrag(w.saldoVal)} €</>
@@ -71,7 +71,7 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
                   }
                 </div>
                 {!hasMultiple&&<div style={{color:T.txt2,fontSize:10,marginTop:2}}>
-                  {w.nextPos?(()=>{const[,wm,wd]=(w.nextPos.date||"").split("-");return<>Ausgleichen bis <span style={{color:T.gold,fontWeight:700}}>{parseInt(wd)}.{parseInt(wm)}.</span>{w.nextPos.name&&` (${w.nextPos.name})`} — mindestens <span style={{color:T.neg,fontWeight:700,fontFamily:NUM_FONT}}>{betrag(w.deficit)} €</span> einplanen</>})():<>Kein Ausgleich — mindestens <span style={{color:T.neg,fontWeight:700,fontFamily:NUM_FONT}}>{betrag(w.deficit)} €</span> fehlen</>}
+                  {w.nextPos?(()=>{const[,wm,wd]=(w.nextPos.date||"").split("-");return<>Ausgleichen bis <span style={{color:T.acc_gold,fontWeight:700}}>{parseInt(wd)}.{parseInt(wm)}.</span>{w.nextPos.name&&` (${w.nextPos.name})`} — mindestens <span style={{color:T.acc_neg,fontWeight:700,fontFamily:NUM_FONT}}>{betrag(w.deficit)} €</span> einplanen</>})():<>Kein Ausgleich — mindestens <span style={{color:T.acc_neg,fontWeight:700,fontFamily:NUM_FONT}}>{betrag(w.deficit)} €</span> fehlen</>}
                 </div>}
               </div>
               {hasMultiple&&<div style={{color:T.txt2,fontSize:10,flexShrink:0}}>
@@ -87,12 +87,12 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
               return(
                 <div key={j} style={{padding:"5px 10px 5px 48px",
                   borderTop:`1px solid ${T.neg}22`,background:`${T.neg}0C`}}>
-                  <div style={{color:T.neg,fontSize:11,fontWeight:700}}>
+                  <div style={{color:T.acc_neg,fontSize:11,fontWeight:700}}>
                     Ab {fromLabel} −{betrag(d.deficit)} €
                   </div>
                   <div style={{color:T.txt2,fontSize:10}}>
                     {nextLabel
-                      ? <>Ausgleichen bis <span style={{color:T.gold,fontWeight:700}}>{nextLabel}</span>{d.nextPos?.name&&` (${d.nextPos.name})`} — mindestens <span style={{color:T.neg,fontWeight:700,fontFamily:NUM_FONT}}>{betrag(d.deficit)} €</span></>
+                      ? <>Ausgleichen bis <span style={{color:T.acc_gold,fontWeight:700}}>{nextLabel}</span>{d.nextPos?.name&&` (${d.nextPos.name})`} — mindestens <span style={{color:T.acc_neg,fontWeight:700,fontFamily:NUM_FONT}}>{betrag(d.deficit)} €</span></>
                       : <>Kein Ausgleich im Monat</>}
                   </div>
                 </div>

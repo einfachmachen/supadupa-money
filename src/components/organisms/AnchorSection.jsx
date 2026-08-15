@@ -88,9 +88,9 @@ function AnchorSection({selAccId, accounts, startBalances, setStartBalances, mob
       background:"rgba(255,255,255,0.03)",overflow:"hidden"}}>
       <div onClick={()=>setAnchorOpen(v=>!v)}
         style={{display:"flex",alignItems:"center",gap:8,padding:mobileMode?"12px 16px":"8px 12px",cursor:"pointer"}}>
-        {Li("landmark",mobileMode?18:13,T.blue)}
+        {Li("landmark",mobileMode?18:13,T.acc)}
         <div style={{flex:1}}>
-          <div style={{color:T.blue,fontSize:mobileMode?16:12,fontWeight:700}}>
+          <div style={{color:T.acc,fontSize:mobileMode?16:12,fontWeight:700}}>
             Kontostand-Ankerpunkte
             {filteredAnchors.length>0&&<span style={{color:T.txt2,fontWeight:400,marginLeft:6,fontSize:mobileMode?13:10}}>({filteredAnchors.length})</span>}
           </div>
@@ -118,11 +118,11 @@ function AnchorSection({selAccId, accounts, startBalances, setStartBalances, mob
                     {aAcc&&<span style={{background:(aAcc.color||T.blue)+"22",color:aAcc.color||T.blue,
                       borderRadius:4,padding:"1px 5px",fontSize:mobileMode?11:9,fontWeight:700}}>{aAcc.name}</span>}
                     <span style={{color:T.txt2,fontSize:mobileMode?13:10,flex:1}}>{a.label}</span>
-                    <span style={{color:T.pos,fontSize:mobileMode?14:12,fontWeight:700,fontFamily:NUM_FONT}}>
+                    <span style={{color:T.acc_pos,fontSize:mobileMode?14:12,fontWeight:700,fontFamily:NUM_FONT}}>
                       {a.value>=0?"+":""}{a.value.toLocaleString("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2})} €
                     </span>
                     <button onClick={()=>deleteAnchor(a)}
-                      style={{background:"none",border:"none",color:T.neg,opacity:0.6,cursor:"pointer",padding:"2px"}}>
+                      style={{background:"none",border:"none",color:T.acc_neg,opacity:0.6,cursor:"pointer",padding:"2px"}}>
                       {Li("trash-2",mobileMode?16:12)}
                     </button>
                   </div>
@@ -181,7 +181,7 @@ function AnchorSection({selAccId, accounts, startBalances, setStartBalances, mob
                 {Li("plus",mobileMode?16:13,anchorValue?"#fff":T.txt2)} Setzen
               </button>
             </div>
-            {anchorSaved&&<div style={{color:T.pos,fontSize:mobileMode?13:11,textAlign:"center",marginTop:8}}>✓ Ankerpunkt gespeichert</div>}
+            {anchorSaved&&<div style={{color:T.acc_pos,fontSize:mobileMode?13:11,textAlign:"center",marginTop:8}}>✓ Ankerpunkt gespeichert</div>}
           </div>
         </div>
       )}

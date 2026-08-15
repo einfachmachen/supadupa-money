@@ -25,7 +25,7 @@ function MonthPicker({month, year, onMonth, onYear, yearOnly=false}) {
   const btnS = {
     background: lightT?"#fff":T.surf3,
     border: lightT?`1px solid ${T.bds}`:"none",
-    color:T.blue,
+    color:T.acc,
     borderRadius:8, width:32, height:32, fontSize:16, cursor:"pointer",
     display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,
     boxShadow: lightT?"0 1px 3px rgba(0,0,0,0.12)":"none",
@@ -72,7 +72,7 @@ function MonthPicker({month, year, onMonth, onYear, yearOnly=false}) {
               onMonth(now.getMonth());onYear(now.getFullYear());setOpen(false);
             }}
               style={{width:"100%",padding:"5px",borderRadius:8,border:`1px solid ${T.blue}44`,
-                background:"rgba(74,159,212,0.1)",color:T.blue,
+                background:"rgba(74,159,212,0.1)",color:T.acc,
                 fontSize:11,fontWeight:700,cursor:"pointer",marginBottom:8}}>
               Heute ({MONTHS_S[new Date().getMonth()]} {new Date().getFullYear()})
             </button>

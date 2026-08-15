@@ -70,11 +70,11 @@ function TagInput({ value, onChange, placeholder="Tag hinzufügen…", suggestio
         display:"flex",flexWrap:"wrap",gap:6,alignItems:"center",...style}}>
         {tags.map(t=>(
           <span key={t} style={{display:"inline-flex",alignItems:"center",gap:4,
-            background:`${T.blue}22`,border:`1px solid ${T.blue}55`,color:T.blue,
+            background:`${T.blue}22`,border:`1px solid ${T.blue}55`,color:T.acc,
             borderRadius:20,padding:"3px 8px",fontSize:12.5,fontWeight:700}}>
             #{t}
             <span onClick={()=>removeTag(t)} style={{cursor:"pointer",display:"inline-flex",opacity:0.75}}>
-              {Li("x",11,T.blue)}
+              {Li("x",11,T.acc)}
             </span>
           </span>
         ))}

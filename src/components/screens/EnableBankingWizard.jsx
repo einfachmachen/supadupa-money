@@ -498,7 +498,7 @@ function EnableBankingWizard({ onClose, onBack }) {
         <div style={{ margin: "10px 18px 0", padding: "10px 14px", borderRadius: 12,
           background: T.pos + "18", border: `1px solid ${T.pos}55`,
           display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-          {Li("check-circle", 18, T.pos)}
+          {Li("check-circle", 18, T.acc_pos)}
           <div style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 13, lineHeight: 1.4 }}>
             Bank-Verbindung ist schon aktiv — gültig bis <b>{String(validUntil).slice(0, 10)}</b>.
           </div>
@@ -525,7 +525,7 @@ function EnableBankingWizard({ onClose, onBack }) {
               <>
                 <Box tone="tip">
                   <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 800, marginBottom: 6 }}>
-                    {Li("check-circle", 17, T.pos)} Zugang eingerichtet
+                    {Li("check-circle", 17, T.acc_pos)} Zugang eingerichtet
                   </div>
                   <div style={{ fontSize: 13.5, lineHeight: 1.7 }}>
                     <div>Application-ID: <code style={{ fontFamily: "monospace" }}>{appId}</code></div>
@@ -712,9 +712,9 @@ function EnableBankingWizard({ onClose, onBack }) {
                       </div>
                       <button onClick={() => disconnectBank(s)} title="Bank entfernen"
                         style={{ flexShrink: 0, background: "transparent", border: `1px solid ${T.bd}`,
-                          borderRadius: 9, padding: "6px 8px", color: T.neg, cursor: "pointer",
+                          borderRadius: 9, padding: "6px 8px", color: T.acc_neg, cursor: "pointer",
                           display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700 }}>
-                        {Li("trash-2", 14, T.neg)} entfernen
+                        {Li("trash-2", 14, T.acc_neg)} entfernen
                       </button>
                     </div>
                   ))}
@@ -814,7 +814,7 @@ function EnableBankingWizard({ onClose, onBack }) {
                     <div key={a.uid} style={{ marginTop: 14 }}>
                       <div style={{ color: unmapped ? T.gold : T.txt2, fontSize: 12.5, marginBottom: 5,
                         display: "flex", alignItems: "center", gap: 5 }}>
-                        {unmapped && Li("alert-triangle", 13, T.gold)} {a.label}
+                        {unmapped && Li("alert-triangle", 13, T.acc_gold)} {a.label}
                       </div>
                       <select style={{ ...inputStyle, border: `1px solid ${unmapped ? T.gold : (T.bds || T.bd)}` }}
                         value={accMap[a.uid] || ""}
@@ -875,7 +875,7 @@ function EnableBankingWizard({ onClose, onBack }) {
                     unten separat änderbar. */}
                 <div style={{ marginTop: 10 }}>
                   <div style={{ color: T.txt2, fontSize: 12, fontWeight: 600, marginBottom: 4, display: "flex", alignItems: "center", gap: 5 }}>
-                    {Li("hash", 12, T.blue)} Tag auf alle ausgewählten anwenden
+                    {Li("hash", 12, T.acc)} Tag auf alle ausgewählten anwenden
                   </div>
                   <TagInput value={[]} onChange={(t) => t.forEach(applyTagToChecked)}
                     suggestions={allTags}
@@ -894,7 +894,7 @@ function EnableBankingWizard({ onClose, onBack }) {
                           <span style={{ color: T.txt2, fontSize: 12, display: "inline-flex", alignItems: "center", gap: 5 }}>
                             {it.row.isoDate}
                             {it.row.pending && (
-                              <span style={{ background: "rgba(245,166,35,0.15)", color: T.gold,
+                              <span style={{ background: "rgba(245,166,35,0.15)", color: T.acc_gold,
                                 borderRadius: 4, padding: "0 4px", fontSize: 9, fontWeight: 700 }}>
                                 vorgemerkt
                               </span>
@@ -967,7 +967,7 @@ function EnableBankingWizard({ onClose, onBack }) {
               {msg.action && (
                 <button onClick={msg.action.onClick}
                   style={{ display: "block", marginTop: 8, background: "transparent", border: `1px solid ${T.pos}66`,
-                    color: T.pos, borderRadius: 9, padding: "8px 12px", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+                    color: T.acc_pos, borderRadius: 9, padding: "8px 12px", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
                   {msg.action.label}
                 </button>
               )}

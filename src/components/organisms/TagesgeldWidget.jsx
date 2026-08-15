@@ -496,7 +496,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
 
       {toast&&(
         <div style={{margin:"4px 0",padding:"8px 12px",background:"rgba(34,197,94,0.15)",
-          border:`1px solid ${T.pos}44`,borderRadius:8,color:T.pos,fontSize:12,fontWeight:700,
+          border:`1px solid ${T.pos}44`,borderRadius:8,color:T.acc_pos,fontSize:12,fontWeight:700,
           textAlign:"center"}}>
           {toast}
         </div>
@@ -700,7 +700,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                 <div style={{color:col,fontSize:26,fontWeight:800,fontFamily:NUM_FONT,letterSpacing:-0.5}}>
                   {computing?"…":maxTransfer===null?"—":maxTransfer<=0?"0":betrag(maxTransfer)} €
                 </div>
-                {result&&!keinSpielraum&&<div style={{color:T.pos,fontSize:9,marginTop:2}}>
+                {result&&!keinSpielraum&&<div style={{color:T.acc_pos,fontSize:9,marginTop:2}}>
                   ∑ {monate+1} Monate: <span style={{fontWeight:700,fontFamily:NUM_FONT}}>
                     {betrag(totalKumuliert)} €
                   </span>
@@ -709,9 +709,9 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                 {keinSpielraum&&(
                   <div style={{marginTop:4,background:"rgba(234,64,37,0.12)",border:`1px solid ${T.neg}44`,
                     borderRadius:8,padding:"6px 10px",display:"flex",alignItems:"center",gap:6}}>
-                    {Li("x-circle",14,T.neg)}
+                    {Li("x-circle",14,T.acc_neg)}
                     <div>
-                      <div style={{color:T.neg,fontSize:11,fontWeight:700}}>Kein sinnvoller Spielraum</div>
+                      <div style={{color:T.acc_neg,fontSize:11,fontWeight:700}}>Kein sinnvoller Spielraum</div>
                       <div style={{color:T.txt2,fontSize:9}}>{keinSpielraumGrund}</div>
                     </div>
                   </div>
@@ -766,9 +766,9 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
           <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${T.bd}`}}>
             <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:8}}>
               <div style={{color:T.txt,fontSize:12}}>
-                Mega-Sparrate zum {kurzDat(sweep.termin)} <span style={{color:T.gold}}>(Zinstermin)</span>
+                Mega-Sparrate zum {kurzDat(sweep.termin)} <span style={{color:T.acc_gold}}>(Zinstermin)</span>
               </div>
-              <div style={{color:T.gold,fontSize:20,fontWeight:800,fontFamily:NUM_FONT,letterSpacing:-0.5}}>
+              <div style={{color:T.acc_gold,fontSize:20,fontWeight:800,fontFamily:NUM_FONT,letterSpacing:-0.5}}>
                 {betrag(sweep.hin)} €
               </div>
             </div>
@@ -776,7 +776,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
               <div style={{color:T.txt,fontSize:12}}>
                 zurück aufs Giro am {kurzDat(sweep.bis)} ({wochentag(sweep.bis)})
               </div>
-              <div style={{color:T.blue,fontSize:13,fontWeight:800,fontFamily:NUM_FONT}}>
+              <div style={{color:T.acc,fontSize:13,fontWeight:800,fontFamily:NUM_FONT}}>
                 {betrag(sweep.zurueck)} €
               </div>
             </div>
@@ -904,7 +904,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                   <div style={{flex:1,textAlign:"right",fontSize:12,fontFamily:NUM_FONT,fontWeight:700,
                     color:minNach===null?T.txt:minNach<puffer?T.neg:T.pos}}>
                     {minNach===null?"—":<>{minNach>=0?"+":"−"}{betragK(Math.abs(minNach))}</>}
-                    {kritisch&&<span style={{color:T.neg,fontSize:7}}> ⚠</span>}
+                    {kritisch&&<span style={{color:T.acc_neg,fontSize:7}}> ⚠</span>}
                   </div>
                   <div style={{flex:1,textAlign:"right",color:zusCol,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>
                     {zusaetzlich>0?<>+{betragK(zusaetzlich)}</>:"—"}

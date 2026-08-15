@@ -155,7 +155,7 @@ function MatchingScreen({onClose, onBack}) {
       {/* Anleitung */}
       <div style={{padding:"8px 14px",background:"rgba(74,159,212,0.06)",
         borderBottom:`1px solid ${T.bd}`,flexShrink:0,fontSize:10,color:T.txt2,lineHeight:1.5}}>
-        1. Vormerkung antippen (links) · 2. Buchung antippen (rechts) · 3. <b style={{color:T.blue}}>Zuordnen ✓</b>
+        1. Vormerkung antippen (links) · 2. Buchung antippen (rechts) · 3. <b style={{color:T.acc}}>Zuordnen ✓</b>
       </div>
 
       {/* Zuordnen-Button wenn beide gewählt */}
@@ -163,7 +163,7 @@ function MatchingScreen({onClose, onBack}) {
         <div style={{padding:"8px 14px",background:"rgba(74,159,212,0.12)",
           borderBottom:`1px solid ${T.blue}44`,flexShrink:0,display:"flex",gap:8,alignItems:"center"}}>
           <div style={{flex:1,fontSize:11,color:T.txt}}>
-            <span style={{color:T.gold,display:"inline-flex",alignItems:"center",gap:4}}>{Li("clock",12,T.gold)}{txs.find(t=>t.id===selPend)?.desc||"Vormerkung"}</span>
+            <span style={{color:T.acc_gold,display:"inline-flex",alignItems:"center",gap:4}}>{Li("clock",12,T.acc_gold)}{txs.find(t=>t.id===selPend)?.desc||"Vormerkung"}</span>
             <span style={{color:T.txt2,padding:"0 4px"}}>{Li("arrow-left-right",12,T.txt2)}</span>
             <span style={{color:T.txt}}>{txs.find(t=>t.id===selTx)?.desc||"Buchung"}</span>
           </div>
@@ -182,7 +182,7 @@ function MatchingScreen({onClose, onBack}) {
 
         {/* Links: Vormerkungen */}
         <div style={{flex:1,overflowY:"auto",padding:"8px 8px 8px 14px",borderRight:`1px solid ${T.bd}`}}>
-          <div style={{color:T.gold,fontSize:10,fontWeight:700,marginBottom:4}}>
+          <div style={{color:T.acc_gold,fontSize:10,fontWeight:700,marginBottom:4}}>
             Vormerkungen ({unmatchedPends.length} offen)
           </div>
           <div style={{display:"flex",alignItems:"center",gap:4,background:"rgba(0,0,0,0.2)",borderRadius:7,padding:"3px 7px",marginBottom:6}}>
@@ -212,11 +212,11 @@ function MatchingScreen({onClose, onBack}) {
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{color:T.txt,fontSize:11,fontWeight:600,
                     overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                    {tx.desc||cat?.name||"Vormerkung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex"}}>{Li("sticky-note",9,T.gold)}</span>}
+                    {tx.desc||cat?.name||"Vormerkung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex"}}>{Li("sticky-note",9,T.acc_gold)}</span>}
                   </div>
                   <div style={{color:T.txt2,fontSize:9}}>{cat?.name||"unkategorisiert"}</div>
                 </div>
-                <div style={{color:T.gold,fontSize:11,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
+                <div style={{color:T.acc_gold,fontSize:11,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>
                   {betrag(tx.totalAmount)}
                 </div>
               </div>
@@ -226,7 +226,7 @@ function MatchingScreen({onClose, onBack}) {
           {/* Bereits gematched */}
           {matched.length>0&&(
             <>
-              <div style={{color:T.pos,fontSize:10,fontWeight:700,margin:"10px 0 6px"}}>
+              <div style={{color:T.acc_pos,fontSize:10,fontWeight:700,margin:"10px 0 6px"}}>
                 ✓ Zugeordnet ({matched.length})
               </div>
               {matched.map(m=>{
@@ -237,7 +237,7 @@ function MatchingScreen({onClose, onBack}) {
                   <div key={m.pendId} style={{display:"flex",alignItems:"center",gap:6,
                     padding:"6px 10px",borderRadius:8,marginBottom:3,
                     background:"rgba(52,211,153,0.08)",border:`1px solid ${T.pos}44`}}>
-                    <span style={{color:T.pos,fontSize:10,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                    <span style={{color:T.acc_pos,fontSize:10,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                       ✓ {pend.desc||"Vormerkung"}
                     </span>
                     <button onClick={()=>setMatched(p=>p.filter(x=>x.pendId!==m.pendId))}
@@ -254,7 +254,7 @@ function MatchingScreen({onClose, onBack}) {
               ? <button onClick={()=>setShowNewPend(true)}
                   style={{width:"100%",padding:"7px",borderRadius:9,
                     border:`1px dashed ${T.bds}`,background:"transparent",
-                    color:T.gold,fontSize:11,cursor:"pointer"}}>
+                    color:T.acc_gold,fontSize:11,cursor:"pointer"}}>
                   + neue Vormerkung
                 </button>
               : <div style={{background:"rgba(245,158,11,0.08)",borderRadius:12,
@@ -321,7 +321,7 @@ function MatchingScreen({onClose, onBack}) {
                           borderRadius:7,padding:"5px 4px",color:T.txt,fontSize:10,outline:"none",textAlign:"center"}}/>
                     </div>
                     {newPend.repeatMonths>1&&(
-                      <div style={{color:T.gold,fontSize:10,marginTop:4}}>
+                      <div style={{color:T.acc_gold,fontSize:10,marginTop:4}}>
                         ↩ Erstellt {newPend.repeatMonths} Vormerkungen ab {newPend.date}
                       </div>
                     )}
@@ -399,14 +399,14 @@ function MatchingScreen({onClose, onBack}) {
                   background:bankPend?T.gold+"33":(cat?.color||"#888")+"33",
                   display:"flex",alignItems:"center",justifyContent:"center",
                   fontSize:14,flexShrink:0}}>
-                  {bankPend?Li("landmark",14,T.gold):tx.pending?(tx._seriesTyp==="finanzierung"?Li("credit-card",14,T.gold):tx._seriesId?Li("repeat",14,T.pos):Li("calendar",14,T.blue)):isUncat?Li("help-circle",14,T.txt2):Li(cat?.icon||"tag",14,cat?.color||T.txt2)}
+                  {bankPend?Li("landmark",14,T.acc_gold):tx.pending?(tx._seriesTyp==="finanzierung"?Li("credit-card",14,T.acc_gold):tx._seriesId?Li("repeat",14,T.acc_pos):Li("calendar",14,T.acc)):isUncat?Li("help-circle",14,T.txt2):Li(cat?.icon||"tag",14,cat?.color||T.txt2)}
                 </div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{color:T.txt,fontSize:11,fontWeight:600,
                     overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                    {bankPend&&<span style={{fontSize:8,background:"rgba(245,166,35,0.18)",color:T.gold,
+                    {bankPend&&<span style={{fontSize:8,background:"rgba(245,166,35,0.18)",color:T.acc_gold,
                       borderRadius:4,padding:"1px 4px",fontWeight:800,marginRight:4,letterSpacing:0.2}}>VORGEMERKT</span>}
-                    {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex"}}>{Li("sticky-note",9,T.gold)}</span>}
+                    {tx.desc||cat?.name||"Buchung"}{tx.note&&<span title={tx.note} style={{marginLeft:3,display:"inline-flex"}}>{Li("sticky-note",9,T.acc_gold)}</span>}
                   </div>
                   <div style={{color:T.txt2,fontSize:9}}>
                     {tagMonat(tx.date)} · {isUncat?"unkategorisiert":cat?.name||""}

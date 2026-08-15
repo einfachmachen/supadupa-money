@@ -406,8 +406,8 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
 
         <button onClick={openNewCat} className="wahl-taste"
           style={{...btnCenter,background:"rgba(74,159,212,0.1)",
-            border:`2px dashed ${T.blue}`,color:T.blue,marginBottom:S.gap}}>
-          {Li("plus",S.fs,T.blue)} neue Kategorie
+            border:`2px dashed ${T.blue}`,color:T.acc,marginBottom:S.gap}}>
+          {Li("plus",S.fs,T.acc)} neue Kategorie
         </button>
 
         {onKonten&&<button onClick={onKonten}
@@ -493,15 +493,15 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
               showToast(`✓ ${newOnes} neu, ${changed} aktualisiert`);
             }, {jaLabel:"Übernehmen", ton:"gefahr"});
         }} className="wahl-taste" style={{...btnCenter,background:"rgba(74,159,212,0.06)",
-          border:`1.5px dashed ${T.blue}66`,color:T.blue,marginBottom:S.gap,fontWeight:600,fontSize:S.fs-2}}>
-          {Li("refresh-cw",S.fs-4,T.blue)} Zuordnungen aus Buchungen prüfen
+          border:`1.5px dashed ${T.blue}66`,color:T.acc,marginBottom:S.gap,fontWeight:600,fontSize:S.fs-2}}>
+          {Li("refresh-cw",S.fs-4,T.acc)} Zuordnungen aus Buchungen prüfen
         </button>
 
         {/* Toast */}
         {toast && (
           <div style={{padding:`${S.pad}px ${S.padL}px`,marginBottom:S.gap,
             background:T.pos+"22",border:`1px solid ${T.pos}`,borderRadius:S.radius,
-            color:T.pos,fontSize:S.fs-4,fontWeight:600,textAlign:"center"}}>
+            color:T.acc_pos,fontSize:S.fs-4,fontWeight:600,textAlign:"center"}}>
             {toast}
           </div>
         )}
@@ -691,7 +691,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                     {/* Budget-Anzeige */}
                     {curGesamt>0&&!editing&&(
                       <div style={{textAlign:"right",flexShrink:0}}>
-                        <div style={{color:T.gold,fontSize:17,fontWeight:700,fontFamily:NUM_FONT}}>{betrag(curGesamt)}</div>
+                        <div style={{color:T.acc_gold,fontSize:17,fontWeight:700,fontFamily:NUM_FONT}}>{betrag(curGesamt)}</div>
                         {curMitte>0&&<div style={{color:T.txt2,fontSize:11}}>Mitte: {betrag(curMitte)}</div>}
                       </div>
                     )}
@@ -712,7 +712,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                       width:30,height:30,minHeight:30,
                       display:"flex",alignItems:"center",justifyContent:"center",
                       flexShrink:0,lineHeight:0}}>
-                      {editing ? Li("arrow-left",18,T.gold) : Li("target",18,T.gold)}
+                      {editing ? Li("arrow-left",18,T.acc_gold) : Li("target",18,T.acc_gold)}
                     </button>
                   </div>
 
@@ -737,18 +737,18 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                             style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",
                               marginBottom:8,borderRadius:12,border:`1px solid ${T.blue}55`,
                               background:"rgba(74,159,212,0.10)",cursor:"pointer"}}>
-                            {Li("bar-chart-2",18,T.blue)}
+                            {Li("bar-chart-2",18,T.acc)}
                             <div style={{flex:1,minWidth:0}}>
                               <div style={{display:"flex",alignItems:"baseline",gap:6,flexWrap:"wrap"}}>
                                 <span style={{fontSize:14,color:T.txt2}}>Vorschlag</span>
-                                <b style={{fontSize:18,color:T.blue,fontFamily:NUM_FONT}}>{betrag(sugAmt)} €</b>
+                                <b style={{fontSize:18,color:T.acc,fontFamily:NUM_FONT}}>{betrag(sugAmt)} €</b>
                                 <span style={{fontSize:13,color:T.txt2}}>· {RL}</span>
                               </div>
                               <div style={{color:T.txt2,fontSize:11.5,marginTop:2}}>
                                 Ø aus {sug.months} Mon. · {sug.actualMonths} gebucht · {sug.pendingMonths} geplant
                               </div>
                             </div>
-                            <span style={{color:T.blue,fontSize:13,fontWeight:800,flexShrink:0}}>übernehmen</span>
+                            <span style={{color:T.acc,fontSize:13,fontWeight:800,flexShrink:0}}>übernehmen</span>
                           </div>
                         );
                       })()}

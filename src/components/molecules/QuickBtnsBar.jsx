@@ -139,7 +139,7 @@ function QuickBtnsBar({onSelect, _colorTarget, _noDelete, _onDragStart, _onDragE
   const handleNewIcon = (ic) => {
     setQuickBtns(p => {
       if (p.find(b => b.icon === ic)) return p;
-      return [...p, { id: "q" + Date.now(), icon: ic, label: "", color: T.blue, catId: "" }];
+      return [...p, { id: "q" + Date.now(), icon: ic, label: "", color: T.acc, catId: "" }];
     });
     setPickingNew(false);
   };

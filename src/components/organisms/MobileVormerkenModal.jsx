@@ -210,7 +210,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
 
   const header = (title, sub, stepNum, onBack) => (
     <MobileHeader title={title} onBack={onBack} onClose={onClose}
-      subtitle={<><span style={{color:T.blue,fontWeight:700}}>{stepNum}v4</span><span>{sub}</span></>}/>
+      subtitle={<><span style={{color:T.acc,fontWeight:700}}>{stepNum}v4</span><span>{sub}</span></>}/>
   );
 
   const amtVal = () => pn((amount||"").replace(",","."));
@@ -417,7 +417,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
       zIndex:300,display:"flex",alignItems:"center",justifyContent:"center"}}>
       <div style={{textAlign:"center"}}>
         <div style={{fontSize:64,marginBottom:16}}>✓</div>
-        <div style={{color:T.pos,fontSize:24,fontWeight:700}}>
+        <div style={{color:T.acc_pos,fontSize:24,fontWeight:700}}>
           {recurring ? `${totalCount}× gespeichert!` : "Gespeichert!"}
         </div>
       </div>
@@ -505,7 +505,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
           {/* Bei Umbuchung: Zielkonto-Picker */}
           {isTransfer && (<>
             <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6,color:T.txt2,fontSize:S.fs-4,fontWeight:600}}>
-              {Li("arrow-down",S.fs-4,T.blue)}
+              {Li("arrow-down",S.fs-4,T.acc)}
               <span>Ziel</span>
             </div>
             <div style={{marginBottom:S.gap}}>
@@ -546,7 +546,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
                 // aufgehellten Schleier waren es nur 4,26:1 (Kontrast-Lauf,
                 // Theme "Keyboard").
                 background:"transparent",
-                color:T.blue,fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
+                color:T.acc,fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
               {valueDate?"löschen":"heute"}
             </button>
           </div>
@@ -575,7 +575,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
                 // aufgehellten Schleier waren es nur 4,26:1 (Kontrast-Lauf,
                 // Theme "Keyboard").
                 background:"transparent",
-                color:T.blue,fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
+                color:T.acc,fontFamily:"inherit",fontSize:S.fs-6,fontWeight:700,cursor:"pointer"}}>
               {date?"löschen":"heute"}
             </button>
           </div>
@@ -647,7 +647,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
               {/* Vorschau */}
               <div style={{background:"rgba(0,0,0,0.2)",borderRadius:S.radius/2,
                 padding:"10px 14px",marginBottom:S.gap,fontSize:S.fs-4,color:T.txt2,lineHeight:1.7}}>
-                <span style={{color:T.pos,fontWeight:700}}>{totalCount}× {intervalLabel}</span>
+                <span style={{color:T.acc_pos,fontWeight:700}}>{totalCount}× {intervalLabel}</span>
                 {amount&&<>{" · "}{isFinanz?"Rate":""} {betrag(amtVal())}</>}
                 {gesamtbetrag&&<>{" · "}Gesamt: {gesamtbetrag}</>}
                 {date&&<>{" · "}ab {date.split("-").reverse().join(".")}</>}
@@ -657,7 +657,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
 
           {/* Bei Umbuchung Hinweis, falls kein Ziel gewählt */}
           {isTransfer && !tgtAccId && (
-            <div style={{color:T.gold,fontSize:S.fs-6,marginBottom:S.gap,textAlign:"center"}}>
+            <div style={{color:T.acc_gold,fontSize:S.fs-6,marginBottom:S.gap,textAlign:"center"}}>
               Bitte Zielkonto wählen
             </div>
           )}
@@ -775,7 +775,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
               padding:`${S.padL}px`,marginBottom:S.gap}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:S.gap,
                 color:T.txt,fontSize:S.fs-6,fontWeight:700}}>
-                {Li("fuel",S.fs-6,T.gold)} Tank-Erfassung
+                {Li("fuel",S.fs-6,T.acc_gold)} Tank-Erfassung
               </div>
 
               {/* Fahrzeug */}
@@ -872,8 +872,8 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
                 <div style={{display:"flex",alignItems:"flex-start",gap:8,
                   background:`${T.gold}14`,border:`1.5px solid ${T.gold}55`,
                   borderRadius:S.radius/2,padding:"8px 12px",marginBottom:S.gap}}>
-                  {Li("alert-triangle",S.fs-8,T.gold)}
-                  <span style={{color:T.gold,fontSize:S.fs-10,lineHeight:1.4}}>{odometerWarning.message}</span>
+                  {Li("alert-triangle",S.fs-8,T.acc_gold)}
+                  <span style={{color:T.acc_gold,fontSize:S.fs-10,lineHeight:1.4}}>{odometerWarning.message}</span>
                 </div>
               )}
 
@@ -886,8 +886,8 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
                 <div style={{display:"flex",alignItems:"flex-start",gap:6,
                   background:`${T.gold}14`,border:`1.5px solid ${T.gold}55`,
                   borderRadius:S.radius/2,padding:"10px 14px"}}>
-                  {Li("alert-triangle",S.fs-10,T.gold)}
-                  <span style={{color:T.gold,fontSize:S.fs-8,lineHeight:1.4}}>
+                  {Li("alert-triangle",S.fs-10,T.acc_gold)}
+                  <span style={{color:T.acc_gold,fontSize:S.fs-8,lineHeight:1.4}}>
                     Liter × Preis ergibt <b style={{color:T.txt}}>{betrag(fuelComputedTotal)}</b> —
                     weicht vom eingegebenen Betrag (<b style={{color:T.txt}}>{betrag(_amt)}</b>) ab.
                     Der eingegebene Betrag bleibt bestehen; bei Bedarf in Schritt 1 korrigieren.

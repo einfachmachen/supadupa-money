@@ -226,7 +226,7 @@ function SubRow({sub, si, arr, cat}) {
             color:subEdit==="budget"?T.gold:(budgets[sub.id]?T.gold:T.txt2),
             cursor:"pointer",borderRadius:7,padding:"4px 6px",flexShrink:0,
             display:"flex",alignItems:"center"}}>
-          {subEdit==="budget" ? Li("arrow-left",14,T.gold) : Li("target",13,budgets[sub.id]?T.gold:T.txt2)}
+          {subEdit==="budget" ? Li("arrow-left",14,T.acc_gold) : Li("target",13,budgets[sub.id]?T.gold:T.txt2)}
         </button>
         <div style={{flex:1,minWidth:0}}>
           <input defaultValue={sub.name} style={{...INP,marginBottom:0,width:"100%",fontSize:13,padding:"4px 8px"}}
@@ -235,7 +235,7 @@ function SubRow({sub, si, arr, cat}) {
           {(()=>{
             const lastTx = txs.filter(t=>!t.pending&&(t.splits||[]).some(s=>s.subId===sub.id))
               .sort((a,b)=>b.date.localeCompare(a.date))[0];
-            if(!lastTx) return <span style={{color:T.neg,opacity:0.6,fontSize:9,marginLeft:4}}>nie genutzt</span>;
+            if(!lastTx) return <span style={{color:T.acc_neg,opacity:0.6,fontSize:9,marginLeft:4}}>nie genutzt</span>;
             const [y,m] = lastTx.date.split("-");
             const age = (new Date().getFullYear()-Number(y))*12 + (new Date().getMonth()+1-Number(m));
             const col = age>24?"rgba(224,80,96,0.6)":age>12?T.gold:T.txt2;
@@ -243,24 +243,24 @@ function SubRow({sub, si, arr, cat}) {
           })()}
         </div>
         {budgets[sub.id]&&(
-          <span style={{color:T.gold,fontSize:10,fontWeight:700,flexShrink:0,background:(isLightTheme())?"rgba(192,120,0,0.15)":"rgba(245,166,35,0.12)",borderRadius:5,padding:"1px 5px"}}>
-            {Li("target",9,T.gold)} {betrag(budgets[sub.id].amount)} {budgets[sub.id].months===1?"mtl.":budgets[sub.id].months===3?"quartl.":budgets[sub.id].months===6?"halbj.":"jährl."}{budgets[sub.id].startDate?` · ${budgets[sub.id].startDate.split("-")[2]}.`:""}
+          <span style={{color:T.acc_gold,fontSize:10,fontWeight:700,flexShrink:0,background:(isLightTheme())?"rgba(192,120,0,0.15)":"rgba(245,166,35,0.12)",borderRadius:5,padding:"1px 5px"}}>
+            {Li("target",9,T.acc_gold)} {betrag(budgets[sub.id].amount)} {budgets[sub.id].months===1?"mtl.":budgets[sub.id].months===3?"quartl.":budgets[sub.id].months===6?"halbj.":"jährl."}{budgets[sub.id].startDate?` · ${budgets[sub.id].startDate.split("-")[2]}.`:""}
           </span>
         )}
         <button onClick={()=>frageBestaetigung(`„${sub.name}" wirklich löschen?`,
-          ()=>deleteSub(cat.id,sub.id), {jaLabel:"Löschen",ton:"gefahr"})} style={{background:"none",border:"none",color:T.neg,opacity:0.55,cursor:"pointer",fontSize:15,flexShrink:0,display:"flex",alignItems:"center"}}>{Li("trash-2",14)}</button>
+          ()=>deleteSub(cat.id,sub.id), {jaLabel:"Löschen",ton:"gefahr"})} style={{background:"none",border:"none",color:T.acc_neg,opacity:0.55,cursor:"pointer",fontSize:15,flexShrink:0,display:"flex",alignItems:"center"}}>{Li("trash-2",14)}</button>
       </div>
       {subEdit==="budget"&&(
         <div style={{borderTop:`1px solid ${T.bd}`,padding:"10px 10px 12px",background:(isLightTheme())?"rgba(192,120,0,0.06)":"rgba(245,166,35,0.04)"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6,gap:8}}>
-            <div style={{color:T.gold,fontSize:11,fontWeight:700,display:"flex",alignItems:"center",gap:5}}>
-              {Li("target",11,T.gold)} Budget & Vormerkungen für „{sub.name}"
+            <div style={{color:T.acc_gold,fontSize:11,fontWeight:700,display:"flex",alignItems:"center",gap:5}}>
+              {Li("target",11,T.acc_gold)} Budget & Vormerkungen für „{sub.name}"
             </div>
             {/* Live-Zusammenfassung */}
             <div style={{color:T.txt2,fontSize:9,textAlign:"right",lineHeight:1.4}}>
               {pn(budgetInputMitte)>0&&pn(budgetInput)>0
                 ? <>{budgetMonths===1?"mtl.":budgetMonths===3?"quartl.":"jährl."} · bis {budgetEndDate||`Ende ${parseInt(budgetStartDate.split("-")[0])+6}`}<br/>
-                    <span style={{color:T.gold}}>Mitte {budgetInputMitte}€ · Gesamt {budgetInput}€</span></>
+                    <span style={{color:T.acc_gold}}>Mitte {budgetInputMitte}€ · Gesamt {budgetInput}€</span></>
                 : <span>{budgetMonths===1?"monatlich":budgetMonths===3?"quartalsweise":"jährlich"} · {budgetInput||"?"}€</span>
               }
             </div>
@@ -302,7 +302,7 @@ function SubRow({sub, si, arr, cat}) {
                         background:(isLightTheme())?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)",
                         colorScheme:(isLightTheme())?"light":"dark"}}/>
                     <button onClick={()=>setBudgetEndDate("")}
-                      style={{background:"none",border:"none",color:T.neg,
+                      style={{background:"none",border:"none",color:T.acc_neg,
                         cursor:"pointer",padding:"2px",flexShrink:0}}>
                       {Li("x",10)}
                     </button>
@@ -325,7 +325,7 @@ function SubRow({sub, si, arr, cat}) {
             {[{k:"h1",l:"1.H"},{k:"h2",l:"2.H"},{k:"w1",l:"W1"},{k:"w2",l:"W2"},{k:"w3",l:"W3"},{k:"w4",l:"W4"}].map(({k,l})=>(
               <button key={k} onClick={()=>applyQuickDate(k)}
                 style={{padding:"3px 6px",borderRadius:5,border:`1px solid ${T.gold}44`,
-                  background:(isLightTheme())?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)",color:T.gold,fontSize:9,fontWeight:700,cursor:"pointer"}}>
+                  background:(isLightTheme())?"rgba(192,120,0,0.08)":"rgba(245,166,35,0.06)",color:T.acc_gold,fontSize:9,fontWeight:700,cursor:"pointer"}}>
                 {l}
               </button>
             ))}
@@ -342,21 +342,21 @@ function SubRow({sub, si, arr, cat}) {
             </div>
           </div>
           {budgets[sub.id] ? (<>
-            <div style={{color:T.gold,fontSize:10,fontWeight:700,textAlign:"center",marginBottom:4}}>
+            <div style={{color:T.acc_gold,fontSize:10,fontWeight:700,textAlign:"center",marginBottom:4}}>
               {budgetSaved ? "✓ Gespeichert!" : "Welche Platzhalter aktualisieren?"}
             </div>
             <div style={{display:"flex",gap:4,marginBottom:6}}>
               <button onClick={()=>saveBudget("single")}
                 style={{flex:1,padding:"8px 4px",borderRadius:10,border:`1px solid ${T.gold}44`,
-                  background:"rgba(245,166,35,0.1)",color:T.gold,fontSize:11,fontWeight:700,
+                  background:"rgba(245,166,35,0.1)",color:T.acc_gold,fontSize:11,fontWeight:700,
                   cursor:"pointer",fontFamily:"inherit"}}>
-                {Li("check",11,T.gold)} Nur dieser
+                {Li("check",11,T.acc_gold)} Nur dieser
               </button>
               <button onClick={()=>saveBudget("from")}
                 style={{flex:1,padding:"8px 4px",borderRadius:10,border:`1px solid ${T.blue}44`,
-                  background:"rgba(74,159,212,0.1)",color:T.blue,fontSize:11,fontWeight:700,
+                  background:"rgba(74,159,212,0.1)",color:T.acc,fontSize:11,fontWeight:700,
                   cursor:"pointer",fontFamily:"inherit"}}>
-                {Li("check",11,T.blue)} Ab diesem
+                {Li("check",11,T.acc)} Ab diesem
               </button>
               <button onClick={()=>saveBudget("all")}
                 style={{flex:1,padding:"8px 4px",borderRadius:10,border:"none",
@@ -381,9 +381,9 @@ function SubRow({sub, si, arr, cat}) {
                 setTxs(p=>p.filter(t=>t._budgetSubId!==sub.id&&t._budgetSubId!==sub.id+"_mitte"));
                 setBudgetInput(""); setBudgetInputMitte(""); setSubEdit(false);
               }} style={{flex:1,padding:"8px",borderRadius:9,border:`1px solid ${T.neg}44`,
-                background:`${T.neg}08`,color:T.neg,fontSize:11,fontWeight:600,cursor:"pointer",
+                background:`${T.neg}08`,color:T.acc_neg,fontSize:11,fontWeight:600,cursor:"pointer",
                 fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-                {Li("trash-2",11,T.neg)} Entfernen
+                {Li("trash-2",11,T.acc_neg)} Entfernen
               </button>
             )}
           </div>

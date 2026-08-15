@@ -64,7 +64,7 @@ function MobileCatStep({csvType, catId, subId, accountId, onSelect, S, btnBase, 
     if(!newName.trim()) return;
     const id="cat-"+uid();
     const type = ensureGroupForCat(newType);
-    const nc={id,name:newName.trim(),icon:"tag",color:T.blue,type,subs:[]};
+    const nc={id,name:newName.trim(),icon:"tag",color:T.acc,type,subs:[]};
     setCats(p=>[...p,nc]);
     setSelCat(nc); setCatStep("sub");
     setNewMode(null); setNewName("");
@@ -150,8 +150,8 @@ function MobileCatStep({csvType, catId, subId, accountId, onSelect, S, btnBase, 
       <button onClick={()=>setNewMode("sub")} className="wahl-taste"
         style={{...btnBase,marginTop:S.gap/2,
           background:"rgba(74,159,212,0.06)",
-          border:`1.5px dashed ${T.blue}66`,color:T.blue,fontWeight:400}}>
-        {Li("plus",S.fs-4,T.blue)} neue Unterkategorie
+          border:`1.5px dashed ${T.blue}66`,color:T.acc,fontWeight:400}}>
+        {Li("plus",S.fs-4,T.acc)} neue Unterkategorie
       </button>
     </div>
   );
@@ -181,8 +181,8 @@ function MobileCatStep({csvType, catId, subId, accountId, onSelect, S, btnBase, 
       <button onClick={()=>setNewMode("cat")} className="wahl-taste"
         style={{...btnBase,marginTop:S.gap/2,
           background:"rgba(74,159,212,0.06)",
-          border:`1.5px dashed ${T.blue}66`,color:T.blue,fontWeight:400}}>
-        {Li("plus",S.fs-4,T.blue)} neue Kategorie anlegen
+          border:`1.5px dashed ${T.blue}66`,color:T.acc,fontWeight:400}}>
+        {Li("plus",S.fs-4,T.acc)} neue Kategorie anlegen
       </button>
     </div>
   );

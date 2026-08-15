@@ -130,7 +130,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
             borderRadius:6,marginBottom:4,overflow:"hidden"}}>
             <div onClick={()=>{ if(isS){setExpandedId(isExpanded?null:tx.id);}else{openEdit(tx);} }}
               style={{display:"flex",alignItems:"center",gap:8,padding:"5px 6px",cursor:"pointer"}}>
-              <span>{(tx._budgetSubId?Li("target",18,T.gold):tx._seriesTyp==="finanzierung"?Li("credit-card",18,T.gold):tx._seriesId?Li("repeat",18,T.pos):Li("calendar",18,T.blue))}</span>
+              <span>{(tx._budgetSubId?Li("target",18,T.acc_gold):tx._seriesTyp==="finanzierung"?Li("credit-card",18,T.acc_gold):tx._seriesId?Li("repeat",18,T.acc_pos):Li("calendar",18,T.acc))}</span>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{color:T.txt,fontSize:14,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{tx.desc||cat?.name}</div>
                 <div style={{color:T.txt2,fontSize:11,display:"flex",alignItems:"center",gap:5}}>
@@ -141,22 +141,22 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
                       unterscheidbar, damit auffällt: die lässt sich ggf. mit
                       einer eigenen Vormerkung verknüpfen (s. "zuordnen" oben). */}
                   {isBankPending(tx)&&(
-                    <span style={{background:"rgba(74,159,212,0.15)",color:T.blue,
+                    <span style={{background:"rgba(74,159,212,0.15)",color:T.acc,
                       borderRadius:4,padding:"0 4px",fontSize:9,fontWeight:700,flexShrink:0,
                       display:"inline-flex",alignItems:"center",gap:3}}>
-                      {Li("landmark",8,T.blue)} Bank
+                      {Li("landmark",8,T.acc)} Bank
                     </span>
                   )}
                   {/* Flexibler Topf: belastet nicht das Budget der eigenen Kategorie */}
                   {tx._potSubId&&(
-                    <span style={{background:"rgba(245,166,35,0.15)",color:T.gold,
+                    <span style={{background:"rgba(245,166,35,0.15)",color:T.acc_gold,
                       borderRadius:4,padding:"0 4px",fontSize:9,fontWeight:700,flexShrink:0,
                       display:"inline-flex",alignItems:"center",gap:3}}>
-                      {Li("corner-up-right",8,T.gold)} aus Unvorh.
+                      {Li("corner-up-right",8,T.acc_gold)} aus Unvorh.
                     </span>
                   )}
                   {(tx.tags||[]).map(t=>(
-                    <span key={t} style={{background:`${T.blue}1a`,color:T.blue,
+                    <span key={t} style={{background:`${T.blue}1a`,color:T.acc,
                       borderRadius:4,padding:"0 4px",fontSize:9,fontWeight:700,flexShrink:0}}>
                       #{t}
                     </span>
@@ -191,9 +191,9 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
                 })}
                 <button onClick={()=>openEdit(tx)}
                   style={{padding:"5px",borderRadius:7,border:`1px solid ${T.bds}`,
-                    background:"transparent",color:T.blue,fontSize:10,cursor:"pointer",
+                    background:"transparent",color:T.acc,fontSize:10,cursor:"pointer",
                     display:"flex",alignItems:"center",justifyContent:"center",gap:4,fontFamily:"inherit"}}>
-                  {Li("edit",10,T.blue)} Bearbeiten
+                  {Li("edit",10,T.acc)} Bearbeiten
                 </button>
               </div>
             )}

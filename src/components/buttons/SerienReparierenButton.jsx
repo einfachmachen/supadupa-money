@@ -74,11 +74,11 @@ function SerienReparierenButton() {
       <button onClick={reparieren}
         style={{width:"100%",padding:"8px",borderRadius:9,
           border:`1px solid ${T.gold}44`,background:"rgba(245,166,35,0.08)",
-          color:T.gold,fontSize:12,fontWeight:600,cursor:"pointer",
+          color:T.acc_gold,fontSize:12,fontWeight:600,cursor:"pointer",
           display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-        {Li("link",13,T.gold)} {ohneId} Vormerkungen zu Serien zusammenfassen
+        {Li("link",13,T.acc_gold)} {ohneId} Vormerkungen zu Serien zusammenfassen
       </button>
-      {result&&<div style={{color:T.pos,fontSize:11,textAlign:"center"}}>{result}</div>}
+      {result&&<div style={{color:T.acc_pos,fontSize:11,textAlign:"center"}}>{result}</div>}
     </div>
   );
 }

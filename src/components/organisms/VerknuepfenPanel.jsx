@@ -37,10 +37,10 @@ function VerknuepfenPanel({editTx, txs, setTxs, setEditTx, setShowVormHub, setEd
       <div style={{marginBottom:6}}>
         <button onClick={()=>setShowLink(v=>!v)}
           style={{width:"100%",padding:"8px 10px",borderRadius:10,border:`1px solid ${T.blue}44`,
-            background:`${T.blue}08`,color:T.blue,fontSize:12,fontWeight:700,cursor:"pointer",
+            background:`${T.blue}08`,color:T.acc,fontSize:12,fontWeight:700,cursor:"pointer",
             fontFamily:"inherit",display:"flex",alignItems:"center",gap:6,marginBottom:showLink?6:0}}>
-          {Li("link",13,T.blue)} Buchung zuordnen ({candidates.length})
-          {Li(showLink?"chevron-up":"chevron-down",11,T.blue)}
+          {Li("link",13,T.acc)} Buchung zuordnen ({candidates.length})
+          {Li(showLink?"chevron-up":"chevron-down",11,T.acc)}
         </button>
         {showLink&&candidates.map(tx=>{
           const isMatch=Math.abs(tx.totalAmount-editTx.totalAmount)<0.01;
@@ -71,7 +71,7 @@ function VerknuepfenPanel({editTx, txs, setTxs, setEditTx, setShowVormHub, setEd
                 <div style={{color:T.txt2,fontSize:9}}>{tagMonat(tx.date)}</div>
               </div>
               <span style={{color:isMatch?T.pos:T.txt,fontFamily:NUM_FONT,fontSize:11,fontWeight:700,flexShrink:0}}>{betrag(tx.totalAmount)}</span>
-              {Li("link",10,T.blue)}
+              {Li("link",10,T.acc)}
             </div>
           );
         })}
@@ -125,7 +125,7 @@ function VerknuepfenPanel({editTx, txs, setTxs, setEditTx, setShowVormHub, setEd
                 <div style={{color:T.txt2,fontSize:9}}>{tagMonat(pend.date)}</div>
               </div>
               <span style={{color:isMatch?T.gold:T.txt,fontFamily:NUM_FONT,fontSize:11,fontWeight:700,flexShrink:0}}>{betrag(pend.totalAmount)}</span>
-              {Li("link",10,T.gold)}
+              {Li("link",10,T.acc_gold)}
             </div>
           );
         })}

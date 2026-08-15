@@ -679,16 +679,16 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                 <span style={{color:T.txt2,fontSize:10}}>{encryptExport?"an":"aus"}</span>
               </div>
               {!encryptExport ? (
-                <div style={{color:T.gold,fontSize:10,lineHeight:1.5,marginTop:6,display:"flex",gap:5,alignItems:"flex-start"}}>
-                  {Li("alert-triangle",11,T.gold)}
+                <div style={{color:T.acc_gold,fontSize:10,lineHeight:1.5,marginTop:6,display:"flex",gap:5,alignItems:"flex-start"}}>
+                  {Li("alert-triangle",11,T.acc_gold)}
                   <span>Export wird als <b>Klartext</b> gespeichert — z. B. wenn du die Datei
                     anderweitig lesen/auswerten möchtest.</span>
                 </div>
               ) : (<>
                 <div style={{color:T.txt2,fontSize:10,lineHeight:1.5,marginTop:6,display:"flex",gap:5,alignItems:"flex-start"}}>
-                  {Li("shield",11,T.blue)}
+                  {Li("shield",11,T.acc)}
                   <span>Zwei-Faktor: <b>Passphrase</b> (merkst du dir) + <b>Recovery-Code</b>
-                    (unten, einmalig — separat sichern). <b style={{color:T.gold}}>Beide zusammen
+                    (unten, einmalig — separat sichern). <b style={{color:T.acc_gold}}>Beide zusammen
                     nötig</b> — ohne einen von beiden ist die Sicherung dauerhaft unlesbar, es gibt
                     keine Wiederherstellung.</span>
                 </div>
@@ -716,8 +716,8 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                 )}
                 <div style={{marginTop:10,padding:"8px 10px",borderRadius:8,
                   background:"rgba(0,0,0,0.25)",border:`1px dashed ${T.gold}66`}}>
-                  <div style={{color:T.gold,fontSize:10,fontWeight:700,marginBottom:5}}>
-                    {Li("key-round",11,T.gold)} Recovery-Code — jetzt sichern (Passwort-Manager, Ausdruck …):
+                  <div style={{color:T.acc_gold,fontSize:10,fontWeight:700,marginBottom:5}}>
+                    {Li("key-round",11,T.acc_gold)} Recovery-Code — jetzt sichern (Passwort-Manager, Ausdruck …):
                   </div>
                   <div style={{color:T.txt,fontSize:14,fontWeight:700,fontFamily:"monospace",
                     letterSpacing:0.5,wordBreak:"break-all",marginBottom:6}}>
@@ -726,9 +726,9 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                   <div style={{display:"flex",gap:6}}>
                     <button onClick={()=>{navigator.clipboard.writeText(recoveryCode);setRecoveryCodeCopied(true);}}
                       style={{flex:1,padding:"6px",borderRadius:7,border:`1px solid ${T.gold}44`,
-                        background:`${T.gold}10`,color:T.gold,fontSize:11,fontWeight:700,cursor:"pointer",
+                        background:`${T.gold}10`,color:T.acc_gold,fontSize:11,fontWeight:700,cursor:"pointer",
                         fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
-                      {Li(recoveryCodeCopied?"check":"copy",12,T.gold)} {recoveryCodeCopied?"Kopiert":"Kopieren"}
+                      {Li(recoveryCodeCopied?"check":"copy",12,T.acc_gold)} {recoveryCodeCopied?"Kopiert":"Kopieren"}
                     </button>
                     <button onClick={()=>{setRecoveryCode(randomRecoveryCode());setRecoveryCodeCopied(false);}}
                       style={{padding:"6px 10px",borderRadius:7,border:`1px solid ${T.bd}`,
@@ -758,10 +758,10 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                 <span style={{color:T.txt2,fontSize:10}}>{hasEbKey?"vorhanden":"keiner"}</span>
               </div>
               <div style={{color:T.txt2,fontSize:10,lineHeight:1.5,marginTop:6,display:"flex",gap:5,alignItems:"flex-start"}}>
-                {Li("shield",11,T.gold)}
+                {Li("shield",11,T.acc_gold)}
                 <span>Der private Bank-Schlüssel wird normalerweise <b>nicht</b> mitgesichert
                   (er läge sonst unverschlüsselt in der Datei). Optional kannst du ihn hier
-                  <b> mit einer Passphrase verschlüsselt</b> aufnehmen. <b style={{color:T.gold}}>Ohne diese
+                  <b> mit einer Passphrase verschlüsselt</b> aufnehmen. <b style={{color:T.acc_gold}}>Ohne diese
                   Passphrase lässt er sich später nicht wieder importieren.</b></span>
               </div>
               {inclEbKey && (<>
@@ -875,13 +875,13 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                 border:`1px solid ${importErr?T.neg:T.bds}`,borderRadius:10,
                 color:T.txt,fontSize:11,padding:"10px",fontFamily:"monospace",
                 boxSizing:"border-box",outline:"none",resize:"vertical"}}/>
-            {importErr&&<div style={{color:T.neg,fontSize:10,marginTop:4}}>{importErr}</div>}
-            {importOk&&<div style={{color:T.pos,fontSize:11,marginTop:4,fontWeight:700,whiteSpace:"pre-wrap"}}>{importOk}</div>}
+            {importErr&&<div style={{color:T.acc_neg,fontSize:10,marginTop:4}}>{importErr}</div>}
+            {importOk&&<div style={{color:T.acc_pos,fontSize:11,marginTop:4,fontWeight:700,whiteSpace:"pre-wrap"}}>{importOk}</div>}
             <div style={{display:"flex",gap:8,marginTop:10}}>
               <label style={{flex:1,padding:"10px",borderRadius:11,border:`1px solid ${T.blue}44`,
-                background:`${T.blue}08`,color:T.blue,fontSize:12,fontWeight:700,cursor:"pointer",
+                background:`${T.blue}08`,color:T.acc,fontSize:12,fontWeight:700,cursor:"pointer",
                 display:"flex",alignItems:"center",justifyContent:"center",gap:6,textAlign:"center"}}>
-                {Li("folder-open",13,T.blue)} Datei(en) importieren
+                {Li("folder-open",13,T.acc)} Datei(en) importieren
                 <input type="file" accept=".json" multiple style={{display:"none"}}
                   onChange={e=>{
                     const fs=Array.from(e.target.files||[]); if(!fs.length) return;
@@ -909,9 +909,9 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
 
           {/* ── LÖSCHEN ── */}
           {tab==="delete"&&(<>
-            <div style={{color:T.neg,fontSize:11,marginBottom:10,padding:"6px 10px",
+            <div style={{color:T.acc_neg,fontSize:11,marginBottom:10,padding:"6px 10px",
               background:`${T.neg}10`,borderRadius:8,border:`1px solid ${T.neg}33`}}>
-              {Li("alert-triangle",11,T.neg)} Achtung: Löschen kann nicht rückgängig gemacht werden!
+              {Li("alert-triangle",11,T.acc_neg)} Achtung: Löschen kann nicht rückgängig gemacht werden!
             </div>
             {rangeSelector}
             {/* Konto-Filter — Mehrfachauswahl; gilt für Buchungen, Vormerkungen
@@ -949,24 +949,24 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                   <div style={{padding:"8px 10px",borderRadius:9,
                     background:`${T.gold}10`,border:`1px solid ${T.gold}44`}}>
                     <div style={{display:"flex",alignItems:"center",gap:10}}>
-                      {Li(icon,14,T.gold)}
+                      {Li(icon,14,T.acc_gold)}
                       <span style={{flex:1,color:T.txt,fontSize:12}}>{label}</span>
                       {count!==""&&<span style={{color:T.txt2,fontSize:10,fontFamily:"monospace",marginRight:4}}>{count}</span>}
                       <button onClick={onNav}
                         style={{padding:"5px 10px",borderRadius:7,border:`1px solid ${T.gold}66`,
-                          background:`${T.gold}14`,color:T.gold,fontSize:11,fontWeight:700,
+                          background:`${T.gold}14`,color:T.acc_gold,fontSize:11,fontWeight:700,
                           cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
-                        Öffnen {Li("arrow-right",11,T.gold)}
+                        Öffnen {Li("arrow-right",11,T.acc_gold)}
                       </button>
                     </div>
                     <div style={{color:T.txt2,fontSize:10,lineHeight:1.5,marginTop:6,display:"flex",gap:5,alignItems:"flex-start"}}>
-                      {Li("alert-triangle",11,T.gold)}<span>{note}</span>
+                      {Li("alert-triangle",11,T.acc_gold)}<span>{note}</span>
                     </div>
                   </div>
                 ) : delConfirm===key ? (
                   <div style={{padding:"10px",borderRadius:10,
                     background:`${T.neg}15`,border:`1px solid ${T.neg}44`}}>
-                    <div style={{color:T.neg,fontSize:11,fontWeight:700,marginBottom:6}}>
+                    <div style={{color:T.acc_neg,fontSize:11,fontWeight:700,marginBottom:6}}>
                       Wirklich löschen: {label} ({count})?
                     </div>
                     <div style={{color:T.txt2,fontSize:10,marginBottom:8,lineHeight:1.4}}>
@@ -995,9 +995,9 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                     </span>
                     <button onClick={()=>setDelConfirm(key)}
                       style={{padding:"5px 10px",borderRadius:7,border:`1px solid ${T.neg}44`,
-                        background:`${T.neg}10`,color:T.neg,fontSize:11,fontWeight:700,
+                        background:`${T.neg}10`,color:T.acc_neg,fontSize:11,fontWeight:700,
                         cursor:"pointer",fontFamily:"inherit"}}>
-                      {Li("trash-2",11,T.neg)} Löschen
+                      {Li("trash-2",11,T.acc_neg)} Löschen
                     </button>
                   </div>
                 )}

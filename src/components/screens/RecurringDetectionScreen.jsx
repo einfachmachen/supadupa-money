@@ -357,8 +357,8 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
           {Li("arrow-left",13)}
         </button>
         <div style={{flex:1}}>
-          <div style={{color:T.gold,fontSize:15,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
-            {Li("repeat",14,T.gold)} Wiederkehrende Buchungen erkennen
+          <div style={{color:T.acc_gold,fontSize:15,fontWeight:700,display:"flex",alignItems:"center",gap:6}}>
+            {Li("repeat",14,T.acc_gold)} Wiederkehrende Buchungen erkennen
           </div>
           <div style={{color:T.txt2,fontSize:10,marginTop:1}}>
             {tab==="vormerkung"&&(
@@ -410,7 +410,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
       {phase==="config"&&(
         <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",
           justifyContent:"center",gap:16,padding:32}}>
-          {Li("search",48,T.gold)}
+          {Li("search",48,T.acc_gold)}
           <div style={{color:T.txt,fontSize:16,fontWeight:700,textAlign:"center"}}>
             Buchungen nach Mustern durchsuchen
           </div>
@@ -457,7 +457,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
           <div style={{padding:"8px 16px",borderBottom:`1px solid ${T.bd}`,flexShrink:0,
             display:"flex",alignItems:"center",gap:8}}>
             <div style={{color:T.txt2,fontSize:11,flex:1}}>
-              Anhaken = einschließen · <span style={{color:T.gold,fontWeight:700}}>
+              Anhaken = einschließen · <span style={{color:T.acc_gold,fontWeight:700}}>
                 {included.size} ausgewählt
               </span>
             </div>
@@ -497,13 +497,13 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{color:T.txt,fontSize:12,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                         {v.shortDesc}
-                        {hasInterval&&<span style={{marginLeft:6,color:T.gold,fontSize:9,fontWeight:700,
+                        {hasInterval&&<span style={{marginLeft:6,color:T.acc_gold,fontSize:9,fontWeight:700,
                           background:(isLightTheme())?"rgba(192,120,0,0.18)":"rgba(245,166,35,0.15)",borderRadius:4,padding:"1px 5px"}}>
                           {v.interval}
                         </span>}
-                        {v.hasExistingVorm&&<span style={{marginLeft:4,color:T.blue,fontSize:9,fontWeight:700,
+                        {v.hasExistingVorm&&<span style={{marginLeft:4,color:T.acc,fontSize:9,fontWeight:700,
                           background:"rgba(74,159,212,0.15)",borderRadius:4,padding:"1px 5px"}}>
-                          {Li("clock",8,T.blue)} Vormerkg. vorhanden
+                          {Li("clock",8,T.acc)} Vormerkg. vorhanden
                         </span>}
                       </div>
                       <div style={{color:T.txt2,fontSize:10,marginTop:2,display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
@@ -526,7 +526,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
                       {manualIntervals[v.vendor]&&v.repeatedAmounts.length===0&&(
                         <div style={{fontSize:9,color:T.txt2,marginBottom:6,padding:"4px 6px",
                           background:"rgba(74,159,212,0.08)",borderRadius:6}}>
-                          {Li("info",9,T.blue)} Kein gleichbleibender Betrag erkannt — verwende letzten Betrag:
+                          {Li("info",9,T.acc)} Kein gleichbleibender Betrag erkannt — verwende letzten Betrag:
                           <span style={{color:T.txt,fontFamily:NUM_FONT,fontWeight:700,marginLeft:4}}>
                             {(()=>{const last=v.txList.sort((a,b)=>b.date.localeCompare(a.date))[0];return `${v.isIncome?"+":"−"}${fmt2(last?.totalAmount||0)} €`;})()}
                           </span>
@@ -744,7 +744,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
           <div style={{padding:"10px 16px",borderBottom:`1px solid ${T.bd}`,flexShrink:0,
             display:"flex",alignItems:"center",gap:10}}>
             <div style={{color:T.txt2,fontSize:12,flex:1}}>
-              {suggestions.length} Muster · <span style={{color:T.gold,fontWeight:700}}>{accepted.size} ausgewählt</span>
+              {suggestions.length} Muster · <span style={{color:T.acc_gold,fontWeight:700}}>{accepted.size} ausgewählt</span>
             </div>
             <button onClick={()=>setAccepted(new Set(suggestions.map(s=>s.id)))}
               style={{background:"transparent",border:`1px solid ${T.bds}`,color:T.txt2,borderRadius:7,padding:"3px 8px",fontSize:10,cursor:"pointer"}}>Alle</button>
@@ -782,7 +782,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
                           style={{width:"100%",background:"transparent",border:"none",color:T.txt,fontSize:13,
                             fontWeight:700,outline:"none",fontFamily:"inherit",padding:0,boxSizing:"border-box"}}/>
                         <div style={{color:T.txt2,fontSize:10,marginTop:2,display:"flex",gap:8,flexWrap:"wrap"}}>
-                          <span style={{color:T.gold,fontWeight:700}}>{Li("repeat",9,T.gold)} {get(s.id,"interval")||s.interval}</span>
+                          <span style={{color:T.acc_gold,fontWeight:700}}>{Li("repeat",9,T.acc_gold)} {get(s.id,"interval")||s.interval}</span>
                           <span>{s.count}× gefunden</span>
                           <span>Nächster: {(get(s.id,"nextDate")||s.nextDate).split("-").reverse().join(".")}</span>
                         </div>
@@ -823,9 +823,9 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
                         title="neue Kategorie anlegen"
                         style={{padding:"6px 8px",borderRadius:8,border:`1px solid ${T.pos}44`,
                           background:newCatPanel===s.id?`${T.pos}22`:`${T.pos}11`,
-                          color:T.pos,fontSize:11,cursor:"pointer",flexShrink:0,
+                          color:T.acc_pos,fontSize:11,cursor:"pointer",flexShrink:0,
                           display:"flex",alignItems:"center",gap:3,fontFamily:"inherit"}}>
-                        {Li("plus",11,T.pos)} Neu
+                        {Li("plus",11,T.acc_pos)} Neu
                       </button>
                     </div>
                     {/* Inline Kategorie-Ersteller */}
@@ -852,7 +852,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
       {/* ── DONE ── */}
       {phase==="done"&&(
         <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,padding:24}}>
-          {Li("check-circle",48,T.pos)}
+          {Li("check-circle",48,T.acc_pos)}
           <div style={{color:T.txt,fontSize:20,fontWeight:800}}>
             {suggestions.filter(s=>accepted.has(s.id)).length} Serien angelegt!
           </div>
@@ -875,7 +875,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
       {katPhase==="config"&&(
         <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",
           justifyContent:"center",gap:16,padding:32}}>
-          {Li("tag",48,T.blue)}
+          {Li("tag",48,T.acc)}
           <div style={{color:T.txt,fontSize:16,fontWeight:700,textAlign:"center"}}>
             Vergangene Buchungen kategorisieren
           </div>
@@ -914,7 +914,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
           <div style={{padding:"8px 16px",borderBottom:`1px solid ${T.bd}`,flexShrink:0,
             display:"flex",alignItems:"center",gap:8}}>
             <div style={{color:T.txt2,fontSize:11,flex:1}}>
-              <span style={{color:T.blue,fontWeight:700}}>
+              <span style={{color:T.acc,fontWeight:700}}>
                 {katIncluded.size} ausgewählt
               </span>
               {" · "}Anhaken = einschließen
@@ -1129,7 +1129,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
       {/* ── KAT PHASE 3: Done ── */}
       {katPhase==="done"&&(
         <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,padding:24}}>
-          {Li("check-circle",48,T.blue)}
+          {Li("check-circle",48,T.acc)}
           <div style={{color:T.txt,fontSize:20,fontWeight:800}}>
             {katDone} Buchungen kategorisiert!
           </div>

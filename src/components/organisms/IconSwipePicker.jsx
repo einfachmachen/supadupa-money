@@ -102,8 +102,8 @@ function IconSwipePicker({ onClose }) {
       <MobileHeader title="Icon-Favoriten"
         subtitle={total ? `${safeIdx+1} / ${total} · antippen = Favorit` : null}
         onClose={onClose}
-        right={<div style={{display:"flex",alignItems:"center",gap:5,color:T.gold,fontWeight:700,fontSize:14}}>
-          {Li("star",15,T.gold)} {favIcons.length}
+        right={<div style={{display:"flex",alignItems:"center",gap:5,color:T.acc_gold,fontWeight:700,fontSize:14}}>
+          {Li("star",15,T.acc_gold)} {favIcons.length}
         </div>}/>
 
       {/* Karten-Bühne */}
@@ -128,9 +128,9 @@ function IconSwipePicker({ onClose }) {
             }}>
             {/* Favorit-Badge — dauerhaft sichtbar, kein Wisch-Feedback mehr */}
             {isFav && (
-              <div style={{position:"absolute",top:16,right:16,color:T.gold,
+              <div style={{position:"absolute",top:16,right:16,color:T.acc_gold,
                 display:"flex",alignItems:"center",justifyContent:"center",pointerEvents:"none"}}>
-                {Li("star",26,T.gold)}
+                {Li("star",26,T.acc_gold)}
               </div>
             )}
             <div style={{width:240,height:240,borderRadius:44,

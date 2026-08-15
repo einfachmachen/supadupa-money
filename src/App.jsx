@@ -281,7 +281,7 @@ export default function SupaDupaMoney() {
     repeatMonths:1, accountId:"acc-giro",
     splits:[{id:uid(),catId:"",subId:"",amount:""}],
   }));
-  const [newCat,        setNewCat]       = useState({name:"",type:"expense",icon:"tag",color:T.blue,subs:[]});
+  const [newCat,        setNewCat]       = useState({name:"",type:"expense",icon:"tag",color:T.acc,subs:[]});
   const [newSubName,    setNewSubName]   = useState("");
   const [showSettings,  setShowSettings] = useState(false);
   const [showThemeValidator, setShowThemeValidator] = useState(false);
@@ -3604,7 +3604,7 @@ export default function SupaDupaMoney() {
               <div key={tx.id} onClick={()=>{ setShowOverdueList(false); openEdit(tx); }}
                 style={{display:"flex",alignItems:"center",gap:10,padding:"11px 8px",
                   borderBottom:`1px solid ${T.bd}`,cursor:"pointer"}}>
-                {Li("alert-triangle",16,T.gold)}
+                {Li("alert-triangle",16,T.acc_gold)}
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:14,fontWeight:700,color:T.txt,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                     {tx.desc||cat?.name||"Buchung"}
@@ -4397,7 +4397,7 @@ export default function SupaDupaMoney() {
             style={{background:T.surf,borderRadius:20,padding:"20px 18px 22px",width:"100%",maxWidth:480,
               border:`1px solid ${T.bds}`,boxShadow:"0 20px 60px rgba(0,0,0,0.8)",maxHeight:"80vh",display:"flex",flexDirection:"column"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-              <div style={{color:T.blue,fontSize:15,fontWeight:700}}>{Li("file-text",15,T.blue)} {exportModal.title}</div>
+              <div style={{color:T.acc,fontSize:15,fontWeight:700}}>{Li("file-text",15,T.acc)} {exportModal.title}</div>
               <button onClick={()=>setExportModal(null)}
                 style={{background:"rgba(255,255,255,0.07)",border:"none",color:"#888",borderRadius:8,width:28,height:28,cursor:"pointer"}}>{Li("x",13)}</button>
             </div>

@@ -107,7 +107,7 @@ function KategorieAnlegen({onDone}) {
                 }}
                 style={{...INP,marginBottom:0,flex:1,fontSize:11,padding:"4px 8px",
                   border:`1px solid ${saved===cat.id?T.pos:T.bds}`}}/>
-              {saved===cat.id&&<span style={{color:T.pos,fontSize:10,display:"flex",alignItems:"center"}}>{Li("check",11,T.pos)}</span>}
+              {saved===cat.id&&<span style={{color:T.acc_pos,fontSize:10,display:"flex",alignItems:"center"}}>{Li("check",11,T.acc_pos)}</span>}
             </div>
           </div>
         ))}

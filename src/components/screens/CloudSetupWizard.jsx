@@ -207,7 +207,7 @@ function CloudSetupWizard({ onClose, onBack }) {
         <div style={{ margin: "10px 18px 0", padding: "10px 14px", borderRadius: 12,
           background: T.pos + "18", border: `1px solid ${T.pos}55`,
           display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-          {Li("check-circle", 18, T.pos)}
+          {Li("check-circle", 18, T.acc_pos)}
           <div style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 13, lineHeight: 1.4 }}>
             Cloud-Sync ist schon eingerichtet.
           </div>
@@ -232,7 +232,7 @@ function CloudSetupWizard({ onClose, onBack }) {
               <>
                 <Box tone="tip">
                   <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 800, marginBottom: 6 }}>
-                    {Li("check-circle", 17, T.pos)} Cloud-Sync eingerichtet
+                    {Li("check-circle", 17, T.acc_pos)} Cloud-Sync eingerichtet
                   </div>
                   <div style={{ fontSize: 13.5, lineHeight: 1.7 }}>
                     <div>Worker-URL: <code style={{ fontFamily: "monospace", wordBreak: "break-all" }}>{cfUrl}</code></div>
@@ -250,7 +250,7 @@ function CloudSetupWizard({ onClose, onBack }) {
                   (falls genutzt) dieselbe Passphrase eintragen, dann testen.
                   <button onClick={() => setStep(idxOf("test"))}
                     style={{ display: "block", marginTop: 8, background: "transparent", border: `1px solid ${T.pos}66`,
-                      color: T.pos, borderRadius: 9, padding: "8px 12px", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+                      color: T.acc_pos, borderRadius: 9, padding: "8px 12px", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
                     Verbindung testen →
                   </button>
                 </Box>

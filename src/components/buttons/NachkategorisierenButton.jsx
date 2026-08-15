@@ -74,21 +74,21 @@ function NachkategorisierenButton() {
       <button onClick={()=>run(true)}
         style={{width:"100%",padding:"8px",borderRadius:9,
           border:`1px solid ${T.gold}44`,background:"rgba(245,166,35,0.08)",
-          color:T.gold,fontSize:12,fontWeight:600,cursor:"pointer",
+          color:T.acc_gold,fontSize:12,fontWeight:600,cursor:"pointer",
           display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-        {Li("tag",13,T.gold)} Nur unkategorisierte zuordnen ({uncatCount})
+        {Li("tag",13,T.acc_gold)} Nur unkategorisierte zuordnen ({uncatCount})
       </button>
       <button onClick={()=>run(false)}
         style={{width:"100%",padding:"8px",borderRadius:9,
           border:`1px solid ${T.neg}33`,background:"rgba(224,80,96,0.06)",
-          color:T.neg,fontSize:12,fontWeight:600,cursor:"pointer",
+          color:T.acc_neg,fontSize:12,fontWeight:600,cursor:"pointer",
           display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-        {Li("refresh-cw",13,T.neg)} Alle Buchungen neu zuordnen
+        {Li("refresh-cw",13,T.acc_neg)} Alle Buchungen neu zuordnen
       </button>
       {result!==null&&(
         <div style={{background:"rgba(170,204,0,0.1)",border:`1px solid ${T.pos}44`,borderRadius:8,
-          padding:"6px 10px",fontSize:11,color:T.pos,display:"flex",alignItems:"center",gap:6}}>
-          {Li("check-circle",12,T.pos)} {result.matched} zugeordnet · {result.skipped} ohne Treffer
+          padding:"6px 10px",fontSize:11,color:T.acc_pos,display:"flex",alignItems:"center",gap:6}}>
+          {Li("check-circle",12,T.acc_pos)} {result.matched} zugeordnet · {result.skipped} ohne Treffer
         </div>
       )}
     </div>

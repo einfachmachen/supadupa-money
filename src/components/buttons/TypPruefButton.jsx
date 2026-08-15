@@ -70,9 +70,9 @@ function TypPruefButton() {
     <button onClick={pruefen}
       style={{width:"100%",padding:"8px",borderRadius:9,
         border:`1px solid ${T.neg}66`,background:"rgba(224,80,96,0.1)",
-        color:T.neg,fontSize:12,fontWeight:700,cursor:"pointer",
+        color:T.acc_neg,fontSize:12,fontWeight:700,cursor:"pointer",
         display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-      {Li("alert-triangle",13,T.neg)} {wrongCount} falsch zugeordnete Buchungen prüfen
+      {Li("alert-triangle",13,T.acc_neg)} {wrongCount} falsch zugeordnete Buchungen prüfen
     </button>
   );
 }
