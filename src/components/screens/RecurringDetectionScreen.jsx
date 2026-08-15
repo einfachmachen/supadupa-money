@@ -339,7 +339,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
           wie in MobileHeader, sonst liegt der Titel auf Geraeten mit Notch
           unter der Statusleiste. */}
       <div style={{background:T.surf,borderBottom:`1px solid ${T.bds}`,
-        padding:"calc(12px + env(safe-area-inset-top, 0px)) 16px 12px",
+        padding:"calc(12px + var(--safe-top, env(safe-area-inset-top, 0px))) 16px 12px",
         display:"flex",alignItems:"center",gap:12,flexShrink:0}}>
         <button onClick={()=>{
           if(tab==="vormerkung"){
