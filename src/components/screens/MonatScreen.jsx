@@ -1669,7 +1669,13 @@ function MonatScreen() {
               // Reiterleiste (§5). Vorher 8px: in Themes mit randlosem Hero
               // faellt das nicht auf, in "Tastenhell" standen Hero (10) und
               // Tageskarte (8) sichtbar versetzt uebereinander (Nutzer-Hinweis).
-              <div key={date} data-month={date.slice(0,7)} className="tages-karte" style={{margin:"14px 10px 0",border:`1px solid ${T.bd}`,borderRadius:12,background:T.surf||"rgba(255,255,255,0.03)"}}>
+              // 8px zwischen zwei Tagesbereichen — derselbe Abstand wie
+              // zwischen allen anderen Bereichen der Ansicht (Hero, Suche,
+              // Filterzeile, Werkzeuge, Kategoriekarten). Vorher 14px: die
+              // Tagesbloecke standen dadurch als einzige weiter auseinander.
+              // Bewusst hier am Element statt im Theme — der Abstand gilt in
+              // JEDEM Theme, und in jedem war er zu gross (Nutzer-Wunsch).
+              <div key={date} data-month={date.slice(0,7)} className="tages-karte" style={{margin:"8px 10px 0",border:`1px solid ${T.bd}`,borderRadius:12,background:T.surf||"rgba(255,255,255,0.03)"}}>
                 {/* Eigener leerer Wrapper NUR um die Kopfzeile (nicht um den
                     ganzen Tages-Block!) für den Dokumentfluss-Platz — siehe
                     ausführlichen Kommentar bei der Einnahmen-Zeile weiter unten. */}
