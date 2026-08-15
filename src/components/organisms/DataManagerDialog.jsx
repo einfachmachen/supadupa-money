@@ -4,6 +4,7 @@ import React, { createElement, useContext, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
+import { AccountChips } from "../molecules/AccountChips.jsx";
 import { INP } from "../../theme/palette.js";
 import { THEMES } from "../../theme/themes.js";
 import { Li } from "../../utils/icons.jsx";
@@ -552,24 +553,33 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   const rangeSelector = (
     <div style={{background:"rgba(0,0,0,0.15)",borderRadius:9,padding:"8px 10px",marginBottom:10}}>
       <div style={{color:T.txt2,fontSize:10,marginBottom:6,fontWeight:600}}>Zeitraum:</div>
-      <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-        <select value={fromM} onChange={e=>setFromM(Number(e.target.value))}
-          style={{flex:1,minWidth:60,...INP,marginBottom:0,fontSize:11,padding:"4px 6px"}}>
+      {/* Eine Zeile: MMM YYYY – MMM YYYY. Vorher brach die Zeile in fuenf
+          Zeilen um, weil eine globale Regel (themes.css, iOS-Zoomsperre) die
+          Schrift von Feldern im Vollbild-Dialog auf --mob-fs zwingt — die
+          Inline-Angabe fontSize:11 verlor dagegen. Der Haken `zeitraum-feld`
+          holt sie zurueck (hoehere Spezifitaet als `.mobile-modal select`).
+          "Alles" ist jetzt ein Symbolknopf: als Wort belegte er die Breite,
+          die den Umbruch ausloeste. */}
+      <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"nowrap"}}>
+        <select className="zeitraum-feld" value={fromM} onChange={e=>setFromM(Number(e.target.value))}
+          style={{flex:1,minWidth:0,...INP,marginBottom:0,padding:"4px 2px",textAlign:"center"}}>
           {MONTHS_G.map((m,i)=><option key={i} value={i}>{m}</option>)}
         </select>
-        <input type="number" value={fromY} onChange={e=>setFromY(Number(e.target.value))}
-          style={{width:64,...INP,marginBottom:0,fontSize:11,padding:"4px 6px",textAlign:"center"}}/>
-        <span style={{color:T.txt2,fontSize:11}}>–</span>
-        <select value={toM} onChange={e=>setToM(Number(e.target.value))}
-          style={{flex:1,minWidth:60,...INP,marginBottom:0,fontSize:11,padding:"4px 6px"}}>
+        <input className="zeitraum-feld" type="number" value={fromY} onChange={e=>setFromY(Number(e.target.value))}
+          style={{flex:1,minWidth:0,...INP,marginBottom:0,padding:"4px 2px",textAlign:"center"}}/>
+        <span style={{color:T.txt2,fontSize:12,flexShrink:0}}>–</span>
+        <select className="zeitraum-feld" value={toM} onChange={e=>setToM(Number(e.target.value))}
+          style={{flex:1,minWidth:0,...INP,marginBottom:0,padding:"4px 2px",textAlign:"center"}}>
           {MONTHS_G.map((m,i)=><option key={i} value={i}>{m}</option>)}
         </select>
-        <input type="number" value={toY} onChange={e=>setToY(Number(e.target.value))}
-          style={{width:64,...INP,marginBottom:0,fontSize:11,padding:"4px 6px",textAlign:"center"}}/>
+        <input className="zeitraum-feld" type="number" value={toY} onChange={e=>setToY(Number(e.target.value))}
+          style={{flex:1,minWidth:0,...INP,marginBottom:0,padding:"4px 2px",textAlign:"center"}}/>
         <button onClick={()=>{setFromM(fullFromM);setFromY(fullFromY);setToM(fullToM);setToY(fullToY);}}
-          title="Ganzer Zeitraum (alle Buchungen)"
+          title="Ganzer Zeitraum (alle Buchungen)" aria-label="Ganzer Zeitraum"
           style={{background:"rgba(255,255,255,0.07)",border:"none",color:T.txt2,borderRadius:6,
-            padding:"4px 8px",fontSize:10,cursor:"pointer"}}>Alles</button>
+            padding:"4px 6px",cursor:"pointer",flexShrink:0,display:"inline-flex",alignItems:"center"}}>
+          {Li("maximize-2",14,T.txt2)}
+        </button>
       </div>
     </div>
   );
@@ -920,28 +930,14 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
               <div style={{color:T.txt2,fontSize:10,marginBottom:4}}>
                 Konto-Filter (Mehrfachauswahl möglich):
               </div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:4}}>
-                <button onClick={()=>setDelAccs(new Set())}
-                  style={{padding:"4px 10px",borderRadius:6,fontSize:11,fontWeight:allAccts?700:400,
-                    background:allAccts?T.blue:"transparent",
-                    color:allAccts?"#fff":T.txt2,
-                    border:`1px solid ${allAccts?T.blue:T.bd}`,cursor:"pointer"}}>
-                  Alle Konten
-                </button>
-                {(accounts||[]).map(a => {
-                  const on = delAccs.has(a.id);
-                  return (
-                    <button key={a.id} onClick={()=>toggleDelAcc(a.id)}
-                      style={{padding:"4px 10px",borderRadius:6,fontSize:11,fontWeight:on?700:400,
-                        display:"inline-flex",alignItems:"center",gap:4,
-                        background:on?T.blue:"transparent",
-                        color:on?"#fff":T.txt2,
-                        border:`1px solid ${on?T.blue:T.bd}`,cursor:"pointer"}}>
-                      {on&&Li("check",11,"#fff")}{a.name}
-                    </button>
-                  );
-                })}
-              </div>
+              {/* Dieselbe Konto-Schnellwahl wie ueberall sonst (Vormerken,
+                  Buchung anlegen, CSV-Import) — hier im Mehrfach-Modus.
+                  Vorher standen an dieser einen Stelle eigene Textpillen ohne
+                  Symbole, die mit nichts anderem in der App zusammenpassten. */}
+              <AccountChips accounts={accounts||[]} allowAll allLabel="Alle"
+                values={[...delAccs]} onToggle={toggleDelAcc}
+                onChange={()=>setDelAccs(new Set())}
+                S={{fs:22,radius:12,gap:10}}/>
             </div>
             {DELETE_ITEMS.map(({key,label,icon,count,action,nav,onNav,note})=>(
               <div key={key} style={{marginBottom:6}}>

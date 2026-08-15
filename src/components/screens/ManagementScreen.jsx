@@ -250,7 +250,7 @@ function ManagementScreen({activeTab="kategorien"}) {
               // Import — obwohl das eine BANKDATEN einliest (fremdes Format,
               // wird zu neuen Buchungen) und das andere eine SICHERUNG DER APP
               // wiederherstellt. Genau diese Verwechslung war der Anlass.
-              const csvRow      = {icon:"download",   color:T.acc_pos,          label:"CSV / PDF einlesen",    sub:"Kontoauszug aus der Banking-App", onClick:()=>setShowCsv?.(true), tourId:"row-csv"};
+              const csvRow      = {icon:"download",   color:T.acc_pos,          label:"csv/pdf importieren",   sub:"Kontoauszug aus der Banking-App", onClick:()=>setShowCsv?.(true), tourId:"row-csv"};
               const bankRow     = {icon:"landmark",   color:T.acc_gold,         label:"Bank verbinden",        sub:"Schritt für Schritt · Enable Banking", onClick:()=>setShowBankWizard?.(true), tourId:"row-bank"};
               const dataMgrRow  = {icon:"database",   color:T.acc_pos,          label:"Daten-Manager",         sub:"Export / Import / Löschen",       onClick:()=>setShowDataMgr?.(true)};
               const cloudRow    = {icon:"cloud",      color:T.acc_cf||T.blue,   label:"Cloud-Sync einrichten", sub:"Eigene Cloud-DB · geführt",       onClick:()=>setShowCloudSetup?.(true), tourId:"row-cloudsync"};
@@ -290,7 +290,7 @@ function ManagementScreen({activeTab="kategorien"}) {
                 ? [holen, eigene, verwalten, app]
                 : [verwalten, holen, eigene, app];
             })().map((gruppe)=>(
-              <div key={gruppe.titel} style={{marginBottom:18}}>
+              <div key={gruppe.titel} style={{marginBottom:8}}>
                 <div style={{color:T.lbl||T.txt2,fontSize:11,fontWeight:600,display:"flex",
                   alignItems:"center",gap:6,marginBottom:10}}>
                   {/* Symbol folgt der Beschriftung (currentColor): es steht

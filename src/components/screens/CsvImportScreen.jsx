@@ -997,7 +997,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
       {/* Header — einheitlich mit den anderen Daten-Tab-Dialogen (siehe MobileHeader),
           unabhängig von mobileMode. Zurück führt review/done → input, input → Mehr-Menü. */}
       {!embedded && (
-        <MobileHeader title="CSV importieren" icon="download" iconColor={T.pos}
+        <MobileHeader title="csv/pdf importieren" icon="download" iconColor={T.pos}
           subtitle={step==="review"&&parsed?.format ? parsed.format : "DKB · Finanzblick · beliebiges Format"}
           onBack={step!=="input" ? ()=>setStep("input") : (onBack||onClose)}
           onClose={onClose}/>

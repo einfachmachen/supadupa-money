@@ -505,6 +505,11 @@
      waehrend die Textfelder daneben laengst --mob-fs benutzten. Genau das
      liess Kategorie/Unterkategorie kleiner aussehen als Betrag. */
   .mobile-modal select { font-size: var(--mob-fs) !important; }
+  /* Ausnahme: die vier Zeitraum-Felder im Daten-Manager. Mit --mob-fs (18px)
+     passte "MMM YYYY - MMM YYYY" nicht in eine Zeile und brach in fuenf um.
+     Hoehere Spezifitaet (0,2,0) als `.mobile-modal select` (0,1,1) → gewinnt.
+     12px ist klein genug fuer eine Zeile und gross genug zum Tippen. */
+  .mobile-modal .zeitraum-feld { font-size: 12px !important; }
   /* Mobile mode — alle Texte und Buttons größer */
   /* iOS Safari Fix + nav-bottom-Überlappung:
      Die nav-bottom (Home/Monat/Jahr-Buttons) ist position:fixed bottom:0,

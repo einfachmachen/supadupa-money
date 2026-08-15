@@ -13,6 +13,10 @@
 //   excludeId     – Konto ausblenden (z.B. Umbuchungs-Quelle)
 //   minCols       – Mindest-Spaltenzahl (hält z.B. Ziel auf Quell-Breite)
 //   S             – Größen-Tokens { fs, radius, gap } (Default wie Vormerken)
+//   values        – OPTIONAL: Liste ausgewählter accountIds. Ist sie gesetzt,
+//                   schaltet die Auswahl auf MEHRFACH um (Daten-Manager:
+//                   Konto-Filter für Export/Löschen). Leere Liste = „Alle“.
+//   onToggle(id)  – Callback im Mehrfach-Modus (statt onChange)
 
 import React from "react";
 import { theme as T } from "../../theme/activeTheme.js";
@@ -26,7 +30,14 @@ function AccountChips({
   allowAll = false, allLabel = "Alle",
   onAddAccount = null, addLabel = "Konto",
   excludeId = null, minCols = 0, S = DEFAULT_S,
+  values = null, onToggle = null,
 }) {
+  // Mehrfach-Modus: `values` gesetzt. Einfach-Modus bleibt Zeichen fuer
+  // Zeichen wie bisher — alle bestehenden Aufrufe uebergeben `values` nicht.
+  const mehrfach = Array.isArray(values);
+  const istGewaehlt = (id) => mehrfach ? values.includes(id) : value === id;
+  const alleGewaehlt = mehrfach ? values.length === 0 : value == null;
+  const waehle = (id) => (mehrfach && id != null) ? onToggle?.(id) : onChange?.(id);
   const list = (accounts || []).filter((a) => a.id !== excludeId);
   const cols = Math.max(minCols, list.length + (allowAll ? 1 : 0) + (onAddAccount ? 1 : 0));
   if (cols === 0) return null;
@@ -55,19 +66,19 @@ function AccountChips({
   return (
     <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: S.gap / 2 }}>
       {allowAll && (
-        <button onClick={() => onChange(null)} className={value == null ? undefined : "wahl-taste"}
-          style={chipStyle(value == null, T.blue)}>
-          {Li("layers", S.fs, value == null ? aufChip(T.blue, 3) : T.txt2)}
-          <span style={nameStyle(value == null)}>{allLabel}</span>
+        <button onClick={() => waehle(null)} className={alleGewaehlt ? undefined : "wahl-taste"}
+          style={chipStyle(alleGewaehlt, T.blue)}>
+          {Li("layers", S.fs, alleGewaehlt ? aufChip(T.blue, 3) : T.txt2)}
+          <span style={nameStyle(alleGewaehlt)}>{allLabel}</span>
         </button>
       )}
       {list.map((acc) => {
-        const sel = value === acc.id;
+        const sel = istGewaehlt(acc.id);
         const col = acc.color || T.blue;
         return (
           // Nicht gewaehlte Kacheln sind Tasten (Nutzer-Wunsch) — die gewaehlte
           // traegt ihre Kontofarbe voll.
-          <button key={acc.id} onClick={() => onChange(acc.id)} className={sel ? undefined : "wahl-taste"}
+          <button key={acc.id} onClick={() => waehle(acc.id)} className={sel ? undefined : "wahl-taste"}
             style={chipStyle(sel, col)}>
             {acc.delayDays > 0 && (
               <span style={{ position: "absolute", top: 3, right: 3, fontSize: S.fs - 16,
