@@ -207,6 +207,11 @@ function DashboardScreenV2() {
     const detailsOpen = detailsOpenManual===null ? !schnellstartDone : detailsOpenManual;
     const setDetailsOpen = (v) => setDetailsOpenManual(typeof v==="function" ? v(detailsOpen) : v);
 
+    // "Ausgaben nach Kategorie": Zustand liegt jetzt HIER statt im Diagramm
+    // selbst — geschaltet wird es ueber das Symbol im Hero (SaldoHeroV2),
+    // nachdem die eigene Leiste darunter entfallen ist.
+    const [chartOpen, setChartOpen] = useState(false);
+
     // ── Bank-Abruf direkt im Dashboard (Pull-to-Refresh) ──
     // bankFetch: null | {status:"loading"|"done"|"error", reason?, message?, staged?, dupeItems?}
     const [bankFetch, setBankFetch] = useState(null);
@@ -1113,7 +1118,8 @@ function DashboardScreenV2() {
                   onDrillBuchIn={drillBuchIn}   onDrillBuchOut={drillBuchOut}
                   onDrillPendIn={drillPendIn}   onDrillPendOut={drillPendOut}
                   onDrillUncatIn={drillUncatIn} onDrillUncatOut={drillUncatOut}
-                  detailsOpen={detailsOpen} setDetailsOpen={setDetailsOpen}/>
+                  detailsOpen={detailsOpen} setDetailsOpen={setDetailsOpen}
+                  chartOpen={chartOpen} onToggleChart={setChartOpen}/>
               );
             })();
           }
@@ -1211,12 +1217,15 @@ function DashboardScreenV2() {
           </div>
         )}
 
-        {/* "Ausgaben nach Kategorie" — aus der Monatsansicht hierher (Dashboard)
-            verschoben; eigene Klapp-Logik im Chart. */}
+        {/* "Ausgaben nach Kategorie" — geschaltet ueber das Symbol im Hero
+            (unter dem Fragezeichen). Die fruehere eigene Leiste an dieser
+            Stelle ist entfallen: sie belegte eine volle Zeile fuer einen
+            einzigen Umschalter. Zugeklappt rendert CategoryChart nichts. */}
         {chartCatSums.length>0 && !window.MBT_DEBUG?.disable_categorychart && (
-          <div data-tour="cat-list" style={{padding:"0 10px"}}>
+          <div style={{padding:"0 10px"}}>
             <CategoryChart catSums={chartCatSums} maxSum={chartMaxSum} budgets={budgets}
-              getBudgetForMonth={getBudgetForMonth} year={year} month={month}/>
+              getBudgetForMonth={getBudgetForMonth} year={year} month={month}
+              open={chartOpen} onToggle={setChartOpen}/>
           </div>
         )}
 

@@ -30,8 +30,16 @@ import { schriftAuf } from "../../theme/amtPill.js";
 // Schriftgroessen darueber.
 const GRUNDLINIE_ZU_MITTE = 0.36;
 
-function CategoryChart({catSums, maxSum, budgets, getBudgetForMonth, year, month}) {
-  const [chartOpen, setChartOpen] = React.useState(false);
+// `open`/`onToggle` (optional): schaltet das Diagramm von AUSSEN. Wird
+// `onToggle` uebergeben, entfaellt die eigene Kopfzeile "Ausgaben nach
+// Kategorie" — dann sitzt der Schalter woanders (im Dashboard: als Symbol im
+// Hero, unter dem Fragezeichen). Ohne die Props bleibt alles wie bisher:
+// eigener Zustand und eigene aufklappbare Kopfzeile.
+function CategoryChart({catSums, maxSum, budgets, getBudgetForMonth, year, month, open, onToggle}) {
+  const vonAussenGesteuert = typeof onToggle === "function";
+  const [chartOpenLokal, setChartOpenLokal] = React.useState(false);
+  const chartOpen = vonAussenGesteuert ? !!open : chartOpenLokal;
+  const setChartOpen = vonAussenGesteuert ? onToggle : setChartOpenLokal;
   const [view, setView] = React.useState("bar");
   const [hovered, setHovered] = React.useState(null);
   const total = catSums.reduce((s,c)=>s+c.sum, 0);
@@ -119,19 +127,28 @@ function CategoryChart({catSums, maxSum, budgets, getBudgetForMonth, year, month
     } : null)),
   ].filter(Boolean);
 
+  // Von aussen gesteuert und zugeklappt: gar nichts zeichnen. Ohne die eigene
+  // Kopfzeile bliebe sonst ein leerer Rahmen an ihrer Stelle stehen.
+  if (vonAussenGesteuert && !chartOpen) return null;
+
   return (
     // `diagramm-flaeche`: ein Inhaltsblock wie Hero und Kategorienkarten. Ohne
     // eigene Flaeche stand die Torte als grosser heller Fleck zwischen zwei
     // Tasten (Nutzer-Hinweis "wirkt inkonsistent").
     <div className="diagramm-flaeche"
       style={{margin:"0 0 4px",borderRadius:12,overflow:"hidden",border:`1px solid ${T.bd}`}}>
-      <div onClick={()=>setChartOpen(v=>!v)}
-        style={{display:"flex",alignItems:"center",gap:6,padding:"7px 2px",
-          cursor:"pointer",background:"rgba(255,255,255,0.03)"}}>
-        {Li("bar-chart-2",13,T.txt2)}
-        <span style={{flex:1,color:T.txt2,fontSize:11,fontWeight:600}}>Ausgaben nach Kategorie</span>
-        {Li(chartOpen?"chevron-up":"chevron-down",12,T.txt2)}
-      </div>
+      {/* Eigene Kopfzeile nur, solange das Diagramm sich selbst schaltet.
+          Von aussen gesteuert (Dashboard: Symbol im Hero) waere sie eine
+          zweite Bedienstelle fuer dieselbe Sache. */}
+      {!vonAussenGesteuert && (
+        <div onClick={()=>setChartOpen(v=>!v)}
+          style={{display:"flex",alignItems:"center",gap:6,padding:"7px 2px",
+            cursor:"pointer",background:"rgba(255,255,255,0.03)"}}>
+          {Li("bar-chart-2",13,T.txt2)}
+          <span style={{flex:1,color:T.txt2,fontSize:11,fontWeight:600}}>Ausgaben nach Kategorie</span>
+          {Li(chartOpen?"chevron-up":"chevron-down",12,T.txt2)}
+        </div>
+      )}
       {chartOpen&&<>
         <div style={{display:"flex",gap:6,padding:"6px 2px 2px",borderTop:`1px solid ${T.bd}`}}>
           {[["bar","bar-chart-2","Balken"],["pie","pie-chart","Torte"]].map(([v,icon,label])=>(

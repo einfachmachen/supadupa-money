@@ -29,6 +29,12 @@ function SaldoHeroV2({
   onDrillBuchIn, onDrillBuchOut, onDrillPendIn, onDrillPendOut, onDrillUncatIn, onDrillUncatOut,
   detailsOpen, setDetailsOpen, hideDetailRows,
   showScrollFocusToggle,
+  // Schalter fuer "Ausgaben nach Kategorie" (nur das Dashboard uebergibt ihn).
+  // Frueher stand dafuer eine eigene Leiste unter dem Hero; sie kostete eine
+  // volle Zeile fuer einen einzigen Umschalter. Jetzt sitzt er als Symbol im
+  // freien Bereich links im Hero, unter dem Fragezeichen. Ohne den Handler
+  // (Monat, Jahr) erscheint das Symbol gar nicht.
+  chartOpen, onToggleChart,
 }) {
   const { selAcc, setSelAcc, startKonto, setStartKonto, accounts, getKumulierterSaldo, txs, getCat, getSub, amtMode, setAmtMode, setShowGuidedTour, debugFlags, setDebugFlag } = useContext(AppCtx);
   const [progDrill, setProgDrill] = useState(null);
@@ -335,6 +341,16 @@ function SaldoHeroV2({
               display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
             {Li("help-circle",17,T.txt2)}
           </span>
+          {typeof onToggleChart === "function" && (
+            <span onClick={()=>onToggleChart(v=>!v)} data-tour="cat-list"
+              title={chartOpen?"Ausgaben nach Kategorie ausblenden":"Ausgaben nach Kategorie"}
+              style={{cursor:"pointer",userSelect:"none",width:22,height:22,
+                display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
+              {/* Aktiv in der Akzentfarbe — sonst ist am Symbol nicht
+                  abzulesen, ob das Diagramm gerade offen ist. */}
+              {Li("bar-chart-2",17,chartOpen?T.blue:T.txt2)}
+            </span>
+          )}
         </div>
       )}
 
@@ -351,6 +367,18 @@ function SaldoHeroV2({
               display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
             {Li("help-circle",17,T.txt2)}
           </span>
+          {/* Auch hier noetig: das Editorial-Layout hat den Bereich links oben
+              nicht, und ohne diesen Schalter waere "Ausgaben nach Kategorie"
+              seit dem Wegfall der eigenen Leiste ueberhaupt nicht mehr
+              erreichbar. */}
+          {typeof onToggleChart === "function" && (
+            <span onClick={()=>onToggleChart(v=>!v)} data-tour="cat-list"
+              title={chartOpen?"Ausgaben nach Kategorie ausblenden":"Ausgaben nach Kategorie"}
+              style={{cursor:"pointer",userSelect:"none",width:22,height:22,
+                display:"inline-flex",alignItems:"center",justifyContent:"center"}}>
+              {Li("bar-chart-2",17,chartOpen?T.blue:T.txt2)}
+            </span>
+          )}
           <span style={{color:T.lbl,fontSize:9,fontWeight:800,letterSpacing:2.5}}>KONTOSTAND</span>
           {renderAccPill({menuAlign:"left"})}
           <div style={{flex:1}}/>
