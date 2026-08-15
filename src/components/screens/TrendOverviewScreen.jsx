@@ -13,6 +13,7 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
+import { UNTEN_FREI } from "../../theme/palette.js";
 import { Li } from "../../utils/icons.jsx";
 import { fmt, NUM_FONT } from "../../utils/format.js";
 import { betrag } from "../../utils/betrag.jsx";
@@ -380,14 +381,16 @@ function TrendOverviewScreen() {
       <YearSectionHeader active="trend" detailsOpen={heroOpen} setDetailsOpen={setHeroOpen} />
 
       <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
-        <div style={{ padding: "12px 16px 4px" }}>
+        {/* 8px-Rhythmus wie im Rest der App: Kopfzeile und Kartenliste tragen
+            oben/unten denselben Abstand, die Karten untereinander ebenso. */}
+        <div style={{ padding: "8px 16px 0" }}>
           <div style={{ color: T.txt, fontSize: 20, fontWeight: 700 }}>Trend</div>
           <div style={{ color: T.txt2, fontSize: 12 }}>
             {metric ? `${activeMetric.label} · alle Jahre` : "Alle Jahre im Überblick"}
           </div>
         </div>
 
-        <div style={{ padding: "8px 16px 24px" }}>
+        <div style={{ padding: `8px 16px ${UNTEN_FREI}px` }}>
           {!metric ? (
             // ── Übersicht: 3 Sparkline-Karten ──
             METRICS.map(m => {
@@ -398,7 +401,7 @@ function TrendOverviewScreen() {
                 <button key={m.key} onClick={() => setMetric(m.key)}
                   style={{ width: "100%", display: "flex", alignItems: "center", gap: 12,
                     background: T.surf, border: `1px solid ${T.bd}`, borderRadius: 14,
-                    padding: "14px 14px", marginBottom: 10, cursor: "pointer",
+                    padding: "14px 14px", marginBottom: 8, cursor: "pointer",
                     fontFamily: "inherit", textAlign: "left" }}>
                   <div style={{ width: 38, height: 38, borderRadius: 10, background: col + "22",
                     display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
