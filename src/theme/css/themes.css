@@ -232,9 +232,9 @@
     padding-bottom: 0 !important;
   }
   .theme-tastenhell .screen-scroll {
-    /* Dieselbe Rechnung wie die Leistenhoehe (s.u.: 52px Innenraum + 16px
+    /* Dieselbe Rechnung wie die Leistenhoehe (s.u.: 52px Innenraum + 10px
        Aussenabstand) — sonst endet die Liste zu frueh oder zu spaet. */
-    padding-bottom: 68px;
+    padding-bottom: 62px;
   }
 
   /* Systemfarbschema: die Wurzel steht auf "light" (helle Platte, siehe
@@ -285,29 +285,26 @@
        die Aussenkante bleibt dabei unveraendert bei 10px. */
     padding-left: 6px;
     padding-right: 6px;
-    /* Die Reiter werden sonst in der Leiste ZENTRIERT (alignItems:"center" als
-       Inline-Style, App.jsx). Der Abstand nach unten ergibt sich damit aus
-       Zentrierung + Rand + Polster und laesst sich gar nicht fest setzen. Mit
-       `stretch` fuellen die Tasten die Hoehe, und ihr Abstand kommt
-       ausschliesslich aus ihrem eigenen Rand — oben wie unten exakt 8px.
-       Das Polster unten muss dafuer weg, sonst kaeme es zu den 8px hinzu. */
-    /* Abstand der Reiter zur Bildschirmunterkante — EIN fester Wert.
-       Vorgeschichte: urspruenglich sass die Leiste mit bottom:0 und festen
-       57px direkt auf der Kante, die Reiter "klebten" unten (rund 8px). Der
-       naechstliegende Fix, das Polster um env(safe-area-inset-bottom) wachsen
-       zu lassen, schoss weit ueber das Ziel: auf Geraeten mit Home-Anzeige
+    /* Abstand der Reiter zur Bildschirmunterkante — EIN fester Wert, an genau
+       dieser Stelle einzustellen (er steht zweimal: einmal als Polster, einmal
+       als Summand der Hoehe, damit der Innenraum bei 52px bleibt und die
+       Reiter darin unveraendert gross sind).
+       Der sichtbare Abstand unter den Tasten ist etwas groesser als dieser
+       Wert: dazu kommen die 2px Rand am Reiter und ein halbes Pixel aus der
+       Zentrierung (alignItems:"center" als Inline-Style, App.jsx) — bei 10px
+       also rund 12,5px.
+       Weg dahin, weil die Zahl sonst willkuerlich wirkt: ohne jede Reserve
+       (Polster 5px) klebten die Reiter mit ~7,5px am Rand. Das Polster um
+       env(safe-area-inset-bottom) wachsen zu lassen war der naheliegende
+       Reflex, schoss aber weit ueber das Ziel — auf Geraeten mit Home-Anzeige
        sind das rund 34px, die Leiste schwebte damit ~42px ueber der Kante.
-       Deshalb hier bewusst keine Geraeteabhaengigkeit, sondern ein
-       nachvollziehbarer Wert: 16px, also doppelt so viel Luft nach aussen wie
-       zwischen den Kacheln (8px) — die uebliche Staffelung "aussen mehr als
-       innen". Wer daran drehen will, aendert NUR die 16 an beiden Stellen:
-       die Hoehe traegt sie zusaetzlich zu den 52px Innenraum, damit die
-       Reiter darin unveraendert gross bleiben.
-       KEIN align-items:stretch: das hatte die Tasten die Hoehe fuellen lassen
-       und damit ihre Form veraendert (Nutzer-Hinweis). Sie bleiben zentriert
-       und behalten ihre Groesse aus dem Inhalt. */
-    height: calc(52px + 16px) !important;
-    padding-bottom: 16px !important;
+       16px ergaben ~18,5px und waren noch zu viel. Daher bewusst KEINE
+       Geraeteabhaengigkeit, sondern dieser gemessene Mittelwert.
+       KEIN align-items:stretch: das liess die Tasten die Leistenhoehe fuellen
+       und veraenderte damit ihre Form. Sie bleiben zentriert und behalten
+       ihre Groesse aus dem Inhalt. */
+    height: calc(52px + 10px) !important;
+    padding-bottom: 10px !important;
     /* Wächst der + Knopf, verlässt sein Platz den Fluss (App.jsx) — der frei
        werdende Raum geht in die LÜCKEN, nicht in die Reiter: die behalten
        ihre Breite und rücken nur auseinander (Nutzer-Wunsch). */
