@@ -1431,8 +1431,11 @@ function DashboardScreenV2() {
         {detailsOpen && (incomeTotals.length>0||catTotals.length>0)&&(()=>{
           // 10px wie die Kategoriefelder darunter — die Zeile gehoert zu ihnen
           // und stand vorher 2px weiter innen.
+          // `sortier-zeile`: Haken fuer Themes, die diese Zeile in ihren
+          // eigenen Abstands-Rhythmus einreihen (siehe Tastenhell). Ohne ein
+          // solches Theme hat die Klasse keinerlei Wirkung.
           return (
-            <div style={{padding:"6px 10px 4px",display:"flex",alignItems:"center",gap:8}}>
+            <div className="sortier-zeile" style={{padding:"6px 10px 4px",display:"flex",alignItems:"center",gap:8}}>
               <div style={{display:"flex",gap:6,flex:1,minWidth:0,alignItems:"center"}}>
                 {[["custom","\u270e Eigene"],["desc","\u2193"],["asc","\u2191"]].map(([mode,lbl])=>(
                   <button key={mode} onClick={()=>setCatSortMode(mode)}

@@ -185,6 +185,30 @@
     margin-top: 8px;
     margin-bottom: 8px;
   }
+  /* Derselbe 8px-Rhythmus auch um den Block zwischen Hero und Kategorien:
+     Diagramm (Balken/Torte), die Drei-Symbol-Zeile und die Sortier-/Pegel-
+     Zeile. Alle drei brachten bisher ihre eigenen, unterschiedlichen Raender
+     mit (0/4px, 2px/0, 6px/4px) — daher die ungleichen Luecken.
+     `!important` ist noetig, weil Diagramm und Symbolzeile ihre Raender INLINE
+     setzen (margin "0 0 4px" bzw. "2px 10px 0"); dagegen verliert ein
+     Stylesheet sonst. Bewusst nur oben/unten: die seitliche Einrueckung kommt
+     beim Diagramm vom umgebenden Block, bei der Symbolzeile aus ihrem eigenen
+     Inline-Rand — beides soll unangetastet bleiben.
+     Angrenzende Raender verschmelzen im Blockfluss, aus 8 + 8 wird also 8. */
+  .theme-tastenhell .diagramm-flaeche,
+  .theme-tastenhell .symbolzeile,
+  .theme-tastenhell .sortier-zeile {
+    margin-top: 8px !important;
+    margin-bottom: 8px !important;
+  }
+  /* Die Sortierzeile trug ihren Abstand als Innenpolster (6px/4px). Das kaeme
+     zu den 8px oben hinzu — hier abgeraeumt, der Abstand kommt jetzt allein
+     aus dem Rand. Seitlich bleiben die 10px. */
+  .theme-tastenhell .sortier-zeile {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
   /* Die Liste laeuft als Schicht DIREKT hinter dem Hero (Nutzer-Wunsch):
      der sticky-Block der Monatsansicht malt sonst die Plattenfarbe deckend,
      und in den runden Ecken der Hero-Karte stand dadurch Hell gegen Dunkel.
@@ -208,9 +232,9 @@
     padding-bottom: 0 !important;
   }
   .theme-tastenhell .screen-scroll {
-    /* Mitgewachsen mit der Leiste (s.u.), sonst endet die Liste um den Bereich
-       der Home-Anzeige zu frueh bzw. zu spaet. */
-    padding-bottom: calc(57px + env(safe-area-inset-bottom, 0px));
+    /* Dieselbe Rechnung wie die Leistenhoehe (s.u.: 52px Innenraum + 16px
+       Aussenabstand) — sonst endet die Liste zu frueh oder zu spaet. */
+    padding-bottom: 68px;
   }
 
   /* Systemfarbschema: die Wurzel steht auf "light" (helle Platte, siehe
@@ -267,20 +291,23 @@
        `stretch` fuellen die Tasten die Hoehe, und ihr Abstand kommt
        ausschliesslich aus ihrem eigenen Rand — oben wie unten exakt 8px.
        Das Polster unten muss dafuer weg, sonst kaeme es zu den 8px hinzu. */
-    /* Der eigentliche Grund, warum die Tasten unten "klebten": die Leiste sass
-       mit bottom:0 und festen 57px UEBER dem Bereich der Home-Anzeige
-       (env(safe-area-inset-bottom) kam in der ganzen App bisher kein einziges
-       Mal vor). Ihr Innenraum reichte damit bis an die physische Bildschirm-
-       kante.
-       Hoehe UND Polster wachsen deshalb um genau diesen Bereich: der
-       Innenraum bleibt dadurch exakt 52px wie zuvor (57 − 5), die Reiter
-       behalten Groesse, Form und Lage darin unveraendert — die ganze Leiste
-       rueckt lediglich ueber die Home-Anzeige.
+    /* Abstand der Reiter zur Bildschirmunterkante — EIN fester Wert.
+       Vorgeschichte: urspruenglich sass die Leiste mit bottom:0 und festen
+       57px direkt auf der Kante, die Reiter "klebten" unten (rund 8px). Der
+       naechstliegende Fix, das Polster um env(safe-area-inset-bottom) wachsen
+       zu lassen, schoss weit ueber das Ziel: auf Geraeten mit Home-Anzeige
+       sind das rund 34px, die Leiste schwebte damit ~42px ueber der Kante.
+       Deshalb hier bewusst keine Geraeteabhaengigkeit, sondern ein
+       nachvollziehbarer Wert: 16px, also doppelt so viel Luft nach aussen wie
+       zwischen den Kacheln (8px) — die uebliche Staffelung "aussen mehr als
+       innen". Wer daran drehen will, aendert NUR die 16 an beiden Stellen:
+       die Hoehe traegt sie zusaetzlich zu den 52px Innenraum, damit die
+       Reiter darin unveraendert gross bleiben.
        KEIN align-items:stretch: das hatte die Tasten die Hoehe fuellen lassen
        und damit ihre Form veraendert (Nutzer-Hinweis). Sie bleiben zentriert
        und behalten ihre Groesse aus dem Inhalt. */
-    height: calc(57px + env(safe-area-inset-bottom, 0px)) !important;
-    padding-bottom: calc(5px + env(safe-area-inset-bottom, 0px)) !important;
+    height: calc(52px + 16px) !important;
+    padding-bottom: 16px !important;
     /* Wächst der + Knopf, verlässt sein Platz den Fluss (App.jsx) — der frei
        werdende Raum geht in die LÜCKEN, nicht in die Reiter: die behalten
        ihre Breite und rücken nur auseinander (Nutzer-Wunsch). */
