@@ -481,7 +481,11 @@ function MonatScreen() {
       // überschreibt — auch inline gesetzte. box-shadow ist davon nicht
       // betroffen.
       row.style.boxShadow = active ? `inset 4px 0 0 0 ${T.pos}, 0 10px 26px -6px rgba(0,0,0,0.4)` : "none";
-      row.style.borderRadius = active ? "14px" : "0px";
+      // Zurueck auf die NATUERLICHE Rundung, nicht pauschal auf 0: die
+      // Kopfzeile eines Tages folgt der Rundung ihrer Tageskarte (sonst schaut
+      // oben eine Ecke heraus), alle uebrigen Zeilen sind eckig.
+      const istTagesKopf = String(row.dataset.tx || "").startsWith("day-");
+      row.style.borderRadius = active ? "14px" : (istTagesKopf ? "11px 11px 0 0" : "0px");
       row.style.transform = active ? "scale(1.025)" : "scale(1)";
       row.style.zIndex = active ? "5" : "1";
       // Icon-Maße, Schriftgrößen, Innenabstände und Detailbereich-Höhe
@@ -1570,8 +1574,8 @@ function MonatScreen() {
         {/* Neuere Monate einblenden (oben) */}
         {multiMonth && newerHidden>0 && (
           <div onClick={revealNewer} style={{textAlign:"center",padding:"12px 0 0",cursor:"pointer",
-            color:T.blue,fontSize:13,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-            {Li("chevron-up",14,T.blue)} + {newerHidden} neuere anzeigen
+            color:T.acc,fontSize:13,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+            {Li("chevron-up",14,T.acc)} + {newerHidden} neuere anzeigen
           </div>
         )}
         {dayTxsAll.length===0
@@ -1670,9 +1674,16 @@ function MonatScreen() {
                     ganzen Tages-Block!) für den Dokumentfluss-Platz — siehe
                     ausführlichen Kommentar bei der Einnahmen-Zeile weiter unten. */}
                 <div style={{position:"relative"}}>
+                {/* Die Kopfzeile malt eine eigene Flaeche. Ohne eigene Rundung
+                    schaute sie an den oberen Ecken aus der abgerundeten
+                    Tageskarte heraus (12px Radius minus 1px Rahmen = 11px).
+                    Kein overflow:hidden an der Karte: der Fokus-Effekt schiebt
+                    und skaliert Zeilen ueber ihre Kante hinaus, die wuerden
+                    dadurch abgeschnitten. */}
                 <div data-tx={"day-"+date} data-rest-bg="rgba(255,255,255,0.04)"
                   style={{display:"flex",alignItems:"center",position:"relative",transformOrigin:"top center",
-                  padding:"7px 10px 6px",gap:8,background:"rgba(255,255,255,0.04)"}}>
+                  padding:"7px 10px 6px",gap:8,background:"rgba(255,255,255,0.04)",
+                  borderRadius:"11px 11px 0 0"}}>
                   {/* Darf als EINZIGER Teil der Kopfzeile schrumpfen: wird es auf
                       sehr schmalen Geräten doch einmal eng, soll das Datum
                       abgeschnitten werden — nie der Tagessaldo rechts. */}
@@ -2329,8 +2340,8 @@ function MonatScreen() {
         {/* Ältere Monate einblenden (unten) */}
         {multiMonth && olderHidden>0 && (
           <div onClick={revealOlder} style={{textAlign:"center",padding:"14px 0 4px",cursor:"pointer",
-            color:T.blue,fontSize:13,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-            {Li("chevron-down",14,T.blue)} + {olderHidden} ältere anzeigen
+            color:T.acc,fontSize:13,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+            {Li("chevron-down",14,T.acc)} + {olderHidden} ältere anzeigen
           </div>
         )}
         <div style={{height:8}}/>

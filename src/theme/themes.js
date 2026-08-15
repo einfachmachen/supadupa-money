@@ -984,6 +984,19 @@ THEMES.tastenhell = {
   txt_card:"#FFFFFF",
   txt2_card:"rgba(255,255,255,0.86)",
   lbl_card:"rgba(255,255,255,0.78)",
+  // Akzentfarbe fuer TEXT, getrennt nach Untergrund — dieselbe Trennung wie
+  // bei txt/txt_card, und aus demselben Grund. Das geerbte Lime #C8DC2E
+  // erreicht auf der Taste #525252 saubere 5,11:1, auf der Platte #ECECE4
+  // aber nur 1,29:1: dort ist es faktisch unsichtbar (Nutzer-Hinweis "die
+  // Schrift ist fast unsichtbar"). Ein einzelner Ton kann beides nicht
+  // bedienen — die Platte ist hell, die Taste mitteldunkel, jeder Wert, der
+  // auf der einen traegt, faellt auf der anderen durch (durchgerechnet).
+  // #5C7000 ist der hellste Limeton, der auf der Platte noch 4,5:1 schafft
+  // (gemessen 4,69:1) und dabei erkennbar Lime bleibt.
+  // `blue` selbst bleibt unangetastet: es FUELLT Knoepfe, und dort ist das
+  // helle Lime richtig.
+  acc:"#5C7000",
+  acc_card:"#C8DC2E",
   hero_bg:"linear-gradient(135deg,#525252,#464646)",
   // Jede Flaeche, die Akzentfarben zeigt, muss eine Taste sein (Grund s. o.).
   // Das sind ausser den Karten selbst: Hero, Drei-Symbol-Zeile, der Kopf des
