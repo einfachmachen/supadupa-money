@@ -13,11 +13,11 @@ const Overlay = ({onClose,children,zIndex=50}) => (
     backdropFilter:"blur(12px)",zIndex,display:"flex",alignItems:"flex-start",justifyContent:"center",
     // Der Karteninhalt beginnt oben — ohne die Notch-Aussparung liegt seine
     // Ueberschrift auf Geraeten mit Statusleisten-Aussparung darunter.
-    padding:"16px",paddingTop:"calc(20px + var(--safe-top, env(safe-area-inset-top, 0px)))",
+    padding:"16px",paddingTop:"calc(20px + env(safe-area-inset-top, 0px))",
     paddingBottom:"calc(16px + env(safe-area-inset-bottom, 0px))",overflowY:"auto"}}>
     <div onClick={e=>e.stopPropagation()} style={{
       background:(isLightTheme())?"#F5F7F2":T.surf2,
-      borderRadius:20,padding:"20px 18px",width:"100%",maxWidth:480,maxHeight:"calc(100dvh - 32px - var(--safe-top, env(safe-area-inset-top, 0px)) - var(--overdue-space, 0px))",overflowY:"auto",boxSizing:"border-box",
+      borderRadius:20,padding:"20px 18px",width:"100%",maxWidth:480,maxHeight:"calc(100dvh - 32px - env(safe-area-inset-top, 0px))",overflowY:"auto",boxSizing:"border-box",
       boxShadow:"0 20px 60px rgba(0,0,0,0.5)",border:`1px solid ${T.bds}`}}>
       {children}
     </div>

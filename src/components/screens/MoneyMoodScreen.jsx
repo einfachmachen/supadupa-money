@@ -503,7 +503,7 @@ function MoodDetail({ row, isSub, isIncome, focusMi, year, txs, getAcc, recentId
 
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: T.surf || T.bg, zIndex: 300, display: "flex", alignItems: "flex-start" }}>
-      <div onClick={e => e.stopPropagation()} style={{ width: "100%", height: "calc(100dvh - var(--overdue-space, 0px))", maxHeight: "calc(100dvh - var(--overdue-space, 0px))", overflow: "hidden", background: T.surf || T.bg, display: "flex", flexDirection: "column", paddingLeft: 5, paddingRight: 5, paddingTop: "calc(8px + var(--safe-top, env(safe-area-inset-top, 0px)))", paddingBottom: "58px" }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: "100%", height: "100dvh", maxHeight: "100dvh", overflow: "hidden", background: T.surf || T.bg, display: "flex", flexDirection: "column", paddingLeft: 5, paddingRight: 5, paddingTop: "calc(8px + env(safe-area-inset-top, 0px))", paddingBottom: "58px" }}>
         {/* Scrollende Mitte: ALLE Inhalte (inkl. Titel) von UNTEN nach oben verankert,
             direkt über dem Chart. Leerraum entsteht oben. */}
         <div className="sdm-scroll" style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column" }}>

@@ -408,20 +408,12 @@
      window.visualViewport laufend auf die tatsächlich sichtbare Höhe
      gesetzt und hat deshalb Vorrang; 100svh bleibt nur als Fallback, falls
      --app-vvh (noch) nicht gesetzt ist. */
-  /* --overdue-space: Hoehe der Ueberfaellig-Warnung ganz oben (0px, wenn sie
-     nicht angezeigt wird). Der Warnbalken liegt fest oben ueber allem; das
-     Wurzel-Div haelt seine Hoehe als Polster frei und ist per transform
-     zugleich Bezugsrahmen aller position:fixed-Dialoge — top:0 heisst hier
-     also bereits "unterhalb des Balkens". Eine FESTE Hoehe (--app-vvh = volle
-     sichtbare Viewporthoehe) muesste sonst um genau diesen Betrag unten
-     ueberstehen, wodurch die untersten Zeilen hinter der Bottom-Bar
-     verschwaenden. Deshalb hier abziehen. */
   .mobile-modal {
     font-size: 18px;
     top: 0 !important;
     height: 100vh !important;
     height: 100svh !important;
-    height: calc(var(--app-vvh, 100svh) - var(--overdue-space, 0px)) !important;
+    height: var(--app-vvh, 100svh) !important;
     padding-bottom: 57px !important;
     box-sizing: border-box;
   }

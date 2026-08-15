@@ -1818,15 +1818,9 @@ function DashboardScreenV2() {
           <div onClick={()=>setDashDrill(null)}
             style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",backdropFilter:"blur(8px)",
               zIndex:65,display:"flex",alignItems:"flex-start",justifyContent:"center",padding:0}}>
-            {/* Feste Hoehe minus --overdue-space: liegt die Ueberfaellig-Warnung
-                oben an, beginnt dieser (position:fixed) Aufriss bereits
-                unterhalb des Balkens — volle 100dvh wuerden dann unten um genau
-                dessen Hoehe ueberstehen. */}
             <div onClick={e=>e.stopPropagation()} className="aufriss-blatt"
               style={{background:T.bg,borderRadius:0,width:"100%",maxWidth:560,
-                height:"calc(100dvh - var(--overdue-space, 0px))",
-                maxHeight:"calc(100dvh - var(--overdue-space, 0px))",
-                display:"flex",flexDirection:"column",
+                height:"100dvh",maxHeight:"100dvh",display:"flex",flexDirection:"column",
                 border:"none",boxShadow:"0 8px 40px rgba(0,0,0,0.7)"}}>
               {/* Header — kein eigener Schließen-Button mehr (Zurück-Pfeil UND Tap auf
                   den abgedunkelten Hintergrund schließen bereits). Titel bricht um
@@ -1834,12 +1828,8 @@ function DashboardScreenV2() {
                   volle Breite (kein Abhaken-/Uhr-Symbol mehr daneben — die Aufschlüsselung
                   steht schon unter dem Betrag, s.u.). Betrag oben rechts, Buch./VM/unkat.
                   mit je eigenem Symbol darunter — kompakt statt eigener Unterzeile. */}
-              {/* --safe-top statt env(safe-area-inset-top): liegt die
-                  Ueberfaellig-Warnung oben an, sitzt der Notch-Abstand bereits
-                  in ihr — dann ist --safe-top 0px, sonst der echte Inset. Ohne
-                  das stuende die Titelzeile bei aktiver Warnung doppelt tief. */}
               <div style={{display:"flex",alignItems:"flex-start",gap:6,
-                padding:"calc(8px + var(--safe-top, env(safe-area-inset-top, 0px)) + var(--sync-badge-space, 0px)) 10px 6px",flexShrink:0}}>
+                padding:"calc(8px + env(safe-area-inset-top, 0px) + var(--sync-badge-space, 0px)) 10px 6px",flexShrink:0}}>
                 {/* Zurueck-Pfeil links (spaeter auch per + bedienbar) */}
                 <button onClick={()=>setDashDrill(null)}
                   style={{background:"rgba(255,255,255,0.08)",border:"none",color:T.txt,
