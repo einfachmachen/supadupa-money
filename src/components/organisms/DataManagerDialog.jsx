@@ -76,6 +76,16 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   const [toY,   setToY]   = useState(fullToY);
   const [toM,   setToM]   = useState(fullToM);
 
+  // Auswahlliste der Jahre fuer die beiden Jahres-Felder. Sie deckt den
+  // gesamten Datenbestand ab und schliesst die aktuell gewaehlten Werte
+  // immer mit ein — sonst stuende im Feld ein Jahr, das die Liste gar nicht
+  // anbietet (etwa nach dem Laden eines aelteren Standes).
+  const jahreListe = React.useMemo(() => {
+    const von = Math.min(fullFromY, fullToY, fromY, toY);
+    const bis = Math.max(fullFromY, fullToY, fromY, toY);
+    return Array.from({length: bis - von + 1}, (_, i) => von + i);
+  }, [fullFromY, fullToY, fromY, toY]);
+
   // Export-Auswahl — Standard: ALLES an (= 100 %-Sicherung).
   const [sel, setSel] = useState({
     cats:true, groups:true, accounts:true, vehicles:true,
@@ -565,15 +575,23 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
           style={{flex:1,minWidth:0,...INP,marginBottom:0,padding:"0 2px",textAlign:"center",minHeight:ZEILE_H,boxSizing:"border-box"}}>
           {MONTHS_G.map((m,i)=><option key={i} value={i}>{m}</option>)}
         </select>
-        <input className="zeitraum-feld" type="number" value={fromY} onChange={e=>setFromY(Number(e.target.value))}
-          style={{flex:1,minWidth:0,...INP,marginBottom:0,padding:"0 2px",textAlign:"center",minHeight:ZEILE_H,boxSizing:"border-box"}}/>
+        {/* Auswahlliste statt Zahlenfeld: gibt auf dem Geraet das native Rad
+            und im Browser die Klappliste — beides ohne Tippen. Nebenbei
+            entfallen die Spinner-Pfeile, die in der einzeiligen Leiste Breite
+            gekostet haben. */}
+        <select className="zeitraum-feld" value={fromY} onChange={e=>setFromY(Number(e.target.value))}
+          style={{flex:1,minWidth:0,...INP,marginBottom:0,padding:"0 2px",textAlign:"center",minHeight:ZEILE_H,boxSizing:"border-box"}}>
+          {jahreListe.map(j=><option key={j} value={j}>{j}</option>)}
+        </select>
         <span style={{color:T.txt2,fontSize:12,flexShrink:0}}>–</span>
         <select className="zeitraum-feld" value={toM} onChange={e=>setToM(Number(e.target.value))}
           style={{flex:1,minWidth:0,...INP,marginBottom:0,padding:"0 2px",textAlign:"center",minHeight:ZEILE_H,boxSizing:"border-box"}}>
           {MONTHS_G.map((m,i)=><option key={i} value={i}>{m}</option>)}
         </select>
-        <input className="zeitraum-feld" type="number" value={toY} onChange={e=>setToY(Number(e.target.value))}
-          style={{flex:1,minWidth:0,...INP,marginBottom:0,padding:"0 2px",textAlign:"center",minHeight:ZEILE_H,boxSizing:"border-box"}}/>
+        <select className="zeitraum-feld" value={toY} onChange={e=>setToY(Number(e.target.value))}
+          style={{flex:1,minWidth:0,...INP,marginBottom:0,padding:"0 2px",textAlign:"center",minHeight:ZEILE_H,boxSizing:"border-box"}}>
+          {jahreListe.map(j=><option key={j} value={j}>{j}</option>)}
+        </select>
         <button onClick={()=>{setFromM(fullFromM);setFromY(fullFromY);setToM(fullToM);setToY(fullToY);}}
           title="Ganzer Zeitraum (alle Buchungen)" aria-label="Ganzer Zeitraum"
           style={{background:"rgba(255,255,255,0.07)",border:"none",color:T.txt2,borderRadius:6,

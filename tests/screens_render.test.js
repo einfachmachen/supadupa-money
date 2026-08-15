@@ -25,6 +25,13 @@ const cases = [
   ["ManagementScreen",  () => import("../src/components/screens/ManagementScreen.jsx"), { activeTab:"einstellungen" }],
   ["SettingsInline",    () => import("../src/components/screens/SettingsInline.jsx"), {}],
   ["EnableBankingWizard", () => import("../src/components/screens/EnableBankingWizard.jsx"), {}],
+  // Lazy geladene Vollbild-Dialoge: sie kommen im Hauptbundle nicht vor und
+  // waren deshalb in keinem Render-Test — ein TDZ-Fehler darin (Wert vor
+  // seiner Deklaration benutzt) faellt sonst erst beim Oeffnen auf dem Geraet
+  // auf. Genau das war beim Jahres-Auswahlfeld des Daten-Managers beinahe
+  // passiert.
+  ["DataManagerDialog", () => import("../src/components/organisms/DataManagerDialog.jsx"), {}],
+  ["CsvImportScreen",   () => import("../src/components/screens/CsvImportScreen.jsx"), {}],
 ];
 
 describe("Screen-Render (TDZ-Regression)", () => {
