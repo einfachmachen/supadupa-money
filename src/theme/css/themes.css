@@ -283,8 +283,14 @@
        Aufteilung hat sich verschoben (frueher 7 + 3), weil die Fuge ZWISCHEN
        den Reitern auf 8px gewachsen ist (= Abstand der Kategoriefelder, s.o.);
        die Aussenkante bleibt dabei unveraendert bei 10px. */
-    padding-left: 6px;
-    padding-right: 6px;
+    /* `!important` ist hier ZWINGEND: die Leiste setzt ihr seitliches Polster
+       inline (paddingLeft/Right: 8, App.jsx) — dagegen verliert ein Stylesheet
+       sonst lautlos. Genau deshalb lag die Aussenkante bisher bei 8 + 4 = 12px
+       statt der beabsichtigten 10px, und die Reiter standen nicht bündig mit
+       den uebrigen Bloecken (derselbe Fallstrick wie beim Kartenabstand und
+       bei der Reiterbreite, s.u.). */
+    padding-left: 6px !important;
+    padding-right: 6px !important;
     /* Abstand der Reiter zur Bildschirmunterkante — EIN fester Wert, an genau
        dieser Stelle einzustellen (er steht zweimal: einmal als Polster, einmal
        als Summand der Hoehe, damit der Innenraum bei 52px bleibt und die
