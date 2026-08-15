@@ -194,7 +194,7 @@
      Stylesheet sonst. Bewusst nur oben/unten: die seitliche Einrueckung kommt
      beim Diagramm vom umgebenden Block, bei der Symbolzeile aus ihrem eigenen
      Inline-Rand — beides soll unangetastet bleiben.
-     Angrenzende Raender verschmelzen im Blockfluss, aus 8 + 8 wird also 8. */
+     Angrenzende Raender verschmelzen im Blockfluss, aus 8 + 8 wird also 8.
      Dieselbe Rechnung gilt in der Monatsansicht fuer Suchzeile und
      Filterzeile (Ausgaben/Einnahmen/vorgemerkt/?): auch sie brachten je
      eigene Polster mit (6px/4px bzw. 0/6px). Die Werkzeuge-Zeile darunter
