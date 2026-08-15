@@ -241,7 +241,14 @@ function ManagementScreen({activeTab="kategorien"}) {
           </div>
         )}
         {mgrTab==="daten"&&(
-          <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 14px 24px"}}>
+          // Genug Scroll-Reserve, damit sich die LETZTE Kachel bis ueber die
+          // Reiterleiste UND den vergroesserten + Knopf schieben laesst — vorher
+          // blieb "Einstellungen" dauerhaft halb darunter (Nutzer-Hinweis).
+          // 216 = 64 Leiste + 152 Ueberhang des Knopfes: er wird im
+          // arretierten Zustand um 94px angehoben und auf 1,5 skaliert
+          // (78 -> 117px), steht also mit gut der halben Hoehe (58px) darueber.
+          // Die Flaeche ist reiner Scroll-Weg und nur am Listenende sichtbar.
+          <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 14px 216px"}}>
             {(()=>{
               const kontenRow   = {icon:"credit-card",color:T.acc,         label:"Konten",                sub:"Verwalten, Reihenfolge, Puffer",  onClick:()=>setMgrTab("konten"), tourId:"row-konten"};
               const budgetRow   = {icon:"target",     color:T.acc_mid,          label:"Kategorien & Budget",   sub:"Budgets je Kategorie festlegen",  onClick:()=>setShowMobileKategorien?.(true), tourId:"row-budget"};
