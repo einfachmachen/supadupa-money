@@ -344,7 +344,7 @@ function MoneyMoodScreen() {
         // Als Kartenflaeche schalten zugleich die Textfarben auf ihre
         // Karten-Varianten um (§4.7), Schrift und Symbole darin stimmen
         // damit ohne weiteres Zutun.
-        <div style={{ margin: "8px 10px 2px", background: flaecheAbgesetzt(), border: `1px solid ${T.neg}66`, borderRadius: 12, padding: "9px 11px" }}>
+        <div style={{ margin: "8px 10px", background: flaecheAbgesetzt(), border: `1px solid ${T.neg}66`, borderRadius: 12, padding: "9px 11px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
             {Li("alert-triangle", 16, T.acc_neg)}
             <span style={{ color: T.acc_neg, fontWeight: 700, fontSize: 13.5 }}>
@@ -404,7 +404,12 @@ function MoneyMoodScreen() {
           Für {year} sind noch keine Buchungen/Budgets vorhanden.
         </div>
       ) : (
-        <div style={{ padding: "4px 10px", display: "flex", flexDirection: "column", gap: 2 }}>
+        // Fuge 8px zwischen den Kategoriezeilen — derselbe Abstand wie ueberall
+        // sonst in der App. Mit den bisherigen 2px standen sie als ein Block
+        // ohne Luft dazwischen. Kein eigenes Polster nach oben: den Abstand
+        // traegt bereits der untere Rand des Schieflage-Panels bzw. der
+        // Kopfzeile darueber, sonst kaeme er doppelt.
+        <div style={{ padding: "0 10px", display: "flex", flexDirection: "column", gap: 8 }}>
           {sortedRows.map(renderCard)}
         </div>
       )}
