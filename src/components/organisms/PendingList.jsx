@@ -111,7 +111,7 @@ function PendingList({pTxs, getCat, txType, openEdit, dayOf, pendOpenAmt, getSub
                   // Budget überschritten: Hellorange wie bei negativem Kontostand
                   // (T.warn_icon), nicht mehr die Ausgaben-Farbe (T.neg/Cyan) —
                   // das ist eine Warnung, keine normale Ausgaben-Vormerkung.
-                  <span style={{color:T.warn_icon,fontSize:15,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>{betrag(Math.abs(rest))} drüber</span>
+                  <span style={{color:T.acc_warn,fontSize:15,fontWeight:700,fontFamily:NUM_FONT,flexShrink:0}}>{betrag(Math.abs(rest))} drüber</span>
                 ) : (
                   <span style={{display:"inline-flex",alignItems:"baseline",gap:4,flexShrink:0}}>
                     <span style={{color:T.txt2,fontSize:10}}>offen:</span>

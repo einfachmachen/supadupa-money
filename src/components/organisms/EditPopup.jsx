@@ -778,7 +778,7 @@ function EditPopup() {
                           }
                         }}
                         style={{width:"100%",background:"rgba(255,255,255,0.06)",border:`1px solid ${T.gold}44`,
-                          borderRadius:8,padding:"6px 8px",color:T.mid,fontSize:13,fontWeight:700,
+                          borderRadius:8,padding:"6px 8px",color:T.acc_mid,fontSize:13,fontWeight:700,
                           fontFamily:NUM_FONT,textAlign:"right",outline:"none",boxSizing:"border-box"}}
                         inputMode="decimal" placeholder="0,00"/>
                     </div>

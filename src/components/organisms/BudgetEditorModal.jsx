@@ -268,7 +268,7 @@ function BudgetEditorModal({sub, cat, accountId="acc-giro", onClose}) {
             background:"rgba(255,255,255,0.04)",borderRadius:7,padding:"6px 10px",
             fontSize:12,fontFamily:NUM_FONT}}>
             <span><span style={{color:T.txt2,fontFamily:"inherit",fontSize:11}}>Mitte: </span>
-              <span style={{color:T.mid,fontWeight:700}}>{betrag(amtM||0)}</span></span>
+              <span style={{color:T.acc_mid,fontWeight:700}}>{betrag(amtM||0)}</span></span>
             <span style={{color:T.txt2}}>·</span>
             <span><span style={{color:T.txt2,fontFamily:"inherit",fontSize:11}}>Gesamt: </span>
               <span style={{color:T.txt,fontWeight:700}}>{betrag(amtG)}</span></span>

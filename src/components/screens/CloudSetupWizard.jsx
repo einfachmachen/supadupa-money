@@ -274,7 +274,7 @@ function CloudSetupWizard({ onClose, onBack }) {
                 Lege deinen Worker im Cloudflare-Dashboard an — <b>ganz ohne GitHub</b>.
               </Box>
               <ol style={olStep}>
-                <li>Im <a href={DASH_URL} target="_blank" rel="noopener noreferrer" style={{ color: T.cf || T.blue, fontWeight: 700 }}>Cloudflare-Dashboard</a> → <b>Workers &amp; Pages</b> <i>(Workers und Pages)</i> → <b>Create</b> <i>(Erstellen)</i> → <b>Worker</b>.</li>
+                <li>Im <a href={DASH_URL} target="_blank" rel="noopener noreferrer" style={{ color: T.acc_cf || T.blue, fontWeight: 700 }}>Cloudflare-Dashboard</a> → <b>Workers &amp; Pages</b> <i>(Workers und Pages)</i> → <b>Create</b> <i>(Erstellen)</i> → <b>Worker</b>.</li>
                 <li>Name z. B. <b>supadupa-sync</b> → <b>Deploy</b> <i>(Bereitstellen)</i>.</li>
               </ol>
               <Fig name="cloudflare-create-worker.svg" alt="Worker anlegen: Workers und Pages → Erstellen → Worker → Name → Bereitstellen" />
@@ -426,7 +426,7 @@ function CloudSetupWizard({ onClose, onBack }) {
               <button onClick={runTest} disabled={!cfActive || testState === "testing"}
                 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
                   width: "100%", marginTop: 12, padding: "12px", borderRadius: 13, border: `1px solid ${T.cf || T.blue}55`,
-                  background: `${T.cf || T.blue}14`, color: T.cf || T.blue, fontSize: 15, fontWeight: 800,
+                  background: `${T.cf || T.blue}14`, color: T.acc_cf || T.blue, fontSize: 15, fontWeight: 800,
                   cursor: !cfActive ? "not-allowed" : "pointer", opacity: !cfActive ? 0.5 : 1 }}>
                 {Li("wifi", 16, T.cf || T.blue)} {testState === "testing" ? "Teste…" : "Verbindung testen"}
               </button>

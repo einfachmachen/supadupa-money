@@ -313,8 +313,8 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
           setCats(p=>p.filter(c=>c.id!==selCat.id));
           setView("list");
         }, {jaLabel:"Löschen", ton:"gefahr"})} style={{...btnCenter,background:"transparent",
-          border:`1.5px solid ${T.cond_neg}44`,color:T.cond_neg,fontWeight:400}}>
-          {Li("trash-2",S.fs-4,T.cond_neg)} Kategorie löschen
+          border:`1.5px solid ${T.cond_neg}44`,color:T.acc_cond_neg,fontWeight:400}}>
+          {Li("trash-2",S.fs-4,T.acc_cond_neg)} Kategorie löschen
         </button>
       </div>
     </div>
@@ -808,8 +808,8 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
                           <button onClick={doDeleteBudget}
                             style={{padding:`${S.pad}px ${S.padL}px`,borderRadius:S.radius,
                               border:`1px solid ${T.cond_neg}44`,background:`${T.cond_neg}11`,
-                              color:T.cond_neg,cursor:"pointer",fontFamily:"inherit",fontSize:S.fs-4}}>
-                            {Li("trash-2",16,T.cond_neg)}
+                              color:T.acc_cond_neg,cursor:"pointer",fontFamily:"inherit",fontSize:S.fs-4}}>
+                            {Li("trash-2",16,T.acc_cond_neg)}
                           </button>
                         )}
                       </div>

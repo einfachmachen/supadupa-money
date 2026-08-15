@@ -187,7 +187,7 @@ function FuelAnalysisScreen({onClose, onBack, mobileMode=false}) {
             {/* Kosten/km-Chart */}
             <div style={{marginBottom:16}}>
               <div style={{color:T.txt2,fontSize:11,fontWeight:600,marginBottom:6,display:"flex",alignItems:"center",gap:5}}>
-                {Li("route",12,T.mid)} Kosten je gefahrenem km
+                {Li("route",12,T.acc_mid)} Kosten je gefahrenem km
               </div>
               <div style={{background:"rgba(255,255,255,0.03)",border:`1px solid ${T.bd}`,borderRadius:11,padding:"8px"}}>
                 {barChart(withCostPerKm, t=>t._costPerKm, T.mid,
@@ -218,7 +218,7 @@ function FuelAnalysisScreen({onClose, onBack, mobileMode=false}) {
                       </div>
                     )}
                     {t._costPerKm!=null&&(
-                      <div style={{color:T.mid,fontSize:10,fontWeight:700,fontFamily:NUM_FONT}}>
+                      <div style={{color:T.acc_mid,fontSize:10,fontWeight:700,fontFamily:NUM_FONT}}>
                         {t._costPerKm.toFixed(3).replace(".",",")} €/km
                       </div>
                     )}

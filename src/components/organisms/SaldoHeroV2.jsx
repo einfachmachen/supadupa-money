@@ -410,7 +410,7 @@ function SaldoHeroV2({
             style={{display:"flex",alignItems:"baseline",gap:6,cursor:"pointer",
               borderRadius:8,padding:"2px 8px 3px",marginLeft:-8,
               background: progDrill==="Mitte" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
-            <span style={{color:T.mid||T.txt2,fontSize:9,fontWeight:700,letterSpacing:2,opacity:0.7}}>MITTE</span>
+            <span style={{color:T.acc_mid||T.txt2,fontSize:9,fontWeight:700,letterSpacing:2,opacity:0.7}}>MITTE</span>
             <span className="heroAmt" style={{color: saldoCol(prognoseMitte, mitteAbgHero),
               fontSize:19,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>
               {prognoseMitte>=0?"":"−"}{fmtMoney(Math.abs(prognoseMitte||0))}
@@ -494,7 +494,7 @@ function SaldoHeroV2({
           <div onClick={()=>setProgDrill(v=>v==="Mitte"?null:"Mitte")}
             style={{display:"inline-block",cursor:"pointer",borderRadius:8,padding:"0 10px",
               background: progDrill==="Mitte" ? (T.surf2||"rgba(255,255,255,0.04)") : "transparent"}}>
-            <div style={{color:T.mid||T.txt2,fontSize:9,fontWeight:700,
+            <div style={{color:T.acc_mid||T.txt2,fontSize:9,fontWeight:700,
               letterSpacing:2,opacity:0.7,marginBottom:2}}>MITTE</div>
             <div className="heroAmt" style={{color: saldoCol(prognoseMitte, mitteAbgHero),
               fontSize:20,fontWeight:800,fontVariantNumeric:"tabular-nums",fontFamily:NUM_FONT}}>

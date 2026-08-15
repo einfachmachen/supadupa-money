@@ -254,6 +254,14 @@ const _ACC_KEYS = {
   acc_pos:  { varName: "--acc-pos",  platte: (t) => t.acc_pos  || t.pos,  karte: (t) => t.acc_pos_card  || t.pos  },
   acc_neg:  { varName: "--acc-neg",  platte: (t) => t.acc_neg  || t.neg,  karte: (t) => t.acc_neg_card  || t.neg  },
   acc_gold: { varName: "--acc-gold", platte: (t) => t.acc_gold || t.gold, karte: (t) => t.acc_gold_card || t.gold },
+  // Die uebrigen Akzentrollen der App. Sie sind seltener, haben auf einer
+  // hellen Platte aber dieselbe Schwaeche: cf 1,37:1, mid 1,08:1,
+  // warn_icon 1,21:1, cond_pos 1,01:1, cond_neg 1,43:1 (durchgerechnet).
+  acc_cf:       { varName: "--acc-cf",       platte: (t) => t.acc_cf       || t.cf,       karte: (t) => t.acc_cf_card       || t.cf },
+  acc_mid:      { varName: "--acc-mid",      platte: (t) => t.acc_mid      || t.mid,      karte: (t) => t.acc_mid_card      || t.mid },
+  acc_warn:     { varName: "--acc-warn",     platte: (t) => t.acc_warn     || t.warn_icon,karte: (t) => t.acc_warn_card     || t.warn_icon },
+  acc_cond_pos: { varName: "--acc-cond-pos", platte: (t) => t.acc_cond_pos || t.cond_pos, karte: (t) => t.acc_cond_pos_card || t.cond_pos },
+  acc_cond_neg: { varName: "--acc-cond-neg", platte: (t) => t.acc_cond_neg || t.cond_neg, karte: (t) => t.acc_cond_neg_card || t.cond_neg },
 };
 
 export const hatKartenText = (t = _state.current) => !!(t && t.txt_card);

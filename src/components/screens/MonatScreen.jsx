@@ -1512,8 +1512,8 @@ function MonatScreen() {
               const totalIncome  = mTxs.reduce((s,t)=>s+Math.abs(t.totalAmount||0),0) - totalExpense;
               return (
                 <span style={{marginLeft:"auto",display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
-                  {totalExpense>0&&<span style={{color:T.cond_neg,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>−{betrag(totalExpense)}</span>}
-                  {totalIncome>0&&<span style={{color:T.cond_pos,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>+{betrag(totalIncome)}</span>}
+                  {totalExpense>0&&<span style={{color:T.acc_cond_neg,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>−{betrag(totalExpense)}</span>}
+                  {totalIncome>0&&<span style={{color:T.acc_cond_pos,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>+{betrag(totalIncome)}</span>}
                 </span>
               );
             })()}
@@ -1690,7 +1690,7 @@ function MonatScreen() {
                   <div style={{display:"flex",alignItems:"center",gap:5,minWidth:0,overflow:"hidden"}}>
                     <span style={{color:T.txt,fontSize:FS_KOPF,fontWeight:700,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{showFullDate?fmtDFull(date):fmtD(date)}</span>
                     <span style={{color:T.txt2,fontSize:FS_SUB,flexShrink:0}}>{dayName(date)}</span>
-                    {dayOf(date)<=14&&<span style={{color:T.mid,fontSize:9,fontWeight:700,flexShrink:0,whiteSpace:"nowrap",
+                    {dayOf(date)<=14&&<span style={{color:T.acc_mid,fontSize:9,fontWeight:700,flexShrink:0,whiteSpace:"nowrap",
                       background:"rgba(103,232,249,0.1)",borderRadius:5,padding:"1px 5px"}}>Mitte</span>}
                   </div>
                   {/* Verbindungs-Linie in grün (positiver) / rot (negativer Ist-Saldo).
@@ -1779,10 +1779,10 @@ function MonatScreen() {
                     }}>
                       <div style={{flexShrink:0,width:28,height:28,borderRadius:8,
                         background:`${T.warn_bold}22`,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                        {Li("alert-triangle",14,T.warn_icon)}
+                        {Li("alert-triangle",14,T.acc_warn)}
                       </div>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{color:T.warn_icon,fontSize:12,fontWeight:700,lineHeight:1.3}}>
+                        <div style={{color:T.acc_warn,fontSize:12,fontWeight:700,lineHeight:1.3}}>
                           {nurBudget ? "Nach Budget im Minus" : "Kontostand im Minus"}: −{betrag(w.deficit)} €
                         </div>
                         <div style={{color:T.txt2,fontSize:10,marginTop:2,lineHeight:1.4}}>

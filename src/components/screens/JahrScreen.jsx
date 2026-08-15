@@ -567,7 +567,7 @@ function JahrScreen({forceSingle=false}) {
                             <div style={{color:T.txt2,fontSize:10}}>{tx.date.slice(0,7)}</div>
                           </div>
                           <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
-                            <span style={{color:T.mid,fontSize:10}}>Mitte</span>
+                            <span style={{color:T.acc_mid,fontSize:10}}>Mitte</span>
                             <span style={{...amtStyle("neg",col2),fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>−{betrag(tx._mitteAmt)}</span>
                             <span style={{color:T.acc_gold,fontSize:10}}>Gesamt</span>
                             <span style={{...amtStyle("neg",col2),fontSize:11,fontWeight:700,fontFamily:NUM_FONT}}>−{betrag(tx._mitteAmt+tx._endeAmt)}</span>

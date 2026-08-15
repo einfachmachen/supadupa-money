@@ -177,7 +177,7 @@ function SettingsInline() {
           <div style={{marginBottom:10,padding:"8px 10px",borderRadius:8,
             border:`1px solid ${T.cf}44`,background:`${T.cf}0d`,
             display:"flex",alignItems:"center",gap:8}}>
-            {Li("hash",13,T.cf)}
+            {Li("hash",13,T.acc_cf)}
             <div style={{flex:1}}>
               <div style={{fontSize:10,color:T.txt2,fontWeight:600}}>Sync-Fingerabdruck (auf allen Geräten vergleichen)</div>
               <div style={{fontSize:15,color:T.txt,fontWeight:800,letterSpacing:1.5,fontFamily:"monospace"}}>{cfFingerprint}</div>
@@ -206,9 +206,9 @@ function SettingsInline() {
                 setCfStatus("ok"); alert("Cloudflare Verbindung OK!");
               }catch(e){setCfStatus("error");alert("Fehler: "+e.message);}
             }} style={{flex:1,padding:"8px",borderRadius:9,border:`1px solid ${T.cf}44`,
-              background:`${T.cf}11`,color:T.cf,fontSize:12,fontWeight:600,cursor:"pointer",
+              background:`${T.cf}11`,color:T.acc_cf,fontSize:12,fontWeight:600,cursor:"pointer",
               fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-              {Li("wifi",12,T.cf)} Verbindung testen
+              {Li("wifi",12,T.acc_cf)} Verbindung testen
             </button>
           </div>
         )}

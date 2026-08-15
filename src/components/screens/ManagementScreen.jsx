@@ -250,11 +250,11 @@ function ManagementScreen({activeTab="kategorien"}) {
             </div>
             {(()=>{
               const kontenRow   = {icon:"credit-card",color:T.acc,         label:"Konten",                sub:"Verwalten, Reihenfolge, Puffer",  onClick:()=>setMgrTab("konten"), tourId:"row-konten"};
-              const budgetRow   = {icon:"target",     color:T.mid,          label:"Kategorien & Budget",   sub:"Budgets je Kategorie festlegen",  onClick:()=>setShowMobileKategorien?.(true), tourId:"row-budget"};
+              const budgetRow   = {icon:"target",     color:T.acc_mid,          label:"Kategorien & Budget",   sub:"Budgets je Kategorie festlegen",  onClick:()=>setShowMobileKategorien?.(true), tourId:"row-budget"};
               const csvRow      = {icon:"download",   color:T.acc_pos,          label:"csv importieren",       sub:"Buchungen aus Banking-App",       onClick:()=>setShowCsv?.(true), tourId:"row-csv"};
               const bankRow     = {icon:"landmark",   color:T.acc_gold,         label:"Bank verbinden",        sub:"Schritt für Schritt · Enable Banking", onClick:()=>setShowBankWizard?.(true), tourId:"row-bank"};
               const dataMgrRow  = {icon:"database",   color:T.acc_pos,          label:"Daten-Manager",         sub:"Export / Import / Löschen",       onClick:()=>setShowDataMgr?.(true)};
-              const cloudRow    = {icon:"cloud",      color:T.cf||T.blue,   label:"Cloud-Sync einrichten", sub:"Eigene Cloud-DB · geführt",       onClick:()=>setShowCloudSetup?.(true), tourId:"row-cloudsync"};
+              const cloudRow    = {icon:"cloud",      color:T.acc_cf||T.blue,   label:"Cloud-Sync einrichten", sub:"Eigene Cloud-DB · geführt",       onClick:()=>setShowCloudSetup?.(true), tourId:"row-cloudsync"};
               const fuelRow     = {icon:"fuel",       color:T.acc_gold,         label:"Tankverbrauch",         sub:"Verbrauch & Preisentwicklung",    onClick:()=>setShowFuelAnalysis?.(true)};
               const matchingRow = {icon:"git-merge",  color:T.acc,         label:"Vormerkungen zuordnen", sub:"Eigene mit Bank-Buchungen verknüpfen", onClick:()=>setShowMatching?.(true), tourId:"row-matching"};
               // "Suche & Summe" wurde als eigene, zu versteckte Ansicht entfernt —
