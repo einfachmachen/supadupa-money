@@ -13,7 +13,7 @@ import { SettingsInline } from "./SettingsInline.jsx";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
-import { INP } from "../../theme/palette.js";
+import { INP, UNTEN_FREI } from "../../theme/palette.js";
 import { uid, NUM_FONT } from "../../utils/format.js";
 import { reassignAccount, accountRefs } from "../../utils/accountReassign.js";
 import { Li } from "../../utils/icons.jsx";
@@ -104,7 +104,7 @@ function ManagementScreen({activeTab="kategorien"}) {
       // farbkräftige Flächen) gedacht, schon genutzt in SaldoHeroV2.
       const dispColorCat = cat.color || (isIncCat ? T.cond_pos : T.cond_neg);
       return (
-        <div style={{overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+        <div style={{overflowY:"auto",WebkitOverflowScrolling:"touch",paddingBottom:UNTEN_FREI}}>
           {showIconPicker==="cat"&&<IconPickerDialog selectedIcon={cat.icon} selectedColor={cat.color} onSelect={ic=>updateCat(cat.id,"icon",ic)} onClose={()=>setShowIconPicker(null)}/>}
           <div style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px 6px"}}>
             <button onClick={()=>setMgmtCat(null)} style={{background:"rgba(255,255,255,0.08)",border:"none",color:T.txt,borderRadius:10,width:34,height:34,cursor:"pointer",fontSize:18}}>{Li("arrow-left",13)}</button>
@@ -244,11 +244,8 @@ function ManagementScreen({activeTab="kategorien"}) {
           // Genug Scroll-Reserve, damit sich die LETZTE Kachel bis ueber die
           // Reiterleiste UND den vergroesserten + Knopf schieben laesst — vorher
           // blieb "Einstellungen" dauerhaft halb darunter (Nutzer-Hinweis).
-          // 216 = 64 Leiste + 152 Ueberhang des Knopfes: er wird im
-          // arretierten Zustand um 94px angehoben und auf 1,5 skaliert
-          // (78 -> 117px), steht also mit gut der halben Hoehe (58px) darueber.
-          // Die Flaeche ist reiner Scroll-Weg und nur am Listenende sichtbar.
-          <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 14px 216px"}}>
+          // Herleitung von UNTEN_FREI: siehe palette.js.
+          <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:`12px 14px ${UNTEN_FREI}px`}}>
             {(()=>{
               const kontenRow   = {icon:"credit-card",color:T.acc,         label:"Konten",                sub:"Verwalten, Reihenfolge, Puffer",  onClick:()=>setMgrTab("konten"), tourId:"row-konten"};
               const budgetRow   = {icon:"target",     color:T.acc_mid,          label:"Kategorien & Budget",   sub:"Budgets je Kategorie festlegen",  onClick:()=>setShowMobileKategorien?.(true), tourId:"row-budget"};
@@ -332,7 +329,7 @@ function ManagementScreen({activeTab="kategorien"}) {
             <MobileHeader title="Konten" subtitle="Verwalten, Reihenfolge, Puffer"
               icon="credit-card" iconColor={T.blue} safeAreaTop={false}
               onBack={()=>setMgrTab("daten")}/>
-            <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 14px 24px"}}>
+            <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:`12px 14px ${UNTEN_FREI}px`}}>
             {_accounts.map((acc,ai)=>(
               <div key={acc.id} style={{display:"flex",alignItems:"center",gap:10,background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"12px 10px",marginBottom:6,border:`1px solid ${T.bd}`}}>
                 <div style={{display:"flex",flexDirection:"column",gap:1,flexShrink:0}}>

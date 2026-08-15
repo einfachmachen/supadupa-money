@@ -470,7 +470,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
               Alle an
             </button>
           </div>
-          <div style={{flex:1,overflowY:"auto",padding:"8px 12px"}}>
+          <div style={{flex:1,overflowY:"auto",padding:`8px 12px ${UNTEN_FREI}px`}}>
             {(vendors||[]).filter(v=>{
               if(!vendorSearch) return true;
               const isAmt = /^[=<>]?[\d.,]+$/.test(vendorSearch.trim());
@@ -761,7 +761,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
               </div>
             </div>
           ):(
-            <div style={{flex:1,overflowY:"auto",padding:"8px 12px"}}>
+            <div style={{flex:1,overflowY:"auto",padding:`8px 12px ${UNTEN_FREI}px`}}>
               {suggestions.map(s=>{
                 const isAcc=accepted.has(s.id);
                 const cat=getCat(get(s.id,"catId"));
@@ -924,7 +924,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
             <button onClick={()=>setKatIncluded(new Set(katVendors.map(v=>v.vendor)))}
               style={{background:"transparent",border:`1px solid ${T.bds}`,color:T.txt2,borderRadius:7,padding:"3px 8px",fontSize:10,cursor:"pointer"}}>Alle an</button>
           </div>
-          <div style={{flex:1,overflowY:"auto",padding:"8px 12px"}}>
+          <div style={{flex:1,overflowY:"auto",padding:`8px 12px ${UNTEN_FREI}px`}}>
             {(katVendors||[]).filter(v=>{
               if(!katSearch) return true;
               const isAmt = /^[=<>]?[\d.,]+$/.test(katSearch.trim());
@@ -1084,7 +1084,7 @@ function RecurringDetectionScreen({onClose, embedded=false, initialTab="vormerku
               Je Absender eine Kategorie wählen · {Object.values(katAssign).filter(a=>a.catId).length} zugewiesen
             </div>
           </div>
-          <div style={{flex:1,overflowY:"auto",padding:"8px 12px"}}>
+          <div style={{flex:1,overflowY:"auto",padding:`8px 12px ${UNTEN_FREI}px`}}>
             {(katVendors||[]).filter(v=>katIncluded.has(v.vendor)).map(v=>{
               const assigned=katAssign[v.vendor];
               const assignedCat=assigned?.catId?allCatOpts.find(o=>o.catId===assigned.catId&&o.subId===assigned.subId):null;

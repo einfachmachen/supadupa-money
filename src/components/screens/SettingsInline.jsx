@@ -8,6 +8,7 @@ import { CustomThemeEditor } from "./CustomThemeEditor.jsx";
 import { IconSwipePicker } from "../organisms/IconSwipePicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
+import { UNTEN_FREI } from "../../theme/palette.js";
 import { INP } from "../../theme/palette.js";
 import { Li } from "../../utils/icons.jsx";
 import { makeYearData } from "../../utils/yearData.js";
@@ -66,7 +67,7 @@ function SettingsInline() {
   }, [cfUrl, cfSecret]);
 
   return (
-    <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 14px 24px"}}>
+    <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:`12px 14px ${UNTEN_FREI}px`}}>
 
       {/* ── Design (eigenes Farbschema) ─────────────────── */}
       <CustomThemeEditor/>

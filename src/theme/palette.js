@@ -69,6 +69,20 @@ const gs = (block, type) => { const bc=getBC(); return (bc[block]||bc.aus)[type]
 // gegenseitigem "beide zusammen aendern"-Hinweis) — hier liegt er einmal.
 const ZEILE_H = 38;
 
+// Scroll-Reserve am unteren Ende jeder Liste, die UNTER der Reiterleiste
+// endet. Ohne sie bleibt der letzte Eintrag dauerhaft halb verdeckt und
+// laesst sich nicht freischieben.
+//
+// 216 = 64px Leiste + 152px Ueberhang des + Knopfes: der wird im arretierten
+// Zustand um 94px angehoben und auf 1,5 skaliert (78 -> 117px), steht also
+// mit gut der halben Hoehe (58px) ueber der Leistenoberkante.
+//
+// Die Flaeche ist reiner Scroll-Weg — sie wird erst am Listenende sichtbar.
+// NICHT fuer Vollbild-Dialoge: die liegen mit z-Index 300 ueber der Leiste
+// und verdecken sie, dort waere die Reserve nur eine Luecke (siehe
+// `.mobile-modal.unter-leiste` in themes.css fuer die eine Ausnahme).
+const UNTEN_FREI = 216;
+
 // ─── Initial categories ───────────────────────────────────────────────────────
 
-export { INP, PAL, getBC, gs, ZEILE_H };
+export { INP, PAL, getBC, gs, ZEILE_H, UNTEN_FREI };
