@@ -1820,7 +1820,7 @@ function DashboardScreenV2() {
               zIndex:65,display:"flex",alignItems:"flex-start",justifyContent:"center",padding:0}}>
             <div onClick={e=>e.stopPropagation()} className="aufriss-blatt"
               style={{background:T.bg,borderRadius:0,width:"100%",maxWidth:560,
-                height:"100dvh",maxHeight:"100dvh",display:"flex",flexDirection:"column",
+                height:"calc(100dvh - var(--overdue-space, 0px))",maxHeight:"calc(100dvh - var(--overdue-space, 0px))",display:"flex",flexDirection:"column",
                 border:"none",boxShadow:"0 8px 40px rgba(0,0,0,0.7)"}}>
               {/* Header — kein eigener Schließen-Button mehr (Zurück-Pfeil UND Tap auf
                   den abgedunkelten Hintergrund schließen bereits). Titel bricht um
@@ -1829,7 +1829,7 @@ function DashboardScreenV2() {
                   steht schon unter dem Betrag, s.u.). Betrag oben rechts, Buch./VM/unkat.
                   mit je eigenem Symbol darunter — kompakt statt eigener Unterzeile. */}
               <div style={{display:"flex",alignItems:"flex-start",gap:6,
-                padding:"calc(8px + env(safe-area-inset-top, 0px) + var(--sync-badge-space, 0px)) 10px 6px",flexShrink:0}}>
+                padding:"calc(8px + var(--safe-top, env(safe-area-inset-top, 0px)) + var(--sync-badge-space, 0px)) 10px 6px",flexShrink:0}}>
                 {/* Zurueck-Pfeil links (spaeter auch per + bedienbar) */}
                 <button onClick={()=>setDashDrill(null)}
                   style={{background:"rgba(255,255,255,0.08)",border:"none",color:T.txt,

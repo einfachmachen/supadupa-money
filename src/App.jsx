@@ -2081,6 +2081,18 @@ export default function SupaDupaMoney() {
       .sort((a,b)=>a.date.localeCompare(b.date));
   }, [txs]);
 
+  // ── Platz für die Überfällig-Warnung ganz oben ─────────────────────────────
+  // Bewusst ein FESTER CSS-Ausdruck statt einer gemessenen Höhe: der Balken hat
+  // zwei einzeilige, per Ellipse gekürzte Textzeilen (12.5px + 11px bei
+  // Zeilenhöhe 1.25 ≈ 30px) plus 7px Polster oben/unten — er kann also gar
+  // nicht umbrechen und ist damit exakt vorhersagbar. Eine JS-Messung würde
+  // beim ersten Bild noch 0 liefern und den Inhalt sichtbar springen lassen.
+  // Der Balken selbst bekommt exakt diese Höhe (overflow:hidden), das Wurzel-
+  // Div exakt diesen Abstand — beide können deshalb nie auseinanderlaufen.
+  const OVERDUE_H = "calc(46px + max(0px, calc(env(safe-area-inset-top) - 14px)))";
+  const overdueAn = overduePending.length > 0;
+  const overdueSpace = overdueAn ? OVERDUE_H : "0px";
+
   // ── Prognostizierter Saldo (inkl. offene Vormerkungen bis Halbmonat oder Monatsende) ──
   const _progDetailCache = React.useRef({});
   const _progDetailTxsRef = React.useRef(null);
@@ -3356,6 +3368,54 @@ export default function SupaDupaMoney() {
   return (
   <AppCtx.Provider value={cx}>
     <>
+    {/* ── Überfällige-Vormerkungen-Warnung ────────────────────────────────────
+        Schlanker, antippbarer Balken ganz oben — auf allen Screens UND über
+        allen Vollbild-Dialogen sichtbar (Nutzer-Vorgabe: "muss immer sichtbar
+        sein").
+
+        Warum hier, außerhalb des Wurzel-Divs? Alle Vollbild-Dialoge (Bank
+        verbinden, Daten-Manager, CSV-Import, Fahrzeug-Analyse, Aufriss …) sind
+        selbst position:fixed; inset:0 mit z-Index bis 400. Ein Balken im
+        normalen Fluss liegt zwangsläufig darunter und ist dort unsichtbar. Als
+        Geschwister vor dem Wurzel-Div — das per transform einen eigenen
+        Stapelkontext bildet — liegt er garantiert über dem gesamten Inhalt.
+
+        Verdeckt wird trotzdem nichts: das Wurzel-Div rückt per marginTop um
+        genau diese Höhe nach unten, und weil sein transform es zum
+        Bezugsrahmen aller position:fixed-Nachfahren macht, beginnen auch die
+        Dialoge dort. Höhe fest (OVERDUE_H), nicht gemessen — siehe dort.
+
+        Der Notch-Abstand steckt im Balken selbst, damit sein Braun bis unter
+        die Statusleiste durchläuft und der Inhalt bündig anschließt. ── */}
+    {overdueAn && (()=>{
+      const first = overduePending[0];
+      const dateStr = first.date.split("-").reverse().join(".");
+      return (
+        <div onClick={()=>setShowOverdueList(true)}
+          style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",
+            background:"#8A5A00",color:"#fff",
+            padding:"7px 12px",
+            paddingTop:"calc(7px + max(0px, calc(env(safe-area-inset-top) - 14px)))",
+            position:"fixed",top:0,left:0,right:0,
+            // Feste Höhe + overflow:hidden — der Balken kann dadurch niemals
+            // höher werden als der Platz, den das Wurzel-Div freihält.
+            height:OVERDUE_H,boxSizing:"border-box",overflow:"hidden",
+            zIndex:450,boxShadow:"0 1px 6px rgba(0,0,0,0.3)"}}>
+          {Li("alert-triangle",16,"#fff")}
+          <div style={{flex:1,minWidth:0,lineHeight:1.25}}>
+            <div style={{fontSize:12.5,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+              {overduePending.length===1
+                ? `Überfällige Vormerkung: ${first.desc||"Buchung"}`
+                : `${overduePending.length} überfällige Vormerkungen`}
+            </div>
+            <div style={{fontSize:11,opacity:0.92,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+              seit {dateStr} noch nicht als tatsächliche Buchung eingetroffen · tippen
+            </div>
+          </div>
+          {Li("chevron-right",18,"#fff")}
+        </div>
+      );
+    })()}
     {/* Theme-Klasse allgemein aus dem Namen — vorher stand hier
         eine Kette aus Einzelvergleichen, in die jedes neue Theme von Hand
         eingetragen werden musste. Genau das wurde bei "Tastenhell" vergessen:
@@ -3365,7 +3425,19 @@ export default function SupaDupaMoney() {
       themeName?`theme-${themeName}`:null,
       amtMode===0?"amts-blur":null, amtMode<2?"amts-neutral":null,
       amtFont?`amtfont-${amtFont}`:null].filter(Boolean).join(" ")||undefined}
-      style={{background:T.bg,height:"100vh",maxHeight:"100vh",
+      style={{background:T.bg,
+      // Höhe UND Startpunkt weichen der Überfällig-Warnung aus — nicht per
+      // paddingTop! Das Wurzel-Div trägt (bei aktiver Warnung) transform und
+      // wird dadurch zum Bezugsrahmen aller position:fixed-Nachfahren; dessen
+      // Maße sind laut CSS-Transforms-Spec die BORDER-Box. Polster liegt
+      // INNERHALB dieser Box und verschiebt die Dialoge deshalb kein Stück —
+      // genau daran ist der vorige Versuch gescheitert (Kopfzeilen von
+      // Bank-Assistent, Cloud-Einrichtung und Daten-Manager lagen unsichtbar
+      // hinter dem Balken). marginTop verschiebt die Border-Box selbst, und
+      // die reduzierte Höhe hält die Unterkante am Bildschirmrand, damit die
+      // Reiterleiste (position:fixed, bottom:0) dort bleibt, wo sie hingehört.
+      height:`calc(100vh - ${overdueSpace})`,maxHeight:`calc(100vh - ${overdueSpace})`,
+      marginTop:overdueSpace,
       // Systemfarbschema der Eingabefelder. Normalerweise folgt es der
       // Theme-Helligkeit; ein Theme kann es aber ausdruecklich setzen. Genau
       // das braucht "Tastenhell": die SEITE ist hell, nur seine Karten und
@@ -3380,6 +3452,17 @@ export default function SupaDupaMoney() {
       // überschreibt sie die Regel aus kartenTextRegel() (siehe <style> unten).
       ...(wurzelTextVars()||{}),
       "--sync-badge-space":syncBadgeSpace,
+      // Von der Überfällig-Warnung belegte Höhe. Dialoge mit FESTER Höhe
+      // (.mobile-modal via --app-vvh, Aufriss und Money Mood mit 100dvh)
+      // beziehen sich auf den ganzen Bildschirm und müssen sie abziehen —
+      // sonst ragen sie unten um genau diesen Betrag hinaus. Dialoge mit
+      // inset:0 (ohne feste Höhe) passen sich von selbst an.
+      "--overdue-space":overdueSpace,
+      // Wirksamer Notch-Abstand für Vollbild-Dialoge: liegt die Warnung an,
+      // steckt der Abstand zur Statusleiste schon in IHR, und der Dialog
+      // beginnt unter ihr. Ohne diese Umschaltung holten sich die Dialogköpfe
+      // den Inset ein zweites Mal und stünden doppelt tief.
+      "--safe-top": overdueAn ? "0px" : "env(safe-area-inset-top, 0px)",
       display:"flex",flexDirection:"column",
       // Inhalt unter die Notch/Statusleiste; bg füllt bis ganz oben. Der volle
       // safe-area-inset-top-Wert liegt spürbar über der reinen Statusleisten-
@@ -3387,7 +3470,13 @@ export default function SupaDupaMoney() {
       // Inhalt (Sync-Banner) näher an die Statusleiste rückt. max(0px, ...)
       // verhindert auf jedem Gerät negative Werte (Inhalt würde sonst hinter
       // die Notch/Dynamic Island rutschen).
-      paddingTop:"max(0px, calc(env(safe-area-inset-top) - 14px))",
+      // Ohne Warnung wie bisher: Inhalt unter die Notch. Mit Warnung steckt
+      // dieser Abstand bereits in ihr (marginTop oben), sonst käme er doppelt.
+      paddingTop: overdueAn ? 0 : "max(0px, calc(env(safe-area-inset-top) - 14px))",
+      // Macht die Border-Box zum Bezugsrahmen aller position:fixed-Nachfahren,
+      // sodass die Vollbild-Dialoge unterhalb des Balkens beginnen. Nur bei
+      // aktiver Warnung gesetzt — ohne sie bleibt das Layout unverändert.
+      ...(overdueAn ? {transform:"translateZ(0)"} : null),
       fontFamily:"'SF Pro Text',-apple-system,BlinkMacSystemFont,sans-serif",
       userSelect:"none",overflow:"hidden"}}>
 
@@ -3497,33 +3586,9 @@ export default function SupaDupaMoney() {
         );
       })()}
 
-      {/* ── Überfällige-Vormerkungen-Warnung: schlanker, antippbarer Balken ganz oben
-          (alle Screens). Erscheint, solange mind. eine Vormerkung ein bereits
-          vergangenes Buchungsdatum hat und noch nicht real gebucht wurde. Tippen
-          öffnet eine Liste der betroffenen Vormerkungen. ── */}
-      {overduePending.length>0 && (()=>{
-        const first = overduePending[0];
-        const dateStr = first.date.split("-").reverse().join(".");
-        return (
-          <div onClick={()=>setShowOverdueList(true)}
-            style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",
-              background:"#8A5A00",color:"#fff",padding:"7px 12px",flexShrink:0,
-              boxShadow:"0 1px 6px rgba(0,0,0,0.3)"}}>
-            {Li("alert-triangle",16,"#fff")}
-            <div style={{flex:1,minWidth:0,lineHeight:1.25}}>
-              <div style={{fontSize:12.5,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                {overduePending.length===1
-                  ? `Überfällige Vormerkung: ${first.desc||"Buchung"}`
-                  : `${overduePending.length} überfällige Vormerkungen`}
-              </div>
-              <div style={{fontSize:11,opacity:0.92,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                seit {dateStr} noch nicht als tatsächliche Buchung eingetroffen · tippen
-              </div>
-            </div>
-            {Li("chevron-right",18,"#fff")}
-          </div>
-        );
-      })()}
+      {/* Der Überfällig-Warnbalken steht bewusst NICHT hier, sondern als
+          Geschwister VOR dem Wurzel-Div (ganz oben in dieser Datei) — nur dort
+          liegt er über den Vollbild-Dialogen. */}
 
       {showOverdueList && (
         <Overlay onClose={()=>setShowOverdueList(false)}>

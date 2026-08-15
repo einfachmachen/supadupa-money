@@ -408,12 +408,18 @@
      window.visualViewport laufend auf die tatsächlich sichtbare Höhe
      gesetzt und hat deshalb Vorrang; 100svh bleibt nur als Fallback, falls
      --app-vvh (noch) nicht gesetzt ist. */
+  /* --overdue-space: Hoehe der Ueberfaellig-Warnung ganz oben (0px, wenn keine
+     anliegt). Liegt sie an, beginnt dieser Dialog bereits unter ihr (das
+     Wurzel-Div ist per transform sein Bezugsrahmen). --app-vvh misst aber die
+     GANZE sichtbare Viewporthoehe — ohne Abzug ragte der Dialog unten um genau
+     diesen Betrag hinaus, und seine letzten Zeilen verschwaenden hinter der
+     Reiterleiste. */
   .mobile-modal {
     font-size: 18px;
     top: 0 !important;
     height: 100vh !important;
     height: 100svh !important;
-    height: var(--app-vvh, 100svh) !important;
+    height: calc(var(--app-vvh, 100svh) - var(--overdue-space, 0px)) !important;
     padding-bottom: 57px !important;
     box-sizing: border-box;
   }

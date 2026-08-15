@@ -53,7 +53,12 @@ function MobileHeader({ title, subtitle, icon, iconColor, onBack, onClose, title
       // und volle 12px obendrauf schoben den Titel unnoetig weit nach unten
       // (Nutzer-Hinweis). Auf Geraeten ohne Aussparung (env = 0) bleiben es
       // die vollen 12px, sonst waere der Titel dort zu dicht am Rand.
-      padding:`${safeAreaTop ? `max(${H_PAD_V}px, calc(env(safe-area-inset-top, 0px) + 2px))` : `${H_PAD_V}px`} ${H_PAD_H}px ${H_PAD_V}px`,
+      // --safe-top statt env(...) direkt: liegt oben die Ueberfaellig-Warnung
+      // an, beginnt dieser Vollbild-Dialog bereits UNTER ihr, und der
+      // Notch-Abstand steckt schon in ihr. App.jsx setzt --safe-top dann auf
+      // 0px, sodass hier die vollen 12px bleiben statt eines doppelten
+      // Abstands ueber der Titelzeile.
+      padding:`${safeAreaTop ? `max(${H_PAD_V}px, calc(var(--safe-top, env(safe-area-inset-top, 0px)) + 2px))` : `${H_PAD_V}px`} ${H_PAD_H}px ${H_PAD_V}px`,
       display:"flex", alignItems:"center", gap:12, flexShrink:0}}>
       {/* `kopf-taste`: Der Kopf IST schon eine Taste (`T.surf`). Themes, die
           jede blasse Fläche im Dialog zur Taste erklären (§4.7), müssen diesen
