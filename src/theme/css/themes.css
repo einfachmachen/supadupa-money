@@ -163,7 +163,7 @@
     gap: 8px !important;
     /* Dieselbe Fuge auch ueber der ersten Kategorie. Zwischen Hero und Liste
        koennen Panels stehen (Bank-Abruf, Auto-Zuordnung, Duplikat-Warnung …),
-       die unten keinen eigenen Rand haben (BankFetchPanel: margin "6px 4px 0")
+       die unten keinen eigenen Rand haben (BankFetchPanel: margin "6px 10px 0")
        und deshalb direkt an "Einkommen" klebten. Der Rand sitzt bewusst HIER
        statt an jedem einzelnen Panel: so gilt er fuer alle, auch fuer kuenftige.
        Steht kein Panel dazwischen, verschmilzt er mit dem unteren Rand des
@@ -232,9 +232,9 @@
     padding-bottom: 0 !important;
   }
   .theme-tastenhell .screen-scroll {
-    /* Dieselbe Rechnung wie die Leistenhoehe (s.u.: 52px Innenraum + 10px
+    /* Dieselbe Rechnung wie die Leistenhoehe (s.u.: 52px Innenraum + 12px
        Aussenabstand) — sonst endet die Liste zu frueh oder zu spaet. */
-    padding-bottom: 62px;
+    padding-bottom: 64px;
   }
 
   /* Systemfarbschema: die Wurzel steht auf "light" (helle Platte, siehe
@@ -291,8 +291,8 @@
        Reiter darin unveraendert gross sind).
        Der sichtbare Abstand unter den Tasten ist etwas groesser als dieser
        Wert: dazu kommen die 2px Rand am Reiter und ein halbes Pixel aus der
-       Zentrierung (alignItems:"center" als Inline-Style, App.jsx) — bei 10px
-       also rund 12,5px.
+       Zentrierung (alignItems:"center" als Inline-Style, App.jsx) — bei 12px
+       also rund 14,5px.
        Weg dahin, weil die Zahl sonst willkuerlich wirkt: ohne jede Reserve
        (Polster 5px) klebten die Reiter mit ~7,5px am Rand. Das Polster um
        env(safe-area-inset-bottom) wachsen zu lassen war der naheliegende
@@ -303,8 +303,8 @@
        KEIN align-items:stretch: das liess die Tasten die Leistenhoehe fuellen
        und veraenderte damit ihre Form. Sie bleiben zentriert und behalten
        ihre Groesse aus dem Inhalt. */
-    height: calc(52px + 10px) !important;
-    padding-bottom: 10px !important;
+    height: calc(52px + 12px) !important;
+    padding-bottom: 12px !important;
     /* Wächst der + Knopf, verlässt sein Platz den Fluss (App.jsx) — der frei
        werdende Raum geht in die LÜCKEN, nicht in die Reiter: die behalten
        ihre Breite und rücken nur auseinander (Nutzer-Wunsch). */

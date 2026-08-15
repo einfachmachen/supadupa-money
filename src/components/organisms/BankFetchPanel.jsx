@@ -143,7 +143,10 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm, 
   const removeRow = (id) => onUpdateStaged((list) => list.filter((t) => t.id !== id));
 
   const wrap = (children) => (
-    <div style={{ margin: "6px 4px 0", border: `1px solid ${T.blue}55`, borderRadius: 14,
+    // Seitlich 10px wie JEDER andere Block der Ansicht (Kategorieliste
+    // "0 10px 4px", Duplikat-Warnung "6px 10px", Diagramm-Rahmen "0 10px").
+    // Mit den frueheren 4px ragte dieses Panel als einziges beidseitig heraus.
+    <div style={{ margin: "6px 10px 0", border: `1px solid ${T.blue}55`, borderRadius: 14,
       background: T.surf || "rgba(255,255,255,0.03)", overflow: "hidden" }}>
       {children}
     </div>
