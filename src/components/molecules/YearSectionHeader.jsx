@@ -5,6 +5,7 @@
 import React, { useContext, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
+import { schriftAuf } from "../../theme/amtPill.js";
 import { Li } from "../../utils/icons.jsx";
 import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
 import { useSaldoHeroData } from "../../state/useSaldoHeroData.js";
@@ -41,12 +42,20 @@ function YearSectionHeader({ active, detailsOpen, setDetailsOpen, children }) { 
             {OPTS.map(([id, lbl, ic]) => {
               const on = active === id;
               return (
+                // GEWAEHLT heisst GEFUELLT, nicht getoent (§4.4, wie bei den
+                // Konto-Kacheln). Vorher trug der aktive Reiter einen
+                // 16-%-Goldschleier und goldene Schrift darauf: auf einer
+                // hellen Platte hebt sich die Flaeche mit rund 1,05:1 nicht ab
+                // und die Schrift darauf mit rund 1,18:1 ebenso wenig — der
+                // Reiter war praktisch unsichtbar (Nutzer-Hinweis "geht
+                // ueberhaupt nicht"). Gefuellt traegt er die volle Akzentfarbe,
+                // die Schriftfarbe rechnet schriftAuf dagegen aus.
                 <button key={id} onClick={() => { if (id !== active) setSubTab(id); }}
                   style={{ display: "flex", alignItems: "center", gap: 6, padding: "5px 12px", borderRadius: 9, cursor: "pointer",
                     fontFamily: "inherit", fontSize: 12, fontWeight: on ? 700 : 500,
-                    border: `1px solid ${on ? T.gold : T.bd}`, background: on ? "rgba(245,166,35,0.16)" : "transparent",
-                    color: on ? T.gold : T.txt2 }}>
-                  {Li(ic, 13, on ? T.gold : T.txt2)} {lbl}
+                    border: `1px solid ${on ? T.gold : T.bd}`, background: on ? T.gold : "transparent",
+                    color: on ? schriftAuf(T.gold, T.on_accent) : T.txt2 }}>
+                  {Li(ic, 13, on ? schriftAuf(T.gold, T.on_accent, 3) : T.txt2)} {lbl}
                 </button>
               );
             })}
