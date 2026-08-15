@@ -3497,35 +3497,6 @@ export default function SupaDupaMoney() {
         );
       })()}
 
-      {/* ── Überfällige-Vormerkungen-Warnung: schlanker, antippbarer Balken ganz oben
-          (alle Screens). Erscheint, solange mind. eine Vormerkung ein bereits
-          vergangenes Buchungsdatum hat und noch nicht real gebucht wurde. Tippen
-          öffnet eine Liste der betroffenen Vormerkungen. ── */}
-      {overduePending.length>0 && (()=>{
-        const first = overduePending[0];
-        const dateStr = first.date.split("-").reverse().join(".");
-        return (
-          <div onClick={()=>setShowOverdueList(true)}
-            style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",
-              background:"#8A5A00",color:"#fff",padding:"7px 12px",
-              position:"fixed",top:"max(0px, calc(env(safe-area-inset-top) - 14px))",left:0,right:0,
-              zIndex:35,boxShadow:"0 1px 6px rgba(0,0,0,0.3)"}}>
-            {Li("alert-triangle",16,"#fff")}
-            <div style={{flex:1,minWidth:0,lineHeight:1.25}}>
-              <div style={{fontSize:12.5,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                {overduePending.length===1
-                  ? `Überfällige Vormerkung: ${first.desc||"Buchung"}`
-                  : `${overduePending.length} überfällige Vormerkungen`}
-              </div>
-              <div style={{fontSize:11,opacity:0.92,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                seit {dateStr} noch nicht als tatsächliche Buchung eingetroffen · tippen
-              </div>
-            </div>
-            {Li("chevron-right",18,"#fff")}
-          </div>
-        );
-      })()}
-
       {showOverdueList && (
         <Overlay onClose={()=>setShowOverdueList(false)}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
@@ -3634,10 +3605,39 @@ export default function SupaDupaMoney() {
 
       {/* ── CONTENT ── */}
       <div className="app-content" style={{flex:1,minHeight:0,overflow:"hidden",display:"flex",flexDirection:"column",
-        touchAction:"pan-y",paddingBottom:57,
-        paddingTop: overduePending.length > 0 ? 26 : 0}}
-        // Dynamisch Platz für das fixed Warnbanner oben reservieren
+        touchAction:"pan-y",paddingBottom:57}}
         onTouchStart={onTS} onTouchEnd={onTE}>
+
+        {/* ── Überfällige-Vormerkungen-Warnung: schlanker, antippbarer Balken ganz oben
+            (alle Screens). Erscheint, solange mind. eine Vormerkung ein bereits
+            vergangenes Buchungsdatum hat und noch nicht real gebucht wurde. Tippen
+            öffnet eine Liste der betroffenen Vormerkungen.
+            ✓ Jetzt als Flex-Child in app-content: bleibt oben und stört nicht
+              die scroll-Container der Screens. ── */}
+        {overduePending.length>0 && (()=>{
+          const first = overduePending[0];
+          const dateStr = first.date.split("-").reverse().join(".");
+          return (
+            <div onClick={()=>setShowOverdueList(true)}
+              style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",
+                background:"#8A5A00",color:"#fff",padding:"7px 12px",
+                zIndex:35,boxShadow:"0 1px 6px rgba(0,0,0,0.3)",flexShrink:0}}>
+              {Li("alert-triangle",16,"#fff")}
+              <div style={{flex:1,minWidth:0,lineHeight:1.25}}>
+                <div style={{fontSize:12.5,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                  {overduePending.length===1
+                    ? `Überfällige Vormerkung: ${first.desc||"Buchung"}`
+                    : `${overduePending.length} überfällige Vormerkungen`}
+                </div>
+                <div style={{fontSize:11,opacity:0.92,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                  seit {dateStr} noch nicht als tatsächliche Buchung eingetroffen · tippen
+                </div>
+              </div>
+              {Li("chevron-right",18,"#fff")}
+            </div>
+          );
+        })()}
+
         {/* Hinweis: year/month im Context sind frozenYear/frozenMonth, solange das
             Monatswähler-Modal offen ist — verhindert teure Re-Renders. */}
         {mainTab==="erfassen"&&subTab==="dashboard"&&(
