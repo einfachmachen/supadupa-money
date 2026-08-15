@@ -1572,8 +1572,11 @@ function MonatScreen() {
 
         {/* Transaction cards */}
         {/* Neuere Monate einblenden (oben) */}
+        {/* 8px oberhalb wie ueberall sonst. UNTEN bewusst kein Polster: den
+            Abstand traegt schon der Rand der ersten Tageskarte (8px) — ein
+            eigenes Polster kaeme dazu und ergaebe 16px. */}
         {multiMonth && newerHidden>0 && (
-          <div onClick={revealNewer} style={{textAlign:"center",padding:"12px 0 0",cursor:"pointer",
+          <div onClick={revealNewer} style={{textAlign:"center",padding:"8px 0 0",cursor:"pointer",
             color:T.acc,fontSize:13,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
             {Li("chevron-up",14,T.acc)} + {newerHidden} neuere anzeigen
           </div>
@@ -2343,9 +2346,10 @@ function MonatScreen() {
             );
           })
         }
-        {/* Ältere Monate einblenden (unten) */}
+        {/* Ältere Monate einblenden (unten).
+            Wie oben: 8px darueber, darunter liegt bereits ein 8px-Platzhalter. */}
         {multiMonth && olderHidden>0 && (
-          <div onClick={revealOlder} style={{textAlign:"center",padding:"14px 0 4px",cursor:"pointer",
+          <div onClick={revealOlder} style={{textAlign:"center",padding:"8px 0 0",cursor:"pointer",
             color:T.acc,fontSize:13,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
             {Li("chevron-down",14,T.acc)} + {olderHidden} ältere anzeigen
           </div>
