@@ -209,12 +209,17 @@
   }
   /* Diese Zeilen trugen ihren Abstand als Innenpolster (6px/4px bzw. 0/6px).
      Das kaeme zu den 8px Rand hinzu — hier abgeraeumt, der Abstand kommt
-     jetzt allein aus dem Rand. Seitlich bleiben die 10px. */
+     jetzt allein aus dem Rand. Seitlich bleiben die 10px.
+     `!important` ist ZWINGEND: alle drei setzen ihr Polster als
+     `padding`-Kurzschreibweise INLINE, und dagegen verliert ein Stylesheet
+     sonst lautlos — dann bleiben die alten 6px/4px stehen und addieren sich
+     auf den Rand. (Derselbe Fallstrick wie beim Kartenabstand, der
+     Reiterbreite und dem Polster der Reiterleiste, s.u.) */
   .theme-tastenhell .sortier-zeile,
   .theme-tastenhell .such-zeile,
   .theme-tastenhell .filter-zeile {
-    padding-top: 0;
-    padding-bottom: 0;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
   }
 
   /* Die Liste laeuft als Schicht DIREKT hinter dem Hero (Nutzer-Wunsch):
@@ -293,8 +298,8 @@
        vergroesserten Zustand aber position:absolute (App.jsx,
        plusWrapperShell), und die Leiste ist als position:fixed ohnehin
        laengst sein Bezugsrahmen. Es aendert sich also nichts an seiner Lage. */
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
     /* Abstand ueber MARGIN, nicht ueber `gap`: der Platz des + Knopfes ist im
        vergroesserten Zustand ein Flex-Element der Breite 0 — mit `gap` bekaeme
        es trotzdem links UND rechts eine Luecke, und in der Mitte klaffte
