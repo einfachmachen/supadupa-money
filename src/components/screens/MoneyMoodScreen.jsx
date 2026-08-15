@@ -14,7 +14,7 @@
 
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
-import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
+import { theme as T, isLightTheme, flaecheAbgesetzt } from "../../theme/activeTheme.js";
 import { MONTHS_S, MONTHS_F } from "../../utils/constants.js";
 import { fmt, pn, NUM_FONT } from "../../utils/format.js";
 import { betrag } from "../../utils/betrag.jsx";
@@ -336,7 +336,15 @@ function MoneyMoodScreen() {
       {/* Schieflage-Panel: ab wann, wie hoch, kürzbare Treiber zuerst. Mehrere
           betroffene Monate sind als Pills durchschaltbar (löst „+N weitere Monate"). */}
       {activeStrain && (
-        <div style={{ margin: "8px 10px 2px", background: T.neg + "1A", border: `1px solid ${T.neg}66`, borderRadius: 12, padding: "9px 11px" }}>
+        // Flaeche per flaecheAbgesetzt statt als 10-%-Cyan-Schleier: der
+        // ergab auf der hellen Platte ein blasses Mint, das sich mit rund
+        // 1,1:1 nicht abhob (Nutzer-Hinweis). Auf einen Rahmen ist kein
+        // Verlass — der randlose Modus (Standard) macht jede Rahmenfarbe
+        // transparent, die Abgrenzung MUSS also aus der Flaeche kommen.
+        // Als Kartenflaeche schalten zugleich die Textfarben auf ihre
+        // Karten-Varianten um (§4.7), Schrift und Symbole darin stimmen
+        // damit ohne weiteres Zutun.
+        <div style={{ margin: "8px 10px 2px", background: flaecheAbgesetzt(), border: `1px solid ${T.neg}66`, borderRadius: 12, padding: "9px 11px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
             {Li("alert-triangle", 16, T.acc_neg)}
             <span style={{ color: T.acc_neg, fontWeight: 700, fontSize: 13.5 }}>
@@ -372,7 +380,7 @@ function MoneyMoodScreen() {
                 return (
                   <button key={d.row.id} onClick={() => setDetail({ row: d.row, isSub: false, isIncome: d.row.isIncome, focusMi: activeStrain.mi })}
                     title={ess ? "Essentiell – schwer kürzbar" : flex ? "Flexibel – am ehesten kürzbar" : undefined}
-                    style={{ display: "inline-flex", alignItems: "center", gap: 5, opacity: ess ? 0.55 : 1, background: flex ? T.gold + "22" : (T.surf || "rgba(255,255,255,0.06)"), border: `1px solid ${flex ? T.gold + "99" : T.bd}`, borderRadius: 14, padding: "3px 9px", cursor: "pointer", fontFamily: "inherit" }}>
+                    style={{ display: "inline-flex", alignItems: "center", gap: 5, opacity: ess ? 0.55 : 1, background: flex ? T.gold + "33" : flaecheAbgesetzt(flaecheAbgesetzt()), border: `1px solid ${flex ? T.gold + "99" : T.bd}`, borderRadius: 14, padding: "3px 9px", cursor: "pointer", fontFamily: "inherit" }}>
                     {ess && Li("lock", 11, T.txt2)}
                     {Li(d.row.icon || "folder", 12, d.row.color || T.neg)}
                     <span style={{ color: T.txt, fontSize: 11.5, fontWeight: flex ? 700 : 600 }}>{d.row.name}</span>
