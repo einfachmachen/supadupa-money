@@ -1572,11 +1572,15 @@ function MonatScreen() {
 
         {/* Transaction cards */}
         {/* Neuere Monate einblenden (oben) */}
-        {/* 8px oberhalb wie ueberall sonst. UNTEN bewusst kein Polster: den
-            Abstand traegt schon der Rand der ersten Tageskarte (8px) — ein
-            eigenes Polster kaeme dazu und ergaebe 16px. */}
+        {/* 8px rundum — als RAND, nicht als Polster. Polster addiert sich zum
+            Rand des Nachbarn: die Werkzeuge-Zeile darueber traegt bereits 8px,
+            zusammen waren das 16px (Nutzer-Hinweis "oben noch nicht"). Raender
+            angrenzender Geschwister verschmelzen dagegen zu 8px — und dort, wo
+            der Nachbar gar keinen Rand hat (Themes ohne eigenen Rhythmus),
+            bleiben es ebenfalls 8px. Unten liefert der Rand der ersten
+            Tageskarte den Abstand. */}
         {multiMonth && newerHidden>0 && (
-          <div onClick={revealNewer} style={{textAlign:"center",padding:"8px 0 0",cursor:"pointer",
+          <div onClick={revealNewer} style={{textAlign:"center",margin:"8px 0 0",cursor:"pointer",
             color:T.acc,fontSize:13,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
             {Li("chevron-up",14,T.acc)} + {newerHidden} neuere anzeigen
           </div>
@@ -2349,7 +2353,7 @@ function MonatScreen() {
         {/* Ältere Monate einblenden (unten).
             Wie oben: 8px darueber, darunter liegt bereits ein 8px-Platzhalter. */}
         {multiMonth && olderHidden>0 && (
-          <div onClick={revealOlder} style={{textAlign:"center",padding:"8px 0 0",cursor:"pointer",
+          <div onClick={revealOlder} style={{textAlign:"center",margin:"8px 0 0",cursor:"pointer",
             color:T.acc,fontSize:13,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
             {Li("chevron-down",14,T.acc)} + {olderHidden} ältere anzeigen
           </div>
