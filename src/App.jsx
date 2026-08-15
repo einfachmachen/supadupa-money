@@ -3407,7 +3407,8 @@ export default function SupaDupaMoney() {
         <div onClick={()=>setAutoSparInfo(null)}
           style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",
             background:T.blue,color:T.on_accent||"#fff",padding:"7px 12px",flexShrink:0,
-            boxShadow:"0 1px 6px rgba(0,0,0,0.3)"}}>
+            boxShadow:"0 1px 6px rgba(0,0,0,0.3)",
+            position:"sticky",top:0,zIndex:40}}>
           {Li(autoSparInfo.direction==="up"?"trending-up":"trending-down",16,T.on_accent||"#fff")}
           <div style={{flex:1,minWidth:0,lineHeight:1.25}}>
             <div style={{fontSize:12.5,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
@@ -3508,7 +3509,8 @@ export default function SupaDupaMoney() {
           <div onClick={()=>setShowOverdueList(true)}
             style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",
               background:"#8A5A00",color:"#fff",padding:"7px 12px",flexShrink:0,
-              boxShadow:"0 1px 6px rgba(0,0,0,0.3)"}}>
+              boxShadow:"0 1px 6px rgba(0,0,0,0.3)",
+              position:"sticky",top:(autoSparInfo?26:0),zIndex:40}}>
             {Li("alert-triangle",16,"#fff")}
             <div style={{flex:1,minWidth:0,lineHeight:1.25}}>
               <div style={{fontSize:12.5,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
@@ -3633,10 +3635,7 @@ export default function SupaDupaMoney() {
 
       {/* ── CONTENT ── */}
       <div className="app-content" style={{flex:1,minHeight:0,overflow:"hidden",display:"flex",flexDirection:"column",
-        touchAction:"pan-y",paddingBottom:57,
-        // Dynamisch: Platz für Banner oben reservieren (autoSparInfo, overduePending)
-        // Jedes Banner ist ~26px hoch (7px padding oben + ~12px Icon/Text + 7px padding unten)
-        paddingTop: (autoSparInfo ? 26 : 0) + (overduePending.length > 0 ? 26 : 0)}}
+        touchAction:"pan-y",paddingBottom:57}}
         onTouchStart={onTS} onTouchEnd={onTE}>
         {/* Hinweis: year/month im Context sind frozenYear/frozenMonth, solange das
             Monatswähler-Modal offen ist — verhindert teure Re-Renders. */}
