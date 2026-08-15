@@ -468,8 +468,58 @@ async function stationen(page, merke) {
     // dazugekommen waere. Ausgegeben wird weiter je Station — dort sieht man,
     // WO es auffaellt.
     const gezaehlt = new Set();
+    // ── Alles messen, nicht nur den sichtbaren Ausschnitt ──────────────────
+    // SCAN sieht per Definition nur, was GERADE im Bild steht (sichtbar()
+    // verwirft alles ober- und unterhalb). Bis hierher wurde nie gescrollt —
+    // alles unter der Falz blieb damit ungeprueft. Genau so entging dem Lauf
+    // die gemeldete Lime-Schrift auf heller Platte ("+ N neuere anzeigen",
+    // Monatsansicht): sie steht weit unten in der Liste.
+    // Deshalb wird jetzt jede scrollbare Bahn schrittweise durchgefahren und
+    // an jeder Position neu gemessen. Bahnen sind nicht nur das Fenster: die
+    // App scrollt in eigenen Behaeltern (.screen-scroll, Dialoginhalte).
+    const bahnenSuchen = () => page.evaluate(() => {
+      window.__bahnen = [document.scrollingElement, ...document.querySelectorAll("*")]
+        .filter(el => el && el.scrollHeight - el.clientHeight > 8 && el.clientHeight > 120);
+      return window.__bahnen.length;
+    });
+    const bahnMasse = (i) => page.evaluate((idx) => {
+      const el = (window.__bahnen || [])[idx];
+      if (!el) return null;
+      return { max: el.scrollHeight - el.clientHeight,
+               // 80 % Ueberlappung: eine Zeile darf nicht zwischen zwei
+               // Messpunkte fallen.
+               schritt: Math.max(120, Math.round(el.clientHeight * 0.8)) };
+    }, i);
+    const fahre = (i, y) => page.evaluate(([idx, pos]) => {
+      const el = (window.__bahnen || [])[idx];
+      if (!el) return false;
+      el.scrollTop = pos;
+      return true;
+    }, [i, y]);
+
     const merke = async (wo) => {
-      const funde = await page.evaluate(SCAN);
+      const gesammelt = [];
+      const einsammeln = async () => { gesammelt.push(...await page.evaluate(SCAN)); };
+      await einsammeln();
+      const anzahl = await bahnenSuchen();
+      for (let i = 0; i < anzahl; i++) {
+        const masse = await bahnMasse(i);
+        if (!masse || masse.max <= 8) continue;
+        for (let y = masse.schritt; ; y += masse.schritt) {
+          const ziel = Math.min(y, masse.max);
+          if (!(await fahre(i, ziel))) break;
+          await page.waitForTimeout(120);
+          await einsammeln();
+          if (ziel >= masse.max) break;
+        }
+        await fahre(i, 0);   // zurueck, damit die naechste Station stimmt
+      }
+      // Gleiche Kombination nur einmal — ueber alle Messpunkte hinweg.
+      const gesehenHier = new Set();
+      const funde = gesammelt.filter(f => {
+        const s = `${f.art}|${f.was}|${f.fg}|${f.bg}`;
+        if (gesehenHier.has(s)) return false; gesehenHier.add(s); return true;
+      });
       if (BILDER) await page.screenshot({ path: path.join(ORDNER, `${th}-${String(++n).padStart(2, "0")}.png`) });
       const vomTheme = funde.filter(f => !nutzerRgb.has(f.fg));
       const vonDaten = funde.filter(f => nutzerRgb.has(f.fg));
