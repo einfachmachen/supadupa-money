@@ -3507,8 +3507,9 @@ export default function SupaDupaMoney() {
         return (
           <div onClick={()=>setShowOverdueList(true)}
             style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",
-              background:"#8A5A00",color:"#fff",padding:"7px 12px",flexShrink:0,
-              boxShadow:"0 1px 6px rgba(0,0,0,0.3)"}}>
+              background:"#8A5A00",color:"#fff",padding:"7px 12px",
+              position:"fixed",top:"max(0px, calc(env(safe-area-inset-top) - 14px))",left:0,right:0,
+              zIndex:35,boxShadow:"0 1px 6px rgba(0,0,0,0.3)"}}>
             {Li("alert-triangle",16,"#fff")}
             <div style={{flex:1,minWidth:0,lineHeight:1.25}}>
               <div style={{fontSize:12.5,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
@@ -3633,7 +3634,9 @@ export default function SupaDupaMoney() {
 
       {/* ── CONTENT ── */}
       <div className="app-content" style={{flex:1,minHeight:0,overflow:"hidden",display:"flex",flexDirection:"column",
-        touchAction:"pan-y",paddingBottom:57}}
+        touchAction:"pan-y",paddingBottom:57,
+        paddingTop: overduePending.length > 0 ? 26 : 0}}
+        // Dynamisch Platz für das fixed Warnbanner oben reservieren
         onTouchStart={onTS} onTouchEnd={onTE}>
         {/* Hinweis: year/month im Context sind frozenYear/frozenMonth, solange das
             Monatswähler-Modal offen ist — verhindert teure Re-Renders. */}
