@@ -242,16 +242,15 @@ function ManagementScreen({activeTab="kategorien"}) {
         )}
         {mgrTab==="daten"&&(
           <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 14px 24px"}}>
-            <div style={{color:T.lbl||T.txt2,fontSize:11,fontWeight:600,display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
-              {/* Symbol folgt der Beschriftung (currentColor): es steht direkt
-                  auf dem Hintergrund, wo eine helle Akzentfarbe in hellen
-                  Themes durchfaellt. */}
-              {Li("database",13,"currentColor")} Daten &amp; Verbindungen
-            </div>
             {(()=>{
               const kontenRow   = {icon:"credit-card",color:T.acc,         label:"Konten",                sub:"Verwalten, Reihenfolge, Puffer",  onClick:()=>setMgrTab("konten"), tourId:"row-konten"};
               const budgetRow   = {icon:"target",     color:T.acc_mid,          label:"Kategorien & Budget",   sub:"Budgets je Kategorie festlegen",  onClick:()=>setShowMobileKategorien?.(true), tourId:"row-budget"};
-              const csvRow      = {icon:"download",   color:T.acc_pos,          label:"csv importieren",       sub:"Buchungen aus Banking-App",       onClick:()=>setShowCsv?.(true), tourId:"row-csv"};
+              // Beschriftung geschaerft: "csv importieren" stand direkt neben
+              // "Daten-Manager · Export / Import / Loeschen", und beide hiessen
+              // Import — obwohl das eine BANKDATEN einliest (fremdes Format,
+              // wird zu neuen Buchungen) und das andere eine SICHERUNG DER APP
+              // wiederherstellt. Genau diese Verwechslung war der Anlass.
+              const csvRow      = {icon:"download",   color:T.acc_pos,          label:"CSV / PDF einlesen",    sub:"Kontoauszug aus der Banking-App", onClick:()=>setShowCsv?.(true), tourId:"row-csv"};
               const bankRow     = {icon:"landmark",   color:T.acc_gold,         label:"Bank verbinden",        sub:"Schritt für Schritt · Enable Banking", onClick:()=>setShowBankWizard?.(true), tourId:"row-bank"};
               const dataMgrRow  = {icon:"database",   color:T.acc_pos,          label:"Daten-Manager",         sub:"Export / Import / Löschen",       onClick:()=>setShowDataMgr?.(true)};
               const cloudRow    = {icon:"cloud",      color:T.acc_cf||T.blue,   label:"Cloud-Sync einrichten", sub:"Eigene Cloud-DB · geführt",       onClick:()=>setShowCloudSetup?.(true), tourId:"row-cloudsync"};
@@ -270,28 +269,52 @@ function ManagementScreen({activeTab="kategorien"}) {
               const schnellstartDone = (_accounts?.length||0)>0
                 && _cats.some(c=>(c.subs||[]).length>0)
                 && (txs?.length||0)>0;
-              // Solange der Erststart läuft, stehen Konten/Kategorien & Budget/
-              // csv importieren ganz oben; danach rücken sie als Gruppe hinter
-              // Tankverbrauch (direkt vor Vormerkungen zuordnen) — sie bleiben
-              // also erreichbar, drängen sich aber nicht mehr in den Vordergrund.
+              // ── Gruppen statt einer flachen Liste ──────────────────────
+              // Vorher standen alle neun Kacheln unter der einen Ueberschrift
+              // "Daten & Verbindungen" — der Bank-Assistent also direkt neben
+              // dem Daten-Manager, ohne dass der Unterschied ablesbar war.
+              // Es sind aber zwei voellig verschiedene Dinge:
+              //   * Buchungen HOLEN: kommen von aussen (Bank-Abruf, CSV, PDF)
+              //     und werden zu neuen Buchungen. Fremdes Format, muss
+              //     uebersetzt, zugeordnet und auf Dubletten geprueft werden.
+              //   * Die Daten der APP: das, was hier bereits gesammelt ist —
+              //     sichern, wiederherstellen, loeschen, abgleichen.
+              // Getrennt dargestellt erklaert sich der Unterschied von selbst.
+              const holen    = {titel:"Buchungen holen",   icon:"download", eintraege:[bankRow, csvRow]};
+              const eigene   = {titel:"Daten dieser App",  icon:"database", eintraege:[dataMgrRow, cloudRow]};
+              const verwalten= {titel:"Verwalten",         icon:"sliders",  eintraege:[kontenRow, budgetRow, matchingRow, fuelRow]};
+              const app      = {titel:"App",               icon:"settings", eintraege:[settingsRow]};
+              // Solange der Erststart laeuft, steht "Verwalten" vorn: ohne
+              // Konten und Kategorien bringt das Holen von Buchungen nichts.
               return schnellstartDone
-                ? [bankRow, dataMgrRow, cloudRow, fuelRow, kontenRow, budgetRow, csvRow, matchingRow, settingsRow]
-                : [kontenRow, budgetRow, csvRow, bankRow, dataMgrRow, cloudRow, fuelRow, matchingRow, settingsRow];
-            })().map((it,i)=>(
-              <button key={i} onClick={it.onClick} data-tour={it.tourId} className="menue-kachel"
-                style={{display:"flex",alignItems:"center",gap:12,width:"100%",textAlign:"left",
-                  background:"rgba(255,255,255,0.04)",border:`1px solid ${T.bd}`,borderRadius:14,
-                  padding:"14px 14px",marginBottom:10,cursor:"pointer",fontFamily:"inherit"}}>
-                <div style={{width:42,height:42,borderRadius:12,background:`${it.color}22`,flexShrink:0,
-                  display:"flex",alignItems:"center",justifyContent:"center"}}>
-                  {Li(it.icon,21,it.color)}
+                ? [holen, eigene, verwalten, app]
+                : [verwalten, holen, eigene, app];
+            })().map((gruppe)=>(
+              <div key={gruppe.titel} style={{marginBottom:18}}>
+                <div style={{color:T.lbl||T.txt2,fontSize:11,fontWeight:600,display:"flex",
+                  alignItems:"center",gap:6,marginBottom:10}}>
+                  {/* Symbol folgt der Beschriftung (currentColor): es steht
+                      direkt auf dem Hintergrund, wo eine helle Akzentfarbe in
+                      hellen Themes durchfaellt. */}
+                  {Li(gruppe.icon,13,"currentColor")} {gruppe.titel}
                 </div>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{color:T.txt,fontSize:19,fontWeight:700}}>{it.label}</div>
-                  <div style={{color:T.txt2,fontSize:14,marginTop:2}}>{it.sub}</div>
-                </div>
-                {Li("chevron-right",20,T.txt2)}
-              </button>
+                {gruppe.eintraege.map((it,i)=>(
+                  <button key={i} onClick={it.onClick} data-tour={it.tourId} className="menue-kachel"
+                    style={{display:"flex",alignItems:"center",gap:12,width:"100%",textAlign:"left",
+                      background:"rgba(255,255,255,0.04)",border:`1px solid ${T.bd}`,borderRadius:14,
+                      padding:"14px 14px",marginBottom:10,cursor:"pointer",fontFamily:"inherit"}}>
+                    <div style={{width:42,height:42,borderRadius:12,background:`${it.color}22`,flexShrink:0,
+                      display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      {Li(it.icon,21,it.color)}
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{color:T.txt,fontSize:19,fontWeight:700}}>{it.label}</div>
+                      <div style={{color:T.txt2,fontSize:14,marginTop:2}}>{it.sub}</div>
+                    </div>
+                    {Li("chevron-right",20,T.txt2)}
+                  </button>
+                ))}
+              </div>
             ))}
           </div>
         )}
