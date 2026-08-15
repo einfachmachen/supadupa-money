@@ -7,7 +7,7 @@ import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { AnchorSection } from "../organisms/AnchorSection.jsx";
 import { QuickPicker } from "../organisms/QuickPicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
-import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
+import { theme as T, isLightTheme, flaecheAbgesetzt } from "../../theme/activeTheme.js";
 import { parseCSV } from "../../utils/csv.js";
 import { assignPayPalLinks, enrichPayPalMerchants, looksLikePayPalCsv, dropPayPalCounterBookings, detectPayPalRefunds, reconcilePayPalLegs, payPalMerchant } from "../../utils/paypalMatch.js";
 import { AccountChips } from "../molecules/AccountChips.jsx";
@@ -1105,10 +1105,16 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
           <AnchorSection selAccId={selAccId} accounts={accounts} startBalances={startBalances}
             setStartBalances={setStartBalances} mobileMode={mobileMode} MFSl={MFSl}/>
 
+          {/* Flaeche per flaecheAbgesetzt statt als 8-%-Schleier: der hob sich
+              auf einer hellen Platte praktisch nicht ab, und der Rahmen faellt
+              im randlosen Modus (Standard) ohnehin weg — uebrig blieb ein
+              unsichtbarer Knopf (Nutzer-Hinweis). Der Helfer nimmt die
+              Kartenfarbe des Themes und rueckt selbst nach, wo die zu nah am
+              Untergrund liegt. */}
           <label style={{display:"block",padding:"11px 14px",borderRadius:11,border:`1px solid ${T.bds}`,
-            background:"rgba(137,196,244,0.08)",color:T.acc,fontSize:MFS,fontWeight:600,
+            background:flaecheAbgesetzt(),color:T.acc,fontSize:MFS,fontWeight:600,
             cursor:"pointer",marginBottom:10,textAlign:"left"}}>
-            {Li("folder-open",14)} CSV- oder PDF-Datei auswählen
+            {Li("folder-open",14)} csv- oder pdf-Datei(en) auswählen
             <input type="file" accept=".csv,.txt,text/csv,.pdf,application/pdf" multiple style={{display:"none"}}
               onChange={e=>{
                 const files=Array.from(e.target.files||[]); if(!files.length) return;

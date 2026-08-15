@@ -183,6 +183,50 @@ const SCAN = () => {
       }
     }
 
+    // ── Bedienflaechen: heben sie sich ueberhaupt vom Untergrund ab? ──────
+    // Bis hierher pruefte der Lauf ausschliesslich SCHRIFT und SYMBOLE. Eine
+    // Schaltflaeche kann aber tadellos lesbare Beschriftung tragen und
+    // trotzdem unsichtbar sein, wenn ihre FLAECHE mit dem Untergrund
+    // verschmilzt — genau so gemeldet fuer "csv- oder pdf-Datei(en)
+    // auswaehlen": ein 8-%-Schleier auf heller Platte.
+    //
+    // WCAG 1.4.11 verlangt 3:1 fuer die Begrenzung eines Bedienelements. Die
+    // Begrenzung kann die Flaeche selbst ODER ein Rahmen sein — deshalb gilt
+    // der bessere der beiden Werte. Wichtig fuer diese App: der randlose
+    // Modus (Standardeinstellung) macht JEDE Rahmenfarbe transparent, dann
+    // bleibt nur die Flaeche.
+    const istBedienflaeche = el.tagName.toLowerCase() === "button"
+      || el.tagName.toLowerCase() === "label"
+      || el.getAttribute("role") === "button";
+    if (istBedienflaeche) {
+      const eigen = parse(cs.backgroundColor);
+      // Nur Flaechen, die ueberhaupt etwas malen. Voellig transparente
+      // Schaltflaechen (reine Textknoepfe) sind Absicht und keine Meldung.
+      if (eigen && eigen[3] > 0.02) {
+        // Untergrund = alles ausser der eigenen Flaeche.
+        const dahinter = (() => {
+          const k = []; let n = el.parentElement;
+          while (n && n !== document.documentElement) { k.push(n); n = n.parentElement; }
+          let b = [255, 255, 255];
+          k.reverse().forEach(x => {
+            const c = parse(getComputedStyle(x).backgroundColor);
+            if (c && c[3] > 0) b = ueber(c, b);
+          });
+          return b;
+        })();
+        const flaeche = ueber(eigen, dahinter);
+        let k = kon(flaeche, dahinter);
+        // Ein sichtbarer Rahmen darf die Abgrenzung uebernehmen.
+        const rb = parse(cs.borderTopColor);
+        const rw = parseFloat(cs.borderTopWidth) || 0;
+        if (rb && rb[3] > 0.15 && rw >= 1) k = Math.max(k, kon(ueber(rb, dahinter), dahinter));
+        if (k < 3) funde.push({ art: "Flaeche",
+          was: (el.textContent || "").trim().slice(0, 34) || el.tagName.toLowerCase(),
+          k: +k.toFixed(2), soll: 3, fg: cs.backgroundColor,
+          bg: `rgb(${dahinter.map(Math.round).join(", ")})` });
+      }
+    }
+
     // Symbole: Strich- bzw. Fuellfarbe. Ohne diesen Zweig blieben genau die
     // Warn-/Spar-/VM-Symbole unentdeckt, die der Nutzer gemeldet hat.
     if (el.tagName.toLowerCase() === "svg") {
