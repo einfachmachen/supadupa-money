@@ -21,14 +21,7 @@ import { RotatedCents } from "../atoms/RotatedCents.jsx";
 //   FS_DETAIL  Zusaetze in der Kopfzeile ("ohne Budget …", "inkl. N Vorm.")
 const FS_ZEILE = 17, FS_BETRAG = 17, FS_SUB = 12,
       FS_KOPF = 14, FS_SALDO = 20, FS_DETAIL = 12;
-// Gemeinsame Hoehe der drei Bedienzeilen oberhalb der Liste: Suchfeld,
-// Filter-Pillen (Ausgaben/Einnahmen/vorgemerkt/?) und Werkzeuge. Massgebend
-// ist das Suchfeld — es kann nicht flacher werden, weil eine globale Regel
-// (themes.css, iOS-Zoomsperre) seine Schrift auf 16px zwingt. Die beiden
-// anderen waren mit ~23px bzw. ~30px sichtbar niedriger.
-// ACHTUNG: derselbe Wert steht in WerkzeugeSection.jsx (dort nicht
-// importierbar, das ergaebe einen Ringschluss) — beide zusammen aendern.
-const ZEILE_H = 38;
+
 import { MitteEndeFields } from "../molecules/MitteEndeFields.jsx";
 import { BudgetEditorModal } from "../organisms/BudgetEditorModal.jsx";
 import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
@@ -36,7 +29,7 @@ import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
 import { WerkzeugeSection } from "../organisms/WerkzeugeSection.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
-import { PAL } from "../../theme/palette.js";
+import { PAL, ZEILE_H } from "../../theme/palette.js";
 import { amtStyle, readableOn } from "../../theme/amtPill.js";
 import { MONTHS_F } from "../../utils/constants.js";
 import { dayOf, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";

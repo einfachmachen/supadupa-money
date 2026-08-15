@@ -5,6 +5,7 @@ import { NachkategorisierenButton } from "../buttons/NachkategorisierenButton.js
 import { TypPruefButton } from "../buttons/TypPruefButton.jsx";
 import { KontoWarnungWidget } from "./KontoWarnungWidget.jsx";
 import { theme as T } from "../../theme/activeTheme.js";
+import { ZEILE_H } from "../../theme/palette.js";
 import { Li } from "../../utils/icons.jsx";
 
 function WerkzeugeSection() {
@@ -18,11 +19,9 @@ function WerkzeugeSection() {
     // Zeile sonst hoeher malen als Suchfeld und Filter-Pillen daneben — das
     // Polster kaeme zur Zeilenhoehe hinzu.
     <div className="symbolzeile werkzeuge-zeile" style={{borderBottom:`1px solid ${T.bd}`,flexShrink:0}}>
-      {/* Dieselbe Hoehe wie Suchfeld und Filter-Pillen (ZEILE_H in
-          MonatScreen.jsx — dort nicht importierbar, das ergaebe einen
-          Ringschluss; beide Werte zusammen aendern). */}
+      {/* Dieselbe Hoehe wie Suchfeld und Filter-Pillen (ZEILE_H, palette.js). */}
       <div onClick={()=>setOpen(v=>!v)}
-        style={{minHeight:38,boxSizing:"border-box",padding:"0 14px",display:"flex",alignItems:"center",gap:6,
+        style={{minHeight:ZEILE_H,boxSizing:"border-box",padding:"0 14px",display:"flex",alignItems:"center",gap:6,
           cursor:"pointer",userSelect:"none"}}>
         {Li("tag",12,T.acc_gold)}
         <span style={{color:T.txt2,fontSize:11,fontWeight:600,flex:1}}>Werkzeuge</span>

@@ -57,6 +57,18 @@ const getBC = () => {
 };
 const gs = (block, type) => { const bc=getBC(); return (bc[block]||bc.aus)[type] || bc.aus.row; };
 
+// Gemeinsame Hoehe aller Bedienzeilen und -felder: Suchfeld und Filter-Pillen
+// der Monatsansicht, die Werkzeuge-Zeile, die Zeitraum-Felder im Daten-Manager.
+//
+// Massgebend war das Suchfeld — es kann gar nicht flacher werden, weil eine
+// globale Regel (themes.css, iOS-Zoomsperre) die Schrift von Eingabefeldern
+// auf 16px zwingt. Alle uebrigen ziehen darauf nach, damit nebeneinander
+// nichts unterschiedlich hoch steht.
+//
+// Der Wert stand vorher doppelt (MonatScreen und WerkzeugeSection, mit
+// gegenseitigem "beide zusammen aendern"-Hinweis) — hier liegt er einmal.
+const ZEILE_H = 38;
+
 // ─── Initial categories ───────────────────────────────────────────────────────
 
-export { INP, PAL, getBC, gs };
+export { INP, PAL, getBC, gs, ZEILE_H };

@@ -5,7 +5,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { AccountChips } from "../molecules/AccountChips.jsx";
-import { INP } from "../../theme/palette.js";
+import { INP, ZEILE_H } from "../../theme/palette.js";
 import { THEMES } from "../../theme/themes.js";
 import { Li } from "../../utils/icons.jsx";
 import { schriftAuf, aufToenung } from "../../theme/amtPill.js";
@@ -562,22 +562,23 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
           die den Umbruch ausloeste. */}
       <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"nowrap"}}>
         <select className="zeitraum-feld" value={fromM} onChange={e=>setFromM(Number(e.target.value))}
-          style={{flex:1,minWidth:0,...INP,marginBottom:0,padding:"4px 2px",textAlign:"center"}}>
+          style={{flex:1,minWidth:0,...INP,marginBottom:0,padding:"0 2px",textAlign:"center",minHeight:ZEILE_H,boxSizing:"border-box"}}>
           {MONTHS_G.map((m,i)=><option key={i} value={i}>{m}</option>)}
         </select>
         <input className="zeitraum-feld" type="number" value={fromY} onChange={e=>setFromY(Number(e.target.value))}
-          style={{flex:1,minWidth:0,...INP,marginBottom:0,padding:"4px 2px",textAlign:"center"}}/>
+          style={{flex:1,minWidth:0,...INP,marginBottom:0,padding:"0 2px",textAlign:"center",minHeight:ZEILE_H,boxSizing:"border-box"}}/>
         <span style={{color:T.txt2,fontSize:12,flexShrink:0}}>–</span>
         <select className="zeitraum-feld" value={toM} onChange={e=>setToM(Number(e.target.value))}
-          style={{flex:1,minWidth:0,...INP,marginBottom:0,padding:"4px 2px",textAlign:"center"}}>
+          style={{flex:1,minWidth:0,...INP,marginBottom:0,padding:"0 2px",textAlign:"center",minHeight:ZEILE_H,boxSizing:"border-box"}}>
           {MONTHS_G.map((m,i)=><option key={i} value={i}>{m}</option>)}
         </select>
         <input className="zeitraum-feld" type="number" value={toY} onChange={e=>setToY(Number(e.target.value))}
-          style={{flex:1,minWidth:0,...INP,marginBottom:0,padding:"4px 2px",textAlign:"center"}}/>
+          style={{flex:1,minWidth:0,...INP,marginBottom:0,padding:"0 2px",textAlign:"center",minHeight:ZEILE_H,boxSizing:"border-box"}}/>
         <button onClick={()=>{setFromM(fullFromM);setFromY(fullFromY);setToM(fullToM);setToY(fullToY);}}
           title="Ganzer Zeitraum (alle Buchungen)" aria-label="Ganzer Zeitraum"
           style={{background:"rgba(255,255,255,0.07)",border:"none",color:T.txt2,borderRadius:6,
-            padding:"4px 6px",cursor:"pointer",flexShrink:0,display:"inline-flex",alignItems:"center"}}>
+            padding:"0 8px",cursor:"pointer",flexShrink:0,display:"inline-flex",alignItems:"center",
+            justifyContent:"center",minHeight:ZEILE_H,boxSizing:"border-box"}}>
           {Li("maximize-2",14,T.txt2)}
         </button>
       </div>
