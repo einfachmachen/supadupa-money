@@ -32,6 +32,15 @@ const cases = [
   // passiert.
   ["DataManagerDialog", () => import("../src/components/organisms/DataManagerDialog.jsx"), {}],
   ["CsvImportScreen",   () => import("../src/components/screens/CsvImportScreen.jsx"), {}],
+  // Weitere lazy geladene Vollbild-Screens. Anlass: in RecurringDetectionScreen
+  // wurde eine Konstante benutzt, ohne sie zu importieren — weder Build noch
+  // Tests schlugen an (ein fehlender Import ist erst zur LAUFZEIT ein Fehler),
+  // aufgefallen waere es erst beim Oeffnen des Screens.
+  ["RecurringDetectionScreen", () => import("../src/components/screens/RecurringDetectionScreen.jsx"), {}],
+  ["MatchingScreen",           () => import("../src/components/screens/MatchingScreen.jsx"), {}],
+  ["VormerkungHub",            () => import("../src/components/screens/VormerkungHub.jsx"), {}],
+  ["FuelAnalysisScreen",       () => import("../src/components/screens/FuelAnalysisScreen.jsx"), {}],
+  ["CloudSetupWizard",         () => import("../src/components/screens/CloudSetupWizard.jsx"), {}],
 ];
 
 describe("Screen-Render (TDZ-Regression)", () => {

@@ -5,6 +5,7 @@ import { InlineCatSelect } from "../molecules/InlineCatSelect.jsx";
 import { InlineNewCat } from "../molecules/InlineNewCat.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
+import { UNTEN_FREI } from "../../theme/palette.js";
 import { isoAddMonths } from "../../utils/date.js";
 import { pn, uid, NUM_FONT } from "../../utils/format.js";
 import { Li } from "../../utils/icons.jsx";
