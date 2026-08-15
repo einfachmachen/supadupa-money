@@ -3633,7 +3633,10 @@ export default function SupaDupaMoney() {
 
       {/* ── CONTENT ── */}
       <div className="app-content" style={{flex:1,minHeight:0,overflow:"hidden",display:"flex",flexDirection:"column",
-        touchAction:"pan-y",paddingBottom:57}}
+        touchAction:"pan-y",paddingBottom:57,
+        // Dynamisch: Platz für Banner oben reservieren (autoSparInfo, overduePending)
+        // Jedes Banner ist ~26px hoch (7px padding oben + ~12px Icon/Text + 7px padding unten)
+        paddingTop: (autoSparInfo ? 26 : 0) + (overduePending.length > 0 ? 26 : 0)}}
         onTouchStart={onTS} onTouchEnd={onTE}>
         {/* Hinweis: year/month im Context sind frozenYear/frozenMonth, solange das
             Monatswähler-Modal offen ist — verhindert teure Re-Renders. */}
