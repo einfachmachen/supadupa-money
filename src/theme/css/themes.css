@@ -168,6 +168,14 @@
     margin-left: 10px;
     margin-right: 10px;
   }
+  /* Ein Rhythmus fuer die ganze Ansicht: der Hero bekommt oben und unten
+     dieselbe Fuge wie die Kategoriefelder untereinander (8px, s.o.), statt
+     der geerbten 6px/2px. Nur fuer Tastenhell — das dunkle Keyboard-Theme
+     behaelt seine engere Staffelung. */
+  .theme-tastenhell .hero-flaeche {
+    margin-top: 8px;
+    margin-bottom: 8px;
+  }
   /* Die Liste laeuft als Schicht DIREKT hinter dem Hero (Nutzer-Wunsch):
      der sticky-Block der Monatsansicht malt sonst die Plattenfarbe deckend,
      und in den runden Ecken der Hero-Karte stand dadurch Hell gegen Dunkel.
@@ -236,9 +244,12 @@
        es trotzdem links UND rechts eine Luecke, und in der Mitte klaffte
        doppelt so viel wie zwischen den uebrigen Reitern. Mit Rand am Reiter
        selbst stehen alle Fugen gleich (Nutzer-Wunsch: gleichmaessig verteilt).
-       7 + 3 = 10px aussen — dieselbe Kante wie die Kategoriefelder (§5). */
-    padding-left: 7px;
-    padding-right: 7px;
+       6 + 4 = 10px aussen — dieselbe Kante wie die Kategoriefelder (§5). Die
+       Aufteilung hat sich verschoben (frueher 7 + 3), weil die Fuge ZWISCHEN
+       den Reitern auf 8px gewachsen ist (= Abstand der Kategoriefelder, s.o.);
+       die Aussenkante bleibt dabei unveraendert bei 10px. */
+    padding-left: 6px;
+    padding-right: 6px;
     /* Wächst der + Knopf, verlässt sein Platz den Fluss (App.jsx) — der frei
        werdende Raum geht in die LÜCKEN, nicht in die Reiter: die behalten
        ihre Breite und rücken nur auseinander (Nutzer-Wunsch). */
@@ -246,14 +257,18 @@
   }
   .theme-tastenhell .nav-tab {
     border-radius: 14px;
-    margin: 4px 3px 2px;
+    /* Seitlich 4px → 4 + 4 = 8px Fuge zwischen zwei Reitern, also derselbe
+       Abstand wie zwischen den Kategoriefeldern. Oben/unten bleibt es bei
+       4px/2px: die Leiste ist nur 57px hoch, dort würden 8px die Tasten
+       spürbar schrumpfen lassen. */
+    margin: 4px 4px 2px;
     /* Feste Breite statt `flex:1` — sonst dehnen sich die Reiter auf den
        Platz des + Knopfes aus und ändern ihre Form. Der Wert ist genau die
        Breite aus dem Startzustand: Leistenbreite abzüglich Knopf-Slot (90),
-       geteilt durch vier, abzüglich der eigenen Ränder (2 × 3). */
+       geteilt durch vier, abzüglich der eigenen Ränder (2 × 4). */
     /* `!important`, weil `flex:1` als Inline-Style am Reiter haengt — dagegen
        verliert ein Stylesheet (derselbe Fallstrick wie beim Kartenabstand). */
-    flex: 0 0 calc((100% - 90px) / 4 - 6px) !important;
+    flex: 0 0 calc((100% - 90px) / 4 - 8px) !important;
   }
 
   /* ── „+"-Button (.plus-master-btn): in den eckigen Spezial-Themes wieder
