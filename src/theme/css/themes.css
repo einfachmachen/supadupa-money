@@ -161,6 +161,15 @@
     /* `!important`, weil der Abstand als Inline-Style am Container haengt
        (`gap:2`) — dagegen verliert ein Stylesheet. */
     gap: 8px !important;
+    /* Dieselbe Fuge auch ueber der ersten Kategorie. Zwischen Hero und Liste
+       koennen Panels stehen (Bank-Abruf, Auto-Zuordnung, Duplikat-Warnung …),
+       die unten keinen eigenen Rand haben (BankFetchPanel: margin "6px 4px 0")
+       und deshalb direkt an "Einkommen" klebten. Der Rand sitzt bewusst HIER
+       statt an jedem einzelnen Panel: so gilt er fuer alle, auch fuer kuenftige.
+       Steht kein Panel dazwischen, verschmilzt er mit dem unteren Rand des
+       Hero (beide 8px, angrenzende Geschwister im Blockfluss) — es entsteht
+       also keine doppelte Luecke. */
+    margin-top: 8px;
   }
   .theme-tastenhell .hero-flaeche,
   .theme-tastenhell .symbolzeile {
@@ -258,17 +267,20 @@
        `stretch` fuellen die Tasten die Hoehe, und ihr Abstand kommt
        ausschliesslich aus ihrem eigenen Rand — oben wie unten exakt 8px.
        Das Polster unten muss dafuer weg, sonst kaeme es zu den 8px hinzu. */
-    align-items: stretch !important;
     /* Der eigentliche Grund, warum die Tasten unten "klebten": die Leiste sass
        mit bottom:0 und festen 57px UEBER dem Bereich der Home-Anzeige
        (env(safe-area-inset-bottom) kam in der ganzen App bisher kein einziges
        Mal vor). Ihr Innenraum reichte damit bis an die physische Bildschirm-
-       kante, und jeder Rand am Reiter verpuffte in dieser Zone. Jetzt waechst
-       die Leiste um genau diesen Bereich und haelt ihn als Polster frei — die
-       57px Innenraum liegen darueber, und die 8px am Reiter sind wieder ein
-       echter, sichtbarer Abstand zur bedienbaren Unterkante. */
+       kante.
+       Hoehe UND Polster wachsen deshalb um genau diesen Bereich: der
+       Innenraum bleibt dadurch exakt 52px wie zuvor (57 − 5), die Reiter
+       behalten Groesse, Form und Lage darin unveraendert — die ganze Leiste
+       rueckt lediglich ueber die Home-Anzeige.
+       KEIN align-items:stretch: das hatte die Tasten die Hoehe fuellen lassen
+       und damit ihre Form veraendert (Nutzer-Hinweis). Sie bleiben zentriert
+       und behalten ihre Groesse aus dem Inhalt. */
     height: calc(57px + env(safe-area-inset-bottom, 0px)) !important;
-    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+    padding-bottom: calc(5px + env(safe-area-inset-bottom, 0px)) !important;
     /* Wächst der + Knopf, verlässt sein Platz den Fluss (App.jsx) — der frei
        werdende Raum geht in die LÜCKEN, nicht in die Reiter: die behalten
        ihre Breite und rücken nur auseinander (Nutzer-Wunsch). */
@@ -276,12 +288,12 @@
   }
   .theme-tastenhell .nav-tab {
     border-radius: 14px;
-    /* Rundum 8px — derselbe Abstand wie zwischen den Kategoriefeldern:
-       seitlich ergeben 4 + 4 die Fuge zwischen zwei Reitern, oben und unten
-       stehen die 8px direkt als Abstand zum Inhalt bzw. zum unteren
-       Bildschirmrand. Zusammen mit align-items:stretch (s.o.) bleibt von den
-       57px Leistenhöhe eine Tastenhöhe von 41px. */
-    margin: 8px 4px;
+    /* Seitlich 4px → 4 + 4 = 8px Fuge zwischen zwei Reitern, also derselbe
+       Abstand wie zwischen den Kategoriefeldern. Oben/unten bleibt es bei den
+       urspruenglichen 4px/2px: die Reiter sollen NUR anders sitzen, nicht
+       anders aussehen. Der Abstand zur bedienbaren Unterkante kommt aus dem
+       Polster der Leiste (s.o.), nicht von hier. */
+    margin: 4px 4px 2px;
     /* Feste Breite statt `flex:1` — sonst dehnen sich die Reiter auf den
        Platz des + Knopfes aus und ändern ihre Form. Der Wert ist genau die
        Breite aus dem Startzustand: Leistenbreite abzüglich Knopf-Slot (90),
