@@ -796,10 +796,12 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
             <div style={{display:"flex",gap:8,marginTop:12,opacity:blocked?0.5:1}}>
               <button onClick={copyExport} disabled={blocked}
                 style={{flex:1,padding:"10px",borderRadius:11,border:`1px solid ${T.pos}44`,
-                  background:`${T.pos}08`,color:T.pos,fontSize:12,fontWeight:700,
+                  // Liegt auf der Platte (Toenung 3 %): T.acc statt T.pos,
+                  // sonst Lime auf Creme — der Kontrast-Lauf mass 1,28:1.
+                  background:`${T.pos}08`,color:T.acc,fontSize:12,fontWeight:700,
                   cursor:blocked?"not-allowed":"pointer",
                   fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-                {Li("copy",13,T.pos)} Kopieren
+                {Li("copy",13,T.acc)} Kopieren
               </button>
               <button onClick={doExport} disabled={blocked}
                 style={{flex:2,padding:"10px",borderRadius:11,border:"none",

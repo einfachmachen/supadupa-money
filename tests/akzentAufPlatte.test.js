@@ -40,6 +40,19 @@ describe("Akzent-Text auf Platte und Karte", () => {
       .toBeGreaterThanOrEqual(4.5);
   });
 
+  it("Tastenhell: acc_neg traegt auf der Platte, acc_neg_card auf der Taste", () => {
+    const t = THEMES.tastenhell;
+    const aufPlatte = kontrast(t.acc_neg, t.bg);
+    const aufTaste = kontrast(t.acc_neg_card, t.surf);
+    expect(aufPlatte, `acc_neg ${t.acc_neg} auf Platte ${t.bg}: ${aufPlatte.toFixed(2)}:1`)
+      .toBeGreaterThanOrEqual(4.5);
+    expect(aufTaste, `acc_neg_card ${t.acc_neg_card} auf Taste ${t.surf}: ${aufTaste.toFixed(2)}:1`)
+      .toBeGreaterThanOrEqual(4.5);
+    // Auch hier: der Karten-Ton faellt auf der Platte durch — der gemeldete
+    // Zustand ("alle Daten zuruecksetzen" mass 1,31:1).
+    expect(kontrast(t.acc_neg_card, t.bg)).toBeLessThan(4.5);
+  });
+
   it("belegt, warum es zwei Werte braucht: ein Ton kann nicht beides", () => {
     const t = THEMES.tastenhell;
     // Der Karten-Ton auf der Platte — das war der gemeldete Zustand.

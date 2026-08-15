@@ -355,9 +355,12 @@ function SettingsInline() {
               ()=>setTxs(p=>p.filter(t=>!(t._budgetSubId && t.pending))),
               {jaLabel:"Alle löschen", ton:"gefahr"})} style={{width:"100%",padding:"7px",borderRadius:9,marginTop:6,
               border:`1px solid ${T.neg}33`,background:`${T.neg}06`,
-              color:T.neg,fontSize:11,fontWeight:600,cursor:"pointer",
+              // Der Knopf liegt auf der Platte und ist nur hauchduenn getoent —
+              // Text und Symbol messen sich also gegen die Platte. T.acc_neg
+              // liefert dort den lesbaren Ton (Kontrast-Lauf: vorher 1,41:1).
+              color:T.acc_neg,fontSize:11,fontWeight:600,cursor:"pointer",
               fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
-              {Li("trash-2",11,T.neg)} Alle {allBudgetTxs.length} Budget-Platzhalter löschen
+              {Li("trash-2",11,T.acc_neg)} Alle {allBudgetTxs.length} Budget-Platzhalter löschen
             </button>
           </div>
         );
@@ -369,7 +372,8 @@ function SettingsInline() {
         {!confirmReset
           ? <button onClick={()=>setConfirmReset(true)}
               style={{width:"100%",padding:"11px",borderRadius:11,border:`1px solid rgba(224,80,96,0.4)`,
-                background:"rgba(224,80,96,0.08)",color:T.neg,fontSize:13,fontWeight:600,
+                // Siehe oben: liegt auf der Platte, misst sich gegen sie.
+                background:"rgba(224,80,96,0.08)",color:T.acc_neg,fontSize:13,fontWeight:600,
                 cursor:"pointer",textAlign:"left"}}>
               {Li("trash-2",14)} alle Daten zurücksetzen
             </button>

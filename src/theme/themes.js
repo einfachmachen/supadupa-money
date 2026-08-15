@@ -997,6 +997,13 @@ THEMES.tastenhell = {
   // helle Lime richtig.
   acc:"#5C7000",
   acc_card:"#C8DC2E",
+  // Dieselbe Trennung fuer die Ausgaben-/Gefahrenfarbe. Das geerbte Cyan
+  // #00D9FF erreicht auf der Taste 4,60:1, auf der Platte aber nur 1,43:1 —
+  // der Kontrast-Lauf fand damit "Alle N Budget-Platzhalter loeschen" bei
+  // 1,41:1 und "alle Daten zuruecksetzen" bei 1,31:1. #006C7A schafft auf der
+  // Platte 5,16:1 und bleibt erkennbar derselbe Farbton.
+  acc_neg:"#006C7A",
+  acc_neg_card:"#00D9FF",
   hero_bg:"linear-gradient(135deg,#525252,#464646)",
   // Jede Flaeche, die Akzentfarben zeigt, muss eine Taste sein (Grund s. o.).
   // Das sind ausser den Karten selbst: Hero, Drei-Symbol-Zeile, der Kopf des

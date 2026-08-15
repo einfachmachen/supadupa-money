@@ -246,9 +246,13 @@ const _TEXT_KEYS = { txt: "--txt", txt2: "--txt2", lbl: "--lbl" };
 // Farbwert lesen können, keine CSS-Variable. `acc` ist rein für Text und
 // folgt derselben Mechanik wie txt/txt2/lbl: Wurzel setzt den Platten-Ton,
 // Kartenflächen überschreiben ihn mit dem Karten-Ton.
-const _ACC_KEY = "--acc";
-const accPlatte = (t) => t.acc || t.blue;
-const accKarte  = (t) => t.acc_card || t.blue;
+// Ein Eintrag je Akzent-Rolle: [CSS-Variable, Wert auf der Platte, Wert auf
+// der Karte]. Fehlt die themeeigene Angabe, steht ueberall der bisherige
+// Farbwert — solche Themes aendern sich um kein Zeichen.
+const _ACC_KEYS = {
+  acc:     { varName: "--acc",     platte: (t) => t.acc     || t.blue, karte: (t) => t.acc_card     || t.blue },
+  acc_neg: { varName: "--acc-neg", platte: (t) => t.acc_neg || t.neg,  karte: (t) => t.acc_neg_card || t.neg  },
+};
 
 export const hatKartenText = (t = _state.current) => !!(t && t.txt_card);
 
@@ -262,8 +266,9 @@ export const hatKartenText = (t = _state.current) => !!(t && t.txt_card);
 // daneben (Nutzer-Hinweis).
 export function wurzelTextVars(t = _state.current) {
   if (!hatKartenText(t)) return null;
-  return { "--txt": t.txt, "--txt2": t.txt2, "--lbl": t.lbl, "--amt-neutral": t.txt,
-           [_ACC_KEY]: accPlatte(t) };
+  const vars = { "--txt": t.txt, "--txt2": t.txt2, "--lbl": t.lbl, "--amt-neutral": t.txt };
+  Object.values(_ACC_KEYS).forEach(a => { vars[a.varName] = a.platte(t); });
+  return vars;
 }
 
 // Farbwert → so, wie ihn der Browser ins style-Attribut zurückschreibt.
@@ -296,7 +301,7 @@ export function kartenTextRegel(t = _state.current) {
   const txt2 = t.txt2_card || t.txt_card;
   const kartenVars = hatKartenText(t)
     ? `--txt:${t.txt_card};--txt2:${txt2};--lbl:${t.lbl_card || txt2};--amt-neutral:${t.txt_card};`
-      + `${_ACC_KEY}:${accKarte(t)};`
+      + Object.values(_ACC_KEYS).map(a => `${a.varName}:${a.karte(t)};`).join("")
     : "";
   const deko = t.card_shadow ? `box-shadow:${t.card_shadow};` : "";
   let css = `${sel}{${kartenVars}${deko}}`;
@@ -325,12 +330,13 @@ export const theme = new Proxy({}, {
     // Der Rückfallwert ist die Hintergrund-Farbe — käme die Variable irgendwo
     // nicht an, steht dort dieselbe Farbe wie vor diesem Umbau.
     if (_TEXT_KEYS[key] && t.txt_card) return `var(${_TEXT_KEYS[key]}, ${t[key]})`;
-    // `acc`: Akzentfarbe für Text (siehe _ACC_KEY oben). Existiert in JEDEM
+    // Akzentfarben für Text (siehe _ACC_KEYS oben). Existieren in JEDEM
     // Theme — ohne eigene Angabe schlicht als `blue`, dann ändert sich nichts.
     // Die Variable kommt nur bei Themes mit getrennten Karten-Textfarben ins
     // Spiel; nur dort gibt es zwei gegensätzliche Untergründe.
-    if (key === "acc") {
-      return t.txt_card ? `var(${_ACC_KEY}, ${accPlatte(t)})` : accPlatte(t);
+    const akzent = _ACC_KEYS[key];
+    if (akzent) {
+      return t.txt_card ? `var(${akzent.varName}, ${akzent.platte(t)})` : akzent.platte(t);
     }
     return t[key];
   },
