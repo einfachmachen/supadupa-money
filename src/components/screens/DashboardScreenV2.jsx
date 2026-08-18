@@ -18,6 +18,7 @@ import { AutoMatchReview } from "../organisms/AutoMatchReview.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme, flaecheAbgesetzt, blasserAkzent } from "../../theme/activeTheme.js";
 import { amtStyle, readableOn, isLightColor, schriftAuf } from "../../theme/amtPill.js";
+import { UNTEN_FREI } from "../../theme/palette.js";
 import { groupBudgetPairs, budgetOpenRestFor } from "../../utils/budgets.js";
 import { dayOf, drillSort, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { betrag, betragText } from "../../utils/betrag.jsx";
@@ -983,7 +984,14 @@ function DashboardScreenV2() {
       <div ref={dashScrollRef}
         onTouchStart={onPullStart} onTouchMove={onPullMove} onTouchEnd={onPullEnd}
         className="screen-scroll"
-        style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch"}}>
+        // paddingBottom UNTEN_FREI (Leiste + Ueberhang des + Knopfes, Herleitung
+        // in palette.js): ohne die Reserve endet die letzte Kategorie unter dem
+        // + Knopf und laesst sich nicht darueber hochschieben. Die Reserve stand
+        // hier bisher als 64px in themes.css — das ist genau die Leistenhoehe
+        // OHNE den Knopf, der darueber hinausragt. Inline, weil UNTEN_FREI in
+        // palette.js die eine Quelle dafuer ist und alle anderen Listen sie
+        // ebenso beziehen.
+        style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch",paddingBottom:UNTEN_FREI}}>
         {/* Pull-to-Refresh-Indikator wird unterhalb des fixierten Hero
             gerendert (zwischen Hero und erster Kategorie) — siehe unten. */}
         {/* Duplikat-Warnung */}

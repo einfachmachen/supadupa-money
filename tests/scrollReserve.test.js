@@ -104,3 +104,27 @@ describe("Scroll-Reserve in den Dialogen mit + Knopf", () => {
     });
   }
 });
+
+// Die beiden Hauptlisten hinter der Leiste: Home und Monat. Sie holten ihre
+// Reserve nicht aus UNTEN_FREI, sondern aus einer Regel in themes.css mit
+// 64px — genau die Leistenhoehe OHNE den + Knopf, der darueber hinausragt.
+// Gemessen endete der letzte Tag in Monat dadurch 120px UNTER dessen
+// Oberkante und liess sich nicht hochschieben; mit UNTEN_FREI sind es 32px
+// darueber. Die Regel in themes.css bleibt bestehen (Inline gewinnt), sie
+// deckt nur noch Faelle ohne eigene Reserve ab.
+describe("Scroll-Reserve der Hauptlisten", () => {
+  for (const datei of [
+    "src/components/screens/DashboardScreenV2.jsx",
+    "src/components/screens/MonatScreen.jsx",
+  ]) {
+    it(`${datei} gibt der Bildschirmliste UNTEN_FREI mit`, () => {
+      const code = ohneKommentare(readFileSync(resolve(wurzel, datei), "utf8"));
+      expect(code).toMatch(/import\s*\{[^}]*\bUNTEN_FREI\b[^}]*\}\s*from\s*["'][^"']*palette\.js["']/);
+      // Der Scrollbehaelter traegt die Klasse screen-scroll; die Reserve muss
+      // an genau diesem Element haengen, nicht irgendwo sonst in der Datei.
+      const block = stilBloecke(code).find(s => /paddingBottom:\s*UNTEN_FREI/.test(s)
+        && /overflowY\s*:\s*["']auto["']/.test(nurObersteEbene(s)));
+      expect(block, "keine Scrollflaeche mit UNTEN_FREI gefunden").toBeTruthy();
+    });
+  }
+});

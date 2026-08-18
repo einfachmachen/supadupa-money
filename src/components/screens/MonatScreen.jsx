@@ -29,7 +29,7 @@ import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
 import { WerkzeugeSection } from "../organisms/WerkzeugeSection.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
-import { PAL, ZEILE_H } from "../../theme/palette.js";
+import { PAL, ZEILE_H, UNTEN_FREI } from "../../theme/palette.js";
 import { amtStyle, readableOn } from "../../theme/amtPill.js";
 import { MONTHS_F } from "../../utils/constants.js";
 import { dayOf, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
@@ -1208,7 +1208,11 @@ function MonatScreen() {
     };
 
     return (<>
-      <div ref={listRef} onScroll={onListScroll} className="screen-scroll" style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",position:"relative"}} onTouchStart={onListTouchStart} onTouchEnd={onTE}>
+      {/* paddingBottom UNTEN_FREI wie in allen anderen Listen (Herleitung in
+          palette.js). Die 64px aus themes.css sind genau die Leistenhoehe OHNE
+          den + Knopf, der darueber hinausragt — gemessen endete der letzte Tag
+          120px UNTER dessen Oberkante und liess sich nicht hochschieben. */}
+      <div ref={listRef} onScroll={onListScroll} className="screen-scroll" style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",position:"relative",paddingBottom:UNTEN_FREI}} onTouchStart={onListTouchStart} onTouchEnd={onTE}>
 
         {/* Hero — SaldoHeroV2 (gemeinsamer Hero mit dem Dashboard) */}
         <div ref={stickyRef} className="hero-sticky" style={window.MBT_DEBUG?.disable_sticky?{}:{position:"sticky",top:0,zIndex:10,background:T.bg}}>
