@@ -10,6 +10,7 @@
 import React, { useContext, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
+import { aufToenung } from "../../theme/amtPill.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
@@ -59,8 +60,8 @@ function LinkBtn({ href, icon, children, color }) {
     <a href={href} target="_blank" rel="noopener noreferrer"
       style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
         textDecoration: "none", marginTop: 12, padding: "13px", borderRadius: 13,
-        border: `1px solid ${c}55`, background: `${c}14`, color: c, fontSize: 16, fontWeight: 800 }}>
-      {Li(icon, 18, c)} {children}
+        border: `1px solid ${c}55`, background: `${c}14`, color: aufToenung(c,0x14/255), fontSize: 16, fontWeight: 800 }}>
+      {Li(icon, 18, aufToenung(c,0x14/255,undefined,3))} {children}
     </a>
   );
 }
@@ -426,9 +427,9 @@ function CloudSetupWizard({ onClose, onBack }) {
               <button onClick={runTest} disabled={!cfActive || testState === "testing"}
                 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
                   width: "100%", marginTop: 12, padding: "12px", borderRadius: 13, border: `1px solid ${T.cf || T.blue}55`,
-                  background: `${T.cf || T.blue}14`, color: T.acc_cf || T.blue, fontSize: 15, fontWeight: 800,
+                  background: `${T.cf || T.blue}14`, color: aufToenung(T.cf || T.blue,0x14/255), fontSize: 15, fontWeight: 800,
                   cursor: !cfActive ? "not-allowed" : "pointer", opacity: !cfActive ? 0.5 : 1 }}>
-                {Li("wifi", 16, T.cf || T.blue)} {testState === "testing" ? "Teste…" : "Verbindung testen"}
+                {Li("wifi", 16, aufToenung(T.cf || T.blue,0x14/255,undefined,3))} {testState === "testing" ? "Teste…" : "Verbindung testen"}
               </button>
               {testState === "ok" && <Box tone="tip">✓ {testMsg}</Box>}
               {testState === "error" && <Box tone="danger">Fehler: {testMsg}</Box>}

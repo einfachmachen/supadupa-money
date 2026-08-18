@@ -4,7 +4,7 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { Li } from "../../utils/icons.jsx";
-import { readableOn } from "../../theme/amtPill.js";
+import { readableOn, aufToenung } from "../../theme/amtPill.js";
 
 function CloudSaveModal({ onClose }) {
   const { cfActive, cfStatus, saveConfig, isDirty } = useContext(AppCtx);
@@ -65,7 +65,7 @@ function CloudSaveModal({ onClose }) {
         {/* Status-Pille */}
         <div style={{display:"inline-flex",alignItems:"center",gap:7,
           padding:"5px 12px",borderRadius:999,background:`${status.col}1A`,
-          color:status.col,fontSize:13,fontWeight:700}}>
+          color:aufToenung(status.col,0x1A/255),fontSize:13,fontWeight:700}}>
           <span style={{width:7,height:7,borderRadius:"50%",background:status.col,
             display:"inline-block"}}/>
           {status.txt}

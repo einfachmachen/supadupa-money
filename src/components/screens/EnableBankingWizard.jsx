@@ -11,6 +11,7 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
+import { aufToenung } from "../../theme/amtPill.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { TagInput } from "../atoms/TagInput.jsx";
 import { getAllTags } from "../../utils/search.js";
@@ -72,7 +73,7 @@ function Steps({ items }) {
       {items.map((it, i) => (
         <div key={i} style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
           <div style={{ flexShrink: 0, width: 24, height: 24, borderRadius: 12,
-            background: ACCENT + "22", color: ACCENT, fontSize: 13, fontWeight: 800,
+            background: ACCENT + "22", color: aufToenung(ACCENT,0x22/255), fontSize: 13, fontWeight: 800,
             display: "flex", alignItems: "center", justifyContent: "center" }}>{i + 1}</div>
           <div style={{ color: T.txt, fontSize: 14.5, lineHeight: 1.5, paddingTop: 1 }}>{it}</div>
         </div>
@@ -92,8 +93,8 @@ function LinkBtn({ href, icon, children, color }) {
     <a href={href} target="_blank" rel="noopener noreferrer"
       style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
         textDecoration: "none", marginTop: 12, padding: "13px", borderRadius: 13,
-        border: `1px solid ${c}55`, background: `${c}14`, color: c, fontSize: 16, fontWeight: 800 }}>
-      {Li(icon, 18, c)} {children}
+        border: `1px solid ${c}55`, background: `${c}14`, color: aufToenung(c,0x14/255), fontSize: 16, fontWeight: 800 }}>
+      {Li(icon, 18, aufToenung(c,0x14/255,undefined,3))} {children}
     </a>
   );
 }

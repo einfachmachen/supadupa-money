@@ -30,7 +30,7 @@ import { WerkzeugeSection } from "../organisms/WerkzeugeSection.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { PAL, ZEILE_H, UNTEN_FREI } from "../../theme/palette.js";
-import { amtStyle, readableOn } from "../../theme/amtPill.js";
+import { amtStyle, readableOn, aufToenung } from "../../theme/amtPill.js";
 import { MONTHS_F } from "../../utils/constants.js";
 import { dayOf, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { betrag } from "../../utils/betrag.jsx";
@@ -1644,7 +1644,7 @@ function MonatScreen() {
                               </span>
                             : "Vorgemerkt · ")}{sub0?.name||cat?.name||""}
                           {tx.accountId&&tx.accountId!=="acc-giro"&&(()=>{const a=getAcc(tx.accountId);return a?(
-                            <span style={{background:a.color+"22",color:a.color,borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>{Li(a.icon,9,a.color)} {a.name}</span>
+                            <span style={{background:a.color+"22",color:aufToenung(a.color,0x22/255),borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>{Li(a.icon,9,aufToenung(a.color,0x22/255,undefined,3))} {a.name}</span>
                           ):null;})()}
                           {(tx.tags||[]).map(t=>(
                             <span key={t} style={{background:`${T.blue}1a`,color:T.acc,borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>
@@ -1891,7 +1891,7 @@ function MonatScreen() {
                                     {Li("alert-triangle",9,T.acc_gold)}Vorgemerkt · überfällig ·{" "}
                                   </span>
                                 : "Vorgemerkt · ")}{isS?involvedCats.map(c=>c.name).join(" · "):(()=>{const ss=getSub((tx.splits||[])[0]?.catId,(tx.splits||[])[0]?.subId);return ss?.name||cat?.name||"";})()}
-                              {tx.accountId&&tx.accountId!=="acc-giro"&&(()=>{const a=getAcc(tx.accountId);return(<span style={{background:a.color+"22",color:a.color,borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>{Li(a.icon,9,a.color)} {a.name}</span>)})()}
+                              {tx.accountId&&tx.accountId!=="acc-giro"&&(()=>{const a=getAcc(tx.accountId);return(<span style={{background:a.color+"22",color:aufToenung(a.color,0x22/255),borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>{Li(a.icon,9,aufToenung(a.color,0x22/255,undefined,3))} {a.name}</span>)})()}
                               {(tx.tags||[]).map(t=>(
                                 <span key={t} style={{background:`${T.blue}1a`,color:T.acc,
                                   borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>
@@ -2220,7 +2220,7 @@ function MonatScreen() {
                               </span>
                             )}
                             {tx.accountId&&tx.accountId!=="acc-giro"&&(()=>{const a=getAcc(tx.accountId);return(
-                                <span style={{background:a.color+"22",color:a.color,borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>{Li(a.icon,9,a.color)} {a.name}</span>
+                                <span style={{background:a.color+"22",color:aufToenung(a.color,0x22/255),borderRadius:5,padding:"1px 5px",fontSize:9,fontWeight:700,flexShrink:0}}>{Li(a.icon,9,aufToenung(a.color,0x22/255,undefined,3))} {a.name}</span>
                               )})()}
                             {/* Flexibler Topf: belastet nicht das Budget der eigenen Kategorie */}
                             {tx._potSubId&&(

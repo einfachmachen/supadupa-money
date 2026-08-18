@@ -347,8 +347,8 @@ function CustomThemeEditor() {
                   </div>
                   {/* Type selector on bg */}
                   <div style={{display:"flex",gap:4,padding:"5px 6px",background:edit.bg}}>
-                    <div style={{flex:1,padding:"3px 0",borderRadius:5,background:`${edit.pos}22`,border:`1px solid ${edit.pos}55`,textAlign:"center",color:edit.pos,fontSize:7,fontWeight:700}}>Einnahme</div>
-                    <div style={{flex:1,padding:"3px 0",borderRadius:5,background:`${edit.neg}22`,border:`1px solid ${edit.neg}55`,textAlign:"center",color:edit.neg,fontSize:7,fontWeight:700}}>Ausgabe</div>
+                    <div style={{flex:1,padding:"3px 0",borderRadius:5,background:`${edit.pos}22`,border:`1px solid ${edit.pos}55`,textAlign:"center",color:aufToenung(edit.pos,0x22/255),fontSize:7,fontWeight:700}}>Einnahme</div>
+                    <div style={{flex:1,padding:"3px 0",borderRadius:5,background:`${edit.neg}22`,border:`1px solid ${edit.neg}55`,textAlign:"center",color:aufToenung(edit.neg,0x22/255),fontSize:7,fontWeight:700}}>Ausgabe</div>
                   </div>
                   {/* Einnahmen panel */}
                   <div style={{background:edit.pal_inc_bg,border:`1px solid ${edit.pal_inc_bd}`,margin:"0 6px 4px",borderRadius:7,padding:"5px 6px"}}>

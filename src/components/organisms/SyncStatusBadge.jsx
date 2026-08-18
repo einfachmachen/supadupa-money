@@ -9,6 +9,7 @@
 import React, { useContext } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
+import { aufToenung } from "../../theme/amtPill.js";
 import { getSyncBadgeState } from "../../utils/syncBadge.js";
 
 function SyncStatusBadge() {
@@ -16,7 +17,22 @@ function SyncStatusBadge() {
   const state = getSyncBadgeState({ isOnline, cfActive, isDirty, syncStatus });
   if (!state) return null;
 
+  // ZWEI Farben aus derselben Rolle, nicht eine:
+  //   `col`     — der Rohton. Nur fuer Flaeche, Rahmen und den Punkt links;
+  //               ein Alpha-Suffix ("22"/"77") braucht einen echten Hex-Wert.
+  //   `schrift` — die Schriftfarbe, gerechnet gegen die GETOENTE Flaeche.
+  //
+  // Vorher stand hier nur `col`, auch als Schriftfarbe: helles Gold auf einer
+  // 13-%-Toenung desselben Golds — der Hinweis „Nicht synchronisiert" war auf
+  // heller Platte kaum zu lesen (Nutzer-Hinweis).
+  //
+  // `aufToenung` ist genau dafuer da: es rechnet den Untergrund erst zusammen
+  // (Toenung UEBER der Platte, also in Richtung der Schrift verschoben) und
+  // gibt den Wunschton nur zurueck, wenn er darauf traegt — sonst Schwarz oder
+  // Weiss. Ein fester Ersatzton haette nicht gereicht: nachgerechnet fielen
+  // 57 von 136 Theme-/Ton-Kombinationen unter 4,5:1, quer durch die Themes.
   const col = T[state.tone];
+  const schrift = aufToenung(col, 0x22 / 255);
 
   // "cloud_newer": ein anderes Gerät hat neuere Daten gespeichert (z.B. eine
   // dort vorgenommene Vormerkungs-Verknüpfung) — Antippen lädt sie direkt,
@@ -42,7 +58,7 @@ function SyncStatusBadge() {
           width:"100%",minHeight:48,boxSizing:"border-box",
           padding:"10px 16px",borderRadius:14,
           background:`${col}22`,border:`1.5px solid ${col}77`,
-          color:col,fontSize:14,fontWeight:700,cursor:"pointer",
+          color:schrift,fontSize:14,fontWeight:700,cursor:"pointer",
           textAlign:"center",lineHeight:1.25}}>
         <span style={{width:9,height:9,borderRadius:"50%",background:col,display:"inline-block",flexShrink:0}}/>
         {state.text}

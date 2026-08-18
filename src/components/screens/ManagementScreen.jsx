@@ -13,6 +13,7 @@ import { SettingsInline } from "./SettingsInline.jsx";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
+import { aufToenung } from "../../theme/amtPill.js";
 import { INP, UNTEN_FREI } from "../../theme/palette.js";
 import { uid, NUM_FONT } from "../../utils/format.js";
 import { reassignAccount, accountRefs } from "../../utils/accountReassign.js";
@@ -660,8 +661,8 @@ function ManagementScreen({activeTab="kategorien"}) {
                 </span>
               )}
               {grp.accountId&&(()=>{const a=_accounts.find(x=>x.id===grp.accountId);return a?(
-                <span style={{background:a.color+"22",color:a.color,borderRadius:5,
-                  padding:"1px 6px",fontSize:9,fontWeight:700}}>{Li(a.icon,10,a.color)} {a.name}</span>
+                <span style={{background:a.color+"22",color:aufToenung(a.color,0x22/255),borderRadius:5,
+                  padding:"1px 6px",fontSize:9,fontWeight:700}}>{Li(a.icon,10,aufToenung(a.color,0x22/255,undefined,3))} {a.name}</span>
               ):null;})()}
               <span style={{flex:1}}/>
               <button onClick={e=>{e.stopPropagation();toggleGrp(grp.id);}}
