@@ -40,6 +40,17 @@ describe("Jahres-Kopf: Abstand unter dem Hero", () => {
     expect(unsere).toBeGreaterThan(letzterThemeRand);
   });
 
+  it("gibt dem Schieflage-Panel keinen Rand nach unten", () => {
+    // Zweite Falle derselben Art, aber aus dem umgekehrten Grund: Money Mood
+    // ist ein FLEX-Container, und Raender von Flex-Kindern fallen NIE
+    // zusammen. Ein Rand unten am Panel addierte sich deshalb zum Rand der
+    // Kategorieliste — 8 + 8 = 16px. Im Browser gegengeprueft: mit
+    // "8px 10px" misst die Luecke 16px, mit "8px 10px 0" genau 8px.
+    const mm = lies("src/components/screens/MoneyMoodScreen.jsx");
+    expect(mm).toMatch(/margin:\s*"8px 10px 0"/);
+    expect(mm).not.toMatch(/margin:\s*"8px 10px"/);
+  });
+
   it("nennt den dritten Reiter Jahr, nicht Trend", () => {
     // „Trend" ist der Name des ganzen Bereichs in der unteren Leiste und stand
     // als Reiter darin ein zweites Mal fuer die engere Jahresansicht.

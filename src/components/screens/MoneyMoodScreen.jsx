@@ -348,7 +348,13 @@ function MoneyMoodScreen() {
         // Als Kartenflaeche schalten zugleich die Textfarben auf ihre
         // Karten-Varianten um (§4.7), Schrift und Symbole darin stimmen
         // damit ohne weiteres Zutun.
-        <div style={{ margin: "8px 10px", background: flaecheAbgesetzt(), border: `1px solid ${T.neg}66`, borderRadius: 12, padding: "9px 11px" }}>
+        //
+        // Rand nur OBEN: dieser Bildschirm ist ein Flex-Container, und Raender
+        // von Flex-Kindern fallen NIE zusammen — anders als im normalen
+        // Blockfluss. Ein Rand unten haette sich also zum Rand der
+        // Kategorieliste addiert (8 + 8 = 16px statt 8). Den Abstand nach
+        // unten bringt die Liste selbst mit.
+        <div style={{ margin: "8px 10px 0", background: flaecheAbgesetzt(), border: `1px solid ${T.neg}66`, borderRadius: 12, padding: "9px 11px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
             {Li("alert-triangle", 16, T.acc_neg)}
             <span style={{ color: T.acc_neg, fontWeight: 700, fontSize: 13.5 }}>
