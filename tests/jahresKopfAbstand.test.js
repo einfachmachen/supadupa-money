@@ -51,16 +51,14 @@ describe("Jahres-Kopf: Abstand unter dem Hero", () => {
     expect(mm).not.toMatch(/margin:\s*"8px 10px"/);
   });
 
-  it("haelt die Legendenzeile der Jahresansicht einzeilig", () => {
-    // Die Zeile ist das letzte Flex-Kind und endet damit immer am unteren
-    // Bildschirmrand — hinter der Leiste. Mit umbrechendem Text wurde sie
-    // 53 der 64 Leisten-Pixel hoch und trug dort die helle Seitenflaeche
-    // statt der dunklen Tabelle: durch die durchscheinende Leiste sah man
-    // einen hellen Balken. Einzeilig sind es 20px (im Browser gemessen).
+  it("laesst die Jahrestabelle ueber den + Knopf hochscrollen", () => {
+    // Die Tabelle ist die letzte Liste, der die Reserve noch fehlte: ihre
+    // untersten Zeilen endeten unter Leiste und + Knopf. Ein erster Versuch
+    // hatte stattdessen die Legendenzeile darunter verkleinert — das war die
+    // falsche Ursache, denn scrollen liess sich die Tabelle dadurch nicht.
     const js = lies("src/components/screens/JahrScreen.jsx");
-    const zeile = js.slice(js.indexOf("{/* Legend + Toggle"), js.indexOf("{/* Legend + Toggle") + 900);
-    expect(zeile).toMatch(/flexWrap:\s*"nowrap"/);
-    expect(zeile).not.toMatch(/flexWrap:\s*"wrap"/);
+    expect(js).toMatch(/import\s*\{[^}]*\bUNTEN_FREI\b[^}]*\}\s*from\s*["'][^"']*palette\.js["']/);
+    expect(js).toMatch(/dataScrollRef[\s\S]{0,400}?paddingBottom:\s*UNTEN_FREI/);
   });
 
   it("nennt den dritten Reiter Jahr, nicht Trend", () => {
