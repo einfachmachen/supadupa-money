@@ -79,7 +79,7 @@ function Row({ t, accName, setRowCat, removeRow, setRowNote, setRowTags, allTags
               border: `1px solid ${t._potSubId ? T.gold : "transparent"}`, borderRadius: 7,
               cursor: "pointer", padding: 3, display: "inline-flex", alignItems: "center",
               flexShrink: 0 }}>
-            {Li("piggy-bank", 16, t._potSubId ? T.acc_gold : T.txt2)}
+            {Li("life-buoy", 16, t._potSubId ? T.acc_gold : T.txt2)}
           </button>
         )}
         <button onClick={() => removeRow(t.id)} title="Eintrag löschen"
@@ -350,7 +350,7 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm, 
           fontSize: 11.5, lineHeight: 1.4, display: "flex", alignItems: "center", gap: 6 }}>
           {Li("info", 13, T.acc)}
           <span>Noch nicht importiert — prüfen, ggf. kategorisieren oder löschen, dann <b style={{ color: T.txt }}>Übernehmen</b>.
-            {_potSub && <> {Li("piggy-bank", 12, T.txt2)} = aus Unvorhergesehenes bezahlen.</>}</span>
+            {_potSub && <> {Li("life-buoy", 12, T.txt2)} = aus Unvorhergesehenes bezahlen.</>}</span>
         </div>
       )}
       {newTxs.length > 1 && (
