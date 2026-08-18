@@ -21,7 +21,7 @@ import { getAllTags } from "../../utils/search.js";
 // BankFetchPanel erzeugt sonst eine neue Funktionsreferenz), wodurch React
 // das <input> bei jedem Buchstaben komplett neu montiert und damit den Fokus
 // (und die Bildschirmtastatur) verliert.
-function Row({ t, accName, setRowCat, removeRow, setRowNote, setRowTags, allTags }) {
+function Row({ t, accName, setRowCat, removeRow, setRowNote, setRowTags, allTags, potSub, setRowPot }) {
   const sp = (t.splits || [])[0];
   const categorized = !!sp?.catId;
   const isInc = t._csvType === "income";
@@ -63,6 +63,25 @@ function Row({ t, accName, setRowCat, removeRow, setRowNote, setRowTags, allTags
           />
         </div>
         {categorized && Li("check-circle", 18, T.acc_pos)}
+        {/* Flexibler Topf, platzsparend: ein Symbolknopf in der Zeile, die es
+            ohnehin gibt — statt einer eigenen Schalterzeile je Eintrag. Der
+            Betrag bleibt in seiner Kategorie, nur die Budget-Anrechnung
+            wandert in den Topf. Sichtbar nur bei Ausgaben, nur wenn es die
+            Kategorie gibt und der Eintrag nicht ohnehin schon darin liegt.
+            Die getoente Flaeche nutzt den ROHTON T.gold — an einen
+            Akzent-Proxy (`var(...)`) darf kein Alpha-Suffix. */}
+        {!isInc && potSub && sp?.subId !== potSub.id && (
+          <button onClick={() => setRowPot(t.id)}
+            title={t._potSubId ? "Wird aus Unvorhergesehenes bezahlt — antippen hebt es auf"
+                               : "Aus Unvorhergesehenes bezahlen"}
+            aria-pressed={!!t._potSubId} aria-label="aus Unvorhergesehenes bezahlen"
+            style={{ background: t._potSubId ? T.gold + "2E" : "transparent",
+              border: `1px solid ${t._potSubId ? T.gold : "transparent"}`, borderRadius: 7,
+              cursor: "pointer", padding: 3, display: "inline-flex", alignItems: "center",
+              flexShrink: 0 }}>
+            {Li("piggy-bank", 16, t._potSubId ? T.acc_gold : T.txt2)}
+          </button>
+        )}
         <button onClick={() => removeRow(t.id)} title="Eintrag löschen"
           style={{ background: "transparent", border: "none", cursor: "pointer", padding: 4,
             display: "inline-flex", alignItems: "center", flexShrink: 0 }}>
@@ -90,7 +109,7 @@ function Row({ t, accName, setRowCat, removeRow, setRowNote, setRowTags, allTags
 }
 
 function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm, onPromoteDupe }) {
-  const { accounts, txs } = useContext(AppCtx);
+  const { accounts, txs, cats } = useContext(AppCtx);
   const allTags = React.useMemo(()=>getAllTags(txs), [txs]);
   const [showExisting, setShowExisting] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
@@ -141,6 +160,19 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm, 
   // Falsch abgerufenen Eintrag direkt entfernen — ohne ihn vorher kategorisieren
   // zu müssen. (Beim nächsten Abruf würde er ggf. wieder als neu erkannt.)
   const removeRow = (id) => onUpdateStaged((list) => list.filter((t) => t.id !== id));
+
+  // Flexibler Topf "Unvorhergesehenes" — per Name erkannt, wie in EditPopup,
+  // Vormerken-Assistent und VormerkungHub. Hier kann er schon beim Abruf
+  // gesetzt werden, statt jeden Eintrag hinterher einzeln zu oeffnen.
+  const _potSub = React.useMemo(() => {
+    for (const c of (cats || [])) for (const sub of (c.subs || []))
+      if ((sub.name || "").trim().toLowerCase() === "unvorhergesehenes") return sub;
+    return null;
+  }, [cats]);
+  const setRowPot = (id) =>
+    onUpdateStaged((list) => list.map((t) => (t.id === id
+      ? { ...t, _potSubId: t._potSubId ? undefined : _potSub?.id }
+      : t)));
 
   const wrap = (children) => (
     // Seitlich 10px wie JEDER andere Block der Ansicht (Kategorieliste
@@ -317,7 +349,8 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm, 
         <div style={{ padding: "7px 12px", borderTop: `1px solid ${T.bd}`, color: T.txt2,
           fontSize: 11.5, lineHeight: 1.4, display: "flex", alignItems: "center", gap: 6 }}>
           {Li("info", 13, T.acc)}
-          <span>Noch nicht importiert — prüfen, ggf. kategorisieren oder löschen, dann <b style={{ color: T.txt }}>Übernehmen</b>.</span>
+          <span>Noch nicht importiert — prüfen, ggf. kategorisieren oder löschen, dann <b style={{ color: T.txt }}>Übernehmen</b>.
+            {_potSub && <> {Li("piggy-bank", 12, T.txt2)} = aus Unvorhergesehenes bezahlen.</>}</span>
         </div>
       )}
       {newTxs.length > 1 && (
@@ -332,7 +365,8 @@ function BankFetchPanel({ state, onClose, onRefetch, onUpdateStaged, onConfirm, 
       )}
       {newTxs.map((t) => <Row key={t.id} t={t} accName={accName}
         setRowCat={setRowCat} removeRow={removeRow} setRowNote={setRowNote}
-        setRowTags={setRowTags} allTags={allTags} />)}
+        setRowTags={setRowTags} allTags={allTags}
+        potSub={_potSub} setRowPot={setRowPot} />)}
 
       {exactDupes.length > 0 && (
         <>
