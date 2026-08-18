@@ -3,26 +3,32 @@ main = "license-worker.js"
 compatibility_date = "2024-11-01"
 compatibility_flags = ["nodejs_compat"]
 
-# KV-Namespace für Lizenzcodes
+# KV-Namespace für Lizenzcodes.
+#
+# `binding` ist der Name, unter dem der Code den Speicher sieht
+# (license-worker.js: `env.LICENSE_KV`) — der muss so bleiben.
+# `id` ist der Namespace im Cloudflare-Konto (Dashboard-Name:
+# "supadupa-lizenzen-kv"). Bewusst nur EINE Stelle: vorher stand die id
+# zusätzlich unter [env.production] und [env.development], drei Kopien, die
+# auseinanderlaufen können. Ohne --env greift ohnehin dieser Block.
+#
+# Der Namespace ist absichtlich app-übergreifend: kommt später eine weitere
+# SupaDupa-App dazu, kommen deren Codes in denselben Speicher und werden über
+# das Feld `products` im Wert auseinandergehalten (siehe license-worker.js).
 [[kv_namespaces]]
 binding = "LICENSE_KV"
-id = "YOUR_KV_NAMESPACE_ID"
-# Preview Namespace für Entwicklung (optional):
-# preview_id = "YOUR_PREVIEW_KV_NAMESPACE_ID"
+id = "73da43c30a24489da812f6791b3d4862"
 
-# Environment Variables und Secrets
-[env.production]
-kv_namespaces = [
-  { binding = "LICENSE_KV", id = "YOUR_KV_NAMESPACE_ID" }
-]
+# Optional: Zugriff auf die eigenen App-Domains beschränken (kommasepariert).
+# Leer/nicht gesetzt = alle Origins erlaubt.
+# [vars]
+# ALLOWED_ORIGINS = "https://einfachmachen.github.io,http://localhost:5173"
 
-[env.development]
-kv_namespaces = [
-  { binding = "LICENSE_KV", id = "YOUR_PREVIEW_KV_NAMESPACE_ID" }
-]
-
-# LICENSE_SECRET wird via CLI gesetzt:
-#   wrangler secret put LICENSE_SECRET
-# oder
-#   wrangler secret put LICENSE_SECRET --env production
-#   wrangler secret put LICENSE_SECRET --env development
+# Alle Befehle brauchen --config, weil in diesem Ordner zwei Konfigurationen
+# liegen (wrangler.toml gehört zum Bank-Proxy) und wrangler sonst die falsche
+# nimmt:
+#   wrangler secret put LICENSE_SECRET --config wrangler-license.toml
+#   wrangler deploy --config wrangler-license.toml
+#
+# LICENSE_SECRET ist eine lange Zufallszeichenkette (z. B. `openssl rand
+# -base64 32`) und gehört NIE in eine Datei — nur über `wrangler secret put`.

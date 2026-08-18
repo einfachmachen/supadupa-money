@@ -110,9 +110,20 @@ online sein.
 - [ ] **LemonSqueezy-Account + Produkt anlegen.** Muss Dirk selbst machen
   (Verifizierung dauert oft 1–2 Tage). Danach entscheiden: Lizenzschluessel von
   LemonSqueezy erzeugen lassen ODER eigenen `/webhook`-Endpunkt bauen.
-- [ ] **Worker deployen:** KV-Namespace anlegen, echte id in
-  `wrangler-license.toml` eintragen (steht auf `YOUR_KV_NAMESPACE_ID`),
-  `wrangler secret put LICENSE_SECRET`, deployen.
+- [x] **KV-Namespace angelegt** (`supadupa-lizenzen-kv`), id steht in
+  `wrangler-license.toml`. Bewusst app-uebergreifend fuer alle SupaDupa-Apps:
+  ein Lizenzserver, ein Secret, eine URL — die KV-Limits gelten ohnehin pro
+  Konto, nicht pro Namespace. Getrennt wird ueber das Feld `products` im Wert.
+- [x] **CORS + `products` im Worker.** `/verify` wurde aus dem Browser
+  aufgerufen, ohne je CORS-Header zu senden (Preflight scheitert; per curl
+  unauffaellig) — inklusive der Fehlerantworten, ein 402 ohne Header wird zum
+  diffusen Netzwerkfehler. `products` verhindert, dass ein Money-Code eine
+  spaetere App mit freischaltet. Abgesichert in `tests/lizenzWorker.test.js`.
+- [ ] **Worker deployen** (muss Dirk tun, braucht Konto-Zugang). In `worker/`,
+  `--config` ist Pflicht — sonst nimmt wrangler die `wrangler.toml` des
+  Bank-Proxys:
+  `wrangler secret put LICENSE_SECRET --config wrangler-license.toml`,
+  dann `wrangler deploy --config wrangler-license.toml`.
 - [ ] **End-to-End einmal durchspielen:** Code in KV legen → `/verify` → Token
   zurueck → Token laeuft nach 30 Tagen ab.
 
