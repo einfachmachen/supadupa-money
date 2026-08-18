@@ -51,6 +51,18 @@ describe("Jahres-Kopf: Abstand unter dem Hero", () => {
     expect(mm).not.toMatch(/margin:\s*"8px 10px"/);
   });
 
+  it("haelt die Legendenzeile der Jahresansicht einzeilig", () => {
+    // Die Zeile ist das letzte Flex-Kind und endet damit immer am unteren
+    // Bildschirmrand — hinter der Leiste. Mit umbrechendem Text wurde sie
+    // 53 der 64 Leisten-Pixel hoch und trug dort die helle Seitenflaeche
+    // statt der dunklen Tabelle: durch die durchscheinende Leiste sah man
+    // einen hellen Balken. Einzeilig sind es 20px (im Browser gemessen).
+    const js = lies("src/components/screens/JahrScreen.jsx");
+    const zeile = js.slice(js.indexOf("{/* Legend + Toggle"), js.indexOf("{/* Legend + Toggle") + 900);
+    expect(zeile).toMatch(/flexWrap:\s*"nowrap"/);
+    expect(zeile).not.toMatch(/flexWrap:\s*"wrap"/);
+  });
+
   it("nennt den dritten Reiter Jahr, nicht Trend", () => {
     // „Trend" ist der Name des ganzen Bereichs in der unteren Leiste und stand
     // als Reiter darin ein zweites Mal fuer die engere Jahresansicht.

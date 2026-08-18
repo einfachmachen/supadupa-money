@@ -850,9 +850,18 @@ function JahrScreen({forceSingle=false}) {
           })}
         </div></div>{/* end data scroll */}
 
-        {/* Legend + Toggle */}
-        <div style={{padding:"4px 12px 6px",display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",
-          borderTop:`1px solid ${T.bds}`,background:T.bg}}>
+        {/* Legend + Toggle.
+            Eine Zeile, kein Umbruch: die Zeile ist das letzte Flex-Kind und
+            endet damit immer am unteren Bildschirmrand — also HINTER der
+            Leiste. Mit umbrechendem Text wurde sie 53 der 64 Leisten-Pixel
+            hoch, und weil sie die helle Seitenflaeche traegt statt der
+            dunklen Tabelle, schien durch die durchscheinende Leiste ein
+            heller Balken (Nutzer-Hinweis: "Abstand zur Bottombar
+            reduzieren"). Kurz gehalten reicht die Tabelle weiter nach unten
+            und der Balken verschwindet. Die Hinweistexte kuerzen dabei ab —
+            sie sind an dieser Stelle ohnehin verdeckt. */}
+        <div style={{padding:"2px 12px 3px",display:"flex",gap:8,flexWrap:"nowrap",alignItems:"center",
+          overflow:"hidden",borderTop:`1px solid ${T.bds}`,background:T.bg}}>
           <button onClick={()=>setHideEmptyRows(v=>!v)}
             style={{display:"flex",alignItems:"center",gap:5,background:"transparent",
               border:`1px solid ${hideEmptyRows?T.pos:T.bds}`,borderRadius:7,
@@ -861,8 +870,8 @@ function JahrScreen({forceSingle=false}) {
             {Li(hideEmptyRows?"eye":"eye-off",9,hideEmptyRows?T.pos:T.lbl||T.txt2)}
             {hideEmptyRows?"nur genutzte Kategorien":"alle Kategorien"}
           </button>
-          <span style={{color:T.lbl||T.txt2,fontSize:9}}>M = Buchungen 1–14 · E = alle · {col3Name} = aktuell</span>
-          <span style={{color:T.lbl||T.txt2,fontSize:9,opacity:0.6}}>░ schraffiert = Ende ≠ {col3Name} · <span style={{color:T.override}}>amber</span> = manuell überschrieben (Zelle anklicken → ↺ Auto zum Zurücksetzen)</span>
+          <span style={{color:T.lbl||T.txt2,fontSize:9,whiteSpace:"nowrap",flexShrink:0}}>M = Buchungen 1–14 · E = alle · {col3Name} = aktuell</span>
+          <span style={{color:T.lbl||T.txt2,fontSize:9,opacity:0.6,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",minWidth:0}}>░ schraffiert = Ende ≠ {col3Name} · <span style={{color:T.override}}>amber</span> = manuell überschrieben (Zelle anklicken → ↺ Auto zum Zurücksetzen)</span>
         </div>
       </div>
     );
