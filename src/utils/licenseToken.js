@@ -1,58 +1,60 @@
-// Token-Verifikation: HMAC-SHA256-Signatur prüfen, Ablauf checken.
+// Lizenz-Token: ablegen, lesen, auf Ablauf prüfen.
 //
-// Das Token wurde vom Worker signiert mit `LICENSE_SECRET`. Der Client prüft
-// die Signatur offline, ohne den Server zu fragen. Das ermöglicht Offline-Modus.
+// Das Token stellt der Lizenz-Worker aus (worker/license-worker.js):
+//   payload   = Base64(JSON.stringify({ email, tier, products, iat, exp }))
+//   signature = Base64(HMAC-SHA256(payload, LICENSE_SECRET))
+//   token     = payload + "." + signature
 //
-// Token-Format (vom Worker): `payload.signature`
-//   payload = Base64(JSON.stringify({ email, tier, products, iat, exp }))
-//   signature = Base64(HMAC-SHA256(payload, secret))
+// Was der Client hier prüft: NUR das Ablaufdatum. Die Signatur kann er nicht
+// nachrechnen — dafür bräuchte er `LICENSE_SECRET`, und das liegt allein im
+// Worker. Das ist kein Mangel, sondern die Aufgabenteilung:
 //
-// Achtung: Der Client kennt `LICENSE_SECRET` nicht. Er kann die Signatur
-// NICHT neu erzeugen, nur prüfen, ob eine bestehende gültig ist — dafür
-// brauchte er das Secret. Das ist korrekt: nur der Worker kann Token
-// ausstellen, der Client kann sie nur glauben oder anzweifeln.
+//   • Der Client entscheidet nichts Schützenswertes. Wer die Sperre umgehen
+//     will, ändert den Code im Browser — eine Signaturprüfung an dieser
+//     Stelle würde er im selben Atemzug mit entfernen. Die weichen Gates
+//     sagen ehrlichen Nutzern, was sie haben; mehr sollen sie nicht leisten.
+//   • Die Signatur trägt für den SERVER. Der Bank-Proxy (Phase 3) prüft sie
+//     mit dem Secret in der Hand — dort kann sie niemand umgehen.
 //
-// Stattdessen nutzen wir ein lokales Vertrauen: wenn wir das Token von
-// `/verify` bekommen haben und die Antwort ein signiertes Token ist,
-// speichern wir es und glauben ihm, bis es abläuft. Kein Reflex, die
-// Signatur zu prüfen — das wäre nicht möglich ohne das Secret.
-//
-// (Für Tests: test/licenseToken.test.js hat ein Testgeheimnis und prüft
-// die komplette Signatur nach.)
+// Gespeichert wird über kvStore (IndexedDB), wie alle Einstellungen dieser
+// App. Der Schlüssel trägt das `mbt_`-Präfix, damit ihn die
+// localStorage-Migration in kvStore.js als App-Schlüssel erkennt.
 
-// Token parsen und die Payload dekodieren
+import { kvStore } from "./kvStore.js";
+
+const TOKEN_KEY = "mbt_license_token";
+
+// Token zerlegen und die Nutzlast dekodieren. `null`, wenn es kein Token im
+// erwarteten Format ist.
 function decodeToken(token) {
   if (!token || typeof token !== "string") return null;
   const parts = token.split(".");
   if (parts.length !== 2) return null;
   try {
-    const payloadStr = atob(parts[0]);
-    const payload = JSON.parse(payloadStr);
-    return {
-      payload,
-      encodedPayload: parts[0],
-      signature: parts[1],
-    };
+    const payload = JSON.parse(atob(parts[0]));
+    if (!payload || typeof payload !== "object") return null;
+    return { payload, encodedPayload: parts[0], signature: parts[1] };
   } catch (e) {
     return null;
   }
 }
 
-// Ist das Token noch gültig (Ablauf prüfen)?
+// `exp` ist eine Unix-Zeit in SEKUNDEN (so schreibt es der Worker), nicht in
+// Millisekunden — der Vergleich muss auf derselben Einheit laufen.
 function isTokenValid(payload) {
   if (!payload || typeof payload.exp !== "number") return false;
-  const now = Math.floor(Date.now() / 1000);
-  return payload.exp > now;
+  return payload.exp > Math.floor(Date.now() / 1000);
 }
 
-// Token aus localStorage laden und prüfen
+// Abgelaufene Token werden beim Lesen gleich entsorgt, damit nicht bei jedem
+// Start erneut ein toter Wert durch die Prüfung läuft.
 function loadLocalToken() {
   try {
-    const stored = localStorage.getItem("supadupa_license_token");
+    const stored = kvStore.getItem(TOKEN_KEY);
     if (!stored) return null;
     const decoded = decodeToken(stored);
     if (!decoded || !isTokenValid(decoded.payload)) {
-      localStorage.removeItem("supadupa_license_token");
+      kvStore.removeItem(TOKEN_KEY);
       return null;
     }
     return { token: stored, data: decoded.payload };
@@ -61,23 +63,21 @@ function loadLocalToken() {
   }
 }
 
-// Token in localStorage speichern
+// Nur ablegen, was auch lesbar und noch gültig ist — sonst hätten wir einen
+// Wert im Speicher, den jeder Lesevorgang sofort wieder wegwirft.
 function saveLocalToken(token) {
   try {
     const decoded = decodeToken(token);
     if (!decoded || !isTokenValid(decoded.payload)) return false;
-    localStorage.setItem("supadupa_license_token", token);
+    kvStore.setItem(TOKEN_KEY, token);
     return true;
   } catch (e) {
     return false;
   }
 }
 
-// Token löschen
 function clearLocalToken() {
-  try {
-    localStorage.removeItem("supadupa_license_token");
-  } catch (e) {}
+  try { kvStore.removeItem(TOKEN_KEY); } catch (e) {}
 }
 
-export { decodeToken, isTokenValid, loadLocalToken, saveLocalToken, clearLocalToken };
+export { TOKEN_KEY, decodeToken, isTokenValid, loadLocalToken, saveLocalToken, clearLocalToken };

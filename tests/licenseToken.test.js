@@ -1,96 +1,107 @@
+// Token-Ablage (src/utils/licenseToken.js).
+//
+// Gespeichert wird über kvStore (IndexedDB), wie alle Einstellungen dieser
+// App — NICHT über localStorage. Der Unterschied ist kein Schoenheitsfehler:
+// kvStore.migrateFromLocalStorage() raeumt App-Schluessel aus localStorage
+// ab, und der Cache ist die einzige Quelle, die alle anderen Einstellungen
+// lesen. Ein Token daneben waere der einzige Wert, der anders lebt.
+//
+// Die Signatur wird hier bewusst NICHT geprueft — der Client kennt
+// LICENSE_SECRET nicht. Geprueft wird allein `exp`; die Signatur traegt fuer
+// den Server (siehe Kommentar in licenseToken.js).
+
+// fake-indexeddb + kvStore.init(): vor der Initialisierung liest kvStore aus
+// localStorage, schreibt aber schon in seinen Cache — Lesen und Schreiben
+// laegen dann auseinander. In der App kann das nicht passieren (main.jsx
+// rendert erst nach kvStore.init()), im Test muss man es herstellen.
+import "fake-indexeddb/auto";
 import { describe, it, expect, beforeEach } from "vitest";
-import { decodeToken, isTokenValid, loadLocalToken, saveLocalToken, clearLocalToken } from "../src/utils/licenseToken.js";
+import {
+  TOKEN_KEY, decodeToken, isTokenValid,
+  loadLocalToken, saveLocalToken, clearLocalToken,
+} from "../src/utils/licenseToken.js";
+import { kvStore } from "../src/utils/kvStore.js";
 
-const VALID_PAYLOAD = {
-  email: "test@example.com",
-  tier: "pro",
-  products: ["money"],
-  iat: Math.floor(Date.now() / 1000),
-  exp: Math.floor(Date.now() / 1000) + 86400 * 30  // 30 Tage in Zukunft
-};
-const EXPIRED_PAYLOAD = {
-  email: "test@example.com",
-  tier: "pro",
-  products: ["money"],
-  iat: 1000,
-  exp: 1  // weit in Vergangenheit
-};
+const jetzt = () => Math.floor(Date.now() / 1000);
 
-// Base64-Token erzeugen (echtes Format wie vom Worker)
-function makeToken(template, expired = false) {
-  let p;
-  if (expired) {
-    p = EXPIRED_PAYLOAD;
-  } else {
-    // Template kopieren und mit aktuellem Timestamp versehen
-    p = { ...template, iat: Math.floor(Date.now() / 1000) };
-  }
-  const payloadB64 = btoa(JSON.stringify(p));
-  const signatureB64 = "fake_signature_123"; // Für Tests genug
-  return `${payloadB64}.${signatureB64}`;
+// Ein Token bauen, wie es der Worker ausstellt: Base64(payload) + "." + sig.
+function baueToken(ueberschreiben = {}) {
+  const payload = {
+    email: "kunde@example.com",
+    tier: "pro",
+    products: ["money"],
+    iat: jetzt(),
+    exp: jetzt() + 30 * 24 * 60 * 60,
+    ...ueberschreiben,
+  };
+  // Die Signatur ist hier belanglos: der Client rechnet sie nie nach.
+  return `${btoa(JSON.stringify(payload))}.c2lnbmF0dXI`;
 }
 
-describe("licenseToken", () => {
-  beforeEach(() => {
-    localStorage.clear();
+describe("Lizenz-Token", () => {
+  beforeEach(async () => {
+    await kvStore.init();
+    kvStore.removeItem(TOKEN_KEY);
   });
 
-  it("decodeToken parst ein gültiges Token", () => {
-    const token = makeToken(VALID_PAYLOAD);
-    const result = decodeToken(token);
-    expect(result).not.toBeNull();
-    expect(result.payload.email).toBe("test@example.com");
-    expect(result.payload.tier).toBe("pro");
+  it("liegt im kvStore, nicht in localStorage", () => {
+    saveLocalToken(baueToken());
+    expect(kvStore.getItem(TOKEN_KEY)).toBeTruthy();
+    // Der Schluessel traegt das mbt_-Praefix, damit ihn die Migration in
+    // kvStore.js als App-Schluessel erkennt.
+    expect(TOKEN_KEY.startsWith("mbt_")).toBe(true);
   });
 
-  it("decodeToken gibt null zurück für ungültige Tokens", () => {
-    expect(decodeToken(null)).toBeNull();
-    expect(decodeToken("")).toBeNull();
-    expect(decodeToken("no_dot")).toBeNull();
-    expect(decodeToken("too.many.parts")).toBeNull();
+  it("zerlegt ein gueltiges Token", () => {
+    const d = decodeToken(baueToken());
+    expect(d.payload.email).toBe("kunde@example.com");
+    expect(d.payload.tier).toBe("pro");
+    expect(d.payload.products).toEqual(["money"]);
   });
 
-  it("isTokenValid prüft das Ablaufdatum", () => {
-    const valid = decodeToken(makeToken(VALID_PAYLOAD)).payload;
-    const expired = decodeToken(makeToken(EXPIRED_PAYLOAD)).payload;
-    expect(isTokenValid(valid)).toBe(true);
-    expect(isTokenValid(expired)).toBe(false);
+  it("weist alles zurueck, was kein Token ist", () => {
+    for (const murks of [null, undefined, "", "ohnepunkt", "zu.viele.teile", 42, {}]) {
+      expect(decodeToken(murks), String(murks)).toBeNull();
+    }
+    // Gueltige Struktur, aber kein JSON in der Nutzlast.
+    expect(decodeToken(`${btoa("kein json")}.sig`)).toBeNull();
   });
 
-  it("saveLocalToken speichert ein gültiges Token", () => {
-    const token = makeToken(VALID_PAYLOAD);
-    const result = saveLocalToken(token);
-    expect(result).toBe(true);
-    expect(localStorage.getItem("supadupa_license_token")).toBe(token);
+  it("rechnet exp in SEKUNDEN, nicht in Millisekunden", () => {
+    // Der Worker schreibt Unix-Sekunden. Wuerde hier gegen Date.now() in
+    // Millisekunden verglichen, waere JEDES Token sofort abgelaufen.
+    expect(isTokenValid({ exp: jetzt() + 60 })).toBe(true);
+    expect(isTokenValid({ exp: jetzt() - 60 })).toBe(false);
+    expect(isTokenValid({ exp: Date.now() })).toBe(true);
+    expect(isTokenValid({})).toBe(false);
+    expect(isTokenValid(null)).toBe(false);
   });
 
-  it("saveLocalToken gibt false zurück für ungültige/abgelaufene Tokens", () => {
-    const expiredToken = makeToken(EXPIRED_PAYLOAD);
-    expect(saveLocalToken(expiredToken)).toBe(false);
-    expect(localStorage.getItem("supadupa_license_token")).toBeNull();
+  it("legt ein gueltiges Token ab und liest es zurueck", () => {
+    const token = baueToken();
+    expect(saveLocalToken(token)).toBe(true);
+    const geladen = loadLocalToken();
+    expect(geladen.token).toBe(token);
+    expect(geladen.data.tier).toBe("pro");
   });
 
-  it("loadLocalToken gibt das gespeicherte Token zurück", () => {
-    const token = makeToken(VALID_PAYLOAD);
-    localStorage.setItem("supadupa_license_token", token);
-    const loaded = loadLocalToken();
-    expect(loaded).not.toBeNull();
-    expect(loaded.token).toBe(token);
-    expect(loaded.data.tier).toBe("pro");
+  it("legt abgelaufene oder kaputte Token gar nicht erst ab", () => {
+    expect(saveLocalToken(baueToken({ exp: jetzt() - 1 }))).toBe(false);
+    expect(saveLocalToken("murks")).toBe(false);
+    expect(kvStore.getItem(TOKEN_KEY)).toBeNull();
   });
 
-  it("loadLocalToken löscht abgelaufene Tokens automatisch", () => {
-    const expiredToken = makeToken(EXPIRED_PAYLOAD);
-    localStorage.setItem("supadupa_license_token", expiredToken);
-    const loaded = loadLocalToken();
-    expect(loaded).toBeNull();
-    expect(localStorage.getItem("supadupa_license_token")).toBeNull();
+  it("entsorgt ein abgelaufenes Token beim Lesen", () => {
+    // Am Speicher vorbei ablegen — so sieht der Fall aus, wenn das Token
+    // erst nach dem Ablegen ablaeuft (der Normalfall nach 30 Tagen).
+    kvStore.setItem(TOKEN_KEY, baueToken({ exp: jetzt() - 1 }));
+    expect(loadLocalToken()).toBeNull();
+    expect(kvStore.getItem(TOKEN_KEY)).toBeNull();
   });
 
-  it("clearLocalToken löscht das Token", () => {
-    const token = makeToken(VALID_PAYLOAD);
-    localStorage.setItem("supadupa_license_token", token);
+  it("clearLocalToken raeumt auf", () => {
+    saveLocalToken(baueToken());
     clearLocalToken();
-    expect(localStorage.getItem("supadupa_license_token")).toBeNull();
+    expect(loadLocalToken()).toBeNull();
   });
 });

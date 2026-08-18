@@ -1,41 +1,76 @@
-// Lizenz-Stufenmodell: Welche Fähigkeit in welcher Stufe freigeschaltet ist.
+// Stufenmodell: welche Fähigkeit in welcher Stufe steckt.
 //
-// Bewusst app-übergreifend gedacht: `products` im Token trägt, für welche
-// SupaDupa-Apps der Code gilt. `tier` separiert die Stufen. Ein Money-Code
-// kann "pro" sein, eine spätere App dann "premium" oder "promax".
+// Zwei Achsen, bewusst getrennt (siehe worker/license-worker.js):
+//   products — für WELCHE SupaDupa-App der Code gilt (["money"] …)
+//   tier     — WELCHE Stufe innerhalb der App
 //
-// Gates fragen nach *Fähigkeiten* (`hasFeature("bank_connect")`), nicht nach
-// Stufennamen. Das ermöglicht es, die Stufenlogik später zu ändern, ohne
-// jeden Gate zu ändern.
+// Gates fragen nach der FÄHIGKEIT, nie nach dem Stufennamen:
+//     hasFeature(lizenz, "bank_connect")     ✓
+//     lizenz.tier === "pro"                  ✗
+// Sonst muss beim Einführen einer weiteren Stufe jede einzelne Abfrage
+// gesucht und um `|| tier === "promax"` ergänzt werden — genau die Streuung,
+// die sich später nicht mehr einfangen lässt. Eine neue Stufe ist hier eine
+// Zeile, und sonst nirgends.
 
-// Stufendefinition: tier → Fähigkeiten
+// Reihenfolge der Leiter, von frei nach teuer. Explizit als Liste, damit die
+// Antwort von `wunschStufe` nicht an der Schlüsselreihenfolge eines
+// Objektliterals hängt.
+const TIER_ORDER = ["free", "premium", "pro", "promax"];
+
+// Wie eine Fähigkeit durchgesetzt wird — der Unterschied ist wichtig genug,
+// um ihn an der Fähigkeit selbst zu vermerken:
+//   "server" — ein eigener Worker prüft und kann wirklich „nein" sagen.
+//   "weich"  — nur die Oberfläche fragt. Ehrlichen Nutzern ein Wegweiser,
+//              kein Schutz; im Browser in Sekunden ausgehebelt.
+// Damit hängt niemand später versehentlich etwas Schützenswertes hinter ein
+// weiches Tor, „weil es ja auch ein Gate ist".
+const FEATURES = {
+  bank_connect: { label: "Bankabruf", schutz: "server" },
+  // Bewusst weich: jeder hostet seinen eigenen Daten-Worker, es gibt nichts
+  // von uns zu schützen. Siehe TODO.md, Phase 3.
+  cloud_sync: { label: "Cloud-Sync", schutz: "weich" },
+};
+
+// Stufe → Fähigkeiten. Jede Stufe enthält alles der darunterliegenden.
 const TIER_FEATURES = {
   free: [],
   premium: ["cloud_sync"],
   pro: ["cloud_sync", "bank_connect"],
+  // promax trägt heute nichts Eigenes — die Stufe existiert, damit das Modell
+  // sie kennt, sobald es eine Funktion dafür gibt. Bis dahin ist sie
+  // absichtlich deckungsgleich mit pro.
   promax: ["cloud_sync", "bank_connect"],
 };
 
-// Welche Stufe braucht man für eine Fähigkeit?
-function requiredTier(feature) {
-  for (const [tier, features] of Object.entries(TIER_FEATURES)) {
-    if (features.includes(feature)) return tier;
+// Niedrigste Stufe, die eine Fähigkeit mitbringt — für Hinweise wie
+// „ab Pro verfügbar". `null`, wenn keine Stufe sie kennt.
+function wunschStufe(feature) {
+  for (const tier of TIER_ORDER) {
+    if ((TIER_FEATURES[tier] || []).includes(feature)) return tier;
   }
   return null;
 }
 
-// Hat eine Stufe die Fähigkeit?
 function tierHasFeature(tier, feature) {
-  const features = TIER_FEATURES[tier] || [];
-  return features.includes(feature);
+  return (TIER_FEATURES[tier] || []).includes(feature);
 }
 
-// Beispiel: licenseData = { tier: "pro", products: ["money"], ... }
-// hasFeature(licenseData, "bank_connect") → true
-// hasFeature(licenseData, "cloud_sync") → true
+// `licenseData` ist die Nutzlast des Tokens ({ email, tier, products, … })
+// oder `null`, wenn keine Lizenz hinterlegt ist.
 function hasFeature(licenseData, feature) {
   if (!licenseData || !licenseData.tier) return false;
   return tierHasFeature(licenseData.tier, feature);
 }
 
-export { TIER_FEATURES, requiredTier, tierHasFeature, hasFeature };
+// Anzeigename einer Stufe für die Oberfläche.
+const TIER_LABEL = {
+  free: "Frei",
+  premium: "Premium",
+  pro: "Pro",
+  promax: "Pro Max",
+};
+
+export {
+  TIER_ORDER, TIER_FEATURES, TIER_LABEL, FEATURES,
+  wunschStufe, tierHasFeature, hasFeature,
+};

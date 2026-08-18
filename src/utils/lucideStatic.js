@@ -2,7 +2,7 @@
 // Diese rendern sofort (im Hauptbundle, tree-shaked). Das komplette Icon-Set
 // für den Icon-Picker und nutzergewählte Icons lädt main.jsx asynchron nach.
 import {
-  Activity, AlertCircle, AlertTriangle, ArrowDown, ArrowLeft, ArrowLeftRight, ArrowRight, ArrowRightLeft, Ban, BarChart2, Bookmark, Briefcase, Building, Calendar, CalendarPlus, CalendarRange, Car, Check, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Cloud, Copy, CornerDownRight, CornerUpLeft, CornerUpRight, CreditCard, Database, Download, DownloadCloud, Edit, Edit2, Edit3, Euro, Eye, EyeOff, FileText, Filter, FolderOpen, Fuel, GitBranch, GitCompare, GitMerge, Hash, HelpCircle, Home, Inbox, Info, Key, KeyRound, Landmark, Layers, LifeBuoy, Link, List, Loader, Lock, Maximize2, Monitor, Palette, Pencil, PiggyBank, Plus, PlusCircle, RefreshCw, Repeat, RotateCcw, Route, Search, Settings, Shield, ShoppingCart, Sliders, Split, Square, Star, StickyNote, Tag, Target, Trash2, TrendingUp, Unlink, Unlock, Upload, UploadCloud, Wallet, Wifi, X, XCircle, Zap
+  Activity, AlertCircle, AlertTriangle, ArrowDown, ArrowLeft, ArrowLeftRight, ArrowRight, ArrowRightLeft, Ban, BarChart2, Bookmark, Briefcase, Building, Calendar, CalendarPlus, CalendarRange, Car, Check, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Cloud, Copy, CornerDownRight, CornerUpLeft, CornerUpRight, CreditCard, Database, Download, DownloadCloud, Edit, Edit2, Edit3, Euro, Eye, EyeOff, FileText, Filter, FolderOpen, Fuel, GitBranch, GitCompare, GitMerge, Hash, HelpCircle, Home, Inbox, Info, Key, KeyRound, Landmark, Layers, LifeBuoy, Link, List, Loader, Lock, LogOut, Maximize2, Monitor, Palette, Pencil, PiggyBank, Plus, PlusCircle, RefreshCw, Repeat, RotateCcw, Route, Search, Settings, Shield, ShoppingCart, Sliders, Sparkles, Split, Square, Star, StickyNote, Tag, Target, Trash2, TrendingUp, Unlink, Unlock, Upload, UploadCloud, Wallet, Wifi, X, XCircle, Zap
 } from "lucide-react";
 
 export const STATIC_LUCIDE = {
@@ -59,6 +59,7 @@ export const STATIC_LUCIDE = {
   "info": Info,
   "key": Key,
   "key-round": KeyRound,
+  "log-out": LogOut,
   "landmark": Landmark,
   "layers": Layers,
   "life-buoy": LifeBuoy,
@@ -82,6 +83,7 @@ export const STATIC_LUCIDE = {
   "shield": Shield,
   "shopping-cart": ShoppingCart,
   "sliders": Sliders,
+  "sparkles": Sparkles,
   "split": Split,
   "square": Square,
   "star": Star,

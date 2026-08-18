@@ -129,10 +129,16 @@ online sein.
 
 ### Phase 2 — Client: Freischalten + weiche Sperren
 
-- [ ] **Lizenz-Zustand** (`useLicense`/`hasFeature("bank_connect"|"cloud_sync")`)
-  in `src/state/AppContext.js`. Existiert noch nicht.
-- [ ] **Menuepunkt „Pro freischalten"** in den Einstellungen: Code eingeben →
-  `/verify` → Token lokal ablegen.
+- [x] **Lizenz-Zustand.** `src/hooks/useLicense.js` (GENAU ein Aufruf, in
+  App.jsx, verteilt ueber den AppCtx), `src/utils/licenseFeatures.js`
+  (Stufenleiter free/premium/pro/promax + `hasFeature`),
+  `src/utils/licenseToken.js` (Ablage im kvStore, Ablaufpruefung).
+  Jede Faehigkeit traegt einen Vermerk `schutz: "server" | "weich"`, damit
+  spaeter nichts Schuetzenswertes hinter einem weichen Tor landet.
+- [x] **Menuepunkt „Premium"** in den Einstellungen (ganz oben):
+  `src/components/organisms/PremiumFreischalten.jsx`. Code eingeben →
+  `/verify` → Token im kvStore. Zeigt im freigeschalteten Zustand Stufe,
+  Mailadresse, Gueltigkeit und einen Knopf zum Entfernen.
 - [ ] **Weiche Gates** in `EnableBankingWizard.jsx` und `CloudSetupWizard.jsx`:
   ohne Lizenz statt des Assistenten eine Pro-Karte mit Kauf-Link.
 

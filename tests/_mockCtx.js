@@ -42,6 +42,14 @@ const EXPLICIT = {
   _txsInMonth: () => [], _txsInMonthCat: () => [], _txsInMonthCatSub: () => [],
   _txsInMonthAcc: () => [], _txsInMonthAccCat: () => [], _txsInMonthAccCatSub: () => [],
   sparOpenRequest: 0,
+  // Lizenz/Freemium. Muss explizit stehen: der Universalwert fuer unbekannte
+  // Schluessel ist eine FUNKTION — `istFreigeschaltet` waere damit wahr und
+  // `tier` eine Funktion, die als React-Kind landet ("Functions are not valid
+  // as a React child"). Der ungefreischaltete Zustand ist ausserdem der
+  // richtige Standard fuer einen Smoke-Test.
+  istFreigeschaltet: false, tier: "free", lizenzMail: "", lizenzBis: 0,
+  hasFeature: () => false, freischalten: async () => ({ ok: false }),
+  lizenzEntfernen: () => {}, lizenzLaeuft: false, lizenzFehler: "",
   // Cloud-Status (für SettingsInline)
   supaUrl: "", supaKey: "", supaStatus: "idle", supaError: "", supaLockKey: 0, supaActive: false,
   jsonbinKey: "", jsonbinId: "", jsonbinStatus: "idle", jsonbinActive: false,

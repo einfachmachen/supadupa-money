@@ -36,6 +36,13 @@ const _ctxDefault = {
   // Rueckfrage auszufuehren. Bei Loesch-Absicherungen ist das die richtige
   // Richtung; ein fehlender Eintrag haette stattdessen geworfen.
   frageBestaetigung: () => {},
+  // Freemium/Lizenz. Der Standard ist bewusst "nicht freigeschaltet" und
+  // hasFeature() => false: ausserhalb des Providers wird nichts geoeffnet,
+  // was Geld kostet, statt versehentlich alles freizugeben.
+  istFreigeschaltet: false, tier: "free", lizenzMail: "", lizenzBis: 0,
+  hasFeature: () => false,
+  freischalten: async () => ({ ok: false }),
+  lizenzEntfernen: () => {}, lizenzLaeuft: false, lizenzFehler: "",
 };
 const AppCtx = createContext(_ctxDefault);
 

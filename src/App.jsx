@@ -73,6 +73,7 @@ import { BASE_ROWS, CUR_YEAR, INIT_ACCOUNTS, INIT_CATS } from "./utils/constants
 import { kvStore } from "./utils/kvStore.js";
 import { useLocalSaveDebounce } from "./hooks/useLocalSaveDebounce.js";
 import { useCloudCredentials } from "./hooks/useCloudCredentials.js";
+import { useLicense } from "./hooks/useLicense.js";
 import { isoAddMonths, calcRecurringCount } from "./utils/date.js";
 import { anchorValue, anchorDay } from "./utils/anchors.js";
 import { pn, uid, sumAmounts, fmt, round2 } from "./utils/format.js";
@@ -563,6 +564,14 @@ export default function SupaDupaMoney() {
     cfUrl, cfSecret, setCfUrl, setCfSecret, cfCredsReady, cfStatus, setCfStatus, cfActive,
     syncPass, setSyncPass, syncPassReady, syncEncActive,
   } = useCloudCredentials();
+
+  // Lizenz-Zustand (Freemium). GENAU EIN Aufruf in der ganzen App — der Hook
+  // haelt React-State, ein zweiter Aufruf haette seinen eigenen und wuesste
+  // nach dem Freischalten nichts davon. Verteilt wird ueber den AppCtx.
+  const {
+    istFreigeschaltet, tier, lizenzMail, lizenzBis, hasFeature,
+    freischalten, lizenzEntfernen, lizenzLaeuft, lizenzFehler,
+  } = useLicense();
 
   const normCfUrl = (url) => {
     if(!url) return "";
@@ -3302,6 +3311,9 @@ export default function SupaDupaMoney() {
     masterOverride, setMasterOverride,
     tourPlusFly, setTourPlusFly,
     favIcons, setFavIcons,
+    // Freemium: Zustand + Feature-Abfrage fuer die Gates.
+    istFreigeschaltet, tier, lizenzMail, lizenzBis, hasFeature,
+    freischalten, lizenzEntfernen, lizenzLaeuft, lizenzFehler,
   }), [
     cats, groups, txs, accounts, vehicles, yearData,
     frozenYear, frozenMonth, year, selAcc, startKonto, isLand, scrollToTodayTick,
@@ -3321,6 +3333,8 @@ export default function SupaDupaMoney() {
     syncStatus, syncError, isDirty, isOnline, cfSaveOnClose,
     dashDrillOpen, amtMode, amtFont, centsGedreht, noBorders, masterOverride, tourPlusFly,
     favIcons,
+    istFreigeschaltet, tier, lizenzMail, lizenzBis, hasFeature,
+    freischalten, lizenzEntfernen, lizenzLaeuft, lizenzFehler,
   ]);
 
   // ═══════════════════════════════════════════════════════════════════════════

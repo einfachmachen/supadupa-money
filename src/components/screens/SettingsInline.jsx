@@ -15,6 +15,7 @@ import { makeYearData } from "../../utils/yearData.js";
 import { kvStore } from "../../utils/kvStore.js";
 import { aufGrund } from "../../theme/amtPill.js";
 import { cloudFingerprint } from "../../utils/cloudFingerprint.js";
+import { PremiumFreischalten } from "../organisms/PremiumFreischalten.jsx";
 import WORKER_CODE from "../../../worker-data/data-store-worker.js?raw";
 
 // Einheitlicher Section-Rahmen: Trennlinie oben + Icon-Label-Header, damit
@@ -68,6 +69,19 @@ function SettingsInline() {
 
   return (
     <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:`12px 14px ${UNTEN_FREI}px`}}>
+
+      {/* ── Premium freischalten ──
+          Steht bewusst ganz oben: der Zustand („freigeschaltet" bzw. der Weg
+          dorthin) ist das Erste, was jemand hier sucht. Ohne die Trennlinie
+          von SECTION — die trennt Blöcke voneinander, oben gäbe es nichts
+          abzutrennen. */}
+      {/* Überschrift nur „Premium": der Knopf darunter heisst schon
+          „Premium freischalten", und im freigeschalteten Zustand waere eine
+          Aufforderung zum Freischalten ohnehin verkehrt. */}
+      <div style={{...SECTION, borderTop:"none", marginTop:0, paddingTop:0, marginBottom:18}}>
+        <SectionHeader icon="sparkles" color={T.gold} label="Premium"/>
+        <PremiumFreischalten/>
+      </div>
 
       {/* ── Design (eigenes Farbschema) ─────────────────── */}
       <CustomThemeEditor/>
