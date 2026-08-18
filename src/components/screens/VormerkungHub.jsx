@@ -1184,7 +1184,8 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
               {_showPotToggle&&(
                 <div style={{background:"rgba(255,255,255,0.04)",borderRadius:11,padding:"10px 12px",marginBottom:8,border:`1px solid ${T.bd}`}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
-                    <span style={{color:T.txt,fontSize:S.fs-6}}>aus Unvorhergesehenes</span>
+                    <span style={{color:T.txt,fontSize:S.fs-6,display:"inline-flex",alignItems:"center",gap:7}}>
+                      {Li("life-buoy",S.fs-6,potOn?T.acc_gold:T.txt2)} aus Unvorhergesehenes</span>
                     <div onClick={()=>setPotOn(v=>!v)} role="switch" aria-checked={potOn}
                       aria-label="aus Unvorhergesehenes bezahlen"
                       style={{width:52,height:30,borderRadius:15,flexShrink:0,

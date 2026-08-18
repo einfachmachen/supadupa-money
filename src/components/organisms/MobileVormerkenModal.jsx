@@ -759,7 +759,8 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
             <div style={{background:"rgba(255,255,255,0.06)",borderRadius:S.radius,
               padding:`${S.padL}px`,marginBottom:S.gap}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <span style={{color:T.txt,fontSize:S.fs-6}}>aus Unvorhergesehenes</span>
+                <span style={{color:T.txt,fontSize:S.fs-6,display:"inline-flex",alignItems:"center",gap:7}}>
+                  {Li("life-buoy",S.fs-6,potOn?T.acc_gold:T.txt2)} aus Unvorhergesehenes</span>
                 <div onClick={()=>setPotOn(v=>!v)}
                   style={{width:52,height:30,borderRadius:15,flexShrink:0,
                     background:potOn?T.gold:"rgba(255,255,255,0.12)",cursor:"pointer",

@@ -606,7 +606,8 @@ function EditPopup() {
               in den Topf. */}
           {_showPotToggle&&(<div style={{background:"rgba(255,255,255,0.04)",borderRadius:11,padding:"6px 10px",marginBottom:16}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <span style={{color:T.txt,fontSize:13}}>aus Unvorhergesehenes</span>
+              <span style={{color:T.txt,fontSize:13,display:"inline-flex",alignItems:"center",gap:6}}>
+                {Li("life-buoy",15,editTx._potSubId?T.acc_gold:T.txt2)} aus Unvorhergesehenes</span>
               <div onClick={()=>setEditTx(p=>({...p,_potSubId:p._potSubId?undefined:_potSub.id}))}
                 style={{width:44,height:26,borderRadius:13,background:editTx._potSubId?T.gold:"rgba(255,255,255,0.1)",cursor:"pointer",position:"relative",transition:"background 0.2s"}}>
                 <div style={{position:"absolute",top:3,left:editTx._potSubId?21:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 4px rgba(0,0,0,0.3)"}}/>

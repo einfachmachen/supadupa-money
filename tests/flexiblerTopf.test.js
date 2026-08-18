@@ -38,6 +38,18 @@ describe("Flexibler Topf: an allen drei Bearbeitungswegen", () => {
     });
   }
 
+  it("alle drei tragen dasselbe Symbol wie der Bank-Abruf", () => {
+    // Ein Rettungsring an jeder Stelle: der Topf ist damit ueberall auf einen
+    // Blick wiederzuerkennen — im Bank-Abruf, wo nur das Symbol steht, und in
+    // den Dialogen, wo es die Beschriftung begleitet. (Das Sparschwein wuerde
+    // mit dem Sparplan kollidieren.)
+    for (const [datei] of STELLEN) {
+      const code = lies(datei);
+      expect(code, `${datei}: Symbol fehlt`).toMatch(/Li\("life-buoy"/);
+      expect(code, `${datei}: Sparschwein gehoert dem Sparplan`).not.toMatch(/Li\("piggy-bank"/);
+    }
+  });
+
   it("VormerkungHub uebernimmt den vorhandenen Stand beim Oeffnen", () => {
     // Ohne das wuerde ein Speichern den Topf stillschweigend abschalten.
     const code = lies("src/components/screens/VormerkungHub.jsx");
