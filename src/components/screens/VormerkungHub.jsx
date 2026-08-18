@@ -117,6 +117,9 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
   // Umbuchungs-Modus als eigener Zustand: ein frisch angetippter
   // "Umbuchung"-Knopf hat noch kein Zielkonto, ist aber schon aktiv.
   const [umbuchung, setUmbuchung] = useState(!!(_existingLinkInit?.accountId));
+  // Flexibler Topf: beim Bearbeiten den vorhandenen Stand uebernehmen, damit
+  // ein Speichern ihn nicht stillschweigend abschaltet.
+  const [potOn, setPotOn] = useState(!!editVorm?._potSubId);
   const [showNewAcc, setShowNewAcc] = useState(false);
   // Offene Kategorie-Auswahl: "quelle" | "quelleSub" | "ziel" | "zielSub".
   // Die "…Sub"-Varianten steigen direkt beim Unterschritt ein (s. unten).
@@ -398,6 +401,28 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
   const subOpts = selCat?.subs||[];
   const _showFuelFields = typ==="einmalig" && csvType==="expense"
     && !(transferToAcc && transferToAcc!==accountId) && isFuelSelection(selCat, getSub(catId,subId));
+
+  // Flexibler Topf "Unvorhergesehenes" (per Name erkannt, wie in EditPopup und
+  // im Vormerken-Assistenten). Der Betrag bleibt in seiner Kategorie, nur die
+  // Budget-Anrechnung wandert in den Topf.
+  //
+  // Bisher gab es den Schalter nur beim ANLEGEN einer Vormerkung und beim
+  // Bearbeiten einer bereits gebuchten Buchung — nicht beim Bearbeiten einer
+  // bestehenden Vormerkung, denn die laeuft ueber diesen Dialog. Nachtraeglich
+  // liess sich der Topf damit gar nicht zuordnen (Nutzer-Hinweis).
+  //
+  // Wie beim Anlegen nur fuer EINMALIGE Ausgaben: bei einer Serie wuerde die
+  // Aenderung auf alle Folgeeintraege wirken, und ein dauerhaft aus dem Topf
+  // bezahlter Posten ist keine unvorhergesehene Ausgabe mehr. Nicht bei
+  // Umbuchungen (kein Budget) und nicht, wenn der Eintrag ohnehin schon im
+  // Topf liegt.
+  const _potSub = (() => {
+    for(const c of (cats||[])) for(const sub of (c.subs||[]))
+      if((sub.name||"").trim().toLowerCase()==="unvorhergesehenes") return sub;
+    return null;
+  })();
+  const _showPotToggle = typ==="einmalig" && csvType==="expense" && !umbuchung
+    && !!_potSub && subId !== _potSub.id;
   const fuelComputedTotal = (() => {
     const l = pn((fuelLiters||"").replace(",","."));
     const p = pn((fuelPricePerL||"").replace(",","."));
@@ -478,6 +503,11 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
         repeatMonths:interval_,
         ...(lastOfMonth?{_lastOfMonth:true}:{_lastOfMonth:undefined}),
         ...(typ==="finanzierung"?{_seriesTyp:"finanzierung"}:{_seriesTyp:undefined}),
+        // Flexibler Topf: nur setzen, solange der Schalter ueberhaupt gilt.
+        // Faellt seine Bedingung weg (Typ auf Serie gestellt, Umbuchung,
+        // Kategorie auf den Topf selbst), wird er mit abgeraeumt statt
+        // unsichtbar weiterzuwirken.
+        _potSubId: (_showPotToggle && potOn && _potSub) ? _potSub.id : undefined,
         ...fuelTxFields,
       });
 
@@ -691,6 +721,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
         note: note||"", tags,
         ...(lastOfMonth&&typ!=="einmalig" ? {_lastOfMonth:true} : {}),
         ...(typ==="einmalig"&&valueDate ? {valueDate} : {}),
+        ...((_showPotToggle && potOn && _potSub) ? {_potSubId:_potSub.id} : {}),
         ...fuelTxFields,
       };
       if(seriesId){
@@ -1144,6 +1175,31 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                 {katFeld(subOpts.find(o=>o.id===subId)?.name, "Unterkategorie",
                   ()=>setKatPicker("quelleSub"), !catId || !subOpts.length)}
               </div>
+
+              {/* 9. Flexibler Topf: diese Vormerkung aus dem
+                  Unvorhergesehenes-Budget bezahlen. Kategorie und Betrag
+                  bleiben, nur die Budget-Anrechnung wandert in den Topf.
+                  Steht direkt unter der Kategorie, weil sie sich genau darauf
+                  bezieht. */}
+              {_showPotToggle&&(
+                <div style={{background:"rgba(255,255,255,0.04)",borderRadius:11,padding:"10px 12px",marginBottom:8,border:`1px solid ${T.bd}`}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
+                    <span style={{color:T.txt,fontSize:S.fs-6}}>aus Unvorhergesehenes</span>
+                    <div onClick={()=>setPotOn(v=>!v)} role="switch" aria-checked={potOn}
+                      aria-label="aus Unvorhergesehenes bezahlen"
+                      style={{width:52,height:30,borderRadius:15,flexShrink:0,
+                        background:potOn?T.gold:"rgba(255,255,255,0.12)",cursor:"pointer",
+                        position:"relative",transition:"background 0.2s"}}>
+                      <div style={{position:"absolute",top:3,left:potOn?25:3,width:24,height:24,
+                        borderRadius:"50%",background:"#fff",transition:"left 0.2s",
+                        boxShadow:"0 1px 4px rgba(0,0,0,0.3)"}}/>
+                    </div>
+                  </div>
+                  <div style={{color:T.txt2,fontSize:S.fs-13,marginTop:6,lineHeight:1.35}}>
+                    Betrag bleibt in dieser Kategorie, wird aber vom Unvorhergesehenes-Budget abgezogen.
+                  </div>
+                </div>
+              )}
 
               {/* 9a. Tank-Erfassung (nur bei Kategorie "Tanken") */}
               {_showFuelFields&&(
