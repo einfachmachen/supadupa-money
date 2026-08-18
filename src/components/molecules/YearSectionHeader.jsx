@@ -38,7 +38,8 @@ function YearSectionHeader({ active, detailsOpen, setDetailsOpen, children }) { 
           dem Hero-Ausklappmodus (nur sichtbar, wenn die Hero-Details offen sind). */}
       {open && (
         <>
-          <div style={{ display: "flex", gap: 6, alignItems: "center", padding: "7px 10px", borderBottom: `1px solid ${T.bd}` }}>
+          {/* 8px oben wie unten — derselbe Abstand wie ueberall sonst. */}
+          <div style={{ display: "flex", gap: 6, alignItems: "center", padding: "8px 10px", borderBottom: `1px solid ${T.bd}` }}>
             {OPTS.map(([id, lbl, ic]) => {
               const on = active === id;
               return (

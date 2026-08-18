@@ -381,10 +381,11 @@ function TrendOverviewScreen() {
       <YearSectionHeader active="trend" detailsOpen={heroOpen} setDetailsOpen={setHeroOpen} />
 
       <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
-        {/* 8px-Rhythmus wie im Rest der App: Kopfzeile und Kartenliste tragen
-            oben/unten denselben Abstand, die Karten untereinander ebenso. */}
+        {/* Die Ueberschrift "Trend" ist entfallen: derselbe Name steht schon im
+            Reiter darueber und in der unteren Leiste — dreimal dasselbe Wort
+            untereinander. Es bleibt die Unterzeile, die tatsaechlich etwas
+            erklaert. 8px Abstand zum Hero wie ueberall sonst. */}
         <div style={{ padding: "8px 16px 0" }}>
-          <div style={{ color: T.txt, fontSize: 20, fontWeight: 700 }}>Trend</div>
           <div style={{ color: T.txt2, fontSize: 12 }}>
             {metric ? `${activeMetric.label} · alle Jahre` : "Alle Jahre im Überblick"}
           </div>

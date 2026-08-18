@@ -311,7 +311,10 @@ function MoneyMoodScreen() {
   // Sortier-Buttons (wie Dashboard) + Farb-Legende — beides nur im Hero-Ausklappmodus.
   const headerExtras = (
     <>
-      <div style={{ padding: "6px 12px 2px", display: "flex", gap: 6, flexWrap: "wrap" }}>
+      {/* 8px oben. Unten bewusst kein Polster: den Abstand traegt der Nachbar
+          darunter — das Schieflage-Panel mit seinem Rand bzw. die Kartenliste.
+          Ein eigenes Polster kaeme dazu und ergaebe 16px. */}
+      <div style={{ padding: "8px 12px 0", display: "flex", gap: 6, flexWrap: "wrap" }}>
         {[["custom", "✎ Eigene"], ["desc", "↓"], ["asc", "↑"], ["mood", "Auffällig"]].map(([mode, lbl]) => (
           <button key={mode} onClick={() => setCatSortMode(mode)}
             style={{ background: catSortMode === mode ? T.blue : "transparent", color: catSortMode === mode ? (T.on_accent || "#000") : T.txt2, border: `1px solid ${catSortMode === mode ? T.blue : T.bd}`, borderRadius: 14, padding: "3px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
@@ -409,7 +412,7 @@ function MoneyMoodScreen() {
         // ohne Luft dazwischen. Kein eigenes Polster nach oben: den Abstand
         // traegt bereits der untere Rand des Schieflage-Panels bzw. der
         // Kopfzeile darueber, sonst kaeme er doppelt.
-        <div style={{ padding: "0 10px", display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ padding: "0 10px", marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
           {sortedRows.map(renderCard)}
         </div>
       )}

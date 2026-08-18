@@ -484,6 +484,17 @@
     height: 44px !important;
     margin-top: 0 !important;
   }
+  /* Solange ein Dialog den + Knopf uebernommen hat (masterOverride), muss die
+     Leiste UEBER dem Dialog liegen — sonst ist der Knopf weg.
+     Hintergrund: die Leiste ist position:fixed mit z-Index und bildet damit
+     einen eigenen Stapelkontext. Der Uebernahme-Knopf steht darin zwar auf 500,
+     kann diesen Kontext aber nicht verlassen; der Dialog (300) deckt ihn zu.
+     Mit den frueheren 9999 der Leiste fiel das nicht auf — seit deren Absenkung
+     auf 50 (Plus-Button-Fix) schon. 400 liegt ueber den Dialogen (300/320) und
+     unter den kurzlebigen Auswahlfenstern (Symbol-/Monatswahl). */
+  .nav-bottom.ueber-dialog {
+    z-index: 400 !important;
+  }
   .nav-bottom {
     height: 57px !important;
     padding-bottom: 5px !important;

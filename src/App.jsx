@@ -4163,7 +4163,7 @@ export default function SupaDupaMoney() {
           const G = T.pos; const D = T.txt2;
           const items = [NAV_TABS[0], NAV_TABS[1], "plus", NAV_TABS[2], NAV_TABS[3]];
           return (
-            <div className="nav-bottom" style={{
+            <div className={"nav-bottom"+(masterOverride?" ueber-dialog":"")} style={{
               background:"#0D0D0D",
               borderTop:`1px solid ${G}22`,
               display:"flex", alignItems:"stretch", flexShrink:0, zIndex:50,
@@ -4202,7 +4202,7 @@ export default function SupaDupaMoney() {
           // Navs, damit er themeunabhängig an derselben Stelle sitzt.
           const items = [NAV_TABS[0], NAV_TABS[1], "plus", NAV_TABS[2], NAV_TABS[3]];
           return (
-            <div className="nav-bottom" style={{
+            <div className={"nav-bottom"+(masterOverride?" ueber-dialog":"")} style={{
               background:BY,
               borderTop:`3px solid ${BK}`,
               display:"flex", alignItems:"stretch", flexShrink:0, zIndex:50,
@@ -4267,7 +4267,7 @@ export default function SupaDupaMoney() {
         const items = [NAV_TABS[0], NAV_TABS[1], "plus", NAV_TABS[2], NAV_TABS[3]];
 
         return (
-          <div className="nav-bottom" style={{
+          <div className={"nav-bottom"+(masterOverride?" ueber-dialog":"")} style={{
             background:T.surf,
             display:"flex", alignItems:"center", flexShrink:0, zIndex:200,
             paddingLeft:8, paddingRight:8,
