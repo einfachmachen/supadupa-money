@@ -606,3 +606,16 @@
      der Datei, damit sie die theme-eigenen Hero-Raender gleicher Spezifitaet
      (Theme-Klasse plus hero-flaeche, weiter oben) ueberschreibt. */
   .jahres-kopf > .hero-flaeche { margin-bottom: 0; }
+
+  /* ── Jahrestabelle ──
+     Seitenrand und runde Ecken wie beim Hero, damit die Tabelle als eigene
+     Flaeche auf der Platte liegt statt randlos von Kante zu Kante zu laufen.
+     Der Radius steht hier und nicht inline, damit die Themes ihn mitbestimmen:
+     Brutalist, Terminal, Swiss, Clean und Kloetzchenwelt setzen alle Ecken per
+     `*`-Regel auf 0 zurueck, das greift so automatisch auch hier. */
+  .jahres-tabelle {
+    border-radius: 14px;
+    margin-left: 10px;
+    margin-right: 10px;
+  }
+  .theme-tastenhell .jahres-tabelle { border-radius: 16px; }

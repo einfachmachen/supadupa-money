@@ -701,11 +701,21 @@ function JahrScreen({forceSingle=false}) {
         )}
 
         {/* Filter-Toggle jetzt in der floating Bottom-Bar */}
+        {/* Rahmen um die ganze Tabelle (Kopf + Datenbereich + Umschaltzeile):
+            Seitenrand und runde Ecken wie beim Hero. Seitenrand und Radius
+            stehen in themes.css, damit sie dem Theme folgen; overflow hidden
+            steht hier, weil es die Ecken erst beschneidet und damit zur
+            Struktur gehoert, nicht zur Farbgebung.
+            marginTop 8: jeder Block bringt seinen Abstand nach oben selbst mit
+            (Konvention aus Monat) — vorher trug ihn das Polster der
+            Reiterzeile, danach der Tabellenkopf. */}
+        <div className="jahres-tabelle" style={{flex:1,minHeight:0,display:"flex",flexDirection:"column",marginTop:8,overflow:"hidden"}}>
         {/* ── Sticky header (outside scroll) ── */}
         <style>{`#jahres-header::-webkit-scrollbar { display:none; }`}</style>
-        {/* marginTop 8: jeder Block bringt seinen Abstand nach oben selbst mit
-            (Konvention aus Monat) — vorher trug ihn das Polster der Reiterzeile. */}
-        <div id="jahres-header" ref={headerScrollRef} onScroll={()=>syncScroll(headerScrollRef,dataScrollRef)} style={{overflowX:"auto",flexShrink:0,background:"#fff",marginTop:8,scrollbarWidth:"none",msOverflowStyle:"none",position:"relative"}}>
+        {/* background T.surf statt hart "#fff": die Flaeche liegt jetzt an den
+            runden Ecken frei und muss zu den Kopfzellen passen, die ebenfalls
+            T.surf tragen — weiss war dort in jedem dunklen Theme falsch. */}
+        <div id="jahres-header" ref={headerScrollRef} onScroll={()=>syncScroll(headerScrollRef,dataScrollRef)} style={{overflowX:"auto",flexShrink:0,background:T.surf,scrollbarWidth:"none",msOverflowStyle:"none",position:"relative"}}>
         <div style={{minWidth:LW+showMonths.length*MW}}>
           <div style={{display:"flex",
             background:T.surf,
@@ -881,6 +891,7 @@ function JahrScreen({forceSingle=false}) {
           <span style={{color:T.lbl||T.txt2,fontSize:9,opacity:0.6}}>░ schraffiert = Ende ≠ {col3Name} · <span style={{color:T.override}}>amber</span> = manuell überschrieben (Zelle anklicken → ↺ Auto zum Zurücksetzen)</span>
         </div>
         </div>{/* end data scroll */}
+        </div>{/* end jahres-tabelle */}
       </div>
     );
 
