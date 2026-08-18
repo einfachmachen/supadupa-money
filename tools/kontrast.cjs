@@ -533,6 +533,14 @@ async function stationen(page, merke) {
         // stand der Betrag in der Tortennabe dunkel auf dunkel, waehrend der
         // Lauf ohne die Option sauber meldete.
         st.put("1", "mbt_cents_gedreht");
+        // Cloud-Zugangsdaten setzen. NICHT um zu synchronisieren (die Adresse
+        // ist erfunden), sondern damit der Sync-Hinweis oben ueberhaupt
+        // erscheint: er zeigt sich nur bei eingerichteter Cloud. Ohne das war
+        // ein ganzer Zustand fuer den Lauf unsichtbar — genau dort stand
+        // helles Gold auf einer Toenung desselben Golds auf heller Platte
+        // (Nutzer-Hinweis "Nicht synchronisiert" kaum lesbar).
+        st.put("https://kontrast.invalid/", "cf_url");
+        st.put("kontrast-test", "cf_secret");
         tx.oncomplete = res; tx.onerror = rej; });
     }, [seed, th]);
     await page.reload(); await page.waitForTimeout(2300);
