@@ -520,7 +520,12 @@
      passte "MMM YYYY - MMM YYYY" nicht in eine Zeile und brach in fuenf um.
      Hoehere Spezifitaet (0,2,0) als `.mobile-modal select` (0,1,1) → gewinnt.
      12px ist klein genug fuer eine Zeile und gross genug zum Tippen. */
-  .mobile-modal .zeitraum-feld { font-size: 12px !important; }
+  /* 16px statt 12px: Monat und Jahr wirkten in den grossen Pillen verloren
+     (Nutzer-Hinweis). Die Felder sind flex:1 und teilen sich die Zeile, der
+     groessere Text passt deshalb weiter in EINE Zeile — nachgemessen bei 360
+     und 390 Breite. Die Regel muss bleiben: eine globale Regel (iOS-Zoomsperre)
+     zwingt Felder im Vollbild-Dialog sonst auf --mob-fs. */
+  .mobile-modal .zeitraum-feld { font-size: 16px !important; }
   /* Mobile mode — alle Texte und Buttons größer */
   /* iOS Safari Fix + nav-bottom-Überlappung:
      Die nav-bottom (Home/Monat/Jahr-Buttons) ist position:fixed bottom:0,
