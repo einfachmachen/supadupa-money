@@ -58,7 +58,25 @@ describe("Jahres-Kopf: Abstand unter dem Hero", () => {
     // falsche Ursache, denn scrollen liess sich die Tabelle dadurch nicht.
     const js = lies("src/components/screens/JahrScreen.jsx");
     expect(js).toMatch(/import\s*\{[^}]*\bUNTEN_FREI\b[^}]*\}\s*from\s*["'][^"']*palette\.js["']/);
-    expect(js).toMatch(/dataScrollRef[\s\S]{0,400}?paddingBottom:\s*UNTEN_FREI/);
+    expect(js).toMatch(/dataScrollRef[\s\S]{0,600}?paddingBottom:\s*UNTEN_FREI/);
+  });
+
+  it("haelt die Umschaltzeile im Scrollbereich unter der Tabelle", () => {
+    // Als eigenes Flex-Kind endete die Zeile immer am unteren Bildschirmrand
+    // und lag damit hinter der Leiste: unlesbar, und der Umschalter „alle
+    // Kategorien" war nicht erreichbar. Im Scrollbereich klebt sie unter der
+    // letzten Tabellenzeile, und die Reserve wirkt unter IHR — die Tabelle
+    // laeuft dadurch nur noch bis kurz ueber den + Knopf.
+    const js = lies("src/components/screens/JahrScreen.jsx");
+    const legende = js.indexOf("{/* Legend + Toggle");
+    const scrollEnde = js.indexOf("{/* end data scroll */}");
+    expect(legende).toBeGreaterThan(-1);
+    expect(scrollEnde).toBeGreaterThan(-1);
+    expect(legende).toBeLessThan(scrollEnde);
+    // Waagerecht mitwandern waere falsch — die Tabelle ist breiter als der
+    // Bildschirm, die Zeile muss am linken Rand stehen bleiben.
+    const zeile = js.slice(legende, scrollEnde);
+    expect(zeile).toMatch(/position:\s*"sticky",\s*left:\s*0/);
   });
 
   it("nennt den dritten Reiter Jahr, nicht Trend", () => {

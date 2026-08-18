@@ -853,11 +853,22 @@ function JahrScreen({forceSingle=false}) {
               </div>
             );
           })}
-        </div></div>{/* end data scroll */}
+        </div>
 
-        {/* Legend + Toggle */}
+        {/* Legend + Toggle — INNERHALB des Scrollbereichs, direkt unter der
+            Tabelle. Vorher war die Zeile ein eigenes Flex-Kind und endete
+            damit immer am unteren Bildschirmrand, also hinter der Leiste:
+            unlesbar, und der Umschalter "alle Kategorien" war gar nicht
+            erreichbar. Hier scrollt sie mit und klebt unter der letzten
+            Tabellenzeile; die Reserve unten wirkt jetzt unter IHR, sodass
+            die Tabelle nur noch bis kurz ueber den + Knopf laeuft statt
+            zusaetzlich um die Hoehe dieser Zeile darueber hinaus.
+
+            position sticky / left 0: der Scrollbereich laeuft auch waagerecht
+            (die Tabelle ist breiter als der Bildschirm). Ohne das wandert die
+            Zeile beim Scrollen nach rechts aus dem Bild. */}
         <div style={{padding:"4px 12px 6px",display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",
-          borderTop:`1px solid ${T.bds}`,background:T.bg}}>
+          position:"sticky",left:0,borderTop:`1px solid ${T.bds}`,background:T.bg}}>
           <button onClick={()=>setHideEmptyRows(v=>!v)}
             style={{display:"flex",alignItems:"center",gap:5,background:"transparent",
               border:`1px solid ${hideEmptyRows?T.pos:T.bds}`,borderRadius:7,
@@ -869,6 +880,7 @@ function JahrScreen({forceSingle=false}) {
           <span style={{color:T.lbl||T.txt2,fontSize:9}}>M = Buchungen 1–14 · E = alle · {col3Name} = aktuell</span>
           <span style={{color:T.lbl||T.txt2,fontSize:9,opacity:0.6}}>░ schraffiert = Ende ≠ {col3Name} · <span style={{color:T.override}}>amber</span> = manuell überschrieben (Zelle anklicken → ↺ Auto zum Zurücksetzen)</span>
         </div>
+        </div>{/* end data scroll */}
       </div>
     );
 
