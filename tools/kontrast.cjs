@@ -396,6 +396,39 @@ async function stationen(page, merke) {
 
   await tab(126); await merke("Monat");
   await tab(294); await merke("Trend");
+
+  // Die drei Unteransichten hinter dem Trend-Reiter. Sie liegen hinter dem
+  // aufgeklappten Hero und waren deshalb nie Teil des Laufs — der Umschalter
+  // "nur genutzte Kategorien" im Fuss der Jahrestabelle stand dort mit 1,3:1
+  // unsichtbar auf der hellen Platte, gemeldet hat ihn nicht dieses Werkzeug,
+  // sondern der Nutzer.
+  const heroAufklappen = () => page.evaluate(() => {
+    const h = document.querySelector(".hero-flaeche"); if (!h) return false;
+    const r = h.getBoundingClientRect();
+    const z = [...h.querySelectorAll("svg")].map(s => ({ s, b: s.getBoundingClientRect() }))
+      .filter(o => o.b.bottom > r.bottom - 30 && Math.abs(o.b.x + o.b.width / 2 - (r.x + r.width / 2)) < 40)
+      .sort((a, b) => b.b.bottom - a.b.bottom)[0];
+    if (!z) return false; (z.s.closest("button") || z.s.parentElement).click(); return true;
+  });
+  const unterReiter = (name) => page.evaluate((n) => {
+    const b = [...document.querySelectorAll("button")]
+      .find(e => new RegExp("^\\s*" + n + "\\s*$").test((e.textContent || "").trim()));
+    if (!b) return false; b.click(); return true;
+  }, name);
+  for (const [reiter, titel] of [["Money Mood", "Trend · Money Mood"], ["Jahr", "Trend · Jahr"], ["Übersicht", "Trend · Übersicht"]]) {
+    // Der Hero klappt beim Wechsel der Unteransicht wieder zu, und mit ihm
+    // verschwindet die Reiterzeile. Deshalb vor JEDEM Reiter neu aufklappen —
+    // ohne das wurde nur die erste Unteransicht geprueft und die beiden
+    // anderen still uebersprungen.
+    const offen = await page.evaluate(() => !![...document.querySelectorAll("button")]
+      .find(e => /^\s*Money Mood\s*$/.test((e.textContent || "").trim())));
+    if (!offen) { await heroAufklappen(); await page.waitForTimeout(900); }
+    // Nicht stillschweigend ueberspringen: ein Reiter, den der Lauf nicht
+    // findet, ist eine Luecke in der Abdeckung und keine saubere Ansicht.
+    if (await unterReiter(reiter)) { await page.waitForTimeout(1300); await merke(titel); }
+    else console.log(`  (${titel}: Reiter nicht gefunden — nicht geprueft)`);
+  }
+
   await tab(373); await merke("Daten");
 
   // Die vier Blaetter hinter dem Daten-Tab. Sie waren nie Teil des Laufs,
