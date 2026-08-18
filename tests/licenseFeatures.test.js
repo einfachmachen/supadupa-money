@@ -53,15 +53,26 @@ describe("Lizenz-Stufenmodell", () => {
   });
 
   it("wunschStufe nennt die NIEDRIGSTE Stufe, nicht irgendeine", () => {
+    // Zum Start traegt `premium` alles Kostenpflichtige — beide Faehigkeiten
+    // also ab Premium. `pro`/`promax` sind reserviert und heute
+    // deckungsgleich; wunschStufe darf sie deshalb NICHT nennen.
     expect(wunschStufe("cloud_sync")).toBe("premium");
-    expect(wunschStufe("bank_connect")).toBe("pro");
+    expect(wunschStufe("bank_connect")).toBe("premium");
     expect(wunschStufe("gibtsnicht")).toBeNull();
   });
 
-  it("tierHasFeature trennt die Stufen", () => {
+  it("premium traegt zum Start ALLES Kostenpflichtige", () => {
+    // Sonst bekaemen die ersten zahlenden Nutzer genau die Funktion nicht,
+    // fuer die sie zahlen (der Bankabruf lag zuerst auf `pro`).
+    const bezahlt = Object.keys(FEATURES);
+    expect(TIER_FEATURES.premium).toEqual(expect.arrayContaining(bezahlt));
+  });
+
+  it("tierHasFeature trennt frei von bezahlt", () => {
     expect(tierHasFeature("free", "cloud_sync")).toBe(false);
+    expect(tierHasFeature("free", "bank_connect")).toBe(false);
     expect(tierHasFeature("premium", "cloud_sync")).toBe(true);
-    expect(tierHasFeature("premium", "bank_connect")).toBe(false);
+    expect(tierHasFeature("premium", "bank_connect")).toBe(true);
     expect(tierHasFeature("pro", "bank_connect")).toBe(true);
     expect(tierHasFeature("promax", "bank_connect")).toBe(true);
     // Unbekannte Stufe darf nicht durchrutschen.
@@ -76,11 +87,11 @@ describe("Lizenz-Stufenmodell", () => {
   });
 
   it("hasFeature liest die Stufe aus der Token-Nutzlast", () => {
-    const pro = { email: "a@b.c", tier: "pro", products: ["money"] };
     const premium = { email: "a@b.c", tier: "premium", products: ["money"] };
-    expect(hasFeature(pro, "bank_connect")).toBe(true);
-    expect(hasFeature(pro, "cloud_sync")).toBe(true);
-    expect(hasFeature(premium, "bank_connect")).toBe(false);
+    const frei = { email: "a@b.c", tier: "free", products: [] };
+    expect(hasFeature(premium, "bank_connect")).toBe(true);
     expect(hasFeature(premium, "cloud_sync")).toBe(true);
+    expect(hasFeature(frei, "bank_connect")).toBe(false);
+    expect(hasFeature(frei, "cloud_sync")).toBe(false);
   });
 });

@@ -36,9 +36,9 @@ describe("Premium freischalten", () => {
     // Die beiden kostenpflichtigen Funktionen sind benannt …
     expect(html).toMatch(/Bankabruf/);
     expect(html).toMatch(/Cloud-Sync/);
-    // … samt der Stufe, ab der sie gelten.
-    expect(html).toMatch(/ab Pro/);
-    expect(html).toMatch(/ab Premium/);
+    // … samt der Stufe, ab der sie gelten. Zum Start traegt Premium beides.
+    expect(html).not.toMatch(/ab Pro\b/);
+    expect((html.match(/ab Premium/g) || []).length).toBe(2);
     expect(html).not.toMatch(/freigeschaltet</);
   });
 
@@ -57,11 +57,12 @@ describe("Premium freischalten", () => {
   it("mit Lizenz: nennt genau die Faehigkeiten der Stufe", () => {
     const premium = rendere({ istFreigeschaltet: true, tier: "premium" });
     expect(premium).toMatch(/Cloud-Sync/);
-    expect(premium).not.toMatch(/Bankabruf/);
+    expect(premium).toMatch(/Bankabruf/);
 
-    const pro = rendere({ istFreigeschaltet: true, tier: "pro" });
-    expect(pro).toMatch(/Cloud-Sync/);
-    expect(pro).toMatch(/Bankabruf/);
+    // Eine Stufe ohne Faehigkeiten nennt auch keine.
+    const frei = rendere({ istFreigeschaltet: true, tier: "free" });
+    expect(frei).not.toMatch(/Cloud-Sync/);
+    expect(frei).not.toMatch(/Bankabruf/);
   });
 
   it("eine unbekannte Stufe landet nicht als Rohwert im Text", () => {

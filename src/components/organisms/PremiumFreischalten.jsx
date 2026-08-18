@@ -83,9 +83,13 @@ function PremiumFreischalten() {
           </div>
         </div>
 
+        {/* `lizenzBis` ist die Frist des TOKENS (30 Tage), nicht die der
+            Lizenz. Vorher stand hier „Prüfung erneuert sich bis <Datum>" —
+            das liest sich wie ein Ablaufdatum der Lizenz und hätte bei einer
+            unbefristeten (Lifetime-)Lizenz erst recht in die Irre geführt. */}
         <div style={{ fontSize: 11, color: T.txt2, lineHeight: 1.5, marginBottom: 10 }}>
           Freigeschaltet: {(TIER_FEATURES[tier] || []).map((f) => FEATURES[f]?.label || f).join(", ") || "—"}.
-          {lizenzBis ? ` Prüfung erneuert sich bis ${datumText(lizenzBis)} von selbst.` : ""}
+          {lizenzBis ? ` Auch ohne Internet nutzbar bis ${datumText(lizenzBis)} — danach meldet sich die App einmal kurz beim Lizenzserver.` : ""}
         </div>
 
         <button

@@ -98,7 +98,29 @@ eigener `order_created`-Webhook.
 
 **Token-Modell:** `/verify` gibt ein HMAC-signiertes Token mit 30 Tagen
 Laufzeit zurueck. Bewusst offline-tolerant — die PWA muss nicht bei jedem Start
-online sein.
+online sein. Der Lizenzcode wird lokal mitgespeichert, damit sich das Token
+still erneuern kann; ohne das fiele jeder zahlende Nutzer nach 30 Tagen
+wortlos auf „frei" zurueck.
+
+**Stufen zum Start: nur `free` und `premium`.** `premium` traegt ALLES
+Kostenpflichtige (Cloud-Sync UND Bankabruf). `pro`/`promax` sind reservierte
+Namen und heute deckungsgleich — sie bekommen eigene Eintraege, sobald es eine
+Funktion gibt, die sie rechtfertigt. Eine Stufe, die dasselbe kann wie die
+darunter, darf man nicht verkaufen.
+
+**„Lifetime" ist keine Stufe, sondern ein Abrechnungsmodell** — im
+Lizenzeintrag ein weit in der Zukunft liegendes `expiresAt`, sonst nichts. Es
+braucht dafuer keine Zeile Code und kann jederzeit als Aktion angeboten werden.
+
+**Was spaeter teuer zu aendern waere** (und deshalb jetzt bedacht ist):
+- Die FORM der verkauften KV-Eintraege. Neue Felder sind unkritisch (alte
+  Eintraege haben sie eben nicht, der Code faellt auf einen Standard zurueck),
+  eine geaenderte Bedeutung vorhandener Felder waere es nicht.
+- `products` — deshalb von Anfang an drin (siehe Phase 1).
+Alles andere ist additiv: eine neue Stufe ist eine Zeile in `TIER_FEATURES`,
+eine neue Faehigkeit eine Zeile in `FEATURES` plus die Stufen, die sie tragen.
+Auch der Wechsel zu Apples In-App-Kauf aendert daran nichts: er endet ebenfalls
+in „dieser Nutzer hat Stufe X".
 
 ### Phase 1 — Lizenzserver (Kauf → Code → Verify)
 
@@ -166,15 +188,32 @@ online sein.
   Spaeter ueber LemonSqueezy-Webhook (`order_refunded`,
   `license_key_revoked`) automatisierbar.
 
+### Vor der Veroeffentlichung zu klaeren (nicht Code)
+
+- [ ] **Apple: Aktivierungscodes per Mail sind in einer iOS-App ein Problem.**
+  App Review Guideline **3.1.1** verlangt In-App-Kauf, wenn in der App
+  Funktionen freigeschaltet werden. Zwei gangbare Wege: **3.1.3(b)
+  „Multiplatform Services"** (im Web gekaufte Lizenz darf in der App genutzt
+  werden — klassisch unter der Auflage, in der App NICHT auf den externen Kauf
+  hinzuweisen; diese Anti-Steering-Regel ist durch US-Verfahren und DMA in
+  Bewegung), ODER In-App-Kauf fuer iOS zusaetzlich zum Code fuers Web.
+  **Vor dem Einreichen den aktuellen Wortlaut von 3.1.1 und 3.1.3(b) selbst
+  lesen** — die Regeln aendern sich haeufig. Fuer die Architektur aendert sich
+  dadurch nichts (siehe oben).
+- [ ] **Eigene Domain `supadupa.top`.** Bringt fuer den SCHUTZ nichts —
+  Client-Code bleibt Client-Code. Sinnvoll aus drei anderen Gruenden: die
+  Adresse gehoert Dir (GitHub-Pages-URL nicht), ein gemeinsamer Ursprung fuer
+  App und Worker erlaubt ein enges `ALLOWED_ORIGINS`, und Apple erwartet fuer
+  3.1.3(b) ohnehin einen erkennbaren eigenen Dienst. Umzug: Domain zu
+  Cloudflare, App ueber Cloudflare Pages (baut aus demselben Repo), Worker als
+  Subdomains.
+- [ ] Preis festlegen; Widerrufsbelehrung, AGB, Datenschutzerklaerung.
+  Gehoert zu jemandem, der dafuer haftet — nicht in diese Datei.
+
 ### Phase 4 — optional
 
 - [ ] **Premium-Code als separat nachgeladenes Bundle** statt im oeffentlichen
   Build. Deutlich mehr Aufwand; erst sinnvoll, wenn 1–3 stehen.
-
-### Offen (nicht Code)
-
-- [ ] Preis festlegen; Widerrufsbelehrung, AGB, Datenschutzerklaerung.
-  Gehoert zu jemandem, der dafuer haftet — nicht in diese Datei.
 
 ## Sync / Performance
 

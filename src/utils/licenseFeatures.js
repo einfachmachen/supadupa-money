@@ -4,6 +4,12 @@
 //   products — für WELCHE SupaDupa-App der Code gilt (["money"] …)
 //   tier     — WELCHE Stufe innerhalb der App
 //
+// Was hier NICHT hingehört: das Abrechnungsmodell. „Lifetime" ist keine
+// Stufe, sondern dieselbe Stufe ohne Ablauf — im Lizenzeintrag ein weit in
+// der Zukunft liegendes `expiresAt`, sonst nichts. Es braucht dafür weder
+// hier noch im Worker eine Zeile Code; deshalb kann es jederzeit als Aktion
+// angeboten werden, ohne dass vorher etwas gebaut werden müsste.
+//
 // Gates fragen nach der FÄHIGKEIT, nie nach dem Stufennamen:
 //     hasFeature(lizenz, "bank_connect")     ✓
 //     lizenz.tier === "pro"                  ✗
@@ -15,6 +21,13 @@
 // Reihenfolge der Leiter, von frei nach teuer. Explizit als Liste, damit die
 // Antwort von `wunschStufe` nicht an der Schlüsselreihenfolge eines
 // Objektliterals hängt.
+//
+// ZUM START werden nur `free` und `premium` verkauft. `pro` und `promax`
+// stehen hier als reservierte Namen: der Lizenzserver nimmt ohnehin jede
+// Zeichenkette als `tier` entgegen, und so ist dokumentiert, wohin die Leiter
+// wachsen soll. Solange sie nichts Eigenes tragen, sind sie deckungsgleich
+// mit `premium` — eine Stufe, die dasselbe kann wie die darunter, darf man
+// nicht verkaufen, aber sie schadet auch nicht.
 const TIER_ORDER = ["free", "premium", "pro", "promax"];
 
 // Wie eine Fähigkeit durchgesetzt wird — der Unterschied ist wichtig genug,
@@ -32,13 +45,17 @@ const FEATURES = {
 };
 
 // Stufe → Fähigkeiten. Jede Stufe enthält alles der darunterliegenden.
+//
+// `premium` trägt zum Start ALLES Kostenpflichtige. Vorher lag der Bankabruf
+// auf `pro` — bei einem Start mit „frei und Premium" hätten die ersten
+// zahlenden Nutzer genau die Funktion nicht bekommen, für die sie zahlen.
+// `pro`/`promax` sind reserviert (siehe TIER_ORDER) und heute deshalb
+// deckungsgleich; sie bekommen ihre eigenen Einträge, sobald es eine Funktion
+// gibt, die sie rechtfertigt.
 const TIER_FEATURES = {
   free: [],
-  premium: ["cloud_sync"],
+  premium: ["cloud_sync", "bank_connect"],
   pro: ["cloud_sync", "bank_connect"],
-  // promax trägt heute nichts Eigenes — die Stufe existiert, damit das Modell
-  // sie kennt, sobald es eine Funktion dafür gibt. Bis dahin ist sie
-  // absichtlich deckungsgleich mit pro.
   promax: ["cloud_sync", "bank_connect"],
 };
 

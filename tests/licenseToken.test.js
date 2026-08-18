@@ -17,8 +17,10 @@
 import "fake-indexeddb/auto";
 import { describe, it, expect, beforeEach } from "vitest";
 import {
-  TOKEN_KEY, decodeToken, isTokenValid,
+  TOKEN_KEY, CODE_KEY, ERNEUERN_AB_SEKUNDEN,
+  decodeToken, isTokenValid, brauchtErneuerung,
   loadLocalToken, saveLocalToken, clearLocalToken,
+  loadLocalCode, saveLocalCode, clearLocalCode,
 } from "../src/utils/licenseToken.js";
 import { kvStore } from "../src/utils/kvStore.js";
 
@@ -42,6 +44,7 @@ describe("Lizenz-Token", () => {
   beforeEach(async () => {
     await kvStore.init();
     kvStore.removeItem(TOKEN_KEY);
+    kvStore.removeItem(CODE_KEY);
   });
 
   it("liegt im kvStore, nicht in localStorage", () => {
@@ -103,5 +106,28 @@ describe("Lizenz-Token", () => {
     saveLocalToken(baueToken());
     clearLocalToken();
     expect(loadLocalToken()).toBeNull();
+  });
+
+  it("merkt sich den Lizenzcode — sonst gibt es keine Erneuerung", () => {
+    // Ohne den Code kann die App das Token nach 30 Tagen nicht erneuern; der
+    // zahlende Nutzer fiele wortlos auf „frei" zurueck.
+    saveLocalCode("  ABCD-1234  ");
+    expect(loadLocalCode()).toBe("ABCD-1234");
+    clearLocalCode();
+    expect(loadLocalCode()).toBe("");
+  });
+
+  it("erneuert VOR dem Ablauf, nicht erst danach", () => {
+    // Erst danach hiesse: der Nutzer ist zwischendurch ausgesperrt, wenn er
+    // in dem Moment offline ist.
+    const frisch = decodeToken(baueToken()).payload;
+    expect(brauchtErneuerung(frisch)).toBe(false);
+
+    const knapp = decodeToken(baueToken({ exp: jetzt() + ERNEUERN_AB_SEKUNDEN - 60 })).payload;
+    expect(brauchtErneuerung(knapp)).toBe(true);
+
+    const abgelaufen = decodeToken(baueToken({ exp: jetzt() - 1 })).payload;
+    expect(brauchtErneuerung(abgelaufen)).toBe(true);
+    expect(brauchtErneuerung(null)).toBe(true);
   });
 });
