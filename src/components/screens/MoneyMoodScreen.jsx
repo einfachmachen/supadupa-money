@@ -314,7 +314,7 @@ function MoneyMoodScreen() {
       {/* 8px oben. Unten bewusst kein Polster: den Abstand traegt der Nachbar
           darunter — das Schieflage-Panel mit seinem Rand bzw. die Kartenliste.
           Ein eigenes Polster kaeme dazu und ergaebe 16px. */}
-      <div style={{ padding: "8px 12px 0", display: "flex", gap: 6, flexWrap: "wrap" }}>
+      <div style={{ padding: "0 12px", margin: "8px 0 0", display: "flex", gap: 6, flexWrap: "wrap" }}>
         {[["custom", "✎ Eigene"], ["desc", "↓"], ["asc", "↑"], ["mood", "Auffällig"]].map(([mode, lbl]) => (
           <button key={mode} onClick={() => setCatSortMode(mode)}
             style={{ background: catSortMode === mode ? T.blue : "transparent", color: catSortMode === mode ? (T.on_accent || "#000") : T.txt2, border: `1px solid ${catSortMode === mode ? T.blue : T.bd}`, borderRadius: 14, padding: "3px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
@@ -322,7 +322,7 @@ function MoneyMoodScreen() {
           </button>
         ))}
       </div>
-      <div style={{ color: T.txt2, fontSize: 11, padding: "4px 14px 6px", lineHeight: 1.45 }}>
+      <div style={{ color: T.txt2, fontSize: 11, padding: "0 14px", margin: "8px 0 0", lineHeight: 1.45 }}>
         <b style={{ color: T.acc_gold }}>Gelb</b>/<b style={{ color: T.acc_neg }}>rot</b> nur in Monaten, in denen insgesamt mehr aus- als einging –
         {" "}und diese Kategorie auffällig dazu beitrug. Sonst <b style={{ color: T.acc_pos }}>grün</b>.
         {" "}Die Balken zeigen die <b style={{ color: T.txt }}>Vorschau</b>: gebucht + Vormerkungen, damit künftige Belastungen früh sichtbar werden.
@@ -409,9 +409,9 @@ function MoneyMoodScreen() {
       ) : (
         // Fuge 8px zwischen den Kategoriezeilen — derselbe Abstand wie ueberall
         // sonst in der App. Mit den bisherigen 2px standen sie als ein Block
-        // ohne Luft dazwischen. Kein eigenes Polster nach oben: den Abstand
-        // traegt bereits der untere Rand des Schieflage-Panels bzw. der
-        // Kopfzeile darueber, sonst kaeme er doppelt.
+        // ohne Luft dazwischen. Der Abstand nach oben ist ein RAND, kein
+        // Polster: gegen das Schieflage-Panel faellt er mit dessen Rand zu
+        // einem einzigen 8px zusammen, ohne Panel traegt er ihn allein.
         <div style={{ padding: "0 10px", marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
           {sortedRows.map(renderCard)}
         </div>

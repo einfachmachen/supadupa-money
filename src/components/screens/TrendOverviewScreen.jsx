@@ -385,13 +385,13 @@ function TrendOverviewScreen() {
             Reiter darueber und in der unteren Leiste — dreimal dasselbe Wort
             untereinander. Es bleibt die Unterzeile, die tatsaechlich etwas
             erklaert. 8px Abstand zum Hero wie ueberall sonst. */}
-        <div style={{ padding: "8px 16px 0" }}>
+        <div style={{ padding: "0 16px", margin: "8px 0 0" }}>
           <div style={{ color: T.txt2, fontSize: 12 }}>
             {metric ? `${activeMetric.label} · alle Jahre` : "Alle Jahre im Überblick"}
           </div>
         </div>
 
-        <div style={{ padding: `8px 16px ${UNTEN_FREI}px` }}>
+        <div style={{ padding: `0 16px ${UNTEN_FREI}px`, margin: "8px 0 0" }}>
           {!metric ? (
             // ── Übersicht: 3 Sparkline-Karten ──
             METRICS.map(m => {

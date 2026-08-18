@@ -703,7 +703,9 @@ function JahrScreen({forceSingle=false}) {
         {/* Filter-Toggle jetzt in der floating Bottom-Bar */}
         {/* ── Sticky header (outside scroll) ── */}
         <style>{`#jahres-header::-webkit-scrollbar { display:none; }`}</style>
-        <div id="jahres-header" ref={headerScrollRef} onScroll={()=>syncScroll(headerScrollRef,dataScrollRef)} style={{overflowX:"auto",flexShrink:0,background:"#fff",scrollbarWidth:"none",msOverflowStyle:"none",position:"relative"}}>
+        {/* marginTop 8: jeder Block bringt seinen Abstand nach oben selbst mit
+            (Konvention aus Monat) — vorher trug ihn das Polster der Reiterzeile. */}
+        <div id="jahres-header" ref={headerScrollRef} onScroll={()=>syncScroll(headerScrollRef,dataScrollRef)} style={{overflowX:"auto",flexShrink:0,background:"#fff",marginTop:8,scrollbarWidth:"none",msOverflowStyle:"none",position:"relative"}}>
         <div style={{minWidth:LW+showMonths.length*MW}}>
           <div style={{display:"flex",
             background:T.surf,

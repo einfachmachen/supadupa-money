@@ -38,8 +38,15 @@ function YearSectionHeader({ active, detailsOpen, setDetailsOpen, children }) { 
           dem Hero-Ausklappmodus (nur sichtbar, wenn die Hero-Details offen sind). */}
       {open && (
         <>
-          {/* 8px oben wie unten — derselbe Abstand wie ueberall sonst. */}
-          <div style={{ display: "flex", gap: 6, alignItems: "center", padding: "8px 10px", borderBottom: `1px solid ${T.bd}` }}>
+          {/* Abstand als RAND OBEN, nicht als Polster — so wie in Monat (margin 8,
+              vertikales Polster 0). Zwei Gruende:
+              1. Nur Raender benachbarter Bloecke fallen zusammen (8 + 8 = 8);
+                 Polster addiert sich dagegen zum Rand des Nachbarn (8 + 8 = 16).
+              2. Nur OBEN: dieser Kopf ist ein Flex-Kind und damit ein eigener
+                 Block-Kontext — ein Rand UNTEN kaeme nicht mit dem Rand des
+                 naechsten Blocks zusammen, sondern addierte sich dazu. Jeder
+                 Block bringt seinen Abstand also selbst nach oben mit. */}
+          <div style={{ display: "flex", gap: 6, alignItems: "center", padding: "0 10px", margin: "8px 0 0" }}>
             {OPTS.map(([id, lbl, ic]) => {
               const on = active === id;
               return (
