@@ -1,4 +1,9 @@
-// Einstellungen → „Premium freischalten": Lizenzcode eingeben, Status sehen.
+// Daten → „Premium": Lizenzcode eingeben, Zustand sehen.
+//
+// Steht bewusst NICHT in den Einstellungen: dort liegen Schalter, die man
+// einmal umlegt. Hier geht es um einen eigenen Weg (Code eingeben, Zustand
+// ansehen, Lizenz entfernen) — deshalb eine eigene Kachel als letzter
+// Eintrag im Daten-Tab (ManagementScreen, Gruppe „App").
 //
 // Zwei Zustände, bewusst deutlich unterschieden:
 //   • freigeschaltet — Stufe, Mailadresse, Gültigkeit, Knopf zum Entfernen
@@ -15,7 +20,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { INP } from "../../theme/palette.js";
 import { Li } from "../../utils/icons.jsx";
-import { aufGrund, aufToenung } from "../../theme/amtPill.js";
+import { aufGrund, aufToenung, knopfPaar } from "../../theme/amtPill.js";
 import { TIER_LABEL, TIER_FEATURES, FEATURES, wunschStufe } from "../../utils/licenseFeatures.js";
 
 // Unix-Sekunden → „18.09.2026"
@@ -50,6 +55,11 @@ function PremiumFreischalten() {
   // Gold als Rohton fuer Flaeche/Rahmen, gerechnete Schrift darauf.
   const grundAnteil = 0x14 / 255;
   const goldSchrift = aufToenung(T.gold, grundAnteil);
+  // Schrift auf der VOLLEN Gold-Flaeche des Knopfes — andere Rechnung als
+  // oben (dort liegt Gold nur als Toenung ueber der Platte). knopfPaar darf
+  // notfalls die FLAECHE nachruecken: auf dem Gold zweier Themes traegt sonst
+  // weder Schwarz noch Weiss.
+  const { grund: knopfGrund, schrift: knopfSchrift } = knopfPaar(T.gold, T.on_accent);
 
   if (istFreigeschaltet) {
     return (
@@ -124,16 +134,24 @@ function PremiumFreischalten() {
         style={{ ...INP, marginBottom: 8 }}
       />
 
+      {/* Bewusst NICHT deaktiviert, solange das Feld leer ist. Ein Knopf mit
+          opacity:0.5 halbiert seinen eigenen Kontrast — auf dem Gold-Ton war
+          er dann nicht mehr lesbar (Nutzer-Hinweis). Der leere Fall ist ohnehin
+          besser aufgehoben in der Fehlerzeile darunter: `freischalten` sagt
+          dann „Bitte gib einen Lizenzcode ein", statt dass ein toter Knopf den
+          Nutzer raten laesst, warum nichts passiert.
+          `knopfPaar` prueft die Wunschschrift gegen die Knopffarbe, weicht
+          auf Schwarz/Weiss aus und rueckt zur Not die Flaeche nach:
+          `on_accent` ist je Theme gesetzt, aber gegen T.gold nirgends
+          nachgerechnet. */}
       <button
         onClick={absenden}
-        disabled={lizenzLaeuft || !code.trim()}
+        disabled={lizenzLaeuft}
         style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
           width: "100%", padding: "10px 8px", borderRadius: 9, border: "none",
-          background: T.gold, color: T.on_accent, fontSize: 12, fontWeight: 800,
-          fontFamily: "inherit",
-          cursor: lizenzLaeuft || !code.trim() ? "default" : "pointer",
-          opacity: lizenzLaeuft || !code.trim() ? 0.5 : 1 }}>
-        {Li(geschafft ? "check" : "sparkles", 13, T.on_accent)}
+          background: knopfGrund, color: knopfSchrift, fontSize: 12, fontWeight: 800,
+          fontFamily: "inherit", cursor: lizenzLaeuft ? "default" : "pointer" }}>
+        {Li(geschafft ? "check" : "sparkles", 13, knopfSchrift)}
         {lizenzLaeuft ? "Wird geprüft…" : geschafft ? "Freigeschaltet!" : "Premium freischalten"}
       </button>
 

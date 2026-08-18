@@ -10,6 +10,7 @@ import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
 import { KategorieAnlegen } from "../organisms/KategorieAnlegen.jsx";
 import { SubRow } from "../organisms/SubRow.jsx";
 import { SettingsInline } from "./SettingsInline.jsx";
+import { PremiumFreischalten } from "../organisms/PremiumFreischalten.jsx";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
@@ -18,6 +19,7 @@ import { INP, UNTEN_FREI } from "../../theme/palette.js";
 import { uid, NUM_FONT } from "../../utils/format.js";
 import { reassignAccount, accountRefs } from "../../utils/accountReassign.js";
 import { Li } from "../../utils/icons.jsx";
+import { TIER_LABEL } from "../../utils/licenseFeatures.js";
 
 function ManagementScreen({activeTab="kategorien"}) {
   const { cats=[],setCats,groups=[],setGroups,txs=[],setTxs,accounts=[],setAccounts,
@@ -38,6 +40,7 @@ function ManagementScreen({activeTab="kategorien"}) {
     setShowMatching,
     setShowMobileKategorien,
     frageBestaetigung,
+    istFreigeschaltet, tier,
   } = useContext(AppCtx);
   const [mergeTarget, setMergeTarget] = useState(null);
   const [showNewGroup, setShowNewGroup] = useState(false);
@@ -241,6 +244,18 @@ function ManagementScreen({activeTab="kategorien"}) {
             <SettingsInline/>
           </div>
         )}
+        {mgrTab==="premium"&&(
+          // Eigenes Blatt wie Einstellungen/Konten — `formular-blatt`, weil
+          // ein Eingabefeld darin liegt (§4.7: Felder gehoeren auf eine Taste).
+          <div className="formular-blatt" style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
+            <MobileHeader title="Premium" subtitle="Bankabruf & Cloud-Sync freischalten"
+              icon="sparkles" iconColor={T.gold} safeAreaTop={false}
+              onBack={()=>setMgrTab("daten")}/>
+            <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:`12px 14px ${UNTEN_FREI}px`}}>
+              <PremiumFreischalten/>
+            </div>
+          </div>
+        )}
         {mgrTab==="daten"&&(
           // Genug Scroll-Reserve, damit sich die LETZTE Kachel bis ueber die
           // Reiterleiste UND den vergroesserten + Knopf schieben laesst — vorher
@@ -269,6 +284,15 @@ function ManagementScreen({activeTab="kategorien"}) {
               // die Erklärungen auch inhaltlich hingehören (Teddy-Symbol daneben
               // für den Kids-Modus, siehe SaldoHeroV2.jsx).
               const settingsRow = {icon:"settings",   color:T.txt2,         label:"Einstellungen",         sub:"Theme, Beträge, Sicherheit …",    onClick:()=>setMgrTab("einstellungen")};
+              // Steht bewusst ganz unten und nicht in den Einstellungen: es ist
+              // kein Schalter, den man einmal umlegt, sondern ein eigener Weg
+              // (Code eingeben, Zustand ansehen). Die Unterzeile zeigt den
+              // Zustand, damit man dafuer nicht erst hineingehen muss.
+              const premiumRow  = {icon:"sparkles",   color:T.acc_gold,     label:"Premium",
+                sub: istFreigeschaltet
+                  ? `${TIER_LABEL[tier] || "Premium"} freigeschaltet`
+                  : "Bankabruf & Cloud-Sync freischalten",
+                onClick:()=>setMgrTab("premium")};
               // Erststart-Fortschritt (gleiche Herleitung wie im Dashboard,
               // rein aus vorhandenen Daten — kein eigener Flag nötig).
               const schnellstartDone = (_accounts?.length||0)>0
@@ -288,7 +312,7 @@ function ManagementScreen({activeTab="kategorien"}) {
               const holen    = {titel:"Buchungen holen",   icon:"download", eintraege:[bankRow, csvRow]};
               const eigene   = {titel:"Daten dieser App",  icon:"database", eintraege:[dataMgrRow, cloudRow]};
               const verwalten= {titel:"Verwalten",         icon:"sliders",  eintraege:[kontenRow, budgetRow, matchingRow, fuelRow]};
-              const app      = {titel:"App",               icon:"settings", eintraege:[settingsRow]};
+              const app      = {titel:"App",               icon:"settings", eintraege:[settingsRow, premiumRow]};
               // Solange der Erststart laeuft, steht "Verwalten" vorn: ohne
               // Konten und Kategorien bringt das Holen von Buchungen nichts.
               return schnellstartDone
@@ -437,7 +461,11 @@ function ManagementScreen({activeTab="kategorien"}) {
           </div>
           </div>
         )}
-        {mgrTab!=="einstellungen"&&mgrTab!=="konten"&&mgrTab!=="daten"&&(
+        {/* Auffangzweig fuer die Kategorien-Ansicht. Er zaehlt auf, was er
+            NICHT ist — jedes neue Blatt muss hier ausgeschlossen werden,
+            sonst haengt der Kategorien-Block darunter (genau so passiert,
+            als „premium" dazukam). */}
+        {mgrTab!=="einstellungen"&&mgrTab!=="konten"&&mgrTab!=="daten"&&mgrTab!=="premium"&&(
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch",display:"flex",flexDirection:"column"}}>
 
         {/* ── Kategorie-Zuordnungen ── */}

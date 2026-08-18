@@ -85,6 +85,29 @@ export function schriftAuf(grund, wunsch, schwelle = 4.5) {
   return kontrastWert(HELL, grund) >= kontrastWert(DUNKEL, grund) ? HELL : DUNKEL;
 }
 
+// ── Vollflächige Signatur-Knöpfe ────────────────────────────────────────
+// Ein Knopf, der ganz in einer Akzentfarbe steht und seine Beschriftung
+// daraufschreibt. `schriftAuf` allein reicht hier nicht: es sucht die beste
+// SCHRIFT für eine gegebene Fläche — bei einer mittelhellen Fläche trägt aber
+// weder Schwarz noch Weiß (gemessen 4,36:1 und 4,48:1 auf dem Gold zweier
+// Themes). Dann muss die FLÄCHE nachgeben.
+//
+// Rückgabe: `{ grund, schrift }`. `grund` ist die ursprüngliche Farbe, solange
+// sie trägt — nur im Ausnahmefall minimal in Richtung Schwarz bzw. Weiß
+// gerückt, in 5-%-Schritten und in der Richtung, die zuerst reicht. So bleibt
+// die Farbe erkennbar und die Beschriftung trotzdem lesbar.
+export function knopfPaar(flaeche, wunschSchrift, schwelle = 4.5) {
+  const direkt = schriftAuf(flaeche, wunschSchrift, schwelle);
+  if (kontrastWert(direkt, flaeche) >= schwelle) return { grund: flaeche, schrift: direkt };
+  for (let anteil = 0.05; anteil <= 0.9; anteil += 0.05) {
+    for (const [ziel, schrift] of [[DUNKEL, HELL], [HELL, DUNKEL]]) {
+      const grund = mischen(ziel, anteil, flaeche);
+      if (kontrastWert(schrift, grund) >= schwelle) return { grund, schrift };
+    }
+  }
+  return { grund: flaeche, schrift: direkt };
+}
+
 // ── Flächen, die sich mit ihrer EIGENEN Akzentfarbe tönen ───────────────
 // Warnkasten, Hinweisbalken, Kategorie-Kopfzeile, „Editor öffnen": alle malen
 // `${farbe}1f` und schreiben denselben Ton darauf. Gegen die Platte gerechnet
