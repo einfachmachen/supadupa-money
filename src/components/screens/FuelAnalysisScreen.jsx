@@ -10,6 +10,7 @@ import { fmt, NUM_FONT } from "../../utils/format.js";
 import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { buildFuelSeries } from "../../utils/fuel.js";
+import { UNTEN_FREI } from "../../theme/palette.js";
 
 function FuelAnalysisScreen({onClose, onBack, mobileMode=false}) {
   const { txs, vehicles, setMasterOverride } = useContext(AppCtx);
@@ -104,7 +105,7 @@ function FuelAnalysisScreen({onClose, onBack, mobileMode=false}) {
         icon="fuel" iconColor={T.gold}
         onBack={onBack||onClose} onClose={onClose}/>
 
-      <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:"12px 16px 140px"}}>
+      <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:`12px 16px ${UNTEN_FREI}px`}}>
 
         {!(vehicles||[]).length ? (
           <div style={{textAlign:"center",padding:"40px 16px",color:T.txt2}}>

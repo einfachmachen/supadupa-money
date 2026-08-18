@@ -14,7 +14,7 @@ import { TagInput } from "../atoms/TagInput.jsx";
 import { getAllTags } from "../../utils/search.js";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
-import { INP } from "../../theme/palette.js";
+import { INP, UNTEN_FREI } from "../../theme/palette.js";
 import { MONTHS_F } from "../../utils/constants.js";
 import { isoAddMonths, nextBankWorkday, calcRecurringCount } from "../../utils/date.js";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
@@ -872,9 +872,12 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
             : zielSeite ? "Zielkategorie"
             : (umbuchung ? "Quellkategorie" : "Kategorie")}
           onBack={()=>setKatPicker(null)}/>
+        {/* Untere Reserve UNTEN_FREI: Leiste UND der grosse + Knopf liegen ueber
+            diesem Dialog (der Knopf soll dort bleiben). Ohne die Reserve endet
+            die Liste darunter und laesst sich nicht mehr hochschieben. */}
         <div style={{flex:1,overflowY:"auto",overflowX:"hidden",
           WebkitOverflowScrolling:"touch",background:T.surf2,padding:S.padL,
-          paddingBottom:"calc(32px + env(safe-area-inset-bottom, 0px))"}}>
+          paddingBottom:`calc(${UNTEN_FREI}px + env(safe-area-inset-bottom, 0px))`}}>
           <MobileCatStep
             key={katPicker}
             startSub={beiUnter}
@@ -941,13 +944,16 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
             der Bildschirm (grosse Schrift, lange Kategorienamen). Der Inhalt
             ist auf die Breite ausgelegt, also soll er auch nur senkrecht
             scrollen.
-            Die 57px fuer die Navigationsleiste reserviert bereits
-            .mobile-modal; hier kommt nur noch der + Knopf dazu, der darueber
-            hinausragt (rund 30px). Gerade so viel, dass das letzte Feld frei
-            steht — mehr waere nur leerer Hintergrund. */}
+            Untere Reserve UNTEN_FREI (Leiste + Ueberhang des + Knopfes, siehe
+            palette.js): beide liegen ueber diesem Dialog und der + Knopf soll
+            dort auch bleiben. Die frueheren 32px stammten daher, dass
+            .mobile-modal die 57px der Leiste noch pauschal reserviert hat —
+            das tut es nur noch fuer .unter-leiste, und der + Knopf war nie
+            eingerechnet. Ergebnis: die letzten Felder lagen unerreichbar
+            darunter. */}
         <div style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch",
           background:T.surf2,maxWidth:"100%",
-          paddingBottom:"calc(32px + env(safe-area-inset-bottom, 0px))"}}>
+          paddingBottom:`calc(${UNTEN_FREI}px + env(safe-area-inset-bottom, 0px))`}}>
 
           {/* Typ ganz oben, direkt unter dem Titel — er entscheidet, welche
               Felder darunter ueberhaupt erscheinen (Intervall, Anzahl, Raten).

@@ -21,6 +21,7 @@ import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { pendingForecast } from "../../utils/moodForecast.js";
 import { YearSectionHeader } from "../molecules/YearSectionHeader.jsx";
+import { UNTEN_FREI } from "../../theme/palette.js";
 
 const RANGE = 12;
 // Kategorie-Priorität: bestimmt, welche Posten bei einer Schieflage zuerst als
@@ -412,7 +413,9 @@ function MoneyMoodScreen() {
         // ohne Luft dazwischen. Der Abstand nach oben ist ein RAND, kein
         // Polster: gegen das Schieflage-Panel faellt er mit dessen Rand zu
         // einem einzigen 8px zusammen, ohne Panel traegt er ihn allein.
-        <div style={{ padding: "0 10px", marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+        // UNTEN_FREI unten: sonst endet die letzte Kategorie unter der Leiste
+        // und dem + Knopf und laesst sich nicht hochschieben.
+        <div style={{ padding: `0 10px ${UNTEN_FREI}px`, marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
           {sortedRows.map(renderCard)}
         </div>
       )}

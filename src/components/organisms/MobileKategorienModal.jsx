@@ -12,6 +12,7 @@ import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { schriftAuf, mischen, toenungsGrund } from "../../theme/amtPill.js";
 import { suggestBudget } from "../../utils/budgetSuggest.js";
+import { UNTEN_FREI } from "../../theme/palette.js";
 
 // Kategorie-Priorität (steuert die Treiber-Reihenfolge im Money-Mood-Schieflage-Panel).
 const PRIO_OPTS = [
@@ -244,7 +245,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
     <div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,
       zIndex:300,display:"flex",flexDirection:"column","--mob-fs":"18px"}}>
       {header(`bearbeiten: ${selCat.name}`,()=>setView("list"))}
-      <div style={{flex:1,padding:S.padL,paddingBottom:140,overflowY:"auto"}}>
+      <div style={{flex:1,padding:S.padL,paddingBottom:UNTEN_FREI,overflowY:"auto"}}>
         <div style={{color:T.txt2,fontSize:S.fs-4,marginBottom:6,fontWeight:600}}>Name</div>
         <input value={editName} onChange={e=>setEditName(e.target.value)}
           autoFocus style={{...inp(),marginBottom:S.gap}}/>
@@ -325,7 +326,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
     <div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,
       zIndex:300,display:"flex",flexDirection:"column","--mob-fs":"18px"}}>
       {header("neue Kategorie",()=>setView("list"))}
-      <div style={{flex:1,padding:S.padL,paddingBottom:140,overflowY:"auto"}}>
+      <div style={{flex:1,padding:S.padL,paddingBottom:UNTEN_FREI,overflowY:"auto"}}>
         <div style={{color:T.txt2,fontSize:S.fs-4,marginBottom:6,fontWeight:600}}>Name</div>
         <input value={newName} onChange={e=>setNewName(e.target.value)}
           placeholder="z.B. Freizeit" autoFocus style={{...inp(),marginBottom:S.gap}}/>
@@ -374,7 +375,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
     <div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,
       zIndex:300,display:"flex",flexDirection:"column","--mob-fs":"18px"}}>
       {header(`neue Unterkategorie`,()=>setView("list"))}
-      <div style={{flex:1,padding:S.padL,paddingBottom:140,overflowY:"auto"}}>
+      <div style={{flex:1,padding:S.padL,paddingBottom:UNTEN_FREI,overflowY:"auto"}}>
         <div style={{color:T.txt2,fontSize:S.fs-6,marginBottom:S.gap,
           display:"flex",alignItems:"center",gap:8}}>
           {Li(selCat.icon||"tag",S.fs,selCat.color||T.blue)}
@@ -397,12 +398,12 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
     <div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,
       zIndex:300,display:"flex",flexDirection:"column","--mob-fs":"18px"}}>
       {header("Kategorien & Budget",goBack,"target")}
-      {/* paddingBottom 140px: Scroll-Reserve, damit die letzten Kategorien
-          unter dem vergrößerten + Button (reicht bis ~124px über die
-          Dialog-Unterkante) noch herausgescrollt werden können — sonst
+      {/* Scroll-Reserve UNTEN_FREI (Leiste + Überhang des + Buttons, Herleitung
+          siehe palette.js), damit die letzten Kategorien unter dem
+          vergrößerten + Button noch herausgescrollt werden können — sonst
           blieben sie dort permanent unerreichbar hängen. */}
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",touchAction:"pan-y",WebkitOverflowScrolling:"touch",
-        padding:`${S.gap}px ${S.pad}px 140px`}}>
+        padding:`${S.gap}px ${S.pad}px ${UNTEN_FREI}px`}}>
 
         <button onClick={openNewCat} className="wahl-taste"
           style={{...btnCenter,background:"rgba(74,159,212,0.1)",

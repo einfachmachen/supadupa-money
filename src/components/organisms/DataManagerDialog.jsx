@@ -5,7 +5,7 @@ import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { AccountChips } from "../molecules/AccountChips.jsx";
-import { INP, ZEILE_H } from "../../theme/palette.js";
+import { INP, ZEILE_H, UNTEN_FREI } from "../../theme/palette.js";
 import { THEMES } from "../../theme/themes.js";
 import { Li } from "../../utils/icons.jsx";
 import { schriftAuf, aufToenung } from "../../theme/amtPill.js";
@@ -640,15 +640,16 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
           ))}
         </div>
 
-        {/* paddingBottom 140px: Der vergrößerte + Button (SIZE 78 × scale 1.5,
-            translateY -94px in der 57px-Bottom-Bar) reicht bis zu ~124px
-            über die Dialog-Unterkante — ohne Scroll-Reserve blieben die
-            letzten Zeilen permanent darunter hängen, ohne sie je herausscrollen
-            zu können. 140px = Minimum + kleine Marge. (Der vorherige "leere
+        {/* Scroll-Reserve UNTEN_FREI (Herleitung: siehe palette.js): Leiste UND
+            der vergrößerte + Button liegen über dem Dialog — ohne Reserve
+            blieben die letzten Zeilen permanent darunter hängen, ohne sie je
+            herausscrollen zu können. Vorher standen hier 140px, die noch von
+            der alten 57px-Leiste ohne den Überhang des Knopfes stammten und
+            seit deren Vergrößerung zu knapp waren. (Der frühere "leere
             Streifen" kam NICHT von diesem Puffer, sondern davon, dass der
             Dialog selbst durch 100svh auf iOS Safari zu kurz gerendert wurde
             — siehe --app-vvh in App.jsx/themes.css.) */}
-        <div style={{flex:1,overflowY:"auto",padding:"12px 16px 140px"}}>
+        <div style={{flex:1,overflowY:"auto",padding:`12px 16px ${UNTEN_FREI}px`}}>
 
           {/* ── EXPORT ── */}
           {tab==="export"&&(<>

@@ -21,6 +21,12 @@ import { SchieflageVorwarnung } from "../atoms/SchieflageVorwarnung.jsx";
 import { isFuelSelection, checkOdometerPlausibility } from "../../utils/fuel.js";
 import { TagInput } from "../atoms/TagInput.jsx";
 import { getAllTags } from "../../utils/search.js";
+// UNTEN_FREI = Leiste + Ueberhang des + Knopfes. Beide liegen ueber diesem
+// Dialog (der + Knopf traegt hier die Schritt-Bestaetigung und soll dort
+// bleiben), also muss der Inhalt darunter wegscrollen koennen. Die frueheren
+// 140px reichten nur bis in den Knopf hinein — die letzten Zeilen jedes
+// Schritts blieben unerreichbar.
+import { UNTEN_FREI } from "../../theme/palette.js";
 
 function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialFinanz=false}) {
   const { cats, setCats, accounts, setAccounts, vehicles, setVehicles, txs, setTxs, year, month, getCat, getSub, setMasterOverride } = useContext(AppCtx);
@@ -436,7 +442,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
           : recurring ? (isFinanz?"neue Finanzierung":"neue Serie")
           : "neue Vormerkung",
           "Betrag & Typ",1,goBack)}
-        <div style={{flex:1,padding:S.padL,paddingBottom:140,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+        <div style={{flex:1,padding:S.padL,paddingBottom:UNTEN_FREI,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
 
           {/* Ausgabe / Einnahme / Umbuchung */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:S.gap,marginBottom:S.gap}}>
@@ -694,7 +700,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
         };
         return (<>
           {header(title, subtitle, 2, back)}
-          <div style={{flex:1,padding:S.padL,paddingBottom:140,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+          <div style={{flex:1,padding:S.padL,paddingBottom:UNTEN_FREI,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
             <MobileCatStep
               key={isTgt ? "tgt" : "src"}
               csvType={sideCsv}
@@ -710,7 +716,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
       {/* ── Schritt 3: Details ── */}
       {step===3&&<>
         {header("Details","Beschreibung & Notiz",3,()=>setStep(2))}
-        <div style={{flex:1,padding:S.padL,paddingBottom:140,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+        <div style={{flex:1,padding:S.padL,paddingBottom:UNTEN_FREI,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
 
           {/* Beschreibung */}
           <textarea value={desc} onChange={e=>setDesc(e.target.value)}
@@ -903,7 +909,7 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
       {/* ── Schritt 4: Bestätigung ── */}
       {step===4&&<>
         {header("bestätigen","Alles korrekt?",4,()=>setStep(3))}
-        <div style={{flex:1,padding:S.padL,paddingBottom:140,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+        <div style={{flex:1,padding:S.padL,paddingBottom:UNTEN_FREI,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
           <SchieflageVorwarnung draftTxs={draftTxs}
             kind={isTransfer?"umbuchung":(recurring?(isFinanz?"finanzierung":"serie"):"vormerkung")} style={{marginBottom:S.gap}}/>
           {/* Die Uebersicht steht auf einer KARTE, nicht nackt auf der Flaeche.

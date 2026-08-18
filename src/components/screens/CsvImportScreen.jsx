@@ -22,6 +22,7 @@ import { isoAddDays, nextBankWorkday } from "../../utils/date.js";
 import { liveLinkedGiroIds } from "../../utils/links.js";
 import { autoMatchVormerkungen } from "../../utils/vormMatch.js";
 import { TagInput } from "../atoms/TagInput.jsx";
+import { UNTEN_FREI } from "../../theme/palette.js";
 
 function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
   const { cats, groups, txs, setTxs, accounts, csvRules, setCsvRules, startBalances, setStartBalances, setMasterOverride } = useContext(AppCtx);
@@ -1020,7 +1021,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
 
       {/* STEP: INPUT */}
       {step==="input"&&(
-        <div style={{flex:1,overflowY:"auto",padding:mobileMode?20:16,paddingBottom:140,
+        <div style={{flex:1,overflowY:"auto",padding:mobileMode?20:16,paddingBottom:UNTEN_FREI,
           fontSize:mobileMode?"inherit":"inherit",
           "--csv-fs": mobileMode?"18px":"12px",
           "--csv-fs-s": mobileMode?"15px":"11px",
@@ -1705,7 +1706,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
                       : "Kategorie zuweisen – die App merkt sich die Regel für gleiche Empfänger:")
                   : `${notImportedCount} Buchungen werden ohne Kategorie importiert – du kannst sie später unter Erfassen → Buchungen kategorisieren.`}
               </div>}
-              <div style={{flex:suggFull?"0 0 0px":1,overflowY:"auto",display:suggFull?"none":"block",paddingBottom:140}}>
+              <div style={{flex:suggFull?"0 0 0px":1,overflowY:"auto",display:suggFull?"none":"block",paddingBottom:UNTEN_FREI}}>
                 {parsed.newRows.filter(r=>{
                   if(r._imported) return false;          // gestuft: bereits importiert
                   if(!search) return true;
@@ -1799,7 +1800,10 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
 
       {/* STEP: DONE */}
       {step==="done"&&(
-        <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,padding:24,overflowY:"auto"}}>
+        // Untere Reserve UNTEN_FREI: die Abschluss-Seite kann lang werden
+        // (Ankerpunkt-Warnung mit Schritt-fuer-Schritt-Hinweis) und liegt wie
+        // die uebrigen Schritte unter Leiste und + Knopf.
+        <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,padding:`24px 24px ${UNTEN_FREI}px`,overflowY:"auto"}}>
           {Li("check-circle",48,T.acc_pos)}
           <div style={{color:T.txt,fontSize:20,fontWeight:800}}>{doneCount} Buchungen importiert!</div>
           <div style={{color:T.txt2,fontSize:MFS,textAlign:"center"}}>Die Buchungen sind jetzt in deiner App. Kategorieregeln wurden für zukünftige Importe gespeichert.</div>
