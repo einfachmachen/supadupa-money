@@ -142,9 +142,23 @@ online sein.
   `X-License-Token`, sonst `402 Payment Required`. Heute prueft der Proxy
   nichts. Das ist die Stelle, an der ein Kloner NICHT einfach seine eigene
   Instanz gegen Deine Bank-Anbindung laufen lassen kann.
+- [ ] **Widerruf: der Proxy schlaegt zusaetzlich in KV nach.** Die Signatur
+  allein reicht nicht — sie ist in sich abgeschlossen und bleibt bis `exp`
+  gueltig, auch wenn der KV-Eintrag laengst geloescht ist. Bei Rueckbuchung
+  oder Erstattung haette der Nutzer sonst bis zu 30 Tage weiter Zugriff auf
+  Deinen Bankabruf. Also beides: Signatur pruefen (billig, faengt Faelschungen
+  ab) UND `LICENSE_KV[code]` lesen (faengt Widerrufe ab, wirkt beim naechsten
+  Abruf). Kostet einen KV-Lesevorgang pro Bankabruf — bei 100.000 freien pro
+  Tag unkritisch. Dafuer muss das Token den `licenseCode` mittragen.
+  Bewusst NICHT die Token-Laufzeit kuerzen: das verkleinert das Fenster nur,
+  schliesst es nicht, und bezahlt wird es mit der Offline-Tauglichkeit fuer
+  alle ehrlichen Nutzer.
 - [ ] **Cloud-Sync bleibt bewusst nur weich gegated.** Jeder hostet seinen
   eigenen Daten-Worker — eine harte Sperre waere ohnehin umgehbar. Ehrlicher,
   das offen zu lassen, als Aufwand in Scheinsicherheit zu stecken.
+- [ ] **Erstattung/Rueckbuchung loescht den KV-Eintrag.** Anfangs von Hand.
+  Spaeter ueber LemonSqueezy-Webhook (`order_refunded`,
+  `license_key_revoked`) automatisierbar.
 
 ### Phase 4 — optional
 
