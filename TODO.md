@@ -79,6 +79,72 @@ Offene Punkte aus `ENABLE_BANKING_PLAN.md` (Abschnitt „Noch offen"):
   unkategorisiert an (nachträglich über „Nachkategorisieren" möglich). Wäre
   konsistent mit den CSV-Kategorieregeln (`csvRules`).
 
+## Freemium / Premium (Pro-Freischaltung)
+
+Ziel: Bank-Abruf und Cloud-Sync als kostenpflichtige Funktionen, der Rest der
+App bleibt frei. Der Plan stand bisher nur im Chat — deshalb hier festgehalten.
+
+**Warum diese Aufteilung:** Die App ist eine local-first PWA auf GitHub Pages,
+ohne Nutzerkonto. Alles, was rein lokal rechnet (Trend, Money Mood, Budgets,
+Tanken, Themes, csv/pdf-Import), laesst sich clientseitig nicht durchsetzen —
+eine Sperre dort waere mit den Entwicklerwerkzeugen in Sekunden weg. Nur was
+ueber einen eigenen Worker laeuft, kann wirklich „nein" sagen.
+
+**Zahlungsanbieter: LemonSqueezy** (nicht reines Stripe). Merchant of Record,
+uebernimmt EU-Umsatzsteuer und Rechnungsstellung — erspart als Einzelperson
+viel Buerokratie. Einmalprodukt „SupaDupa Money Pro". LemonSqueezy kann
+Lizenzschluessel selbst erzeugen und per Mail verschicken; dann entfaellt ein
+eigener `order_created`-Webhook.
+
+**Token-Modell:** `/verify` gibt ein HMAC-signiertes Token mit 30 Tagen
+Laufzeit zurueck. Bewusst offline-tolerant — die PWA muss nicht bei jedem Start
+online sein.
+
+### Phase 1 — Lizenzserver (Kauf → Code → Verify)
+
+- [x] **`worker/license-worker.js`** mit `/verify` und `/health`, KV-Struktur
+  `LICENSE_KV[code] = {email, tier, purchasedAt, expiresAt}`, HMAC-Token
+  (30 Tage). Liegt samt `worker/wrangler-license.toml` im Repo. **Achtung:**
+  in einem frueheren Commit beilaeufig mit eingecheckt (`a8d3e668`, Betreff
+  „Budget-Bereiche …") — deshalb war er hier nicht vermerkt.
+- [ ] **LemonSqueezy-Account + Produkt anlegen.** Muss Dirk selbst machen
+  (Verifizierung dauert oft 1–2 Tage). Danach entscheiden: Lizenzschluessel von
+  LemonSqueezy erzeugen lassen ODER eigenen `/webhook`-Endpunkt bauen.
+- [ ] **Worker deployen:** KV-Namespace anlegen, echte id in
+  `wrangler-license.toml` eintragen (steht auf `YOUR_KV_NAMESPACE_ID`),
+  `wrangler secret put LICENSE_SECRET`, deployen.
+- [ ] **End-to-End einmal durchspielen:** Code in KV legen → `/verify` → Token
+  zurueck → Token laeuft nach 30 Tagen ab.
+
+### Phase 2 — Client: Freischalten + weiche Sperren
+
+- [ ] **Lizenz-Zustand** (`useLicense`/`hasFeature("bank_connect"|"cloud_sync")`)
+  in `src/state/AppContext.js`. Existiert noch nicht.
+- [ ] **Menuepunkt „Pro freischalten"** in den Einstellungen: Code eingeben →
+  `/verify` → Token lokal ablegen.
+- [ ] **Weiche Gates** in `EnableBankingWizard.jsx` und `CloudSetupWizard.jsx`:
+  ohne Lizenz statt des Assistenten eine Pro-Karte mit Kauf-Link.
+
+### Phase 3 — Harte Sperre (die einzige, die wirklich schuetzt)
+
+- [ ] **`worker/enable-banking-proxy.js`**: Anfrage braucht ein gueltiges
+  `X-License-Token`, sonst `402 Payment Required`. Heute prueft der Proxy
+  nichts. Das ist die Stelle, an der ein Kloner NICHT einfach seine eigene
+  Instanz gegen Deine Bank-Anbindung laufen lassen kann.
+- [ ] **Cloud-Sync bleibt bewusst nur weich gegated.** Jeder hostet seinen
+  eigenen Daten-Worker — eine harte Sperre waere ohnehin umgehbar. Ehrlicher,
+  das offen zu lassen, als Aufwand in Scheinsicherheit zu stecken.
+
+### Phase 4 — optional
+
+- [ ] **Premium-Code als separat nachgeladenes Bundle** statt im oeffentlichen
+  Build. Deutlich mehr Aufwand; erst sinnvoll, wenn 1–3 stehen.
+
+### Offen (nicht Code)
+
+- [ ] Preis festlegen; Widerrufsbelehrung, AGB, Datenschutzerklaerung.
+  Gehoert zu jemandem, der dafuer haftet — nicht in diese Datei.
+
 ## Sync / Performance
 
 - [ ] **Delta-Sync statt Voll-State-Sync.** Aktuell wird bei jedem Speichern der
