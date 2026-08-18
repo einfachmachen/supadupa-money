@@ -385,13 +385,13 @@ function TrendOverviewScreen() {
             Reiter darueber und in der unteren Leiste — dreimal dasselbe Wort
             untereinander. Es bleibt die Unterzeile, die tatsaechlich etwas
             erklaert. 8px Abstand zum Hero wie ueberall sonst. */}
-        <div style={{ padding: "0 16px", margin: "8px 0 0" }}>
+        <div style={{ padding: "0 10px", margin: "8px 0 0" }}>
           <div style={{ color: T.txt2, fontSize: 12 }}>
             {metric ? `${activeMetric.label} · alle Jahre` : "Alle Jahre im Überblick"}
           </div>
         </div>
 
-        <div style={{ padding: `0 16px ${UNTEN_FREI}px`, margin: "8px 0 0" }}>
+        <div style={{ padding: `0 10px ${UNTEN_FREI}px`, margin: "8px 0 0" }}>
           {!metric ? (
             // ── Übersicht: 3 Sparkline-Karten ──
             METRICS.map(m => {
@@ -422,7 +422,7 @@ function TrendOverviewScreen() {
           ) : (
             // ── Detail: ein Balken/eine Zeile pro Jahr für die gewählte Kennzahl ──
             <>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                 <button onClick={() => setMetric(null)}
                   style={{ display: "flex", alignItems: "center", gap: 6,
                     background: "transparent", border: "none", color: T.acc, fontSize: 13, fontWeight: 700,
@@ -453,7 +453,7 @@ function TrendOverviewScreen() {
                       aktuellFill={aktuellFillFor()}
                       onSelectYear={openYear} />}
               </div>
-              <div style={{ color: T.txt2, fontSize: 11, marginTop: 10, textAlign: "center" }}>
+              <div style={{ color: T.txt2, fontSize: 11, marginTop: 8, textAlign: "center" }}>
                 {layout === "vertical" ? "Balken" : "Zeile"} antippen → Money Mood für dieses Jahr
                 {activeMetric.split ? " · hell = vorgemerkt" : ""}
                 {activeMetric.key === "saldo" && layout === "vertical" ? " · hell = Prognose (laufendes/zukünftiges Jahr)" : ""}

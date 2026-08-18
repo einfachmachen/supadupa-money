@@ -86,3 +86,23 @@ describe("Jahres-Kopf: Abstand unter dem Hero", () => {
     expect(jsx).not.toMatch(/\["jahr",\s*"Trend"/);
   });
 });
+
+// Der Hero traegt 10px Seitenrand (themes.css). Die Trend-Bereiche standen mit
+// 16px schmaler und sprangen dadurch sichtbar ein — im Browser gemessen liegen
+// Hero und Karten jetzt beide bei links 10 / rechts 380 (390px breit).
+describe("Trend: Breite und Abstaende", () => {
+  const trend = lies("src/components/screens/TrendOverviewScreen.jsx");
+
+  it("nutzt denselben Seitenrand wie der Hero", () => {
+    expect(trend).toMatch(/padding:\s*"0 10px",\s*margin:\s*"8px 0 0"/);
+    expect(trend).toMatch(/padding:\s*`0 10px \$\{UNTEN_FREI\}px`/);
+    expect(trend).not.toMatch(/padding:\s*"0 16px"/);
+  });
+
+  it("haelt auch in der Detailansicht den 8px-Rhythmus", () => {
+    // Vorher standen hier 12 (unter der Steuerzeile) und 10 (ueber dem
+    // Hinweis) — Einzelwerte, waehrend ueberall sonst 8 gilt.
+    expect(trend).not.toMatch(/marginBottom:\s*12\s*\}\}>/);
+    expect(trend).not.toMatch(/marginTop:\s*10,\s*textAlign/);
+  });
+});
