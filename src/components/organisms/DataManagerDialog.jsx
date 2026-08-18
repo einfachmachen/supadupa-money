@@ -560,6 +560,27 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
     {key:"themes",  label:"eigene Farbthemes",       icon:"palette",   count:Object.keys(JSON.parse(kvStore.getItem("mbt_custom_themes")||"{}")).length},
   ];
 
+  // Auswahlfeld mit EIGENEM Pfeil. Die nativen Felder sehen je nach Plattform
+  // anders aus: iOS malt ein Doppel-Chevron mit eigenem Innenabstand, Chrome
+  // ein einfaches Dreieck, andere wieder anders — nebeneinander in einer Zeile
+  // faellt das sofort auf (Nutzer-Hinweis). `appearance:none` nimmt die native
+  // Darstellung weg, der Pfeil kommt stattdessen aus dem Symbolsatz der App
+  // und traegt damit auch die Themefarbe. `pointerEvents:none` laesst den
+  // Klick durch zum Feld darunter.
+  const ZeitFeld = ({value,onChange,children}) => (
+    <div style={{flex:1,minWidth:0,position:"relative",display:"flex"}}>
+      <select className="zeitraum-feld" value={value} onChange={onChange}
+        style={{flex:1,minWidth:0,...INP,marginBottom:0,padding:"0 13px 0 3px",textAlign:"center",
+          minHeight:ZEILE_H,boxSizing:"border-box",appearance:"none",WebkitAppearance:"none"}}>
+        {children}
+      </select>
+      <span style={{position:"absolute",right:2,top:"50%",transform:"translateY(-50%)",
+        pointerEvents:"none",display:"flex",alignItems:"center"}}>
+        {Li("chevron-down",11,T.txt2)}
+      </span>
+    </div>
+  );
+
   const rangeSelector = (
     <div style={{background:"rgba(0,0,0,0.15)",borderRadius:9,padding:"8px 10px",marginBottom:10}}>
       <div style={{color:T.txt2,fontSize:10,marginBottom:6,fontWeight:600}}>Zeitraum:</div>
@@ -571,27 +592,23 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
           "Alles" ist jetzt ein Symbolknopf: als Wort belegte er die Breite,
           die den Umbruch ausloeste. */}
       <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"nowrap"}}>
-        <select className="zeitraum-feld" value={fromM} onChange={e=>setFromM(Number(e.target.value))}
-          style={{flex:1,minWidth:0,...INP,marginBottom:0,padding:"0 2px",textAlign:"center",minHeight:ZEILE_H,boxSizing:"border-box"}}>
+        <ZeitFeld value={fromM} onChange={e=>setFromM(Number(e.target.value))}>
           {MONTHS_G.map((m,i)=><option key={i} value={i}>{m}</option>)}
-        </select>
+        </ZeitFeld>
         {/* Auswahlliste statt Zahlenfeld: gibt auf dem Geraet das native Rad
             und im Browser die Klappliste — beides ohne Tippen. Nebenbei
             entfallen die Spinner-Pfeile, die in der einzeiligen Leiste Breite
             gekostet haben. */}
-        <select className="zeitraum-feld" value={fromY} onChange={e=>setFromY(Number(e.target.value))}
-          style={{flex:1,minWidth:0,...INP,marginBottom:0,padding:"0 2px",textAlign:"center",minHeight:ZEILE_H,boxSizing:"border-box"}}>
+        <ZeitFeld value={fromY} onChange={e=>setFromY(Number(e.target.value))}>
           {jahreListe.map(j=><option key={j} value={j}>{j}</option>)}
-        </select>
+        </ZeitFeld>
         <span style={{color:T.txt2,fontSize:12,flexShrink:0}}>–</span>
-        <select className="zeitraum-feld" value={toM} onChange={e=>setToM(Number(e.target.value))}
-          style={{flex:1,minWidth:0,...INP,marginBottom:0,padding:"0 2px",textAlign:"center",minHeight:ZEILE_H,boxSizing:"border-box"}}>
+        <ZeitFeld value={toM} onChange={e=>setToM(Number(e.target.value))}>
           {MONTHS_G.map((m,i)=><option key={i} value={i}>{m}</option>)}
-        </select>
-        <select className="zeitraum-feld" value={toY} onChange={e=>setToY(Number(e.target.value))}
-          style={{flex:1,minWidth:0,...INP,marginBottom:0,padding:"0 2px",textAlign:"center",minHeight:ZEILE_H,boxSizing:"border-box"}}>
+        </ZeitFeld>
+        <ZeitFeld value={toY} onChange={e=>setToY(Number(e.target.value))}>
           {jahreListe.map(j=><option key={j} value={j}>{j}</option>)}
-        </select>
+        </ZeitFeld>
         <button onClick={()=>{setFromM(fullFromM);setFromY(fullFromY);setToM(fullToM);setToY(fullToY);}}
           title="Ganzer Zeitraum (alle Buchungen)" aria-label="Ganzer Zeitraum"
           style={{background:"rgba(255,255,255,0.07)",border:"none",color:T.txt2,borderRadius:6,

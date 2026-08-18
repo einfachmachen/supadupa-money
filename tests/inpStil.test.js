@@ -39,3 +39,33 @@ describe("INP (Eingabefeld-Grundstil)", () => {
     expect({ ...INP }.background).not.toBe(dunkel);
   });
 });
+
+// Die vier Zeitraum-Felder im Daten-Manager sind <select>. Nativ malt jede
+// Plattform sie anders — iOS ein Doppel-Chevron mit eigenem Innenabstand,
+// Chrome ein einfaches Dreieck — und nebeneinander in einer Zeile faellt das
+// sofort auf (Nutzer-Hinweis). Deshalb `appearance:none` plus ein Pfeil aus
+// dem Symbolsatz der App, der zugleich die Themefarbe traegt.
+describe("Zeitraum-Felder im Daten-Manager", () => {
+  it("schalten die native Darstellung ab und malen den Pfeil selbst", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { resolve, dirname } = await import("node:path");
+    const { fileURLToPath } = await import("node:url");
+    const wurzel = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+    const code = readFileSync(resolve(wurzel, "src/components/organisms/DataManagerDialog.jsx"), "utf8");
+
+    const feld = code.slice(code.indexOf("const ZeitFeld"), code.indexOf("const rangeSelector"));
+    expect(feld, "ZeitFeld nicht gefunden").toBeTruthy();
+    expect(feld).toMatch(/appearance:\s*"none"/);
+    expect(feld).toMatch(/WebkitAppearance:\s*"none"/);
+    expect(feld).toMatch(/Li\("chevron-down"/);
+    // Der Pfeil darf den Klick nicht abfangen — sonst laesst sich das Feld
+    // an der Stelle nicht mehr oeffnen.
+    expect(feld).toMatch(/pointerEvents:\s*"none"/);
+    // Und alle vier Felder muessen ueber dasselbe Bauteil laufen, sonst
+    // driften sie wieder auseinander.
+    expect((code.match(/<ZeitFeld /g) || []).length).toBe(4);
+    // Genau EIN <select> mit dem Haken — das im Bauteil. Taucht ein zweites
+    // auf, ist ein Feld an ZeitFeld vorbei gebaut und driftet wieder.
+    expect((code.match(/<select className="zeitraum-feld"/g) || []).length).toBe(1);
+  });
+});
