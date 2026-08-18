@@ -1019,6 +1019,12 @@ THEMES.tastenhell = {
   acc_warn:"#7E6300",         acc_warn_card:"#FFD24D",     // Platte 4,82:1 (war 1,21)
   acc_cond_pos:"#5C7000",     acc_cond_pos_card:"#BFFF00", // Platte 4,69:1 (war 1,01)
   acc_cond_neg:"#007585",     acc_cond_neg_card:"#00D9FF", // Platte 4,55:1 (war 1,43)
+  // Amber der manuellen Ueberschreibung. Beide Toene mussten nachgerechnet
+  // werden: der geerbte #B45309 schafft auf der Platte nur 4,23:1 (der Test
+  // hat es aufgedeckt, geschaetzt war er auf 4,6) und auf der Taste gar nur
+  // 1,56:1. #AB4E08 traegt auf der Platte, #FFC46B auf der Taste — beide
+  // bleiben erkennbar Amber.
+  acc_override:"#AB4E08",     acc_override_card:"#FFC46B", // Platte 4,62:1 · Taste 4,97:1
   hero_bg:"linear-gradient(135deg,#525252,#464646)",
   // Jede Flaeche, die Akzentfarben zeigt, muss eine Taste sein (Grund s. o.).
   // Das sind ausser den Karten selbst: Hero, Drei-Symbol-Zeile, der Kopf des

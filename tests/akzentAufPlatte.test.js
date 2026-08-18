@@ -53,6 +53,22 @@ describe("Akzent-Text auf Platte und Karte", () => {
     expect(kontrast(t.acc_neg_card, t.bg)).toBeLessThan(4.5);
   });
 
+  it("Tastenhell: acc_override traegt auf Platte und Taste", () => {
+    // Die Rolle kam nach: seit der Fuss der Jahrestabelle auf der
+    // Tabellenflaeche liegt, stand das Amber der manuellen Ueberschreibung
+    // dort mit 1,56:1. Gefunden hat es der Kontrast-Lauf, nachdem die
+    // Jahresansicht Station wurde — vorher sah er die Ansicht nie.
+    const t = THEMES.tastenhell;
+    expect(t.acc_override, "acc_override fehlt").toBeTruthy();
+    expect(t.acc_override_card, "acc_override_card fehlt").toBeTruthy();
+    const aufPlatte = kontrast(t.acc_override, t.bg);
+    const aufTaste = kontrast(t.acc_override_card, t.surf);
+    expect(aufPlatte, `acc_override ${t.acc_override} auf Platte ${t.bg}: ${aufPlatte.toFixed(2)}:1`)
+      .toBeGreaterThanOrEqual(4.5);
+    expect(aufTaste, `acc_override_card ${t.acc_override_card} auf Taste ${t.surf}: ${aufTaste.toFixed(2)}:1`)
+      .toBeGreaterThanOrEqual(4.5);
+  });
+
   it("belegt, warum es zwei Werte braucht: ein Ton kann nicht beides", () => {
     const t = THEMES.tastenhell;
     // Der Karten-Ton auf der Platte — das war der gemeldete Zustand.

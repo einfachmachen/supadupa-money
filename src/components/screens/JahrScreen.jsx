@@ -389,11 +389,11 @@ function JahrScreen({forceSingle=false}) {
               {(popup.sub==="M"||popup.sub==="E")&&popup.row?.type==="auto"&&popup.row?.subId&&(
                 <div style={{background:"rgba(180,83,9,0.1)",border:"1px solid rgba(180,83,9,0.3)",borderRadius:10,padding:"8px 12px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center",gap:8}}>
                   <div>
-                    <div style={{color:T.override,fontSize:10,fontWeight:700,marginBottom:1}}>Manuell überschrieben</div>
+                    <div style={{color:T.acc_override,fontSize:10,fontWeight:700,marginBottom:1}}>Manuell überschrieben</div>
                     <div style={{color:T.txt2,fontSize:10}}>Auto-Wert: <b style={{color:T.txt}}>{betrag(getActualSum(year, popup.mi, popup.row.subId, popup.sub)||0)}</b></div>
                   </div>
                   <button onClick={()=>{setJV(popup.mi,popup.id,popup.sub,"");setPopup(null);}}
-                    style={{background:"`${T.override}26`",border:"1px solid `${T.override}66`",color:T.override,borderRadius:8,padding:"6px 12px",fontSize:12,cursor:"pointer",fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>
+                    style={{background:`${T.override}26`,border:`1px solid ${T.override}66`,color:T.acc_override,borderRadius:8,padding:"6px 12px",fontSize:12,cursor:"pointer",fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>
                     ↺ Auto wiederherstellen
                   </button>
                 </div>
@@ -482,17 +482,17 @@ function JahrScreen({forceSingle=false}) {
                   borderRadius:10,margin:"0 12px 8px",padding:"8px 12px",
                   display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
                   <div style={{flex:1}}>
-                    <div style={{color:T.override,fontSize:10,fontWeight:700}}>Manuell überschrieben</div>
+                    <div style={{color:T.acc_override,fontSize:10,fontWeight:700}}>Manuell überschrieben</div>
                     <div style={{color:T.txt2,fontSize:10}}>
-                      Gespeichert: <b style={{color:T.override}}>{betrag(pn(drilldown.storedVal))}</b>
+                      Gespeichert: <b style={{color:T.acc_override}}>{betrag(pn(drilldown.storedVal))}</b>
                       {" · "}Auto: <b style={{color:T.txt}}>{betrag(pn(drilldown.autoVal))}</b>
                     </div>
                   </div>
                   <button onClick={()=>{
                     setJV(drilldown.mi, drilldown.rowId, drilldown.sub, "");
                     setDrilldown(p=>({...p, isOverride:false}));
-                  }} style={{background:"`${T.override}26`",border:"1px solid `${T.override}66`",
-                    color:T.override,borderRadius:8,padding:"6px 10px",fontSize:11,
+                  }} style={{background:`${T.override}26`,border:`1px solid ${T.override}66`,
+                    color:T.acc_override,borderRadius:8,padding:"6px 10px",fontSize:11,
                     cursor:"pointer",fontWeight:700,whiteSpace:"nowrap",flexShrink:0}}>
                     ↺ Auto
                   </button>
@@ -876,19 +876,37 @@ function JahrScreen({forceSingle=false}) {
 
             position sticky / left 0: der Scrollbereich laeuft auch waagerecht
             (die Tabelle ist breiter als der Bildschirm). Ohne das wandert die
-            Zeile beim Scrollen nach rechts aus dem Bild. */}
-        <div style={{padding:"4px 12px 6px",display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",
-          position:"sticky",left:0,borderTop:`1px solid ${T.bds}`,background:T.bg}}>
+            Zeile beim Scrollen nach rechts aus dem Bild.
+
+            Die Zeile traegt die Tabellenflaeche T.surf und die unteren runden
+            Ecken: damit ist sie der FUSS der Platte, und die Tabelle rundet
+            unten sichtbar ab. Auf der hellen Platte ging das nicht — der
+            Rahmen reicht bis hinter die Leiste, seine unteren Ecken liegen
+            also ausserhalb des Bildes. Die Flaeche im style-Attribut schaltet
+            zugleich die Textfarben auf ihre Karten-Varianten um (§4.7), die
+            Beschriftungen darin stimmen damit ohne weiteres Zutun. */}
+        <div className="jahres-tabelle-fuss" style={{padding:"6px 12px 8px",display:"flex",gap:8,flexWrap:"wrap",alignItems:"center",
+          position:"sticky",left:0,borderTop:`1px solid ${T.bds}`,background:T.surf}}>
+          {/* Ohne Rahmen und ohne waagerechtes Polster, damit die Beschriftung
+              exakt auf der Fluchtlinie der Hinweiszeilen darunter beginnt.
+              Farbe ueber T.acc_pos statt T.pos: die Akzentfarbe in ihrer
+              Variante fuer die jeweilige Flaeche. Als T.pos stand hier das
+              helle Limegreen auf der hellen Platte mit 1,3:1 — praktisch
+              unsichtbar (Nutzer-Hinweis). Auf der Tabellenflaeche traegt
+              dieselbe Rolle die karten-taugliche Variante. */}
           <button onClick={()=>setHideEmptyRows(v=>!v)}
             style={{display:"flex",alignItems:"center",gap:5,background:"transparent",
-              border:`1px solid ${hideEmptyRows?T.pos:T.bds}`,borderRadius:7,
-              padding:"2px 8px",color:hideEmptyRows?T.pos:T.lbl||T.txt2,
+              border:"none",padding:"2px 0",color:hideEmptyRows?T.acc_pos:T.txt2,
               fontSize:9,fontWeight:hideEmptyRows?700:400,cursor:"pointer",fontFamily:"inherit",flexShrink:0}}>
-            {Li(hideEmptyRows?"eye":"eye-off",9,hideEmptyRows?T.pos:T.lbl||T.txt2)}
+            {Li(hideEmptyRows?"eye":"eye-off",9,hideEmptyRows?T.acc_pos:T.txt2)}
             {hideEmptyRows?"nur genutzte Kategorien":"alle Kategorien"}
           </button>
           <span style={{color:T.lbl||T.txt2,fontSize:9}}>M = Buchungen 1–14 · E = alle · {col3Name} = aktuell</span>
-          <span style={{color:T.lbl||T.txt2,fontSize:9,opacity:0.6}}>░ schraffiert = Ende ≠ {col3Name} · <span style={{color:T.override}}>amber</span> = manuell überschrieben (Zelle anklicken → ↺ Auto zum Zurücksetzen)</span>
+          {/* opacity 0.9 statt 0.6: die Zeile soll leiser sein als die darueber,
+              aber lesbar bleiben. Wirksame Deckung ist Alpha MAL opacity — mit
+              0.6 landete der Text auf der Tabellenflaeche bei 3,1:1 und damit
+              unter der Schwelle 4,5:1; mit 0.9 sind es 4,8:1. */}
+          <span style={{color:T.lbl||T.txt2,fontSize:9,opacity:0.9}}>░ schraffiert = Ende ≠ {col3Name} · <span style={{color:T.acc_override}}>amber</span> = manuell überschrieben (Zelle anklicken → ↺ Auto zum Zurücksetzen)</span>
         </div>
         </div>{/* end data scroll */}
         </div>{/* end jahres-tabelle */}

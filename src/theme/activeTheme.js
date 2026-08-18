@@ -262,6 +262,11 @@ const _ACC_KEYS = {
   acc_warn:     { varName: "--acc-warn",     platte: (t) => t.acc_warn     || t.warn_icon,karte: (t) => t.acc_warn_card     || t.warn_icon },
   acc_cond_pos: { varName: "--acc-cond-pos", platte: (t) => t.acc_cond_pos || t.cond_pos, karte: (t) => t.acc_cond_pos_card || t.cond_pos },
   acc_cond_neg: { varName: "--acc-cond-neg", platte: (t) => t.acc_cond_neg || t.cond_neg, karte: (t) => t.acc_cond_neg_card || t.cond_neg },
+  // `override` markiert manuell ueberschriebene Werte in der Jahrestabelle.
+  // Die Rolle kam spaeter dazu: der Fuss der Tabelle liegt seit den runden
+  // Ecken auf der Tabellenflaeche, und dort stand das Amber mit 1,56:1 —
+  // gefunden vom Kontrast-Lauf, nachdem die Jahresansicht Station wurde.
+  acc_override: { varName: "--acc-override", platte: (t) => t.acc_override || t.override, karte: (t) => t.acc_override_card || t.override },
 };
 
 export const hatKartenText = (t = _state.current) => !!(t && t.txt_card);

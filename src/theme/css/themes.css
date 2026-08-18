@@ -619,3 +619,14 @@
     margin-right: 10px;
   }
   .theme-tastenhell .jahres-tabelle { border-radius: 16px; }
+  /* Der Fuss der Tabelle (Umschalter + Legende) traegt die unteren Ecken:
+     der Rahmen selbst reicht bis hinter die Leiste, seine Unterkante liegt
+     ausserhalb des Bildes. Sichtbar endet die Platte an dieser Zeile. */
+  .jahres-tabelle-fuss {
+    border-bottom-left-radius: 14px;
+    border-bottom-right-radius: 14px;
+  }
+  .theme-tastenhell .jahres-tabelle-fuss {
+    border-bottom-left-radius: 16px;
+    border-bottom-right-radius: 16px;
+  }
