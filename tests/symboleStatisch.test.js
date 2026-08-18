@@ -15,12 +15,12 @@ import { fileURLToPath } from "node:url";
 
 const wurzel = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-// Bereits bestehende Luecken. Nicht als "in Ordnung" gemeint, sondern als
-// Bestandsaufnahme: wer eine davon behebt, streicht sie hier.
-const BEKANNTE_LUECKEN = new Set([
-  "activity", "car", "corner-up-right", "fuel", "key", "key-round",
-  "maximize-2", "route", "trending-up",
-]);
+// Frueher standen hier neun Ausnahmen (activity, car, corner-up-right, fuel,
+// key, key-round, maximize-2, route, trending-up) — darunter das Symbol des
+// Money-Mood-Reiters und der „Alles"-Knopf im Zeitraum-Feld. Sie sind
+// nachgezogen, die Liste ist leer. Sie bleibt bestehen, damit ein bewusster
+// Ausnahmefall spaeter benannt statt stillschweigend eingebaut wird.
+const BEKANNTE_LUECKEN = new Set([]);
 
 function alleDateien(d, raus = []) {
   for (const e of readdirSync(d, { withFileTypes: true })) {

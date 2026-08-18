@@ -2,10 +2,11 @@
 // Diese rendern sofort (im Hauptbundle, tree-shaked). Das komplette Icon-Set
 // für den Icon-Picker und nutzergewählte Icons lädt main.jsx asynchron nach.
 import {
-  AlertCircle, AlertTriangle, ArrowDown, ArrowLeft, ArrowLeftRight, ArrowRight, ArrowRightLeft, Ban, BarChart2, Bookmark, Briefcase, Building, Calendar, CalendarPlus, CalendarRange, Check, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Cloud, Copy, CornerDownRight, CornerUpLeft, CreditCard, Database, Download, DownloadCloud, Edit, Edit2, Edit3, Euro, Eye, EyeOff, FileText, Filter, FolderOpen, GitBranch, GitCompare, GitMerge, Hash, HelpCircle, Home, Inbox, Info, Landmark, Layers, LifeBuoy, Link, List, Loader, Lock, Monitor, Palette, Pencil, PiggyBank, Plus, PlusCircle, RefreshCw, Repeat, RotateCcw, Search, Settings, Shield, ShoppingCart, Sliders, Split, Square, Star, StickyNote, Tag, Target, Trash2, Unlink, Unlock, Upload, UploadCloud, Wallet, Wifi, X, XCircle, Zap
+  Activity, AlertCircle, AlertTriangle, ArrowDown, ArrowLeft, ArrowLeftRight, ArrowRight, ArrowRightLeft, Ban, BarChart2, Bookmark, Briefcase, Building, Calendar, CalendarPlus, CalendarRange, Car, Check, CheckCircle, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Clock, Cloud, Copy, CornerDownRight, CornerUpLeft, CornerUpRight, CreditCard, Database, Download, DownloadCloud, Edit, Edit2, Edit3, Euro, Eye, EyeOff, FileText, Filter, FolderOpen, Fuel, GitBranch, GitCompare, GitMerge, Hash, HelpCircle, Home, Inbox, Info, Key, KeyRound, Landmark, Layers, LifeBuoy, Link, List, Loader, Lock, Maximize2, Monitor, Palette, Pencil, PiggyBank, Plus, PlusCircle, RefreshCw, Repeat, RotateCcw, Route, Search, Settings, Shield, ShoppingCart, Sliders, Split, Square, Star, StickyNote, Tag, Target, Trash2, TrendingUp, Unlink, Unlock, Upload, UploadCloud, Wallet, Wifi, X, XCircle, Zap
 } from "lucide-react";
 
 export const STATIC_LUCIDE = {
+  "activity": Activity,
   "alert-circle": AlertCircle,
   "alert-triangle": AlertTriangle,
   "arrow-down": ArrowDown,
@@ -21,6 +22,7 @@ export const STATIC_LUCIDE = {
   "calendar": Calendar,
   "calendar-plus": CalendarPlus,
   "calendar-range": CalendarRange,
+  "car": Car,
   "check": Check,
   "check-circle": CheckCircle,
   "chevron-down": ChevronDown,
@@ -32,6 +34,7 @@ export const STATIC_LUCIDE = {
   "copy": Copy,
   "corner-down-right": CornerDownRight,
   "corner-up-left": CornerUpLeft,
+  "corner-up-right": CornerUpRight,
   "credit-card": CreditCard,
   "database": Database,
   "download": Download,
@@ -45,6 +48,7 @@ export const STATIC_LUCIDE = {
   "file-text": FileText,
   "filter": Filter,
   "folder-open": FolderOpen,
+  "fuel": Fuel,
   "git-branch": GitBranch,
   "git-compare": GitCompare,
   "git-merge": GitMerge,
@@ -53,6 +57,8 @@ export const STATIC_LUCIDE = {
   "home": Home,
   "inbox": Inbox,
   "info": Info,
+  "key": Key,
+  "key-round": KeyRound,
   "landmark": Landmark,
   "layers": Layers,
   "life-buoy": LifeBuoy,
@@ -60,6 +66,7 @@ export const STATIC_LUCIDE = {
   "list": List,
   "loader": Loader,
   "lock": Lock,
+  "maximize-2": Maximize2,
   "monitor": Monitor,
   "palette": Palette,
   "pencil": Pencil,
@@ -69,6 +76,7 @@ export const STATIC_LUCIDE = {
   "refresh-cw": RefreshCw,
   "repeat": Repeat,
   "rotate-ccw": RotateCcw,
+  "route": Route,
   "search": Search,
   "settings": Settings,
   "shield": Shield,
@@ -81,6 +89,7 @@ export const STATIC_LUCIDE = {
   "tag": Tag,
   "target": Target,
   "trash-2": Trash2,
+  "trending-up": TrendingUp,
   "unlink": Unlink,
   "unlock": Unlock,
   "upload": Upload,
