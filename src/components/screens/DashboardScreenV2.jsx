@@ -1137,10 +1137,16 @@ function DashboardScreenV2() {
         {/* Pull-to-Refresh-Indikator: erscheint beim Herunterziehen zwischen dem
             fest positionierten Hero und der ersten Kategorie. */}
         {pullDist > 0 && !bankFetch && (
+          // T.acc statt T.blue: der Hinweis liegt direkt auf der Platte, ohne
+          // eigene Flaeche. T.blue ist der Rohton des Themes — in Tastenhell
+          // das helle Limegreen der Tasten, das auf der hellen Platte mit
+          // 1,29:1 fast nicht zu erkennen war (Nutzer-Hinweis: faellt beim
+          // Abrufen der Buchungen auf). T.acc ist dieselbe Rolle in der
+          // Variante fuer die jeweilige Flaeche.
           <div style={{height:pullDist,display:"flex",alignItems:"center",justifyContent:"center",
-            gap:8,color:pullDist>=PULL_THRESHOLD?T.blue:T.txt2,fontSize:12.5,fontWeight:700,
+            gap:8,color:pullDist>=PULL_THRESHOLD?T.acc:T.txt2,fontSize:12.5,fontWeight:700,
             overflow:"hidden"}}>
-            {Li(pullDist>=PULL_THRESHOLD?"download-cloud":"arrow-down",16,pullDist>=PULL_THRESHOLD?T.blue:T.txt2)}
+            {Li(pullDist>=PULL_THRESHOLD?"download-cloud":"arrow-down",16,pullDist>=PULL_THRESHOLD?T.acc:T.txt2)}
             {pullDist>=PULL_THRESHOLD?"Loslassen zum Abrufen":"Ziehen für neue Buchungen"}
           </div>
         )}

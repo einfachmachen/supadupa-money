@@ -94,3 +94,22 @@ describe("Akzent-Text auf Platte und Karte", () => {
     expect(T.acc).toBe(wert.blue);
   });
 });
+
+// Der Pull-to-Refresh-Hinweis („Loslassen zum Abrufen") liegt direkt auf der
+// Platte, ohne eigene Flaeche. Er trug den ROHTON T.blue — in Tastenhell das
+// helle Limegreen der Tasten, auf der hellen Platte mit 1,29:1 fast nicht zu
+// erkennen (Nutzer-Hinweis, gefallen beim Abrufen der Buchungen). Genau dafuer
+// gibt es die Rolle T.acc mit ihrer Flaechenvariante.
+describe("Pull-to-Refresh-Hinweis auf der Platte", () => {
+  it("nutzt die Akzentrolle, nicht den Rohton", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { resolve, dirname } = await import("node:path");
+    const { fileURLToPath } = await import("node:url");
+    const wurzel = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+    const code = readFileSync(resolve(wurzel, "src/components/screens/DashboardScreenV2.jsx"), "utf8");
+    const block = code.slice(code.indexOf("pullDist > 0 && !bankFetch"), code.indexOf("Ziehen für neue Buchungen"));
+    expect(block, "Pull-Anzeige nicht gefunden").toBeTruthy();
+    expect(block).toMatch(/PULL_THRESHOLD\?T\.acc:/);
+    expect(block).not.toMatch(/PULL_THRESHOLD\?T\.blue:/);
+  });
+});
