@@ -11,7 +11,10 @@ import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
 import { useSaldoHeroData } from "../../state/useSaldoHeroData.js";
 
 const noop = () => {};
-const OPTS = [["trend", "Übersicht", "bar-chart-2"], ["mood", "Money Mood", "activity"], ["jahr", "Trend", "calendar-range"]];
+// Der dritte Reiter heisst „Jahr", nicht „Trend": „Trend" ist der Name des
+// ganzen Bereichs (untere Leiste) und stand als Reiter darin ein zweites Mal
+// fuer etwas Engeres — die Jahresansicht. Die id war ohnehin schon "jahr".
+const OPTS = [["trend", "Übersicht", "bar-chart-2"], ["mood", "Money Mood", "activity"], ["jahr", "Jahr", "calendar-range"]];
 
 function YearSectionHeader({ active, detailsOpen, setDetailsOpen, children }) {   // active: "mood" | "jahr"
   const { year, month, setSubTab } = useContext(AppCtx);
@@ -27,7 +30,10 @@ function YearSectionHeader({ active, detailsOpen, setDetailsOpen, children }) { 
   const setOpen = setDetailsOpen || setInternalOpen;
 
   return (
-    <div style={{ flexShrink: 0, background: T.bg }}>
+    // `jahres-kopf`: Haken fuer die Regel, die dem Hero hier den unteren Rand
+    // nimmt. Er wuerde sonst von diesem Wrapper eingeschlossen und kaeme zum
+    // Rand des Folgeblocks hinzu (16px statt 8px) — siehe themes.css.
+    <div className="jahres-kopf" style={{ flexShrink: 0, background: T.bg }}>
       <SaldoHeroV2 year={year} month={heroMonth} {...hero}
         onDrillBuchIn={noop} onDrillBuchOut={noop} onDrillPendIn={noop} onDrillPendOut={noop}
         onDrillUncatIn={noop} onDrillUncatOut={noop}

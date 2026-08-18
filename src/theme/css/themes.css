@@ -587,3 +587,22 @@
   .sdm-scroll::-webkit-scrollbar { width: 7px; }
   .sdm-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.06); border-radius: 4px; }
   .sdm-scroll::-webkit-scrollbar-thumb { background: rgba(245,166,35,0.7); border-radius: 4px; }
+  /* ── Jahres-Kopf (Trend/Money Mood/Jahr) ──
+     Der Hero sitzt hier in einem eigenen Wrapper, weil sich Reiterzeile und
+     Sortierzeile mit ihm auf- und zuklappen. Der Wrapper ist ein Flex-Kind und
+     damit ein eigener Block-Kontext: der untere Rand des Heros faellt darin
+     NICHT mehr mit dem oberen Rand des naechsten Blocks zusammen, sondern wird
+     eingeschlossen und addiert sich zu 8 + 8 = 16px. In Home und Monat stehen
+     Hero und Folgeblock als Geschwister im selben Kontext, dort fallen die
+     Raender zu 8px zusammen — daher der Unterschied, den man nur hier sah.
+
+     Sichtbar war er nur bei EINGEKLAPPTEM Hero: aufgeklappt endet der Wrapper
+     an der Reiterzeile (Rand unten 0), zugeklappt am Hero — mit dessen Rand.
+     Den Abstand nach unten bringt hier grundsaetzlich der Folgeblock mit, der
+     ihn ohnehin traegt.
+
+     Bewusst ohne Theme-Praefix: jedes Theme setzt dem Hero einen eigenen
+     unteren Rand, die Verdopplung trat in allen auf. Die Regel steht am Ende
+     der Datei, damit sie die theme-eigenen Hero-Raender gleicher Spezifitaet
+     (Theme-Klasse plus hero-flaeche, weiter oben) ueberschreibt. */
+  .jahres-kopf > .hero-flaeche { margin-bottom: 0; }
