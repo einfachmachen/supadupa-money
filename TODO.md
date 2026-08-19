@@ -188,6 +188,46 @@ in „dieser Nutzer hat Stufe X".
   Spaeter ueber LemonSqueezy-Webhook (`order_refunded`,
   `license_key_revoked`) automatisierbar.
 
+### Manipulation verhindern — ein ANDERES Ziel als Kopierschutz
+
+Anlass: „Ich moechte verhindern, dass sich ein talentiertes Script-Kiddie mal
+einen Spass macht und unsere Arbeit manipuliert." Das ist eine andere Sorge
+als entgangener Umsatz, und die wirksamen Mittel liegen woanders — praktisch
+alle AUSSERHALB des App-Codes.
+
+**Was harmlos ist:** Wer seine EIGENE Kopie im Browser verbiegt, schadet
+niemandem. Es verlaesst kein Datum das Geraet, kein anderer Nutzer merkt
+etwas. Gegen diesen Fall zu bauen kostet Aufwand und bringt nichts.
+
+**Was wirklich zaehlt, sind zwei Faelle:**
+
+1. **Jemand manipuliert, was ANDERE Nutzer bekommen.** Das ginge nur ueber
+   die Auslieferungskette, nicht ueber den Client. Angriffsflaeche sind
+   deshalb die Konten, nicht der Code:
+   - [ ] GitHub-Konto mit **2FA**; Cloudflare-Konto mit 2FA.
+   - [ ] **Branch-Schutz auf `main`** (kein Force-Push, kein Loeschen). Der
+     Deploy laeuft bei jedem Push auf main (`.github/workflows/deploy.yml`) —
+     wer dort schreiben kann, liefert an alle Nutzer aus.
+   - [ ] **Cloudflare-API-Token eng zuschneiden** (nur die noetigen
+     Berechtigungen), nicht den Global API Key verwenden.
+   - [x] Worker-Secrets liegen nie im Repo (`wrangler secret put`) — steht.
+
+2. **Jemand veroeffentlicht einen veraenderten Klon unter aehnlichem Namen.**
+   Das ist der Fall, der dem RUF schadet — und der einzige, gegen den es
+   ueberhaupt eine Handhabe gibt:
+   - [ ] **`LICENSE`-Datei fehlt komplett.** Ohne sie gilt formal „alle
+     Rechte vorbehalten", aber das weiss niemand, weil es nirgends steht.
+     Eine ausdrueckliche Lizenz (welche auch immer) macht klar, was erlaubt
+     ist und was nicht.
+   - [ ] Namensrechte/Marke „SupaDupa Money" pruefen, bevor Geld fliesst.
+
+**Wichtig fuer die Einordnung von Phase 4:** Das Repository ist heute
+**oeffentlich** (`visibility: public`, Forken erlaubt). Solange das so ist,
+schuetzt kein nachgeladenes Premium-Buendel irgendetwas — der komplette
+Quelltext liegt ohnehin offen. Wer Premium-Code wirklich nicht oeffentlich
+haben will, muesste zuerst das Repository (oder wenigstens diesen Teil)
+privat stellen. Das ist die Voraussetzung, nicht ein Detail danach.
+
 ### Vor der Veroeffentlichung zu klaeren (nicht Code)
 
 - [ ] **Apple: Aktivierungscodes per Mail sind in einer iOS-App ein Problem.**
@@ -245,6 +285,41 @@ richtig, fuehrt aber in die falsche Richtung:
 Was der Weg wirklich leistet: er verschiebt die Huerde von „oeffentliches
 Bundle lesen" auf „einmal kaufen und den Code aktiv wegsichern". Gegen
 beilaeufiges Kopieren hilft das, gegen Entschlossene nicht.
+
+**Variante „Leerdateien nachschieben" — geprueft, ebenfalls nicht.**
+Vorschlag: Solange offline, passiert nichts; kommt der Nutzer ohne gueltiges
+Token online, liefert der Server leere Dateien aus, die die lokal
+gespeicherten ueberschreiben. Das ist BESSER gedacht als das Loeschen nach
+Frist — es entschaerft genau den Einwand oben, denn wer offline ist, wird
+nicht angetastet, und die Entscheidung faellt serverseitig. Drei andere
+Gruende sprechen trotzdem dagegen:
+
+- **Aus einem heilbaren Zustand wird ein zerstoerender.** Heute heisst „Token
+  fehlt" nur: Funktionen verborgen, beim naechsten erfolgreichen Abgleich in
+  Sekunden wieder da. Mit dem Ueberschreiben heisst eine fehlgeschlagene
+  Pruefung: Code WEG, Wiederherstellung braucht funktionierenden Server plus
+  Download. Und Pruefungen schlagen fehl — `secret_not_configured` hatten wir
+  beim Einrichten real, dazu kommen verrutschte KV-Bindings nach einem
+  Deploy, Zahlungsanbieter-Aussetzer, Cloudflare-Stoerungen.
+- **Die Datei erreicht nur den Client, der mitspielt.** Wer die Gates
+  entfernt hat, holt sie nicht ab oder bedient sich aus seiner Kopie. Der
+  zerstoerende Pfad trifft damit ausgerechnet zahlende Kunden und ehrliche
+  Gratis-Nutzer.
+- **Fuer ein EINMALPRODUKT gibt es den Zielfall kaum.** Eine gekaufte Lizenz
+  laeuft nicht ab, es gibt also keinen „frueheren Zahler". Bleiben
+  Rueckbuchung und Erstattung — und dafuer steht die Antwort schon in
+  Phase 3 (KV-Eintrag loeschen, Proxy schlaegt nach).
+
+Technisch dazu: Vite vergibt inhaltsabhaengige Dateinamen
+(`index-LjoFr_6S.js`) — eine „gleichnamige leere Datei" gibt es nicht, das
+Buendel braeuchte eine feste URL plus Sonderbehandlung im Service Worker.
+Und ein leeres Modul, das die App importieren will, ist kein Gate, sondern
+ein Laufzeitfehler.
+
+Leitplanken, falls es spaeter DOCH kommt: nur auf eine ausdruecklich
+signierte Widerrufs-Antwort hin, nie bei Fehler, Zeitueberschreitung oder
+unklarer Antwort — und lieber „als inaktiv markieren" als Bytes zerstoeren,
+damit der Weg zurueck ohne Download geht.
 
 **Falls spaeter doch: das Tor sitzt bei der AUSLIEFERUNG, nicht beim
 Behalten.** Eine Route auf dem eigenen Server gibt das Premium-Buendel nur
