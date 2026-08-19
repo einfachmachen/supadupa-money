@@ -210,10 +210,53 @@ in „dieser Nutzer hat Stufe X".
 - [ ] Preis festlegen; Widerrufsbelehrung, AGB, Datenschutzerklaerung.
   Gehoert zu jemandem, der dafuer haftet — nicht in diese Datei.
 
-### Phase 4 — optional
+### Phase 4 — optional (und bewusst zurueckgestellt)
 
 - [ ] **Premium-Code als separat nachgeladenes Bundle** statt im oeffentlichen
   Build. Deutlich mehr Aufwand; erst sinnvoll, wenn 1–3 stehen.
+
+**Abwaegung dazu — Stand dieser Entscheidung: NICHT jetzt bauen.**
+
+Die naheliegende Verschaerfung waere, das nachgeladene Buendel beim Ablauf
+der Lizenz (also spaetestens nach 30 Tagen) wieder aus dem Geraetespeicher zu
+werfen — sonst bliebe es im Service-Worker- bzw. HTTP-Cache liegen und ein
+manipulierter Client koennte es weiter laden. Der Gedanke ist technisch
+richtig, fuehrt aber in die falsche Richtung:
+
+- **Das Loeschen fuehrt der Client aus, dem man nicht traut.** „Token
+  abgelaufen → Buendel verwerfen" ist eine Zeile im oeffentlichen Code. Wer
+  die Gates entfernt, entfernt sie im selben Atemzug.
+- **Einmal ausgeliefert ist ausgeliefert.** Der Code lag im Netzwerk-Tab des
+  Browsers. Geloescht wird der eigene Cache, nicht die Kopie, die jemand
+  gespeichert hat.
+- **Es widerspricht direkt der stillen Erneuerung.** Die 30 Tage Laufzeit
+  gibt es, damit ein zahlender Nutzer offline nicht ausgesperrt wird.
+  Verschwindet bei Ablauf der CODE, verliert genau dieser Nutzer nach einem
+  Monat ohne Netz seine Funktionen — und kommt schlechter wieder heran als
+  bei einem blossen Token-Ablauf: ein Token holt man in Sekunden nach, ein
+  fehlendes Buendel braucht einen Download. Das trifft ausgerechnet die, die
+  bezahlt haben, bei einer App, deren Verkaufsargument „funktioniert ohne
+  Netz" ist.
+- **Baukosten:** Premium-Funktionen duerften nirgends mehr statisch
+  importiert werden, jeder Beruehrungspunkt wird asynchron, der Service
+  Worker braucht eine Sonderbehandlung. Fuer eine iOS-Einreichung wird
+  nachgeladener Programmcode ausserdem nicht einfacher zu erklaeren.
+
+Was der Weg wirklich leistet: er verschiebt die Huerde von „oeffentliches
+Bundle lesen" auf „einmal kaufen und den Code aktiv wegsichern". Gegen
+beilaeufiges Kopieren hilft das, gegen Entschlossene nicht.
+
+**Falls spaeter doch: das Tor sitzt bei der AUSLIEFERUNG, nicht beim
+Behalten.** Eine Route auf dem eigenen Server gibt das Premium-Buendel nur
+gegen ein gueltiges Token heraus — das ist serverseitig und damit echt. Was
+einmal heruntergeladen wurde, bleibt liegen. Groesster Teil des Nutzens,
+ohne das Aussperr-Risiko. Ein zweiter Server ist dafuer nicht noetig, nur
+ein Pfad mit Pruefung.
+
+**Reihenfolge:** erst veroeffentlichen, dann sehen, ob ueberhaupt jemand
+kopiert. Der zu erwartende Verlust durch beilaeufiges Kopieren duerfte
+kleiner sein als der Preis dieser Komplexitaet — und kleiner als der
+Schaden, wenn ein zahlender Kunde ohne Netz vor einer halben App sitzt.
 
 ## Sync / Performance
 
