@@ -1,0 +1,47 @@
+# Auslieferungs-Kopfzeilen für Cloudflare Pages.
+#
+# GitHub Pages kennt diese Datei nicht und ignoriert sie — sie stört dort
+# also nicht, greift aber sofort, sobald über Cloudflare ausgeliefert wird.
+#
+# Warum überhaupt: Zwischen Browser und Datei sitzt bei Cloudflare ein
+# Edge-Cache. Der kann eine Datei ausliefern, die längst ersetzt wurde. Für
+# die drei Dateien, an denen die Update-Erkennung hängt, wäre das fatal —
+# die App würde einen neuen Build nie bemerken.
+
+# version.json trägt die Build-ID und ist die EINZIGE Quelle, an der die
+# laufende App einen neuen Deploy erkennt (utils/autoUpdate.js holt sie alle
+# 3 Minuten mit cache:"no-store"). Der Browser fragt damit zwar frisch, aber
+# der Edge könnte trotzdem eine alte Antwort zurückgeben.
+/version.json
+  Cache-Control: no-store
+  X-Content-Type-Options: nosniff
+
+# Der Service Worker aktualisiert sich nur, wenn der Browser eine geänderte
+# Datei sieht. Ein gecachter sw.js hielte die alte Version beliebig lange am
+# Leben — genau der Fehler, wegen dem in vite.config.js die Build-ID in die
+# sw.js geschrieben wird.
+/sw.js
+  Cache-Control: no-cache
+  X-Content-Type-Options: nosniff
+
+# index.html verweist auf die gehashten Bundles. Sie muss frisch sein, sonst
+# zeigt sie auf Dateien, die es nicht mehr gibt.
+/
+  Cache-Control: no-cache
+/index.html
+  Cache-Control: no-cache
+
+# Die gebauten Bundles tragen den Inhalt im Namen (index-LjoFr_6S.js). Unter
+# einer URL liegt damit immer derselbe Inhalt — sie dürfen ewig liegen
+# bleiben, und genau das macht die App beim zweiten Start schnell.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Grundlegende Absicherung für alle Auslieferungen. Bewusst KEINE
+# Content-Security-Policy hier: die App lädt Schriften und Bilder aus dem
+# eigenen Bundle, spricht aber mit frei konfigurierbaren Zielen (eigener
+# Cloud-Worker, Bank-Relay). Eine CSP müsste die kennen — das gehört
+# durchdacht und nicht nebenbei beim Umzug erledigt.
+/*
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
