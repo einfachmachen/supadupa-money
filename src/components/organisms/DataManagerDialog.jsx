@@ -8,6 +8,7 @@ import { AccountChips } from "../molecules/AccountChips.jsx";
 import { INP, ZEILE_H, UNTEN_FREI } from "../../theme/palette.js";
 import { THEMES } from "../../theme/themes.js";
 import { Li } from "../../utils/icons.jsx";
+import { NUM_FONT } from "../../utils/format.js";
 import { schriftAuf, aufToenung, toenungsGruende } from "../../theme/amtPill.js";
 import { kvStore } from "../../utils/kvStore.js";
 import { exportEbForSync, importEbFromSync } from "../../utils/enableBankingStore.js";
@@ -135,6 +136,12 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   const [showExportPass, setShowExportPass] = useState(false);
   const [recoveryCode, setRecoveryCode] = useState(() => randomRecoveryCode());
   const [recoveryCodeCopied, setRecoveryCodeCopied] = useState(false);
+  // Nach dem Speichern: welcher Code gehoert zu der Datei, die gerade auf der
+  // Platte liegt? Ohne diese Bestaetigung sah der Nutzer nur einen Code im
+  // Dialog, der sich beim naechsten Oeffnen aendert — und konnte nicht
+  // wissen, welcher zu welcher Datei gehoert (Nutzer-Hinweis).
+  const [letzteSicherung, setLetzteSicherung] = useState(null); // {datei, code} | null
+  const [letzterCodeKopiert, setLetzterCodeKopiert] = useState(false);
   const [importExportPass, setImportExportPass] = useState("");
   const [importRecoveryCode, setImportRecoveryCode] = useState("");
 
@@ -219,8 +226,19 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
     const blob = new Blob([json], {type:"application/json"});
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
-    a.href=url; a.download=`supadupa-backup-${new Date().toISOString().slice(0,10)}.json`;
+    const datei = `supadupa-backup-${new Date().toISOString().slice(0,10)}.json`;
+    a.href=url; a.download=datei;
     a.click(); URL.revokeObjectURL(url);
+    // Den Code MIT DEM DATEINAMEN festhalten. Vorher stand er nur lose im
+    // Dialog und wechselte beim naechsten Oeffnen — wer zweimal exportierte,
+    // hatte zwei Codes gesehen und keine Moeglichkeit zu wissen, welcher zu
+    // welcher Datei gehoert.
+    if (encryptExport && exportEncReady) {
+      setLetzteSicherung({ datei, code: recoveryCode });
+      setLetzterCodeKopiert(false);
+    } else {
+      setLetzteSicherung({ datei, code: null });
+    }
   };
 
   const copyExport = async () => {
@@ -782,7 +800,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                 <div style={{marginTop:10,padding:"8px 10px",borderRadius:8,
                   background:"rgba(0,0,0,0.25)",border:`1px dashed ${T.gold}66`}}>
                   <div style={{color:T.acc_gold,fontSize:10,fontWeight:700,marginBottom:5}}>
-                    {Li("key-round",11,T.acc_gold)} Recovery-Code — jetzt sichern (Passwort-Manager, Ausdruck …):
+                    {Li("key-round",11,T.acc_gold)} Recovery-Code fuer DIESE Sicherung — jetzt sichern:
                   </div>
                   <div style={{color:T.txt,fontSize:14,fontWeight:700,fontFamily:"monospace",
                     letterSpacing:0.5,wordBreak:"break-all",marginBottom:6}}>
@@ -877,6 +895,50 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
               </button>
             </div>
             ); })()}
+
+            {/* Bestaetigung NACH dem Speichern.
+                Der Recovery-Code wird bei jedem Oeffnen des Dialogs neu
+                erzeugt — das ist richtig so, denn jede Sicherung ist ein
+                eigener, in sich geschlossener Umschlag. Nur wusste das
+                niemand: Wer den Dialog zweimal oeffnete, sah zwei Codes und
+                konnte nicht wissen, welcher zu welcher Datei gehoert
+                (Nutzer-Hinweis). Deshalb hier Dateiname UND Code zusammen,
+                erst nachdem die Datei wirklich geschrieben ist. */}
+            {letzteSicherung && (
+              <div className="hinweis-karte" style={{marginTop:12,padding:"10px 12px",borderRadius:10,
+                background:`${T.pos}12`,border:`1px solid ${T.pos}55`}}>
+                <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:6}}>
+                  {Li("check-circle",14,aufBanner(T.pos,3))}
+                  <b style={{color:aufBanner(T.pos),fontSize:12}}>Sicherung gespeichert</b>
+                </div>
+                <div style={{color:T.txt2,fontSize:11,lineHeight:1.55,
+                  wordBreak:"break-all",marginBottom:letzteSicherung.code?8:0}}>
+                  {letzteSicherung.datei}
+                </div>
+                {letzteSicherung.code && (<>
+                  <div style={{color:T.txt,fontSize:11,lineHeight:1.55,marginBottom:6}}>
+                    Diese Datei laesst sich <b>nur</b> mit Deiner Passphrase und
+                    <b> genau diesem</b> Recovery-Code oeffnen:
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                    <code style={{fontFamily:NUM_FONT,fontSize:13,fontWeight:700,color:T.txt,
+                      letterSpacing:0.5}}>{letzteSicherung.code}</code>
+                    <button onClick={()=>{navigator.clipboard.writeText(letzteSicherung.code);setLetzterCodeKopiert(true);}}
+                      style={{padding:"5px 10px",borderRadius:8,border:`1px solid ${T.bd}`,
+                        background:"transparent",color:aufBanner(T.pos),fontSize:11,fontWeight:700,
+                        cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>
+                      {Li(letzterCodeKopiert?"check":"copy",11,aufBanner(T.pos,3))}
+                      {letzterCodeKopiert?"Kopiert":"Code kopieren"}
+                    </button>
+                  </div>
+                  <div style={{color:T.txt2,fontSize:10,lineHeight:1.55,marginTop:8}}>
+                    Jede Sicherung hat ihren <b>eigenen</b> Code. Beim naechsten Export
+                    steht oben ein neuer — der gilt dann fuer die neue Datei und macht
+                    diese hier <b>nicht</b> ungueltig.
+                  </div>
+                </>)}
+              </div>
+            )}
           </>)}
 
           {/* ── IMPORT ── */}
