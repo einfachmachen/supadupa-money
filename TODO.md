@@ -203,6 +203,10 @@ hinterlegt sind. Die Einrichtungsschritte stehen im Kopf der Datei.
 - [x] `public/_headers` fuer Cloudflare angelegt: `version.json` und `sw.js`
   duerfen NICHT vom Edge gecacht werden (sonst bemerkt die App neue Deploys
   nie), die gehashten Bundles dagegen ewig. GitHub Pages ignoriert die Datei.
+- [x] **Anleitung zum Abarbeiten: `Cloudflare-Pages-Umzug.md`** — Teile A–H
+  mit Haken, Fehlermeldungs-Tabelle und den Stolpersteinen (Direct Upload
+  statt Git-Anbindung, PWA muss neu installiert werden, ALLOWED_ORIGINS in
+  beiden Workern nachziehen).
 - [ ] Cloudflare Pages-Projekt anlegen (Direct Upload), API-Token +
   Account-ID als Repo-Secrets, `CF_DEPLOY=true` setzen.
 - [ ] `supadupa.top` auf das Pages-Projekt zeigen lassen.
