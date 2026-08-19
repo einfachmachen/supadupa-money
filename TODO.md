@@ -467,9 +467,10 @@ Schaden, wenn ein zahlender Kunde ohne Netz vor einer halben App sitzt.
 - [x] **Reihenfolge im Export-Reiter:** Bank-Schluessel VOR
   „Export verschluesseln" — so passiert es auch (erst wird der Schluessel in die
   Datei gepackt, dann wird die Datei verschluesselt).
-- Aeltere Sicherungen tragen den Schluessel weiter im eigenen Umschlag. Der
-  Import erkennt sie daran, dass `_ebSecure` selbst ein Umschlag ist, und fragt
-  dann weiter nach der alten Schluessel-Passphrase.
+- [x] **Das Import-Feld „Passphrase fuer Bank-Schluessel" ist entfernt**
+  (Nutzer-Entscheidung: einmal neu sichern, dann wird es nicht mehr
+  gebraucht). Trifft der Import doch eine Datei im alten Format, sagt er das
+  im Klartext und ueberspringt den Schluessel — er scheitert nicht still.
 
 ## Kontrast — offene Punkte
 
@@ -480,6 +481,44 @@ Schaden, wenn ein zahlender Kunde ohne Netz vor einer halben App sitzt.
   entweder die betroffenen Themes nachziehen oder `T.txt2` denselben
   Zwei-Farben-Mechanismus geben wie `T.txt`. Bewusst nicht nebenbei mit
   erledigt.
+
+- [ ] **Alle uebrigen hellen Themes durchgehen.** Bisher sind die Kontraste
+  Bildschirm fuer Bildschirm nachgerechnet worden, angestossen jeweils von
+  einem konkreten Fund. Die Rechnung selbst gilt aber fuer ALLE Themes, und
+  die hellen sind die kritischen: `hellgrau`, `creme`, `softecotech`,
+  `abenteuergruen`, `zirkustaschenrechner`, `cleancorporate`, `sand`,
+  `swiss`, `kontrasthell`, `paper`, `ios`, `material`, `dkb`. Dort faellt
+  regelmaessig durch, was auf dunklem Grund traegt — Gold auf `zirkus`
+  2,11:1, das Cloudflare-Orange auf `hellgrau` 2,86:1, `acc_neg` auf `dkb`
+  3,00:1. Aufgabe: `tools/kontrast.cjs` ueber jedes helle Theme laufen
+  lassen und die Funde entweder im Theme oder ueber die Helfer
+  (`aufPlatte`/`imKasten`/`knopfPaar`) beheben.
+
+## Gestaltung — die Abstaende von „Tastenhell" fuer ALLE Themes
+
+- [ ] **Nutzer-Wunsch:** „Tastenhell" wirkt deutlich aufgelockerter als die
+  uebrigen Themes, und das soll ueberall so sein. Die Ursache ist nicht die
+  Farbe, sondern der Abstand: Das Theme bringt eine eigene Regelgruppe in
+  `src/theme/css/themes.css` mit (`.theme-tastenhell …`) — Aussenabstand um
+  Hero und Symbolzeile (`margin: 8px 10px`), groessere Radien (16 statt 14),
+  Luft zwischen den Kategoriezeilen (`.kategorie-liste { gap: 8px }`),
+  Abstaende um Diagramm-, Sortier-, Such- und Filterzeile, und eine untere
+  Leiste mit Fugen zwischen den Reitern.
+
+  Zu tun: Diese Werte aus dem Theme herausloesen und zur Grundeinstellung der
+  App machen, statt sie an `.theme-tastenhell` zu haengen. Zwei Punkte, die
+  dabei nicht untergehen duerfen:
+
+  1. **Die Fuge braucht einen Kontrast.** Bei „Tastenhell" ist die Platte
+     hell und die Karte dunkel — der Abstand ist deshalb SICHTBAR. In
+     Themes, deren Karten fast die Hintergrundfarbe haben (`kontrasthell`:
+     beides `#FFFFFF`), entsteht durch mehr Abstand kein luftigeres Bild,
+     sondern nur eine groessere weisse Flaeche. Dort muss
+     `flaecheAbgesetzt()` mitziehen — den Helfer gibt es schon, er wird bloss
+     noch nicht ueberall benutzt.
+  2. **Die Hoehe.** Mehr Abstand heisst weniger Zeilen pro Bildschirm. Auf
+     einem iPhone 13 mini ist das spuerbar. Vor dem Umbau einmal im Browser
+     durchmessen, nicht schaetzen.
 
 ## Sync / Performance
 

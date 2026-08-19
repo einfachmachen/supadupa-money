@@ -9,7 +9,7 @@
 
 import React, { useContext, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
-import { theme as T, accWert } from "../../theme/activeTheme.js";
+import { theme as T, accWert, flaecheAbgesetzt } from "../../theme/activeTheme.js";
 import { aufToenung, schriftAuf, toenungsGrund, knopfPaar } from "../../theme/amtPill.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { Li } from "../../utils/icons.jsx";
@@ -75,11 +75,20 @@ function Box({ tone = "info", children }) {
   );
 }
 
-const lblStyle = { color: T.txt2, fontSize: 14.5, fontWeight: 700, marginBottom: 6, marginTop: 16, display: "block" };
-const inputStyle = {
-  width: "100%", boxSizing: "border-box", background: T.bg, color: T.txt,
+// Als FUNKTIONEN, nicht als Konstanten: der Assistent wird nachgeladen
+// (Code-Splitting), und `T.txt2` & Co. liefern den Wert des Themes, das dabei
+// gerade aktiv war. Wer danach das Theme wechselte, sah hier die alte Farbe.
+const lbl = () => ({ color: T.txt2, fontSize: 14.5, fontWeight: 700, marginBottom: 6, marginTop: 16, display: "block" });
+
+// Eingabefelder standen auf `T.bg` — auf GENAU der Farbe der Seite dahinter.
+// Sichtbar war nur ein 1px-Rahmen, als Eingabefeld erkannte man sie nicht
+// (Nutzer-Hinweis zu den Schritten 6, 7 und 8). `flaecheAbgesetzt()` nimmt die
+// Kartenfarbe des Themes und rueckt sie selbst vom Untergrund ab, wo beide zu
+// dicht beieinander liegen.
+const feld = () => ({
+  width: "100%", boxSizing: "border-box", background: flaecheAbgesetzt(), color: T.txt,
   border: `1px solid ${T.bds || T.bd}`, borderRadius: 11, padding: "13px 14px", fontSize: 17, fontFamily: "inherit",
-};
+});
 function LinkBtn({ href, icon, children, color }) {
   const c = color || T.cf || T.blue;
   return (
@@ -102,7 +111,7 @@ function Fig({ name, alt }) {
         borderRadius: 14, border: `1px solid ${T.bd}` }} />
   );
 }
-const olStep = { margin: "10px 0 0", padding: "0 0 0 20px", color: T.txt, fontSize: 15.5, lineHeight: 1.6 };
+const olStep = () => ({ margin: "10px 0 0", padding: "0 0 0 20px", color: T.txt, fontSize: 15.5, lineHeight: 1.6 });
 
 // Die vollflächigen Aktionsknöpfe („Code kopieren", „Secret generieren",
 // „Daten hochladen"): ganz in `T.pos`, Beschriftung `T.on_accent` darauf.
@@ -110,6 +119,12 @@ const olStep = { margin: "10px 0 0", padding: "0 0 0 20px", color: T.txt, fontSi
 // rückt sie nur im Ausnahmefall in 5-%-Schritten, wenn dort weder die
 // Wunschschrift noch Schwarz oder Weiß auf 4,5:1 kommt.
 const aktionsKnopf = () => knopfPaar(T.pos, T.on_accent);
+
+// „Verbindung testen" (Schritt 9) war ein 8-%-Schleier mit duennem Rahmen —
+// als KNOPF hat man ihn nicht erkannt (Nutzer-Hinweis). Jetzt vollflaechig wie
+// die anderen Aktionsknoepfe, nur in der Cloudflare-Farbe statt in `T.pos`,
+// damit „testen" und „hochladen" unterscheidbar bleiben.
+const testKnopf = () => knopfPaar(T.cf || T.blue, T.on_accent);
 
 function CloudSetupWizard({ onClose, onBack }) {
   const {
@@ -210,8 +225,9 @@ function CloudSetupWizard({ onClose, onBack }) {
   }, [step, urlReady, secretReady, passReady]);
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: T.bg, zIndex: 320, display: "flex", flexDirection: "column",
-      paddingBottom: "57px" }}>
+    <div className="formular-blatt"
+      style={{ position: "fixed", inset: 0, background: T.bg, zIndex: 320, display: "flex", flexDirection: "column",
+        paddingBottom: "57px" }}>
       {/* Header — einheitlich mit den anderen Daten-Tab-Dialogen (siehe MobileHeader) */}
       <MobileHeader title="Cloud-Sync einrichten"
         subtitle={`Schritt ${step + 1}/${STEPS.length} · ${STEPS[step].title}`}
@@ -308,7 +324,7 @@ function CloudSetupWizard({ onClose, onBack }) {
               <Box tone="info">
                 Lege deinen Worker im Cloudflare-Dashboard an — <b>ganz ohne GitHub</b>.
               </Box>
-              <ol style={olStep}>
+              <ol style={olStep()}>
                 <li>Im <a href={DASH_URL} target="_blank" rel="noopener noreferrer" style={{ color: aufPlatte("acc_cf"), fontWeight: 700 }}>Cloudflare-Dashboard</a> → <b>Workers &amp; Pages</b> <i>(Workers und Pages)</i> → <b>Create</b> <i>(Erstellen)</i> → <b>Worker</b>.</li>
                 <li>Name z. B. <b>supadupa-sync</b> → <b>Deploy</b> <i>(Bereitstellen)</i>.</li>
               </ol>
@@ -337,7 +353,7 @@ function CloudSetupWizard({ onClose, onBack }) {
                   background: aktionsKnopf().grund, color: aktionsKnopf().schrift, fontSize: 15, fontWeight: 800, cursor: "pointer" }}>
                 {Li(codeCopied ? "check" : "copy", 16, aktionsKnopf().schrift)} {codeCopied ? "Code kopiert!" : "Worker-Code kopieren"}
               </button>
-              <ol style={olStep}>
+              <ol style={olStep()}>
                 <li><b>Edit code</b> <i>(Code bearbeiten)</i> öffnen, alles markieren, den kopierten Code <b>einfügen</b> → <b>Deploy</b> <i>(Bereitstellen)</i>.</li>
               </ol>
               <Fig name="cloudflare-edit-code.svg" alt="Code einfügen: Code bearbeiten öffnen, alles markieren, einfügen, Bereitstellen" />
@@ -350,7 +366,7 @@ function CloudSetupWizard({ onClose, onBack }) {
                 Lege den Speicher (<b>KV-Namespace</b>) an. Das geht <b>nur hier</b> —
                 der Binding-Dialog im nächsten Schritt kann keinen neuen anlegen.
               </Box>
-              <ol style={olStep}>
+              <ol style={olStep()}>
                 <li>Menü <b>Storage &amp; Databases → KV</b> <i>(Speicher und Datenbanken → KV)</i> — je nach Dashboard auch <b>Workers &amp; Pages → KV</b>.</li>
                 <li><b>Create</b> <i>(Namespace erstellen)</i> → Name z. B. <b>supadupa-sync-kv</b>.</li>
               </ol>
@@ -363,7 +379,7 @@ function CloudSetupWizard({ onClose, onBack }) {
               <Box tone="info">
                 Verbinde den Speicher mit dem Worker (Binding).
               </Box>
-              <ol style={olStep}>
+              <ol style={olStep()}>
                 <li>Reiter <b>Bindings</b> <i>(Bindungen)</i> öffnen — <b>eigener Reiter neben „Settings"</b>, nicht darunter → <b>Add binding</b> <i>(Bindung hinzufügen)</i> → Typ <b>KV namespace</b>.</li>
                 <li><b>Variable name</b> <i>(Variablenname)</i>: genau <b>SYNC_KV</b>. <b>KV namespace</b>: den eben angelegten <b>supadupa-sync-kv</b> <b>auswählen</b>.</li>
               </ol>
@@ -377,8 +393,8 @@ function CloudSetupWizard({ onClose, onBack }) {
                 Nach dem <b>Deploy</b> zeigt Cloudflare die Adresse deines Workers
                 (endet auf <b>…workers.dev</b>). Trag sie hier ein.
               </Box>
-              <label style={lblStyle}>Worker-URL</label>
-              <input style={inputStyle} value={urlDraft}
+              <label style={lbl()}>Worker-URL</label>
+              <input style={feld()} value={urlDraft}
                 onFocus={()=>{urlFocused.current=true;}}
                 onBlur={()=>{urlFocused.current=false; setUrl(urlDraft);}}
                 onChange={(e) => setUrlDraft(e.target.value)}
@@ -403,8 +419,8 @@ function CloudSetupWizard({ onClose, onBack }) {
                 {Li(copied ? "check" : "key", 16, aktionsKnopf().schrift)} {copied ? "Kopiert!" : "Secret generieren & kopieren"}
               </button>
               <Fig name="cloudflare-secret.svg" alt="Secret setzen: Typ Secret, Variablenname SYNC_SECRET, Wert = kopiertes Secret" />
-              <label style={lblStyle}>Secret</label>
-              <input style={inputStyle} value={secretDraft}
+              <label style={lbl()}>Secret</label>
+              <input style={feld()} value={secretDraft}
                 onFocus={()=>{secFocused.current=true;}}
                 onBlur={()=>{secFocused.current=false; setSecret(secretDraft);}}
                 onChange={(e) => setSecretDraft(e.target.value)}
@@ -420,9 +436,9 @@ function CloudSetupWizard({ onClose, onBack }) {
                 (Zero-Knowledge). Auf <b>jedem Gerät dieselbe</b> Passphrase eingeben.
                 Geht sie verloren, sind die Cloud-Daten nicht mehr lesbar.
               </Box>
-              <label style={lblStyle}>Passphrase (leer = unverschlüsselt)</label>
+              <label style={lbl()}>Passphrase (leer = unverschlüsselt)</label>
               <div style={{ position: "relative" }}>
-                <input style={{ ...inputStyle, paddingRight: 44 }} type={showPass ? "text" : "password"}
+                <input style={{ ...feld(), paddingRight: 44 }} type={showPass ? "text" : "password"}
                   value={pass1} onChange={(e) => setPass1(e.target.value)}
                   placeholder="z. B. ein langer Merksatz"
                   autoCapitalize="off" autoCorrect="off" autoComplete="new-password" spellCheck={false} />
@@ -433,8 +449,8 @@ function CloudSetupWizard({ onClose, onBack }) {
                   {Li(showPass ? "eye-off" : "eye", 18, T.txt2)}
                 </button>
               </div>
-              <label style={lblStyle}>Passphrase wiederholen</label>
-              <input style={inputStyle} type={showPass ? "text" : "password"}
+              <label style={lbl()}>Passphrase wiederholen</label>
+              <input style={feld()} type={showPass ? "text" : "password"}
                 value={pass2} onChange={(e) => setPass2(e.target.value)}
                 placeholder="zur Sicherheit nochmal eingeben"
                 autoCapitalize="off" autoCorrect="off" autoComplete="new-password" spellCheck={false} />
@@ -466,10 +482,11 @@ function CloudSetupWizard({ onClose, onBack }) {
                   nicht geht, sagt stattdessen die Zeile darunter. */}
               <button onClick={runTest} disabled={!cfActive || testState === "testing"}
                 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-                  width: "100%", marginTop: 12, padding: "12px", borderRadius: 13, border: `1px solid ${T.cf || T.blue}55`,
-                  background: `${T.cf || T.blue}14`, color: aufToenung(T.cf || T.blue,0x14/255), fontSize: 15, fontWeight: 800,
+                  width: "100%", marginTop: 12, padding: "13px", borderRadius: 13, border: "none",
+                  background: testKnopf().grund, color: testKnopf().schrift, fontSize: 15, fontWeight: 800,
+                  fontFamily: "inherit",
                   cursor: !cfActive ? "not-allowed" : "pointer" }}>
-                {Li("wifi", 16, aufToenung(T.cf || T.blue,0x14/255,undefined,3))} {testState === "testing" ? "Teste…" : "Verbindung testen"}
+                {Li("wifi", 16, testKnopf().schrift)} {testState === "testing" ? "Teste…" : "Verbindung testen"}
               </button>
               {!cfActive && (
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8,

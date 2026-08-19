@@ -88,13 +88,20 @@ describe("Cloud-Assistent: Kontrast über alle neun Schritte", () => {
   });
 
   it("die vollflächigen Aktionsknöpfe tragen ihre Beschriftung", () => {
+    // `T.pos` = Code kopieren / Secret generieren / Daten hochladen,
+    // `T.cf` = „Verbindung testen" (Schritt 9). Letzterer war vorher ein
+    // 8-%-Schleier mit dünnem Rahmen und als Knopf nicht zu erkennen
+    // (Nutzer-Hinweis) — jetzt vollflächig, deshalb hier mit geprüft.
     const durchgefallen = [];
     for (const [name, t] of Object.entries(THEMES)) {
-      if (name === "custom_preview" || !t || !t.pos || !/^#/.test(t.pos)) continue;
+      if (name === "custom_preview" || !t || !t.bg) continue;
       setActiveTheme(name, t); _t = t;
-      const { grund, schrift } = knopfPaar(t.pos, t.on_accent);
-      const wert = kontrastWert(schrift, grund);
-      if (wert < 4.5) durchgefallen.push(`${name}: ${wert.toFixed(2)}:1`);
+      for (const [was, flaeche] of [["Aktion", t.pos], ["Verbindung testen", t.cf || t.blue]]) {
+        if (!flaeche || !/^#/.test(flaeche)) continue;
+        const { grund, schrift } = knopfPaar(flaeche, t.on_accent);
+        const wert = kontrastWert(schrift, grund);
+        if (wert < 4.5) durchgefallen.push(`${name} · ${was}: ${wert.toFixed(2)}:1`);
+      }
     }
     expect(durchgefallen, `zu schwach:\n  ${durchgefallen.join("\n  ")}`).toEqual([]);
   });

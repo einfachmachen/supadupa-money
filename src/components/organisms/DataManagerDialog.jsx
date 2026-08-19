@@ -133,11 +133,12 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   // gegenseitig fest (siehe die zwei Karten im Export-Reiter). Damit schützen
   // Passphrase + Recovery-Code alles — ein Geheimnis-Paar für die ganze Datei.
   //
-  // `importEbPass` bleibt: ÄLTERE Sicherungen tragen den Schlüssel weiter im
-  // eigenen Umschlag, und die müssen sich einspielen lassen.
+  // Auch das Import-Feld für die alte Schlüssel-Passphrase ist weg. Es hätte
+  // nur noch Sicherungen aus der Zeit VOR diesem Umbau bedient und stand
+  // sonst als drittes Geheimnis-Feld im Weg. Trifft der Import doch einmal
+  // eine solche Datei, sagt er das im Klartext (siehe applyImport).
   const [hasEbKey, setHasEbKey] = useState(false);
   const [inclEbKey, setInclEbKey] = useState(false);
-  const [importEbPass, setImportEbPass] = useState("");
   useEffect(() => { exportEbForSync().then(b => setHasEbKey(!!b)).catch(()=>{}); }, []);
 
   // Gesamt-Export-Verschlüsselung: standardmäßig AN, Zwei-Faktor (Passphrase +
@@ -326,18 +327,15 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
     // übernommen, wenn dieses Gerät noch keinen Schlüssel hat (lokaler Vorrang).
     if(d._ebSecure) {
       if(isEncrypted(d._ebSecure)) {
-        if(!importEbPass) {
-          msg.push("Bank-Schlüssel übersprungen (Passphrase fehlt)");
-        } else {
-          let block;
-          try { block = await decryptJSON(d._ebSecure, importEbPass); }
-          catch(e) { throw new Error("Bank-Schlüssel: Passphrase falsch oder Daten beschädigt"); }
-          const ok = await importEbFromSync(block);
-          msg.push(ok ? "Bank-Schlüssel" : "Bank-Schlüssel (lokal bereits vorhanden, beibehalten)");
-        }
+        // ALTES Format: der Schlüssel steckt in einem eigenen Umschlag mit
+        // eigener Passphrase. Die App fragt sie nicht mehr ab — das Feld war
+        // genau die Verwirrung, die der Umbau beseitigt hat. Solche Dateien
+        // sind selten (sie entstehen seit dem Umbau nicht mehr), und der Weg
+        // heraus ist einfach: einmal neu sichern, mit Schlüssel.
+        msg.push("Bank-Schlüssel übersprungen (alte Sicherung mit eigener Passphrase — bitte neu sichern)");
       } else {
         const ok = await importEbFromSync(d._ebSecure);
-        if(ok) msg.push("Bank-Schlüssel");
+        msg.push(ok ? "Bank-Schlüssel" : "Bank-Schlüssel (lokal bereits vorhanden, beibehalten)");
       }
     }
     return msg;
@@ -959,14 +957,10 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
 
           {/* ── IMPORT ── */}
           {tab==="import"&&(()=>{
-            // Enthält das eingefügte JSON einen verschlüsselten Bank-Schlüssel,
-            // oder ist es selbst ein Gesamt-Export-Umschlag (Zwei-Faktor)?
-            let pastedHasKey = false, pastedIsEncrypted = false;
-            try {
-              const d = JSON.parse(importJson);
-              pastedIsEncrypted = isEncrypted(d);
-              pastedHasKey = !pastedIsEncrypted && !!d && isEncrypted(d._ebSecure);
-            } catch {}
+            // Ist das eingefügte JSON selbst ein Gesamt-Export-Umschlag
+            // (Zwei-Faktor)? Dann Passphrase + Recovery-Code hervorheben.
+            let pastedIsEncrypted = false;
+            try { pastedIsEncrypted = isEncrypted(JSON.parse(importJson)); } catch {}
             return (<>
             <div style={{color:T.txt2,fontSize:11,marginBottom:10,lineHeight:1.6}}>
               JSON einfügen oder Datei(en) wählen. Du kannst <b style={{color:T.txt}}>mehrere Dateien
@@ -996,25 +990,6 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                 placeholder="Recovery-Code"
                 autoCapitalize="off" autoCorrect="off" autoComplete="off" spellCheck={false}
                 style={{...INP,marginBottom:0,fontSize:13,fontFamily:"monospace"}}/>
-            </div>
-            {/* Passphrase für einen Bank-Schlüssel im EIGENEN Umschlag. Neue
-                Sicherungen haben das nicht mehr — dort liegt der Schlüssel im
-                Chiffrat der ganzen Datei und kommt mit Passphrase und
-                Recovery-Code von oben heraus. Das Feld bleibt für ältere
-                Dateien; `pastedHasKey` erkennt sie daran, dass `_ebSecure`
-                selbst ein Umschlag ist. */}
-            <div style={{marginBottom:10,padding:"8px 10px",borderRadius:9,
-              border:`1px solid ${pastedHasKey?T.gold:T.bd}`,
-              background:pastedHasKey?`${T.gold}12`:"transparent"}}>
-              <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:5,
-                color:pastedHasKey?T.gold:T.txt2,fontSize:11,fontWeight:700}}>
-                {Li("key",12,pastedHasKey?T.gold:T.txt2)}
-                Passphrase für Bank-Schlüssel {pastedHasKey?"— diese Datei enthält einen!":"(nur für ältere Sicherungen)"}
-              </div>
-              <input type="password" value={importEbPass} onChange={e=>setImportEbPass(e.target.value)}
-                placeholder="Schlüssel-Passphrase eingeben"
-                autoCapitalize="off" autoCorrect="off" autoComplete="new-password" spellCheck={false}
-                style={{...INP,marginBottom:0,fontSize:13}}/>
             </div>
             <textarea value={importJson} onChange={e=>setImportJson(e.target.value)}
               placeholder='{"cats":[...],"realTxs":[...],...}'

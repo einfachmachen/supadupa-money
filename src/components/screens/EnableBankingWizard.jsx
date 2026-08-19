@@ -10,8 +10,8 @@
 
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
-import { theme as T } from "../../theme/activeTheme.js";
-import { aufToenung } from "../../theme/amtPill.js";
+import { theme as T, accWert, flaecheAbgesetzt } from "../../theme/activeTheme.js";
+import { aufToenung, schriftAuf, toenungsGrund, knopfPaar } from "../../theme/amtPill.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { TagInput } from "../atoms/TagInput.jsx";
 import { getAllTags } from "../../utils/search.js";
@@ -39,7 +39,31 @@ import { friendlyBankError, fetchAllTransactions, buildKnownFps, buildKnownPendi
 // Vom Betreiber bereitgestellter Standard-Relay (datenlos, geteilt).
 const DEFAULT_RELAY = "https://enable-banking-proxy.relay-url-supadupa-money.workers.dev";
 const SIGNUP_URL = "https://enablebanking.com";
-const ACCENT = T.gold;
+// Als FUNKTION, nicht als Konstante: `T.gold` liefert den Wert des Themes,
+// das beim Laden dieses Moduls gerade aktiv war. Der Assistent wird
+// nachgeladen (Code-Splitting) — wer danach das Theme wechselt, sah hier
+// weiter die alte Farbe. Dasselbe gilt unten für `lbl()` und `feld()`.
+const accent = () => T.gold;
+
+// ── Kontrast in diesem Assistenten ──────────────────────────────────────
+// Dieselben drei Fälle wie im Cloud-Assistenten (siehe CloudSetupWizard.jsx):
+//
+//   `aufPlatte(rolle)`      – liegt direkt auf `T.bg`. `accWert()` statt
+//        `T.acc_*`, weil letzteres in Themes mit eigenen Karten-Textfarben
+//        eine CSS-Variable ist — die kann man nicht nachrechnen.
+//   `imKasten(ton, wunsch)` – liegt in einem Hinweiskasten, der sich mit
+//        `${ton}18` selbst tönt. Themes mit gegensätzlichen Flächen erklären
+//        `.hinweis-karte` zur Taste und malen deren Farbe darüber.
+//   `feld()`                – Eingabefelder. Sie standen auf `T.bg`, also auf
+//        GENAU der Farbe der Seite dahinter: sichtbar war nur ein 1px-Rahmen,
+//        und als Eingabefeld erkannte man sie nicht (Nutzer-Hinweis zu den
+//        Schritten 6–8 des Cloud-Assistenten, hier dieselbe Bauform).
+//        `flaecheAbgesetzt()` nimmt die Kartenfarbe des Themes und rückt sie
+//        selbst vom Untergrund ab, wo beide zu dicht beieinander liegen.
+const KASTEN_TON = 0x18 / 255;
+const aufPlatte = (rolle, schwelle = 4.5) => schriftAuf(T.bg, accWert(rolle), schwelle);
+const kastenGrund = (ton) => toenungsGrund(ton, KASTEN_TON, ".hinweis-karte");
+const imKasten = (ton, wunsch, schwelle = 4.5) => schriftAuf(kastenGrund(ton), wunsch, schwelle);
 
 // Eine Seite pro Schritt — Erklärung + die für diesen Schritt nötigen
 // Eingaben/Aktionen, genau wie beim Cloud-Sync-Assistenten.
@@ -60,8 +84,9 @@ function Box({ tone = "info", children }) {
   const map = { info: T.blue, tip: T.pos, warn: T.gold, danger: T.neg };
   const c = map[tone] || T.blue;
   return (
-    <div style={{ background: c + "18", border: `1px solid ${c}55`, borderRadius: 12,
-      padding: "12px 14px", color: T.txt, fontSize: 15, lineHeight: 1.55, marginTop: 12 }}>
+    <div className="hinweis-karte"
+      style={{ background: c + "18", border: `1px solid ${c}55`, borderRadius: 12,
+        padding: "12px 14px", color: T.txt, fontSize: 15, lineHeight: 1.55, marginTop: 12 }}>
       {children}
     </div>
   );
@@ -73,7 +98,7 @@ function Steps({ items }) {
       {items.map((it, i) => (
         <div key={i} style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
           <div style={{ flexShrink: 0, width: 24, height: 24, borderRadius: 12,
-            background: ACCENT + "22", color: aufToenung(ACCENT,0x22/255), fontSize: 13, fontWeight: 800,
+            background: accent() + "22", color: aufToenung(accent(),0x22/255,undefined,4.5,T.bg), fontSize: 13, fontWeight: 800,
             display: "flex", alignItems: "center", justifyContent: "center" }}>{i + 1}</div>
           <div style={{ color: T.txt, fontSize: 14.5, lineHeight: 1.5, paddingTop: 1 }}>{it}</div>
         </div>
@@ -82,13 +107,13 @@ function Steps({ items }) {
   );
 }
 
-const lblStyle = { color: T.txt2, fontSize: 14.5, fontWeight: 700, marginBottom: 6, marginTop: 16, display: "block" };
-const inputStyle = {
-  width: "100%", boxSizing: "border-box", background: T.bg, color: T.txt,
+const lbl = () => ({ color: T.txt2, fontSize: 14.5, fontWeight: 700, marginBottom: 6, marginTop: 16, display: "block" });
+const feld = () => ({
+  width: "100%", boxSizing: "border-box", background: flaecheAbgesetzt(), color: T.txt,
   border: `1px solid ${T.bds || T.bd}`, borderRadius: 11, padding: "13px 14px", fontSize: 16, fontFamily: "inherit",
-};
+});
 function LinkBtn({ href, icon, children, color }) {
-  const c = color || ACCENT;
+  const c = color || accent();
   return (
     <a href={href} target="_blank" rel="noopener noreferrer"
       style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
@@ -98,15 +123,26 @@ function LinkBtn({ href, icon, children, color }) {
     </a>
   );
 }
+// Vollflächiger Knopf. `knopfPaar` rückt notfalls die FLÄCHE, damit die
+// Beschriftung 4,5:1 erreicht — auf mittelhellem Gold trägt sonst weder
+// Schwarz noch Weiß.
+//
+// Der gesperrte Zustand kommt bewusst OHNE `opacity: 0.5`: halbe Deckkraft
+// halbiert den Kontrast, und genau das machte den „Premium freischalten"-Knopf
+// unlesbar (Nutzer-Hinweis). Stattdessen die ruhige `T.disabled`-Fläche mit
+// einer darauf nachgerechneten Schrift.
 function ActionBtn({ onClick, disabled, children, bg, icon }) {
+  const { grund, schrift } = disabled
+    ? { grund: T.disabled, schrift: schriftAuf(T.disabled) }
+    : knopfPaar(bg || accent(), T.on_accent);
   return (
     <button onClick={onClick} disabled={disabled}
       style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
         width: "100%", marginTop: 12, padding: "13px", borderRadius: 13, border: "none",
-        cursor: disabled ? "not-allowed" : "pointer", background: disabled ? T.disabled : (bg || ACCENT),
-        color: disabled ? "#888" : T.on_accent, fontSize: 15.5, fontWeight: 800, opacity: disabled ? 0.5 : 1,
+        cursor: disabled ? "not-allowed" : "pointer", background: grund,
+        color: schrift, fontSize: 15.5, fontWeight: 800,
         fontFamily: "inherit" }}>
-      {icon && Li(icon, 16, disabled ? "#888" : T.on_accent)} {children}
+      {icon && Li(icon, 16, schrift)} {children}
     </button>
   );
 }
@@ -468,12 +504,13 @@ function EnableBankingWizard({ onClose, onBack }) {
   const checkedCount = (preview || []).filter((i) => i.checked).length;
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: T.bg, zIndex: 320, display: "flex", flexDirection: "column",
-      paddingBottom: "57px" }}>
+    <div className="formular-blatt"
+      style={{ position: "fixed", inset: 0, background: T.bg, zIndex: 320, display: "flex", flexDirection: "column",
+        paddingBottom: "57px" }}>
       {/* Header — einheitlich mit den anderen Daten-Tab-Dialogen (siehe MobileHeader) */}
       <MobileHeader title="Bank verbinden"
         subtitle={`Schritt ${step + 1}/${STEPS.length} · ${STEPS[step].title}`}
-        icon="landmark" iconColor={ACCENT}
+        icon="landmark" iconColor={accent()}
         onBack={back}
         right={
           <button onClick={() => onCloseRef.current?.()} title="Schließen" aria-label="Schließen"
@@ -488,7 +525,7 @@ function EnableBankingWizard({ onClose, onBack }) {
       <div style={{ display: "flex", gap: 6, padding: "10px 18px 0", flexShrink: 0 }}>
         {STEPS.map((_, i) => (
           <div key={i} style={{ flex: 1, height: 4, borderRadius: 2,
-            background: i <= step ? ACCENT : T.bd }} />
+            background: i <= step ? aufPlatte("acc_gold", 3) : T.bd }} />
         ))}
       </div>
 
@@ -496,16 +533,17 @@ function EnableBankingWizard({ onClose, onBack }) {
           als Meldung unten, die auf jeder Seite erneut/veraltet auftaucht).
           Nur "Konten zuordnen" selbst blendet ihn aus — dort wäre er sinnlos. */}
       {validUntil && stepKey !== "zuordnen" && (
-        <div style={{ margin: "10px 18px 0", padding: "10px 14px", borderRadius: 12,
-          background: T.pos + "18", border: `1px solid ${T.pos}55`,
-          display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-          {Li("check-circle", 18, T.acc_pos)}
+        <div className="hinweis-karte"
+          style={{ margin: "10px 18px 0", padding: "10px 14px", borderRadius: 12,
+            background: T.pos + "18", border: `1px solid ${T.pos}55`,
+            display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+          {Li("check-circle", 18, imKasten(T.pos, T.pos, 3))}
           <div style={{ flex: 1, minWidth: 0, color: T.txt, fontSize: 13, lineHeight: 1.4 }}>
             Bank-Verbindung ist schon aktiv — gültig bis <b>{String(validUntil).slice(0, 10)}</b>.
           </div>
           <button onClick={() => setStep(idxOf("zuordnen"))}
-            style={{ flexShrink: 0, background: T.pos, border: "none", borderRadius: 9,
-              padding: "8px 11px", color: T.on_accent, fontSize: 12.5, fontWeight: 800, cursor: "pointer",
+            style={{ flexShrink: 0, background: knopfPaar(T.pos, T.on_accent).grund, border: "none", borderRadius: 9,
+              padding: "8px 11px", color: knopfPaar(T.pos, T.on_accent).schrift, fontSize: 12.5, fontWeight: 800, cursor: "pointer",
               whiteSpace: "nowrap" }}>
             Konten zuordnen →
           </button>
@@ -526,7 +564,7 @@ function EnableBankingWizard({ onClose, onBack }) {
               <>
                 <Box tone="tip">
                   <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 800, marginBottom: 6 }}>
-                    {Li("check-circle", 17, T.acc_pos)} Zugang eingerichtet
+                    {Li("check-circle", 17, imKasten(T.pos, T.pos, 3))} Zugang eingerichtet
                   </div>
                   <div style={{ fontSize: 13.5, lineHeight: 1.7 }}>
                     <div>Application-ID: <code style={{ fontFamily: "monospace" }}>{appId}</code></div>
@@ -554,8 +592,8 @@ function EnableBankingWizard({ onClose, onBack }) {
                   <Box tone="info">
                     Noch keine Bank verbunden.
                     <button onClick={() => setStep(idxOf("bank"))}
-                      style={{ display: "block", marginTop: 8, background: "transparent", border: `1px solid ${ACCENT}66`,
-                        color: ACCENT, borderRadius: 9, padding: "8px 12px", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+                      style={{ display: "block", marginTop: 8, background: "transparent", border: `1px solid ${accent()}66`,
+                        color: imKasten(T.pos, accent()), borderRadius: 9, padding: "8px 12px", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
                       Jetzt Bank verbinden →
                     </button>
                   </Box>
@@ -606,15 +644,15 @@ function EnableBankingWizard({ onClose, onBack }) {
                 "Die heruntergeladene Schlüssel-Datei (…pem) sicher speichern.",
                 "Die angezeigte Application-ID notieren.",
               ]}/>
-              <label style={lblStyle}>Deine Redirect-URL (im Portal eintragen)</label>
-              <div style={{ background: T.bg, border: `1px solid ${T.bds}`, borderRadius: 11,
+              <label style={lbl()}>Deine Redirect-URL (im Portal eintragen)</label>
+              <div style={{ background: flaecheAbgesetzt(), border: `1px solid ${T.bds}`, borderRadius: 11,
                 padding: "10px 12px", fontSize: 12.5, fontFamily: "monospace", wordBreak: "break-all",
-                color: redirectUrl ? T.txt : T.neg }}>
+                color: redirectUrl ? T.txt : schriftAuf(flaecheAbgesetzt(), T.neg) }}>
                 {redirectUrl || "—"}
               </div>
               <button onClick={copyRedirect}
                 style={{ marginTop: 8, padding: "8px 14px", borderRadius: 11, border: "none",
-                  background: copied ? T.pos : ACCENT, color: T.on_accent, fontSize: 14, fontWeight: 800,
+                  background: copied ? T.pos : accent(), color: knopfPaar(copied ? T.pos : accent(), T.on_accent).schrift, fontSize: 14, fontWeight: 800,
                   cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6 }}>
                 {Li(copied ? "check" : "copy", 16, T.on_accent)}
                 {copied ? "kopiert" : "Redirect-URL kopieren"}
@@ -631,15 +669,15 @@ function EnableBankingWizard({ onClose, onBack }) {
               <Box tone="info">
                 Jetzt das, was Enable Banking dir gegeben hat, hier eintragen.
               </Box>
-              <label style={lblStyle}>Relay-URL (Cloudflare Worker)</label>
-              <input style={inputStyle} value={relayUrl} placeholder="https://…workers.dev"
+              <label style={lbl()}>Relay-URL (Cloudflare Worker)</label>
+              <input style={feld()} value={relayUrl} placeholder="https://…workers.dev"
                 onChange={(e) => setRelayUrl(e.target.value.trim())} autoCapitalize="off" autoCorrect="off" />
 
-              <label style={lblStyle}>Application-ID</label>
-              <input style={inputStyle} value={appId} placeholder="aus dem Enable-Banking-Portal"
+              <label style={lbl()}>Application-ID</label>
+              <input style={feld()} value={appId} placeholder="aus dem Enable-Banking-Portal"
                 onChange={(e) => setAppId(e.target.value.trim())} autoCapitalize="off" autoCorrect="off" />
 
-              <label style={lblStyle}>Privater Schlüssel (.pem)</label>
+              <label style={lbl()}>Privater Schlüssel (.pem)</label>
               <input type="file" accept=".pem,.key,application/x-pem-file"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
@@ -649,7 +687,7 @@ function EnableBankingWizard({ onClose, onBack }) {
                   reader.readAsText(f);
                 }}
                 style={{ color: T.txt2, fontSize: 13, marginTop: 4, marginBottom: 6 }} />
-              <textarea style={{ ...inputStyle, minHeight: 70, fontFamily: "monospace", fontSize: 11 }}
+              <textarea style={{ ...feld(), minHeight: 70, fontFamily: "monospace", fontSize: 11 }}
                 value={privateKey} placeholder="-----BEGIN PRIVATE KEY-----…"
                 onChange={(e) => setPrivateKey(e.target.value)} />
 
@@ -657,17 +695,17 @@ function EnableBankingWizard({ onClose, onBack }) {
                 <summary style={{ color: T.txt2, fontSize: 13, cursor: "pointer" }}>
                   Verbindungs-Check (mit dem Portal abgleichen)
                 </summary>
-                <div style={{ background: T.bg, border: `1px solid ${T.bds}`, borderRadius: 11,
+                <div style={{ background: flaecheAbgesetzt(), border: `1px solid ${T.bds}`, borderRadius: 11,
                   padding: "10px 12px", fontSize: 12.5, lineHeight: 1.5, marginTop: 8 }}>
                   <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
                     <span style={{ color: T.txt2, flexShrink: 0, minWidth: 92 }}>Redirect-URL</span>
                     <span style={{ flex: 1, fontFamily: "monospace", fontSize: 12, wordBreak: "break-all",
-                      color: redirectUrl ? T.txt : T.neg }}>{redirectUrl || "—"}</span>
+                      color: redirectUrl ? T.txt : schriftAuf(flaecheAbgesetzt(), T.neg) }}>{redirectUrl || "—"}</span>
                   </div>
                   <div style={{ display: "flex", gap: 8, alignItems: "baseline", marginTop: 6 }}>
                     <span style={{ color: T.txt2, flexShrink: 0, minWidth: 92 }}>Application-ID</span>
                     <span style={{ flex: 1, fontFamily: "monospace", fontSize: 12, wordBreak: "break-all",
-                      color: appId ? T.txt : T.neg }}>{appId || "(fehlt)"}</span>
+                      color: appId ? T.txt : schriftAuf(flaecheAbgesetzt(), T.neg) }}>{appId || "(fehlt)"}</span>
                   </div>
                 </div>
               </details>
@@ -703,7 +741,7 @@ function EnableBankingWizard({ onClose, onBack }) {
                     <div key={(s.aspsp || "") + "|" + s.sessionId}
                       style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
                         borderRadius: 11, border: `1px solid ${T.bd}`, background: "rgba(255,255,255,0.03)", marginBottom: 8 }}>
-                      {Li("landmark", 18, ACCENT)}
+                      {Li("landmark", 18, aufPlatte("acc_gold", 3))}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ color: T.txt, fontSize: 14, fontWeight: 700, overflow: "hidden",
                           textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.aspsp || "Bank"}</div>
@@ -713,9 +751,9 @@ function EnableBankingWizard({ onClose, onBack }) {
                       </div>
                       <button onClick={() => disconnectBank(s)} title="Bank entfernen"
                         style={{ flexShrink: 0, background: "transparent", border: `1px solid ${T.bd}`,
-                          borderRadius: 9, padding: "6px 8px", color: T.acc_neg, cursor: "pointer",
+                          borderRadius: 9, padding: "6px 8px", color: aufPlatte("acc_neg"), cursor: "pointer",
                           display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700 }}>
-                        {Li("trash-2", 14, T.acc_neg)} entfernen
+                        {Li("trash-2", 14, aufPlatte("acc_neg", 3))} entfernen
                       </button>
                     </div>
                   ))}
@@ -725,8 +763,9 @@ function EnableBankingWizard({ onClose, onBack }) {
               {/* Verbindungs-Status steht jetzt dauerhaft im Banner oben. */}
 
               {diag && (
-                <div style={{ marginTop: 12, border: `1px solid ${diag.outcome === "ok" ? T.pos : T.gold}55`,
-                  borderRadius: 12, background: (diag.outcome === "ok" ? T.pos : T.gold) + "12", padding: "10px 12px" }}>
+                <div className="hinweis-karte"
+                  style={{ marginTop: 12, border: `1px solid ${diag.outcome === "ok" ? T.pos : T.gold}55`,
+                    borderRadius: 12, background: (diag.outcome === "ok" ? T.pos : T.gold) + "12", padding: "10px 12px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                     <div style={{ flex: 1, color: T.txt, fontSize: 13.5, fontWeight: 800 }}>
                       Diagnose (letzter Versuch: {diag.outcome || "?"})
@@ -737,9 +776,9 @@ function EnableBankingWizard({ onClose, onBack }) {
                       setDiagCopied(true); setTimeout(() => setDiagCopied(false), 1500);
                     }}
                       style={{ flexShrink: 0, padding: "5px 10px", borderRadius: 9, border: "none",
-                        background: diagCopied ? T.pos : T.blue, color: T.on_accent, fontSize: 12, fontWeight: 800,
+                        background: knopfPaar(diagCopied ? T.pos : T.blue, T.on_accent).grund, color: knopfPaar(diagCopied ? T.pos : T.blue, T.on_accent).schrift, fontSize: 12, fontWeight: 800,
                         cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5 }}>
-                      {Li(diagCopied ? "check" : "copy", 14, T.on_accent)} {diagCopied ? "Kopiert" : "Kopieren"}
+                      {Li(diagCopied ? "check" : "copy", 14, knopfPaar(diagCopied ? T.pos : T.blue, T.on_accent).schrift)} {diagCopied ? "Kopiert" : "Kopieren"}
                     </button>
                     <button onClick={() => { clearEbDiag(); setDiag(null); }} title="Diagnose verbergen"
                       style={{ flexShrink: 0, background: "transparent", border: "none", cursor: "pointer", padding: 4 }}>
@@ -760,8 +799,8 @@ function EnableBankingWizard({ onClose, onBack }) {
                 </Box>
               ) : (
                 <>
-                  <label style={lblStyle}>Land</label>
-                  <input style={inputStyle} value={country} onChange={(e) => setCountry(e.target.value.toUpperCase().trim())}
+                  <label style={lbl()}>Land</label>
+                  <input style={feld()} value={country} onChange={(e) => setCountry(e.target.value.toUpperCase().trim())}
                     maxLength={2} placeholder="DE" autoCapitalize="characters" />
                   <ActionBtn onClick={loadBanks} disabled={busy} icon="search">Banken laden</ActionBtn>
 
@@ -770,11 +809,11 @@ function EnableBankingWizard({ onClose, onBack }) {
                     const filtered = f ? banks.filter((b) => String(b).toLowerCase().includes(f)) : banks;
                     return (
                       <>
-                        <label style={lblStyle}>Bank suchen</label>
-                        <input style={inputStyle} value={bankFilter} placeholder="z. B. DKB"
+                        <label style={lbl()}>Bank suchen</label>
+                        <input style={feld()} value={bankFilter} placeholder="z. B. DKB"
                           onChange={(e) => setBankFilter(e.target.value)} autoCapitalize="off" autoCorrect="off" />
-                        <label style={lblStyle}>Bank ({filtered.length} von {banks.length})</label>
-                        <select style={inputStyle} value={bank} onChange={(e) => setBank(e.target.value)}>
+                        <label style={lbl()}>Bank ({filtered.length} von {banks.length})</label>
+                        <select style={feld()} value={bank} onChange={(e) => setBank(e.target.value)}>
                           {filtered.map((b, i) => <option key={b + "|" + i} value={b}>{b}</option>)}
                         </select>
                         <ActionBtn onClick={connect} disabled={busy || !bank} icon="link">
@@ -813,11 +852,11 @@ function EnableBankingWizard({ onClose, onBack }) {
                   const unmapped = !accMap[a.uid];
                   return (
                     <div key={a.uid} style={{ marginTop: 14 }}>
-                      <div style={{ color: unmapped ? T.gold : T.txt2, fontSize: 12.5, marginBottom: 5,
+                      <div style={{ color: unmapped ? aufPlatte("acc_gold") : T.txt2, fontSize: 12.5, marginBottom: 5,
                         display: "flex", alignItems: "center", gap: 5 }}>
-                        {unmapped && Li("alert-triangle", 13, T.acc_gold)} {a.label}
+                        {unmapped && Li("alert-triangle", 13, aufPlatte("acc_gold", 3))} {a.label}
                       </div>
-                      <select style={{ ...inputStyle, border: `1px solid ${unmapped ? T.gold : (T.bds || T.bd)}` }}
+                      <select style={{ ...feld(), border: `1px solid ${unmapped ? T.gold : (T.bds || T.bd)}` }}
                         value={accMap[a.uid] || ""}
                         onChange={(e) => setAccMap((m) => {
                           // Sofort persistieren (wie bei den Zugangsdaten) — nicht erst
@@ -835,8 +874,8 @@ function EnableBankingWizard({ onClose, onBack }) {
                     </div>
                   );
                 })}
-                <label style={lblStyle}>Buchungen ab Datum</label>
-                <input type="date" style={inputStyle} value={dateFrom}
+                <label style={lbl()}>Buchungen ab Datum</label>
+                <input type="date" style={feld()} value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)} />
                 <div style={{ color: T.txt2, fontSize: 12.5, marginTop: 6, lineHeight: 1.45 }}>
                   Tipp: Datum hochsetzen (z. B. auf nach deinem letzten Import),
@@ -876,7 +915,7 @@ function EnableBankingWizard({ onClose, onBack }) {
                     unten separat änderbar. */}
                 <div style={{ marginTop: 10 }}>
                   <div style={{ color: T.txt2, fontSize: 12, fontWeight: 600, marginBottom: 4, display: "flex", alignItems: "center", gap: 5 }}>
-                    {Li("hash", 12, T.acc)} Tag auf alle ausgewählten anwenden
+                    {Li("hash", 12, aufPlatte("acc", 3))} Tag auf alle ausgewählten anwenden
                   </div>
                   <TagInput value={[]} onChange={(t) => t.forEach(applyTagToChecked)}
                     suggestions={allTags}
@@ -887,7 +926,7 @@ function EnableBankingWizard({ onClose, onBack }) {
                     <label key={it.key}
                       style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "8px 10px",
                         borderRadius: 10, border: `1px solid ${T.bd}`, cursor: "pointer",
-                        background: it.checked ? ACCENT + "14" : "transparent" }}>
+                        background: it.checked ? accent() + "14" : "transparent" }}>
                       <input type="checkbox" checked={it.checked} onChange={() => togglePreview(it.key)}
                         style={{ marginTop: 3, width: 18, height: 18, flexShrink: 0 }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -901,7 +940,7 @@ function EnableBankingWizard({ onClose, onBack }) {
                               </span>
                             )}
                           </span>
-                          <span style={{ color: it.row.amount < 0 ? T.neg : T.pos, fontSize: 13, fontWeight: 700 }}>
+                          <span style={{ color: aufPlatte(it.row.amount < 0 ? "acc_neg" : "acc_pos"), fontSize: 13, fontWeight: 700 }}>
                             {it.row.amount.toFixed(2)} €
                           </span>
                         </div>
@@ -910,7 +949,7 @@ function EnableBankingWizard({ onClose, onBack }) {
                         </div>
                         {it.status !== "new" && (
                           <span style={{ display: "inline-block", marginTop: 3, fontSize: 11, fontWeight: 700,
-                            color: it.status === "exact" ? T.txt2 : T.gold }}>
+                            color: it.status === "exact" ? T.txt2 : aufPlatte("acc_gold") }}>
                             {it.status === "exact" ? "schon vorhanden" : "mögliche Dublette (Datum + Betrag)"}
                           </span>
                         )}
@@ -968,7 +1007,7 @@ function EnableBankingWizard({ onClose, onBack }) {
               {msg.action && (
                 <button onClick={msg.action.onClick}
                   style={{ display: "block", marginTop: 8, background: "transparent", border: `1px solid ${T.pos}66`,
-                    color: T.acc_pos, borderRadius: 9, padding: "8px 12px", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
+                    color: imKasten(T.pos, T.pos), borderRadius: 9, padding: "8px 12px", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
                   {msg.action.label}
                 </button>
               )}
