@@ -188,6 +188,56 @@ in „dieser Nutzer hat Stufe X".
   Spaeter ueber LemonSqueezy-Webhook (`order_refunded`,
   `license_key_revoked`) automatisierbar.
 
+### Umzug von GitHub Pages zu Cloudflare Pages
+
+Entscheidung: Auslieferung komplett zu Cloudflare, eigene Domain
+`supadupa.top`. Danach — NICHT vorher — die Code-Trennung (Phase 4).
+
+**Der Weg steht technisch schon.** `.github/workflows/deploy-cloudflare.yml`
+existiert seit dem GitHub-Pages-Ausfall im August: Direkt-Upload per
+`wrangler pages deploy`, Build ohne `--base` (auf Cloudflare liegt die App im
+Wurzelverzeichnis, nicht im Repo-Unterordner). Der Job ist hinter
+`vars.CF_DEPLOY == 'true'` geparkt und laeuft los, sobald die Zugangsdaten
+hinterlegt sind. Die Einrichtungsschritte stehen im Kopf der Datei.
+
+- [x] `public/_headers` fuer Cloudflare angelegt: `version.json` und `sw.js`
+  duerfen NICHT vom Edge gecacht werden (sonst bemerkt die App neue Deploys
+  nie), die gehashten Bundles dagegen ewig. GitHub Pages ignoriert die Datei.
+- [ ] Cloudflare Pages-Projekt anlegen (Direct Upload), API-Token +
+  Account-ID als Repo-Secrets, `CF_DEPLOY=true` setzen.
+- [ ] `supadupa.top` auf das Pages-Projekt zeigen lassen.
+- [ ] Erst wenn der neue Weg nachweislich traegt: `deploy.yml` (GitHub Pages)
+  stilllegen. Solange beide laufen, gibt es zwei unabhaengige
+  Auslieferungswege — genau der Grund, aus dem der zweite entstanden ist.
+
+**ACHTUNG, der teure Punkt: Ein Domainwechsel loescht faktisch die lokalen
+Daten aller Nutzer.** IndexedDB haengt am ORIGIN. Wer die App unter
+`einfachmachen.github.io` benutzt hat, startet auf `supadupa.top` mit einer
+leeren App — die Daten sind nicht weg, aber unter der neuen Adresse
+unsichtbar, und es gibt keinen automatischen Weg hinueber (der Browser
+erlaubt keinen Zugriff auf fremde Origins).
+
+- [ ] **Vor dem Umzug selbst sichern:** Daten-Manager → Export mit allen
+  Haken, danach auf der neuen Adresse importieren. Gilt fuer JEDES Geraet
+  einzeln. Alternativ ueber Cloud-Sync: auf der alten Adresse hochladen, auf
+  der neuen laden — derselbe Worker, dasselbe Secret.
+- [ ] **Alte Adresse eine Weile online lassen** mit deutlichem Hinweis auf
+  die neue, damit niemand ohne Vorwarnung vor einer leeren App sitzt.
+
+**Zum „single point of failure":** stimmt — Auslieferung, Lizenzserver,
+Daten-Worker und KV liegen dann alle bei Cloudflare (plus Enable Banking).
+Zwei Dinge entschaerfen das: Die Nutzerdaten liegen lokal auf dem Geraet, ein
+Cloudflare-Ausfall heisst also „App nicht erreichbar und Sync steht", nicht
+„Daten weg". Und der Build ist eine statische Seite — sie laeuft notfalls auf
+jedem beliebigen Host, die Bindung ist also gering, auch wenn der
+Ausfallpunkt real ist.
+
+**Nicht verwechseln:** Cloudflare Pages loest die AUSLIEFERUNG von GitHub,
+nicht den QUELLTEXT. Der liegt weiter auf GitHub, und der Deploy wird von
+GitHub Actions angestossen. Wer auch davon weg will, braucht zusaetzlich eine
+andere Stelle fuer Repository und CI (Codeberg, GitLab, eigener Runner) —
+oder deployt von Hand mit `wrangler pages deploy dist`.
+
 ### Manipulation verhindern — ein ANDERES Ziel als Kopierschutz
 
 Anlass: „Ich moechte verhindern, dass sich ein talentiertes Script-Kiddie mal
