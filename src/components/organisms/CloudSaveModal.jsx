@@ -4,7 +4,8 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { Li } from "../../utils/icons.jsx";
-import { readableOn, aufToenung } from "../../theme/amtPill.js";
+import { readableOn, knopfPaar, DUNKEL } from "../../theme/amtPill.js";
+import { AMPEL } from "../../utils/syncBadge.js";
 
 function CloudSaveModal({ onClose }) {
   const { cfActive, cfStatus, saveConfig, isDirty } = useContext(AppCtx);
@@ -29,13 +30,24 @@ function CloudSaveModal({ onClose }) {
   const accent = T.blue;
   const onAccent = readableOn(accent, accent);
 
-  // Status-Text + Farbe
-  const status = !cfActive ? { txt: "Keine Cloud verbunden", col: T.txt2 }
-    : error     ? { txt: "Speichern fehlgeschlagen", col: T.neg }
-    : justSaved ? { txt: "Gesichert ✓", col: T.pos }
-    : saving    ? { txt: "Speichert…", col: T.gold }
-    : isDirty   ? { txt: "Ungespeicherte Änderungen", col: T.gold }
-    :             { txt: "Alles aktuell gesichert", col: T.pos };
+  // Status-Text + Signalfarbe.
+  //
+  // Dieselbe Ampel wie im SyncStatusBadge (utils/syncBadge.js): es ist
+  // derselbe Zustand, also muss er dieselbe Farbe tragen. Vorher standen hier
+  // Theme-Toene als 10-%-Toenung — ueber 34 Themes ergab das mal Oliv, mal
+  // Senf. Ein Zustand, eine Farbe, ueberall gleich.
+  //
+  // „Keine Cloud verbunden" ist bewusst KEIN Ampelzustand: da ist nichts rot
+  // oder gelb, es ist schlicht nichts eingerichtet. Deshalb neutral.
+  const status = !cfActive ? { txt: "Keine Cloud verbunden", col: null, icon: "cloud" }
+    : error     ? { txt: "Speichern fehlgeschlagen", col: AMPEL.rot, icon: "alert-triangle" }
+    : justSaved ? { txt: "Gesichert ✓", col: AMPEL.gruen, icon: "check" }
+    : saving    ? { txt: "Speichert…", col: AMPEL.gelb, icon: "refresh-cw" }
+    : isDirty   ? { txt: "Ungespeicherte Änderungen", col: AMPEL.gelb, icon: "upload-cloud" }
+    :             { txt: "Alles aktuell gesichert", col: AMPEL.gruen, icon: "check" };
+  const pille = status.col
+    ? knopfPaar(status.col, DUNKEL)
+    : { grund: "transparent", schrift: T.txt2 };
 
   const badgeBg = justSaved ? T.pos : error ? T.neg : accent;
 
@@ -64,14 +76,13 @@ function CloudSaveModal({ onClose }) {
 
         {/* Status-Pille */}
         <div style={{display:"inline-flex",alignItems:"center",gap:7,
-          padding:"5px 12px",borderRadius:999,background:`${status.col}1A`,
-          // Die Pille liegt auf der DIALOGFLAECHE (T.surf, s. u.), nicht auf
-          // dem Seitenhintergrund. Ohne die Angabe rechnete sie gegen T.bg —
-          // in hellen Themes mit dunklen Karten waehlte sie dadurch dunkle
-          // Schrift auf dunklem Grund (Nutzer-Bild).
-          color:aufToenung(status.col,0x1A/255,undefined,4.5,T.surf),fontSize:13,fontWeight:700}}>
-          <span style={{width:7,height:7,borderRadius:"50%",background:status.col,
-            display:"inline-block"}}/>
+          padding:"5px 12px",borderRadius:999,background:pille.grund,
+          border: status.col ? "none" : `1px solid ${T.bd}`,
+          color:pille.schrift,fontSize:13,fontWeight:700}}>
+          {/* Symbol statt Farbpunkt: der Punkt haette dieselbe Farbe wie die
+              Flaeche und waere darauf unsichtbar — und die Aussage darf
+              ohnehin nicht allein an der Farbe haengen. */}
+          {Li(status.icon, 14, pille.schrift)}
           {status.txt}
         </div>
 

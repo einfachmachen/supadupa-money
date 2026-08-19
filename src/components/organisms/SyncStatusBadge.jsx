@@ -8,40 +8,31 @@
 // großen Kontostand im Dashboard überlagern statt eigenen Platz zu bekommen.
 import React, { useContext } from "react";
 import { AppCtx } from "../../state/AppContext.js";
-import { theme as T } from "../../theme/activeTheme.js";
-import { aufToenung } from "../../theme/amtPill.js";
+import { knopfPaar, DUNKEL } from "../../theme/amtPill.js";
+import { Li } from "../../utils/icons.jsx";
 import { getSyncBadgeState } from "../../utils/syncBadge.js";
 
-function SyncStatusBadge({ liegtAuf } = {}) {
+function SyncStatusBadge() {
   const { isOnline, cfActive, isDirty, syncStatus, openCloudSave, loadFromCloud, frageBestaetigung } = useContext(AppCtx);
   const state = getSyncBadgeState({ isOnline, cfActive, isDirty, syncStatus });
   if (!state) return null;
 
-  // ZWEI Farben aus derselben Rolle, nicht eine:
-  //   `col`     — der Rohton. Nur fuer Flaeche, Rahmen und den Punkt links;
-  //               ein Alpha-Suffix ("22"/"77") braucht einen echten Hex-Wert.
-  //   `schrift` — die Schriftfarbe, gerechnet gegen die GETOENTE Flaeche.
+  // VOLLE Signalflaeche statt Toenung.
   //
-  // Vorher stand hier nur `col`, auch als Schriftfarbe: helles Gold auf einer
-  // 13-%-Toenung desselben Golds — der Hinweis „Nicht synchronisiert" war auf
-  // heller Platte kaum zu lesen (Nutzer-Hinweis).
+  // Vorher trug das Badge den jeweiligen Theme-Ton als 13-%-Toenung. Ueber 34
+  // Themes hinweg ergab das mal Oliv, mal Senf, mal ein blasses Gruen — „nicht
+  // Fisch, nicht Fleisch" (Nutzer-Wort). Eine Ampel muss ueberall dieselbe
+  // Ampel sein, deshalb kommen die vier Toene jetzt fest aus syncBadge.js und
+  // nicht aus dem Theme.
   //
-  // `aufToenung` ist genau dafuer da: es rechnet den Untergrund erst zusammen
-  // (Toenung UEBER der Platte, also in Richtung der Schrift verschoben) und
-  // gibt den Wunschton nur zurueck, wenn er darauf traegt — sonst Schwarz oder
-  // Weiss. Ein fester Ersatzton haette nicht gereicht: nachgerechnet fielen
-  // 57 von 136 Theme-/Ton-Kombinationen unter 4,5:1, quer durch die Themes.
-  const col = T[state.tone];
-  // `liegtAuf`: Das Badge wird an ZWEI Stellen gerendert — im Hero (auf dessen
-  // Karte) und frei auf der Seite. Nur der Aufrufer weiss, worauf es liegt.
-  // Ohne die Angabe rechnete es immer gegen den Seitenhintergrund; in
-  // „Tastenhell" liegt der Hero aber auf einer dunklen Verlaufs-Karte, und die
-  // Schrift landete bei 3,03:1 statt 5,98:1 (Nutzer-Bild).
+  // `knopfPaar` rechnet die Schrift gegen die Flaeche und weicht auf
+  // Schwarz/Weiss aus; im Ausnahmefall rueckt es die Flaeche minimal nach. Auf
+  // dem Sonnengelb landet damit dunkle Schrift bei rund 11:1.
   //
-  // Bewusst die FLAECHE, nicht die Klasse: eine Klasse hiesse „ich BIN diese
-  // Karte" — dann malte das Theme seine Farbe ueber die Toenung. Hier liegt
-  // das Badge nur DARAUF, seine Toenung wird also wirklich gemalt.
-  const schrift = aufToenung(col, 0x22 / 255, undefined, 4.5, liegtAuf);
+  // Damit entfaellt auch die Frage, worauf das Badge liegt: eine deckende
+  // Flaeche bringt ihren Untergrund selbst mit. Vorher musste der Aufrufer die
+  // Karte durchreichen, auf der es sitzt — das braucht es jetzt nicht mehr.
+  const { grund, schrift } = knopfPaar(state.signal, DUNKEL);
 
   // "cloud_newer": ein anderes Gerät hat neuere Daten gespeichert (z.B. eine
   // dort vorgenommene Vormerkungs-Verknüpfung) — Antippen lädt sie direkt,
@@ -66,10 +57,13 @@ function SyncStatusBadge({ liegtAuf } = {}) {
         style={{display:"flex",alignItems:"center",justifyContent:"center",gap:9,
           width:"100%",minHeight:48,boxSizing:"border-box",
           padding:"10px 16px",borderRadius:14,
-          background:`${col}22`,border:`1.5px solid ${col}77`,
+          background:grund,border:"none",
           color:schrift,fontSize:14,fontWeight:700,cursor:"pointer",
           textAlign:"center",lineHeight:1.25}}>
-        <span style={{width:9,height:9,borderRadius:"50%",background:col,display:"inline-block",flexShrink:0}}/>
+        {/* Symbol statt Farbpunkt: der Punkt hatte dieselbe Farbe wie die
+            Flaeche und waere darauf unsichtbar. Wichtiger noch — die Aussage
+            darf nicht allein an der Farbe haengen (Rot-Gruen-Sehschwaeche). */}
+        {Li(state.icon, 16, schrift)}
         {state.text}
       </div>
     </div>

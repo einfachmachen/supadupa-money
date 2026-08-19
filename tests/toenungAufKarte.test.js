@@ -2,15 +2,16 @@
 //
 // `aufToenung` rechnet den getönten Untergrund zusammen und wählt die Schrift
 // danach. Der Untergrund war aber bis hierher immer `T.bg`, der
-// Seitenhintergrund. Zwei Stellen liegen nachweislich woanders:
-//
-//   • Sync-Hinweis im Hero → auf der Hero-Karte
-//   • Pille im Cloud-Dialog → auf der Dialogfläche (T.surf)
-//
-// In Themes mit heller Platte und dunklen Karten („Tastenhell") kippt das die
+// Seitenhintergrund — wer auf einer KARTE liegt, wurde falsch gerechnet. In
+// Themes mit heller Platte und dunklen Karten („Tastenhell") kippt das die
 // Entscheidung ins Gegenteil: gerechnet gegen die helle Platte fällt die Wahl
 // auf DUNKLE Schrift, gemalt wird sie aber auf eine dunkle Karte. Gemessen
 // 3,03:1 statt 5,98:1 (Nutzer-Bild).
+//
+// Anlass waren der Sync-Hinweis im Hero und die Pille im Cloud-Dialog. Beide
+// tragen inzwischen feste Signalfarben auf voller Fläche (siehe
+// syncAmpel.test.js) und brauchen die Rechnung nicht mehr — die Fähigkeit
+// bleibt aber richtig und wird von den übrigen getönten Flächen genutzt.
 //
 // Dazu kam eine stille Falle: `flaechen_extra[".hero-flaeche"]` ist in diesem
 // Theme ein VERLAUF. Die alte Prüfung verlangte `karte[0] === "#"` und warf

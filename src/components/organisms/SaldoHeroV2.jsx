@@ -11,7 +11,6 @@ import { SaldoPrognose } from "./SaldoPrognose.jsx";
 import { RotatedCents } from "../atoms/RotatedCents.jsx";
 import { SyncStatusBadge } from "./SyncStatusBadge.jsx";
 import { AppCtx } from "../../state/AppContext.js";
-import { flaecheVon } from "../../theme/amtPill.js";
 import { theme as T, blasserAkzent } from "../../theme/activeTheme.js";
 import { amtStyle } from "../../theme/amtPill.js";
 import { fmt, NUM_FONT, darkenHex } from "../../utils/format.js";
@@ -575,7 +574,7 @@ function SaldoHeroV2({
           zwangslaeufig unterhalb der gesamten Aufriss-Liste, sobald man Mitte
           oder Ende antippte (Nutzer-Bild). Hier bleibt es in beiden Faellen
           unmittelbar unter dem Hero. */}
-      <SyncStatusBadge liegtAuf={flaecheVon(".hero-flaeche")}/>
+      <SyncStatusBadge/>
 
       {/* Prognose-Drilldown (Mitte oder Ende) — über das 20px-Hero-Padding hinaus
           ziehen, damit die Liste fast die volle Breite nutzt (Saldo-Anzeige bleibt). */}
