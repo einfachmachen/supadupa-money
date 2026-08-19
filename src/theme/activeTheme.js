@@ -271,6 +271,22 @@ const _ACC_KEYS = {
 
 export const hatKartenText = (t = _state.current) => !!(t && t.txt_card);
 
+// Der FARBWERT einer Akzent-Rolle auf der Platte — als echtes Hex, nicht als
+// `var(--acc-…)`.
+//
+// `T.acc_pos` & Co. liefern in Themes mit getrennten Karten-Textfarben eine
+// CSS-Variable. Der Browser löst sie richtig auf, eine Kontrastrechnung in JS
+// kann das nicht: `kontrastWert("var(--acc-pos, #C8DC2E)", …)` liest keine
+// Farbe und liefert stillschweigend Unsinn. Wer eine Akzentfarbe NACHRECHNEN
+// will (schriftAuf/aufGrund), braucht deshalb diesen Wert.
+//
+// Es ist bewusst der Platten-Wert: nachgerechnet wird an Stellen, die auf `bg`
+// liegen. Auf einer Karte gilt der Karten-Wert, und dort trägt die Variable.
+export const accWert = (rolle, t = _state.current) => {
+  const a = _ACC_KEYS[rolle];
+  return a ? a.platte(t) : t[rolle];
+};
+
 // Werte für die Wurzel: die Farben für Text, der direkt auf `bg` liegt.
 //
 // `--amt-neutral` muss hier MIT hinein und darf nicht als `var(--txt)` auf der

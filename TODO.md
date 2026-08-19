@@ -209,7 +209,45 @@ hinterlegt sind. Die Einrichtungsschritte stehen im Kopf der Datei.
   beiden Workern nachziehen).
 - [ ] Cloudflare Pages-Projekt anlegen (Direct Upload), API-Token +
   Account-ID als Repo-Secrets, `CF_DEPLOY=true` setzen.
-- [ ] `supadupa.top` auf das Pages-Projekt zeigen lassen.
+- [ ] **`money.supadupa.top`** auf das Pages-Projekt zeigen lassen
+  (nicht die nackte Domain — siehe naechster Abschnitt).
+
+### Eine Domain, mehrere Apps: Unterdomains
+
+Entscheidung (Nutzer-Wunsch): `supadupa.top` ist die **Landing-Page** fuer
+alle SupaDupa-Apps, jede App bekommt ihre eigene Unterdomain.
+
+| Adresse | Was dort liegt |
+|---|---|
+| `supadupa.top`, `www.supadupa.top` | Landing-Page, eigenes Pages-Projekt |
+| `money.supadupa.top` | diese App (Pages-Projekt `supadupa-money`) |
+| `body.supadupa.top` | spaeter, eigenes Projekt |
+| `email.supadupa.top` | spaeter, eigenes Projekt |
+
+Technisch ist das der Normalfall und kostet nichts extra: Jedes
+Pages-Projekt bekommt unter *Custom domains* seine eigene Adresse, und
+Cloudflare legt den DNS-Eintrag selbst an. Eine Adresse gehoert immer genau
+EINEM Projekt — deshalb die Trennung in mehrere Projekte statt eines
+grossen.
+
+Drei Punkte, die daran haengen:
+
+- **Jetzt entscheiden, nicht spaeter.** IndexedDB haengt am Origin. Ein
+  spaeterer Wechsel von `supadupa.top` auf `money.supadupa.top` waere eine
+  ZWEITE Datenwanderung fuer alle, die schon umgezogen sind. Money geht
+  deshalb von Anfang an auf die Unterdomain.
+- **`email` statt `e-mail`.** Der Bindestrich ist in Hostnamen erlaubt, wird
+  beim Tippen aber regelmaessig vergessen. Notfalls beide anlegen und eine
+  auf die andere weiterleiten.
+- **`ALLOWED_ORIGINS` in beiden Workern** (Daten-Worker, Lizenz-Worker) muss
+  die tatsaechliche Unterdomain enthalten, nicht die nackte Domain — sonst
+  scheitert der Bankabruf mit einem CORS-Fehler. Gilt auch fuer die
+  Lizenzpruefung, sobald sie eingeschraenkt wird.
+
+Nebenwirkung, die gelegen kommt: Der Lizenz-Worker liegt unter
+`lizenzen.supadupa.workers.dev` und kann mehrere Produkte bedienen
+(`product`-Feld, schon eingebaut). Eine Landing-Page pro App und ein
+gemeinsamer Lizenzserver passen zusammen.
 - [ ] Erst wenn der neue Weg nachweislich traegt: `deploy.yml` (GitHub Pages)
   stilllegen. Solange beide laufen, gibt es zwei unabhaengige
   Auslieferungswege — genau der Grund, aus dem der zweite entstanden ist.
@@ -411,6 +449,37 @@ ein Pfad mit Pruefung.
 kopiert. Der zu erwartende Verlust durch beilaeufiges Kopieren duerfte
 kleiner sein als der Preis dieser Komplexitaet — und kleiner als der
 Schaden, wenn ein zahlender Kunde ohne Netz vor einer halben App sitzt.
+
+## Sicherung / Export
+
+- [x] **Ein Geheimnis-Paar fuer die ganze Sicherungsdatei.** Der Bank-Schluessel
+  hatte eine EIGENE Passphrase, zusaetzlich zu Passphrase und Recovery-Code des
+  Exports — ohne dass irgendwo stand, wozu (Nutzer-Hinweis: „Muessen das 2
+  unterschiedliche sein?"). Sinn hatte sie nur, weil die Gesamt-Verschluesselung
+  ABSCHALTBAR ist; ohne eigene Passphrase laege der private Schluessel dann
+  offen in der Datei.
+  Geloest, indem genau dieser Fall ausgeschlossen wird: Der Schluessel darf nur
+  in eine **verschluesselte** Sicherung, und beide Schalter halten sich
+  gegenseitig fest (Schluessel an ⇒ Verschluesselung an; Verschluesselung aus ⇒
+  Schluessel raus). Dadurch wird die zweite Passphrase ueberfluessig statt
+  weggelassen. `tests/bankSchluesselEinPasswort.test.js` prueft die Kopplung am
+  echten Dateiinhalt, nicht an der Oberflaeche.
+- [x] **Reihenfolge im Export-Reiter:** Bank-Schluessel VOR
+  „Export verschluesseln" — so passiert es auch (erst wird der Schluessel in die
+  Datei gepackt, dann wird die Datei verschluesselt).
+- Aeltere Sicherungen tragen den Schluessel weiter im eigenen Umschlag. Der
+  Import erkennt sie daran, dass `_ebSecure` selbst ein Umschlag ist, und fragt
+  dann weiter nach der alten Schluessel-Passphrase.
+
+## Kontrast — offene Punkte
+
+- [ ] **`T.txt2` auf getoenten Flaechen und auf `T.bg`.** Gemessen faellt die
+  Sekundaerschrift in mehreren hellen Themes durch (sand 4,37:1, swiss 4,48:1,
+  cleancorporate 4,01:1, auf Hinweiskasten-Toenungen bis 3,69:1). Das ist KEIN
+  Fehler eines einzelnen Bildschirms, sondern gilt fuer die ganze App —
+  entweder die betroffenen Themes nachziehen oder `T.txt2` denselben
+  Zwei-Farben-Mechanismus geben wie `T.txt`. Bewusst nicht nebenbei mit
+  erledigt.
 
 ## Sync / Performance
 

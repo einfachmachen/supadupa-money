@@ -12,8 +12,8 @@ Schritt-für-Schritt zum Abarbeiten. Reihenfolge einhalten — Teil A muss
 ## Teil A — Daten sichern (ZUERST!)
 
 **Warum:** Die App speichert alles lokal im Browser (IndexedDB), und dieser
-Speicher hängt an der **Adresse**. Unter `supadupa.top` startet die App mit
-einer leeren Datenbank — die Daten von `einfachmachen.github.io` sind nicht
+Speicher hängt an der **Adresse**. Unter `money.supadupa.top` startet die App
+mit einer leeren Datenbank — die Daten von `einfachmachen.github.io` sind nicht
 gelöscht, aber dort unerreichbar. Der Browser lässt keinen Zugriff über
 Adressgrenzen hinweg zu, das ist kein Fehler, sondern Absicht.
 
@@ -114,30 +114,61 @@ deshalb konnte er die ganze Zeit im Repo liegen, ohne zu stören.
 
 ## Teil F — Eigene Domain verbinden
 
+### Die Aufteilung: eine Domain, mehrere Apps
+
+`supadupa.top` soll die **Landing-Page** für alle SupaDupa-Apps werden, jede
+App bekommt ihre eigene Unterdomain:
+
+| Adresse | Was dort liegt |
+|---|---|
+| `supadupa.top` (+ `www`) | Landing-Page — **eigenes** Pages-Projekt |
+| `money.supadupa.top` | diese App (Projekt `supadupa-money` aus Teil B) |
+| `body.supadupa.top` | später |
+| `email.supadupa.top` | später |
+
+Das ist bei Cloudflare der Normalfall und kostet nichts extra. Eine Adresse
+gehört immer genau **einem** Pages-Projekt — deshalb pro App ein Projekt.
+
+> **Wichtig, und deshalb jetzt:** Der lokale Speicher der App (IndexedDB)
+> hängt an der genauen Adresse. Money erst auf `supadupa.top` zu stellen und
+> später auf `money.supadupa.top` zu verschieben, wäre eine **zweite**
+> Datenwanderung für alle, die schon umgezogen sind. Also gleich die
+> Unterdomain nehmen.
+
+> **Zu `e-mail`:** Der Bindestrich ist erlaubt, wird beim Tippen aber
+> regelmäßig vergessen. Ich würde `email.supadupa.top` nehmen — und falls Du
+> beide willst, die eine auf die andere weiterleiten.
+
+### Die Schritte
+
 - [ ] **Domain zu Cloudflare bringen.** Wo `supadupa.top` registriert ist:
       entweder die **Nameserver** auf die von Cloudflare umstellen (Cloudflare
       → Add a site → Anweisungen folgen) oder die Domain ganz zu Cloudflare
       transferieren. Nameserver-Umstellung reicht völlig und geht schneller.
-- [ ] Pages-Projekt → Reiter **Custom domains** → **Set up a custom domain**
-- [ ] `supadupa.top` eintragen, Cloudflare legt den DNS-Eintrag selbst an.
-- [ ] Optional zusätzlich `www.supadupa.top` mit Weiterleitung auf die
-      Hauptadresse.
+- [ ] Pages-Projekt `supadupa-money` → Reiter **Custom domains** →
+      **Set up a custom domain**
+- [ ] **`money.supadupa.top`** eintragen. Cloudflare legt den DNS-Eintrag
+      selbst an — Du musst nichts von Hand setzen.
 - [ ] **Zertifikat abwarten.** Das dauert typischerweise Minuten, gelegentlich
       länger. Solange es „Pending" zeigt, ist nichts kaputt.
+- [ ] Die nackte Domain `supadupa.top` bleibt vorerst **frei** für die
+      Landing-Page. Bis die steht, kann dort eine schlichte Seite mit Links
+      auf die Apps stehen — sag Bescheid, dann baue ich sie.
 
 ---
 
 ## Teil G — Prüfen, bevor irgendetwas abgeschaltet wird
 
-- [ ] `https://supadupa.top` öffnet die App.
+- [ ] `https://money.supadupa.top` öffnet die App.
 - [ ] **Daten importieren** (Daten-Manager → Importieren, Datei aus Teil A)
       oder Cloud-Sync einrichten und laden.
 - [ ] **PWA neu installieren.** Eine bereits auf dem iPhone installierte App
       zeigt weiterhin auf die ALTE Adresse — sie merkt vom Umzug nichts. Alte
       Installation löschen, neue Adresse öffnen, „Zum Home-Bildschirm".
 - [ ] **Bank-Relay prüfen:** Falls im Worker `ALLOWED_ORIGINS` gesetzt ist,
-      muss `https://supadupa.top` dort mit hinein — sonst schlägt der
-      Bankabruf mit einem CORS-Fehler fehl.
+      muss `https://money.supadupa.top` dort mit hinein — die Unterdomain,
+      nicht die nackte Domain. Sonst schlägt der Bankabruf mit einem
+      CORS-Fehler fehl.
 - [ ] **Lizenzserver prüfen:** dasselbe, falls dort `ALLOWED_ORIGINS`
       gesetzt wird (in `worker/wrangler-license.toml` heute noch
       auskommentiert).

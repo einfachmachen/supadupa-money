@@ -31,6 +31,7 @@
 
 import React from "react";
 import { theme as T } from "../../theme/activeTheme.js";
+import { aufToenung } from "../../theme/amtPill.js";
 import { Li } from "../../utils/icons.jsx";
 
 // Feste Maße — bewusst als Konstanten, damit alle Screens pixelgleich sind.
@@ -72,10 +73,17 @@ function MobileHeader({ title, subtitle, icon, iconColor, onBack, onClose, title
           padding:0, fontFamily:"inherit"}}>
         {isBack ? Li("arrow-left", 22, T.txt) : "✕"}
       </button>
+      {/* Die Icon-Kachel toent sich mit ihrer EIGENEN Farbe (`${iCol}1f`) und
+          setzt dasselbe Icon darauf. Gegen T.surf gerechnet sieht das sauber
+          aus — gemalt ist der Untergrund aber genau in Richtung des Icons
+          verschoben. Deshalb `flaeche: T.surf` (die Kachel LIEGT auf dem Kopf,
+          sie IST nicht der Kopf) und 3:1 nach WCAG 1.4.11 fuer Symbole.
+          Gemessen fiel sonst z. B. das Cloudflare-Orange im iOS-Theme auf
+          2,51:1 und das Gold im Zirkus-Theme auf 2,06:1. */}
       {icon && (
         <div style={{width:ICON_SZ, height:ICON_SZ, borderRadius:12, flexShrink:0,
           background:`${iCol}1f`, display:"flex", alignItems:"center", justifyContent:"center"}}>
-          {Li(icon, 20, iCol)}
+          {Li(icon, 20, aufToenung(iCol, 0x1f/255, undefined, 3, T.surf))}
         </div>
       )}
       <div style={{flex:1, minWidth:0}}>

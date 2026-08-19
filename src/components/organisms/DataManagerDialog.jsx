@@ -118,12 +118,25 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   const [importErr,  setImportErr]  = useState("");
   const [importOk,   setImportOk]   = useState("");
 
-  // Bank-Schlüssel (.pem): optionaler, passphrase-verschlüsselter Export.
+  // Bank-Schlüssel (.pem): optional mit in die Sicherung.
+  //
+  // Er hatte bis hierher eine EIGENE Passphrase — zusätzlich zu Passphrase und
+  // Recovery-Code des Exports. Das war ein Geheimnis zu viel: der Nutzer
+  // aktivierte den Schlüssel und wurde nach einer zweiten Passphrase gefragt,
+  // ohne dass irgendwo stand, wozu (Nutzer-Hinweis: „Müssen das 2
+  // unterschiedliche sein?").
+  //
+  // Warum es sie überhaupt gab: die Gesamt-Verschlüsselung ist ABSCHALTBAR —
+  // ohne eigene Passphrase läge der private Schlüssel dann im Klartext in der
+  // Datei. Genau dieser Fall ist jetzt ausgeschlossen: der Schlüssel darf nur
+  // in eine verschlüsselte Sicherung, und beide Schalter halten sich
+  // gegenseitig fest (siehe die zwei Karten im Export-Reiter). Damit schützen
+  // Passphrase + Recovery-Code alles — ein Geheimnis-Paar für die ganze Datei.
+  //
+  // `importEbPass` bleibt: ÄLTERE Sicherungen tragen den Schlüssel weiter im
+  // eigenen Umschlag, und die müssen sich einspielen lassen.
   const [hasEbKey, setHasEbKey] = useState(false);
   const [inclEbKey, setInclEbKey] = useState(false);
-  const [ebPass, setEbPass] = useState("");
-  const [ebPass2, setEbPass2] = useState("");
-  const [showEbPass, setShowEbPass] = useState(false);
   const [importEbPass, setImportEbPass] = useState("");
   useEffect(() => { exportEbForSync().then(b => setHasEbKey(!!b)).catch(()=>{}); }, []);
 
@@ -168,15 +181,29 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   // Vollständig, wenn ALLE Haken aktiv UND der volle Zeitraum gewählt ist UND —
   // falls ein Bank-Schlüssel existiert — dieser (verschlüsselt) mit dabei ist.
   const isFullRange = fromY===fullFromY && fromM===fullFromM && toY===fullToY && toM===fullToM;
-  // Schlüssel-Export erst gültig, wenn Passphrase gesetzt UND wiederholt korrekt.
-  const ebMatch = ebPass === ebPass2;
-  const ebReady = inclEbKey && !!ebPass && ebMatch;
-  const ebOk = !hasEbKey || ebReady;
   // Gesamt-Export-Verschlüsselung: Passphrase gesetzt + wiederholt korrekt +
   // Recovery-Code vorhanden (wird automatisch erzeugt, kann aber neu erzeugt
   // werden — daher die reine Existenzprüfung).
   const exportPassMatch = exportPass === exportPass2;
   const exportEncReady = !encryptExport || (!!exportPass && exportPassMatch && !!recoveryCode);
+  // Der Bank-Schlüssel darf NUR in eine verschlüsselte Sicherung. Das ist die
+  // Bedingung, unter der er keine eigene Passphrase mehr braucht — sie ersetzt
+  // sie, sie ist keine Bequemlichkeit.
+  const ebReady = inclEbKey && encryptExport && exportEncReady;
+  const ebOk = !hasEbKey || ebReady;
+
+  // Die zwei Schalter halten sich gegenseitig fest, in BEIDE Richtungen:
+  // Schlüssel an ⇒ Verschlüsselung an; Verschlüsselung aus ⇒ Schlüssel raus.
+  // Ohne die zweite Richtung könnte der Nutzer den Schlüssel aktivieren und
+  // die Verschlüsselung danach abschalten — der private Schlüssel läge dann
+  // im Klartext in der Datei.
+  const schluesselUmschalten = () => {
+    if (!hasEbKey) return;
+    setInclEbKey(v => { const neu = !v; if (neu) setEncryptExport(true); return neu; });
+  };
+  const verschluesselungUmschalten = () => {
+    setEncryptExport(v => { const neu = !v; if (!neu) setInclEbKey(false); return neu; });
+  };
   const isComplete = sel.cats&&sel.groups&&sel.accounts&&sel.vehicles&&sel.realTxs&&sel.pendTxs&&
     sel.rules&&sel.anchors&&sel.yearData&&sel.budgets&&sel.icons&&sel.quick&&sel.themes&&isFullRange&&ebOk;
 
@@ -200,21 +227,25 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
     return out;
   };
 
-  // Hängt den passphrase-verschlüsselten Bank-Schlüssel an, falls gewählt. Der
-  // Schlüssel landet NUR als AES-GCM-Chiffrat in der Datei — ohne die Passphrase
-  // nicht wieder importierbar. Ist die Gesamt-Export-Verschlüsselung aktiv,
-  // wird das komplette Ergebnis danach NOCH EINMAL als Ganzes verschlüsselt
-  // (Zwei-Faktor: Passphrase + Recovery-Code) — der Bank-Schlüssel-Umschlag
-  // liegt dann einfach mit im Chiffrat, ganz normal verschachtelt.
+  // Hängt den Bank-Schlüssel an, falls gewählt — und NUR dann, wenn die
+  // Gesamt-Verschlüsselung wirklich greift. Der Schlüssel liegt danach im
+  // AES-GCM-Chiffrat der ganzen Datei (Passphrase + Recovery-Code); ohne
+  // beides ist er nicht zu erreichen.
+  //
+  // Die doppelte Prüfung ist Absicht: `ebReady` verlangt dasselbe, aber diese
+  // Funktion ist die letzte Stelle vor dem Schreiben. Fiele die Bedingung
+  // irgendwann in der Oberfläche auseinander, ginge hier trotzdem kein
+  // Klartext-Schlüssel in die Datei.
   const buildExportFull = async () => {
     const out = buildExport();
-    if(ebReady && hasEbKey) {
+    const verschluesselt = encryptExport && exportEncReady;
+    if(hasEbKey && inclEbKey && verschluesselt) {
       try {
         const block = await exportEbForSync();
-        if(block) { out._ebSecure = await encryptJSON(block, ebPass); out._ebEnc = true; }
+        if(block) { out._ebSecure = block; out._ebEnc = false; }
       } catch(e) { /* Schlüssel weglassen statt Export zu verhindern */ }
     }
-    if(encryptExport && exportEncReady) {
+    if(verschluesselt) {
       return await encryptJSON(out, combineSecrets(exportPass, recoveryCode));
     }
     return out;
@@ -715,7 +746,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
               <div style={{flex:1,color:T.txt,fontSize:10.5,lineHeight:1.5}}>
                 {isComplete
                   ? <><b style={{color:aufBanner(T.pos)}}>Vollständige Sicherung (100 %)</b> — alle Bereiche + ganzer Zeitraum{hasEbKey?<> inkl. <b>verschlüsseltem Bank-Schlüssel</b></>:""}.</>
-                  : <><b style={{color:aufBanner(T.gold)}}>Teil-Sicherung</b> — für 100 % alle Haken setzen, bei den Buchungen „Alles" als Zeitraum{hasEbKey&&!ebOk?<> und den <b>Bank-Schlüssel</b> mit Passphrase aufnehmen</>:""}.</>}
+                  : <><b style={{color:aufBanner(T.gold)}}>Teil-Sicherung</b> — für 100 % alle Haken setzen, bei den Buchungen „Alles" als Zeitraum{hasEbKey&&!ebOk?<> und den <b>Bank-Schlüssel</b> mitsichern</>:""}.</>}
                 <br/>Wieder einspielen über den Reiter <b style={{color:T.txt}}>„importieren"</b> hier im Daten-Manager.
               </div>
             </div>
@@ -741,6 +772,37 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
               </div>
             ))}
 
+            {/* Bank-Schlüssel (.pem): optional MIT in die Sicherung.
+                Steht bewusst VOR der Verschlüsselung — in dieser Reihenfolge
+                passiert es auch: erst wird der Schlüssel in die Datei gepackt,
+                dann wird die ganze Datei verschlüsselt. Andersherum gelesen
+                („erst verschlüsseln, dann noch etwas hineinlegen") ergibt es
+                keinen Sinn (Nutzer-Hinweis). */}
+            <div className="wahl-taste" style={{marginTop:10,padding:"8px 10px",borderRadius:9,
+              border:`1px solid ${inclEbKey?T.gold:T.bd}`,
+              background:inclEbKey?`${T.gold}10`:"rgba(255,255,255,0.03)"}}>
+              <div onClick={schluesselUmschalten}
+                style={{display:"flex",alignItems:"center",gap:10,cursor:hasEbKey?"pointer":"default",opacity:hasEbKey?1:0.5}}>
+                <div style={{width:16,height:16,borderRadius:4,flexShrink:0,
+                  background:inclEbKey?T.gold:"rgba(255,255,255,0.1)",
+                  border:`2px solid ${inclEbKey?T.gold:T.bds}`,
+                  display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  {inclEbKey&&Li("check",9,T.on_accent)}
+                </div>
+                {Li("key",13,inclEbKey?aufKarte(T.gold,T.gold,3):T.txt2)}
+                <span style={{flex:1,color:T.txt,fontSize:12}}>Bank-Schlüssel mitsichern</span>
+                <span style={{color:T.txt2,fontSize:10}}>{hasEbKey?"vorhanden":"keiner"}</span>
+              </div>
+              <div style={{color:T.txt2,fontSize:10,lineHeight:1.5,marginTop:6,display:"flex",gap:5,alignItems:"flex-start"}}>
+                {Li("shield",11,inclEbKey?aufKarte(T.gold,T.gold,3):T.acc_gold)}
+                <span>Der private Bank-Schlüssel wird normalerweise <b>nicht</b> mitgesichert
+                  (er läge sonst offen in der Datei). Nimmst du ihn auf, wird die Sicherung
+                  <b> zwingend verschlüsselt</b> — <b style={{color:inclEbKey?aufKarte(T.gold,T.gold):T.acc_gold}}>eine
+                  eigene Passphrase braucht er dadurch nicht mehr</b>. Es schützen ihn dieselbe
+                  Passphrase und derselbe Recovery-Code wie den Rest der Datei.</span>
+              </div>
+            </div>
+
             {/* Gesamt-Export-Verschlüsselung: standardmäßig AN. Zwei-Faktor —
                 Passphrase (merkt sich der Nutzer) + Recovery-Code (wird einmalig
                 angezeigt, NIRGENDS gespeichert, muss selbst gesichert werden).
@@ -749,7 +811,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
             <div className="wahl-taste" style={{marginTop:10,padding:"8px 10px",borderRadius:9,
               border:`1px solid ${encryptExport?T.blue:T.bd}`,
               background:encryptExport?`${T.blue}10`:"rgba(255,255,255,0.03)"}}>
-              <div onClick={()=>setEncryptExport(v=>!v)}
+              <div onClick={verschluesselungUmschalten}
                 style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}}>
                 <div style={{width:16,height:16,borderRadius:4,flexShrink:0,
                   background:encryptExport?T.blue:"rgba(255,255,255,0.1)",
@@ -765,7 +827,8 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                 <div style={{color:T.acc_gold,fontSize:10,lineHeight:1.5,marginTop:6,display:"flex",gap:5,alignItems:"flex-start"}}>
                   {Li("alert-triangle",11,T.acc_gold)}
                   <span>Export wird als <b>Klartext</b> gespeichert — z. B. wenn du die Datei
-                    anderweitig lesen/auswerten möchtest.</span>
+                    anderweitig lesen/auswerten möchtest. Der <b>Bank-Schlüssel</b> kann dann
+                    nicht mit hinein.</span>
                 </div>
               ) : (<>
                 <div style={{color:T.txt2,fontSize:10,lineHeight:1.5,marginTop:6,display:"flex",gap:5,alignItems:"flex-start"}}>
@@ -773,7 +836,8 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                   <span>Zwei-Faktor: <b>Passphrase</b> (merkst du dir) + <b>Recovery-Code</b>
                     (unten, einmalig — separat sichern). <b style={{color:aufKarte(T.blue,T.gold)}}>Beide zusammen
                     nötig</b> — ohne einen von beiden ist die Sicherung dauerhaft unlesbar, es gibt
-                    keine Wiederherstellung.</span>
+                    keine Wiederherstellung. Sie schützen <b>alles</b> in der Datei, den
+                    Bank-Schlüssel eingeschlossen.</span>
                 </div>
                 <div style={{position:"relative",marginTop:8}}>
                   <input type={showExportPass?"text":"password"} value={exportPass}
@@ -824,57 +888,9 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
               </>)}
             </div>
 
-            {/* Bank-Schlüssel (.pem): optional, NUR passphrase-verschlüsselt */}
-            <div className="wahl-taste" style={{marginTop:10,padding:"8px 10px",borderRadius:9,
-              border:`1px solid ${inclEbKey?T.gold:T.bd}`,
-              background:inclEbKey?`${T.gold}10`:"rgba(255,255,255,0.03)"}}>
-              <div onClick={()=>hasEbKey&&setInclEbKey(v=>!v)}
-                style={{display:"flex",alignItems:"center",gap:10,cursor:hasEbKey?"pointer":"default",opacity:hasEbKey?1:0.5}}>
-                <div style={{width:16,height:16,borderRadius:4,flexShrink:0,
-                  background:inclEbKey?T.gold:"rgba(255,255,255,0.1)",
-                  border:`2px solid ${inclEbKey?T.gold:T.bds}`,
-                  display:"flex",alignItems:"center",justifyContent:"center"}}>
-                  {inclEbKey&&Li("check",9,T.on_accent)}
-                </div>
-                {Li("key",13,inclEbKey?aufKarte(T.gold,T.gold,3):T.txt2)}
-                <span style={{flex:1,color:T.txt,fontSize:12}}>Bank-Schlüssel (verschlüsselt)</span>
-                <span style={{color:T.txt2,fontSize:10}}>{hasEbKey?"vorhanden":"keiner"}</span>
-              </div>
-              <div style={{color:T.txt2,fontSize:10,lineHeight:1.5,marginTop:6,display:"flex",gap:5,alignItems:"flex-start"}}>
-                {Li("shield",11,inclEbKey?aufKarte(T.gold,T.gold,3):T.acc_gold)}
-                <span>Der private Bank-Schlüssel wird normalerweise <b>nicht</b> mitgesichert
-                  (er läge sonst unverschlüsselt in der Datei). Optional kannst du ihn hier
-                  <b> mit einer Passphrase verschlüsselt</b> aufnehmen. <b style={{color:inclEbKey?aufKarte(T.gold,T.gold):T.acc_gold}}>Ohne diese
-                  Passphrase lässt er sich später nicht wieder importieren.</b></span>
-              </div>
-              {inclEbKey && (<>
-                <div style={{position:"relative",marginTop:8}}>
-                  <input type={showEbPass?"text":"password"} value={ebPass}
-                    onChange={e=>setEbPass(e.target.value)} placeholder="Passphrase für den Schlüssel"
-                    autoCapitalize="off" autoCorrect="off" autoComplete="new-password" spellCheck={false}
-                    style={{...INP,marginBottom:0,paddingRight:40,fontSize:13}}/>
-                  <button onClick={()=>setShowEbPass(v=>!v)}
-                    style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",
-                      background:"transparent",border:"none",cursor:"pointer",padding:6,display:"flex"}}>
-                    {Li(showEbPass?"eye-off":"eye",16,T.txt2)}
-                  </button>
-                </div>
-                <input type={showEbPass?"text":"password"} value={ebPass2}
-                  onChange={e=>setEbPass2(e.target.value)} placeholder="Passphrase wiederholen"
-                  autoCapitalize="off" autoCorrect="off" autoComplete="new-password" spellCheck={false}
-                  style={{...INP,marginBottom:0,marginTop:6,fontSize:13}}/>
-                {(ebPass||ebPass2) && (
-                  <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,
-                    color:aufKarte(T.gold,ebMatch?T.pos:T.neg),fontSize:11,fontWeight:700}}>
-                    {Li(ebMatch?"check":"alert-triangle",12,aufKarte(T.gold,ebMatch?T.pos:T.neg,3))}
-                    {ebMatch?"Passphrasen stimmen überein":"Passphrasen stimmen noch nicht überein"}
-                  </div>
-                )}
-              </>)}
-            </div>
-
-            {/* Export sperren, solange der Schlüssel angefordert ist, aber die
-                Passphrase fehlt/abweicht — sonst ginge der Schlüssel still verloren. */}
+            {/* Export sperren, solange der Schlüssel angefordert ist, die
+                Sicherung aber (noch) nicht verschlüsselt wird — sonst ginge der
+                Schlüssel still verloren. */}
             {(() => { const blocked = (inclEbKey && !ebReady) || !exportEncReady; return (
             <div style={{display:"flex",gap:8,marginTop:12,opacity:blocked?0.5:1}}>
               <button onClick={copyExport} disabled={blocked}
@@ -981,15 +997,19 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                 autoCapitalize="off" autoCorrect="off" autoComplete="off" spellCheck={false}
                 style={{...INP,marginBottom:0,fontSize:13,fontFamily:"monospace"}}/>
             </div>
-            {/* Passphrase für den verschlüsselten Bank-Schlüssel. Hervorgehoben,
-                wenn das eingefügte JSON einen enthält; sonst dezent (für Dateien). */}
+            {/* Passphrase für einen Bank-Schlüssel im EIGENEN Umschlag. Neue
+                Sicherungen haben das nicht mehr — dort liegt der Schlüssel im
+                Chiffrat der ganzen Datei und kommt mit Passphrase und
+                Recovery-Code von oben heraus. Das Feld bleibt für ältere
+                Dateien; `pastedHasKey` erkennt sie daran, dass `_ebSecure`
+                selbst ein Umschlag ist. */}
             <div style={{marginBottom:10,padding:"8px 10px",borderRadius:9,
               border:`1px solid ${pastedHasKey?T.gold:T.bd}`,
               background:pastedHasKey?`${T.gold}12`:"transparent"}}>
               <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:5,
                 color:pastedHasKey?T.gold:T.txt2,fontSize:11,fontWeight:700}}>
                 {Li("key",12,pastedHasKey?T.gold:T.txt2)}
-                Passphrase für Bank-Schlüssel {pastedHasKey?"— diese Datei enthält einen!":"(nur falls enthalten)"}
+                Passphrase für Bank-Schlüssel {pastedHasKey?"— diese Datei enthält einen!":"(nur für ältere Sicherungen)"}
               </div>
               <input type="password" value={importEbPass} onChange={e=>setImportEbPass(e.target.value)}
                 placeholder="Schlüssel-Passphrase eingeben"
