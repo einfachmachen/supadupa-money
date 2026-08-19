@@ -321,6 +321,31 @@ signierte Widerrufs-Antwort hin, nie bei Fehler, Zeitueberschreitung oder
 unklarer Antwort — und lieber „als inaktiv markieren" als Bytes zerstoeren,
 damit der Weg zurueck ohne Download geht.
 
+**GitHub Pages kann das Tor NICHT stellen — wichtig, sonst laeuft man in eine
+Sackgasse.** Der naheliegende Gedanke „freier Teil auf dem einen Pages-Server,
+Premium-Teil auf einem zweiten" traegt nicht: Pages liefert statische Dateien
+ohne jede Authentifizierung aus. Ein zweiter Pages-Server ist genauso
+oeffentlich wie der erste — wer die URL hat, laedt die Datei. (Zugriffsschutz
+fuer Pages gibt es nur in GitHub Enterprise.) Es braucht eine Stelle, die
+pruefen KANN: eine **Cloudflare-Worker-Route** (z. B.
+`lizenzen.supadupa.top/bundle`, prueft `X-License-Token` wie der Bank-Proxy)
+oder **Cloudflare Pages mit Functions**. Beides passt zum Domain-Umzug; ein
+zweiter Anbieter ist nicht noetig.
+
+**Der richtige Hebel ist „keine neueren Versionen", nicht „wegnehmen."**
+Bei einem Einmalprodukt gibt es keinen abgelaufenen Zahler — laufende
+Verbesserungen sind aber ein fortwaehrender Wert, den man vorenthalten kann.
+Nicht destruktiv, trifft niemanden versehentlich, und der Ausgangsstand
+bleibt funktionsfaehig.
+
+**Reihenfolge: erst privat, dann trennen.** Solange das Repository
+oeffentlich ist, klont man den Premium-Code einfach und baut ihn selbst — ein
+Tor vor dem GEBAUTEN Buendel waere dann verlorene Arbeit. Abwaegung dabei:
+Ein offener Quelltext ist bei einer Finanz-App ein Vertrauensargument
+(„schaut nach, was mit euren Daten passiert"), gerade zum
+Local-first-Versprechen. Mittelweg: freier Teil bleibt oeffentlich, nur der
+Premium-Teil zieht in ein zweites, privates Repository.
+
 **Falls spaeter doch: das Tor sitzt bei der AUSLIEFERUNG, nicht beim
 Behalten.** Eine Route auf dem eigenen Server gibt das Premium-Buendel nur
 gegen ein gueltiges Token heraus — das ist serverseitig und damit echt. Was
