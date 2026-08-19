@@ -117,13 +117,63 @@ export function knopfPaar(flaeche, wunschSchrift, schwelle = 4.5) {
 // `klasse` (optional): Erklärt ein Theme diese Fläche per `flaechen_extra` zur
 // Karte („Tastenhell"), gewinnt deren Farbe per `!important` gegen die Tönung
 // — dann ist SIE der Untergrund, und der Akzent bleibt meist stehen.
-export function toenungsGrund(farbe, anteil, klasse) {
-  const karte = klasse && T.flaechen_extra && T.flaechen_extra[klasse];
-  if (typeof karte === "string" && karte[0] === "#") return karte;
-  return mischen(farbe, anteil, T.bg);
+// Alle Hex-Farben aus einem CSS-Hintergrundwert. Ein Verlauf bringt mehrere
+// mit ("linear-gradient(135deg,#4E4E4E,#3A3A3A)") — und die Schrift muss auf
+// JEDEM Ende tragen, nicht nur auf dem zufällig ersten.
+function hexTeile(wert) {
+  return String(wert || "").match(/#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b/g) || [];
 }
-export const aufToenung = (farbe, anteil, klasse, schwelle = 4.5) =>
-  schriftAuf(toenungsGrund(farbe, anteil, klasse), farbe, schwelle);
+
+// Die Fläche, die ein Theme für einen Bereich erklärt (`flaechen_extra`) —
+// oder `undefined`. Kann ein Verlauf sein.
+export function flaecheVon(klasse) {
+  const v = klasse && T.flaechen_extra && T.flaechen_extra[klasse];
+  return typeof v === "string" ? v : undefined;
+}
+
+// Die Untergründe, gegen die zu rechnen ist — eine Farbe, bei einem Verlauf
+// mehrere. Zwei verschiedene Fälle, die man nicht verwechseln darf:
+//
+//   `klasse`  — DIESES Element IST die Karte. Das Theme malt seine Fläche per
+//               `!important` über die eigene Tönung; die wird also gar nicht
+//               sichtbar. Untergrund ist die Kartenfarbe, UNGETÖNT.
+//   `flaeche` — Das Element LIEGT AUF dieser Fläche (z. B. der Sync-Hinweis
+//               im Hero). Seine Tönung wird wirklich gemalt und muss
+//               eingerechnet werden.
+//
+// Ohne beides gilt der Seitenhintergrund.
+//
+// Ein Verlauf wurde vorher STILL verworfen (die Prüfung verlangte
+// `karte[0] === "#"`) und fiel auf `T.bg` zurück — der Aufrufer bekam nie zu
+// sehen, dass seine Angabe ignoriert wurde.
+export function toenungsGruende(farbe, anteil, klasse, flaeche) {
+  const karte = hexTeile(flaecheVon(klasse));
+  if (karte.length) return karte;
+  const teile = hexTeile(flaeche);
+  const gruende = teile.length ? teile : [T.bg];
+  return gruende.map((g) => mischen(farbe, anteil, g));
+}
+
+// Rückwärtskompatibel: EIN Grund. Bei einem Verlauf der dunkelste/hellste ist
+// nicht eindeutig — deshalb der erste. Wer es genau braucht, nimmt
+// `toenungsGruende`.
+export function toenungsGrund(farbe, anteil, klasse, flaeche) {
+  return toenungsGruende(farbe, anteil, klasse, flaeche)[0];
+}
+
+// Schriftfarbe auf einer selbstgetönten Fläche. Der Wunschton wird nur
+// genommen, wenn er auf ALLEN Gründen trägt (bei einem Verlauf also an beiden
+// Enden); sonst Weiß bzw. Fast-Schwarz — und wenn auch davon keines überall
+// reicht, das mit dem besseren schlechtesten Fall.
+export const aufToenung = (farbe, anteil, klasse, schwelle = 4.5, flaeche) => {
+  const gruende = toenungsGruende(farbe, anteil, klasse, flaeche);
+  const traegtUeberall = (c) => gruende.every((g) => kontrastWert(c, g) >= schwelle);
+  if (farbe && traegtUeberall(farbe)) return farbe;
+  if (traegtUeberall(HELL)) return HELL;
+  if (traegtUeberall(DUNKEL)) return DUNKEL;
+  const schlechtester = (c) => Math.min(...gruende.map((g) => kontrastWert(c, g)));
+  return schlechtester(HELL) >= schlechtester(DUNKEL) ? HELL : DUNKEL;
+};
 
 // Kurzform für den häufigsten Fall: Text oder Symbol liegt direkt auf dem
 // SEITENHINTERGRUND. In den meisten Themes trägt die Akzentfarbe dort; in

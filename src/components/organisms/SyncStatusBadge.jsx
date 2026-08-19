@@ -12,7 +12,7 @@ import { theme as T } from "../../theme/activeTheme.js";
 import { aufToenung } from "../../theme/amtPill.js";
 import { getSyncBadgeState } from "../../utils/syncBadge.js";
 
-function SyncStatusBadge() {
+function SyncStatusBadge({ liegtAuf } = {}) {
   const { isOnline, cfActive, isDirty, syncStatus, openCloudSave, loadFromCloud, frageBestaetigung } = useContext(AppCtx);
   const state = getSyncBadgeState({ isOnline, cfActive, isDirty, syncStatus });
   if (!state) return null;
@@ -32,7 +32,16 @@ function SyncStatusBadge() {
   // Weiss. Ein fester Ersatzton haette nicht gereicht: nachgerechnet fielen
   // 57 von 136 Theme-/Ton-Kombinationen unter 4,5:1, quer durch die Themes.
   const col = T[state.tone];
-  const schrift = aufToenung(col, 0x22 / 255);
+  // `liegtAuf`: Das Badge wird an ZWEI Stellen gerendert — im Hero (auf dessen
+  // Karte) und frei auf der Seite. Nur der Aufrufer weiss, worauf es liegt.
+  // Ohne die Angabe rechnete es immer gegen den Seitenhintergrund; in
+  // „Tastenhell" liegt der Hero aber auf einer dunklen Verlaufs-Karte, und die
+  // Schrift landete bei 3,03:1 statt 5,98:1 (Nutzer-Bild).
+  //
+  // Bewusst die FLAECHE, nicht die Klasse: eine Klasse hiesse „ich BIN diese
+  // Karte" — dann malte das Theme seine Farbe ueber die Toenung. Hier liegt
+  // das Badge nur DARAUF, seine Toenung wird also wirklich gemalt.
+  const schrift = aufToenung(col, 0x22 / 255, undefined, 4.5, liegtAuf);
 
   // "cloud_newer": ein anderes Gerät hat neuere Daten gespeichert (z.B. eine
   // dort vorgenommene Vormerkungs-Verknüpfung) — Antippen lädt sie direkt,

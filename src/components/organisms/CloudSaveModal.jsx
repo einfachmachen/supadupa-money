@@ -65,7 +65,11 @@ function CloudSaveModal({ onClose }) {
         {/* Status-Pille */}
         <div style={{display:"inline-flex",alignItems:"center",gap:7,
           padding:"5px 12px",borderRadius:999,background:`${status.col}1A`,
-          color:aufToenung(status.col,0x1A/255),fontSize:13,fontWeight:700}}>
+          // Die Pille liegt auf der DIALOGFLAECHE (T.surf, s. u.), nicht auf
+          // dem Seitenhintergrund. Ohne die Angabe rechnete sie gegen T.bg —
+          // in hellen Themes mit dunklen Karten waehlte sie dadurch dunkle
+          // Schrift auf dunklem Grund (Nutzer-Bild).
+          color:aufToenung(status.col,0x1A/255,undefined,4.5,T.surf),fontSize:13,fontWeight:700}}>
           <span style={{width:7,height:7,borderRadius:"50%",background:status.col,
             display:"inline-block"}}/>
           {status.txt}

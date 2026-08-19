@@ -15,7 +15,7 @@ import { theme as T, isLightTheme } from "../../theme/activeTheme.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
 import { betrag } from "../../utils/betrag.jsx";
-import { nextBankWorkday, isoAddMonths, calcRecurringCount } from "../../utils/date.js";
+import { nextBankWorkday, bankTagAb, isoAddMonths, calcRecurringCount } from "../../utils/date.js";
 import { Li } from "../../utils/icons.jsx";
 import { SchieflageVorwarnung } from "../atoms/SchieflageVorwarnung.jsx";
 import { isFuelSelection, checkOdometerPlausibility } from "../../utils/fuel.js";
@@ -52,6 +52,26 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
   const [tgtSubId, setTgtSubId] = useState("");
   const [catSide, setCatSide] = useState("source");
   const [accId, setAccId] = useState(accounts?.[0]?.id||"acc-giro");
+
+  // Verursachungsdatum setzen — und den Banktag mitziehen.
+  //
+  // Vorher standen beide Felder unverbunden nebeneinander: ein Kauf vom
+  // 27.11. konnte einen Banktag vom 20.08. behalten, also eine Belastung VOR
+  // dem Kauf (Nutzer-Bild). Der Banktag ergibt sich aus dem Kauftag plus den
+  // Verzögerungstagen des Kontos (Karte belastet nicht am Kauftag), gerückt
+  // auf einen Banktag.
+  //
+  // Bewusst bei JEDER Änderung, nicht nur solange `dateTouched` false ist:
+  // wer das Verursachungsdatum ändert, meint den Vorgang — ein von Hand
+  // gesetzter Banktag von vorhin gehört dann zu einem anderen Kauf. Wer den
+  // Banktag danach noch anpassen will, kann das; erst die nächste Änderung am
+  // Verursachungsdatum rechnet wieder.
+  const setzeVerursacht = (v) => {
+    setValueDate(v);
+    if (!v || recurring) return;   // Serie: das Feld heisst Startdatum, nicht Banktag
+    const tage = accounts?.find(a => a.id === accId)?.delayDays || 0;
+    setDate(bankTagAb(v, tage));
+  };
   // ── Schiebeschalter, die den Dialog erweitern ──
   const [recurring,   setRecurring]   = useState(initialRecurring || initialFinanz);
   const [isFinanz,    setIsFinanz]    = useState(initialFinanz);
@@ -540,9 +560,9 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
           {/* verursacht (optional) */}
           <div style={{color:T.txt2,fontSize:S.fs-4,fontWeight:600,marginBottom:6}}>verursacht (optional)</div>
           <div style={{display:"flex",gap:S.gap/2,marginBottom:S.gap}}>
-            <input type="date" value={valueDate} onChange={e=>setValueDate(e.target.value)}
+            <input type="date" value={valueDate} onChange={e=>setzeVerursacht(e.target.value)}
               style={{...inpBase, flex:1, border:`2px solid ${valueDate?T.blue:T.bd}`, colorScheme:(isLightTheme())?"light":"dark"}}/>
-            <button onClick={()=>setValueDate(valueDate?"":today)}
+            <button onClick={()=>setzeVerursacht(valueDate?"":today)}
               className="wahl-taste"
               style={{flexShrink:0,padding:`0 ${S.padL}px`,borderRadius:S.radius,
                 border:`2px solid ${T.bd}`,boxShadow:feldRing,

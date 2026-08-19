@@ -108,6 +108,21 @@ function pendingDebitDate(isoDate, todayIso) {
   return isoDate <= todayIso ? nextBankWorkday(isoDate) : isoDate;
 }
 
+// Belastungstag zu einem Verursachungsdatum: erst die Verzögerungstage des
+// Kontos drauf (Karte belastet nicht am Kauftag), dann auf einen Banktag
+// rücken.
+//
+// Anders als `nextBankWorkday` rückt das NICHT zwingend weiter: fällt das
+// Ergebnis schon auf einen Banktag, bleibt es stehen. Genau das braucht man
+// hier — ein Kauf am Dienstag soll nicht auf Mittwoch rutschen, bloß weil der
+// Helfer immer mindestens einen Tag addiert.
+function bankTagAb(isoDate, plusTage = 0) {
+  if (!isoDate) return isoDate;
+  const iso = plusTage ? isoAddDays(isoDate, plusTage) : isoDate;
+  const [y, m, dd] = iso.split("-").map(Number);
+  return isBankWorkday(new Date(y, m - 1, dd)) ? iso : nextBankWorkday(iso);
+}
+
 // ── Datums-Ausgabe ───────────────────────────────────────────────────────
 // Drei Stufen, je nachdem wie viel aus dem Zusammenhang schon feststeht.
 // Regel (Nutzer-Wunsch): Steht Monat und Jahr bereits am + Button, reicht der
@@ -135,4 +150,4 @@ function tagVoll(iso) {
   return d && m && y ? `${d}.${m}.${y}` : "";
 }
 
-export { isoAddMonths, isoAddDays, parseGermanDate, isBankWorkday, nextBankWorkday, pendingDebitDate, calcRecurringCount, tagKurz, tagMonat, tagVoll };
+export { isoAddMonths, isoAddDays, parseGermanDate, isBankWorkday, nextBankWorkday, pendingDebitDate, bankTagAb, calcRecurringCount, tagKurz, tagMonat, tagVoll };
