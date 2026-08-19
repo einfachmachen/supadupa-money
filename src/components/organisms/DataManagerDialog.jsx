@@ -8,7 +8,7 @@ import { AccountChips } from "../molecules/AccountChips.jsx";
 import { INP, ZEILE_H, UNTEN_FREI } from "../../theme/palette.js";
 import { THEMES } from "../../theme/themes.js";
 import { Li } from "../../utils/icons.jsx";
-import { schriftAuf, aufToenung } from "../../theme/amtPill.js";
+import { schriftAuf, aufToenung, toenungsGruende } from "../../theme/amtPill.js";
 import { kvStore } from "../../utils/kvStore.js";
 import { exportEbForSync, importEbFromSync } from "../../utils/enableBankingStore.js";
 import { encryptJSON, decryptJSON, isEncrypted, combineSecrets, randomRecoveryCode } from "../../utils/syncCrypto.js";
@@ -19,6 +19,24 @@ import { useEffect } from "react";
 // (7 %) und schreibt darauf denselben Ton — gegen die Platte gerechnet sieht
 // das gut aus, gemalt sind es 4,5:1 knapp darunter (§4.4).
 const aufBanner = (farbe, schwelle) => aufToenung(farbe, 0x12 / 255, ".hinweis-karte", schwelle);
+
+// Die zwei Wahlkarten im Export-Reiter („Export verschluesseln",
+// „Bank-Schluessel") toenen sich mit ihrer eigenen Farbe (`${ton}10`).
+// Symbole und Text darauf trugen bisher den ROHTON — der Schluessel auf der
+// goldgetoenten Karte war im hellen Theme kaum zu sehen (Nutzer-Bild).
+//
+// Der Untergrund ist dabei NICHT immer die Toenung: Themes wie „Tastenhell"
+// erklaeren `.wahl-taste` per `flaechen_extra` zur Taste und malen ihre Farbe
+// mit `!important` darueber — gemessen #525252 statt eines Blauschleiers auf
+// heller Platte. Wer gegen die Toenung rechnet, waehlt dort dunkle Schrift
+// auf dunkler Taste, also genau verkehrt.
+//
+// `toenungsGruende` kennt beide Faelle und liefert den WIRKLICH gemalten
+// Grund. Zwei Farben als Eingabe, weil beides vorkommt: gleicher Ton
+// (goldenes Symbol auf goldener Karte) und gekreuzt (goldene Warnschrift auf
+// blauer Karte). Symbole brauchen 3:1 (WCAG 1.4.11), Text 4,5:1.
+const kartenGrund = (ton) => toenungsGruende(ton, 0x10 / 255, ".wahl-taste")[0];
+const aufKarte = (ton, wunsch, schwelle = 4.5) => schriftAuf(kartenGrund(ton), wunsch, schwelle);
 
 function DataManagerDialog({onClose, onBack, mobileMode=false}) {
   const { cats, groups, accounts, vehicles, setVehicles, txs, setTxs, csvRules, startBalances,
@@ -721,7 +739,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                   display:"flex",alignItems:"center",justifyContent:"center"}}>
                   {encryptExport&&Li("check",9,T.on_accent)}
                 </div>
-                {Li("lock",13,encryptExport?T.blue:T.txt2)}
+                {Li("lock",13,encryptExport?aufKarte(T.blue,T.blue,3):T.txt2)}
                 <span style={{flex:1,color:T.txt,fontSize:12}}>Export verschlüsseln</span>
                 <span style={{color:T.txt2,fontSize:10}}>{encryptExport?"an":"aus"}</span>
               </div>
@@ -733,9 +751,9 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                 </div>
               ) : (<>
                 <div style={{color:T.txt2,fontSize:10,lineHeight:1.5,marginTop:6,display:"flex",gap:5,alignItems:"flex-start"}}>
-                  {Li("shield",11,T.acc)}
+                  {Li("shield",11,aufKarte(T.blue,T.blue,3))}
                   <span>Zwei-Faktor: <b>Passphrase</b> (merkst du dir) + <b>Recovery-Code</b>
-                    (unten, einmalig — separat sichern). <b style={{color:T.acc_gold}}>Beide zusammen
+                    (unten, einmalig — separat sichern). <b style={{color:aufKarte(T.blue,T.gold)}}>Beide zusammen
                     nötig</b> — ohne einen von beiden ist die Sicherung dauerhaft unlesbar, es gibt
                     keine Wiederherstellung.</span>
                 </div>
@@ -756,8 +774,8 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                   style={{...INP,marginBottom:0,marginTop:6,fontSize:13}}/>
                 {(exportPass||exportPass2) && (
                   <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,
-                    color:exportPassMatch?T.pos:T.neg,fontSize:11,fontWeight:700}}>
-                    {Li(exportPassMatch?"check":"alert-triangle",12,exportPassMatch?T.pos:T.neg)}
+                    color:aufKarte(T.blue,exportPassMatch?T.pos:T.neg),fontSize:11,fontWeight:700}}>
+                    {Li(exportPassMatch?"check":"alert-triangle",12,aufKarte(T.blue,exportPassMatch?T.pos:T.neg,3))}
                     {exportPassMatch?"Passphrasen stimmen überein":"Passphrasen stimmen noch nicht überein"}
                   </div>
                 )}
@@ -789,7 +807,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
             </div>
 
             {/* Bank-Schlüssel (.pem): optional, NUR passphrase-verschlüsselt */}
-            <div style={{marginTop:10,padding:"8px 10px",borderRadius:9,
+            <div className="wahl-taste" style={{marginTop:10,padding:"8px 10px",borderRadius:9,
               border:`1px solid ${inclEbKey?T.gold:T.bd}`,
               background:inclEbKey?`${T.gold}10`:"rgba(255,255,255,0.03)"}}>
               <div onClick={()=>hasEbKey&&setInclEbKey(v=>!v)}
@@ -800,15 +818,15 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                   display:"flex",alignItems:"center",justifyContent:"center"}}>
                   {inclEbKey&&Li("check",9,T.on_accent)}
                 </div>
-                {Li("key",13,inclEbKey?T.gold:T.txt2)}
+                {Li("key",13,inclEbKey?aufKarte(T.gold,T.gold,3):T.txt2)}
                 <span style={{flex:1,color:T.txt,fontSize:12}}>Bank-Schlüssel (verschlüsselt)</span>
                 <span style={{color:T.txt2,fontSize:10}}>{hasEbKey?"vorhanden":"keiner"}</span>
               </div>
               <div style={{color:T.txt2,fontSize:10,lineHeight:1.5,marginTop:6,display:"flex",gap:5,alignItems:"flex-start"}}>
-                {Li("shield",11,T.acc_gold)}
+                {Li("shield",11,inclEbKey?aufKarte(T.gold,T.gold,3):T.acc_gold)}
                 <span>Der private Bank-Schlüssel wird normalerweise <b>nicht</b> mitgesichert
                   (er läge sonst unverschlüsselt in der Datei). Optional kannst du ihn hier
-                  <b> mit einer Passphrase verschlüsselt</b> aufnehmen. <b style={{color:T.acc_gold}}>Ohne diese
+                  <b> mit einer Passphrase verschlüsselt</b> aufnehmen. <b style={{color:inclEbKey?aufKarte(T.gold,T.gold):T.acc_gold}}>Ohne diese
                   Passphrase lässt er sich später nicht wieder importieren.</b></span>
               </div>
               {inclEbKey && (<>
@@ -829,8 +847,8 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
                   style={{...INP,marginBottom:0,marginTop:6,fontSize:13}}/>
                 {(ebPass||ebPass2) && (
                   <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6,
-                    color:ebMatch?T.pos:T.neg,fontSize:11,fontWeight:700}}>
-                    {Li(ebMatch?"check":"alert-triangle",12,ebMatch?T.pos:T.neg)}
+                    color:aufKarte(T.gold,ebMatch?T.pos:T.neg),fontSize:11,fontWeight:700}}>
+                    {Li(ebMatch?"check":"alert-triangle",12,aufKarte(T.gold,ebMatch?T.pos:T.neg,3))}
                     {ebMatch?"Passphrasen stimmen überein":"Passphrasen stimmen noch nicht überein"}
                   </div>
                 )}
