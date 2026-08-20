@@ -8,6 +8,7 @@ import { BudgetEditorModal } from "../organisms/BudgetEditorModal.jsx";
 import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
 import { KontoWarnungWidget } from "../organisms/KontoWarnungWidget.jsx";
 import { SweepBanner } from "../organisms/SweepBanner.jsx";
+import { AbsicherungsSatz } from "../organisms/AbsicherungsSatz.jsx";
 import { PendingList } from "../organisms/PendingList.jsx";
 import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
 import { BudgetBereich } from "../molecules/BudgetBereich.jsx";
@@ -1350,6 +1351,12 @@ function DashboardScreenV2() {
             </div>
           );
         })()}
+
+        {/* Ein Satz statt einer Tabelle: Reicht das Geld, und wenn nicht, was
+            ist zu tun? Steht ganz oben, weil er die Frage beantwortet, wegen
+            der man die Tabelle sonst überhaupt aufmacht (Nutzer-Wunsch:
+            „recht entspannt auf Nummer sicher gehen"). Reine Auskunft. */}
+        {!isPastMonth && <AbsicherungsSatz/>}
 
         {/* Zins-Sweep: am Stichtag die Überweisung, danach die Rückbuchung.
             Steht ÜBER den Panel-Reitern, damit es auch dann auffällt, wenn

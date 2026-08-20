@@ -488,6 +488,46 @@ export default function SupaDupaMoney() {
   }, [plusArretiert, tourPlusFly, moodDrillOpen]);
 
 
+  // ── Wie hoch der klebende Hero oben ist (`--hero-h`) ──────────────────
+  //
+  // Der Hero liegt in seinem Scroll-Container per `position:sticky` ganz
+  // oben. Wer darunter selbst etwas ankleben will — die Kopfzeile der
+  // Sparplan-Tabelle, damit man beim Scrollen noch weiß, welche Spalte man
+  // liest — muss dort andocken, wo der Hero aufhört. Sonst schöbe sich die
+  // Kopfzeile hinter den Hero und wäre unsichtbar.
+  //
+  // Wieder gemessen statt geraten (wie `--plus-frei`): Der Hero ist auf- und
+  // zuklappbar und je nach Theme unterschiedlich hoch. Ein `ResizeObserver`
+  // hält den Wert nach, ohne dass dieser Effekt neu laufen muss; neu
+  // eingehängt wird er nur, wenn der Bildschirm wechselt und damit ein
+  // anderes Hero-Element im Baum steht.
+  useEffect(() => {
+    let abgebrochen = false;
+    let ro = null;
+    const setzen = (h) =>
+      document.documentElement.style.setProperty("--hero-h", `${Math.round(h)}px`);
+    const anhaengen = () => {
+      if (abgebrochen) return;
+      const el = document.querySelector(".hero-sticky");
+      if (!el) { setzen(0); return; }
+      setzen(el.getBoundingClientRect().height);
+      if (typeof ResizeObserver === "function") {
+        ro?.disconnect();
+        ro = new ResizeObserver(() => setzen(el.getBoundingClientRect().height));
+        ro.observe(el);
+      }
+    };
+    anhaengen();
+    // Der Hero wird erst nach dem ersten Zeichnen einsortiert; ein paar
+    // Nachmessungen decken den Übergang ab (dieselbe Not wie bei --plus-frei).
+    const marken = [80, 300].map((ms) => setTimeout(anhaengen, ms));
+    return () => {
+      abgebrochen = true;
+      marken.forEach(clearTimeout);
+      ro?.disconnect();
+    };
+  }, [mainTab, subTab]);
+
   // Merkt sich den zuletzt aktiven Haupt-Tab (außerhalb der Struktur-/
   // Einstellungs-Screens). Verlässt man die Einstellungen per Doppel-Tap,
   // kehrt man hierher zurück (z.B. nach Monat), statt immer auf Home zu springen.

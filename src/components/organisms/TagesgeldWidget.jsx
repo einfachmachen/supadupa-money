@@ -1104,7 +1104,24 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
             );
           })()}
           <div style={{display:"flex",flexDirection:"column",gap:2,marginTop:8}}>
-            <div style={{display:"flex",padding:"0 6px",marginBottom:3}}>
+            {/* Die Kopfzeile bleibt beim Scrollen stehen — sonst liest man ab
+                der fünften Zeile Zahlen, deren Spalte man nicht mehr kennt
+                (Nutzer-Wunsch).
+
+                `top` ist die Unterkante des klebenden Hero (`--hero-h`, in
+                App.jsx gemessen). Mit `top:0` schöbe sich die Kopfzeile hinter
+                den Hero und wäre genau dann unsichtbar, wenn man sie braucht.
+
+                Der Hintergrund MUSS deckend sein und muss die Farbe der Karte
+                treffen, auf der die Zeile liegt (`T.surf2`, siehe der
+                Widget-Rahmen oben) — sonst scheinen die Zeilen durch, die
+                darunter hindurchwandern. Die negativen Ränder plus dasselbe
+                Polster verbreitern den Streifen bis an die Kartenkanten;
+                andernfalls bliebe links und rechts ein Spalt, durch den die
+                wandernden Zeilen zu sehen wären. */}
+            <div style={{display:"flex",padding:"3px 16px 5px",margin:"0 -10px",
+              position:"sticky",top:"var(--hero-h, 0px)",zIndex:3,
+              background:T.surf2}}>
               <div style={{width:38,flexShrink:0}}/>
               <div style={{flex:1,textAlign:"right",color:T.txt,fontSize:11}}>Tiefst-Saldo*</div>
               <div style={{flex:1,textAlign:"right",color:T.txt,fontSize:11}}>nach Sparen</div>

@@ -619,6 +619,47 @@ nicht erkennbar.
   dafuer ist jetzt vollstaendig da — `sweepFuerMonat` rechnet fuer jeden
   Monat, `sweepZustandAnwenden` legt Hin- und Rueckbuchung an.
 
+## Entspannt auf Nummer sicher — in drei Schritten
+
+**Nutzer-Wunsch:** „Irgendwie suche ich nach einer Moeglichkeit, mir nicht
+staendig darum Gedanken machen zu muessen, sondern recht entspannt auf Nummer
+sicher zu gehen."
+
+Der Grund, warum es sich eng anfuehlt, steckt im Modell: Geld fliesst bisher
+nur in EINE Richtung (Giro → Tagesgeld). Daraus folgt zwingend, dass die erste
+Rate durch das engste kuenftige Fenster begrenzt ist (Suffix-Minimum, siehe
+oben). Das Sicherheitsnetz liegt derweil ungenutzt auf dem Tagesgeld.
+
+Bewusst in dieser Reihenfolge, damit nie eine Automatik Geld bewegt, deren
+Logik noch nicht sichtbar war:
+
+- [x] **Schritt 3 zuerst: ein Satz statt einer Tabelle.** Rein informativ.
+  `utils/absicherung.js` + `components/organisms/AbsicherungsSatz.jsx`, ganz
+  oben auf der Startseite. Drei Aussagen: „Abgesichert bis Mär 27 — nichts zu
+  tun." / „Am 12.04. fehlen 340 € — bis 09.04. vom Tagesgeld zurueckholen." /
+  „Am 12.04. fehlen 340 €, verfuegbar sind nur 120 €." Die Unterscheidung
+  zwischen den letzten beiden ist der ganze Punkt: Ein gedeckter Engpass ist
+  eine Ueberweisung, kein gedeckter ist eine Aenderung. Liest nur
+  (`liquidityWarnings` aus dem Context) und rechnet nichts nach — sonst gaebe
+  es eine dritte Quelle fuer dieselbe Wahrheit.
+  Tests: `tests/absicherungsSatz.test.js`.
+
+- [ ] **Schritt 2: Notgroschen auf dem Tagesgeld.** Ein Mindestbestand, den
+  die App nie einplant und nie zurueckholt; darueber ist alles verfuegbar.
+  Damit kann der Giro-Puffer klein bleiben — das echte Netz liegt eine Etage
+  tiefer und verzinst sich dabei. Der Satz liest den Wert bereits
+  (`mbt_tg_notgroschen`), es fehlt nur das Eingabefeld am Konto. Danach:
+  `sparPlanOptimum` darf den Notgroschen NICHT als Kapazitaet sehen.
+
+- [ ] **Schritt 1: geplante Rueckbuchungen.** Droht ein Engpass, plant die App
+  keine Sparbremse, sondern eine Rueckbuchung Tagesgeld → Giro ein paar
+  Banktage vorher, als sichtbare Vormerkung. Die Sparrate bleibt oben; erst
+  wenn das Tagesgeld nicht reicht, wird gekuerzt. Maschinerie vorhanden
+  (`sweepZustandAnwenden` legt heute schon Hin- und Rueckbuchung an, inklusive
+  des nicht wegklickbaren Hinweises am Tag danach).
+  **Ehrlich dazusagen:** Das kostet ein paar echte Ueberweisungen im Jahr, die
+  der Nutzer ausfuehren muss. Die App kann planen und erinnern, nicht buchen.
+
 ## Kontrast — offene Punkte
 
 - [ ] **`T.txt2` auf getoenten Flaechen und auf `T.bg`.** Gemessen faellt die
