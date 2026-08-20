@@ -323,9 +323,20 @@ export function sparAbgaenge(txs, abDatumIso = null) {
 // `bisIso === null` heißt „bis zum Ende des Horizonts".
 // Gibt `null` zurück, wenn im Fenster kein einziger Tag zu prüfen ist.
 export function minImFenster(vonIso, bisIso, accId, ctx, today, horizonMonths) {
+  return tiefpunktImFenster(vonIso, bisIso, accId, ctx, today, horizonMonths).min;
+}
+
+// Dasselbe, aber mit dem TAG des Tiefpunkts: `{ min, tag }`.
+//
+// Der Tag ist nicht Zierde. Die Sparplan-Tabelle zeigte einen Wert „nach
+// Sparen", ohne zu sagen, wann er eintritt — und der Wert war obendrein falsch
+// gerechnet (Monats-Tiefstand minus voller Rate, obwohl die Rate erst am
+// Monatsletzten abgeht). Beides zusammen ergab rote Minusbeträge, die es nie
+// gab. Wer eine Zahl zeigt, muss sagen können, an welchem Tag sie steht.
+export function tiefpunktImFenster(vonIso, bisIso, accId, ctx, today, horizonMonths) {
   const [vy, vm] = String(vonIso).split("-").map(Number);
-  if (!vy || !vm) return null;
-  let min = null;
+  if (!vy || !vm) return { min: null, tag: null };
+  let min = null, tagMin = null;
   for (let i = 0; i <= horizonMonths; i++) {
     const m = (vm - 1 + i) % 12, y = vy + Math.floor((vm - 1 + i) / 12);
     const monatsPfx = `${y}-${String(m + 1).padStart(2, "0")}-`;
@@ -337,10 +348,10 @@ export function minImFenster(vonIso, bisIso, accId, ctx, today, horizonMonths) {
       if (tag < vonIso) return;
       if (bisIso && tag >= bisIso) return;
       const s = r.saldoAt(tag);
-      if (min === null || s < min) min = s;
+      if (min === null || s < min) { min = s; tagMin = tag; }
     });
   }
-  return min;
+  return { min, tag: tagMin };
 }
 
 // Der höchste Betrag für GENAU DIESE Rate, mit dem im Fenster

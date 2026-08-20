@@ -13,7 +13,8 @@ import { getSparWatermark, noteSparWatermark } from "../../utils/sparWatermarks.
 import { buildTxIdMap } from "../../utils/tx.js";
 import { sparPlanPflege, heuteIsoVon } from "../../utils/sparPlanPflege.js";
 import { recordDeletedTxs } from "../../utils/txTombstones.js";
-import { computeMinTagessaldo, computeTagessaldoAt, buildTxsByMonth, sparPlanOptimum } from "../../utils/sparBerechnen.js";
+import { computeMinTagessaldo, computeTagessaldoAt, buildTxsByMonth, sparPlanOptimum,
+  tiefpunktImFenster } from "../../utils/sparBerechnen.js";
 import { knopfPaar, DUNKEL } from "../../theme/amtPill.js";
 import { AMPEL } from "../../utils/syncBadge.js";
 import { DEFAULT_ZINS_MONATE, parseZinsMonate, serializeZinsMonate,
@@ -80,7 +81,9 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   // gespeicherte Tabellen älterer Stände werden dann nicht mehr angezeigt,
   // sondern verworfen und neu gerechnet. Eine Zahl, der man nicht ansieht, wie
   // alt sie ist, ist schlimmer als gar keine.
-  const VORSCHAU_REGEL = 2;   // 2 = Fenster ab Ratentermin (sparPlanOptimum)
+  // 2 = Fenster ab Ratentermin (sparPlanOptimum)
+  // 3 = „nach Sparen" im Fenster gemessen statt Monats-Tiefstand minus Rate
+  const VORSCHAU_REGEL = 3;
   const [result,    setResultState]   = useState(()=>{ try {
     const s=kvStore.getItem("mbt_spar_result");
     if(!s) return null;
@@ -488,16 +491,66 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
       });
     } catch(e) { /* Vorschau bleibt bei 0 statt zu scheitern */ }
 
+    // ── Der Stand, auf dem die Tabelle ihre Tiefpunkte misst ─────────────
+    //
+    // Die Raten dieses Plans mit dem GERECHNETEN Betrag, nicht mit dem, was
+    // gerade in den Buchungen steht. Nur so zeigt die Tabelle den Tiefpunkt,
+    // der sich mit genau diesem Plan ergibt.
+    const ergebnisTxs = [...basisTxs, ...vorschauRaten.map(t => {
+      const b = optimum.get(t.id) ?? 0;
+      return { ...t, totalAmount: -b, splits: (t.splits||[]).map(s => ({...s, amount: -b})) };
+    })];
+    const fensterCtx = { txs: ergebnisTxs, cats, accounts, getKumulierterSaldo, getCat,
+      getBudgetForMonth, _restCache: {},
+      _txsById: buildTxIdMap(ergebnisTxs), _txsByMonth: buildTxsByMonth(ergebnisTxs) };
+
     const step = () => {
       const end = Math.min(i + CHUNK, total);
       for(; i < end; i++) {
         const m=(nowM+i)%12, y=nowY+Math.floor((nowM+i)/12);
-        const {min:minTag, saldoEnde} = getMinTagessaldo(y, m, virtualSpar, effAcc, excludeDesc);
+        const {min:monatsMin, saldoEnde} = getMinTagessaldo(y, m, virtualSpar, effAcc, excludeDesc);
         const zusaetzlich = (effAcc === undefined || effAcc === null || effAcc === "acc-giro")
           ? (optimum.get(`vorschau-${i}`) ?? 0) : 0;
 
         kumuliert += zusaetzlich;
-        const minNachSparen = minTag!==null ? minTag - zusaetzlich : null;
+
+        // ── „nach Sparen" — im FENSTER der Rate, nicht im Monat ───────────
+        //
+        // Hier stand `minTag - zusaetzlich`: der Tiefstand des ganzen Monats,
+        // minus der vollen Rate. Das unterstellt, die Rate sei den ganzen
+        // Monat über schon weg. Sie geht aber erst am MONATSLETZTEN ab — an
+        // einem tiefen Tag am 15. ist sie noch da.
+        //
+        // Die Folge war eine Zahl, die es nie gab: „Tiefst-Saldo +203, nach
+        // Sparen −379" (Nutzer-Bild) — also ein rotes Minus samt Warndreieck,
+        // während der Plan gleichzeitig 583 € sparen wollte. Beides konnte
+        // nicht stimmen; falsch war die Spalte, nicht die Rate.
+        //
+        // Jetzt gemessen, wo die Rate wirklich wirkt: vom Ratentermin bis zur
+        // nächsten Rate. In diesem Fenster ist sie an JEDEM Tag abgezogen —
+        // deshalb ist der Stand davor exakt `nach + Rate`, und deshalb muss
+        // `nach` den Puffer halten. Tut es das nicht, stimmt etwas nicht, und
+        // das Warndreieck bedeutet wieder etwas.
+        const vonIso = monatsLetzterIso(y, m);
+        const nIdx = nowM + i + 1;
+        const bisIso = monatsLetzterIso(nowY + Math.floor(nIdx/12), nIdx % 12);
+        const aufGiro = effAcc === undefined || effAcc === null || effAcc === "acc-giro";
+        let minNachSparen = null, tiefTag = null, minTag = monatsMin;
+        if(aufGiro) {
+          try {
+            const tp = tiefpunktImFenster(vonIso, bisIso, "acc-giro", fensterCtx, new Date(), 2);
+            minNachSparen = tp.min;
+            tiefTag = tp.tag;
+            if(minNachSparen !== null) minTag = minNachSparen + zusaetzlich;
+          } catch(e) { minNachSparen = null; }
+        }
+        if(minNachSparen === null) {
+          // Fallback (fremdes Konto oder Rechenfehler): wenigstens die alte,
+          // grobe Auskunft — aber ohne den Anspruch, ein Tagessaldo zu sein.
+          minTag = monatsMin;
+          minNachSparen = monatsMin !== null ? monatsMin - zusaetzlich : null;
+          tiefTag = null;
+        }
         addVS(y, m, zusaetzlich, virtualSpar);
 
         // Super-Sparrate für Zinsmonate — reine ANZEIGE. Die Buchungen
@@ -513,7 +566,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
               virtualSpar, monate: zinsMonateVorschau, saldoAmTag });
           } catch(e) { sweep = null; }
         }
-        rows.push({y, m, minTag, minNach: minNachSparen, saldoEnde, zusaetzlich, kumuliert, sweep});
+        rows.push({y, m, minTag, minNach: minNachSparen, tiefTag, saldoEnde, zusaetzlich, kumuliert, sweep});
       }
       setProgress(Math.round(i/total*100));
       if(i < total) requestAnimationFrame(step);
@@ -1058,7 +1111,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
               <div style={{flex:1,textAlign:"right",color:T.txt,fontSize:11}}>+ Monat</div>
               <div style={{flex:1,textAlign:"right",color:T.txt,fontSize:11,fontWeight:700}}>∑ gespart</div>
             </div>
-            {result.map(({y,m,minTag,minNach,zusaetzlich,kumuliert,sweep},i)=>{
+            {result.map(({y,m,minTag,minNach,tiefTag,zusaetzlich,kumuliert,sweep},i)=>{
               const zusCol=zusaetzlich>0?zusaetzlich<500?T.warn:T.pos:T.txt2;
               const isCurM=i===0;
               const kritisch=minNach!==null&&minNach<puffer;
@@ -1075,10 +1128,16 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                   <div style={{flex:1,textAlign:"right",color:minTag===null?T.txt:minTag<puffer?T.neg:T.txt,fontSize:12,fontFamily:NUM_FONT}}>
                     {minTag===null?"—":<>{minTag>=0?"+":"−"}{betragK(Math.abs(minTag))}</>}
                   </div>
-                  <div style={{flex:1,textAlign:"right",fontSize:12,fontFamily:NUM_FONT,fontWeight:700,
-                    color:minNach===null?T.txt:minNach<puffer?T.neg:T.pos}}>
-                    {minNach===null?"—":<>{minNach>=0?"+":"−"}{betragK(Math.abs(minNach))}</>}
-                    {kritisch&&<span style={{color:T.acc_neg,fontSize:7}}> ⚠</span>}
+                  <div style={{flex:1,textAlign:"right"}}>
+                    <div style={{fontSize:12,fontFamily:NUM_FONT,fontWeight:700,
+                      color:minNach===null?T.txt:minNach<puffer?T.neg:T.pos}}>
+                      {minNach===null?"—":<>{minNach>=0?"+":"−"}{betragK(Math.abs(minNach))}</>}
+                      {kritisch&&<span style={{color:T.acc_neg,fontSize:7}}> ⚠</span>}
+                    </div>
+                    {/* WANN der Tiefpunkt eintritt — die Frage, die die Spalte
+                        bisher offenließ („Wann tritt dieser Tagessaldo ein?"). */}
+                    {tiefTag&&<div style={{fontSize:8,color:T.txt,fontFamily:NUM_FONT,
+                      lineHeight:1.1,marginTop:-1}}>{kurzTag(tiefTag)}</div>}
                   </div>
                   <div style={{flex:1,textAlign:"right",color:zusCol,fontSize:12,fontWeight:700,fontFamily:NUM_FONT}}>
                     {zusaetzlich>0?<>+{betragK(zusaetzlich)}</>:"—"}
@@ -1122,8 +1181,11 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
               );
             })}
           </div>
+          {/* Die alte Fußnote beschrieb die alte Regel („Sparen = Tiefst-Saldo
+              − Puffer") und passte nicht mehr zu dem, was gerechnet wird. */}
           <div style={{textAlign:"right",color:T.txt,fontSize:11,marginTop:5,lineHeight:1.45}}>
-            * Tiefst-Saldo nach Abzug bereits eingeplanter Sparraten · Sparen = Tiefst-Saldo − {betrag(puffer)} € Puffer
+            * Tiefster Stand vom Ratentermin bis zur nächsten Rate — dort wirkt sie.
+            {" "}Darunter der Tag. Nach Sparen bleibt der Puffer von {betrag(puffer)} € stehen.
           </div>
         </>)}
 

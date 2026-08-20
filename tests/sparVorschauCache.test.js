@@ -22,7 +22,7 @@ const wurzel = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const src = readFileSync(resolve(wurzel, "src/components/organisms/TagesgeldWidget.jsx"), "utf8");
 
 // Die beiden Zeilen aus dem Widget nachgestellt — Lesen und Schreiben.
-const VORSCHAU_REGEL = 2;
+const VORSCHAU_REGEL = 3;
 const lies = (roh, regel = VORSCHAU_REGEL) => {
   try {
     if (!roh) return null;
@@ -46,7 +46,7 @@ describe("Vorschau-Cache: Stempel statt blindem Vertrauen", () => {
   });
 
   it("ein Stand einer älteren Regel wird verworfen", () => {
-    expect(lies(JSON.stringify({ regel: 1, rows }))).toBeNull();
+    expect(lies(JSON.stringify({ regel: 2, rows }))).toBeNull();
   });
 
   it("Schrott im Speicher wirft nicht, sondern rechnet neu", () => {
