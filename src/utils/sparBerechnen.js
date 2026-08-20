@@ -341,17 +341,23 @@ export function computeSafeAmountForAbgang({ abgang, bisIso, puffer = 0, ctx, to
   const [ay, am] = abgang.date.split("-").map(Number);
   const eff = horizonMonths ?? furthestPendingMonthOffset(ctx.txs, ay, am - 1);
 
-  // Caches wie in computeSafeCurrentMonthAmount: sie hängen nur an den
-  // ANDEREN Buchungen, nie am hier simulierten Betrag.
+  // Caches: sie hängen nur an den ANDEREN Buchungen, nie am simulierten
+  // Betrag. Einmal bauen, über alle Simulationen hinweg teilen.
   const restCache = {};
   const txsById = buildTxIdMap(ctx.txs || []);
+  const basisIndex = buildTxsByMonth(ctx.txs || []);
+  const monatSchluessel = `${ay}-${am - 1}`;
 
   const mitBetrag = (x) => {
-    const testTxs = (ctx.txs || []).map((t) => (t.id === abgang.id
+    const patch = (t) => (t.id === abgang.id
       ? { ...t, totalAmount: -x, splits: (t.splits || []).map((s) => ({ ...s, amount: -x })) }
-      : t));
-    return { ...ctx, txs: testTxs, getProgEndeAccGlobal: undefined,
-      _restCache: restCache, _txsById: txsById, _txsByMonth: buildTxsByMonth(testTxs) };
+      : t);
+    // Nur der Monatstopf DIESER Rate ändert sich — den Rest des Index
+    // weiterverwenden statt ihn neu über alle Buchungen aufzubauen.
+    const index = new Map(basisIndex);
+    index.set(monatSchluessel, (basisIndex.get(monatSchluessel) || []).map(patch));
+    return { ...ctx, txs: (ctx.txs || []).map(patch), getProgEndeAccGlobal: undefined,
+      _restCache: restCache, _txsById: txsById, _txsByMonth: index };
   };
 
   // Obergrenze: was ohne diese Rate im Fenster übrig bleibt.
@@ -360,12 +366,32 @@ export function computeSafeAmountForAbgang({ abgang, bisIso, puffer = 0, ctx, to
   const max = Math.floor(Math.max(0, ohne - puffer));
   if (max === 0) return 0;
 
+  // KEINE Binärsuche mehr — die Antwort steht schon da.
+  //
+  // Das Fenster beginnt am Termin DIESER Rate. Jeder Tag darin liegt also am
+  // oder nach ihrem Abgang, und ein Abgang von `x` senkt den Saldo an jedem
+  // dieser Tage um genau `x`. Das Minimum im Fenster ist damit linear:
+  //
+  //     min(x) = min(0) − x        ⟹  sicher = min(0) − Puffer
+  //
+  // Vorher stand hier eine Binärsuche mit rund zwölf Durchläufen — jeder mit
+  // einer vollen Simulation über alle Buchungen. Bei zwei Dutzend Raten waren
+  // das mehrere hundert Läufe pro Render, und die App stand am Start
+  // sekundenlang (Nutzer-Bild: „Diese Seite verlangsamt Zen").
+  //
+  // Die Linearität hat eine Ausnahme, die man nicht einfach annehmen darf:
+  // Liegt in einem Folgemonat ein echter ANKER (`getKumulierterSaldo` liefert
+  // dort einen Wert), ist der Saldo ab dort festgenagelt und verschiebt sich
+  // NICHT mit. Deshalb wird das Ergebnis EINMAL nachgerechnet — und nur wenn
+  // es nicht trägt, greift die alte Suche. Zwei Simulationen im Normalfall
+  // statt dreizehn.
   const traegt = (x) => {
     const min = minImFenster(abgang.date, bisIso, "acc-giro", mitBetrag(x), today, eff);
     return min === null || min >= puffer;
   };
+  if (traegt(max)) return max;
 
-  let lo = 0, hi = max;
+  let lo = 0, hi = max - 1;
   while (lo < hi) {
     const mid = Math.floor((lo + hi + 1) / 2);
     if (traegt(mid)) lo = mid; else hi = mid - 1;
@@ -373,88 +399,108 @@ export function computeSafeAmountForAbgang({ abgang, bisIso, puffer = 0, ctx, to
   return lo;
 }
 
-// Der ganze Plan auf einmal: für jede Rate ab `abDatumIso` der sichere Betrag.
+// ── Der ganze Sparplan auf einmal, exakt und in einem Durchgang ─────────
 //
-// Rückgabe: [{ abgang, alt, neu }] — nur die Raten, bei denen sich etwas
-// ändert. Chronologisch, damit der Aufrufer sie in einem Zug anwenden kann.
+// Erster Anlauf war ein Vorwärts-Durchgang (jede Rate maximal in ihrem
+// Fenster) plus ein Rückwärts-Durchgang zur Reparatur. Das Ergebnis stimmte,
+// der Weg dorthin war aber quadratisch: Der Vorwärtsgang leerte das Konto,
+// wodurch fast jedes Folgefenster klemmte, und die Reparatur lief für jedes
+// davon rückwärts über alle früheren Raten. Gemessen 561 ms bei 24 Raten und
+// 1000 Buchungen — pro Änderung am Bestand. Die App stand am Start
+// sekundenlang (Nutzer-Bild: „Diese Seite verlangsamt Zen").
 //
-// ZWEI Durchgänge, und der zweite ist nicht optional:
+// Es geht in EINEM Durchgang, und dabei kommt eine unbequeme Wahrheit heraus.
 //
-//   Vorwärts — jede Rate so hoch wie möglich, gemessen an IHREM Fenster. Das
-//     ist die eigentliche Absicht: möglichst viel sparen, so früh wie möglich.
+// Sei `K_i` die Kapazität von Fenster i: der tiefste Tagessaldo zwischen
+// Termin i und Termin i+1, gerechnet mit ALLEN Raten auf 0, minus Puffer.
+// Sei `P_i` die Summe aller Raten bis einschließlich i. Weil gespartes Geld
+// liegen bleibt, gilt für jeden Tag in Fenster i:
 //
-//   Rückwärts — Reparatur. Der Vorwärtsgang allein kann eine Schieflage
-//     ERZEUGEN: Nimmt die August-Rate alles mit, was ihr Fenster hergibt, kann
-//     der September danach unter den Puffer fallen — und wenn dessen eigene
-//     Rate schon bei 0 steht, kann sie nichts mehr ausrichten. Dann muss doch
-//     eine FRÜHERE Rate nachgeben, nur eben so spät wie möglich: erst die
-//     unmittelbar davor, dann die davor.
+//     P_i ≤ K_i        für alle i
 //
-// Ohne den zweiten Durchgang wäre die neue Regel in genau diesen Fällen
-// schlechter als die alte „immer der laufende Monat" — und das war nicht der
-// Deal.
-export function sparRatenAbgleich({ txs, puffer = 0, ctx, today = new Date(), abDatumIso = null, horizonMonths }) {
+// und weil keine Rate negativ sein kann, ist `P` monoton steigend. Aus beidem
+// folgt zwingend
+//
+//     P_i = min(K_i, K_{i+1}, …, K_n)        (Suffix-Minimum)
+//
+// und daraus `r_i = P_i − P_{i−1}`. Das ist das Optimum — mehr lässt sich
+// insgesamt nicht sparen, und die frühen Raten sind so hoch wie überhaupt
+// möglich.
+//
+// DIE UNBEQUEME WAHRHEIT darin: `P_1` ist das Minimum über ALLE Fenster. Die
+// erste Rate ist also zwangsläufig durch das engste künftige Fenster
+// begrenzt. Der Wunsch „ein Engpass im April darf die August-Rate nicht
+// drücken" ist in einem Modell, in dem Gespartes nur in EINE Richtung fließt,
+// nicht erfüllbar — egal wie man rechnet. Erfüllbar wird er erst, wenn Geld
+// vor dem Engpass vom Tagesgeld ZURÜCK aufs Giro kommt (siehe TODO.md,
+// „Der größere Gedanke dahinter").
+//
+// Was der Umbau trotzdem bringt: Die Reduzierung verteilt sich jetzt richtig.
+// Steigt die Kapazität später wieder, steigen auch die späteren Raten wieder
+// (`r_i = P_i − P_{i−1}` wird dann positiv) — vorher trug der laufende Monat
+// die ganze Kürzung allein und die künftigen blieben unangetastet zu hoch.
+//
+// Rückgabe: Map `id → Betrag` für jede betrachtete Rate.
+export function sparPlanOptimum({ txs, puffer = 0, ctx, today = new Date(), abDatumIso = null, horizonMonths }) {
   const ab = abDatumIso || `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
   const raten = sparAbgaenge(txs, ab);
-  if (!raten.length) return [];
+  if (!raten.length) return new Map();
 
-  let stand = txs;
-  const gesetzt = new Map();  // id → neuer Betrag
-  const setze = (id, betrag) => {
-    gesetzt.set(id, betrag);
-    stand = stand.map((t) => (t.id === id
-      ? { ...t, totalAmount: -betrag, splits: (t.splits || []).map((s) => ({ ...s, amount: -betrag })) }
-      : t));
-  };
-  const standRate = (r) => stand.find((t) => t.id === r.id) || r;
-  const endeVon = (i) => (i + 1 < raten.length ? raten[i + 1].date : null);
-  const mitStand = () => ({ ...ctx, txs: stand });
+  // Bezugspunkt: alle betrachteten Raten (und ihre Gegenbuchungen) auf 0.
+  const ids = new Set(raten.map((r) => r.id));
+  const aufNull = (t) => ({ ...t, totalAmount: 0, splits: (t.splits || []).map((s) => ({ ...s, amount: 0 })) });
+  const basis = (txs || []).map((t) =>
+    (ids.has(t.id) || (t._linkedTo && ids.has(t._linkedTo))) ? aufNull(t) : t);
 
-  // ── Durchgang 1: vorwärts, jede Rate maximal in ihrem Fenster ──────────
-  raten.forEach((rate, i) => {
-    const neu = computeSafeAmountForAbgang({
-      abgang: standRate(rate), bisIso: endeVon(i), puffer, ctx: mitStand(), today, horizonMonths,
-    });
-    if (neu !== null) setze(rate.id, neu);
+  // EIN Kontext für alle Fenster. Das ist der zweite Teil des Gewinns: Anker-
+  // und Budget-Cache (`_restCache`, `_anchorCache` in utils/saldo.js) hängen
+  // an diesem Objekt und werden über alle Monate hinweg wiederverwendet.
+  // Vorher bekam jede Rate einen frischen Kontext und rechnete sich rekursiv
+  // bis zum Anker zurück — für jede einzeln.
+  const basisCtx = { ...ctx, txs: basis, getProgEndeAccGlobal: undefined,
+    _restCache: {}, _txsById: buildTxIdMap(basis), _txsByMonth: buildTxsByMonth(basis) };
+
+  const kapazitaet = raten.map((r, i) => {
+    const bis = i + 1 < raten.length ? raten[i + 1].date : null;
+    const [ry, rm] = r.date.split("-").map(Number);
+    const eff = horizonMonths ?? furthestPendingMonthOffset(basis, ry, rm - 1);
+    const min = minImFenster(r.date, bis, "acc-giro", basisCtx, today, eff);
+    return min === null ? Infinity : Math.floor(min - puffer);
   });
 
-  // ── Durchgang 2: rückwärts reparieren, wo ein Fenster klemmt ───────────
-  for (let i = 0; i < raten.length; i++) {
-    const bisIso = endeVon(i);
-    const [ry, rm] = raten[i].date.split("-").map(Number);
-    const eff = horizonMonths ?? furthestPendingMonthOffset(stand, ry, rm - 1);
-    const min = minImFenster(raten[i].date, bisIso, "acc-giro",
-      { ...mitStand(), getProgEndeAccGlobal: undefined }, today, eff);
-    if (min === null || min >= puffer) continue;   // Fenster ist in Ordnung
-
-    // Klemmt. Die eigene Rate steht nach Durchgang 1 bereits am Anschlag —
-    // also die früheren rückwärts nachziehen, mit auf DIESES Fenster
-    // verlängertem Verantwortungsbereich.
-    for (let j = i - 1; j >= 0; j--) {
-      const neuJ = computeSafeAmountForAbgang({
-        abgang: standRate(raten[j]), bisIso, puffer, ctx: mitStand(), today, horizonMonths,
-      });
-      if (neuJ === null) continue;
-      const bisher = gesetzt.has(raten[j].id)
-        ? gesetzt.get(raten[j].id)
-        : Math.round(Math.abs(standRate(raten[j]).totalAmount || 0) * 100) / 100;
-      if (neuJ >= bisher) continue;                // hilft nicht weiter
-      setze(raten[j].id, neuJ);
-      const nun = minImFenster(raten[i].date, bisIso, "acc-giro",
-        { ...mitStand(), getProgEndeAccGlobal: undefined }, today, eff);
-      if (nun !== null && nun >= puffer) break;    // repariert
-    }
+  // Suffix-Minimum → höchstmögliche Summe bis einschließlich Rate i.
+  const summe = new Array(raten.length);
+  let s = Infinity;
+  for (let i = raten.length - 1; i >= 0; i--) {
+    s = Math.min(s, kapazitaet[i]);
+    summe[i] = Number.isFinite(s) ? Math.max(0, s) : null;
   }
 
-  // Nur die Raten melden, bei denen sich wirklich etwas ändert.
-  const aenderungen = [];
-  raten.forEach((rate) => {
-    if (!gesetzt.has(rate.id)) return;
-    const neu = gesetzt.get(rate.id);
-    const alt = Math.round(Math.abs(rate.totalAmount || 0) * 100) / 100;
-    if (neu === alt) return;
-    aenderungen.push({ abgang: rate, alt, neu });
+  const ergebnis = new Map();
+  let bisher = 0;
+  raten.forEach((r, i) => {
+    if (summe[i] === null) return;          // kein Tag im Fenster → unangetastet
+    const betrag = Math.max(0, summe[i] - bisher);
+    ergebnis.set(r.id, betrag);
+    bisher += betrag;
   });
+  return ergebnis;
+}
+
+// Nur die Raten, bei denen sich wirklich etwas ändert — chronologisch, damit
+// der Aufrufer sie in einem Zug anwenden kann.
+// Rückgabe: [{ abgang, alt, neu }]
+export function sparRatenAbgleich({ txs, puffer = 0, ctx, today = new Date(), abDatumIso = null, horizonMonths }) {
+  const optimum = sparPlanOptimum({ txs, puffer, ctx, today, abDatumIso, horizonMonths });
+  if (!optimum.size) return [];
+  const aenderungen = [];
+  (txs || []).forEach((t) => {
+    if (!optimum.has(t.id)) return;
+    const neu = optimum.get(t.id);
+    const alt = Math.round(Math.abs(t.totalAmount || 0) * 100) / 100;
+    if (neu !== alt) aenderungen.push({ abgang: t, alt, neu });
+  });
+  aenderungen.sort((a, b) => String(a.abgang.date).localeCompare(String(b.abgang.date)));
   return aenderungen;
 }
 

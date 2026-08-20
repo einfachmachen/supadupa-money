@@ -1,26 +1,29 @@
 // WELCHE Sparrate fängt eine Schieflage ab?
 //
 // Bisher immer die des LAUFENDEN Monats: `computeSafeCurrentMonthAmount`
-// kennt genau diesen einen Stellknopf und prüft damit den ganzen Horizont.
-// Eine Schieflage im Januar senkte also schon im August die Sparrate — das
-// Geld liegt dann fünf Monate zinslos auf Giro, und genau die Monate mit der
-// Super-Sparrate verlieren ihren Vorsprung (Nutzer-Entscheidung: „Ich möchte
-// so viel wie möglich sparen — besonders in den Monaten mit der
-// Super-Sparrate").
+// kennt genau einen Stellknopf und prüft damit den ganzen Horizont. Eine
+// Schieflage im Januar senkte also schon im August die Sparrate.
 //
-// Die neue Aufteilung folgt aus der Sache: Geld, das eine Rate nicht abbucht,
-// liegt ab IHREM Termin auf Giro — aber die nächste Rate kann dasselbe ab
-// ihrem Termin. Also ist jede Rate für das Fenster von ihrem Termin bis zum
-// nächsten Sparplan-Termin verantwortlich, für nichts davor und nichts danach.
+// Der Wunsch war, das zu vermeiden („so viel wie möglich sparen, besonders in
+// den Monaten mit der Super-Sparrate"). Beim Durchrechnen kam eine unbequeme
+// Wahrheit heraus, und die hält der letzte Test hier fest:
 //
-// Der Fall, an dem sich alles entscheidet, ist der erste Test hier: Fällt der
-// Saldo am 5. Januar unter den Puffer und geht die Januar-Rate erst am 28. ab,
-// kann die Januar-Rate daran NICHTS ändern — zuständig ist die Dezember-Rate.
-// Eine monatsweise Betrachtung („reduziere im Monat des Problems") liefe hier
-// ins Leere, deshalb ist das Fenster taggenau.
+//   Solange gespartes Geld nur in EINE Richtung fließt, ist die erste Rate
+//   zwangsläufig durch das engste künftige Fenster begrenzt. Formal: mit
+//   `P_i` = Summe der Raten bis i und `K_i` = Kapazität von Fenster i gilt
+//   `P_i ≤ K_i` und `P` steigt monoton, also `P_i = min(K_i … K_n)`.
+//
+// Was der Umbau trotzdem bringt: Die Kürzung verteilt sich richtig. Steigt
+// die Kapazität später wieder, steigen auch die späteren Raten wieder —
+// vorher trug der laufende Monat die ganze Kürzung allein, während die
+// künftigen Raten unangetastet zu hoch stehen blieben.
+//
+// `computeSafeAmountForAbgang` (eine Rate, ihr eigenes Fenster) gibt es
+// weiterhin — `sparHilfeFuerEngpass` beantwortet damit die Frage „welche Rate
+// ist für DIESEN Engpass zuständig". Für den PLAN rechnet `sparPlanOptimum`.
 
 import { describe, it, expect } from "vitest";
-import { sparAbgaenge, minImFenster, computeSafeAmountForAbgang, sparRatenAbgleich }
+import { sparAbgaenge, minImFenster, computeSafeAmountForAbgang, sparRatenAbgleich, sparPlanOptimum }
   from "../src/utils/sparBerechnen.js";
 
 // Der Anker gilt NUR fuer den Vormonat des Szenarios (Juli 2026). Fuer alle
@@ -145,35 +148,69 @@ describe("Sparraten: jede Rate haftet nur bis zur nächsten", () => {
     expect(sparAbgaenge(txs, "2026-08-01").map((r) => r.id)).toEqual(["r-09"]);
   });
 
-  it("Vorwaertsgang allein wuerde eine Schieflage ERZEUGEN — der Rueckwaertsgang repariert sie", () => {
-    // Die Luecke der neuen Regel, und der Grund fuer den zweiten Durchgang:
-    // Nimmt die August-Rate alles mit, was IHR Fenster hergibt, kann der
-    // September danach unter den Puffer fallen. Steht dessen eigene Rate schon
-    // bei 0, kann sie nichts mehr ausrichten — dann muss doch die August-Rate
-    // nachgeben. So spaet wie moeglich, aber eben doch.
+  it("das Suffix-Minimum haelt den Puffer — auch wenn ein Fenster spaeter klemmt", () => {
+    // Der Fall, an dem sich die Rechnung entscheidet: Das eigene Fenster der
+    // August-Rate (28.08.–28.09.) sieht die Miete vom 2.10. gar nicht und
+    // wuerde 1900 erlauben. Das Fenster danach klemmt aber, und die
+    // September-Rate steht schon bei 0 — sie kann nichts mehr ausrichten.
     //
-    // Ohne diesen Durchgang waere die neue Regel in genau diesen Faellen
-    // SCHLECHTER als die alte „immer der laufende Monat", und das war nicht
-    // der Deal.
+    // Das Suffix-Minimum faengt genau das ab: die August-Rate wird durch das
+    // ENGSTE kuenftige Fenster begrenzt, nicht durch ihr eigenes.
     const txs = [
-      rate("r-08", "2026-08-28", 0),   // steht auf 0, darf hochgehen
-      rate("r-09", "2026-09-28", 0),   // steht schon bei 0 — kann nichts mehr
+      rate("r-08", "2026-08-28", 0),
+      rate("r-09", "2026-09-28", 0),
       ausgabe("miete", "2026-10-02", 1800),
     ];
     const ctx = buildCtx({ txs, anker: 2000 });
-    const aend = sparRatenAbgleich({ txs, puffer, ctx, today, abDatumIso: "2026-08-01" });
-    const nach = new Map(aend.map((a) => [a.abgang.id, a.neu]));
-    const aug = nach.has("r-08") ? nach.get("r-08") : 0;
-    const sep = nach.has("r-09") ? nach.get("r-09") : 0;
+    const opt = sparPlanOptimum({ txs, puffer, ctx, today, abDatumIso: "2026-08-01" });
+    const aug = opt.get("r-08") ?? 0;
+    const sep = opt.get("r-09") ?? 0;
 
-    // 2000 − aug − sep − 1800 muss >= 100 bleiben.
     expect(2000 - aug - sep - 1800, `aug=${aug} sep=${sep}`).toBeGreaterThanOrEqual(puffer);
-    // Und der Vorwaertsgang allein haette die August-Rate hoeher gesetzt:
-    // ihr eigenes Fenster (28.08.–28.09.) sieht die Miete vom 2.10. gar nicht.
-    const nurVorwaerts = computeSafeAmountForAbgang({
+    const nurEigenesFenster = computeSafeAmountForAbgang({
       abgang: txs.find((t) => t.id === "r-08"), bisIso: "2026-09-28", puffer, ctx, today,
     });
-    expect(nurVorwaerts, "Beleg: das eigene Fenster erlaubt mehr").toBeGreaterThan(aug);
+    expect(nurEigenesFenster, "Beleg: das eigene Fenster allein erlaubt mehr").toBeGreaterThan(aug);
+  });
+
+  it("spaetere Raten steigen wieder, wenn die Kapazitaet zurueckkommt", () => {
+    // Das ist der echte Gewinn gegenueber „immer der laufende Monat": Ein
+    // Engpass im Oktober begrenzt August und September — danach ist wieder
+    // Luft, und die November-Rate darf sie nutzen. Vorher blieben die
+    // kuenftigen Raten unangetastet stehen, und der laufende Monat trug die
+    // ganze Kuerzung.
+    const txs = [
+      rate("r-08", "2026-08-28", 0),
+      rate("r-09", "2026-09-28", 0),
+      rate("r-11", "2026-11-28", 0),
+      ausgabe("miete", "2026-10-02", 1700),
+      einnahme("bonus", "2026-11-05", 2500),
+    ];
+    const ctx = buildCtx({ txs, anker: 2000 });
+    const opt = sparPlanOptimum({ txs, puffer, ctx, today, abDatumIso: "2026-08-01" });
+    const nov = opt.get("r-11") ?? 0;
+    expect(nov, "die November-Rate muss den Bonus nutzen duerfen").toBeGreaterThan(0);
+    // Und die Summe haelt an jedem Fenster den Puffer.
+    const summeBisOkt = (opt.get("r-08") ?? 0) + (opt.get("r-09") ?? 0);
+    expect(2000 - summeBisOkt - 1700).toBeGreaterThanOrEqual(puffer);
+  });
+
+  it("Raten sind nie negativ und die Summe steigt monoton", () => {
+    const txs = [
+      rate("r-08", "2026-08-28", 0),
+      rate("r-09", "2026-09-28", 0),
+      rate("r-10", "2026-10-28", 0),
+      ausgabe("delle", "2026-09-10", 1500),
+    ];
+    const ctx = buildCtx({ txs, anker: 2000 });
+    const opt = sparPlanOptimum({ txs, puffer, ctx, today, abDatumIso: "2026-08-01" });
+    let summe = 0;
+    ["r-08", "r-09", "r-10"].forEach((id) => {
+      const b = opt.get(id) ?? 0;
+      expect(b, `${id} negativ`).toBeGreaterThanOrEqual(0);
+      summe += b;
+    });
+    expect(summe).toBeGreaterThanOrEqual(0);
   });
 
   it("sparRatenAbgleich liefert nur die Raten, die sich wirklich ändern", () => {

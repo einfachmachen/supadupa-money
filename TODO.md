@@ -480,35 +480,58 @@ ausloest, darf den moeglichen Sparbetrag des laufenden Monats NICHT senken —
 „ich moechte so viel wie moeglich sparen, besonders in den Monaten mit der
 Super-Sparrate".
 
-Umgesetzt ueber eine Regel, die aus der Sache selbst folgt:
+**Beim Durchrechnen kam eine unbequeme Wahrheit heraus, und die gehoert
+festgehalten:** Der Wunsch ist so nicht erfuellbar.
 
-> Jede Rate haftet fuer die Tage von ihrem eigenen Termin bis zum NAECHSTEN
-> Sparplan-Termin. Fuer nichts davor und nichts danach. Die letzte Rate im
-> Horizont traegt den Rest.
+Sei `K_i` die Kapazitaet von Fenster i (tiefster Tagessaldo zwischen Termin i
+und i+1, mit allen Raten auf 0, minus Puffer) und `P_i` die Summe aller Raten
+bis einschliesslich i. Weil gespartes Geld liegen bleibt, gilt `P_i ≤ K_i`
+fuer jedes i, und weil keine Rate negativ sein kann, steigt `P` monoton.
+Daraus folgt zwingend
 
-Grund: Geld, das eine Rate nicht abbucht, liegt ab IHREM Termin auf Giro —
-aber die naechste Rate kann dasselbe ab ihrem Termin. Beide Fenster zusammen
-decken luekenlos denselben Zeitraum ab, den vorher die eine Rate allein
-pruefen musste.
+> `P_i = min(K_i, K_{i+1}, …, K_n)`  (Suffix-Minimum)
 
-Die Umkehrung war der Punkt, der beinahe untergegangen waere: Faellt der
-Saldo am 5. Januar unter den Puffer und geht die Januar-Rate erst am 28. ab,
-kann die Januar-Rate daran nichts aendern — zustaendig ist die DEZEMBER-Rate.
-Deshalb ist das Fenster taggenau und nicht monatsweise.
+und damit: **`P_1` ist das Minimum ueber ALLE Fenster.** Die erste Rate ist
+zwangslaeufig durch das engste kuenftige Fenster begrenzt — egal wie man
+rechnet. Solange Gespartes nur in EINE Richtung fliesst, laesst sich ein
+Engpass im April nicht anders vermeiden als dadurch, dass vorher weniger
+gespart wird.
+
+Erfuellbar wird der Wunsch erst mit einer RUECKBUCHUNG vor dem Engpass —
+siehe „Der groessere Gedanke dahinter" weiter unten.
+
+**Was der Umbau trotzdem bringt:** Die Kuerzung verteilt sich jetzt richtig.
+Steigt die Kapazitaet spaeter wieder (Bonus, ausgelaufene Finanzierung),
+steigen auch die spaeteren Raten wieder — `r_i = P_i − P_{i−1}` wird dann
+positiv. Vorher trug der laufende Monat die ganze Kuerzung allein, und die
+kuenftigen Raten blieben unangetastet zu hoch stehen. Insgesamt wird also
+MEHR gespart als vorher, nur eben nicht im ersten Monat.
+
+Nebenbei aufgeraeumt: Es gab zwei getrennte Rechnungen fuer denselben Plan
+(laufender Monat in `currentMonthSparAdjust`, Folgemonate in einer zweiten).
+Die liefen einander in die Quere. Jetzt eine Quelle: `sparPlanOptimum`.
 
 Code:
 
 * `utils/sparBerechnen.js` — `sparAbgaenge()`, `minImFenster()`,
-  `computeSafeAmountForAbgang()`, `sparRatenAbgleich()`.
-  `computeSafeCurrentMonthAmount()` bleibt als Referenz stehen (die Tests
-  belegen an ihr den Unterschied), wird aber nicht mehr benutzt.
-* `App.jsx` — `currentMonthSparAdjust` rechnet nur noch bis zum naechsten
-  Termin; `sparZukunftAnpassungen` pflegt die Folgemonate und meldet sie
-  ueber dieselbe `autoSparInfo`-Leiste, mit Monatsangabe und „+n weitere
-  Monate".
-* `utils/schieflagePreview.js` — der Hinweis im Anlege-Dialog nennt jetzt die
-  Rate, die wirklich zustaendig ist.
-* Tests: `tests/sparRateFenster.test.js`.
+  `computeSafeAmountForAbgang()` (eine Rate, ihr eigenes Fenster — gebraucht
+  von `sparHilfeFuerEngpass`), `sparPlanOptimum()` (der ganze Plan, Suffix-
+  Minimum), `sparRatenAbgleich()` als duenne Huelle darum.
+  `computeSafeCurrentMonthAmount()` bleibt als Referenz stehen, wird aber
+  nicht mehr benutzt.
+* `App.jsx` — EIN verzoegerter Effekt rechnet `sparPlanOptimum` fuer alle
+  Raten ab dem laufenden Monat; `currentMonthSparAdjust` liest seinen Betrag
+  daraus und kuemmert sich nur noch um den Zins-Sweep. Meldung ueber dieselbe
+  `autoSparInfo`-Leiste, mit Monatsangabe und „+n weitere Monate".
+* `utils/schieflagePreview.js` — der Hinweis im Anlege-Dialog nennt die Rate,
+  die wirklich zustaendig ist.
+* Tests: `tests/sparRateFenster.test.js`, `tests/sparHilfeText.test.js`.
+
+**Laufzeit** (gemessen, 24 Raten / 1000 Buchungen): erster Anlauf mit
+Vorwaerts- plus Reparatur-Durchgang 561 ms — quadratisch und bei jeder
+Aenderung am Bestand. Suffix-Minimum: 26 ms, und linear (60 Raten / 3780
+Buchungen: 54 ms). Dazu laeuft die Rechnung nicht mehr im Render, sondern in
+einer freien Luecke danach.
 
 **Offen geblieben:** Was passiert bei „Super-Sparrate neu berechnen"? Die
 Neuberechnung im Tagesgeld-Widget schreibt die Raten neu und wuerde eine so

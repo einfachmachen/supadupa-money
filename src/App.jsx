@@ -80,7 +80,7 @@ import { pn, uid, sumAmounts, fmt, round2 } from "./utils/format.js";
 import { betrag, setCentsGedreht as setCentsGedrehtFlag } from "./utils/betrag.jsx";
 import { MONTHS_S } from "./utils/constants.js";
 import { computeKontoWarnungen } from "./utils/kontoWarnungen.js";
-import { computeSafeAmountForAbgang, sparAbgaenge, sparRatenAbgleich, sparHilfeFuerEngpass, computeTagessaldoAt, buildTxsByMonth } from "./utils/sparBerechnen.js";
+import { sparPlanOptimum, sparHilfeFuerEngpass, computeTagessaldoAt, buildTxsByMonth } from "./utils/sparBerechnen.js";
 import { DEFAULT_ZINS_MONATE, parseZinsMonate, monatsLetzter, sweepFenster,
   computeSweep, ohneSweepBuchungen, sweepZustandAnwenden } from "./utils/zinsSweep.js";
 import { Li } from "./utils/icons.jsx";
@@ -2081,18 +2081,41 @@ export default function SupaDupaMoney() {
   // Hintergrund längst etwas unternimmt — oder eben nicht mehr kann. Beides
   // muss man sehen können (Nutzer: „ich sehe keine Info, ob/was ggf. geändert
   // wird. Bin gerade lost").
-  const sparHilfe = useMemo(() => {
+  // NICHT im Render rechnen, sondern danach.
+  //
+  // Die Rechnung geht über alle Sparraten und deren Fenster. Als `useMemo`
+  // lief sie SYNCHRON während des Renderns — beim Start also bevor
+  // überhaupt etwas auf dem Bildschirm stand. Genau das war zu sehen: eine
+  // leere App, die sekundenlang nicht reagierte, und die Browser-Meldung
+  // „Diese Seite verlangsamt Zen" (Nutzer-Bild).
+  //
+  // Jetzt: erst zeichnen, dann rechnen. `requestIdleCallback` legt die Arbeit
+  // in eine freie Lücke; der Rückfall auf `setTimeout` gilt für Safari/iOS,
+  // das `requestIdleCallback` bis heute nicht kennt.
+  const [sparHilfe, setSparHilfe] = useState(null);
+  useEffect(() => {
     const w = liquidityWarnings[0];
-    if (!w) return null;
-    const tag = w.date || (w.allDays || [])[0]?.date;
-    if (!tag) return null;
-    const reineTxs = ohneSweepBuchungen(txs);
-    try {
-      return sparHilfeFuerEngpass({
-        txs: reineTxs, engpassIso: tag, puffer: pn(_giroPuffer) || 0, today: new Date(),
-        ctx: { txs: reineTxs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth },
-      });
-    } catch { return null; }
+    const tag = w && (w.date || (w.allDays || [])[0]?.date);
+    if (!tag) { setSparHilfe(null); return; }
+    let abgebrochen = false;
+    const rechne = () => {
+      if (abgebrochen) return;
+      const reineTxs = ohneSweepBuchungen(txs);
+      try {
+        setSparHilfe(sparHilfeFuerEngpass({
+          txs: reineTxs, engpassIso: tag, puffer: pn(_giroPuffer) || 0, today: new Date(),
+          ctx: { txs: reineTxs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth },
+        }));
+      } catch { setSparHilfe(null); }
+    };
+    const id = typeof requestIdleCallback === "function"
+      ? requestIdleCallback(rechne, { timeout: 2000 })
+      : setTimeout(rechne, 300);
+    return () => {
+      abgebrochen = true;
+      if (typeof cancelIdleCallback === "function" && typeof requestIdleCallback === "function") cancelIdleCallback(id);
+      else clearTimeout(id);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [liquidityWarnings, txs, cats, accounts, _giroPuffer, budgets, startBalances]);
 
@@ -2599,7 +2622,7 @@ export default function SupaDupaMoney() {
   // Puffer) als auch ERHÖHEND (z.B. nach Gehaltseingang, oder wenn ein
   // Budget wegfällt und dadurch weniger vom Tagessaldo reserviert wird).
   // Prüft dabei nicht nur den laufenden Monat, sondern simuliert auch die
-  // nächsten Sparplan-Termin (computeSafeAmountForAbgang, siehe
+  // ganzen Sparplan in einem Zug (sparPlanOptimum, siehe
   // utils/sparBerechnen.js) — eine zu hohe laufende Rate kann sonst einen
   // Engpass in einem fernen Folgemonat verursachen, den nur eine Reduzierung
   // DIESES Monats vermeiden kann (die Sparbuchung eines Folgemonats bleibt
@@ -2616,11 +2639,21 @@ export default function SupaDupaMoney() {
   // ermittelt — der nachgelagerte Effekt reagiert nur noch auf DESSEN
   // Ergebnis, nicht auf die Rohdaten.
   // WICHTIG (Platzierung): muss NACH der getProgEndeAccGlobal-Deklaration
-  // stehen, da computeSafeAmountForAbgang sie referenziert — useMemo/
+  // stehen, da die Rechnung sie referenziert — useMemo/
   // useEffect laufen zwar erst nach der Definition, aber der useMemo-Callback
   // wird SYNCHRON während des Renderns an dieser Stelle ausgeführt, würde
   // also sonst (anders als ein useEffect) auf eine noch nicht initialisierte
   // const zugreifen (TDZ-ReferenceError — siehe Commit aabd03c).
+  // Ergebnis der Sparplan-Optimierung: Rate-Id → Betrag. Gefüllt von dem
+  // Effekt weiter unten (verzögert, nicht im Render — siehe dort).
+  //
+  // Die Deklaration steht hier oben und nicht beim Effekt: `currentMonthSparAdjust`
+  // ist ein useMemo und läuft SYNCHRON während des Renderns. Stünde die
+  // Zustandsvariable darunter, griffe er auf eine noch nicht initialisierte
+  // const zu (ReferenceError, gefangen von tests/app_boot.test.js — genau die
+  // TDZ-Falle, vor der der Kommentar direkt darunter schon einmal warnt).
+  const [sparOptimum, setSparOptimum] = useState(() => new Map());
+
   const currentMonthSparAdjust = useMemo(() => {
     const today = new Date();
     const y = today.getFullYear(), m = today.getMonth();
@@ -2641,25 +2674,19 @@ export default function SupaDupaMoney() {
     if(candidates.length !== 1) return null;
     const abgang = candidates[0];
     const oldAmount = round2(Math.abs(abgang.totalAmount));
-    // Diese Rate haftet nur bis zum NÄCHSTEN Sparplan-Termin.
+    // Der Betrag kommt aus DERSELBEN Rechnung wie die der Folgemonate
+    // (`sparOptimum`, weiter unten) — der ganze Plan wird in einem Zug
+    // optimiert, nicht Monat für Monat.
     //
-    // Vorher prüfte sie den ganzen Horizont (24 Monate). Eine Schieflage im
-    // Januar senkte damit schon im August die Sparrate — obwohl das Geld bis
-    // Dezember gar nicht gebraucht wird, dann zinslos auf Giro liegt und
-    // gerade die Monate mit der Super-Sparrate ihren Vorsprung verlieren
-    // (Nutzer-Entscheidung: „so viel wie möglich sparen").
+    // Warum nicht mehr hier gerechnet wird: Zwei getrennte Rechnungen für
+    // denselben Plan liefen einander in die Quere. Die eine hob die Rate des
+    // laufenden Monats auf das Maximum ihres Fensters, die andere musste das
+    // in den Folgemonaten wieder einfangen — und wo das nicht ging, blieb eine
+    // Schieflage stehen. Jetzt gibt es eine Quelle für alle Raten.
     //
-    // Für alles ab dem nächsten Termin ist die NÄCHSTE Rate zuständig — die
-    // pflegt `sparZukunftAnpassungen` weiter unten. Zusammen decken die Raten
-    // lückenlos denselben Zeitraum ab wie vorher die eine.
-    const alleRaten = sparAbgaenge(reineTxs);
-    const eigenerIdx = alleRaten.findIndex(r => r.id === abgang.id);
-    const naechste = eigenerIdx >= 0 ? alleRaten[eigenerIdx + 1] : null;
-    const safeAmount = computeSafeAmountForAbgang({
-      abgang, bisIso: naechste ? naechste.date : null, puffer: pn(_giroPuffer),
-      ctx: { txs: reineTxs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth }, today,
-    });
-    if(safeAmount === null) return null;
+    // Solange die (verzögerte) Rechnung noch nicht gelaufen ist, bleibt die
+    // Rate unangetastet; dieser Block kümmert sich dann nur um den Sweep.
+    const safeAmount = sparOptimum.has(abgang.id) ? sparOptimum.get(abgang.id) : oldAmount;
     const zugang = reineTxs.find(t => t._linkedTo === abgang.id && t.pending);
 
     // ── Zins-Sweep: fällt der Monatsletzte auf einen Zinstermin, geht am
@@ -2703,7 +2730,7 @@ export default function SupaDupaMoney() {
     return { abgangId: abgang.id, zugangId: zugang?.id || null, oldAmount, safeAmount,
       sweepZiel, monthLabel: `${MONTHS_S[m]} ${y}` };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [txs, cats, accounts, _giroPuffer, budgets, startBalances]);
+  }, [sparOptimum, txs, cats, accounts, _giroPuffer, budgets, startBalances]);
 
   useEffect(() => {
     if(!currentMonthSparAdjust) return;
@@ -2733,40 +2760,73 @@ export default function SupaDupaMoney() {
     }
   }, [currentMonthSparAdjust]);
 
-  // ── Die Raten der FOLGEMONATE ─────────────────────────────────────────
+  // ── Der Sparplan als GANZES ───────────────────────────────────────────
   //
-  // Der Block oben pflegt die Rate des laufenden Monats, und zwar nur noch bis
-  // zum nächsten Sparplan-Termin. Für alles danach ist die jeweils nächste
-  // Rate zuständig — sonst bliebe eine Schieflage im Januar unbemerkt, weil
-  // niemand mehr dafür haftet.
+  // Eine Rechnung für alle Raten ab dem laufenden Monat, statt zwei getrennte
+  // (laufender Monat hier, Folgemonate dort). Zwei liefen einander in die
+  // Quere: Die eine hob die Rate des laufenden Monats auf das Maximum ihres
+  // Fensters, die andere musste das später wieder einfangen — und wo das
+  // nicht ging, blieb eine Schieflage stehen (Nutzer-Bild, April 2027).
   //
-  // Warum das überhaupt in die Zukunft schreiben darf (Nutzer-Entscheidung):
-  // Genau darum ging es. Eine Vormerkung, die erst in einem fernen Monat eine
-  // Schieflage auslöst, soll nicht schon HEUTE den Sparbetrag drücken — sie
-  // soll die Rate kurz vor dem Engpass senken. Sichtbar bleibt es: dieselbe
-  // Meldung wie beim laufenden Monat, mit Monatsangabe.
+  // NICHT im Render, sondern danach. Als `useMemo` lief die Rechnung synchron
+  // während des Renderns, beim Start also bevor überhaupt etwas auf dem
+  // Bildschirm stand — die App war minutenlang nicht zu bedienen und der
+  // Browser meldete „Diese Seite verlangsamt Zen" (Nutzer-Bild). Jetzt: erst
+  // zeichnen, dann rechnen, in einer freien Lücke.
   //
-  // `sparRatenAbgleich` rechnet auf dem normalisierten Bestand und liefert nur
-  // die Raten, bei denen sich wirklich etwas ändert; der laufende Monat bleibt
-  // ausgespart (er gehört dem Block oben, samt Zins-Sweep).
-  const sparZukunftAnpassungen = useMemo(() => {
-    const today = new Date();
-    const pad2 = n => String(n).padStart(2, "0");
-    // Ab dem NÄCHSTEN Monat — der laufende gehört currentMonthSparAdjust.
-    const ab = `${today.getMonth() === 11 ? today.getFullYear() + 1 : today.getFullYear()}-${pad2(((today.getMonth() + 1) % 12) + 1)}-01`;
-    const reineTxs = ohneSweepBuchungen(txs);
-    try {
-      return sparRatenAbgleich({
-        txs: reineTxs, puffer: pn(_giroPuffer), today, abDatumIso: ab,
-        ctx: { txs: reineTxs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth },
-      });
-    } catch { return []; }
+  // Dass die Automatik dabei auch in ZUKÜNFTIGE Raten schreibt, ist so
+  // gewollt (Nutzer-Entscheidung). Sichtbar bleibt es über dieselbe Meldung
+  // wie bisher, mit Monatsangabe und „+n weitere Monate".
+  useEffect(() => {
+    let abgebrochen = false;
+    const rechne = () => {
+      if (abgebrochen) return;
+      const today = new Date();
+      const pad2 = n => String(n).padStart(2, "0");
+      // Ab dem LAUFENDEN Monat — er gehört mit in dieselbe Optimierung.
+      const ab = `${today.getFullYear()}-${pad2(today.getMonth() + 1)}-01`;
+      // Auf dem NORMALISIERTEN Bestand rechnen: eine für den Zins-Sweep
+      // angehobene Rate wird auf ihren Grundwert zurückgesetzt und die
+      // Rückbuchung ausgeblendet — sonst gälte der Sweep-Betrag als „aktuelle
+      // Rate" und würde jedes Mal zurückgeschrieben.
+      const reineTxs = ohneSweepBuchungen(txs);
+      try {
+        setSparOptimum(sparPlanOptimum({
+          txs: reineTxs, puffer: pn(_giroPuffer), today, abDatumIso: ab,
+          ctx: { txs: reineTxs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth },
+        }));
+      } catch { /* stiller Helfer — bei einem Rechenfehler lieber nichts tun */ }
+    };
+    const id = typeof requestIdleCallback === "function"
+      ? requestIdleCallback(rechne, { timeout: 4000 })
+      : setTimeout(rechne, 600);
+    return () => {
+      abgebrochen = true;
+      if (typeof cancelIdleCallback === "function" && typeof requestIdleCallback === "function") cancelIdleCallback(id);
+      else clearTimeout(id);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [txs, cats, accounts, _giroPuffer, budgets, startBalances]);
 
+  // Die Raten der FOLGEMONATE anwenden. Der laufende Monat läuft weiter über
+  // `currentMonthSparAdjust` — dort hängt der Zins-Sweep mit dran, und der
+  // gehört in EINEN Schreibvorgang mit der Rate.
   useEffect(() => {
-    if(!sparZukunftAnpassungen.length) return;
-    const nachId = new Map(sparZukunftAnpassungen.map(a => [a.abgang.id, a.neu]));
+    if(!sparOptimum.size) return;
+    const today = new Date();
+    const laufend = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-`;
+    const aenderungen = [];
+    txs.forEach(t => {
+      if(!sparOptimum.has(t.id)) return;
+      if((t.date || "").startsWith(laufend)) return;      // gehört dem Block oben
+      const neu = sparOptimum.get(t.id);
+      const alt = round2(Math.abs(t.totalAmount || 0));
+      if(neu !== alt) aenderungen.push({ id: t.id, date: t.date, alt, neu });
+    });
+    if(!aenderungen.length) return;
+    aenderungen.sort((a, b) => String(a.date).localeCompare(String(b.date)));
+
+    const nachId = new Map(aenderungen.map(a => [a.id, a.neu]));
     setTxs(prev => prev.map(t => {
       // Abgang auf Giro …
       if(nachId.has(t.id)) {
@@ -2780,12 +2840,13 @@ export default function SupaDupaMoney() {
       }
       return t;
     }));
-    const erste = sparZukunftAnpassungen[0];
-    const [ey, em] = String(erste.abgang.date).split("-").map(Number);
+    const erste = aenderungen[0];
+    const [ey, em] = String(erste.date).split("-").map(Number);
     setAutoSparInfo({ monthLabel: `${MONTHS_S[em - 1]} ${ey}`, oldAmount: erste.alt,
       newAmount: erste.neu, direction: erste.neu > erste.alt ? "up" : "down",
-      weitere: sparZukunftAnpassungen.length - 1 });
-  }, [sparZukunftAnpassungen]);
+      weitere: aenderungen.length - 1 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sparOptimum]);
 
   useEffect(() => {
     if(!autoSparInfo) return;
@@ -3450,6 +3511,7 @@ export default function SupaDupaMoney() {
     istFreigeschaltet, tier, lizenzMail, lizenzBis, hasFeature,
     freischalten, lizenzEntfernen, lizenzLaeuft, lizenzFehler,
   }), [
+    sparHilfe,
     cats, groups, txs, accounts, vehicles, yearData,
     frozenYear, frozenMonth, year, selAcc, startKonto, isLand, scrollToTodayTick,
     showAllMonths, mainTab, subTab, col3Name, modal, mgmtCat,
