@@ -1,93 +1,57 @@
 // Die Super-Sparraten-Zeile im Sparplan (TagesgeldWidget).
 //
-// Sie hebt sich mit ihrer EIGENEN Warnfarbe ab (`${T.gold}1f`) und schreibt
-// denselben Ton darauf. Auf einem Grund, der aus genau diesem Ton gemischt
-// ist, schrumpft der Kontrast — dieselbe Falle wie bei den Hinweiskästen und
-// den Wahlkarten im Daten-Manager, und sie ist hier schon zweimal
-// zugeschnappt (Nutzer-Bilder).
+// VOLLE Signalfläche in Sonnengelb, keine Tönung (Nutzer-Wunsch — dieselbe
+// Entscheidung wie beim Sync-Hinweis: „einfache, klare Farben").
 //
-// Deshalb rechnet die Zeile mit `aufToenung(..., ".hinweis-karte", ...)`:
-// Themes mit gegensätzlichen Flächen („Tastenhell") erklären diese Klasse per
-// `flaechen_extra` zur Taste und malen deren Farbe mit `!important` über die
-// Tönung — dann ist SIE der Untergrund, nicht der Goldschleier.
+// Eine Tönung war der erste Versuch und ging aus zwei Gründen nicht auf:
+//
+//   * Über 34 Themes ergab derselbe Alpha-Wert mal Oliv, mal Senf, mal einen
+//     kaum sichtbaren Hauch. Gemessen erreichte das Band gegen die Monatszeile
+//     nur 1,10:1 — als Hervorhebung zu wenig.
+//   * In „Tastenhell" sind Zeile und Band dieselbe Taste, sobald man das Band
+//     als Karte auszeichnet; die Tönung wäre dort restlos weggebügelt worden
+//     (1,00:1 gemessen).
+//
+// Eine deckende Fläche bringt ihren Untergrund selbst mit. Damit ist beides
+// erledigt: Sie sieht in jedem Theme gleich aus, und die Schrift lässt sich
+// dagegen ausrechnen statt gegen eine Mischung, die vom Theme abhängt — genau
+// deshalb hat dieser Test keine Theme-Schleife mehr für die Fläche.
 
 import { describe, it, expect } from "vitest";
-import { THEMES } from "../src/theme/themes.js";
-import { setActiveTheme } from "../src/theme/activeTheme.js";
-import { toenungsGrund, schriftAuf, knopfPaar, kontrastWert } from "../src/theme/amtPill.js";
+import { AMPEL } from "../src/utils/syncBadge.js";
+import { knopfPaar, DUNKEL, kontrastWert } from "../src/theme/amtPill.js";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const wurzel = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-// Genau die Rechnung aus TagesgeldWidget.jsx (`sweepFarbe`, `sweepKante`).
-//
-// Das Band bekommt bewusst KEINE Karten-Klasse: In „Tastenhell" waeren Zeile
-// und Band sonst dieselbe Taste, und die Toenung waere weggebuegelt (1,00:1
-// gemessen). Ohne Klasse wird sie wirklich gemalt — also `flaeche` = der
-// Untergrund der Monatszeile.
-const TOENUNG = 0x1f / 255;
-let THEMES_AKTIV = null;
-const zeilenGrund = () => toenungsGrund("#FFFFFF", 0.02, ".wahl-taste", THEMES_AKTIV.surf);
-// Auf einem MITTELHELLEN Band traegt weder Schwarz noch Weiss (in „Dark"
-// gemessene 4,36:1). Die Bandfarbe wird deshalb im Ausnahmefall minimal
-// nachgerueckt, statt als Hex-Alpha darueberzuliegen.
-const grund = () => knopfPaar(toenungsGrund(THEMES_AKTIV.gold, TOENUNG, undefined, zeilenGrund()), null, 4.5).grund;
-const farbe = (ton, schwelle) => schriftAuf(grund(), ton, schwelle);
-const kante = () => schriftAuf(zeilenGrund(), THEMES_AKTIV.gold, 3);
+// Genau die Rechnung aus TagesgeldWidget.jsx (`sweepPaar`).
+const paar = () => knopfPaar(AMPEL.gelb, DUNKEL);
 
-// [Beschreibung, Ton, Schwelle] — Text 4,5:1, Symbole 3:1 (WCAG 1.4.11)
-const STELLEN = [
-  ["Blitz-Symbol",            "gold", 3],
-  ["Wort Super-Sparrate",     "gold", 4.5],
-  ["Hin-Betrag",              "gold", 4.5],
-  ["Rueck-Betrag",            "pos",  4.5],
-  ["Fliesstext",              "txt",  4.5],
-];
-
-describe("Super-Sparraten-Zeile: Kontrast auf der eigenen Toenung", () => {
-  it("alles traegt auf der gemalten Flaeche — in jedem Theme", () => {
-    const durchgefallen = [];
-    for (const [name, t] of Object.entries(THEMES)) {
-      if (name === "custom_preview" || !t || !t.bg || !t.gold) continue;
-      setActiveTheme(name, t); THEMES_AKTIV = t;
-      for (const [was, tonKey, schwelle] of STELLEN) {
-        const ton = t[tonKey];
-        if (!ton || !/^#/.test(ton)) continue;   // `txt` kann eine CSS-Variable sein
-        const wert = kontrastWert(farbe(ton, schwelle), grund());
-        if (wert < schwelle) durchgefallen.push(`${name} · ${was}: ${wert.toFixed(2)}:1 (soll ${schwelle})`);
-      }
-    }
-    expect(durchgefallen, `zu schwach:\n  ${durchgefallen.join("\n  ")}`).toEqual([]);
+describe("Super-Sparraten-Zeile: Sonnengelb mit gerechneter Schrift", () => {
+  it("die Schrift trägt auf dem Sonnengelb", () => {
+    const { grund, schrift } = paar();
+    const wert = kontrastWert(schrift, grund);
+    expect(wert, `nur ${wert.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
   });
 
-  it("das Band ist als Band erkennbar — Toenung oder Kante", () => {
-    // Die Toenung allein traegt nicht ueberall: in hellen Themes sind es nur
-    // ~1,09:1 gegen die Zeile. Deshalb zusaetzlich die Kante links, und die
-    // muss 3:1 halten (WCAG 1.4.11, Bedienelement-Abgrenzung). Eine Kante ist
-    // kein zweiter Bereich — aber sie ist immer da.
-    const durchgefallen = [];
-    for (const [name, t] of Object.entries(THEMES)) {
-      if (name === "custom_preview" || !t || !t.bg || !t.gold || !/^#/.test(t.gold)) continue;
-      setActiveTheme(name, t); THEMES_AKTIV = t;
-      const w = kontrastWert(kante(), zeilenGrund());
-      if (w < 3) durchgefallen.push(`${name} · Kante: ${w.toFixed(2)}:1`);
-    }
-    expect(durchgefallen, `zu schwach:\n  ${durchgefallen.join("\n  ")}`).toEqual([]);
+  it("es ist DASSELBE Sonnengelb wie im Sync-Hinweis", () => {
+    // Zwei Sonnengelbs in einer App driften auseinander. Der Wert kommt
+    // deshalb aus syncBadge.js und wird hier nicht noch einmal getippt.
+    const src = readFileSync(resolve(wurzel, "src/components/organisms/TagesgeldWidget.jsx"), "utf8");
+    expect(src).toMatch(/import \{ AMPEL \} from "\.\.\/\.\.\/utils\/syncBadge\.js"/);
+    expect(src).toMatch(/knopfPaar\(AMPEL\.gelb, DUNKEL\)/);
+    expect(src, "kein zweites Gelb von Hand").not.toMatch(/#FFC400/);
   });
 
-  it("belegt den Fall: der Rohton allein reicht nicht", () => {
-    // Ohne die Rechnung faellt das Gold auf seiner eigenen Toenung durch —
-    // der Beleg, dass `aufToenung` hier wirklich etwas tut.
-    const rohDurchgefallen = [];
-    for (const [name, t] of Object.entries(THEMES)) {
-      if (name === "custom_preview" || !t || !t.gold || !/^#/.test(t.gold)) continue;
-      setActiveTheme(name, t); THEMES_AKTIV = t;
-      if (kontrastWert(t.gold, grund()) < 4.5) rohDurchgefallen.push(name);
-    }
-    expect(rohDurchgefallen.length, "erwartet: der Rohton faellt mehrfach durch")
-      .toBeGreaterThan(0);
+  it("die Fläche ist deckend, nicht getönt", () => {
+    // Eine Tönung (`${…}1f`) wäre der Rückfall in genau das Problem oben.
+    const src = readFileSync(resolve(wurzel, "src/components/organisms/TagesgeldWidget.jsx"), "utf8");
+    const i = src.indexOf("Super-Sparrate</b>");
+    const block = src.slice(i - 500, i + 400);
+    expect(block).toMatch(/background:\s*sweepGrund\(\)/);
+    expect(block, "keine Hex-Alpha-Toenung").not.toMatch(/\$\{T\.gold\}1f/);
   });
 
   it("ein BAND, kein Kasten im Kasten — und ohne Symbol", () => {
@@ -98,15 +62,13 @@ describe("Super-Sparraten-Zeile: Kontrast auf der eigenen Toenung", () => {
     const src = readFileSync(resolve(wurzel, "src/components/organisms/TagesgeldWidget.jsx"), "utf8");
     const i = src.indexOf("Super-Sparrate</b>");
     expect(i, "die Zeile muss es geben").toBeGreaterThan(-1);
-    const block = src.slice(i - 700, i + 400);
+    const block = src.slice(i - 500, i + 400);
     expect(block, "kein Rahmen ringsum").not.toMatch(/border:\s*`1px solid/);
-    expect(block, "keine Rundung").not.toMatch(/borderRadius:\s*6/);
+    expect(block, "keine Rundung").not.toMatch(/borderRadius:/);
     expect(block, "kein Blitzsymbol").not.toMatch(/Li\("zap"/);
     expect(block, "nicht eingerueckt").not.toMatch(/paddingLeft:\s*38/);
     // Buendig bis an die Raender: negative Raender heben das Polster der
     // Monatszeile auf.
     expect(block).toMatch(/margin:\s*"3px -6px -3px"/);
-    expect(block, "Kante links statt Rahmen").toMatch(/borderLeft:/);
   });
 });
-
