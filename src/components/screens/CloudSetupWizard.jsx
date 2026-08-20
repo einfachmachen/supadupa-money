@@ -99,12 +99,13 @@ const klappZeile = () => ({
   background: flaecheAbgesetzt(), border: `1px solid ${T.bds || T.bd}`, borderRadius: 11,
   padding: "11px 13px", color: T.txt, fontSize: 14, fontWeight: 700,
 });
-// Weiterfuehrender Link („Cloudflare-Konto anlegen"). War eine 8-%-Toenung mit
-// 33-%-Rahmen — auf heller Platte gemessene 1,03:1 fuer die Flaeche: als
-// Schaltflaeche nicht zu erkennen. Jetzt vollflaechig wie die uebrigen
-// Knoepfe, dieselbe Bauform wie im Bank-Assistenten.
+// Weiterfuehrender Link („Cloudflare-Konto anlegen", „Deploy to Cloudflare").
+// War eine 8-%-Toenung mit 33-%-Rahmen — auf heller Platte gemessene 1,03:1
+// fuer die Flaeche: als Schaltflaeche nicht zu erkennen. Jetzt vollflaechig,
+// und zwar im Theme-Akzent statt im Cloudflare-Orange: das gehoert zu keinem
+// Theme der App und wirkte als Fremdkoerper (beides Nutzer-Hinweis).
 function LinkBtn({ href, icon, children, color }) {
-  const { grund, schrift, kante } = vollKnopf(color || T.cf || T.blue, T.on_accent);
+  const { grund, schrift, kante } = vollKnopf(color || T.blue, T.on_accent);
   return (
     <a href={href} target="_blank" rel="noopener noreferrer"
       style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
@@ -139,11 +140,18 @@ const aktionsKnopf = () => vollKnopf(T.pos, T.on_accent);
 // nicht braucht (oder keine, wo er eine braeuchte).
 const kastenKnopf = (flaeche, ton) => vollKnopf(flaeche, T.on_accent, kastenGrund(ton));
 
-// „Verbindung testen" (Schritt 9) war ein 8-%-Schleier mit duennem Rahmen —
-// als KNOPF hat man ihn nicht erkannt (Nutzer-Hinweis). Jetzt vollflaechig wie
-// die anderen Aktionsknoepfe, nur in der Cloudflare-Farbe statt in `T.pos`,
-// damit „testen" und „hochladen" unterscheidbar bleiben.
-const testKnopf = () => vollKnopf(T.cf || T.blue, T.on_accent);
+// „Verbindung testen" (Schritt 9) war erst ein 8-%-Schleier mit duennem
+// Rahmen — als KNOPF hat man ihn nicht erkannt. Vollflaechig in der
+// CLOUDFLARE-Farbe wirkte er dann wie ein Fremdkoerper: Orange kommt in
+// keinem Theme der App vor (beides Nutzer-Hinweis).
+//
+// Deshalb der Theme-Akzent `T.blue`. Die Hierarchie bleibt trotzdem
+// erkennbar: die ausfuehrenden Knoepfe („kopieren", „hochladen") stehen in
+// `T.pos`, die pruefenden/weiterfuehrenden in `T.blue`.
+//
+// Die Cloudflare-Farbe bleibt dort, wo sie WIEDERERKENNUNG stiftet statt zu
+// dominieren: Kopf-Symbol und Fortschrittsbalken.
+const testKnopf = () => vollKnopf(T.blue, T.on_accent);
 
 function CloudSetupWizard({ onClose, onBack }) {
   const {
@@ -346,7 +354,7 @@ function CloudSetupWizard({ onClose, onBack }) {
                 Lege deinen Worker im Cloudflare-Dashboard an — <b>ganz ohne GitHub</b>.
               </Box>
               <ol style={olStep()}>
-                <li>Im <a href={DASH_URL} target="_blank" rel="noopener noreferrer" style={{ color: aufPlatte("acc_cf"), fontWeight: 700 }}>Cloudflare-Dashboard</a> → <b>Workers &amp; Pages</b> <i>(Workers und Pages)</i> → <b>Create</b> <i>(Erstellen)</i> → <b>Worker</b>.</li>
+                <li>Im <a href={DASH_URL} target="_blank" rel="noopener noreferrer" style={{ color: aufPlatte("acc"), fontWeight: 700 }}>Cloudflare-Dashboard</a> → <b>Workers &amp; Pages</b> <i>(Workers und Pages)</i> → <b>Create</b> <i>(Erstellen)</i> → <b>Worker</b>.</li>
                 <li>Name z. B. <b>supadupa-sync</b> → <b>Deploy</b> <i>(Bereitstellen)</i>.</li>
               </ol>
               <Fig name="cloudflare-create-worker.svg" alt="Worker anlegen: Workers und Pages → Erstellen → Worker → Name → Bereitstellen" />

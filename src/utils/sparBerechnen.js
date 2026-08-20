@@ -133,7 +133,13 @@ export function computeMinTagessaldo(y, m, virtualSpar = {}, accId, excludeSparD
   // saldoAt wird mit zurückgegeben, damit Aufrufer den Saldo eines EINZELNEN
   // Tages abfragen können, ohne die Basis-/Budget-/Vorzeichen-Logik ein
   // zweites Mal nachzubauen (siehe computeTagessaldoAt).
-  return { min: minVal, saldoEnde, saldoAt };
+  //
+  // `allDays` (die Tage, an denen sich überhaupt etwas ändert — plus 14./15./
+  // Monatsletzter) kommt mit, damit ein Aufrufer das Minimum über ein
+  // DATUMSFENSTER statt über den ganzen Monat bilden kann. Gebraucht von
+  // `minImFenster` unten: die Verantwortung einer Sparrate endet am nächsten
+  // Sparplan-Termin, und der liegt fast immer mitten im Folgemonat.
+  return { min: minVal, saldoEnde, saldoAt, allDays };
 }
 
 // Taggenauer Saldo für EINEN konkreten Tag (ISO "YYYY-MM-DD"). Dünne Hülle um
@@ -203,6 +209,11 @@ export function buildTxsByMonth(txs) {
   return map;
 }
 
+// HISTORISCH: der EINE Stellknopf „Rate des laufenden Monats", geprueft gegen
+// den ganzen Horizont. Die App nutzt ihn nicht mehr — eine Schieflage im
+// Januar senkte damit schon im August die Sparrate (Nutzer-Hinweis, siehe
+// `computeSafeAmountForAbgang` weiter unten). Er bleibt als Referenz stehen:
+// die Tests belegen an ihm den Unterschied zur Fenster-Rechnung.
 export function computeSafeCurrentMonthAmount({ y, m, puffer, abgangId, abgangDesc, ctx, today = new Date(), horizonMonths }) {
   // Cache für RestMitte/RestEnde (Budget-Reservierungen je Monat), über ALLE
   // Kandidaten der binären Suche HINWEG geteilt: anders als der Anker-Cache
@@ -248,4 +259,144 @@ export function computeSafeCurrentMonthAmount({ y, m, puffer, abgangId, abgangDe
     if (isSafeWithAmount(mid)) lo = mid; else hi = mid - 1;
   }
   return lo;
+}
+
+// ── Wer fängt eine Schieflage ab: WELCHE Sparrate? ───────────────────────
+//
+// `computeSafeCurrentMonthAmount` oben kennt genau einen Stellknopf: die Rate
+// des LAUFENDEN Monats. Sie prüft damit den ganzen Horizont — eine Schieflage
+// im Januar senkt also schon im August die Sparrate. Das ist teuer und
+// unnötig: Das Geld wird bis Dezember gar nicht gebraucht, liegt bis dahin
+// zinslos auf Giro, und genau die Monate mit der Super-Sparrate verlieren
+// ihren Vorsprung (Nutzer-Hinweis: „Ich möchte so viel wie möglich sparen —
+// besonders in den Monaten mit der Super-Sparrate").
+//
+// Die richtige Aufteilung folgt aus der Sache selbst: Geld, das eine Rate
+// NICHT abbucht, bleibt von ihrem Termin an auf Giro liegen — aber die
+// nächste Rate kann dasselbe für alles ab IHREM Termin leisten. Also:
+//
+//   Eine Rate ist für die Tage von ihrem eigenen Termin bis zum nächsten
+//   Sparplan-Termin verantwortlich. Für nichts davor und nichts danach.
+//
+// Die letzte Rate im Horizont hat kein „danach" und trägt den Rest.
+//
+// Die Umkehrung ist der Fall, den man leicht übersieht: Fällt der Saldo am
+// 5. Januar unter den Puffer und geht die Januar-Rate erst am 28. ab, kann
+// die Januar-Rate daran nichts ändern — zuständig ist die DEZEMBER-Rate.
+// Genau deshalb ist das Fenster taggenau und nicht monatsweise.
+
+// Alle Sparplan-Abgänge auf Giro, chronologisch — je Monat höchstens einer.
+//
+// Die Eindeutigkeits-Bedingung ist dieselbe wie bisher: Liegen in einem Monat
+// mehrere Sparplan-Buchungen, ist nicht zu erkennen, welche gemeint ist —
+// dann lieber diesen Monat auslassen als raten.
+export function sparAbgaenge(txs, abDatumIso = null) {
+  const proMonat = new Map();
+  (txs || []).forEach((t) => {
+    if (!t.pending || t._linkedTo || !t._seriesId) return;
+    if (t.accountId !== "acc-giro") return;
+    if (!(t.desc || "").startsWith("Sparen·")) return;
+    if (abDatumIso && (t.date || "") < abDatumIso) return;
+    const key = (t.date || "").slice(0, 7);
+    if (!key) return;
+    if (proMonat.has(key)) proMonat.set(key, "mehrdeutig");
+    else proMonat.set(key, t);
+  });
+  return [...proMonat.values()]
+    .filter((v) => v && v !== "mehrdeutig")
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+}
+
+// Tiefster Tagessaldo im Fenster [vonIso, bisIso) — über Monatsgrenzen hinweg.
+// `bisIso === null` heißt „bis zum Ende des Horizonts".
+// Gibt `null` zurück, wenn im Fenster kein einziger Tag zu prüfen ist.
+export function minImFenster(vonIso, bisIso, accId, ctx, today, horizonMonths) {
+  const [vy, vm] = String(vonIso).split("-").map(Number);
+  if (!vy || !vm) return null;
+  let min = null;
+  for (let i = 0; i <= horizonMonths; i++) {
+    const m = (vm - 1 + i) % 12, y = vy + Math.floor((vm - 1 + i) / 12);
+    const monatsPfx = `${y}-${String(m + 1).padStart(2, "0")}-`;
+    // Ganz hinter dem Fensterende? Dann sind wir fertig.
+    if (bisIso && monatsPfx > bisIso.slice(0, 8)) break;
+    const r = computeMinTagessaldo(y, m, {}, accId, null, ctx, today);
+    if (!r || !r.allDays) continue;
+    r.allDays.forEach((tag) => {
+      if (tag < vonIso) return;
+      if (bisIso && tag >= bisIso) return;
+      const s = r.saldoAt(tag);
+      if (min === null || s < min) min = s;
+    });
+  }
+  return min;
+}
+
+// Der höchste Betrag für GENAU DIESE Rate, mit dem im Fenster
+// [abgang.date, bisIso) kein Tag unter den Puffer fällt.
+//
+// `null` heißt: nicht berechenbar (kein Tag im Fenster) — dann bleibt die
+// Rate unangetastet.
+export function computeSafeAmountForAbgang({ abgang, bisIso, puffer = 0, ctx, today = new Date(), horizonMonths }) {
+  if (!abgang || !abgang.date) return null;
+  const [ay, am] = abgang.date.split("-").map(Number);
+  const eff = horizonMonths ?? furthestPendingMonthOffset(ctx.txs, ay, am - 1);
+
+  // Caches wie in computeSafeCurrentMonthAmount: sie hängen nur an den
+  // ANDEREN Buchungen, nie am hier simulierten Betrag.
+  const restCache = {};
+  const txsById = buildTxIdMap(ctx.txs || []);
+
+  const mitBetrag = (x) => {
+    const testTxs = (ctx.txs || []).map((t) => (t.id === abgang.id
+      ? { ...t, totalAmount: -x, splits: (t.splits || []).map((s) => ({ ...s, amount: -x })) }
+      : t));
+    return { ...ctx, txs: testTxs, getProgEndeAccGlobal: undefined,
+      _restCache: restCache, _txsById: txsById, _txsByMonth: buildTxsByMonth(testTxs) };
+  };
+
+  // Obergrenze: was ohne diese Rate im Fenster übrig bleibt.
+  const ohne = minImFenster(abgang.date, bisIso, "acc-giro", mitBetrag(0), today, eff);
+  if (ohne === null) return null;
+  const max = Math.floor(Math.max(0, ohne - puffer));
+  if (max === 0) return 0;
+
+  const traegt = (x) => {
+    const min = minImFenster(abgang.date, bisIso, "acc-giro", mitBetrag(x), today, eff);
+    return min === null || min >= puffer;
+  };
+
+  let lo = 0, hi = max;
+  while (lo < hi) {
+    const mid = Math.floor((lo + hi + 1) / 2);
+    if (traegt(mid)) lo = mid; else hi = mid - 1;
+  }
+  return lo;
+}
+
+// Der ganze Plan auf einmal: für jede Rate ab `abDatumIso` der sichere Betrag.
+//
+// Rückgabe: [{ abgang, alt, neu }] — nur die Raten, bei denen sich etwas
+// ändert. Chronologisch, damit der Aufrufer sie in einem Zug anwenden kann.
+export function sparRatenAbgleich({ txs, puffer = 0, ctx, today = new Date(), abDatumIso = null, horizonMonths }) {
+  const ab = abDatumIso || `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
+  const raten = sparAbgaenge(txs, ab);
+  if (!raten.length) return [];
+  const aenderungen = [];
+  // Laufender Stand: jede Rate wird auf dem Ergebnis der vorherigen gerechnet,
+  // sonst sähe Rate 2 noch den alten Wert von Rate 1.
+  let stand = txs;
+  raten.forEach((rate, i) => {
+    const bisIso = i + 1 < raten.length ? raten[i + 1].date : null;
+    const aktuell = stand.find((t) => t.id === rate.id) || rate;
+    const alt = Math.round(Math.abs(aktuell.totalAmount || 0) * 100) / 100;
+    const neu = computeSafeAmountForAbgang({
+      abgang: aktuell, bisIso, puffer, ctx: { ...ctx, txs: stand }, today, horizonMonths,
+    });
+    if (neu === null || neu === alt) return;
+    aenderungen.push({ abgang: aktuell, alt, neu });
+    stand = stand.map((t) => (t.id === aktuell.id
+      ? { ...t, totalAmount: -neu, splits: (t.splits || []).map((s) => ({ ...s, amount: -neu })) }
+      : t));
+  });
+  return aenderungen;
 }

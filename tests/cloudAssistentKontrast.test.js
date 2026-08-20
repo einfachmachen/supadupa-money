@@ -45,7 +45,7 @@ const AUF_PLATTE = [
   ["unverschluesselt (Text)",                   "acc_gold", 4.5],
   ["unverschluesselt (Symbol)",                 "acc_gold", 3],
   ["Hinweis unter Verbindung-testen",           "acc_gold", 4.5],
-  ["Dashboard-Link",                            "acc_cf",   4.5],
+  ["Dashboard-Link",                            "acc",      4.5],
   ["Fortschrittspunkt (erledigt)",              "acc_cf",   3],
 ];
 
@@ -96,7 +96,7 @@ describe("Cloud-Assistent: Kontrast über alle neun Schritte", () => {
     for (const [name, t] of Object.entries(THEMES)) {
       if (name === "custom_preview" || !t || !t.bg) continue;
       setActiveTheme(name, t); _t = t;
-      for (const [was, flaeche] of [["Aktion", t.pos], ["Verbindung testen", t.cf || t.blue]]) {
+      for (const [was, flaeche] of [["Aktion", t.pos], ["Verbindung testen", t.blue]]) {
         if (!flaeche || !/^#/.test(flaeche)) continue;
         const { grund, schrift } = knopfPaar(flaeche, t.on_accent);
         const wert = kontrastWert(schrift, grund);

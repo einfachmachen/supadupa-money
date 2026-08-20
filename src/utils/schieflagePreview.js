@@ -29,7 +29,7 @@
 //   normalen Warnung ohne Zusatz-Hinweis.
 
 import { computeKontoWarnungen } from "./kontoWarnungen.js";
-import { computeSafeCurrentMonthAmount } from "./sparBerechnen.js";
+import { sparAbgaenge, computeSafeAmountForAbgang } from "./sparBerechnen.js";
 
 // Vorzeichenbehafteter Giro-Beitrag einer Entwurfs-Tx (gleiche Konvention wie
 // kontoWarnungen/saldo). Nur acc-giro, keine Umbuchungs-/Budget-Platzhalter.
@@ -42,17 +42,26 @@ function signedGiro(t) {
   return type === "income" ? abs : -abs;
 }
 
-// Findet die EINE eindeutige Sparplan-Abgang-Buchung des laufenden Monats auf
-// Giro — dieselbe Eindeutigkeits-Bedingung wie App.jsx (currentMonthSparAdjust):
-// bei mehreren/keinen Treffern lieber nichts vorschlagen als raten.
-function findCurrentMonthSparAbgang(combinedTxs, today) {
-  const y = today.getFullYear(), m = today.getMonth();
-  const pad2 = (n) => String(n).padStart(2, "0");
-  const monthPfx = `${y}-${pad2(m + 1)}-`;
-  const candidates = combinedTxs.filter((t) => t.pending && !t._linkedTo && t._seriesId
-    && t.accountId === "acc-giro" && (t.desc || "").startsWith("Sparen·")
-    && (t.date || "").startsWith(monthPfx));
-  return candidates.length === 1 ? { tx: candidates[0], y, m } : null;
+// Welche Sparrate kann DIESEN Engpass abfangen?
+//
+// Nicht mehr die des laufenden Monats (so war es bis hierher), sondern die
+// LETZTE Rate STRIKT VOR dem Engpass-Tag. Geld, das sie nicht abbucht, liegt
+// von ihrem Termin an auf Giro und steht am Engpass-Tag zur Verfügung; eine
+// spätere Rate käme zu spät.
+//
+// Der Fall, der die naive Variante entlarvt: Engpass am 5. Januar, die
+// Januar-Rate geht am 28. ab. „Reduziere im Monat des Problems" hilft dort
+// nichts — zuständig ist die Dezember-Rate. Deshalb der taggenaue Vergleich.
+//
+// Die Eindeutigkeits-Bedingung bleibt (siehe `sparAbgaenge`): Monate mit
+// mehreren Sparbuchungen werden ausgelassen statt geraten.
+function findSparAbgangVor(combinedTxs, engpassIso) {
+  const raten = sparAbgaenge(combinedTxs);
+  let treffer = null, naechste = null;
+  raten.forEach((r, i) => {
+    if ((r.date || "") < engpassIso) { treffer = r; naechste = raten[i + 1] || null; }
+  });
+  return treffer ? { tx: treffer, bisIso: naechste ? naechste.date : null } : null;
 }
 
 export function schieflagePreview({ draftTxs = [], txs = [], cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth, puffer, ...rest } = {}) {
@@ -92,19 +101,19 @@ export function schieflagePreview({ draftTxs = [], txs = [], cats, accounts, get
   const f = impacted[0];
 
   // Könnte die automatische Sparraten-Anpassung diese Schieflage vollständig
-  // vermeiden? Nur relevant bei genau EINER Sparplan-Abgang-Buchung im
-  // laufenden Monat (sonst wäre nicht eindeutig, welche gemeint ist).
+  // vermeiden — und wenn ja, WELCHE Rate trägt sie?
   const sparAdjust = (() => {
     const today = new Date();
-    const found = findCurrentMonthSparAbgang(combinedTxs, today);
+    const found = findSparAbgangVor(combinedTxs, f.date);
     if (!found) return null;
-    const { tx: abgang, y, m } = found;
+    const { tx: abgang, bisIso } = found;
+    const [y, m] = abgang.date.split("-").map(Number);
     const oldAmount = Math.round(Math.abs(abgang.totalAmount) * 100) / 100;
     const ctx = { txs: combinedTxs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth };
     let safeAmount;
     try {
-      safeAmount = computeSafeCurrentMonthAmount({
-        y, m, puffer: puffer || 0, abgangId: abgang.id, abgangDesc: abgang.desc, ctx, today,
+      safeAmount = computeSafeAmountForAbgang({
+        abgang, bisIso, puffer: puffer || 0, ctx, today,
       });
     } catch {
       return null; // rein informativ — bei einem Rechenfehler lieber nichts vorschlagen
@@ -120,7 +129,7 @@ export function schieflagePreview({ draftTxs = [], txs = [], cats, accounts, get
     const warningsAfter = computeKontoWarnungen({ txs: adjustedTxs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth, puffer });
     if (warningsAfter.length > 0) return null; // reduziert, vermeidet die Schieflage aber nicht vollständig
 
-    return { year: y, month: m, oldAmount, safeAmount };
+    return { year: y, month: m - 1, oldAmount, safeAmount };
   })();
 
   return {
