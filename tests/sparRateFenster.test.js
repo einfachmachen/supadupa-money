@@ -145,6 +145,37 @@ describe("Sparraten: jede Rate haftet nur bis zur nächsten", () => {
     expect(sparAbgaenge(txs, "2026-08-01").map((r) => r.id)).toEqual(["r-09"]);
   });
 
+  it("Vorwaertsgang allein wuerde eine Schieflage ERZEUGEN — der Rueckwaertsgang repariert sie", () => {
+    // Die Luecke der neuen Regel, und der Grund fuer den zweiten Durchgang:
+    // Nimmt die August-Rate alles mit, was IHR Fenster hergibt, kann der
+    // September danach unter den Puffer fallen. Steht dessen eigene Rate schon
+    // bei 0, kann sie nichts mehr ausrichten — dann muss doch die August-Rate
+    // nachgeben. So spaet wie moeglich, aber eben doch.
+    //
+    // Ohne diesen Durchgang waere die neue Regel in genau diesen Faellen
+    // SCHLECHTER als die alte „immer der laufende Monat", und das war nicht
+    // der Deal.
+    const txs = [
+      rate("r-08", "2026-08-28", 0),   // steht auf 0, darf hochgehen
+      rate("r-09", "2026-09-28", 0),   // steht schon bei 0 — kann nichts mehr
+      ausgabe("miete", "2026-10-02", 1800),
+    ];
+    const ctx = buildCtx({ txs, anker: 2000 });
+    const aend = sparRatenAbgleich({ txs, puffer, ctx, today, abDatumIso: "2026-08-01" });
+    const nach = new Map(aend.map((a) => [a.abgang.id, a.neu]));
+    const aug = nach.has("r-08") ? nach.get("r-08") : 0;
+    const sep = nach.has("r-09") ? nach.get("r-09") : 0;
+
+    // 2000 − aug − sep − 1800 muss >= 100 bleiben.
+    expect(2000 - aug - sep - 1800, `aug=${aug} sep=${sep}`).toBeGreaterThanOrEqual(puffer);
+    // Und der Vorwaertsgang allein haette die August-Rate hoeher gesetzt:
+    // ihr eigenes Fenster (28.08.–28.09.) sieht die Miete vom 2.10. gar nicht.
+    const nurVorwaerts = computeSafeAmountForAbgang({
+      abgang: txs.find((t) => t.id === "r-08"), bisIso: "2026-09-28", puffer, ctx, today,
+    });
+    expect(nurVorwaerts, "Beleg: das eigene Fenster erlaubt mehr").toBeGreaterThan(aug);
+  });
+
   it("sparRatenAbgleich liefert nur die Raten, die sich wirklich ändern", () => {
     const txs = [
       rate("r-08", "2026-08-28", 500),

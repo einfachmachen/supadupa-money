@@ -377,26 +377,83 @@ export function computeSafeAmountForAbgang({ abgang, bisIso, puffer = 0, ctx, to
 //
 // Rückgabe: [{ abgang, alt, neu }] — nur die Raten, bei denen sich etwas
 // ändert. Chronologisch, damit der Aufrufer sie in einem Zug anwenden kann.
+//
+// ZWEI Durchgänge, und der zweite ist nicht optional:
+//
+//   Vorwärts — jede Rate so hoch wie möglich, gemessen an IHREM Fenster. Das
+//     ist die eigentliche Absicht: möglichst viel sparen, so früh wie möglich.
+//
+//   Rückwärts — Reparatur. Der Vorwärtsgang allein kann eine Schieflage
+//     ERZEUGEN: Nimmt die August-Rate alles mit, was ihr Fenster hergibt, kann
+//     der September danach unter den Puffer fallen — und wenn dessen eigene
+//     Rate schon bei 0 steht, kann sie nichts mehr ausrichten. Dann muss doch
+//     eine FRÜHERE Rate nachgeben, nur eben so spät wie möglich: erst die
+//     unmittelbar davor, dann die davor.
+//
+// Ohne den zweiten Durchgang wäre die neue Regel in genau diesen Fällen
+// schlechter als die alte „immer der laufende Monat" — und das war nicht der
+// Deal.
 export function sparRatenAbgleich({ txs, puffer = 0, ctx, today = new Date(), abDatumIso = null, horizonMonths }) {
   const ab = abDatumIso || `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
   const raten = sparAbgaenge(txs, ab);
   if (!raten.length) return [];
-  const aenderungen = [];
-  // Laufender Stand: jede Rate wird auf dem Ergebnis der vorherigen gerechnet,
-  // sonst sähe Rate 2 noch den alten Wert von Rate 1.
+
   let stand = txs;
-  raten.forEach((rate, i) => {
-    const bisIso = i + 1 < raten.length ? raten[i + 1].date : null;
-    const aktuell = stand.find((t) => t.id === rate.id) || rate;
-    const alt = Math.round(Math.abs(aktuell.totalAmount || 0) * 100) / 100;
-    const neu = computeSafeAmountForAbgang({
-      abgang: aktuell, bisIso, puffer, ctx: { ...ctx, txs: stand }, today, horizonMonths,
-    });
-    if (neu === null || neu === alt) return;
-    aenderungen.push({ abgang: aktuell, alt, neu });
-    stand = stand.map((t) => (t.id === aktuell.id
-      ? { ...t, totalAmount: -neu, splits: (t.splits || []).map((s) => ({ ...s, amount: -neu })) }
+  const gesetzt = new Map();  // id → neuer Betrag
+  const setze = (id, betrag) => {
+    gesetzt.set(id, betrag);
+    stand = stand.map((t) => (t.id === id
+      ? { ...t, totalAmount: -betrag, splits: (t.splits || []).map((s) => ({ ...s, amount: -betrag })) }
       : t));
+  };
+  const standRate = (r) => stand.find((t) => t.id === r.id) || r;
+  const endeVon = (i) => (i + 1 < raten.length ? raten[i + 1].date : null);
+  const mitStand = () => ({ ...ctx, txs: stand });
+
+  // ── Durchgang 1: vorwärts, jede Rate maximal in ihrem Fenster ──────────
+  raten.forEach((rate, i) => {
+    const neu = computeSafeAmountForAbgang({
+      abgang: standRate(rate), bisIso: endeVon(i), puffer, ctx: mitStand(), today, horizonMonths,
+    });
+    if (neu !== null) setze(rate.id, neu);
+  });
+
+  // ── Durchgang 2: rückwärts reparieren, wo ein Fenster klemmt ───────────
+  for (let i = 0; i < raten.length; i++) {
+    const bisIso = endeVon(i);
+    const [ry, rm] = raten[i].date.split("-").map(Number);
+    const eff = horizonMonths ?? furthestPendingMonthOffset(stand, ry, rm - 1);
+    const min = minImFenster(raten[i].date, bisIso, "acc-giro",
+      { ...mitStand(), getProgEndeAccGlobal: undefined }, today, eff);
+    if (min === null || min >= puffer) continue;   // Fenster ist in Ordnung
+
+    // Klemmt. Die eigene Rate steht nach Durchgang 1 bereits am Anschlag —
+    // also die früheren rückwärts nachziehen, mit auf DIESES Fenster
+    // verlängertem Verantwortungsbereich.
+    for (let j = i - 1; j >= 0; j--) {
+      const neuJ = computeSafeAmountForAbgang({
+        abgang: standRate(raten[j]), bisIso, puffer, ctx: mitStand(), today, horizonMonths,
+      });
+      if (neuJ === null) continue;
+      const bisher = gesetzt.has(raten[j].id)
+        ? gesetzt.get(raten[j].id)
+        : Math.round(Math.abs(standRate(raten[j]).totalAmount || 0) * 100) / 100;
+      if (neuJ >= bisher) continue;                // hilft nicht weiter
+      setze(raten[j].id, neuJ);
+      const nun = minImFenster(raten[i].date, bisIso, "acc-giro",
+        { ...mitStand(), getProgEndeAccGlobal: undefined }, today, eff);
+      if (nun !== null && nun >= puffer) break;    // repariert
+    }
+  }
+
+  // Nur die Raten melden, bei denen sich wirklich etwas ändert.
+  const aenderungen = [];
+  raten.forEach((rate) => {
+    if (!gesetzt.has(rate.id)) return;
+    const neu = gesetzt.get(rate.id);
+    const alt = Math.round(Math.abs(rate.totalAmount || 0) * 100) / 100;
+    if (neu === alt) return;
+    aenderungen.push({ abgang: rate, alt, neu });
   });
   return aenderungen;
 }
