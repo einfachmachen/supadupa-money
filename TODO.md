@@ -581,12 +581,20 @@ nicht erkennbar.
   existieren — die App warnt also zu spaet. Jetzt loesbar: `sweepFuerMonat`
   liefert die geplanten Betraege, sie muessen als virtuelle Buchungen in
   `computeKontoWarnungen` hinein.
-- [ ] **Zwei Regeln fuer dieselben Raten.** Die Vorschau `berechnen()` nimmt
-  „maximal, solange die naechsten 3 Monate tragen"; die Automatik
-  `sparPlanOptimum` nimmt das Suffix-Minimum ueber alle Fenster. Solange das
-  auseinanderlaeuft, korrigiert die Automatik nach jedem „neu berechnen" die
-  frisch angelegten Raten wieder, und der Nutzer sieht Zahlen springen. Die
-  Vorschau sollte `sparPlanOptimum` auf einem virtuellen Bestand benutzen.
+- [x] **Zwei Regeln fuer dieselben Raten — ERLEDIGT.** Die Vorschau nahm
+  „maximal, solange die naechsten 3 Monate tragen", die Automatik das
+  Suffix-Minimum ueber alle Fenster. Das ist nicht theoretisch
+  auseinandergelaufen: Der Sparplan zeigte fuer August 103 €, in den Buchungen
+  standen 583 € (Nutzer-Bilder).
+  Der Kern des Unterschieds war die obere Schranke der Vorschau (Tiefst-Saldo
+  des GANZEN Monats). Die Rate geht am MONATSLETZTEN ab und kann an einem
+  tiefen Tag am 15. nichts mehr aendern — sie damit zu begrenzen, verschenkt
+  Sparbetrag ohne jeden Gewinn an Sicherheit.
+  Jetzt eine Quelle: Die Vorschau baut einen virtuellen Bestand (echte
+  Buchungen ohne die Raten dieses Plans, plus je eine Null-Rate am
+  Monatsletzten) und laesst `sparPlanOptimum` darueber laufen. Damit ist die
+  Vorschau per Konstruktion dasselbe, was die Automatik spaeter hinschreibt.
+  Tests: `tests/sparEineQuelle.test.js`.
 - [ ] **Rueckbuchung gegen einen Engpass** (der groessere Gedanke, siehe
   oben): Ein Engpass im April laesst sich sauberer durch eine Rueckbuchung vom
   Tagesgeld loesen als dadurch, im August weniger zu sparen. Die Maschinerie

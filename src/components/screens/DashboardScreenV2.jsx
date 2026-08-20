@@ -17,7 +17,7 @@ import { TagesgeldWidget } from "../organisms/TagesgeldWidget.jsx";
 import { AutoMatchReview } from "../organisms/AutoMatchReview.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme, flaecheAbgesetzt, blasserAkzent } from "../../theme/activeTheme.js";
-import { amtStyle, readableOn, isLightColor, schriftAuf } from "../../theme/amtPill.js";
+import { amtStyle, readableOn, isLightColor, schriftAuf, flaecheVon } from "../../theme/amtPill.js";
 import { UNTEN_FREI } from "../../theme/palette.js";
 import { groupBudgetPairs, budgetOpenRestFor } from "../../utils/budgets.js";
 import { dayOf, drillSort, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
@@ -1274,6 +1274,9 @@ function DashboardScreenV2() {
             // Basisfarbe ohne Alpha auswerten und ggf. fälschlich ein dunkles
             // Icon auf dunklem Grund wählen.
             const bg = activeBg || blasserAkzent();
+            // Setzt das Theme die Symbolzeile als eigene Flaeche ab? Dann
+            // beruehrt der Reiter das Panel darunter nicht (siehe unten).
+            const reiterAbgesetzt = !!flaecheVon(".symbolzeile");
             const iconCol = (panel && isActive && activeBgSolid) ? readableOn(bg, color) : color;
             return (
               <div onClick={onClick || (()=>togglePanel(panel))} data-tour={tourId}
@@ -1286,12 +1289,22 @@ function DashboardScreenV2() {
                   // Randbreite höher, alle drei werden per flex-Stretch auf
                   // diese Höhe gebracht und die ganze Zeile (samt allem
                   // darunter) "springt" beim Umschalten minimal nach unten.
-                  border:"1.5px solid transparent",borderBottom:"none",
+                  border:"1.5px solid transparent",
+                  borderBottom:reiterAbgesetzt ? "1.5px solid transparent" : "none",
                   transition:"background 0.15s,border-color 0.15s",
                   ...(panel && isActive ? {
                     background:bg,
                     borderColor:bg,
-                    borderRadius:"10px 10px 0 0",
+                    // Oben immer rund. UNTEN nur dann eckig, wenn der Reiter
+                    // das Panel darunter wirklich beruehrt — dann sollen die
+                    // beiden Flaechen ineinander uebergehen.
+                    //
+                    // Themes, die `.symbolzeile` zur eigenen Flaeche erklaeren
+                    // („Tastenhell"), setzen die Zeile mit Abstand und eigener
+                    // Rundung ab. Dort steht der Reiter frei, und eine unten
+                    // abgeschnittene Flaeche sieht aus wie ein Fehler
+                    // (Nutzer-Bild). Dann rundum rund.
+                    borderRadius:reiterAbgesetzt ? 10 : "10px 10px 0 0",
                   } : null)}}>
                 {Li(icon, 28, iconCol)}
                 {badge!=null && badge>0 && (()=>{

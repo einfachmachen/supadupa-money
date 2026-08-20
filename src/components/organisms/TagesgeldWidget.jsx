@@ -11,7 +11,7 @@ import { kvStore } from "../../utils/kvStore.js";
 import { planLegDecisions } from "../../utils/sparPlanSeries.js";
 import { getSparWatermark, noteSparWatermark } from "../../utils/sparWatermarks.js";
 import { buildTxIdMap } from "../../utils/tx.js";
-import { computeMinTagessaldo, computeTagessaldoAt, buildTxsByMonth } from "../../utils/sparBerechnen.js";
+import { computeMinTagessaldo, computeTagessaldoAt, buildTxsByMonth, sparPlanOptimum } from "../../utils/sparBerechnen.js";
 import { knopfPaar, DUNKEL } from "../../theme/amtPill.js";
 import { AMPEL } from "../../utils/syncBadge.js";
 import { DEFAULT_ZINS_MONATE, parseZinsMonate, serializeZinsMonate,
@@ -425,33 +425,51 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
       vs[date] = (vs[date]||0) - wert;
     };
 
+    // ── Die Raten kommen aus DERSELBEN Rechnung wie die Automatik ──────
+    //
+    // Hier stand eine zweite, eigene Näherung: obere Schranke aus dem Tiefst-
+    // Saldo des GANZEN Monats, dann eine Binärsuche mit drei Monaten
+    // Vorausschau. Die Automatik in App.jsx rechnet anders (Fenster ab dem
+    // Termin der Rate, Suffix-Minimum über alle Fenster) — zwei Regeln für
+    // dieselben Raten.
+    //
+    // Das ist nicht theoretisch auseinandergelaufen: Für August zeigte die
+    // Vorschau 103 €, während in den Buchungen 583 € standen (Nutzer-Bilder).
+    // Der Grund ist die obere Schranke: Die Rate geht am MONATSLETZTEN ab und
+    // kann an einem tiefen Tag am 15. nichts mehr ändern — sie damit zu
+    // begrenzen, verschenkt Sparbetrag ohne jeden Gewinn an Sicherheit.
+    //
+    // Jetzt eine Quelle: ein virtueller Bestand (echte Buchungen ohne die
+    // Raten dieses Plans, plus je eine Null-Rate am Monatsletzten) geht durch
+    // `sparPlanOptimum`. Damit ist die Vorschau per Konstruktion dasselbe, was
+    // die Automatik später hinschreibt.
+    const pad2v = n=>String(n).padStart(2,"0");
+    const monatsLetzterIso = (y, m) => `${y}-${pad2v(m+1)}-${pad2v(new Date(y, m+1, 0).getDate())}`;
+    const vorschauRaten = [];
+    for(let k = 0; k < total; k++) {
+      const m=(nowM+k)%12, y=nowY+Math.floor((nowM+k)/12);
+      vorschauRaten.push({ id:`vorschau-${k}`, accountId:"acc-giro",
+        date:monatsLetzterIso(y, m), totalAmount:0, pending:true, _csvType:"expense",
+        desc:sparDesc, _seriesId:"vorschau-serie",
+        splits:[{id:`vorschau-s-${k}`, catId:"", subId:"", amount:0}] });
+    }
+    const planTxs = [...basisTxs, ...vorschauRaten];
+    let optimum = new Map();
+    try {
+      optimum = sparPlanOptimum({
+        txs: planTxs, puffer, today: new Date(),
+        abDatumIso: `${nowY}-${pad2v(nowM+1)}-01`,
+        ctx: { txs: planTxs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth },
+      });
+    } catch(e) { /* Vorschau bleibt bei 0 statt zu scheitern */ }
+
     const step = () => {
       const end = Math.min(i + CHUNK, total);
       for(; i < end; i++) {
         const m=(nowM+i)%12, y=nowY+Math.floor((nowM+i)/12);
         const {min:minTag, saldoEnde} = getMinTagessaldo(y, m, virtualSpar, effAcc, excludeDesc);
-        const maxMoeglich = minTag!==null ? Math.floor(Math.max(0, minTag - puffer)) : 0;
-
-        let zusaetzlich = 0;
-        if(maxMoeglich > 0) {
-          // Binäre Suche mit nur 3 Folgemonate-Check (Rest wird in eigener Iteration korrigiert)
-          let lo = 0, hi = maxMoeglich;
-          const LOOKAHEAD = Math.min(3, total - i - 1);
-          while(lo < hi) {
-            const mid = Math.floor((lo + hi + 1) / 2);
-            const vsTest = {...virtualSpar};
-            addVS(y, m, mid, vsTest);
-            let ok = true;
-            for(let ahead = 1; ahead <= LOOKAHEAD; ahead++) {
-              const ni = i + ahead;
-              const nm=(nowM+ni)%12, ny=nowY+Math.floor((nowM+ni)/12);
-              const nextMin = getMinTagessaldo(ny, nm, vsTest, effAcc, excludeDesc).min;
-              if(nextMin !== null && nextMin < puffer) { ok = false; break; }
-            }
-            if(ok) lo = mid; else hi = mid - 1;
-          }
-          zusaetzlich = lo;
-        }
+        const zusaetzlich = (effAcc === undefined || effAcc === null || effAcc === "acc-giro")
+          ? (optimum.get(`vorschau-${i}`) ?? 0) : 0;
 
         kumuliert += zusaetzlich;
         const minNachSparen = minTag!==null ? minTag - zusaetzlich : null;

@@ -66,7 +66,7 @@ function LazyFallback() {
 }
 import { AppCtx } from "./state/AppContext.js";
 import { theme as T, setActiveTheme, isLightTheme, kartenTextRegel, wurzelTextVars } from "./theme/activeTheme.js";
-import { readableOn } from "./theme/amtPill.js";
+import { readableOn, isLightColor } from "./theme/amtPill.js";
 import { PAL, gs } from "./theme/palette.js";
 import { getTheme, THEMES } from "./theme/themes.js";
 import { BASE_ROWS, CUR_YEAR, INIT_ACCOUNTS, INIT_CATS } from "./utils/constants.js";
@@ -136,11 +136,29 @@ export default function SupaDupaMoney() {
   setActiveTheme(themeName, { _rev: themeRev });
   // Haupt-Hintergrundfarbe auch hinter/neben der Notch (Safe-Area, Statusleiste)
   // setzen: body-Hintergrund + theme-color-Meta an die aktuelle Theme-bg koppeln.
+  //
+  // Dazu die SCHRIFTFARBE der Statusleiste (Uhr, Empfang, Batterie). Sie stand
+  // fest auf `black-translucent` — der Inhalt liegt dann unter der Leiste, und
+  // iOS schreibt WEISS darauf. Auf einer hellen Platte („Tastenhell", alle
+  // hellen Themes) ist das weiß auf creme: unlesbar, und dazwischen eine harte
+  // Kante (Nutzer-Bild). `default` gibt dunkle Schrift.
+  //
+  // Einschränkung, die dazugehört: iOS liest dieses Meta bei einer
+  // INSTALLIERTEN PWA nur beim Start. Ein Theme-Wechsel im laufenden Betrieb
+  // wirkt dort erst beim nächsten Öffnen. Im Browser entscheidet ohnehin
+  // Safari selbst, meist anhand von `theme-color` — das wird hier
+  // mitgeführt.
   useEffect(() => {
     try {
       document.body.style.background = T.bg;
-      let meta = document.querySelector('meta[name="theme-color"]');
-      if(meta) meta.setAttribute("content", T.bg);
+      const setzeMeta = (name, wert) => {
+        let meta = document.querySelector(`meta[name="${name}"]`);
+        if(!meta) { meta = document.createElement("meta"); meta.setAttribute("name", name); document.head.appendChild(meta); }
+        meta.setAttribute("content", wert);
+      };
+      setzeMeta("theme-color", T.bg);
+      setzeMeta("apple-mobile-web-app-status-bar-style",
+        isLightColor(T.bg) ? "default" : "black-translucent");
     } catch(e) {}
   }, [themeName, themeRev]);
   // iOS Safari: Die dynamische Symbolleiste (Adressleiste/Toolbar) ändert die
