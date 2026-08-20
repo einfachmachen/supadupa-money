@@ -472,6 +472,79 @@ Schaden, wenn ein zahlender Kunde ohne Netz vor einer halben App sitzt.
   gebraucht). Trifft der Import doch eine Datei im alten Format, sagt er das
   im Klartext und ueberspringt den Schluessel — er scheitert nicht still.
 
+## Sparrate: WELCHE Rate soll eine Schieflage abfangen?
+
+**Nutzer-Frage:** „Muss eine Zahlung, die eine Schieflage erzeugen wuerde,
+nicht zumindest im naechsten Monat oder erst im Monat, in dem das Problem
+auftritt, den Tagesgeld-Sparbetrag reduzieren? Auf diese Art muss ja auch
+nicht der gesamte Sparplan neu berechnet werden."
+
+### Was die App HEUTE tut
+
+Sie reduziert **immer die Rate des laufenden Monats** — und zwar
+**automatisch**, ohne Rueckfrage:
+
+* `utils/sparBerechnen.js` → `computeSafeCurrentMonthAmount()` sucht per
+  Binaersuche den hoechsten Betrag, mit dem in den naechsten *n* Monaten
+  (`furthestPendingMonthOffset`, bis 24) kein Tag unter den Puffer faellt.
+* `App.jsx` → `currentMonthSparAdjust` (useMemo) + der Effekt darunter
+  schreiben das Ergebnis in die Buchung und melden es per `autoSparInfo`.
+* `utils/schieflagePreview.js` → `sparAdjust` zeigt dieselbe Rechnung schon
+  im Anlege-Dialog als Hinweis an („Durch Reduzierung … wird die Schieflage
+  vermieden").
+
+Die Bedingung ist bewusst eng: **genau eine** eindeutige Sparplan-Buchung im
+laufenden Monat, sonst greift die Automatik gar nicht.
+
+### Warum der Wunsch berechtigt ist
+
+Eine Schieflage im **Jan 2027** kostet heute (Aug 2026) fuenf Monate
+Sparrate, obwohl das Geld bis Dezember gar nicht gebraucht wird. Es liegt
+dann auf Giro statt auf Tagesgeld — also ohne Zinsen, und die Super-Sparrate
+verliert genau den Vorsprung, der sie besonders macht.
+
+### Die Korrektur, die dabei nicht untergehen darf
+
+„Im Monat, in dem das Problem auftritt" ist **zu spaet**, wenn der Engpass
+VOR dem Sparplan-Termin liegt: faellt der Saldo am 5. Jan unter den Puffer
+und die Rate geht erst am 28. Jan ab, aendert eine Reduzierung im Januar
+nichts. Richtig ist:
+
+> Reduziert wird die **letzte Sparplan-Rate, die STRIKT VOR dem Engpass-Tag
+> liegt** — nicht die des Engpass-Monats. Reicht sie bis auf 0 nicht aus,
+> zusaetzlich die davor, und so weiter rueckwaerts.
+
+Das ist genau der „nicht den ganzen Plan neu rechnen"-Gedanke, nur an der
+richtigen Kante festgemacht.
+
+### Was zu tun ist
+
+1. `computeSafeCurrentMonthAmount` kann das fast schon: sie nimmt `y`, `m`,
+   `abgangId` und `abgangDesc` entgegen — welcher Monat gemeint ist, steht
+   nicht fest verdrahtet drin. Umbenennen (`computeSafeAmountForAbgang`) und
+   die Simulation ab dem Monat DIESER Rate laufen lassen.
+2. `findCurrentMonthSparAbgang` (in `schieflagePreview.js`) und die
+   Kandidatensuche in `App.jsx` durch „letzte Rate vor dem Engpass-Tag"
+   ersetzen. Beide Stellen haben heute dieselbe Eindeutigkeits-Bedingung —
+   sie muessen dieselbe Quelle bekommen, sonst driften Hinweis und Automatik
+   auseinander.
+3. Rueckwaerts weitergehen, solange eine einzelne Rate nicht reicht.
+4. Test: Engpass VOR und NACH dem Sparplan-Termin im selben Monat — genau
+   der Fall, der die naive Variante entlarvt.
+
+### Zwei Punkte, die vorher entschieden gehoeren
+
+* **Darf die Automatik in ZUKUENFTIGE Raten schreiben?** Heute fasst sie nur
+  den laufenden Monat an, und sie laeuft bei jedem Render. Greift sie in
+  Zukunftsraten ein, aendert sie den Plan an Stellen, die der Nutzer noch
+  gar nicht angesehen hat. Vorschlag: ja, aber sichtbar — dieselbe
+  `autoSparInfo`-Meldung, mit Monatsangabe.
+* **Was passiert bei „Super-Sparrate neu berechnen"?** Die Neuberechnung im
+  Tagesgeld-Widget schreibt die Raten neu und wuerde eine so gesetzte
+  Reduzierung ueberschreiben. Entweder die Neuberechnung beruecksichtigt den
+  Engpass selbst (sauberer), oder die reduzierte Rate wird als „von Hand
+  gesetzt" markiert und ausgespart.
+
 ## Kontrast — offene Punkte
 
 - [ ] **`T.txt2` auf getoenten Flaechen und auf `T.bg`.** Gemessen faellt die
