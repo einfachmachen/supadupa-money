@@ -95,7 +95,7 @@ describe("Trend: Breite und Abstaende", () => {
 
   it("nutzt denselben Seitenrand wie der Hero", () => {
     expect(trend).toMatch(/padding:\s*"0 10px",\s*margin:\s*"8px 0 0"/);
-    expect(trend).toMatch(/padding:\s*`0 10px \$\{UNTEN_FREI\}px`/);
+    expect(trend).toMatch(/padding:\s*`0 10px \$\{UNTEN_FREI\}`/);
     expect(trend).not.toMatch(/padding:\s*"0 16px"/);
   });
 

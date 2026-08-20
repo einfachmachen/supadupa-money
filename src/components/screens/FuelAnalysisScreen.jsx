@@ -105,7 +105,7 @@ function FuelAnalysisScreen({onClose, onBack, mobileMode=false}) {
         icon="fuel" iconColor={T.gold}
         onBack={onBack||onClose} onClose={onClose}/>
 
-      <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:`12px 16px ${UNTEN_FREI}px`}}>
+      <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:`12px 16px ${UNTEN_FREI}`}}>
 
         {!(vehicles||[]).length ? (
           <div style={{textAlign:"center",padding:"40px 16px",color:T.txt2}}>

@@ -421,7 +421,7 @@ function MoneyMoodScreen() {
         // einem einzigen 8px zusammen, ohne Panel traegt er ihn allein.
         // UNTEN_FREI unten: sonst endet die letzte Kategorie unter der Leiste
         // und dem + Knopf und laesst sich nicht hochschieben.
-        <div style={{ padding: `0 10px ${UNTEN_FREI}px`, marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ padding: `0 10px ${UNTEN_FREI}`, marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
           {sortedRows.map(renderCard)}
         </div>
       )}

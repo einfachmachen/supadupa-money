@@ -403,7 +403,7 @@ function MobileKategorienModal({onClose, onBack, onKonten, onKategorienErweitert
           vergrößerten + Button noch herausgescrollt werden können — sonst
           blieben sie dort permanent unerreichbar hängen. */}
       <div style={{flex:1,overflowY:"auto",overflowX:"hidden",touchAction:"pan-y",WebkitOverflowScrolling:"touch",
-        padding:`${S.gap}px ${S.pad}px ${UNTEN_FREI}px`}}>
+        padding:`${S.gap}px ${S.pad}px ${UNTEN_FREI}`}}>
 
         <button onClick={openNewCat} className="wahl-taste"
           style={{...btnCenter,background:"rgba(74,159,212,0.1)",

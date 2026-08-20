@@ -1803,7 +1803,7 @@ function CsvImportScreen({onClose, onBack, embedded=false, mobileMode=false}) {
         // Untere Reserve UNTEN_FREI: die Abschluss-Seite kann lang werden
         // (Ankerpunkt-Warnung mit Schritt-fuer-Schritt-Hinweis) und liegt wie
         // die uebrigen Schritte unter Leiste und + Knopf.
-        <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,padding:`24px 24px ${UNTEN_FREI}px`,overflowY:"auto"}}>
+        <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,padding:`24px 24px ${UNTEN_FREI}`,overflowY:"auto"}}>
           {Li("check-circle",48,T.acc_pos)}
           <div style={{color:T.txt,fontSize:20,fontWeight:800}}>{doneCount} Buchungen importiert!</div>
           <div style={{color:T.txt2,fontSize:MFS,textAlign:"center"}}>Die Buchungen sind jetzt in deiner App. Kategorieregeln wurden für zukünftige Importe gespeichert.</div>

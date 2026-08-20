@@ -251,7 +251,7 @@ function ManagementScreen({activeTab="kategorien"}) {
             <MobileHeader title="Premium" subtitle="Bankabruf & Cloud-Sync freischalten"
               icon="sparkles" iconColor={T.gold} safeAreaTop={false}
               onBack={()=>setMgrTab("daten")}/>
-            <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:`12px 14px ${UNTEN_FREI}px`}}>
+            <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:`12px 14px ${UNTEN_FREI}`}}>
               <PremiumFreischalten/>
             </div>
           </div>
@@ -261,7 +261,7 @@ function ManagementScreen({activeTab="kategorien"}) {
           // Reiterleiste UND den vergroesserten + Knopf schieben laesst — vorher
           // blieb "Einstellungen" dauerhaft halb darunter (Nutzer-Hinweis).
           // Herleitung von UNTEN_FREI: siehe palette.js.
-          <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:`12px 14px ${UNTEN_FREI}px`}}>
+          <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:`12px 14px ${UNTEN_FREI}`}}>
             {(()=>{
               const kontenRow   = {icon:"credit-card",color:T.acc,         label:"Konten",                sub:"Verwalten, Reihenfolge, Puffer",  onClick:()=>setMgrTab("konten"), tourId:"row-konten"};
               const budgetRow   = {icon:"target",     color:T.acc_mid,          label:"Kategorien & Budget",   sub:"Budgets je Kategorie festlegen",  onClick:()=>setShowMobileKategorien?.(true), tourId:"row-budget"};
@@ -354,7 +354,7 @@ function ManagementScreen({activeTab="kategorien"}) {
             <MobileHeader title="Konten" subtitle="Verwalten, Reihenfolge, Puffer"
               icon="credit-card" iconColor={T.blue} safeAreaTop={false}
               onBack={()=>setMgrTab("daten")}/>
-            <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:`12px 14px ${UNTEN_FREI}px`}}>
+            <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:`12px 14px ${UNTEN_FREI}`}}>
             {_accounts.map((acc,ai)=>(
               <div key={acc.id} style={{display:"flex",alignItems:"center",gap:10,background:"rgba(255,255,255,0.04)",borderRadius:12,padding:"12px 10px",marginBottom:6,border:`1px solid ${T.bd}`}}>
                 <div style={{display:"flex",flexDirection:"column",gap:1,flexShrink:0}}>

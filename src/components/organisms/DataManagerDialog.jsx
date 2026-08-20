@@ -731,7 +731,7 @@ function DataManagerDialog({onClose, onBack, mobileMode=false}) {
             Streifen" kam NICHT von diesem Puffer, sondern davon, dass der
             Dialog selbst durch 100svh auf iOS Safari zu kurz gerendert wurde
             — siehe --app-vvh in App.jsx/themes.css.) */}
-        <div style={{flex:1,overflowY:"auto",padding:`12px 16px ${UNTEN_FREI}px`}}>
+        <div style={{flex:1,overflowY:"auto",padding:`12px 16px ${UNTEN_FREI}`}}>
 
           {/* ── EXPORT ── */}
           {tab==="export"&&(<>

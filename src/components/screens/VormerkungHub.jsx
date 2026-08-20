@@ -908,7 +908,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
             die Liste darunter und laesst sich nicht mehr hochschieben. */}
         <div style={{flex:1,overflowY:"auto",overflowX:"hidden",
           WebkitOverflowScrolling:"touch",background:T.surf2,padding:S.padL,
-          paddingBottom:`calc(${UNTEN_FREI}px + env(safe-area-inset-bottom, 0px))`}}>
+          paddingBottom:`calc(${UNTEN_FREI} + env(safe-area-inset-bottom, 0px))`}}>
           <MobileCatStep
             key={katPicker}
             startSub={beiUnter}
@@ -984,7 +984,7 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
             darunter. */}
         <div style={{flex:1,overflowY:"auto",overflowX:"hidden",WebkitOverflowScrolling:"touch",
           background:T.surf2,maxWidth:"100%",
-          paddingBottom:`calc(${UNTEN_FREI}px + env(safe-area-inset-bottom, 0px))`}}>
+          paddingBottom:`calc(${UNTEN_FREI} + env(safe-area-inset-bottom, 0px))`}}>
 
           {/* Typ ganz oben, direkt unter dem Titel — er entscheidet, welche
               Felder darunter ueberhaupt erscheinen (Intervall, Anzahl, Raten).

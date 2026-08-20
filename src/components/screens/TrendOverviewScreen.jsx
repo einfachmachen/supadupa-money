@@ -391,7 +391,7 @@ function TrendOverviewScreen() {
           </div>
         </div>
 
-        <div style={{ padding: `0 10px ${UNTEN_FREI}px`, margin: "8px 0 0" }}>
+        <div style={{ padding: `0 10px ${UNTEN_FREI}`, margin: "8px 0 0" }}>
           {!metric ? (
             // ── Übersicht: 3 Sparkline-Karten ──
             METRICS.map(m => {

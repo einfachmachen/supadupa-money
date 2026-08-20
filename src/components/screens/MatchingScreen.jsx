@@ -182,7 +182,7 @@ function MatchingScreen({onClose, onBack}) {
       <div style={{flex:1,display:"flex",overflow:"hidden",gap:0}}>
 
         {/* Links: Vormerkungen */}
-        <div style={{flex:1,overflowY:"auto",padding:`8px 8px ${UNTEN_FREI}px 14px`,borderRight:`1px solid ${T.bd}`}}>
+        <div style={{flex:1,overflowY:"auto",padding:`8px 8px ${UNTEN_FREI} 14px`,borderRight:`1px solid ${T.bd}`}}>
           <div style={{color:T.acc_gold,fontSize:10,fontWeight:700,marginBottom:4}}>
             Vormerkungen ({unmatchedPends.length} offen)
           </div>
@@ -347,7 +347,7 @@ function MatchingScreen({onClose, onBack}) {
         </div>
 
         {/* Rechts: echte Buchungen */}
-        <div style={{flex:1,overflowY:"auto",padding:`8px 14px ${UNTEN_FREI}px 8px`}}>
+        <div style={{flex:1,overflowY:"auto",padding:`8px 14px ${UNTEN_FREI} 8px`}}>
           <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
             <div style={{color:T.txt,fontSize:10,fontWeight:700,flex:1}}>
               Buchungen ({filteredTxs.length}{filteredTxs.length!==unmatchedTxs.length?` / ${unmatchedTxs.length}`:""})

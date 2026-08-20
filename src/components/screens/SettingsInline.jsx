@@ -67,7 +67,7 @@ function SettingsInline() {
   }, [cfUrl, cfSecret]);
 
   return (
-    <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:`12px 14px ${UNTEN_FREI}px`}}>
+    <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",padding:`12px 14px ${UNTEN_FREI}`}}>
 
       {/* ── Premium freischalten ──
           Steht bewusst ganz oben: der Zustand („freigeschaltet" bzw. der Weg

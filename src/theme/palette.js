@@ -73,15 +73,24 @@ const ZEILE_H = 38;
 // endet. Ohne sie bleibt der letzte Eintrag dauerhaft halb verdeckt und
 // laesst sich nicht freischieben.
 //
-// 216 = 64px Leiste + 152px Ueberhang des + Knopfes: der wird im arretierten
-// Zustand um 94px angehoben und auf 1,5 skaliert (78 -> 117px), steht also
-// mit gut der halben Hoehe (58px) ueber der Leistenoberkante.
+// Der Wert wird zur Laufzeit GEMESSEN (App.jsx setzt `--plus-frei`: Abstand
+// von der Oberkante des + Knopfes bis zum unteren Bildschirmrand, plus etwas
+// Luft). Hier steht nur noch der Rueckfallwert fuer den Moment vor der ersten
+// Messung.
+//
+// Vorher stand hier die feste Zahl 216 (64px Leiste + 152px Ueberhang des
+// arretierten Knopfes). Eine solche Zahl driftet zwangslaeufig: sie stimmt
+// fuer die Maasse, die der Knopf hatte, als sie ausgerechnet wurde. Das Theme
+// "Tastenhell" macht die Leiste 64 statt 57 Pixel hoch, im arretierten
+// Zustand waechst der Knopf auf das 1,5-fache und hebt sich zusaetzlich an,
+// und die Feature-Tour laesst ihn noch weiter nach oben fliegen. Ergebnis:
+// In "neue Vormerkung" und in der Kategorie-Auswahl liess sich der letzte
+// Inhalt nicht ueber den Knopf schieben (Nutzer-Bild).
 //
 // Die Flaeche ist reiner Scroll-Weg — sie wird erst am Listenende sichtbar.
-// NICHT fuer Vollbild-Dialoge: die liegen mit z-Index 300 ueber der Leiste
-// und verdecken sie, dort waere die Reserve nur eine Luecke (siehe
+// NICHT fuer Vollbild-Dialoge, die die Leiste ganz verdecken (siehe
 // `.mobile-modal.unter-leiste` in themes.css fuer die eine Ausnahme).
-const UNTEN_FREI = 216;
+const UNTEN_FREI = "var(--plus-frei, 216px)";
 
 // ─── Initial categories ───────────────────────────────────────────────────────
 

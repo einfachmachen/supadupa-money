@@ -184,6 +184,7 @@ export default function SupaDupaMoney() {
       return () => window.removeEventListener("resize", setH);
     }
   }, []);
+
   const [showHamburger, setShowHamburger] = useState(false);
   // ── DEBUG: Performance-Toggles ──
   const [debugFlags, setDebugFlags] = useState(()=>{
@@ -420,6 +421,54 @@ export default function SupaDupaMoney() {
   // normalen Stelle bleibender Override-Knopf (aus masterOverride) steuert
   // die Tour — s. renderMasterButton weiter unten (Dual-Knopf-Modus).
   const [tourPlusFly, setTourPlusFly] = useState(null);
+
+  // ── Wie viel Platz der + Knopf unten verdeckt (`--plus-frei`) ──────────
+  //
+  // Jede Liste, die UNTER dem Knopf endet, braucht am Ende eine Reserve —
+  // sonst bleibt der letzte Eintrag dauerhaft dahinter und lässt sich nicht
+  // freischieben. Dafür stand bisher die feste Zahl `UNTEN_FREI = 216`
+  // (64px Leiste + 152px Überhang).
+  //
+  // Eine solche Zahl driftet zwangsläufig: Sie stimmt für die Maße, die der
+  // Knopf hatte, als sie ausgerechnet wurde. „Tastenhell" macht die Leiste
+  // 64 statt 57 Pixel hoch, im arretierten Zustand wächst der Knopf auf das
+  // 1,5-fache und hebt sich zusätzlich an, und die Feature-Tour lässt ihn
+  // noch weiter nach oben fliegen. Genau das war der Befund: In „neue
+  // Vormerkung" und in der Kategorie-Auswahl ließ sich der Inhalt nicht über
+  // den Knopf schieben (Nutzer-Bild).
+  //
+  // Also nicht mehr rechnen, sondern MESSEN: Abstand von der Oberkante des
+  // Knopfes bis zum unteren Bildschirmrand, plus 24px Luft. Wer unten Platz
+  // freihalten muss, liest `var(--plus-frei, 216px)` — der Rückfallwert ist
+  // die alte Zahl, damit vor der ersten Messung nichts springt.
+  useEffect(() => {
+    let abgebrochen = false;
+    const miss = () => {
+      if (abgebrochen) return;
+      const el = document.querySelector(".plus-master-btn");
+      const hoehe = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      // Kein Knopf sichtbar (Vollbild-Screens ohne Master-Knopf): nur die
+      // Leistenhöhe freihalten, nicht die volle Reserve.
+      const frei = el ? Math.max(0, hoehe - el.getBoundingClientRect().top) + 24 : 72;
+      document.documentElement.style.setProperty("--plus-frei", `${Math.round(frei)}px`);
+    };
+    // Der Knopf hat eine Transition (0,25 s) und wächst/hebt sich beim
+    // Arretieren. Einmal sofort messen und danach über die Dauer der
+    // Bewegung noch ein paar Mal — sonst steht der Wert von VOR der
+    // Bewegung.
+    miss();
+    const marken = [80, 180, 300, 450].map((ms) => setTimeout(miss, ms));
+    window.addEventListener("resize", miss);
+    const vv = window.visualViewport;
+    vv?.addEventListener("resize", miss);
+    return () => {
+      abgebrochen = true;
+      marken.forEach(clearTimeout);
+      window.removeEventListener("resize", miss);
+      vv?.removeEventListener("resize", miss);
+    };
+  }, [plusArretiert, tourPlusFly, moodDrillOpen]);
+
 
   // Merkt sich den zuletzt aktiven Haupt-Tab (außerhalb der Struktur-/
   // Einstellungs-Screens). Verlässt man die Einstellungen per Doppel-Tap,

@@ -450,9 +450,21 @@ function MobileVormerkenModal({onClose, onBack, initialRecurring=false, initialF
     </div>
   );
 
+  // `overflow:hidden` auf der Wurzel, NICHT `overflowY:auto`.
+  //
+  // Jeder der vier Schritte bringt seinen EIGENEN Scroll-Bereich mit
+  // (`flex:1; overflowY:auto`). Stand die Wurzel zusaetzlich auf `auto`, lagen
+  // zwei Scroll-Container ineinander — und auf iOS entscheidet dann der
+  // aeussere, welcher die Wischgeste bekommt. Ergebnis: die Liste liess sich
+  // nicht bis ans Ende bewegen, der letzte Inhalt blieb hinter dem + Knopf
+  // haengen (Nutzer-Hinweis zu „neue Vormerkung" UND zur Kategorie-Auswahl —
+  // letztere ist Schritt 2 genau dieses Dialogs).
+  //
+  // Die Wurzel hat feste Hoehe (`inset:0` plus `.mobile-modal`), sie hat also
+  // selbst nie etwas zu scrollen.
   return (
     <div className="mobile-modal" style={{position:"fixed",inset:0,background:T.bg,zIndex:300,
-      display:"flex",flexDirection:"column",overflowY:"auto",
+      display:"flex",flexDirection:"column",overflow:"hidden",
       "--mob-fs": S.fs+"px"}}>
 
       {/* ── Schritt 1: Betrag & Typ ── */}
