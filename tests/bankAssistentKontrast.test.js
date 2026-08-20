@@ -19,7 +19,7 @@
 import { describe, it, expect } from "vitest";
 import { THEMES } from "../src/theme/themes.js";
 import { setActiveTheme, accWert, flaecheAbgesetzt } from "../src/theme/activeTheme.js";
-import { schriftAuf, toenungsGrund, knopfPaar, kontrastWert } from "../src/theme/amtPill.js";
+import { schriftAuf, toenungsGrund, knopfPaar, vollKnopf, kontrastWert } from "../src/theme/amtPill.js";
 
 // Genau die Helfer aus EnableBankingWizard.jsx.
 const KASTEN_TON = 0x18 / 255;
@@ -27,11 +27,12 @@ let _t = null;
 const aufPlatte   = (rolle, schwelle = 4.5) => schriftAuf(_t.bg, accWert(rolle), schwelle);
 const kastenGrund = (ton) => toenungsGrund(ton, KASTEN_TON, ".hinweis-karte");
 const imKasten    = (ton, wunsch, schwelle = 4.5) => schriftAuf(kastenGrund(ton), wunsch, schwelle);
+const zeilenGrund = () => toenungsGrund("#FFFFFF", 0.03, ".wahl-taste");
+const inZeile     = (wunsch, schwelle = 4.5) => schriftAuf(zeilenGrund(), wunsch, schwelle);
 
 // [Beschreibung, Akzent-Rolle, Schwelle]
 const AUF_PLATTE = [
   ["Fortschrittspunkt (erledigt)",        "acc_gold", 3],
-  ["Bank-Symbol in der Sitzungsliste",    "acc_gold", 3],
   ["Konto nicht zugeordnet (Text)",       "acc_gold", 4.5],
   ["Konto nicht zugeordnet (Symbol)",     "acc_gold", 3],
   ["Betrag Ausgabe in der Vorschau",      "acc_neg",  4.5],
@@ -98,6 +99,72 @@ describe("Bank-Assistent: Kontrast über alle neun Schritte", () => {
       }
     }
     expect(durchgefallen, `zu schwach:\n  ${durchgefallen.join("\n  ")}`).toEqual([]);
+  });
+
+  it("Verbundene Banken: Symbol und entfernen tragen auf der ZEILE", () => {
+    // Der Fehler, den dieser Fall festhält: Die Zeile trägt einen blassen
+    // Weiß-Schleier, aber Themes mit gegensätzlichen Flächen malen sie als
+    // dunkle Taste. Der erste Anlauf rechnete gegen die HELLE Platte und
+    // wählte deshalb eine dunkle Farbe — die dann auf der dunklen Taste
+    // stand (Nutzer-Bild, Schritt 6). Hier zählt der Untergrund der Zeile.
+    const durchgefallen = [];
+    for (const [name, t] of themen()) {
+      setActiveTheme(name, t); _t = t;
+      for (const [was, ton, schwelle] of [
+        ["Bank-Symbol", t.gold, 3], ["entfernen (Text)", t.neg, 4.5], ["entfernen (Symbol)", t.neg, 3],
+      ]) {
+        if (!ton || !/^#/.test(ton)) continue;
+        const wert = kontrastWert(inZeile(ton, schwelle), zeilenGrund());
+        if (wert < schwelle) durchgefallen.push(`${name} · ${was}: ${wert.toFixed(2)}:1 (soll ${schwelle})`);
+      }
+    }
+    expect(durchgefallen, `zu schwach:\n  ${durchgefallen.join("\n  ")}`).toEqual([]);
+  });
+
+  it("belegt den gemeldeten Fall: gegen die Platte gerechnet geht es schief", () => {
+    // In „Tastenhell" ist die Zeile eine DUNKLE Taste auf HELLER Platte. Die
+    // Rechnung gegen die Platte liefert eine Farbe, die auf der Taste
+    // durchfällt — genau das war im Bild zu sehen.
+    setActiveTheme("tastenhell", THEMES.tastenhell); _t = THEMES.tastenhell;
+    const falsch = schriftAuf(THEMES.tastenhell.bg, accWert("acc_neg"));
+    expect(kontrastWert(falsch, zeilenGrund())).toBeLessThan(4.5);
+    expect(kontrastWert(inZeile(THEMES.tastenhell.neg), zeilenGrund())).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("Ziffernscheibe und Link-Knopf sind als solche erkennbar", () => {
+    // Beide waren blasse Tönungen der Akzentfarbe (13 % bzw. 8 %): gemessen
+    // 1,05:1 und 1,03:1 gegen die Platte — als Scheibe bzw. Schaltfläche
+    // schlicht nicht vorhanden (Nutzer-Bild).
+    //
+    // Ein Knopf braucht ZWEI Kontraste, und die sind unabhängig voneinander:
+    // die Beschriftung muss auf der Fläche tragen (4,5:1), und der Knopf muss
+    // sich als Knopf abheben (3:1 nach WCAG 1.4.11). Das Zweite kann die
+    // Füllung nicht immer leisten — Gold auf der cremefarbenen Platte von
+    // „Tastenhell" kommt auf 1,18:1, obwohl die Ziffer darauf 14,8:1 hat.
+    // Dann trägt die KANTE die Abgrenzung (`vollKnopf`).
+    const durchgefallen = [];
+    for (const [name, t] of themen()) {
+      setActiveTheme(name, t); _t = t;
+      for (const ton of [t.gold, t.pos, t.blue, t.cf]) {
+        if (!ton || !/^#/.test(ton)) continue;
+        const { grund, schrift, kante } = vollKnopf(ton, t.on_accent);
+        const abgrenzung = kante ? kontrastWert(kante, t.bg) : kontrastWert(grund, t.bg);
+        if (abgrenzung < 3) durchgefallen.push(`${name} · ${ton} Abgrenzung: ${abgrenzung.toFixed(2)}:1`);
+        const beschriftung = kontrastWert(schrift, grund);
+        if (beschriftung < 4.5) durchgefallen.push(`${name} · ${ton} Beschriftung: ${beschriftung.toFixed(2)}:1`);
+      }
+    }
+    expect(durchgefallen, `zu schwach:\n  ${durchgefallen.join("\n  ")}`).toEqual([]);
+  });
+
+  it("belegt den Kanten-Fall: die Fuellung allein reicht nicht", () => {
+    // Ohne Kante faellt das Gold auf der hellen Platte durch — der Beleg,
+    // dass `knopfKante` hier wirklich etwas tut und nicht nur mitlaeuft.
+    setActiveTheme("tastenhell", THEMES.tastenhell); _t = THEMES.tastenhell;
+    const { grund, kante } = vollKnopf(THEMES.tastenhell.gold, THEMES.tastenhell.on_accent);
+    expect(kontrastWert(grund, THEMES.tastenhell.bg)).toBeLessThan(3);
+    expect(kante, "es haette eine Kante geben muessen").toBeTruthy();
+    expect(kontrastWert(kante, THEMES.tastenhell.bg)).toBeGreaterThanOrEqual(3);
   });
 
   it("Eingabefelder setzen sich von der Seite ab — in jedem Theme", () => {

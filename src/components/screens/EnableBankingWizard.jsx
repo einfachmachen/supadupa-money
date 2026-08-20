@@ -11,7 +11,7 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, accWert, flaecheAbgesetzt } from "../../theme/activeTheme.js";
-import { aufToenung, schriftAuf, toenungsGrund, knopfPaar } from "../../theme/amtPill.js";
+import { schriftAuf, toenungsGrund, knopfPaar, vollKnopf, knopfKante } from "../../theme/amtPill.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { TagInput } from "../atoms/TagInput.jsx";
 import { getAllTags } from "../../utils/search.js";
@@ -65,6 +65,23 @@ const aufPlatte = (rolle, schwelle = 4.5) => schriftAuf(T.bg, accWert(rolle), sc
 const kastenGrund = (ton) => toenungsGrund(ton, KASTEN_TON, ".hinweis-karte");
 const imKasten = (ton, wunsch, schwelle = 4.5) => schriftAuf(kastenGrund(ton), wunsch, schwelle);
 
+// Die Zeilen unter „Verbundene Banken": ein blasser Weiss-Schleier
+// (`rgba(255,255,255,0.03)`) auf der Platte. In Themes mit gegensaetzlichen
+// Flaechen ist so eine Zeile aber eine TASTE — „Tastenhell" malt sie mit
+// `!important` in #525252.
+//
+// Genau daran ist der erste Anlauf gescheitert: „entfernen" und das
+// Bank-Symbol rechneten mit `aufPlatte` gegen die HELLE Platte und waehlten
+// deshalb eine dunkle Farbe — die dann auf der dunklen Taste stand
+// (Nutzer-Bild). Hier zaehlt der Untergrund der ZEILE, nicht der der Seite.
+// Die Klasse steht jetzt auch im Markup, damit Rechnung und Anstrich
+// dieselbe Quelle haben.
+// Ein vollflaechiger Knopf IN einem Hinweiskasten: dort ist der Kasten sein
+// Untergrund, nicht die Seite.
+const kastenKnopf = (flaeche, ton) => vollKnopf(flaeche, T.on_accent, kastenGrund(ton));
+const zeilenGrund = () => toenungsGrund("#FFFFFF", 0.03, ".wahl-taste");
+const inZeile = (wunsch, schwelle = 4.5) => schriftAuf(zeilenGrund(), wunsch, schwelle);
+
 // Eine Seite pro Schritt — Erklärung + die für diesen Schritt nötigen
 // Eingaben/Aktionen, genau wie beim Cloud-Sync-Assistenten.
 const STEPS = [
@@ -92,13 +109,20 @@ function Box({ tone = "info", children }) {
   );
 }
 
+// Die Ziffer eines Schrittes. Vorher eine 13-%-Toenung der Akzentfarbe —
+// gemessen 1,05:1 gegen die Platte, die Scheibe war schlicht nicht da und die
+// Ziffern schwebten frei (Nutzer-Bild). Jetzt eine volle Akzentscheibe mit
+// darauf nachgerechneter Ziffer: als Nummerierung sofort erkennbar.
+const ziffer = () => vollKnopf(accent(), T.on_accent);
+
 function Steps({ items }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 12 }}>
       {items.map((it, i) => (
         <div key={i} style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
           <div style={{ flexShrink: 0, width: 24, height: 24, borderRadius: 12,
-            background: accent() + "22", color: aufToenung(accent(),0x22/255,undefined,4.5,T.bg), fontSize: 13, fontWeight: 800,
+            background: ziffer().grund, color: ziffer().schrift, fontSize: 13, fontWeight: 800,
+            boxShadow: ziffer().kante ? `inset 0 0 0 1.5px ${ziffer().kante}` : "none",
             display: "flex", alignItems: "center", justifyContent: "center" }}>{i + 1}</div>
           <div style={{ color: T.txt, fontSize: 14.5, lineHeight: 1.5, paddingTop: 1 }}>{it}</div>
         </div>
@@ -112,14 +136,29 @@ const feld = () => ({
   width: "100%", boxSizing: "border-box", background: flaecheAbgesetzt(), color: T.txt,
   border: `1px solid ${T.bds || T.bd}`, borderRadius: 11, padding: "13px 14px", fontSize: 16, fontFamily: "inherit",
 });
+// Aufklappbare Nebenwege („Alternative: 1-Klick per GitHub", „Technische
+// Details"). Sie standen als blasser Fliesstext da — dass man sie ANTIPPEN
+// kann, sah man nicht (Nutzer-Bild). Jetzt eine abgesetzte Zeile mit Rahmen
+// und Dreieck: als Bedienelement erkennbar, aber ruhiger als ein Knopf,
+// denn es ist ja der Nebenweg.
+const klappZeile = () => ({
+  cursor: "pointer", listStyle: "none", display: "flex", alignItems: "center", gap: 8,
+  background: flaecheAbgesetzt(), border: `1px solid ${T.bds || T.bd}`, borderRadius: 11,
+  padding: "11px 13px", color: T.txt, fontSize: 14, fontWeight: 700,
+});
+// Weiterfuehrender Link („enablebanking.com oeffnen"). Er war eine 8-%-Toenung
+// mit 33-%-Rahmen: auf heller Platte gemessene 1,03:1 fuer die Flaeche und
+// 1,18:1 fuer den Rahmen — als Schaltflaeche nicht zu erkennen (Nutzer-Bild).
+// Jetzt vollflaechig wie die uebrigen Knoepfe.
 function LinkBtn({ href, icon, children, color }) {
-  const c = color || accent();
+  const { grund, schrift, kante } = vollKnopf(color || accent(), T.on_accent);
   return (
     <a href={href} target="_blank" rel="noopener noreferrer"
       style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
         textDecoration: "none", marginTop: 12, padding: "13px", borderRadius: 13,
-        border: `1px solid ${c}55`, background: `${c}14`, color: aufToenung(c,0x14/255), fontSize: 16, fontWeight: 800 }}>
-      {Li(icon, 18, aufToenung(c,0x14/255,undefined,3))} {children}
+        border: kante ? `1.5px solid ${kante}` : "none", background: grund, color: schrift,
+        fontSize: 16, fontWeight: 800 }}>
+      {Li(icon, 18, schrift)} {children}
     </a>
   );
 }
@@ -132,13 +171,14 @@ function LinkBtn({ href, icon, children, color }) {
 // unlesbar (Nutzer-Hinweis). Stattdessen die ruhige `T.disabled`-Fläche mit
 // einer darauf nachgerechneten Schrift.
 function ActionBtn({ onClick, disabled, children, bg, icon }) {
-  const { grund, schrift } = disabled
-    ? { grund: T.disabled, schrift: schriftAuf(T.disabled) }
-    : knopfPaar(bg || accent(), T.on_accent);
+  const { grund, schrift, kante } = disabled
+    ? { grund: T.disabled, schrift: schriftAuf(T.disabled), kante: knopfKante(T.disabled) }
+    : vollKnopf(bg || accent(), T.on_accent);
   return (
     <button onClick={onClick} disabled={disabled}
       style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-        width: "100%", marginTop: 12, padding: "13px", borderRadius: 13, border: "none",
+        width: "100%", marginTop: 12, padding: "13px", borderRadius: 13,
+        border: kante ? `1.5px solid ${kante}` : "none",
         cursor: disabled ? "not-allowed" : "pointer", background: grund,
         color: schrift, fontSize: 15.5, fontWeight: 800,
         fontFamily: "inherit" }}>
@@ -542,8 +582,10 @@ function EnableBankingWizard({ onClose, onBack }) {
             Bank-Verbindung ist schon aktiv — gültig bis <b>{String(validUntil).slice(0, 10)}</b>.
           </div>
           <button onClick={() => setStep(idxOf("zuordnen"))}
-            style={{ flexShrink: 0, background: knopfPaar(T.pos, T.on_accent).grund, border: "none", borderRadius: 9,
-              padding: "8px 11px", color: knopfPaar(T.pos, T.on_accent).schrift, fontSize: 12.5, fontWeight: 800, cursor: "pointer",
+            style={{ flexShrink: 0, background: kastenKnopf(T.pos, T.pos).grund,
+              border: kastenKnopf(T.pos, T.pos).kante ? `1.5px solid ${kastenKnopf(T.pos, T.pos).kante}` : "none",
+              borderRadius: 9,
+              padding: "8px 11px", color: kastenKnopf(T.pos, T.pos).schrift, fontSize: 12.5, fontWeight: 800, cursor: "pointer",
               whiteSpace: "nowrap" }}>
             Konten zuordnen →
           </button>
@@ -652,7 +694,10 @@ function EnableBankingWizard({ onClose, onBack }) {
               </div>
               <button onClick={copyRedirect}
                 style={{ marginTop: 8, padding: "8px 14px", borderRadius: 11, border: "none",
-                  background: copied ? T.pos : accent(), color: knopfPaar(copied ? T.pos : accent(), T.on_accent).schrift, fontSize: 14, fontWeight: 800,
+                  background: vollKnopf(copied ? T.pos : accent(), T.on_accent).grund,
+                  border: vollKnopf(copied ? T.pos : accent(), T.on_accent).kante
+                    ? `1.5px solid ${vollKnopf(copied ? T.pos : accent(), T.on_accent).kante}` : "none",
+                  color: vollKnopf(copied ? T.pos : accent(), T.on_accent).schrift, fontSize: 14, fontWeight: 800,
                   cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6 }}>
                 {Li(copied ? "check" : "copy", 16, T.on_accent)}
                 {copied ? "kopiert" : "Redirect-URL kopieren"}
@@ -692,8 +737,8 @@ function EnableBankingWizard({ onClose, onBack }) {
                 onChange={(e) => setPrivateKey(e.target.value)} />
 
               <details style={{ marginTop: 16 }}>
-                <summary style={{ color: T.txt2, fontSize: 13, cursor: "pointer" }}>
-                  Verbindungs-Check (mit dem Portal abgleichen)
+                <summary style={klappZeile()}>
+                  {Li("chevron-down", 16, T.txt2)} Verbindungs-Check (mit dem Portal abgleichen)
                 </summary>
                 <div style={{ background: flaecheAbgesetzt(), border: `1px solid ${T.bds}`, borderRadius: 11,
                   padding: "10px 12px", fontSize: 12.5, lineHeight: 1.5, marginTop: 8 }}>
@@ -738,10 +783,10 @@ function EnableBankingWizard({ onClose, onBack }) {
                     Verbundene Banken ({connectedBanks.length})
                   </div>
                   {connectedBanks.map((s) => (
-                    <div key={(s.aspsp || "") + "|" + s.sessionId}
+                    <div key={(s.aspsp || "") + "|" + s.sessionId} className="wahl-taste"
                       style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
                         borderRadius: 11, border: `1px solid ${T.bd}`, background: "rgba(255,255,255,0.03)", marginBottom: 8 }}>
-                      {Li("landmark", 18, aufPlatte("acc_gold", 3))}
+                      {Li("landmark", 18, inZeile(T.gold, 3))}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ color: T.txt, fontSize: 14, fontWeight: 700, overflow: "hidden",
                           textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.aspsp || "Bank"}</div>
@@ -751,9 +796,9 @@ function EnableBankingWizard({ onClose, onBack }) {
                       </div>
                       <button onClick={() => disconnectBank(s)} title="Bank entfernen"
                         style={{ flexShrink: 0, background: "transparent", border: `1px solid ${T.bd}`,
-                          borderRadius: 9, padding: "6px 8px", color: aufPlatte("acc_neg"), cursor: "pointer",
+                          borderRadius: 9, padding: "6px 8px", color: inZeile(T.neg), cursor: "pointer",
                           display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700 }}>
-                        {Li("trash-2", 14, aufPlatte("acc_neg", 3))} entfernen
+                        {Li("trash-2", 14, inZeile(T.neg, 3))} entfernen
                       </button>
                     </div>
                   ))}
@@ -776,9 +821,11 @@ function EnableBankingWizard({ onClose, onBack }) {
                       setDiagCopied(true); setTimeout(() => setDiagCopied(false), 1500);
                     }}
                       style={{ flexShrink: 0, padding: "5px 10px", borderRadius: 9, border: "none",
-                        background: knopfPaar(diagCopied ? T.pos : T.blue, T.on_accent).grund, color: knopfPaar(diagCopied ? T.pos : T.blue, T.on_accent).schrift, fontSize: 12, fontWeight: 800,
+                        background: kastenKnopf(diagCopied ? T.pos : T.blue, diag.outcome === "ok" ? T.pos : T.gold).grund,
+                        color: kastenKnopf(diagCopied ? T.pos : T.blue, diag.outcome === "ok" ? T.pos : T.gold).schrift,
+                        fontSize: 12, fontWeight: 800,
                         cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5 }}>
-                      {Li(diagCopied ? "check" : "copy", 14, knopfPaar(diagCopied ? T.pos : T.blue, T.on_accent).schrift)} {diagCopied ? "Kopiert" : "Kopieren"}
+                      {Li(diagCopied ? "check" : "copy", 14, kastenKnopf(diagCopied ? T.pos : T.blue, diag.outcome === "ok" ? T.pos : T.gold).schrift)} {diagCopied ? "Kopiert" : "Kopieren"}
                     </button>
                     <button onClick={() => { clearEbDiag(); setDiag(null); }} title="Diagnose verbergen"
                       style={{ flexShrink: 0, background: "transparent", border: "none", cursor: "pointer", padding: 4 }}>
@@ -1013,7 +1060,9 @@ function EnableBankingWizard({ onClose, onBack }) {
               )}
               {msg.detail && (
                 <details style={{ marginTop: 6 }}>
-                  <summary style={{ cursor: "pointer", color: T.txt2, fontSize: 12 }}>Technische Details</summary>
+                  <summary style={{ ...klappZeile(), fontSize: 12.5 }}>
+                    {Li("chevron-down", 15, T.txt2)} Technische Details
+                  </summary>
                   <div style={{ fontFamily: "monospace", fontSize: 11, color: T.txt2,
                     wordBreak: "break-all", marginTop: 4, whiteSpace: "pre-wrap" }}>{msg.detail}</div>
                 </details>

@@ -10,7 +10,7 @@
 import React, { useContext, useState } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, accWert, flaecheAbgesetzt } from "../../theme/activeTheme.js";
-import { aufToenung, schriftAuf, toenungsGrund, knopfPaar } from "../../theme/amtPill.js";
+import { schriftAuf, toenungsGrund, knopfPaar, vollKnopf } from "../../theme/amtPill.js";
 import { MobileHeader } from "../atoms/MobileHeader.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
@@ -89,14 +89,29 @@ const feld = () => ({
   width: "100%", boxSizing: "border-box", background: flaecheAbgesetzt(), color: T.txt,
   border: `1px solid ${T.bds || T.bd}`, borderRadius: 11, padding: "13px 14px", fontSize: 17, fontFamily: "inherit",
 });
+// Aufklappbare Nebenwege („Alternative: 1-Klick per GitHub", „Technische
+// Details"). Sie standen als blasser Fliesstext da — dass man sie ANTIPPEN
+// kann, sah man nicht (Nutzer-Bild). Jetzt eine abgesetzte Zeile mit Rahmen
+// und Dreieck: als Bedienelement erkennbar, aber ruhiger als ein Knopf,
+// denn es ist ja der Nebenweg.
+const klappZeile = () => ({
+  cursor: "pointer", listStyle: "none", display: "flex", alignItems: "center", gap: 8,
+  background: flaecheAbgesetzt(), border: `1px solid ${T.bds || T.bd}`, borderRadius: 11,
+  padding: "11px 13px", color: T.txt, fontSize: 14, fontWeight: 700,
+});
+// Weiterfuehrender Link („Cloudflare-Konto anlegen"). War eine 8-%-Toenung mit
+// 33-%-Rahmen — auf heller Platte gemessene 1,03:1 fuer die Flaeche: als
+// Schaltflaeche nicht zu erkennen. Jetzt vollflaechig wie die uebrigen
+// Knoepfe, dieselbe Bauform wie im Bank-Assistenten.
 function LinkBtn({ href, icon, children, color }) {
-  const c = color || T.cf || T.blue;
+  const { grund, schrift, kante } = vollKnopf(color || T.cf || T.blue, T.on_accent);
   return (
     <a href={href} target="_blank" rel="noopener noreferrer"
       style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
         textDecoration: "none", marginTop: 12, padding: "13px", borderRadius: 13,
-        border: `1px solid ${c}55`, background: `${c}14`, color: aufToenung(c,0x14/255), fontSize: 16, fontWeight: 800 }}>
-      {Li(icon, 18, aufToenung(c,0x14/255,undefined,3))} {children}
+        border: kante ? `1.5px solid ${kante}` : "none", background: grund, color: schrift,
+        fontSize: 16, fontWeight: 800 }}>
+      {Li(icon, 18, schrift)} {children}
     </a>
   );
 }
@@ -118,13 +133,17 @@ const olStep = () => ({ margin: "10px 0 0", padding: "0 0 0 20px", color: T.txt,
 // `knopfPaar` gibt die Fläche unverändert zurück, solange sie trägt — und
 // rückt sie nur im Ausnahmefall in 5-%-Schritten, wenn dort weder die
 // Wunschschrift noch Schwarz oder Weiß auf 4,5:1 kommt.
-const aktionsKnopf = () => knopfPaar(T.pos, T.on_accent);
+const aktionsKnopf = () => vollKnopf(T.pos, T.on_accent);
+// Derselbe Knopf, aber IN einem Hinweiskasten — dann ist der Kasten sein
+// Untergrund, nicht die Seite. Sonst bekaeme er eine Kante, die er dort gar
+// nicht braucht (oder keine, wo er eine braeuchte).
+const kastenKnopf = (flaeche, ton) => vollKnopf(flaeche, T.on_accent, kastenGrund(ton));
 
 // „Verbindung testen" (Schritt 9) war ein 8-%-Schleier mit duennem Rahmen —
 // als KNOPF hat man ihn nicht erkannt (Nutzer-Hinweis). Jetzt vollflaechig wie
 // die anderen Aktionsknoepfe, nur in der Cloudflare-Farbe statt in `T.pos`,
 // damit „testen" und „hochladen" unterscheidbar bleiben.
-const testKnopf = () => knopfPaar(T.cf || T.blue, T.on_accent);
+const testKnopf = () => vollKnopf(T.cf || T.blue, T.on_accent);
 
 function CloudSetupWizard({ onClose, onBack }) {
   const {
@@ -263,8 +282,10 @@ function CloudSetupWizard({ onClose, onBack }) {
             Cloud-Sync ist schon eingerichtet.
           </div>
           <button onClick={() => setStep(idxOf("test"))}
-            style={{ flexShrink: 0, background: aktionsKnopf().grund, border: "none", borderRadius: 9,
-              padding: "8px 11px", color: aktionsKnopf().schrift, fontSize: 12.5, fontWeight: 800, cursor: "pointer",
+            style={{ flexShrink: 0, background: kastenKnopf(T.pos, T.pos).grund,
+              border: kastenKnopf(T.pos, T.pos).kante ? `1.5px solid ${kastenKnopf(T.pos, T.pos).kante}` : "none",
+              borderRadius: 9,
+              padding: "8px 11px", color: kastenKnopf(T.pos, T.pos).schrift, fontSize: 12.5, fontWeight: 800, cursor: "pointer",
               whiteSpace: "nowrap" }}>
             Verbindung testen →
           </button>
@@ -330,7 +351,9 @@ function CloudSetupWizard({ onClose, onBack }) {
               </ol>
               <Fig name="cloudflare-create-worker.svg" alt="Worker anlegen: Workers und Pages → Erstellen → Worker → Name → Bereitstellen" />
               <details style={{ marginTop: 12 }}>
-                <summary style={{ color: T.txt2, fontSize: 14, cursor: "pointer" }}>Alternative: 1-Klick per GitHub (nur mit öffentlichem Repo)</summary>
+                <summary style={klappZeile()}>
+                  {Li("chevron-down", 16, T.txt2)} Alternative: 1-Klick per GitHub (nur mit öffentlichem Repo)
+                </summary>
                 <div style={{ marginTop: 8 }}>
                   <LinkBtn href={DEPLOY_URL} icon="upload-cloud">Deploy to Cloudflare</LinkBtn>
                   <div style={{ color: T.txt2, fontSize: 12.5, lineHeight: 1.5, marginTop: 6 }}>
@@ -349,7 +372,8 @@ function CloudSetupWizard({ onClose, onBack }) {
               </Box>
               <button onClick={copyWorkerCode}
                 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-                  width: "100%", marginTop: 12, padding: "12px", borderRadius: 13, border: "none",
+                  width: "100%", marginTop: 12, padding: "12px", borderRadius: 13,
+                  border: aktionsKnopf().kante ? `1.5px solid ${aktionsKnopf().kante}` : "none",
                   background: aktionsKnopf().grund, color: aktionsKnopf().schrift, fontSize: 15, fontWeight: 800, cursor: "pointer" }}>
                 {Li(codeCopied ? "check" : "copy", 16, aktionsKnopf().schrift)} {codeCopied ? "Code kopiert!" : "Worker-Code kopieren"}
               </button>
@@ -414,7 +438,8 @@ function CloudSetupWizard({ onClose, onBack }) {
               </Box>
               <button onClick={genSecret}
                 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-                  width: "100%", marginTop: 12, padding: "12px", borderRadius: 13, border: "none",
+                  width: "100%", marginTop: 12, padding: "12px", borderRadius: 13,
+                  border: aktionsKnopf().kante ? `1.5px solid ${aktionsKnopf().kante}` : "none",
                   background: aktionsKnopf().grund, color: aktionsKnopf().schrift, fontSize: 15, fontWeight: 800, cursor: "pointer" }}>
                 {Li(copied ? "check" : "key", 16, aktionsKnopf().schrift)} {copied ? "Kopiert!" : "Secret generieren & kopieren"}
               </button>
@@ -482,7 +507,8 @@ function CloudSetupWizard({ onClose, onBack }) {
                   nicht geht, sagt stattdessen die Zeile darunter. */}
               <button onClick={runTest} disabled={!cfActive || testState === "testing"}
                 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-                  width: "100%", marginTop: 12, padding: "13px", borderRadius: 13, border: "none",
+                  width: "100%", marginTop: 12, padding: "13px", borderRadius: 13,
+                  border: testKnopf().kante ? `1.5px solid ${testKnopf().kante}` : "none",
                   background: testKnopf().grund, color: testKnopf().schrift, fontSize: 15, fontWeight: 800,
                   fontFamily: "inherit",
                   cursor: !cfActive ? "not-allowed" : "pointer" }}>
@@ -500,7 +526,8 @@ function CloudSetupWizard({ onClose, onBack }) {
               {testState === "ok" && (
                 <button onClick={() => { saveConfig?.(); }}
                   style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-                    width: "100%", marginTop: 12, padding: "13px", borderRadius: 13, border: "none",
+                    width: "100%", marginTop: 12, padding: "13px", borderRadius: 13,
+                    border: aktionsKnopf().kante ? `1.5px solid ${aktionsKnopf().kante}` : "none",
                     background: aktionsKnopf().grund, color: aktionsKnopf().schrift, fontSize: 16, fontWeight: 800, cursor: "pointer" }}>
                   {Li("upload-cloud", 16, aktionsKnopf().schrift)} Daten jetzt hochladen
                 </button>

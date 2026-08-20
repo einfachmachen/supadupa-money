@@ -108,6 +108,44 @@ export function knopfPaar(flaeche, wunschSchrift, schwelle = 4.5) {
   return { grund: flaeche, schrift: direkt };
 }
 
+// ── Ein Knopf braucht ZWEI Kontraste ────────────────────────────────────
+// `knopfPaar` sorgt dafür, dass die BESCHRIFTUNG auf der Fläche trägt. Das
+// genügt nicht: Man muss den Knopf auch als Knopf ERKENNEN, und dafür muss
+// sich seine Fläche vom Untergrund abheben. Beides ist unabhängig — im Theme
+// „Tastenhell" trägt die Ziffer auf dem Gold mit 14,8:1, das Gold selbst
+// steht auf der cremefarbenen Platte aber bei 1,18:1. Genau so sah es aus:
+// dunkle Ziffern, die frei zu schweben schienen, und eine Schaltfläche, die
+// niemand als Schaltfläche erkannte (Nutzer-Bild).
+//
+// Die Fläche darf dafür NICHT verbogen werden — sie trägt die Akzentfarbe,
+// und die ist gewollt. Stattdessen trägt eine KANTE die Abgrenzung. Dieselbe
+// Lösung wie beim Gefahr-Knopf (GEFAHR_KANTE in activeTheme.js), wo Füllung
+// und Beschriftung rechnerisch nicht beides gleichzeitig leisten können.
+//
+// Rückgabe: die Kantenfarbe — oder `null`, wenn die Fläche selbst schon
+// genug Abstand zum Untergrund hat (der Normalfall in dunklen Themes).
+export function knopfKante(flaeche, untergrund, schwelle = 3) {
+  const grund = untergrund || T.bg;
+  if (!_rgb(flaeche) || !_rgb(grund)) return null;
+  if (kontrastWert(flaeche, grund) >= schwelle) return null;
+  // In der Richtung rücken, die zuerst reicht — meist dieselbe wie die der
+  // Beschriftung, dadurch wirkt der Knopf wie aus einem Guss.
+  for (let anteil = 0.15; anteil <= 0.95; anteil += 0.05) {
+    for (const ziel of [DUNKEL, HELL]) {
+      const kante = mischen(ziel, anteil, flaeche);
+      if (kontrastWert(kante, grund) >= schwelle) return kante;
+    }
+  }
+  return kontrastWert(DUNKEL, grund) >= kontrastWert(HELL, grund) ? DUNKEL : HELL;
+}
+
+// Der ganze Knopf auf einmal: Fläche, Beschriftung, Kante.
+// `{ grund, schrift, kante }` — `kante` ist `null`, wo keine nötig ist.
+export function vollKnopf(flaeche, wunschSchrift, untergrund, schwelle = 4.5) {
+  const paar = knopfPaar(flaeche, wunschSchrift, schwelle);
+  return { ...paar, kante: knopfKante(paar.grund, untergrund) };
+}
+
 // ── Flächen, die sich mit ihrer EIGENEN Akzentfarbe tönen ───────────────
 // Warnkasten, Hinweisbalken, Kategorie-Kopfzeile, „Editor öffnen": alle malen
 // `${farbe}1f` und schreiben denselben Ton darauf. Gegen die Platte gerechnet
