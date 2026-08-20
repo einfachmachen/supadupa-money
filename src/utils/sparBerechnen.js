@@ -94,7 +94,13 @@ export function computeMinTagessaldo(y, m, virtualSpar = {}, accId, excludeSparD
     })();
     return ct === "income" ? +Math.abs(t.totalAmount) : -Math.abs(t.totalAmount);
   };
-  const _saldoCtx = { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth,
+  // `today` MUSS mit (wie oben bei _saldoUtilCtx): `phaseStillReachable` in
+  // utils/saldo.js entscheidet daran, ob die Budget-Reservierung eines Monats
+  // noch gilt. Ohne das Feld fiele es auf `new Date()` zurück — in der App
+  // dasselbe, in einem Test mit injiziertem Stichtag aber nicht. Dann wäre
+  // ausgerechnet die Frage „ist das ungenutzte Budget berücksichtigt?" nicht
+  // mehr nachprüfbar.
+  const _saldoCtx = { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth, today,
     _restCache: ctx._restCache, _txsById: ctx._txsById, _txsByMonth: ctx._txsByMonth };
   const istGiroView = !effSelAcc || effSelAcc === "acc-giro";
   const obMitte = (istGiroView && phaseStillReachable(y, m, 14, _saldoCtx)) ? restMitte(y, m, _saldoCtx) : 0;

@@ -68,9 +68,28 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   };
   const [collapsed, setCollapsed] = useState(initialCollapsed);
   React.useEffect(()=>{ if(sparOpenRequest>0) setCollapsed(false); }, [sparOpenRequest]);
-  const [result,    setResultState]   = useState(()=>{ try { const s=kvStore.getItem("mbt_spar_result"); return s?JSON.parse(s):null; } catch{return null;} });
+  // Die Vorschau-Tabelle liegt lokal im kvStore — sonst stünde sie nach jedem
+  // Neuladen leer da. Der Haken daran hat den Nutzer echtes Vertrauen gekostet:
+  // `resultOutdated` reagiert nur auf Horizont und Puffer, NICHT auf geänderte
+  // Buchungen und schon gar nicht auf eine geänderte Rechenregel. Als die
+  // Automatik die neue Regel bekam (11261788) und die Vorschau noch die alte
+  // hatte, zeigte die Tabelle weiter ihren alten Stand (103 €), während in den
+  // Buchungen längst der neue stand (583 €) — und sah dabei aktuell aus.
+  //
+  // Deshalb ein Stempel: Wird die Regel geändert, wird VORSCHAU_REGEL erhöht;
+  // gespeicherte Tabellen älterer Stände werden dann nicht mehr angezeigt,
+  // sondern verworfen und neu gerechnet. Eine Zahl, der man nicht ansieht, wie
+  // alt sie ist, ist schlimmer als gar keine.
+  const VORSCHAU_REGEL = 2;   // 2 = Fenster ab Ratentermin (sparPlanOptimum)
+  const [result,    setResultState]   = useState(()=>{ try {
+    const s=kvStore.getItem("mbt_spar_result");
+    if(!s) return null;
+    const p=JSON.parse(s);
+    if(Array.isArray(p)) return null;                  // Stand vor dem Stempel
+    return p && p.regel===VORSCHAU_REGEL ? p.rows : null;
+  } catch{return null;} });
   const resultRef = React.useRef(result);
-  const setResult = (v) => { resultRef.current = v; setResultState(v); try{ if(v) kvStore.setItem("mbt_spar_result",JSON.stringify(v)); else kvStore.removeItem("mbt_spar_result"); }catch{} };
+  const setResult = (v) => { resultRef.current = v; setResultState(v); try{ if(v) kvStore.setItem("mbt_spar_result",JSON.stringify({regel:VORSCHAU_REGEL, rows:v})); else kvStore.removeItem("mbt_spar_result"); }catch{} };
   const [resultOutdated, setResultOutdated] = useState(false);
   const [computing, setComputing]= useState(false);
   const [monate,    setMonate]   = useState(()=>parseInt(kvStore.getItem("mbt_sparen_monate")||"3"));
