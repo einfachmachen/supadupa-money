@@ -12,6 +12,7 @@ import { planLegDecisions } from "../../utils/sparPlanSeries.js";
 import { getSparWatermark, noteSparWatermark } from "../../utils/sparWatermarks.js";
 import { buildTxIdMap } from "../../utils/tx.js";
 import { computeMinTagessaldo, computeTagessaldoAt, buildTxsByMonth } from "../../utils/sparBerechnen.js";
+import { aufToenung } from "../../theme/amtPill.js";
 import { DEFAULT_ZINS_MONATE, parseZinsMonate, serializeZinsMonate,
   zinsTermine, sweepFenster, computeSweep, ohneSweepBuchungen, sweepFuerMonat,
   SWEEP_RUECK_DESC } from "../../utils/zinsSweep.js";
@@ -90,6 +91,11 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   const buildSparDesc = (name) => "Sparen·"+(name||"Plan");
   // „2026-12-31" → „31.12."  — kurz, weil das Jahr in der Zeile schon steht.
   const kurzTag = (iso) => { const p = String(iso).split("-"); return p.length === 3 ? `${p[2]}.${p[1]}.` : String(iso); };
+  // Schrift auf der Gold-Tönung der Super-Sparraten-Zeile. Der Wunschton wird
+  // gegen den WIRKLICH gemalten Untergrund geprüft — auf einer Fläche, die aus
+  // genau diesem Ton gemischt ist, schrumpft der Kontrast sonst. Symbole
+  // dürfen die niedrigere Schwelle nutzen (3:1, WCAG 1.4.11).
+  const sweepFarbe = (farbe, schwelle) => aufToenung(farbe, 0x1f / 255, ".hinweis-karte", schwelle);
   // Bestehende Sparplan-Series für aktuellen Plannamen finden
   const findExistingSeries = (name) => {
     const desc = buildSparDesc(name);
@@ -959,16 +965,28 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                     Stichtag aufs Tagesgeld, `zurueck` kommt am nächsten
                     Banktag wieder — nur die Differenz bleibt gespart.
                     Der Rückweg steht mit Datum dabei, weil genau der
-                    vergessen werden kann. */}
+                    vergessen werden kann.
+
+                    Bündig LINKS unter dem Monat, nicht eingerückt: Die Zeile
+                    gehört zu diesem Monat als Ganzem, nicht zu einer der
+                    Spalten rechts (Nutzer-Wunsch).
+
+                    Eigene Tönung, damit sie sich abhebt: `.hinweis-karte`,
+                    weil Themes mit gegensätzlichen Flächen („Tastenhell")
+                    genau diese Klasse zur Taste erklären — dann ist SIE der
+                    Untergrund und der Goldton wird darauf nachgerechnet. */}
                 {sweep && (
-                  <div style={{display:"flex",alignItems:"center",gap:6,
-                    marginTop:2,paddingLeft:38,fontSize:10.5,lineHeight:1.4}}>
-                    {Li("zap",11,T.acc_gold)}
-                    <span style={{color:T.txt,flex:1,minWidth:0}}>
-                      Super-Sparrate am {kurzTag(sweep.termin)}:{" "}
-                      <b style={{color:T.acc_gold,fontFamily:NUM_FONT}}>{betragK(sweep.hin)}</b>
+                  <div className="hinweis-karte"
+                    style={{display:"flex",alignItems:"center",gap:6,
+                      marginTop:3,padding:"3px 6px",borderRadius:6,
+                      background:`${T.gold}1f`,border:`1px solid ${T.gold}55`,
+                      fontSize:10.5,lineHeight:1.4}}>
+                    {Li("zap",12,sweepFarbe(T.gold,3))}
+                    <span style={{color:sweepFarbe(T.txt),flex:1,minWidth:0}}>
+                      <b style={{color:sweepFarbe(T.gold)}}>Super-Sparrate</b> am {kurzTag(sweep.termin)}:{" "}
+                      <b style={{color:sweepFarbe(T.gold),fontFamily:NUM_FONT}}>{betragK(sweep.hin)}</b>
                       {" "}→ am {kurzTag(sweep.bis)}{" "}
-                      <b style={{fontFamily:NUM_FONT}}>{betragK(sweep.zurueck)}</b> zurück
+                      <b style={{color:sweepFarbe(T.pos),fontFamily:NUM_FONT}}>{betragK(sweep.zurueck)}</b> zurück
                     </span>
                   </div>
                 )}
