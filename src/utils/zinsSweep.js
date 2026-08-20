@@ -236,3 +236,38 @@ export function sweepZustandAnwenden(txs, ziel) {
     splits: [{ id: mkId(), catId: "", subId: "", amount: zurueck }] };
   return [...next, ab, zu];
 }
+
+// ── Der Sweep für EINEN beliebigen Monat ────────────────────────────────
+//
+// Bis hierher wurde der Sweep nur für den LAUFENDEN Monat gerechnet: in
+// App.jsx hinter `if (zinsMonate.includes(today.getMonth()))`, im SweepBanner
+// hinter `istZinstermin`. Ein technisches Hindernis war das nie — es fragte
+// nur niemand für andere Monate.
+//
+// Genau das fehlte aber: Im Sparplan stand für einen Zinsmonat die normale
+// Rate, obwohl dort in Wirklichkeit ein Vielfaches fließt (Nutzer-Hinweis:
+// „Es macht wenig Sinn, dass ich die Super-Sparraten erst sehe, wenn ein
+// Zinsmonat läuft"). Eine Vorschau, die etwas anderes zeigt als das, was
+// passiert, ist keine.
+//
+// Wichtig: Diese Funktion RECHNET nur. Sie legt keine Buchungen an — die
+// entstehen weiterhin erst zum Termin (`sweepZustandAnwenden`). Der Plan darf
+// die Zahl zeigen, ohne das Geld vorzeitig zu bewegen.
+//
+// `virtualSpar`: geplante, noch nicht gebuchte Raten (Datum→Betrag). Die
+// Sparplan-Vorschau arbeitet damit; ohne diesen Durchgriff sähe die Rechnung
+// einen Saldo, in dem die geplanten Raten gar nicht abgezogen sind.
+//
+// Rückgabe: `{ hin, zurueck, bleibt, termin, bis }` — oder `null`, wenn der
+// Monat kein Zinsmonat ist oder kein Spielraum bleibt.
+export function sweepFuerMonat({ y, m, ctx, puffer = 0, normaleSparrate = 0,
+  sofortRueck = false, today = new Date(), virtualSpar = {}, monate = DEFAULT_ZINS_MONATE,
+  saldoAmTag }) {
+  if (!Array.isArray(monate) || !monate.includes(m)) return null;
+  const termin = monatsLetzter(y, m);
+  const f = sweepFenster(termin);
+  const salden = f.tage.map((d) => ({ date: d, saldo: saldoAmTag(d, ctx, virtualSpar) }));
+  const r = computeSweep({ salden, puffer, normaleSparrate, sofortRueck });
+  if (!r || !(r.zurueck > 0)) return null;
+  return { ...r, termin, bis: f.bis };
+}

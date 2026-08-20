@@ -13,7 +13,7 @@ import { getSparWatermark, noteSparWatermark } from "../../utils/sparWatermarks.
 import { buildTxIdMap } from "../../utils/tx.js";
 import { computeMinTagessaldo, computeTagessaldoAt, buildTxsByMonth } from "../../utils/sparBerechnen.js";
 import { DEFAULT_ZINS_MONATE, parseZinsMonate, serializeZinsMonate,
-  zinsTermine, sweepFenster, computeSweep, ohneSweepBuchungen,
+  zinsTermine, sweepFenster, computeSweep, ohneSweepBuchungen, sweepFuerMonat,
   SWEEP_RUECK_DESC } from "../../utils/zinsSweep.js";
 
 function TagesgeldWidget({year, month, initialCollapsed=true}) {
@@ -88,6 +88,8 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   };
   // Einheitlicher sparDesc-Builder — nur vom Plannamen abhängig
   const buildSparDesc = (name) => "Sparen·"+(name||"Plan");
+  // „2026-12-31" → „31.12."  — kurz, weil das Jahr in der Zeile schon steht.
+  const kurzTag = (iso) => { const p = String(iso).split("-"); return p.length === 3 ? `${p[2]}.${p[1]}.` : String(iso); };
   // Bestehende Sparplan-Series für aktuellen Plannamen finden
   const findExistingSeries = (name) => {
     const desc = buildSparDesc(name);
@@ -362,6 +364,29 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     const total = monate + 1;
     const CHUNK = 3; // Verarbeite mehrere Monate pro Frame
 
+    // ── Grundlage für die Super-Sparrate in der Vorschau ────────────────
+    //
+    // Die Zinsmonate bekommen zusätzlich zur normalen Rate ihren Sweep-Betrag
+    // ausgewiesen. Bis hierher stand dort die normale Rate, obwohl in
+    // Wirklichkeit ein Vielfaches fließt — eine Vorschau, die etwas anderes
+    // zeigt als das, was passiert (Nutzer-Hinweis).
+    //
+    // Gerechnet wird auf demselben Stand wie die Vorschau selbst: bestehende
+    // Raten dieses Plans raus (sie werden ja gerade neu geplant), Sweep-
+    // Buchungen raus (sonst rechnete sich der Sweep gegen sich selbst). Die
+    // geplanten Raten kommen über `virtualSpar` dazu.
+    //
+    // KEIN `getProgEndeAccGlobal`: der Cache in App.jsx hängt an den ECHTEN
+    // Buchungen und würde diesen hypothetischen Stand schlicht ignorieren.
+    const zinsMonateVorschau = parseZinsMonate(kvStore.getItem("mbt_zins_monate")) ?? DEFAULT_ZINS_MONATE;
+    const sofortRueckVorschau = kvStore.getItem("mbt_zins_sofortrueck") === "1";
+    const basisTxs = ohneSweepBuchungen(txs)
+      .filter(t => !(excludeDesc && t.pending && t.desc === excludeDesc));
+    const sweepCtx = { txs: basisTxs, cats, accounts, getKumulierterSaldo, getCat,
+      getBudgetForMonth, _restCache: {},
+      _txsById: buildTxIdMap(basisTxs), _txsByMonth: buildTxsByMonth(basisTxs) };
+    const saldoAmTag = (d, c, vs) => computeTagessaldoAt(d, "acc-giro", c, undefined, vs);
+
     const addVS = (y, m, wert, vs) => {
       if(!wert || wert <= 0) return;
       const pad2 = n=>String(n).padStart(2,"0");
@@ -401,7 +426,21 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
         kumuliert += zusaetzlich;
         const minNachSparen = minTag!==null ? minTag - zusaetzlich : null;
         addVS(y, m, zusaetzlich, virtualSpar);
-        rows.push({y, m, minTag, minNach: minNachSparen, saldoEnde, zusaetzlich, kumuliert});
+
+        // Super-Sparrate für Zinsmonate — reine ANZEIGE. Die Buchungen
+        // entstehen weiterhin erst zum Termin (sweepZustandAnwenden); der Plan
+        // darf die Zahl zeigen, ohne das Geld vorzeitig zu bewegen.
+        // `virtualSpar` enthält an dieser Stelle bereits die Rate DIESES
+        // Monats — genau so, wie sie am Stichtag abgeht.
+        let sweep = null;
+        if(effAcc === undefined || effAcc === null || effAcc === "acc-giro") {
+          try {
+            sweep = sweepFuerMonat({ y, m, ctx: sweepCtx, puffer,
+              normaleSparrate: zusaetzlich, sofortRueck: sofortRueckVorschau,
+              virtualSpar, monate: zinsMonateVorschau, saldoAmTag });
+          } catch(e) { sweep = null; }
+        }
+        rows.push({y, m, minTag, minNach: minNachSparen, saldoEnde, zusaetzlich, kumuliert, sweep});
       }
       setProgress(Math.round(i/total*100));
       if(i < total) requestAnimationFrame(step);
@@ -885,15 +924,16 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
               <div style={{flex:1,textAlign:"right",color:T.txt,fontSize:11}}>+ Monat</div>
               <div style={{flex:1,textAlign:"right",color:T.txt,fontSize:11,fontWeight:700}}>∑ gespart</div>
             </div>
-            {result.map(({y,m,minTag,minNach,zusaetzlich,kumuliert},i)=>{
+            {result.map(({y,m,minTag,minNach,zusaetzlich,kumuliert,sweep},i)=>{
               const zusCol=zusaetzlich>0?zusaetzlich<500?T.warn:T.pos:T.txt2;
               const isCurM=i===0;
               const kritisch=minNach!==null&&minNach<puffer;
               return (
-                <div key={i} style={{display:"flex",alignItems:"center",
+                <div key={i} style={{
                   padding:"3px 6px",borderRadius:7,
                   background:isCurM?"rgba(74,159,212,0.08)":"rgba(255,255,255,0.02)",
                   border:kritisch?`1px solid ${T.neg}44`:"1px solid transparent"}}>
+                <div style={{display:"flex",alignItems:"center"}}>
                   <div style={{width:38,flexShrink:0}}>
                     <span style={{color:isCurM?T.blue:T.txt,fontSize:12,fontWeight:700}}>{MONTHS_G[m]}</span>
                     <span style={{color:T.txt,fontSize:10,marginLeft:2}}>{String(y).slice(2)}</span>
@@ -912,6 +952,26 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                   <div style={{flex:1,textAlign:"right",color:kumuliert>0?T.pos:T.txt,fontSize:12,fontWeight:800,fontFamily:NUM_FONT}}>
                     {kumuliert>0?betragK(kumuliert):"—"}
                   </div>
+                </div>
+                {/* Zinsmonat: die Super-Sparrate gehört SICHTBAR in den Plan,
+                    nicht erst in den laufenden Monat (Nutzer-Wunsch). Zwei
+                    Zahlen, weil es zwei verschiedene Dinge sind: `hin` geht am
+                    Stichtag aufs Tagesgeld, `zurueck` kommt am nächsten
+                    Banktag wieder — nur die Differenz bleibt gespart.
+                    Der Rückweg steht mit Datum dabei, weil genau der
+                    vergessen werden kann. */}
+                {sweep && (
+                  <div style={{display:"flex",alignItems:"center",gap:6,
+                    marginTop:2,paddingLeft:38,fontSize:10.5,lineHeight:1.4}}>
+                    {Li("zap",11,T.acc_gold)}
+                    <span style={{color:T.txt,flex:1,minWidth:0}}>
+                      Super-Sparrate am {kurzTag(sweep.termin)}:{" "}
+                      <b style={{color:T.acc_gold,fontFamily:NUM_FONT}}>{betragK(sweep.hin)}</b>
+                      {" "}→ am {kurzTag(sweep.bis)}{" "}
+                      <b style={{fontFamily:NUM_FONT}}>{betragK(sweep.zurueck)}</b> zurück
+                    </span>
+                  </div>
+                )}
                 </div>
               );
             })}

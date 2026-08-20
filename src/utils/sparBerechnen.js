@@ -151,10 +151,16 @@ export function computeMinTagessaldo(y, m, virtualSpar = {}, accId, excludeSparD
 // Monatsletzten bis zum nächsten Banktag und überschreitet damit regelmäßig
 // die Monatsgrenze — computeMinTagessaldo liefert dagegen nur das Minimum
 // EINES Monats.
-export function computeTagessaldoAt(iso, accId, ctx, today = new Date()) {
+// `virtualSpar` (optional): geplante, aber noch nicht gebuchte Sparraten als
+// Datum→Betrag-Karte — dasselbe Format wie in `computeMinTagessaldo`. Die
+// Sparplan-Vorschau rechnet damit (sie legt ja noch keine Buchungen an), und
+// die Super-Sparrate soll dort schon VOR dem Zinsmonat stehen. Ohne diesen
+// Durchgriff sähe die Sweep-Rechnung einen Saldo, in dem die geplanten Raten
+// gar nicht abgezogen sind — und käme auf einen viel zu hohen Betrag.
+export function computeTagessaldoAt(iso, accId, ctx, today = new Date(), virtualSpar = {}) {
   const [y, mo] = String(iso).split("-").map(Number);
   if (!y || !mo) return null;
-  const r = computeMinTagessaldo(y, mo - 1, {}, accId, null, ctx, today);
+  const r = computeMinTagessaldo(y, mo - 1, virtualSpar, accId, null, ctx, today);
   return r && typeof r.saldoAt === "function" ? r.saldoAt(iso) : null;
 }
 

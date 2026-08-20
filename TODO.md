@@ -537,90 +537,61 @@ einer freien Luecke danach.
 Neuberechnung im Tagesgeld-Widget schreibt die Raten neu und wuerde eine so
 gesetzte Reduzierung ueberschreiben. Haengt am naechsten Punkt.
 
-## Super-Sparrate im Sparplan sichtbar machen — GEPRUEFT, noch nicht gebaut
+## Super-Sparrate im Sparplan sichtbar — TEILWEISE ERLEDIGT
 
-**Nutzer-Wunsch:** „Es macht wenig Sinn, dass ich nur die normale und nicht
-die Super-Sparraten in den Zinsmonaten vorher sehe, sondern erst, wenn ein
-Zinsmonat laeuft. Die Super-Sparrate moechte ich auch im Sparplan sehen."
+**Nutzer-Wunsch:** „In den Zinsmonaten soviel wie moeglich vom Giro aufs
+Tagesgeld schieben und nach der Verzinsung sofort wieder zurueck. Im Sparplan
+muessen also die risikolose UND die Super-Sparrate stehen, und am Tag nach der
+Verzinsung der nicht wegklickbare Hinweis, wieviel zurueck muss."
 
-### 1. Warum die Anhebung erst im laufenden Zinsmonat entsteht
+### Erledigt: die Super-Sparrate steht jetzt im Plan
 
-Kein technisches Hindernis — es fragt schlicht niemand danach. In `App.jsx`
-steht die Bedingung
+* `utils/zinsSweep.js` → `sweepFuerMonat({y, m, …})` rechnet den Sweep fuer
+  JEDEN Monat. Vorher lag die Rechnung zweimal inline und beide Male hinter
+  „ist das der laufende Monat?" (App.jsx, SweepBanner) — ein technisches
+  Hindernis war das nie, es fragte nur niemand fuer andere Monate.
+* `utils/sparBerechnen.js` → `computeTagessaldoAt` nimmt jetzt optional
+  `virtualSpar` entgegen. Ohne diesen Durchgriff saehe die Vorschau einen
+  Saldo, in dem ihre eigenen geplanten Raten gar nicht abgezogen sind.
+* `TagesgeldWidget` → je Zinsmonat eine zweite Zeile unter der Monatszeile:
+  „Super-Sparrate am 31.12.: X → am 02.01. Y zurueck".
+* Die Vorschau RECHNET nur. Buchungen entstehen weiterhin erst zum Termin
+  (`sweepZustandAnwenden`) — eigener Test dafuer.
+* Tests: `tests/superSparrateVorschau.test.js`.
 
-```js
-if (zinsMonate.includes(m) && zugang)   // m = today.getMonth()
-```
+### Schon vorhanden: der Rueckbuchungs-Hinweis
 
-Der Sweep wird also nur fuer den LAUFENDEN Monat gerechnet. Die Bausteine
-selbst sind monatsunabhaengig: `sweepFenster(terminIso)` nimmt jeden Termin,
-`computeTagessaldoAt(iso, …)` liefert jeden Tag, `computeSweep({salden, …})`
-rechnet auf uebergebenen Salden.
+Der nicht wegklickbare Balken „X € zurueck aufs Giro" gibt es bereits, und
+zwar als OBERSTEN Balken auf allen Screens (App.jsx, noch vor der
+Liquiditaetswarnung), mit eigener Faerbung fuer „ueberfaellig". Zusaetzlich
+steht unter dem Hero der `SweepBanner` mit den drei Zustaenden Zinstermin
+heute / Engpass eingeplant / Rueckueberweisung faellig.
 
-Zu tun: den Block aus `App.jsx` als `sweepFuerMonat({y, m, txs, puffer, ctx,
-today})` herausziehen. Die heutige Stelle wird ihr erster Aufrufer, die
-Vorschau der zweite. Kosten pro Zinsmonat: ein `sweepFenster` plus eine
-Handvoll `computeTagessaldoAt` — neben der bestehenden Binaersuche je Monat
-vernachlaessigbar (~4 Zinsmonate pro Jahr).
+Er erscheint nur, wenn es Sweep-Buchungen GIBT — und die entstehen erst im
+laufenden Zinsmonat. Bei Quartalsenden (Standard) ist der naechste der
+30.09.; im August ist deshalb nichts zu sehen. Das ist richtig so, war aber
+nicht erkennbar.
 
-### 2. Kann die Vorschau die erhoehte Rate zeigen, ohne den Sweep vorzuziehen?
+### Noch offen
 
-Ja, und das ist ausdruecklich der richtige Weg: Die BUCHUNGEN sollen weiter
-erst zum Termin entstehen, nur die ANZEIGE soll ehrlich sein.
-
-Eine Huerde gibt es, und die ist der eigentliche Aufwand: `berechnen()` im
-Tagesgeld-Widget rechnet mit einem VIRTUELLEN Sparplan (`virtualSpar`, ein
-Datum→Betrag-Objekt), nicht mit echten Buchungen. `computeTagessaldoAt` kennt
-`virtualSpar` nicht — es sieht nur `ctx.txs`. Fuer den Sweep muessen die
-virtuellen Raten also als Pseudo-Buchungen materialisiert werden.
-
-Ergebnis in der Tabelle: je Zinsmonat zusaetzlich `hin` und `zurueck` (aus
-`computeSweep`), sichtbar als zweite Zeile oder Zusatzspalte.
-
-### 3. Muss die Schieflage-Rechnung die Super-Sparrate kennen?
-
-**Ja — und das ist der schaerfste der drei Punkte.** Der Sweep nimmt vom
-Zinstermin bis zum Rueckbuchungstag deutlich MEHR vom Giro als die normale
-Rate. Faellt ein Engpass-Tag in dieses Fenster, sieht die heutige Rechnung ihn
-nicht, weil die Sweep-Buchungen kuenftiger Monate noch gar nicht existieren.
-Die App warnt also zu spaet — erst wenn der Zinsmonat anbricht.
-
-Zu tun: Die GEPLANTEN Sweeps als virtuelle Buchungen in die
-Schieflage-Rechnung geben. Dieselbe Normalisierung wie heute
-(`ohneSweepBuchungen`) muss dann auch fuer sie gelten, sonst rechnet sich der
-Sweep gegen sich selbst.
-
-### Der Konflikt, der dabei aufgeloest werden muss
-
-Zwei Stellen setzen Sparraten, mit UNTERSCHIEDLICHEN Regeln:
-
-| Wer | Regel |
-|---|---|
-| Vorschau `berechnen()` (wird beim Anlegen zur Buchung) | maximal, solange die naechsten **3** Monate ueber dem Puffer bleiben (`LOOKAHEAD = min(3, …)`) |
-| Automatik `sparRatenAbgleich` | maximal im Fenster bis zur naechsten Rate, danach Rueckwaerts-Reparatur |
-
-Solange beide verschieden rechnen, korrigiert die Automatik nach jedem
-„Super-Sparrate neu berechnen" die gerade angelegten Raten wieder — der Nutzer
-sieht Zahlen springen, ohne zu wissen warum. Die Vorschau sollte deshalb
-dieselbe Funktion benutzen wie die Automatik (`sparRatenAbgleich` auf einem
-virtuellen Bestand), statt eine zweite Naeherung mitzuschleppen.
-
-Damit ist auch die Frage von vorhin beantwortet („Was passiert bei
-Super-Sparrate neu berechnen mit einer automatisch gesenkten Rate?"): Nichts
-Ueberraschendes mehr, sobald beide dieselbe Rechnung verwenden.
-
-### Der groessere Gedanke dahinter (fuer spaeter)
-
-Das heutige Modell behandelt Sparen als EINBAHNSTRASSE: Ein Engpass im April
-laesst sich nur dadurch vermeiden, dass vorher weniger gespart wird. Das Geld
-liegt aber auf dem Tagesgeld und ist nicht weg — es koennte einfach
-zurueckgeholt werden. Genau diese Maschinerie gibt es schon: der Zins-Sweep
-bucht hin und am naechsten Banktag zurueck.
-
-Ein Engpass im April waere damit sauberer zu loesen als durch weniger Sparen
-im August: eine Rueckbuchung vom Tagesgeld kurz vor dem Engpass. Eigener,
-groesserer Punkt — aber er gehoert hierher, weil er dieselben Bausteine
-braucht.
+- [ ] **Die Schieflage-Rechnung kennt die kuenftigen Sweeps nicht.** Der Sweep
+  nimmt vom Zinstermin bis zum Rueckbuchungstag deutlich MEHR vom Giro als die
+  normale Rate. Faellt ein Engpass-Tag in dieses Fenster, sieht die heutige
+  Rechnung ihn nicht, weil die Sweep-Buchungen kuenftiger Monate noch nicht
+  existieren — die App warnt also zu spaet. Jetzt loesbar: `sweepFuerMonat`
+  liefert die geplanten Betraege, sie muessen als virtuelle Buchungen in
+  `computeKontoWarnungen` hinein.
+- [ ] **Zwei Regeln fuer dieselben Raten.** Die Vorschau `berechnen()` nimmt
+  „maximal, solange die naechsten 3 Monate tragen"; die Automatik
+  `sparPlanOptimum` nimmt das Suffix-Minimum ueber alle Fenster. Solange das
+  auseinanderlaeuft, korrigiert die Automatik nach jedem „neu berechnen" die
+  frisch angelegten Raten wieder, und der Nutzer sieht Zahlen springen. Die
+  Vorschau sollte `sparPlanOptimum` auf einem virtuellen Bestand benutzen.
+- [ ] **Rueckbuchung gegen einen Engpass** (der groessere Gedanke, siehe
+  oben): Ein Engpass im April laesst sich sauberer durch eine Rueckbuchung vom
+  Tagesgeld loesen als dadurch, im August weniger zu sparen. Die Maschinerie
+  dafuer ist jetzt vollstaendig da — `sweepFuerMonat` rechnet fuer jeden
+  Monat, `sweepZustandAnwenden` legt Hin- und Rueckbuchung an.
 
 ## Kontrast — offene Punkte
 
