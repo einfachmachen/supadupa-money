@@ -11,6 +11,8 @@ import { kvStore } from "../../utils/kvStore.js";
 import { planLegDecisions } from "../../utils/sparPlanSeries.js";
 import { getSparWatermark, noteSparWatermark } from "../../utils/sparWatermarks.js";
 import { buildTxIdMap } from "../../utils/tx.js";
+import { sparPlanPflege, heuteIsoVon } from "../../utils/sparPlanPflege.js";
+import { recordDeletedTxs } from "../../utils/txTombstones.js";
 import { computeMinTagessaldo, computeTagessaldoAt, buildTxsByMonth, sparPlanOptimum } from "../../utils/sparBerechnen.js";
 import { knopfPaar, DUNKEL } from "../../theme/amtPill.js";
 import { AMPEL } from "../../utils/syncBadge.js";
@@ -120,6 +122,10 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   const sweepPaar = () => knopfPaar(AMPEL.gelb, DUNKEL);
   const sweepGrund = () => sweepPaar().grund;
   const sweepFarbe = () => sweepPaar().schrift;
+  // Der „Entfernen"-Knopf beim Hinweis auf überfällige Raten: dieselbe
+  // Rechnung, damit die Schrift auf dem Gold in JEDEM Theme trägt, statt sich
+  // auf ein festes Schwarz zu verlassen.
+  const pflegePaar = () => knopfPaar(T.gold, DUNKEL);
   // Bestehende Sparplan-Series für aktuellen Plannamen finden
   const findExistingSeries = (name) => {
     const desc = buildSparDesc(name);
@@ -845,6 +851,67 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
             )}
           </div>
         </div>
+
+        {/* ── Raten, die die Automatik NICHT pflegt ────────────────────────
+            Der Plan oben und die Vormerkungen sind seit `sparPlanOptimum`
+            dieselbe Zahl — aber nur für die Raten, die die Automatik anfasst.
+            Zwei Sorten lässt sie bewusst liegen, und beide sahen bisher aus wie
+            ein Widerspruch zwischen zwei Bildschirmen (Nutzer: „das verwirrt
+            sonst total"). Herleitung in utils/sparPlanPflege.js. */}
+        {(()=>{
+          const pflege = sparPlanPflege({ txs, sparDesc: buildSparDesc(sparPlanName),
+            heuteIso: heuteIsoVon() });
+          if(!pflege.handlungsbedarf) return null;
+          const monatsText = (k) => { const [jy,jm2]=k.split("-").map(Number);
+            return `${MONTHS_G[jm2-1]} ${jy}`; };
+          return (
+            <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${T.bd}`}}>
+              {pflege.vergangenAnzahl>0&&(
+                <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                  {Li("clock",14,T.acc_gold)}
+                  <div style={{flex:1,minWidth:180}}>
+                    <div style={{color:T.txt,fontSize:12,fontWeight:700}}>
+                      {pflege.vergangenAnzahl} überfällige {pflege.vergangenAnzahl===1?"Rate":"Raten"}
+                      {" "}({pflege.vergangenMonate.map(monatsText).join(", ")})
+                    </div>
+                    <div style={{color:T.txt,fontSize:10,lineHeight:1.4}}>
+                      Termin vorbei, aber nie gebucht — zusammen {betrag(pflege.vergangenSumme)} €.
+                      Sie zählen weder im Saldo noch im Plan und werden auch nicht mehr
+                      angepasst. Entfernen, falls die Überweisung ausgefallen ist;
+                      stehen lassen, falls sie nur noch nicht importiert wurde.
+                    </div>
+                  </div>
+                  <button onClick={()=>{
+                      // Grabstein setzen, sonst holt der naechste Sync die
+                      // geloeschten Raten von einem anderen Geraet zurueck.
+                      recordDeletedTxs(pflege.vergangenIds);
+                      const ids = new Set(pflege.vergangenIds);
+                      setTxs(p=>p.filter(t=>!ids.has(t.id)));
+                      showToast(`✓ ${pflege.vergangenAnzahl} überfällige Raten entfernt`);
+                    }}
+                    style={{padding:"6px 12px",borderRadius:9,border:"none",
+                      background:pflegePaar().grund,color:pflegePaar().schrift,
+                      fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>
+                    Entfernen
+                  </button>
+                </div>
+              )}
+              {pflege.mehrdeutig.length>0&&(
+                <div style={{display:"flex",alignItems:"flex-start",gap:8,
+                  marginTop:pflege.vergangenAnzahl>0?8:0}}>
+                  {Li("alert-triangle",14,T.acc_neg)}
+                  <div style={{color:T.txt,fontSize:10,lineHeight:1.4}}>
+                    <b style={{fontSize:12}}>Mehrere Raten in einem Monat</b> —
+                    {" "}{pflege.mehrdeutig.map(monatsText).join(", ")}.
+                    Dort ist nicht zu erkennen, welche die Sparrate ist; diese Monate
+                    lässt die Automatik aus, ihr Betrag bleibt stehen, wie er ist.
+                    Doppelte Rate löschen, dann stimmt der Monat wieder mit dem Plan überein.
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* ── Mega-Sparrate zum nächsten Zinstermin ───────────────────────
             Steht bewusst direkt unter der normalen Sparrate: beide gehen am
