@@ -12,7 +12,7 @@ import { planLegDecisions } from "../../utils/sparPlanSeries.js";
 import { getSparWatermark, noteSparWatermark } from "../../utils/sparWatermarks.js";
 import { buildTxIdMap } from "../../utils/tx.js";
 import { computeMinTagessaldo, computeTagessaldoAt, buildTxsByMonth } from "../../utils/sparBerechnen.js";
-import { aufToenung } from "../../theme/amtPill.js";
+import { toenungsGrund, schriftAuf, knopfPaar } from "../../theme/amtPill.js";
 import { DEFAULT_ZINS_MONATE, parseZinsMonate, serializeZinsMonate,
   zinsTermine, sweepFenster, computeSweep, ohneSweepBuchungen, sweepFuerMonat,
   SWEEP_RUECK_DESC } from "../../utils/zinsSweep.js";
@@ -91,11 +91,37 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   const buildSparDesc = (name) => "Sparen·"+(name||"Plan");
   // „2026-12-31" → „31.12."  — kurz, weil das Jahr in der Zeile schon steht.
   const kurzTag = (iso) => { const p = String(iso).split("-"); return p.length === 3 ? `${p[2]}.${p[1]}.` : String(iso); };
-  // Schrift auf der Gold-Tönung der Super-Sparraten-Zeile. Der Wunschton wird
-  // gegen den WIRKLICH gemalten Untergrund geprüft — auf einer Fläche, die aus
-  // genau diesem Ton gemischt ist, schrumpft der Kontrast sonst. Symbole
-  // dürfen die niedrigere Schwelle nutzen (3:1, WCAG 1.4.11).
-  const sweepFarbe = (farbe, schwelle) => aufToenung(farbe, 0x1f / 255, ".hinweis-karte", schwelle);
+  // ── Farben der Super-Sparraten-Zeile ──────────────────────────────────
+  //
+  // Sie liegt AUF der Monatszeile (heller Schleier auf der Widget-Fläche; in
+  // Themes mit gegensätzlichen Flächen eine Taste) und tönt sich darauf mit
+  // ihrem eigenen Gold. Zwei Dinge müssen gleichzeitig stimmen:
+  //
+  //   * die Tönung muss als Band ERKENNBAR sein,
+  //   * jede Schrift darauf muss 4,5:1 halten.
+  //
+  // Durchgemessen über alle Themes: 12 % Gold (`1f`) ist das Optimum. Bei 17 %
+  // (`2b`) fällt in „Dark" die hellste Schrift auf 4,49:1, darunter wird das
+  // Band in mehreren hellen Themes unsichtbar.
+  //
+  // Der Haken: In „Tastenhell" sind Zeile UND Band dieselbe Taste, sobald man
+  // das Band als Karte auszeichnet — die Tönung wäre dort weggebügelt (1,00:1
+  // gemessen). Deshalb bekommt das Band KEINE Klasse; seine Tönung wird also
+  // wirklich gemalt, und die Schrift rechnet gegen genau diese Mischung
+  // (`flaeche` = der Untergrund der Zeile). Für die Fälle, in denen 12 % kaum
+  // trägt (helle Themes, ~1,09:1), sorgt zusätzlich die Kante links —
+  // eine Kante ist kein zweiter Bereich, aber sie ist immer da.
+  // Ein weiterer Haken, der beim Nachmessen auffiel: Auf einem MITTELHELLEN
+  // Band trägt weder Schwarz noch Weiß (in „Dark" gemessene 4,36:1). Deshalb
+  // wird die Bandfarbe als konkreter Farbwert gerechnet und im Ausnahmefall
+  // minimal nachgerückt (`knopfPaar` in 5-%-Schritten), statt sie als
+  // Hex-Alpha darüberzulegen und zu hoffen.
+  const SWEEP_TON = 0x1f / 255;
+  const zeilenGrund = () => toenungsGrund("#FFFFFF", 0.02, ".wahl-taste", T.surf);
+  const sweepGrund = () => knopfPaar(toenungsGrund(T.gold, SWEEP_TON, undefined, zeilenGrund()), null, 4.5).grund;
+  const sweepFarbe = (farbe, schwelle = 4.5) => schriftAuf(sweepGrund(), farbe, schwelle);
+  // Die Kante steht auf der ZEILE, nicht auf dem Band — 3:1 nach WCAG 1.4.11.
+  const sweepKante = () => schriftAuf(zeilenGrund(), T.gold, 3);
   // Bestehende Sparplan-Series für aktuellen Plannamen finden
   const findExistingSeries = (name) => {
     const desc = buildSparDesc(name);
@@ -976,18 +1002,20 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                     genau diese Klasse zur Taste erklären — dann ist SIE der
                     Untergrund und der Goldton wird darauf nachgerechnet. */}
                 {sweep && (
-                  <div className="hinweis-karte"
-                    style={{display:"flex",alignItems:"center",gap:6,
-                      marginTop:3,padding:"3px 6px",borderRadius:6,
-                      background:`${T.gold}1f`,border:`1px solid ${T.gold}55`,
-                      fontSize:10.5,lineHeight:1.4}}>
-                    {Li("zap",12,sweepFarbe(T.gold,3))}
-                    <span style={{color:sweepFarbe(T.txt),flex:1,minWidth:0}}>
-                      <b style={{color:sweepFarbe(T.gold)}}>Super-Sparrate</b> am {kurzTag(sweep.termin)}:{" "}
-                      <b style={{color:sweepFarbe(T.gold),fontFamily:NUM_FONT}}>{betragK(sweep.hin)}</b>
-                      {" "}→ am {kurzTag(sweep.bis)}{" "}
-                      <b style={{color:sweepFarbe(T.pos),fontFamily:NUM_FONT}}>{betragK(sweep.zurueck)}</b> zurück
-                    </span>
+                  // Ein BAND, kein Kasten: bündig bis an die Ränder der
+                  // Monatszeile (negative Ränder heben deren Polster auf),
+                  // ohne Rahmen und ohne Rundung. Ein gerahmtes Kästchen IN
+                  // einer gerahmten Zeile las sich als zweiter Bereich
+                  // (Nutzer-Hinweis). Ohne Symbol, damit eine Zeile reicht.
+                  <div style={{margin:"3px -6px -3px",padding:"2px 6px 3px",
+                    background:sweepGrund(),borderLeft:`3px solid ${sweepKante()}`,
+                    color:sweepFarbe(T.txt),fontSize:10.5,lineHeight:1.35}}>
+                    <b style={{color:sweepFarbe(T.gold)}}>Super-Sparrate</b>{" "}
+                    {kurzTag(sweep.termin)}:{" "}
+                    <b style={{color:sweepFarbe(T.gold),fontFamily:NUM_FONT}}>{betragK(sweep.hin)}</b>
+                    {" → "}{kurzTag(sweep.bis)}{" "}
+                    <b style={{color:sweepFarbe(T.pos),fontFamily:NUM_FONT}}>{betragK(sweep.zurueck)}</b>
+                    {" zurück"}
                   </div>
                 )}
                 </div>

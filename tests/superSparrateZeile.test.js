@@ -14,18 +14,28 @@
 import { describe, it, expect } from "vitest";
 import { THEMES } from "../src/theme/themes.js";
 import { setActiveTheme } from "../src/theme/activeTheme.js";
-import { aufToenung, toenungsGrund, kontrastWert } from "../src/theme/amtPill.js";
+import { toenungsGrund, schriftAuf, knopfPaar, kontrastWert } from "../src/theme/amtPill.js";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const wurzel = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-// Genau die Rechnung aus TagesgeldWidget.jsx (`sweepFarbe`).
+// Genau die Rechnung aus TagesgeldWidget.jsx (`sweepFarbe`, `sweepKante`).
+//
+// Das Band bekommt bewusst KEINE Karten-Klasse: In „Tastenhell" waeren Zeile
+// und Band sonst dieselbe Taste, und die Toenung waere weggebuegelt (1,00:1
+// gemessen). Ohne Klasse wird sie wirklich gemalt — also `flaeche` = der
+// Untergrund der Monatszeile.
 const TOENUNG = 0x1f / 255;
-const grund = () => toenungsGrund(THEMES_AKTIV.gold, TOENUNG, ".hinweis-karte");
-const farbe = (ton, schwelle) => aufToenung(ton, TOENUNG, ".hinweis-karte", schwelle);
 let THEMES_AKTIV = null;
+const zeilenGrund = () => toenungsGrund("#FFFFFF", 0.02, ".wahl-taste", THEMES_AKTIV.surf);
+// Auf einem MITTELHELLEN Band traegt weder Schwarz noch Weiss (in „Dark"
+// gemessene 4,36:1). Die Bandfarbe wird deshalb im Ausnahmefall minimal
+// nachgerueckt, statt als Hex-Alpha darueberzuliegen.
+const grund = () => knopfPaar(toenungsGrund(THEMES_AKTIV.gold, TOENUNG, undefined, zeilenGrund()), null, 4.5).grund;
+const farbe = (ton, schwelle) => schriftAuf(grund(), ton, schwelle);
+const kante = () => schriftAuf(zeilenGrund(), THEMES_AKTIV.gold, 3);
 
 // [Beschreibung, Ton, Schwelle] — Text 4,5:1, Symbole 3:1 (WCAG 1.4.11)
 const STELLEN = [
@@ -52,6 +62,21 @@ describe("Super-Sparraten-Zeile: Kontrast auf der eigenen Toenung", () => {
     expect(durchgefallen, `zu schwach:\n  ${durchgefallen.join("\n  ")}`).toEqual([]);
   });
 
+  it("das Band ist als Band erkennbar — Toenung oder Kante", () => {
+    // Die Toenung allein traegt nicht ueberall: in hellen Themes sind es nur
+    // ~1,09:1 gegen die Zeile. Deshalb zusaetzlich die Kante links, und die
+    // muss 3:1 halten (WCAG 1.4.11, Bedienelement-Abgrenzung). Eine Kante ist
+    // kein zweiter Bereich — aber sie ist immer da.
+    const durchgefallen = [];
+    for (const [name, t] of Object.entries(THEMES)) {
+      if (name === "custom_preview" || !t || !t.bg || !t.gold || !/^#/.test(t.gold)) continue;
+      setActiveTheme(name, t); THEMES_AKTIV = t;
+      const w = kontrastWert(kante(), zeilenGrund());
+      if (w < 3) durchgefallen.push(`${name} · Kante: ${w.toFixed(2)}:1`);
+    }
+    expect(durchgefallen, `zu schwach:\n  ${durchgefallen.join("\n  ")}`).toEqual([]);
+  });
+
   it("belegt den Fall: der Rohton allein reicht nicht", () => {
     // Ohne die Rechnung faellt das Gold auf seiner eigenen Toenung durch —
     // der Beleg, dass `aufToenung` hier wirklich etwas tut.
@@ -65,14 +90,23 @@ describe("Super-Sparraten-Zeile: Kontrast auf der eigenen Toenung", () => {
       .toBeGreaterThan(0);
   });
 
-  it("die Zeile beginnt links, nicht eingerueckt", () => {
-    // Nutzer-Wunsch: Sie gehoert zum Monat als Ganzem, nicht zu einer der
-    // Spalten rechts. Ein `paddingLeft` in Spaltenbreite (38px) waere genau
-    // die Einrueckung, die vorher dastand.
+  it("ein BAND, kein Kasten im Kasten — und ohne Symbol", () => {
+    // Nutzer-Hinweise, beide in einem: „im Bereich nicht noch einen Bereich
+    // zeichnen" und „das Blitzsymbol koennen wir weglassen, damit eine Zeile
+    // reicht". Ein gerahmtes Kaestchen IN einer gerahmten Zeile las sich als
+    // zweiter Bereich; das Symbol kostete die Breite, an der die Zeile umbrach.
     const src = readFileSync(resolve(wurzel, "src/components/organisms/TagesgeldWidget.jsx"), "utf8");
-    const zeile = src.slice(src.indexOf("Super-Sparrate</b> am") - 900, src.indexOf("Super-Sparrate</b> am"));
-    expect(zeile).not.toMatch(/paddingLeft:\s*38/);
-    expect(zeile).toContain('className="hinweis-karte"');
+    const i = src.indexOf("Super-Sparrate</b>");
+    expect(i, "die Zeile muss es geben").toBeGreaterThan(-1);
+    const block = src.slice(i - 700, i + 400);
+    expect(block, "kein Rahmen ringsum").not.toMatch(/border:\s*`1px solid/);
+    expect(block, "keine Rundung").not.toMatch(/borderRadius:\s*6/);
+    expect(block, "kein Blitzsymbol").not.toMatch(/Li\("zap"/);
+    expect(block, "nicht eingerueckt").not.toMatch(/paddingLeft:\s*38/);
+    // Buendig bis an die Raender: negative Raender heben das Polster der
+    // Monatszeile auf.
+    expect(block).toMatch(/margin:\s*"3px -6px -3px"/);
+    expect(block, "Kante links statt Rahmen").toMatch(/borderLeft:/);
   });
 });
 
