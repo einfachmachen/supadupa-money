@@ -6,16 +6,57 @@
 // Rendert als normales Flow-Element ganz oben (wie die Liquiditäts-Engpass-
 // Leiste in App.jsx) statt als position:fixed-Overlay — sonst würde es den
 // großen Kontostand im Dashboard überlagern statt eigenen Platz zu bekommen.
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useSyncExternalStore } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { knopfPaar, DUNKEL } from "../../theme/amtPill.js";
 import { Li } from "../../utils/icons.jsx";
 import { getSyncBadgeState } from "../../utils/syncBadge.js";
 
-function SyncStatusBadge() {
+// ── Der Hinweis darf nur EINMAL auf dem Bildschirm stehen ────────────────
+//
+// Er wird an zwei Stellen gerendert: im Hero (direkt unter dem Saldo, wo er
+// hingehört) und ganz oben, für Bildschirme ohne Hero. Welche Bildschirme
+// einen Hero haben, stand als feste Liste in App.jsx
+// (`mainTab==="erfassen" && (subTab==="dashboard" || subTab==="monat")`) — und
+// die war unvollständig: Die Jahresansicht rendert ihren Hero über
+// `YearSectionHeader`, taucht in der Liste aber nicht auf. Ergebnis: zweimal
+// „Nicht synchronisiert" übereinander (Nutzer-Bild).
+//
+// Statt die Liste zu pflegen (und beim nächsten Bildschirm mit Hero wieder zu
+// vergessen), meldet sich der Hero-Hinweis selbst an. Solange einer angemeldet
+// ist, hält sich der obere zurück. Ein winziger externer Speicher statt eines
+// Context: Der obere Hinweis und der Hero liegen in verschiedenen Ästen des
+// Baums, ein Provider müsste dafür um die ganze App gelegt werden.
+let _heroBadges = 0;
+const _hoerer = new Set();
+const _melden = () => _hoerer.forEach((h) => h());
+const _abonnieren = (h) => { _hoerer.add(h); return () => _hoerer.delete(h); };
+const _stand = () => _heroBadges > 0;
+
+// Für App.jsx: Steht der Hinweis gerade im Hero? Dann braucht die Leiste oben
+// auch keinen Platz zu reservieren (`--sync-badge-space`).
+export function useHeroBadgeAktiv() {
+  return useSyncExternalStore(_abonnieren, _stand, () => false);
+}
+
+// `imHero`: Diese Instanz sitzt unter dem Saldo. Sie gewinnt immer — dort ist
+// der Hinweis am richtigen Ort, direkt bei den Zahlen, um die es geht.
+function SyncStatusBadge({ imHero = false }) {
   const { isOnline, cfActive, isDirty, syncStatus, openCloudSave, loadFromCloud, frageBestaetigung } = useContext(AppCtx);
   const state = getSyncBadgeState({ isOnline, cfActive, isDirty, syncStatus });
+  const heroDa = useHeroBadgeAktiv();
+
+  // An-/Abmelden — nur die Hero-Instanz, und nur solange sie wirklich etwas
+  // anzeigt. Ein Hero ohne Hinweis darf den oberen nicht unterdrücken.
+  const sichtbar = !!state;
+  useEffect(() => {
+    if (!imHero || !sichtbar) return;
+    _heroBadges += 1; _melden();
+    return () => { _heroBadges -= 1; _melden(); };
+  }, [imHero, sichtbar]);
+
   if (!state) return null;
+  if (!imHero && heroDa) return null;
 
   // VOLLE Signalflaeche statt Toenung.
   //

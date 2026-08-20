@@ -400,3 +400,55 @@ export function sparRatenAbgleich({ txs, puffer = 0, ctx, today = new Date(), ab
   });
   return aenderungen;
 }
+
+// ── Was kann die Sparrate gegen DIESEN Engpass noch ausrichten? ──────────
+//
+// Die App passt Sparraten automatisch an. Das ist gut, war aber unsichtbar:
+// Solange die Anpassung reichte, sah man gar keine Warnung — und wenn sie
+// nicht mehr reichte, stand plötzlich eine Warnung da, ohne ein Wort dazu, ob
+// die App etwas dagegen tut (Nutzer: „ich sehe keine Info, ob/was ggf.
+// geändert wird. Bin gerade lost").
+//
+// Diese Funktion beantwortet genau das für einen konkreten Engpass-Tag:
+//
+//   { jahr, monat, aktuell, sicher, wirdReduziert, reicht }  |  null
+//
+//   `null`          – es gibt gar keine Rate vor diesem Tag, die helfen könnte.
+//   `wirdReduziert` – die App senkt diese Rate gleich (oder hat es schon).
+//   `reicht`        – mit der gesenkten Rate ist der Engpass wirklich weg.
+//                     Ist das false, hilft nur noch, Ausgaben zu kürzen.
+export function sparHilfeFuerEngpass({ txs, engpassIso, puffer = 0, ctx, today = new Date() }) {
+  if (!engpassIso) return null;
+  const raten = sparAbgaenge(txs);
+  let rate = null, naechste = null;
+  raten.forEach((r, i) => {
+    if ((r.date || "") < engpassIso) { rate = r; naechste = raten[i + 1] || null; }
+  });
+  if (!rate) return null;
+
+  const bisIso = naechste ? naechste.date : null;
+  const aktuell = Math.round(Math.abs(rate.totalAmount || 0) * 100) / 100;
+  let sicher;
+  try {
+    sicher = computeSafeAmountForAbgang({ abgang: rate, bisIso, puffer, ctx, today });
+  } catch { return null; }
+  if (sicher === null) return null;
+
+  // Reicht die gesenkte Rate wirklich? `computeSafeAmountForAbgang` liefert im
+  // Zweifel 0 — das heißt „mehr geht nicht", nicht „damit ist es gelöst".
+  const [ay, am] = rate.date.split("-").map(Number);
+  const eff = furthestPendingMonthOffset(ctx.txs, ay, am - 1);
+  const mitSicher = (ctx.txs || []).map((t) => (t.id === rate.id
+    ? { ...t, totalAmount: -sicher, splits: (t.splits || []).map((s) => ({ ...s, amount: -sicher })) }
+    : t));
+  const min = minImFenster(rate.date, bisIso, "acc-giro",
+    { ...ctx, txs: mitSicher, getProgEndeAccGlobal: undefined,
+      _restCache: {}, _txsById: buildTxIdMap(mitSicher), _txsByMonth: buildTxsByMonth(mitSicher) },
+    today, eff);
+
+  return {
+    jahr: ay, monat: am - 1, aktuell, sicher,
+    wirdReduziert: sicher < aktuell,
+    reicht: min === null || min >= puffer,
+  };
+}

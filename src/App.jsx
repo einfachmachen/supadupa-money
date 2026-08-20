@@ -14,7 +14,7 @@ import { ManagementScreen } from "./components/screens/ManagementScreen.jsx";
 import { MonatScreen } from "./components/screens/MonatScreen.jsx";
 import { MoneyMoodScreen } from "./components/screens/MoneyMoodScreen.jsx";
 import { TrendOverviewScreen } from "./components/screens/TrendOverviewScreen.jsx";
-import { SyncStatusBadge } from "./components/organisms/SyncStatusBadge.jsx";
+import { SyncStatusBadge, useHeroBadgeAktiv } from "./components/organisms/SyncStatusBadge.jsx";
 import { BestaetigenDialog } from "./components/organisms/BestaetigenDialog.jsx";
 import { GuidedFeatureTour } from "./components/organisms/GuidedFeatureTour.jsx";
 import { useOnlineStatus } from "./hooks/useOnlineStatus.js";
@@ -80,7 +80,7 @@ import { pn, uid, sumAmounts, fmt, round2 } from "./utils/format.js";
 import { betrag, setCentsGedreht as setCentsGedrehtFlag } from "./utils/betrag.jsx";
 import { MONTHS_S } from "./utils/constants.js";
 import { computeKontoWarnungen } from "./utils/kontoWarnungen.js";
-import { computeSafeAmountForAbgang, sparAbgaenge, sparRatenAbgleich, computeTagessaldoAt, buildTxsByMonth } from "./utils/sparBerechnen.js";
+import { computeSafeAmountForAbgang, sparAbgaenge, sparRatenAbgleich, sparHilfeFuerEngpass, computeTagessaldoAt, buildTxsByMonth } from "./utils/sparBerechnen.js";
 import { DEFAULT_ZINS_MONATE, parseZinsMonate, monatsLetzter, sweepFenster,
   computeSweep, ohneSweepBuchungen, sweepZustandAnwenden } from "./utils/zinsSweep.js";
 import { Li } from "./utils/icons.jsx";
@@ -2075,6 +2075,27 @@ export default function SupaDupaMoney() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [txs, cats, accounts, _giroPuffer, budgets, startBalances]);
 
+  // Was tut die Sparraten-Automatik gegen den frühesten Engpass?
+  //
+  // Ohne diese Antwort steht die Warnung kommentarlos da, obwohl die App im
+  // Hintergrund längst etwas unternimmt — oder eben nicht mehr kann. Beides
+  // muss man sehen können (Nutzer: „ich sehe keine Info, ob/was ggf. geändert
+  // wird. Bin gerade lost").
+  const sparHilfe = useMemo(() => {
+    const w = liquidityWarnings[0];
+    if (!w) return null;
+    const tag = w.date || (w.allDays || [])[0]?.date;
+    if (!tag) return null;
+    const reineTxs = ohneSweepBuchungen(txs);
+    try {
+      return sparHilfeFuerEngpass({
+        txs: reineTxs, engpassIso: tag, puffer: pn(_giroPuffer) || 0, today: new Date(),
+        ctx: { txs: reineTxs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth },
+      });
+    } catch { return null; }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liquidityWarnings, txs, cats, accounts, _giroPuffer, budgets, startBalances]);
+
   // Banner-Daten: frühester betroffener Monat (Konto fällt unter den Puffer).
   const strainWarning = useMemo(()=>{
     if(!liquidityWarnings.length) return null;
@@ -3343,6 +3364,7 @@ export default function SupaDupaMoney() {
     _txsInMonthAcc, _txsInMonthAccCat, _txsInMonthAccCatSub,
     navigateToSparen, sparOpenRequest,
     liquidityWarnings,
+    sparHilfe,
     getJV, setJV, getMV, setMV, getAcc, openEdit, saveEdit, deleteFromEdit,
     updEditSplit, moveCat, moveSub, updateSub, updateCat,
     renameCat, renameSub, deleteCat, deleteSub, saveNewCat, saveNewSub,
@@ -3487,10 +3509,16 @@ export default function SupaDupaMoney() {
   // Vollbild-Dialoge (die den Badge sonst nicht kennen und ihn überdecken
   // würden, siehe Kategorie-Drilldown) ihren eigenen Notch-Abstand darum
   // ergänzen können: calc(12px + env(safe-area-inset-top) + var(--sync-badge-space)).
-  // Screens mit Hero (Dashboard, Monat) zeigen den Sync-Hinweis selbst direkt
-  // unter dem Hero; nur die übrigen bekommen ihn oben unter der Notch.
-  const heroScreenAktiv = mainTab==="erfassen" && (subTab==="dashboard" || subTab==="monat");
-  const syncBadgeSpace = (!heroScreenAktiv && getSyncBadgeState({isOnline, cfActive, isDirty, syncStatus})) ? "38px" : "0px";
+  // Screens mit Hero zeigen den Sync-Hinweis selbst direkt unter dem Hero; nur
+  // die übrigen bekommen ihn oben unter der Notch.
+  //
+  // Welche Screens das sind, stand hier als feste Liste — und die war
+  // unvollständig (die Jahresansicht rendert ihren Hero über
+  // YearSectionHeader). Folge: zweimal derselbe Hinweis übereinander
+  // (Nutzer-Bild). Jetzt meldet sich der Hero-Hinweis selbst an, siehe
+  // SyncStatusBadge.jsx.
+  const heroBadgeAktiv = useHeroBadgeAktiv();
+  const syncBadgeSpace = (!heroBadgeAktiv && getSyncBadgeState({isOnline, cfActive, isDirty, syncStatus})) ? "38px" : "0px";
 
   return (
   <AppCtx.Provider value={cx}>
@@ -3817,7 +3845,8 @@ export default function SupaDupaMoney() {
           Nur auf Screens OHNE Hero. Dashboard und Monat rendern ihn selbst
           unterhalb des Heros (siehe dort) — dort oben unter der Notch war er
           zu schmal und zu nah am Rand, um ihn zuverlässig zu treffen. ── */}
-      {!heroScreenAktiv && <SyncStatusBadge/>}
+      {/* Unterdrückt sich selbst, sobald der Hero-Hinweis angemeldet ist. */}
+      <SyncStatusBadge/>
 
       {/* ── Interaktive Feature-Tour (Hero-"?"-Symbol): Overlay ÜBER dem
           aktiven Tab, wechselt selbst zwischen Tabs — kein showXxx-Vollbild-

@@ -574,7 +574,7 @@ function SaldoHeroV2({
           zwangslaeufig unterhalb der gesamten Aufriss-Liste, sobald man Mitte
           oder Ende antippte (Nutzer-Bild). Hier bleibt es in beiden Faellen
           unmittelbar unter dem Hero. */}
-      <SyncStatusBadge/>
+      <SyncStatusBadge imHero/>
 
       {/* Prognose-Drilldown (Mitte oder Ende) — über das 20px-Hero-Padding hinaus
           ziehen, damit die Liste fast die volle Breite nutzt (Saldo-Anzeige bleibt). */}

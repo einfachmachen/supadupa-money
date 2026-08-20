@@ -54,7 +54,7 @@ function classify(dev, isIncome) {
 const fmtK = (v) => v >= 1000 ? (Math.round(v / 100) / 10) + "k" : String(Math.round(v));
 
 function MoneyMoodScreen() {
-  const { cats, groups, txs, year, selAcc, getActualSum, getBudgetForMonth, getAcc, openEdit, updateCat, liquidityWarnings } = useContext(AppCtx);
+  const { cats, groups, txs, year, selAcc, getActualSum, getBudgetForMonth, getAcc, openEdit, updateCat, liquidityWarnings, sparHilfe } = useContext(AppCtx);
   const [openCat, setOpenCat] = useState(null);   // aufgeklappte Hauptkategorie
   const [detail, setDetail] = useState(null);     // { row, isSub, isIncome }
   const [heroOpen, setHeroOpen] = useState(false);          // Hero-Details auf/zu
@@ -381,6 +381,33 @@ function MoneyMoodScreen() {
           <div style={{ color: T.txt, fontSize: 12.5, lineHeight: 1.4, marginBottom: activeStrain.drivers.length ? 7 : 0 }}>
             <b>{MONTHS_F[activeStrain.mi]}:</b> Konto fällt auf <b style={{ color: T.acc_neg }}>{activeStrain.saldoVal < 0 ? "−" : ""}{betrag(activeStrain.saldoVal)} €</b> — <b style={{ color: T.acc_gold }}>{betrag(activeStrain.deficit)} €</b> unter Puffer ({betrag(buffer)} €).
           </div>
+
+          {/* Was tut die App selbst dagegen?
+              Ohne diese Zeile stand die Warnung kommentarlos da, obwohl die
+              Sparraten-Automatik im Hintergrund längst eingreift — oder eben
+              nicht mehr eingreifen kann. Beides muss man sehen (Nutzer: „ich
+              sehe keine Info, ob/was ggf. geändert wird. Bin gerade lost").
+              Nur beim FRÜHESTEN Engpass: `sparHilfe` rechnet für genau den. */}
+          {sparHilfe && activeStrain.mi === (liquidityWarnings[0]?.month) && (
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: 7,
+              color: T.txt, fontSize: 12, lineHeight: 1.45 }}>
+              {Li(sparHilfe.reicht ? "arrow-down" : "info", 13,
+                sparHilfe.reicht ? T.acc_pos : T.acc_gold)}
+              <span>
+                {sparHilfe.wirdReduziert ? (<>
+                  Die App senkt dafür die <b>Sparrate {MONTHS_S[sparHilfe.monat]} {sparHilfe.jahr}</b>{" "}
+                  von <b>{betrag(sparHilfe.aktuell)} €</b> auf{" "}
+                  <b style={{ color: T.acc_pos }}>{betrag(sparHilfe.sicher)} €</b>
+                  {sparHilfe.reicht ? " — damit ist der Engpass weg." : " — das reicht aber nicht."}
+                </>) : (<>
+                  Die Sparrate kann hier nichts mehr auffangen
+                  ({MONTHS_S[sparHilfe.monat]} {sparHilfe.jahr} steht schon bei{" "}
+                  <b>{betrag(sparHilfe.aktuell)} €</b>).{" "}
+                  <b style={{ color: T.acc_gold }}>Hier hilft nur kürzen.</b>
+                </>)}
+              </span>
+            </div>
+          )}
 
           {activeStrain.drivers.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
