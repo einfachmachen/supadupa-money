@@ -22,6 +22,7 @@ import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { isFuelSelection, checkOdometerPlausibility } from "../../utils/fuel.js";
 import { recordDeletedTxs } from "../../utils/txTombstones.js";
+import { serienAbschnitte, heuteIso } from "../../utils/serienAbschnitte.js";
 
 function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
   const { cats, groups, txs, setTxs, accounts, vehicles, setVehicles, year, month, getCat, getSub, setMasterOverride,
@@ -1551,20 +1552,13 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                 // Hauptbuchungen (keine Ausnahme-Markierung)
                 const mainSorted = allSorted.filter(t=>!t._isException);
                 if(mainSorted.length<1) return null;
-                const total = mainSorted.length;
-                // Betrags-Abschnitte aus Hauptbuchungen
-                const sections = [];
-                let cur = null;
-                mainSorted.forEach(t=>{
-                  const a = Math.round(t.totalAmount*100)/100;
-                  if(!cur || cur.amt!==a) {
-                    if(cur) sections.push(cur);
-                    cur = {amt:a, from:t.date, to:t.date, count:1};
-                  } else {
-                    cur.to = t.date; cur.count++;
-                  }
-                });
-                if(cur) sections.push(cur);
+                // Vergangenes vom Geplanten trennen (siehe utils/serienAbschnitte.js):
+                // Eine Rate vom Vormonat steht mit dem Betrag von DAMALS in der
+                // Liste. Zwischen den kommenden Raten gelesen, sieht das aus wie
+                // ein zweiter, widersprüchlicher Sparplan — es ist aber schlicht
+                // Vergangenheit, die die Automatik bewusst nicht mehr anfasst.
+                const {offen:sections, offenCount:total, vergangenSections, vergangenCount, nurVergangen}
+                  = serienAbschnitte(mainSorted, heuteIso());
                 // Ausnahmen (isException-Markierung)
                 const exSorted = allSorted.filter(t=>t._isException);
                 // Gruppiere Ausnahmen nach exSeriesId
@@ -1581,7 +1575,9 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                   <div style={{marginBottom:8,background:"rgba(0,0,0,0.15)",borderRadius:9,
                     padding:"8px 10px",fontSize:S.fs-6}}>
                     <div style={{color:T.txt,fontWeight:700,marginBottom:6}}>
-                      {total}× insgesamt
+                      {nurVergangen
+                        ? `${vergangenCount}× — alle vorbei`
+                        : `${total}× noch geplant`}
                     </div>
                     {sections.map((s,i)=>(
                       <div key={i} style={{display:"flex",justifyContent:"space-between",
@@ -1610,6 +1606,41 @@ function VormerkungHub({onClose, editVorm: _editVormProp=null}) {
                         </span>
                         <span style={{color:T.acc_gold,fontWeight:700,fontFamily:NUM_FONT}}>
                           {betrag(ex.amt)} €
+                        </span>
+                      </div>
+                    ))}
+                    {/* Was vorbei ist, steht ABGESETZT darunter — mit eigener
+                        Überschrift, damit kein alter Betrag mehr als geplante
+                        Rate gelesen wird. */}
+                    {!nurVergangen&&vergangenCount>0&&(
+                      <div style={{marginTop:8,paddingTop:6,borderTop:`1px solid ${T.bd}`}}>
+                        <div style={{color:T.txt2,fontWeight:700,marginBottom:4}}>
+                          {vergangenCount}× vorbei · wird nicht mehr angepasst
+                        </div>
+                        {vergangenSections.map((s,i)=>(
+                          <div key={"v"+i} style={{display:"flex",justifyContent:"space-between",
+                            padding:"3px 0",alignItems:"center",opacity:0.85}}>
+                            <span style={{color:T.txt2}}>
+                              {s.count===1 ? fmtMY(s.from) : `${fmtMY(s.from)} – ${fmtMY(s.to)}`}
+                              {s.count>1&&<span style={{color:T.txt2}}> ({s.count}×)</span>}
+                            </span>
+                            <span style={{color:T.txt2,fontWeight:700,fontFamily:NUM_FONT}}>
+                              {betrag(s.amt)} €
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {nurVergangen&&vergangenSections.map((s,i)=>(
+                      <div key={"nv"+i} style={{display:"flex",justifyContent:"space-between",
+                        padding:"3px 0",borderBottom:`1px solid ${T.bd}`,alignItems:"center"}}>
+                        <span style={{color:T.txt2}}>
+                          {s.count===1 ? fmtMY(s.from) : `${fmtMY(s.from)} – ${fmtMY(s.to)}`}
+                          {s.count>1&&vergangenSections.length>1&&
+                            <span style={{color:T.txt2,opacity:0.6}}> ({s.count}×)</span>}
+                        </span>
+                        <span style={{color:T.acc_pos,fontWeight:700,fontFamily:NUM_FONT}}>
+                          {betrag(s.amt)} €
                         </span>
                       </div>
                     ))}

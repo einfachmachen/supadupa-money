@@ -65,6 +65,24 @@ Heute öffnet JEDER Bearbeiten-Tipp das Desktop-`EditPopup` (App.jsx:2609,
   - Quelle: Wunsch aus der mobilen Umbuchungs-/Vormerken-Arbeit (Giro war der
     erste Schritt; Puffer für weitere Konten „brauchen wir").
 
+- [ ] **Vergangene Vormerkungen laufen nicht ab.**
+  Nur Budget-Platzhalter (`_budgetSubId`) verschwinden mit ihrer Phase —
+  `budgetPlaceholderActive()` in `utils/saldo.js`. Eine gewoehnliche
+  Vormerkung bleibt stehen, bis sie einer echten Buchung zugeordnet oder
+  von Hand geloescht wird. Bei einer Sparrate faellt das auf: Die vom 31.07.
+  steht am 20.08. noch in den offenen Vormerkungen, obwohl sie nie abging.
+  - Auf den Saldo wirkt sie nicht (der Anker eines vergangenen Monats ist
+    der ECHTE Saldo, `saldoAnchor()`), und die Automatik fasst sie nicht an
+    (`sparAbgaenge` filtert ab dem laufenden Monat) — sie ist nur Ballast.
+  - In der Serien-Betragsliste ist sie inzwischen abgesetzt
+    (`utils/serienAbschnitte.js`, „x× vorbei · wird nicht mehr angepasst").
+    In der Liste der offenen Vormerkungen steht sie weiterhin dazwischen.
+  - Zu entscheiden (Dirk): stillschweigend loeschen waere falsch — die
+    Ueberweisung koennte real passiert und nur noch nicht importiert sein.
+    Besser ein sichtbarer Hinweis „x Vormerkungen sind ueberfaellig" mit
+    zwei Knoepfen: „gab es wirklich" (zuordnen) / „ist ausgefallen"
+    (loeschen).
+
 ## Bank-Anbindung (Enable Banking)
 
 Offene Punkte aus `ENABLE_BANKING_PLAN.md` (Abschnitt „Noch offen"):
