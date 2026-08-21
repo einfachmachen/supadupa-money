@@ -53,7 +53,7 @@ describe("Karten-Textfarbe", () => {
     // siehe tests/tastenhellTheme.test.js). Hier wird der Mechanismus selbst
     // an einem gestellten Theme geprueft, damit der Test nicht mitwandert,
     // wenn sich die Farben eines echten Themes aendern.
-    const gegensaetzlich = { ...THEMES.keyboard, txt: "#1E1E1C", txt_card: "#FFFFFF",
+    const gegensaetzlich = { ...THEMES.tastenhell, txt: "#1E1E1C", txt_card: "#FFFFFF",
       txt2: "rgba(30,30,28,0.66)", txt2_card: "rgba(255,255,255,0.80)" };
     setActiveTheme("probe", gegensaetzlich);
     expect(hatKartenText()).toBe(true);
@@ -70,14 +70,14 @@ describe("Karten-Textfarbe", () => {
   });
 
   it("nennt in der Regel JEDE Kartenflaeche des Themes", () => {
-    setActiveTheme("keyboard", THEMES.keyboard);
+    setActiveTheme("tastenhell", THEMES.tastenhell);
     const regel = kartenTextRegel();
     const alsRgb = (h) => { const [r, g, b] = rgb(h); return `rgb(${r}, ${g}, ${b})`; };
-    [THEMES.keyboard.surf, THEMES.keyboard.surf2, THEMES.keyboard.surf3, THEMES.keyboard.cat_bg]
+    [THEMES.tastenhell.surf, THEMES.tastenhell.surf2, THEMES.tastenhell.surf3, THEMES.tastenhell.cat_bg]
       .forEach(f => expect(regel).toContain(alsRgb(f)));
     // Hero, Drei-Symbol-Zeile und Werkzeuge-Zeile tragen Akzentfarben und
     // brauchen ebenfalls eine Flaeche — sonst fallen die Symbole durch.
-    Object.keys(THEMES.keyboard.flaechen_extra).forEach(sel => {
+    Object.keys(THEMES.tastenhell.flaechen_extra).forEach(sel => {
       expect(regel).toContain(sel);
     });
     // Die Fuge zwischen zwei Keycaps kommt aus dem Theme, nicht aus der
@@ -85,19 +85,27 @@ describe("Karten-Textfarbe", () => {
     expect(regel).toContain("box-shadow");
   });
 
-  it("Keyboard: Text und Akzente sitzen lesbar auf Platte UND Keycaps", () => {
-    const t = THEMES.keyboard;
+  it("Tastenhell: dunkler Text auf der Platte, weisser auf den Tasten", () => {
+    // Frueher stand hier "Keyboard" (mittelgraue Platte, EINE Textfarbe fuer
+    // alles). Das Theme ist entfernt. "Tastenhell" hat seine Farbwelt geerbt,
+    // aber eine HELLE Platte — und damit genau den Fall, fuer den der
+    // Zwei-Textfarben-Mechanismus gebaut wurde (§4.7): Auf der Platte traegt
+    // die dunkle Schrift, auf den Tasten die weisse. Die Akzente (Gelbgruen,
+    // Cyan, Gold) sind fuer die TASTEN gemacht; auf der hellen Platte fallen
+    // sie bewusst durch — deshalb gibt es `flaechen_extra`.
+    const t = THEMES.tastenhell;
     // In `flaechen_extra` darf auch ein Verlauf stehen (der Hero hat einen) —
     // dann zaehlt jede seiner Farben als eigene Flaeche.
     const farbenAus = (wert) => String(wert).match(/#[0-9a-fA-F]{3,6}/g) || [];
-    const flaechen = [t.bg, t.surf, t.surf2, t.surf3, t.cat_bg,
+    const tasten = [t.surf, t.surf2, t.surf3, t.cat_bg,
       ...Object.values(t.flaechen_extra).flatMap(farbenAus)];
-    // Weisser Text traegt auf allen Flaechen …
-    flaechen.forEach(f => expect(kontrast(t.txt, f)).toBeGreaterThanOrEqual(4.5));
-    // … und die Akzente erreichen ueberall die Schwelle fuer Symbole/grossen
-    // Text. Genau daran ist die fast weisse Platte gescheitert.
-    [t.blue, t.neg, t.gold, t.mid].forEach(a => {
-      flaechen.forEach(f => expect(kontrast(a, f)).toBeGreaterThanOrEqual(3));
+
+    expect(kontrast(t.txt, t.bg), "dunkler Text auf der hellen Platte")
+      .toBeGreaterThanOrEqual(4.5);
+    tasten.forEach((f) => expect(kontrast(t.txt_card, f), `weisser Text auf ${f}`)
+      .toBeGreaterThanOrEqual(4.5));
+    [t.blue, t.neg, t.gold, t.mid].forEach((a) => {
+      tasten.forEach((f) => expect(kontrast(a, f), `${a} auf ${f}`).toBeGreaterThanOrEqual(3));
     });
     // Vorgemerkt bleibt vom Gebuchten unterscheidbar (§4.4).
     expect(kontrast(t.neg, t.neg_vm)).toBeGreaterThan(1.25);

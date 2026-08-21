@@ -80,7 +80,7 @@ describe("Luftige Gestalt für alle Themes", () => {
     // düster"). Nur „Tastenhell" zählt sie selbst auf: dort ist die Platte
     // hell, und die Akzentfarben fänden sonst keinen Grund.
     alle.forEach(([k, t]) => {
-      if (k === "tastenhell" || k === "keyboard") return;
+      if (k === "tastenhell") return;
       [".warn-karte", ".hinweis-karte", ".wahl-taste", ".tages-karte"].forEach((sel) => {
         expect((t.flaechen_extra || {})[sel], `${k}: ${sel} darf nicht übermalt werden`)
           .toBeFalsy();
@@ -98,12 +98,12 @@ describe("Luftige Gestalt für alle Themes", () => {
       .toMatch(/T\.luftig\?"theme-luftig":null/);
   });
 
-  it("die beiden „Luftig\"-Duplikate sind weg — und laufen ins Leere", () => {
+  it("entfernte Themes laufen ins Leere statt ins Nichts", () => {
     // Wer eines ausgewählt hatte, darf nicht auf einem Namen sitzen bleiben,
     // den es nicht mehr gibt: Die App zeigte dann zwar etwas, in der
     // Theme-Auswahl wäre aber nichts markiert (derselbe Fall wie bei
     // „darkhell").
-    ["limeluftig", "deepoceanluftig"].forEach((k) => {
+    ["limeluftig", "deepoceanluftig", "keyboard", "magazin"].forEach((k) => {
       expect(THEMES[k], `${k} muss weg sein`).toBeUndefined();
       expect(THEME_ALIAS[k], `${k} braucht ein Ziel`).toBeTruthy();
       expect(THEMES[THEME_ALIAS[k]]).toBeTruthy();

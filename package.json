@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "kontrast": "node tools/kontrast.cjs"
+    "kontrast": "node tools/kontrast.cjs",
+    "themes:aehnlich": "node tools/themeAehnlich.cjs"
   },
   "dependencies": {
     "lucide-react": "^0.395.0",

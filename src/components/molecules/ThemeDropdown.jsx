@@ -15,7 +15,7 @@ function ThemeDropdown({themeName, setThemeName}) {
     Object.entries(saved).forEach(([k,v])=>{ if(!THEMES[k]) THEMES[k]=v; });
     const list = Object.entries(THEMES)
       .filter(([k])=>k!=="custom_preview")
-      .map(([k,v])=>({ key:k, name:v.name||k, bg:v.bg, blue:v.blue, pos:v.pos, neg:v.neg, lum:luma(v.bg) }));
+      .map(([k,v])=>({ key:k, name:v.name||k, bg:v.swatch_bg||v.bg, blue:v.blue, pos:v.pos, neg:v.neg, lum:luma(v.bg) }));
     // Gruppieren: Dunkel zuerst, dann Hell. Innerhalb als Helligkeits-Verlauf
     // (dunkel: dunkelste zuerst, hell: hellste zuerst).
     return {

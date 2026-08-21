@@ -149,11 +149,9 @@
      eine Kette aus Theme-Namen mitwachsen muss — dieselbe Ueberlegung wie bei
      der Theme-Klasse selbst (siehe App.jsx).
 
-     ── Tastatur-Themes (Keyboard dunkel, Tastenhell hell) ──
+     ── Tastatur-Gestalt (das Theme Keyboard ist entfernt, seine Farbwelt lebt als Basis von Tastenhell weiter) ──
      Fuge und Kartenflaechen kommen aus dem Theme selbst (card_shadow,
      flaechen_extra in themes.js) — hier steht nur noch die Form. */
-  .theme-keyboard .hero-flaeche,
-  .theme-keyboard .symbolzeile,
   .theme-luftig .hero-flaeche,
   .theme-luftig .symbolzeile {
     border-radius: 14px;
@@ -185,7 +183,6 @@
      exakt so hoch sein wie Suchfeld und Filter-Pillen daneben. Das
      Innenpolster der Taste kaeme zu ihrer Zeilenhoehe hinzu — hier deshalb
      oben/unten abgeraeumt; die Hoehe traegt die Zeile selbst. */
-  .theme-keyboard .werkzeuge-zeile,
   .theme-luftig .werkzeuge-zeile {
     padding-top: 0;
     padding-bottom: 0;

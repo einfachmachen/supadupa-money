@@ -60,7 +60,10 @@ function Swatch({ th, size = 22, dot = 5, gap = 2 }) {
   return (
     <div style={{
       width: size, height: size, borderRadius: 6, flexShrink: 0,
-      background: toH(th.bg), border: "1px solid rgba(128,128,128,0.35)",
+      // `swatch_bg`: Ein Theme darf fuer sein Wahl-Symbol eine andere Flaeche
+      // nennen als seine Platte. "Tastenhell" tut das - seine Platte ist
+      // cremefarben und war in der Liste kaum als eigenes Feld zu erkennen.
+      background: toH(th.swatch_bg || th.bg), border: "1px solid rgba(128,128,128,0.35)",
       display: "flex", alignItems: "center", justifyContent: "center",
       flexWrap: "wrap", gap, padding: 2, boxSizing: "border-box",
     }}>

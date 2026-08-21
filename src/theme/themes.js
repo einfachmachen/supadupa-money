@@ -1,4 +1,55 @@
 // Theme-Definitionen
+// ── Basis „Keyboard" ──────────────────────────────────────────────────────
+//
+// Das Theme selbst ist entfernt (Nutzer-Entscheidung: zu viele Themes). Seine
+// Farbwelt bleibt aber als BASIS bestehen, denn „Tastenhell" baut darauf auf —
+// es uebernimmt Tastenfarben und Akzente und dreht nur die Platte ins Helle.
+// Ohne diese Konstante muesste man sie dort noch einmal auffuehren.
+const KEYBOARD_BASIS = {
+    name:"Keyboard",
+    bg:"#52524C",                // Tastatur-Platte (hellste Fassung ohne Kontrastverlust)
+    surf:"#4E4E4E",              // Keycap-Flaeche — mittleres Grau wie in der Vorlage
+    surf2:"#464646",             // etwas tiefer (Modale, Dialogkarten)
+    surf3:"#3C3C3C",             // dunkelste Stufe (Trennungen)
+    cat_bg:"#4E4E4E",            // Kategorien-Karten = Keycaps
+    bd:"rgba(238,238,230,0.55)",   // helle Platte als Fuge zwischen den Tasten
+    bds:"rgba(238,238,230,0.92)",  // staerker (Umriss der ganzen Tastatur)
+    txt:"#FFFFFF",               // Text auf der Platte: fast schwarz
+    txt2:"rgba(255,255,255,0.86)",
+    lbl:"rgba(255,255,255,0.78)",
+    blue:"#C8DC2E",              // Zweitbelegung: leuchtendes Gelbgruen
+    pos:"#C8DC2E",
+    neg:"#00D9FF",               // Ausgaben-Cyan wie im ueblichen Farbkonzept
+    gold:"#FFD700",
+    warn:"#F59E0B", override:"#B45309",
+    on_accent:"#1A1E00",         // dunkler Text auf dem hellen Gelbgruen
+    disabled:"#2A2A2A",
+    mid:"#A8EFFA",               // heller als im Standard: die "Mitte"-Pille liegt
+                                 // auf einer eigenen, mittelhellen Flaeche.
+    cf:"#FFBE80",
+    vorm_bg:"#FFD700", vorm_bd:"#FFD700",
+    cell_inc:"#9CB336", cell_inc_bg:"#141A00", cell_inc_bd:"#4A6600", cell_exp:"#FFD24D", over:"#FF7EB6",
+    tab_exp:"#6B1A10", tab_inc:"#2A4A00", tab_pend:"#5A3A00",
+    err:"#FF4444", err_bg:"#7A1020",
+    pal_inc_bg:"#161900", pal_inc_bd:"#3A4800", pal_inc_hdr:"#C8D400", pal_inc_fld:"#1A1E00", pal_inc_val:"#D4E040",
+    pal_exp_bg:"#1F0608", pal_exp_bd:"#5C1018", pal_exp_fld:"#240408",
+    pal_tg_bg:"#071820",  pal_tg_bd:"#1A3A48",  pal_tg_hdr:"#4A9FC0",  pal_tg_fld:"#091E2A",  pal_tg_val:"#80C8E0",
+    hero_bg:"linear-gradient(135deg,#4E4E4E,#3A3A3A)",
+    // Hero und Symbolzeile sind im Markup keine Karten, muessen hier aber
+    // welche sein: sie tragen Akzentfarben (Kontostand, Prognose, Warn-/
+    // Spar-/VM-Symbol), die auf der hellen Platte durchfallen wuerden.
+    // Der Hero behaelt seinen Verlauf: `flaechen_extra` setzt den Wert
+    // unveraendert als background ein, also darf dort auch ein Verlauf stehen.
+    flaechen_extra:{".hero-flaeche":"linear-gradient(135deg,#4E4E4E,#3A3A3A)",".symbolzeile":"#4E4E4E"},
+    // Die Fuge zwischen zwei Keycaps plus deren untere Kante. Steht hier und
+    // nicht in der CSS-Datei, damit sie nicht von der Kartenfarbe abgekoppelt
+    // werden kann.
+    card_shadow:"0 0 0 1.5px rgba(238,238,230,0.85), 0 2px 3px rgba(0,0,0,0.35)",
+    logo_c1:"#7E8F1A",     logo_c2:"#C8DC2E",
+    cond_neg:"#00D9FF", neg_aktuell:"#59E6FF", neg_vm:"#8CEEFF", warn_bold:"#FF8800", warn_icon:"#FFD24D",
+    cond_warn:"#E67E22", cond_gold:"#F1C40F", cond_pos:"#BFFF00", pos_aktuell:"#D5FF59", pos_vm:"#E2FF8C",
+  };
+
 const THEMES = {
   dark: {
     bg:"#2C3035", surf:"#363B42", surf2:"#3D4349",
@@ -510,50 +561,6 @@ const THEMES = {
   // Die FUGE zwischen zwei Keycaps kommt als box-shadow aus `card_shadow`,
   // nicht aus `bd`: "Rahmen aus" ist der Standard und setzt jede border-color
   // auf transparent.
-  keyboard: {
-    name:"Keyboard",
-    bg:"#52524C",                // Tastatur-Platte (hellste Fassung ohne Kontrastverlust)
-    surf:"#4E4E4E",              // Keycap-Flaeche — mittleres Grau wie in der Vorlage
-    surf2:"#464646",             // etwas tiefer (Modale, Dialogkarten)
-    surf3:"#3C3C3C",             // dunkelste Stufe (Trennungen)
-    cat_bg:"#4E4E4E",            // Kategorien-Karten = Keycaps
-    bd:"rgba(238,238,230,0.55)",   // helle Platte als Fuge zwischen den Tasten
-    bds:"rgba(238,238,230,0.92)",  // staerker (Umriss der ganzen Tastatur)
-    txt:"#FFFFFF",               // Text auf der Platte: fast schwarz
-    txt2:"rgba(255,255,255,0.86)",
-    lbl:"rgba(255,255,255,0.78)",
-    blue:"#C8DC2E",              // Zweitbelegung: leuchtendes Gelbgruen
-    pos:"#C8DC2E",
-    neg:"#00D9FF",               // Ausgaben-Cyan wie im ueblichen Farbkonzept
-    gold:"#FFD700",
-    warn:"#F59E0B", override:"#B45309",
-    on_accent:"#1A1E00",         // dunkler Text auf dem hellen Gelbgruen
-    disabled:"#2A2A2A",
-    mid:"#A8EFFA",               // heller als im Standard: die "Mitte"-Pille liegt
-                                 // auf einer eigenen, mittelhellen Flaeche.
-    cf:"#FFBE80",
-    vorm_bg:"#FFD700", vorm_bd:"#FFD700",
-    cell_inc:"#9CB336", cell_inc_bg:"#141A00", cell_inc_bd:"#4A6600", cell_exp:"#FFD24D", over:"#FF7EB6",
-    tab_exp:"#6B1A10", tab_inc:"#2A4A00", tab_pend:"#5A3A00",
-    err:"#FF4444", err_bg:"#7A1020",
-    pal_inc_bg:"#161900", pal_inc_bd:"#3A4800", pal_inc_hdr:"#C8D400", pal_inc_fld:"#1A1E00", pal_inc_val:"#D4E040",
-    pal_exp_bg:"#1F0608", pal_exp_bd:"#5C1018", pal_exp_fld:"#240408",
-    pal_tg_bg:"#071820",  pal_tg_bd:"#1A3A48",  pal_tg_hdr:"#4A9FC0",  pal_tg_fld:"#091E2A",  pal_tg_val:"#80C8E0",
-    hero_bg:"linear-gradient(135deg,#4E4E4E,#3A3A3A)",
-    // Hero und Symbolzeile sind im Markup keine Karten, muessen hier aber
-    // welche sein: sie tragen Akzentfarben (Kontostand, Prognose, Warn-/
-    // Spar-/VM-Symbol), die auf der hellen Platte durchfallen wuerden.
-    // Der Hero behaelt seinen Verlauf: `flaechen_extra` setzt den Wert
-    // unveraendert als background ein, also darf dort auch ein Verlauf stehen.
-    flaechen_extra:{".hero-flaeche":"linear-gradient(135deg,#4E4E4E,#3A3A3A)",".symbolzeile":"#4E4E4E"},
-    // Die Fuge zwischen zwei Keycaps plus deren untere Kante. Steht hier und
-    // nicht in der CSS-Datei, damit sie nicht von der Kartenfarbe abgekoppelt
-    // werden kann.
-    card_shadow:"0 0 0 1.5px rgba(238,238,230,0.85), 0 2px 3px rgba(0,0,0,0.35)",
-    logo_c1:"#7E8F1A",     logo_c2:"#C8DC2E",
-    cond_neg:"#00D9FF", neg_aktuell:"#59E6FF", neg_vm:"#8CEEFF", warn_bold:"#FF8800", warn_icon:"#FFD24D",
-    cond_warn:"#E67E22", cond_gold:"#F1C40F", cond_pos:"#BFFF00", pos_aktuell:"#D5FF59", pos_vm:"#E2FF8C",
-  },
 
 };
 
@@ -882,37 +889,7 @@ THEMES.kloetzchenwelt = {
   name:"Klötzchenwelt",
 };
 
-// ════════════════════════════════════════════════════════════════════════
-//  Magazin (Editorial) — erstes Theme mit EIGENEM Hero-Layout statt nur
-//  eigener Farben: hero_layout:"editorial" schaltet in SaldoHeroV2 auf eine
-//  linksbündige Schlagzeilen-Anordnung um (Kicker-Zeile mit Kontowahl oben,
-//  großer Betrag links, Prognosen als Ticker-Leiste darunter). Farbwelt:
-//  dunkle Tinte + Kupfer/Messing, wie ein edles Finanzmagazin.
-// ════════════════════════════════════════════════════════════════════════
-THEMES.magazin = {
-  ...THEMES.dark,
-  bg:"#12141A", surf:"#1A1D24", surf2:"#232730", surf3:"#0D0F13",
-  bd:"rgba(235,220,195,0.13)", bds:"rgba(235,220,195,0.26)",
-  txt:"#F4EFE5", txt2:"rgba(226,212,188,0.60)", lbl:"rgba(226,212,188,0.46)",
-  blue:"#4DA6FF",   // Akzentfarbe (Kontostand/+Button) — klares Blau statt Kupfer
-  pos:"#A3C585", neg:"#00D9FF", gold:"#D9B45B",
-  on_accent:"#241304", disabled:"#2A2D34",
-  warn:"#D9964A", override:"#A96A2A",
-  mid:"#8FB6C9",
-  cell_inc:"#7F9A68", cell_inc_bg:"#141B10", cell_inc_bd:"#3E5A2C", cell_exp:"#FFD24D", over:"#FF7EB6",
-  tab_exp:"rgba(226,96,76,0.18)", tab_inc:"rgba(163,197,133,0.16)", tab_pend:"rgba(217,180,91,0.16)",
-  err:"#E2604C", err_bg:"#3A140E",
-  vorm_bg:"#2A2110", vorm_bd:"#FFD700",
-  pal_inc_bg:"#141B10", pal_inc_bd:"#3E5A2C", pal_inc_hdr:"#A3C585", pal_inc_fld:"#182114", pal_inc_val:"#C2DCA8",
-  pal_exp_bg:"#241009", pal_exp_bd:"#5C2418", pal_exp_fld:"#2C140C",
-  pal_tg_bg:"#101820", pal_tg_bd:"#2A4250", pal_tg_hdr:"#8FB6C9", pal_tg_fld:"#141E28", pal_tg_val:"#B8D5E2",
-  hero_bg:"linear-gradient(150deg,#1A1D24 0%,#12141A 55%,#181314 100%)",
-  logo_c1:"#E0975C", logo_c2:"#D9B45B",
-  cond_neg:"#00D9FF", neg_aktuell:"#59E6FF", neg_vm:"#8CEEFF", warn_bold:"#FF8800", warn_icon:"#FFD24D", cond_warn:"#D9964A", cond_gold:"#D9B45B", cond_pos:"#BFFF00", pos_aktuell:"#D5FF59", pos_vm:"#E2FF8C",
-  hero_layout:"editorial",
-  nav_icons:{ home:"newspaper", jahr:"trending-up", daten:"archive" },
-  name:"Magazin (Editorial)",
-};
+
 
 // ════════════════════════════════════════════════════════════════════════
 //  Tastenhell — die Tastatur aus dem CachyOS-Installationsprogramm, jetzt
@@ -958,7 +935,7 @@ const VERTIEFT = [".hero-flaeche", ".symbolzeile", ".aufriss-blatt",
   ".warn-karte", ".hinweis-karte", ".wahl-taste"];
 
 THEMES.tastenhell = {
-  ...THEMES.keyboard,
+  ...KEYBOARD_BASIS,
   hell:false,                  // helle Platte, aber dunkle Karten (s. o.)
   // … die Eingabefelder auf der PLATTE muessen aber hell bleiben: mit dem
   // dunklen Systemfarbschema malt der Browser sie dort fast schwarz. Die
@@ -1106,6 +1083,12 @@ THEMES.tastenhell = {
   // nichts Farbiges — sie gelten jetzt fuer jedes Theme, das sich hiermit
   // anmeldet.
   luftig:true,
+  // Das Wahl-Symbol in der Theme-Liste zeigt sonst die PLATTE — bei
+  // „Tastenhell" also ein cremefarbenes Quadrat, das auf dem hellen Grund der
+  // Liste kaum als eigenes Feld zu erkennen war. Es zeigt jetzt die Platte von
+  // „Keyboard" (Nutzer-Wunsch), und damit dasselbe mittlere Grau wie die
+  // Tasten: Das Symbol sieht aus wie eine Taste, und genau darum geht es.
+  swatch_bg: KEYBOARD_BASIS.bg,
   name:"Tastenhell",
 };
 
@@ -1261,7 +1244,12 @@ Object.entries(THEMES).forEach(([k, t]) => { if (k !== "custom_preview") luftigM
 
 // Wer eines der beiden kurzlebigen Duplikate ausgewaehlt hatte, landet auf
 // der Vorlage — die sieht jetzt genauso aus.
-const THEME_ALIAS = { limeluftig: "dark", deepoceanluftig: "deepocean" };
+const THEME_ALIAS = {
+  limeluftig: "dark", deepoceanluftig: "deepocean",
+  // Entfernt (Nutzer-Entscheidung: 32 Themes ueberfordern). „Keyboard" lebt
+  // als Basis von „Tastenhell" weiter, „Magazin" ist ganz weg.
+  keyboard: "tastenhell", magazin: "creme",
+};
 
 // Globales T — wird von getAppTheme() überschrieben, initialisiert mit dark — wird von getAppTheme() überschrieben, initialisiert mit dark
 function getTheme(name) {

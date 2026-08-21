@@ -91,11 +91,16 @@ describe("mischen", () => {
   });
 
   it("bildet die gemeldete Stelle nach: Cyan auf Cyan-Toenung faellt durch", () => {
-    const t = THEMES.keyboard;
+    // Frueher am Theme "Keyboard" gezeigt (mittelgraue Platte, Ausweichfarbe
+    // Weiss). Das Theme ist entfernt; die Stelle gibt es aber unveraendert in
+    // "Tastenhell", das seine Farbwelt geerbt hat — nur ist die Platte dort
+    // HELL, und die Ausweichfarbe deshalb Fast-Schwarz statt Weiss. Der
+    // Mechanismus ist derselbe: Ein Ton auf seiner EIGENEN Toenung verliert
+    // Kontrast (gemessen 1,34:1), und die Schrift weicht aus.
+    const t = THEMES.tastenhell;
     const grund = mischen(t.neg, TOENUNG, t.bg);
     expect(kontrastWert(t.neg, grund)).toBeLessThan(4.5);
-    // … und die Ueberschrift weicht deshalb auf Weiss aus.
-    expect(schriftAuf(grund, t.neg)).toBe(HELL);
+    expect(schriftAuf(grund, t.neg)).toBe(DUNKEL);
     // Ohne die Toenung mitzurechnen waere der Fehler unsichtbar geblieben.
     expect(kontrastWert(t.neg, t.bg)).toBeGreaterThan(kontrastWert(t.neg, grund));
   });
@@ -115,11 +120,15 @@ describe("aufToenung", () => {
   const TOENUNG = 0x1f / 255;
 
   it("rechnet gegen die Toenung, wo das Theme nichts anderes sagt", () => {
-    setActiveTheme("keyboard", THEMES.keyboard);
-    const t = THEMES.keyboard;
-    expect(toenungsGrund(t.neg, TOENUNG, ".warn-karte"))
+    setActiveTheme("tastenhell", THEMES.tastenhell);
+    const t = THEMES.tastenhell;
+    // Ein Bereich, den KEIN Theme zur Karte erklaert — dann wird die Toenung
+    // wirklich gemalt und ist der Untergrund. (".warn-karte" taugt dafuer
+    // nicht mehr: "Tastenhell" zaehlt sie selbst auf, siehe naechster Test.)
+    const KEIN_KASTEN = ".gibt-es-nicht";
+    expect(toenungsGrund(t.neg, TOENUNG, KEIN_KASTEN))
       .toBe(mischen(t.neg, TOENUNG, t.bg));
-    expect(aufToenung(t.neg, TOENUNG, ".warn-karte")).toBe(HELL);
+    expect(aufToenung(t.neg, TOENUNG, KEIN_KASTEN)).toBe(DUNKEL);
   });
 
   it("rechnet gegen die KARTE, wo das Theme die Flaeche dazu erklaert", () => {
