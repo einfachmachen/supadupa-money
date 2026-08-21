@@ -41,14 +41,17 @@ describe("Sparplan-Kopf: eine Zeile je Betrag, rechtsbündig, ohne Cent", () => 
     // Eine gemeinsame Hilfsfunktion statt dreimal derselbe Aufbau — sonst
     // driften die drei Zeilen beim nächsten Umbau wieder auseinander, und
     // genau das war der „unruhige" Eindruck.
-    expect(wirksam).toMatch(/const betragZeile = \(label, farbe, wert\)/);
+    expect(wirksam).toMatch(/const betragZeile = \(label, farbe, wert, davor\)/);
     const i = wirksam.indexOf("const betragZeile");
     const block = wirksam.slice(i, i + 600);
     expect(block, "Beschriftung und Betrag nebeneinander")
       .toMatch(/justifyContent:"space-between"/);
-    // Auf der Schriftlinie, nicht auf der Mitte: 12px-Text neben einer
-    // 22px-Zahl saesse bei `center` sichtbar zu hoch.
-    expect(block).toMatch(/alignItems:"baseline"/);
+    // Ohne Symbol auf der Schriftlinie (ein 12px-Text neben einer 22px-Zahl
+    // saesse mittig sichtbar zu hoch), MIT Symbol mittig: Ein Knopf hat keine
+    // Schriftlinie. Im Browser gemessen — mit `baseline` sass die
+    // Beschriftung 6px statt 2px ueber der Zahl, und die Zeile wuchs von
+    // 30 auf 39px.
+    expect(block).toMatch(/alignItems:davor\?"center":"baseline"/);
     expect(block).toMatch(/fontSize:BETRAG_GROSS/);
     expect(block, "der Betrag bricht nicht um und schrumpft nicht")
       .toMatch(/whiteSpace:"nowrap",flexShrink:0/);
@@ -140,8 +143,12 @@ describe("Sparplan-Knopf: anlegen oder löschen", () => {
   it("ein Symbol, zwei Zustände", () => {
     expect(wirksam).toMatch(/Li\(gibtEs\?"trash-2":"plus-circle"/);
     expect(wirksam).toMatch(/onClick=\{gibtEs\?sparplanLoeschen:sparplanAnlegen\}/);
-    // Platzsparend: ein Quadrat, kein Knopf ueber die halbe Zeile.
-    expect(wirksam).toMatch(/width:36,height:36/);
+    // Platzsparend: ein kleines Quadrat VOR der Beschriftung, in einer Zeile,
+    // die es ohnehin gibt — nicht in einer eigenen ueber der Tabelle
+    // („vor der Tabelle eine ganze Zeile zu vergeuden, ist doof").
+    expect(wirksam).toMatch(/width:30,height:30/);
+    expect(wirksam, "der Knopf steht in der Zeile Heute sicher sparen")
+      .toMatch(/\), planKnopf\(\)\)\}/);
     // Ein Symbol ohne Namen ist fuer Screenreader stumm.
     expect(wirksam).toMatch(/title=\{name\} aria-label=\{name\}/);
     expect(wirksam).toContain('"Sparplan löschen"');

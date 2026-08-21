@@ -19,6 +19,7 @@ import { phaseStillReachable } from "../../utils/saldo.js";
 import { Li } from "../../utils/icons.jsx";
 import { ThemeSwitcherMini } from "../molecules/ThemeSwitcherMini.jsx";
 import { kvStore } from "../../utils/kvStore.js";
+import { useAbsicherungsStatus } from "../../state/useAbsicherungsStatus.js";
 
 function SaldoHeroV2({
   year, month,
@@ -35,8 +36,9 @@ function SaldoHeroV2({
   // freien Bereich links im Hero, unter dem Fragezeichen. Ohne den Handler
   // (Monat, Jahr) erscheint das Symbol gar nicht.
   chartOpen, onToggleChart,
-  // Grüne Umrandung „alles abgesichert" (siehe unten). Ohne Wert kein Rahmen —
-  // die Monatsansicht nutzt denselben Hero und lässt ihn weg.
+  // Grüne Umrandung „alles abgesichert" (siehe unten). OHNE diese Angabe
+  // entscheidet der Hero selbst — siehe `ring` weiter unten. `null` schaltet
+  // die Umrandung ausdrücklich ab.
   ringFarbe,
 }) {
   const { selAcc, setSelAcc, startKonto, setStartKonto, accounts, getKumulierterSaldo, txs, getCat, getSub, amtMode, setAmtMode, setShowGuidedTour, debugFlags, setDebugFlag } = useContext(AppCtx);
@@ -168,6 +170,21 @@ function SaldoHeroV2({
   // Kontowahl, Auge) oben, großer Betrag links, Prognosen als Ticker-Leiste.
   // Alle anderen Themes rendern unverändert den bisherigen Aufbau.
   const isEditorial = T.hero_layout === "editorial";
+  // ── „Alles abgesichert" als grüne Umrandung ──────────────────────────
+  //
+  // Der Hero entscheidet das SELBST, statt sich die Farbe von jedem Bildschirm
+  // reichen zu lassen. Der erste Anlauf ging über eine Eigenschaft, die nur das
+  // Dashboard setzte — und prompt fehlte die Umrandung in Monat und Trend,
+  // obwohl dort derselbe Hero steht (Nutzer: „müssen wir auch noch in Monat und
+  // Trend ergänzen"). Es ist eine Aussage über die Lage, nicht über den
+  // Bildschirm: Sie gilt auf allen dreien gleich.
+  //
+  // Die Eigenschaft bleibt als Übersteuerung erhalten — `null` schaltet die
+  // Umrandung ab, etwa für eine Vorschau, die nichts behaupten soll.
+  const absicherung = useAbsicherungsStatus();
+  const ring = ringFarbe !== undefined
+    ? ringFarbe
+    : (absicherung.art === "sicher" ? T.pos : null);
   // Mitte/Ende-Prognose: Varianten der Akzentfarbe (dieselbe wie der aktuelle
   // Kontostand) — kräftiger sobald das jeweilige Datum erreicht ist, sonst
   // blasser. Negativ bleibt die eigene Warnfarbe.
@@ -354,9 +371,9 @@ function SaldoHeroV2({
           deshalb war „die grüne Umrandung nicht zu entdecken" (Nutzer).
           Dieselbe Lösung wie bei den Eingabefeldern eine Regel weiter unten:
           „Randlos" meint die DEKO-Linien der App, nicht eine Information. */}
-      {ringFarbe && (
+      {ring && (
         <div aria-hidden="true" style={{position:"absolute",inset:0,
-          boxShadow:`inset 0 0 0 2px ${ringFarbe}`,borderRadius:"inherit",
+          boxShadow:`inset 0 0 0 2px ${ring}`,borderRadius:"inherit",
           pointerEvents:"none"}}/>
       )}
       {/* Freier Bereich links oben: minimaler Theme-Umschalter, direkt darunter

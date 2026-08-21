@@ -40,10 +40,10 @@ describe("Randlos-Modus: tragende Kanten als innerer Schatten", () => {
 
   it("die Absicherungs-Umrandung am Hero ist ein innerer Schatten", () => {
     const hero = lies("src/components/organisms/SaldoHeroV2.jsx");
-    const i = hero.indexOf("{ringFarbe && (");
+    const i = hero.indexOf("{ring && (");
     expect(i, "die Umrandung muss es geben").toBeGreaterThan(-1);
     const block = hero.slice(i, i + 300);
-    expect(block).toMatch(/boxShadow:`inset 0 0 0 2px \$\{ringFarbe\}`/);
+    expect(block).toMatch(/boxShadow:`inset 0 0 0 2px \$\{ring\}`/);
     expect(block, "ein border waere im Standardmodus unsichtbar")
       .not.toMatch(/border:`?\d/);
   });

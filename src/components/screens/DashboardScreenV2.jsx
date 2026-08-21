@@ -9,7 +9,6 @@ import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
 import { KontoWarnungWidget } from "../organisms/KontoWarnungWidget.jsx";
 import { SweepBanner } from "../organisms/SweepBanner.jsx";
 import { AbsicherungsSatz } from "../organisms/AbsicherungsSatz.jsx";
-import { useAbsicherungsStatus } from "../../state/useAbsicherungsStatus.js";
 import { PendingList } from "../organisms/PendingList.jsx";
 import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
 import { BudgetBereich } from "../molecules/BudgetBereich.jsx";
@@ -357,13 +356,15 @@ function DashboardScreenV2() {
     const [activePanel, setActivePanel] = useState(null);
     // Der Absicherungs-Stand wird an ZWEI Stellen gebraucht: für die grüne
     // Umrandung des Hero („alles in Ordnung") und für den Balken darunter (nur
-    // im Handlungsfall). Beide lesen denselben Hook — zwei Rechnungen für
-    // dieselbe Frage sind in diesem Projekt schon einmal auseinandergelaufen.
+    // im Handlungsfall). Beide holen ihn sich SELBST aus demselben Hook
+    // (SaldoHeroV2, AbsicherungsSatz) — dieser Bildschirm reicht nichts durch.
+    // Solange er es tat, fehlte die Umrandung in Monat und Trend, wo derselbe
+    // Hero steht. Zwei eigene Rechnungen für dieselbe Frage sind in diesem
+    // Projekt ohnehin schon einmal auseinandergelaufen.
     //
     // Erster Anlauf war ein Rahmen um das SCHILD-Symbol. Der kostete zwar
     // keinen Platz, war aber „leider zu versteckt" (Nutzer). Der Hero ist die
     // Fläche, auf die man ohnehin zuerst schaut.
-    const absicherung = useAbsicherungsStatus();
     // Deckende Flaeche fuer den Zuordnungs-Hinweis, Schrift dagegen gerechnet
     // (siehe dort). Als Funktion, damit sie dem Theme-Wechsel folgt.
     const zuordnungPaar = () => knopfPaar(T.pos, DUNKEL);
@@ -1126,9 +1127,12 @@ function DashboardScreenV2() {
               const drillUncatIn = (isMitte)=>{setDashDrill({kind:"uncatIn", isMitte,label:"Einnahmen"+(isMitte?" bis 14.":""),isIncome:true, cat:null});setDashSearch("");};
               const drillUncatOut= (isMitte)=>{setDashDrill({kind:"uncatOut",isMitte,label:"Ausgaben" +(isMitte?" bis 14.":""),isIncome:false,cat:null});setDashSearch("");};
 
+              // Die gruene „alles abgesichert"-Umrandung steht nicht mehr
+              // hier: Der Hero holt sich den Stand selbst (siehe `ring` in
+              // SaldoHeroV2). Als Eigenschaft von HIER fehlte sie in Monat und
+              // Trend, wo derselbe Hero steht.
               return (
                 <SaldoHeroV2 year={year} month={month}
-                  ringFarbe={absicherung.art==="sicher" ? T.pos : null}
                   buchInM={buchInM}  buchOutM={buchOutM}
                   buchInE={buchInE}  buchOutE={buchOutE}
                   pendInM={pendInM}  pendOutM={pendOutM}

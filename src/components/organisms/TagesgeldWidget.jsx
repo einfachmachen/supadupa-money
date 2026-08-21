@@ -738,10 +738,57 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   // String und darf, anders als `betrag`, auch in Template-Literals stehen.
   const fmtR = (v) => fmtK(Math.round(v));
   const betragR = (v) => betragText(fmtR(v));
-  // Beschriftung links, Betrag rechts — in EINER Zeile.
-  const betragZeile = (label, farbe, wert) => (
-    <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:10}}>
-      <div style={{color:T.txt,fontSize:12,whiteSpace:"nowrap"}}>{label}</div>
+  // ── Das Symbol, das den Sparplan anlegt oder wegwirft ────────────────
+  //
+  // Es steht VOR „Heute sicher sparen:" und damit in einer Zeile, die es
+  // ohnehin gibt (Nutzer: „vor der Tabelle eine ganze Zeile zu vergeuden, ist
+  // doof"). Zwei Zustände, ein Symbol: Gibt es noch keine Vormerkungsserie,
+  // legt es sie an (Plus); gibt es eine, wirft es sie weg (Papierkorb).
+  //
+  // Warum es überhaupt einen Knopf braucht, obwohl gerechnet wird: Das RECHNEN
+  // passiert von selbst, das SCHREIBEN nicht. Anlegen und Löschen ändern
+  // Vormerkungen — das bleibt eine Entscheidung des Nutzers und keine
+  // Nebenwirkung des Hinschauens.
+  //
+  // Beschriftung im `title`/`aria-label` statt daneben: Ein Symbol ohne Namen
+  // ist für Screenreader stumm.
+  const planKnopf = () => {
+    const gibtEs = findExistingSeries(sparPlanName).seriesIds.length>0;
+    // Ohne Plan UND ohne Ergebnis gibt es nichts anzulegen — dann kein Knopf.
+    if(!gibtEs && !(result&&result.length>0)) return null;
+    const name = gibtEs ? "Sparplan löschen" : "Sparplan anlegen";
+    const anlegenPaar = knopfPaar(T.pos, DUNKEL);
+    const aus = !gibtEs && computing;
+    return (
+      <button onClick={gibtEs?sparplanLoeschen:sparplanAnlegen} disabled={aus}
+        title={name} aria-label={name}
+        style={{width:30,height:30,borderRadius:9,border:"none",padding:0,flexShrink:0,
+        background:aus?"rgba(255,255,255,0.1)":gibtEs?GEFAHR:anlegenPaar.grund,
+        cursor:aus?"default":"pointer",opacity:aus?0.5:1,
+        display:"flex",alignItems:"center",justifyContent:"center"}}>
+        {Li(gibtEs?"trash-2":"plus-circle",16,
+            aus?T.txt2:gibtEs?"#fff":anlegenPaar.schrift)}
+      </button>
+    );
+  };
+  // Beschriftung links, Betrag rechts — in EINER Zeile. `davor` nimmt ein
+  // Symbol VOR der Beschriftung auf (der Anlegen/Löschen-Knopf): Es steht damit
+  // in einer Zeile, die es ohnehin gibt, statt eine eigene zu verbrauchen
+  // (Nutzer: „vor der Tabelle eine ganze Zeile zu vergeuden, ist doof").
+  //
+  // Zeilen OHNE Symbol richten sich an der Schriftlinie aus — sonst schwebte
+  // der 12px-Text neben der 22px-Zahl. Die Zeile MIT Symbol richtet sich
+  // stattdessen mittig aus: Ein Knopf hat keine Schriftlinie, an der sich etwas
+  // ausrichten liesse (im Browser gemessen: die Beschriftung sass dadurch 6px
+  // ueber der Zahl statt 2px, und die Zeile wuchs von 30 auf 39px). Mittig
+  // sitzen Knopf, Beschriftung und Betrag auf derselben Achse.
+  const betragZeile = (label, farbe, wert, davor) => (
+    <div style={{display:"flex",alignItems:davor?"center":"baseline",
+      justifyContent:"space-between",gap:10}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,minWidth:0}}>
+        {davor}
+        <div style={{color:T.txt,fontSize:12,whiteSpace:"nowrap"}}>{label}</div>
+      </div>
       <div style={{color:farbe,fontSize:BETRAG_GROSS,fontWeight:800,fontFamily:NUM_FONT,
         letterSpacing:-0.5,whiteSpace:"nowrap",flexShrink:0}}>{wert}</div>
     </div>
@@ -1094,7 +1141,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                 {betragZeile("Heute sicher sparen:", col, (
                   computing?"…":maxTransfer===null?"—":maxTransfer<=0?"0 €"
                     : <>{betragR(maxTransfer)} €</>
-                ))}
+                ), planKnopf())}
 
                 {keinSpielraum&&(
                   <div style={{marginTop:4,background:"rgba(234,64,37,0.12)",border:`1px solid ${T.neg}44`,
@@ -1225,44 +1272,6 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
         )}
         </div>
 
-        {/* EIN Symbol für die beiden Zustände des Plans — anlegen oder
-            wegwerfen (Nutzer-Wunsch: „platzsparendes Symbol", „sobald es einen
-            Sparplan gibt, wechseln wir es doch zu einem Papierkorb"). Der lange
-            Knopf davor kostete eine ganze Zeile über der Tabelle.
-
-            Warum es überhaupt einen Knopf braucht, obwohl gerechnet wird: Das
-            RECHNEN passiert von selbst, das SCHREIBEN nicht. Anlegen und
-            Löschen ändern Vormerkungen — das bleibt eine Entscheidung des
-            Nutzers und keine Nebenwirkung des Hinschauens.
-
-            Steht ÜBER der Ergebnis-Tabelle und nicht darin: Einen bestehenden
-            Plan muss man auch dann wegwerfen können, wenn die Vorschau gerade
-            nichts hergibt (leeres Ergebnis, laufende Rechnung) — sonst sitzt
-            man auf Vormerkungen, an die man nicht mehr herankommt.
-
-            Beschriftung im `title`/`aria-label` statt daneben: Ein Symbol ohne
-            Namen ist für Screenreader stumm. */}
-        {(()=>{
-          const {seriesIds:_existingIds} = findExistingSeries(sparPlanName);
-          const gibtEs = _existingIds.length>0;
-          if(!gibtEs && !(result&&result.length>0)) return null;
-          const name = gibtEs ? "Sparplan löschen" : "Sparplan anlegen";
-          const anlegenPaar = knopfPaar(T.pos, DUNKEL);
-          const aus = !gibtEs && computing;
-          return (
-            <div style={{display:"flex",justifyContent:"flex-end",marginTop:6}}>
-              <button onClick={gibtEs?sparplanLoeschen:sparplanAnlegen} disabled={aus}
-                title={name} aria-label={name}
-                style={{width:36,height:36,borderRadius:10,border:"none",padding:0,
-                background:aus?"rgba(255,255,255,0.1)":gibtEs?GEFAHR:anlegenPaar.grund,
-                cursor:aus?"default":"pointer",opacity:aus?0.5:1,
-                display:"flex",alignItems:"center",justifyContent:"center"}}>
-                {Li(gibtEs?"trash-2":"plus-circle",18,
-                    aus?T.txt2:gibtEs?"#fff":anlegenPaar.schrift)}
-              </button>
-            </div>
-          );
-        })()}
         {/* Ergebnis-Tabelle */}
         {!result&&(
           <div style={{textAlign:"center",color:T.txt2,fontSize:10,padding:"8px 0"}}>

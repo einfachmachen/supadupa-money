@@ -112,9 +112,29 @@ describe("Absicherungs-Satz", () => {
     // ohnehin zuerst schaut.
     const dash = readFileSync(resolve(wurzel, "src/components/screens/DashboardScreenV2.jsx"), "utf8");
     const hero = readFileSync(resolve(wurzel, "src/components/organisms/SaldoHeroV2.jsx"), "utf8");
-    expect(dash).toMatch(/ringFarbe=\{absicherung\.art==="sicher" \? T\.pos : null\}/);
     expect(dash, "nicht mehr am Schild").not.toMatch(/ring=\{absicherung/);
-    expect(hero).toMatch(/\{ringFarbe && \(/);
+    expect(hero).toMatch(/\{ring && \(/);
+  });
+
+  it("die Umrandung gilt auf ALLEN Bildschirmen mit diesem Hero", () => {
+    // Sie hing zuerst an einer Eigenschaft, die nur das Dashboard setzte —
+    // in Monat und Trend steht derselbe Hero und blieb ohne (Nutzer: „muessen
+    // wir auch noch in Monat und Trend ergaenzen"). Es ist eine Aussage ueber
+    // die LAGE, nicht ueber den Bildschirm; also entscheidet der Hero selbst.
+    const hero = readFileSync(resolve(wurzel, "src/components/organisms/SaldoHeroV2.jsx"), "utf8");
+    expect(hero).toMatch(/const absicherung = useAbsicherungsStatus\(\)/);
+    expect(hero).toMatch(/absicherung\.art === "sicher" \? T\.pos : null/);
+    // Die Eigenschaft bleibt als Uebersteuerung — sonst koennte eine Vorschau
+    // nichts behaupten, was sie nicht weiss.
+    expect(hero).toMatch(/ringFarbe !== undefined/);
+    // Und kein Bildschirm reicht sie mehr durch: Genau das war die Luecke.
+    ["src/components/screens/DashboardScreenV2.jsx",
+     "src/components/screens/MonatScreen.jsx",
+     "src/components/molecules/YearSectionHeader.jsx"].forEach((datei) => {
+      const src = readFileSync(resolve(wurzel, datei), "utf8");
+      expect(src, `${datei} setzt ringFarbe wieder von Hand`)
+        .not.toMatch(/ringFarbe=/);
+    });
   });
 
   it("die Umrandung verschiebt nichts und folgt der Theme-Rundung", () => {
@@ -122,7 +142,7 @@ describe("Absicherungs-Satz", () => {
     // beim Umschalten. Und ein fester Radius saesse in der Haelfte der Themes
     // falsch (Tastenhell 16px, Keyboard 14px, andere gar keiner).
     const hero = readFileSync(resolve(wurzel, "src/components/organisms/SaldoHeroV2.jsx"), "utf8");
-    const i = hero.indexOf("{ringFarbe && (");
+    const i = hero.indexOf("{ring && (");
     const block = hero.slice(i, i + 320);
     expect(block).toMatch(/position:"absolute",inset:0/);
     expect(block).toMatch(/borderRadius:"inherit"/);
@@ -130,9 +150,9 @@ describe("Absicherungs-Satz", () => {
   });
 
   it("beide Stellen lesen denselben Stand", () => {
-    const dash = readFileSync(resolve(wurzel, "src/components/screens/DashboardScreenV2.jsx"), "utf8");
+    const hero = readFileSync(resolve(wurzel, "src/components/organisms/SaldoHeroV2.jsx"), "utf8");
     const satz = readFileSync(resolve(wurzel, "src/components/organisms/AbsicherungsSatz.jsx"), "utf8");
-    expect(dash).toMatch(/const absicherung = useAbsicherungsStatus\(\)/);
+    expect(hero).toMatch(/const absicherung = useAbsicherungsStatus\(\)/);
     expect(satz).toMatch(/const status = useAbsicherungsStatus\(\)/);
   });
 
