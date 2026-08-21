@@ -15,6 +15,7 @@ import { MonatScreen } from "./components/screens/MonatScreen.jsx";
 import { MoneyMoodScreen } from "./components/screens/MoneyMoodScreen.jsx";
 import { TrendOverviewScreen } from "./components/screens/TrendOverviewScreen.jsx";
 import { SyncStatusBadge, useHeroBadgeAktiv } from "./components/organisms/SyncStatusBadge.jsx";
+import { useAbsicherungsSatzAktiv } from "./components/organisms/AbsicherungsSatz.jsx";
 import { BestaetigenDialog } from "./components/organisms/BestaetigenDialog.jsx";
 import { GuidedFeatureTour } from "./components/organisms/GuidedFeatureTour.jsx";
 import { useOnlineStatus } from "./hooks/useOnlineStatus.js";
@@ -3638,6 +3639,9 @@ export default function SupaDupaMoney() {
   // (Nutzer-Bild). Jetzt meldet sich der Hero-Hinweis selbst an, siehe
   // SyncStatusBadge.jsx.
   const heroBadgeAktiv = useHeroBadgeAktiv();
+  // Steht der Absicherungs-Satz gerade auf dem Bildschirm? Dann meldet der
+  // orange Balken weiter unten dieselbe Schieflage ein zweites Mal.
+  const absicherungsSatzDa = useAbsicherungsSatzAktiv();
   const syncBadgeSpace = (!heroBadgeAktiv && getSyncBadgeState({isOnline, cfActive, isDirty, syncStatus})) ? "38px" : "0px";
 
   return (
@@ -3835,7 +3839,12 @@ export default function SupaDupaMoney() {
         );
       })()}
 
-      {strainWarning && !strainDurchSweep && (()=>{
+      {/* Solange der Absicherungs-Satz auf dem Bildschirm steht, tritt dieser
+          Balken zurück: Beide melden dieselbe Schieflage, und der Satz sagt
+          zusätzlich, was zu tun ist (Nutzer: „Die Warnungen nehmen Überhand").
+          Auf allen anderen Bildschirmen — Monat, Trend, Daten — bleibt der
+          Balken die einzige Meldung und erscheint wie bisher. */}
+      {strainWarning && !strainDurchSweep && !absicherungsSatzDa && (()=>{
         const w = strainWarning, s = w.soonest;
         const label = `${MONTHS_S[s.mi]} ${s.yr}`;
         return (

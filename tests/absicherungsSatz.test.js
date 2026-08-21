@@ -84,8 +84,49 @@ describe("Absicherungs-Satz", () => {
     expect(src, "es wird nichts geschrieben").not.toMatch(/setTxs/);
   });
 
-  it("der Satz steht auf der Startseite", () => {
+  it("der Satz steht auf der Startseite und öffnet die Warnungen", () => {
+    // Der Klick fuehrte ins Leere (Nutzer: „passiert nichts") — obwohl im Satz
+    // „+1 weitere" steht und es also etwas zu sehen gibt.
     const src = readFileSync(resolve(wurzel, "src/components/screens/DashboardScreenV2.jsx"), "utf8");
-    expect(src).toMatch(/<AbsicherungsSatz\/>/);
+    expect(src).toMatch(/<AbsicherungsSatz/);
+    expect(src).toMatch(/onOeffnen=\{\(\)=>setActivePanel/);
+  });
+
+  it("„nichts zu tun\" ist NICHT klickbar", () => {
+    // Ein Pfeil, der nichts aufmacht, ist genau der gemeldete Fehlgriff.
+    const src = readFileSync(resolve(wurzel, "src/components/organisms/AbsicherungsSatz.jsx"), "utf8");
+    expect(src).toMatch(/const klickbar = status\.art !== "sicher"/);
+    expect(src, "der Pfeil nur, wo er etwas aufmacht").toMatch(/klickbar && <span/);
+  });
+
+  it("solange der Satz steht, tritt der orange Balken zurück", () => {
+    // Drei Meldungen fuer denselben Sachverhalt waren zu viel („Die Warnungen
+    // nehmen Überhand"). Der Satz gewinnt, weil er sagt, was zu tun ist.
+    const satz = readFileSync(resolve(wurzel, "src/components/organisms/AbsicherungsSatz.jsx"), "utf8");
+    const app = readFileSync(resolve(wurzel, "src/App.jsx"), "utf8");
+    expect(satz).toMatch(/export function useAbsicherungsSatzAktiv/);
+    expect(app).toMatch(/const absicherungsSatzDa = useAbsicherungsSatzAktiv\(\)/);
+    expect(app).toMatch(/strainWarning && !strainDurchSweep && !absicherungsSatzDa/);
+  });
+
+  it("die Vorwarnung im Dialog sagt dasselbe — schon VOR dem Speichern", () => {
+    // Bisher erschien der Satz erst nach dem Speichern; dabei ist der Moment
+    // davor der einzige, in dem die Auskunft die Entscheidung noch aendert.
+    const src = readFileSync(resolve(wurzel, "src/components/atoms/SchieflageVorwarnung.jsx"), "utf8");
+    expect(src).toMatch(/absicherungsStatus\(\{/);
+    expect(src, "dieselbe Tagesgeld-Quelle wie die Startseite").toMatch(/useTagesgeldFrei\(\)/);
+    // Faengt die Sparraten-Automatik alles ab, entfaellt der Rueckhol-Hinweis.
+    expect(src).toMatch(/!res\.sparAdjust && status && status\.art === "rueckholen"/);
+  });
+
+  it("beide Stellen holen den Tagesgeld-Bestand aus DERSELBEN Funktion", () => {
+    // Zwei eigene Rechnungen waeren genau der Fehler, der uns bei Vorschau und
+    // Automatik schon einmal eingeholt hat.
+    const satz = readFileSync(resolve(wurzel, "src/components/organisms/AbsicherungsSatz.jsx"), "utf8");
+    const warn = readFileSync(resolve(wurzel, "src/components/atoms/SchieflageVorwarnung.jsx"), "utf8");
+    [satz, warn].forEach((src) => {
+      expect(src).toMatch(/useTagesgeldFrei/);
+      expect(src, "keine eigene Saldo-Rechnung").not.toMatch(/saldoIst\(/);
+    });
   });
 });

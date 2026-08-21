@@ -1355,8 +1355,13 @@ function DashboardScreenV2() {
         {/* Ein Satz statt einer Tabelle: Reicht das Geld, und wenn nicht, was
             ist zu tun? Steht ganz oben, weil er die Frage beantwortet, wegen
             der man die Tabelle sonst überhaupt aufmacht (Nutzer-Wunsch:
-            „recht entspannt auf Nummer sicher gehen"). Reine Auskunft. */}
-        {!isPastMonth && <AbsicherungsSatz/>}
+            „recht entspannt auf Nummer sicher gehen"). Reine Auskunft.
+
+            Der Klick öffnet die Warnungen — genau das, was hinter dem „+n
+            weitere" steckt. Vorher führte er ins Leere (Nutzer: „passiert
+            nichts"). */}
+        {!isPastMonth && <AbsicherungsSatz
+          onOeffnen={()=>setActivePanel(p=>p==="warnings"?null:"warnings")}/>}
 
         {/* Zins-Sweep: am Stichtag die Überweisung, danach die Rückbuchung.
             Steht ÜBER den Panel-Reitern, damit es auch dann auffällt, wenn

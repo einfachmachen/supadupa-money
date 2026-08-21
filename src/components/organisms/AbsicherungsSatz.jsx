@@ -18,49 +18,58 @@
 // REINE AUSKUNFT. Hier wird nichts gebucht und nichts verschoben — das war die
 // Bedingung, unter der dieser Schritt zuerst kommt: sofort spürbar, ohne dass
 // eine Automatik Geld bewegt, deren Logik man noch nicht gesehen hat.
+//
+// ── Warum dieser Satz das orange Banner verdrängt ──────────────────────
+//
+// Rückmeldung nach dem ersten Einbau: „Die Warnungen nehmen Überhand."
+// Dieselbe Schieflage stand gleichzeitig im orangen Balken ganz oben, in
+// diesem Satz und in der Warnkarte im Panel. Drei Meldungen, ein Sachverhalt.
+//
+// Der Satz ist die bessere der drei: Er sagt nicht nur, DASS etwas fehlt,
+// sondern was zu tun ist. Solange er steht, tritt der orange Balken zurück —
+// über denselben Modul-Speicher wie beim Sync-Hinweis (`SyncStatusBadge`),
+// damit App.jsx nicht raten muss, ob gerade die Startseite sichtbar ist.
 
-import React, { useContext } from "react";
+import React, { useContext, useSyncExternalStore } from "react";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T } from "../../theme/activeTheme.js";
 import { NUM_FONT } from "../../utils/format.js";
 import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
-import { kvStore } from "../../utils/kvStore.js";
-import { saldoIst } from "../../utils/saldo.js";
+import { useTagesgeldFrei } from "../../state/useTagesgeldFrei.js";
 import { absicherungsStatus } from "../../utils/absicherung.js";
 import { knopfPaar, DUNKEL } from "../../theme/amtPill.js";
+
+// ── Modul-Speicher: steht der Satz gerade auf dem Bildschirm? ──────────
+let _sichtbar = 0;
+const _hoerer = new Set();
+const _melden = () => _hoerer.forEach((h) => h());
+const _abonnieren = (h) => { _hoerer.add(h); return () => _hoerer.delete(h); };
+const _stand = () => _sichtbar > 0;
+
+export function useAbsicherungsSatzAktiv() {
+  return useSyncExternalStore(_abonnieren, _stand, () => false);
+}
 
 const MONATE_K = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
 const kurzDat = (iso) => {
   const [y, m, d] = String(iso).split("-");
   return `${d}.${m}.${String(y).slice(2)}`;
 };
-const monatText = (iso) => {
-  const [y, m] = String(iso).split("-").map(Number);
+const monatText = (jjjjMm) => {
+  const [y, m] = String(jjjjMm).split("-").map(Number);
   return `${MONATE_K[m - 1]} ${String(y).slice(2)}`;
 };
 
 function AbsicherungsSatz({ onOeffnen }) {
-  const { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth,
-    liquidityWarnings, navigateToSparen } = useContext(AppCtx);
+  const { txs, liquidityWarnings } = useContext(AppCtx);
+  const tagesgeldFrei = useTagesgeldFrei();
 
-  const heute = new Date();
-
-  // Was auf dem Tagesgeld liegt — abzüglich Notgroschen. Das Zielkonto des
-  // Sparplans ist die naheliegende Quelle; ohne zugeordnetes Konto lässt sich
-  // über das Zurückholen nichts sagen (dann sagt der Satz das auch nicht).
-  const tgAccId = kvStore.getItem("mbt_spar_accid") || "";
-  const notgroschen = parseInt(kvStore.getItem("mbt_tg_notgroschen") || "0", 10) || 0;
-  const tagesgeldFrei = React.useMemo(() => {
-    if (!tgAccId || !(accounts || []).some((a) => a.id === tgAccId)) return null;
-    try {
-      const ctx = { txs, cats, accounts, getKumulierterSaldo, getBudgetForMonth };
-      const stand = saldoIst(heute.getFullYear(), heute.getMonth(), heute.getDate(), tgAccId, ctx);
-      if (stand === null || stand === undefined) return null;
-      return stand - notgroschen;
-    } catch { return null; }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [txs, cats, accounts, tgAccId, notgroschen]);
+  // Solange dieser Satz im Baum hängt, tritt der orange Balken zurück.
+  React.useEffect(() => {
+    _sichtbar++; _melden();
+    return () => { _sichtbar--; _melden(); };
+  }, []);
 
   // Bis wann überhaupt gerechnet wurde: der späteste Monat mit Vormerkungen.
   const horizontBis = React.useMemo(() => {
@@ -87,17 +96,21 @@ function AbsicherungsSatz({ onOeffnen }) {
   const symbol = status.art === "sicher" ? "shield"
     : status.art === "rueckholen" ? "arrow-down" : "alert-triangle";
 
-  const oeffnen = onOeffnen || navigateToSparen;
+  // „Nichts zu tun" braucht keinen Weg irgendwohin — ein Pfeil, der nichts
+  // aufmacht, war genau der gemeldete Fehlgriff („passiert nichts").
+  const klickbar = status.art !== "sicher" && typeof onOeffnen === "function";
 
   return (
-    <div onClick={oeffnen}
-      style={{margin:"0 10px 6px",padding:"7px 12px",borderRadius:12,
-        background:paar.grund,color:paar.schrift,cursor:oeffnen?"pointer":"default",
+    <div onClick={klickbar ? onOeffnen : undefined}
+      role={klickbar ? "button" : undefined} tabIndex={klickbar ? 0 : undefined}
+      onKeyDown={klickbar ? (e) => { if (e.key === "Enter" || e.key === " ") onOeffnen(); } : undefined}
+      style={{margin:"0 10px 6px",padding:"8px 12px",borderRadius:12,
+        background:paar.grund,color:paar.schrift,cursor:klickbar?"pointer":"default",
         display:"flex",alignItems:"center",gap:8,fontSize:12,lineHeight:1.35}}>
       <span style={{flexShrink:0,display:"inline-flex"}}>{Li(symbol,15,paar.schrift)}</span>
-      <div style={{flex:1}}>
+      <div style={{flex:1,minWidth:0}}>
         {status.art === "sicher" && (
-          <><b>Abgesichert{status.bis ? ` bis ${monatText(status.bis + "-01")}` : ""}</b>
+          <><b>Abgesichert{status.bis ? ` bis ${monatText(status.bis)}` : ""}</b>
             {" — nichts zu tun."}</>
         )}
         {status.art === "rueckholen" && (
@@ -115,9 +128,13 @@ function AbsicherungsSatz({ onOeffnen }) {
           </>
         )}
         {status.weitere > 0 && (
-          <span style={{opacity:0.85}}> +{status.weitere} weitere</span>
+          <span> {" · "}+{status.weitere} weitere{status.weitere === 1 ? "r" : ""} Monat
+            {status.weitere === 1 ? "" : "e"}</span>
         )}
       </div>
+      {/* Der Pfeil steht nur da, wo er auch etwas aufmacht. */}
+      {klickbar && <span style={{flexShrink:0,display:"inline-flex"}}>
+        {Li("chevron-right",16,paar.schrift)}</span>}
     </div>
   );
 }

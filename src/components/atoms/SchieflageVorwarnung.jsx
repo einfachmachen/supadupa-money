@@ -17,6 +17,8 @@ import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { MONTHS_S } from "../../utils/constants.js";
 import { schieflagePreview } from "../../utils/schieflagePreview.js";
+import { absicherungsStatus } from "../../utils/absicherung.js";
+import { useTagesgeldFrei } from "../../state/useTagesgeldFrei.js";
 import { aufToenung } from "../../theme/amtPill.js";
 
 // Der Kasten tönt sich mit seiner eigenen Warnfarbe ein UND schreibt die
@@ -27,6 +29,11 @@ import { aufToenung } from "../../theme/amtPill.js";
 // nicht mehr trägt. Rahmen und Symbol bleiben farbig, der Kasten also
 // weiterhin als Warnung erkennbar.
 const TOENUNG = 0x1f / 255; // = die "1f"-Deckkraft der Fläche unten
+
+const kurzDat = (iso) => {
+  const [y, m, d] = String(iso).split("-");
+  return `${d}.${m}.${String(y).slice(2)}`;
+};
 
 export function SchieflageVorwarnung({ draftTxs, kind = "vormerkung", style }) {
   const { txs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth, budgets } = useContext(AppCtx);
@@ -55,6 +62,15 @@ export function SchieflageVorwarnung({ draftTxs, kind = "vormerkung", style }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debDraft, txs, cats, accounts, budgets, giroPuffer]);
+
+  // Was das Tagesgeld davon auffangen könnte — dieselbe Quelle wie auf der
+  // Startseite (`useTagesgeldFrei`), damit beide Stellen nie auseinanderlaufen.
+  // MUSS vor dem frühen return stehen: Hooks laufen in fester Reihenfolge.
+  const tagesgeldFrei = useTagesgeldFrei();
+  const status = useMemo(() => (res.hasImpact
+    ? absicherungsStatus({
+        warnungen: [{ date: res.date, deficit: res.deficit }], tagesgeldFrei })
+    : null), [res, tagesgeldFrei]);
 
   if (!res.hasImpact) return null;
 
@@ -89,6 +105,32 @@ export function SchieflageVorwarnung({ draftTxs, kind = "vormerkung", style }) {
           <b style={{ color: auf(T.gold) }}>{betrag(res.deficit)} €</b> unter deinen Puffer ({betrag(res.buffer)} €).
           {res.count > 1 ? ` Betroffen: ${res.count} Monate.` : ""}
         </div>
+        {/* Was tun? — dieselbe Aussage wie der Absicherungs-Satz auf der
+            Startseite, in denselben Worten. Bisher erschien sie erst NACH dem
+            Speichern (Nutzer-Hinweis); dabei ist genau hier der Moment, in
+            dem sie etwas ändert: Ein Engpass, den das Tagesgeld deckt, ist
+            eine Überweisung — einer, den es nicht deckt, ist eine
+            Entscheidung.
+
+            Faengt die Sparraten-Automatik den Engpass ohnehin ganz ab
+            (`sparAdjust`), entfaellt diese Zeile: Dann ist gar nichts zu tun,
+            und ein Rueckhol-Hinweis waere eine Meldung zu viel — genau das,
+            was hier zu viel war. */}
+        {!res.sparAdjust && status && status.art === "rueckholen" && (
+          <div style={{ fontSize: 13, color: T.txt, marginTop: 4 }}>
+            {Li("arrow-down", 13, auf(T.pos, 3))}{" "}
+            Deckbar: bis <b>{kurzDat(status.holenBis)}</b>{" "}
+            <b style={{ color: auf(T.pos) }}>{betrag(status.fehlt)} €</b> vom Tagesgeld
+            zurückholen.
+          </div>
+        )}
+        {!res.sparAdjust && status && status.art === "eng" && status.frei !== null && (
+          <div style={{ fontSize: 13, color: T.txt, marginTop: 4 }}>
+            {Li("alert-triangle", 13, auf(T.neg, 3))}{" "}
+            Vom Tagesgeld sind nur <b style={{ color: auf(T.gold) }}>{betrag(status.frei)} €</b>{" "}
+            verfügbar — <b>{betrag(status.luecke)} €</b> bleiben offen.
+          </div>
+        )}
         {res.sparAdjust && (
           <div style={{ fontSize: 13, color: T.txt, marginTop: 4 }}>
             {Li("arrow-down", 13, auf(T.pos, 3))}{" "}
