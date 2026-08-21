@@ -54,8 +54,20 @@ describe("Theme-Klasse am Wurzel-Container", () => {
   });
 
   it("jede Theme-Klasse in der CSS-Datei gehoert zu einem echten Theme", () => {
+    // Ausnahme: MERKMAL-Klassen. Sie stehen nicht fuer ein Theme, sondern fuer
+    // eine Eigenschaft, zu der sich mehrere Themes bekennen — `theme-luftig`
+    // haengt an `luftig:true` (themes.js) und wird in App.jsx gesetzt. Jede
+    // hier gelistete Klasse muss von mindestens einem Theme beansprucht
+    // werden, sonst waere die Ausnahme ein Freibrief fuer tote Regeln.
+    const merkmale = { luftig: (t) => !!t.luftig };
     const css = fs.readFileSync(path.resolve(import.meta.dirname, "..", "src", "theme", "css", "themes.css"), "utf8");
     const namen = [...new Set((css.match(/\.theme-[a-z_]+/g) || []).map(s => s.slice(7)))];
-    expect(namen.filter(n => !THEMES[n])).toEqual([]);
+    expect(namen.filter(n => !THEMES[n] && !merkmale[n])).toEqual([]);
+    Object.entries(merkmale).forEach(([name, hat]) => {
+      if (!namen.includes(name)) return;
+      const traeger = Object.values(THEMES).filter(hat);
+      expect(traeger.length, `kein Theme setzt "${name}" — die Regeln waeren tot`)
+        .toBeGreaterThan(0);
+    });
   });
 });

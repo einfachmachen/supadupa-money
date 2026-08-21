@@ -139,13 +139,23 @@
     border-radius: 0 !important;
   }
 
-  /* ── Tastatur-Themes (Keyboard dunkel, Tastenhell hell) ──
+  /* ── „Luftige" Themes ──
+     Diese Regeln standen bis hierher fest auf `.theme-tastenhell`. Sie
+     beschreiben aber nichts, was mit den FARBEN dieses Themes zu tun haette,
+     sondern nur Abstand, Form und Durchsicht — genau das, was ein Theme
+     „aufgelockert" aussehen laesst. Ein Theme setzt dafuer `luftig:true`
+     (themes.js); App.jsx haengt dann die Klasse `theme-luftig` an die Wurzel.
+     So bekommt jedes weitere luftige Theme dieselbe Gestalt, ohne dass hier
+     eine Kette aus Theme-Namen mitwachsen muss — dieselbe Ueberlegung wie bei
+     der Theme-Klasse selbst (siehe App.jsx).
+
+     ── Tastatur-Themes (Keyboard dunkel, Tastenhell hell) ──
      Fuge und Kartenflaechen kommen aus dem Theme selbst (card_shadow,
      flaechen_extra in themes.js) — hier steht nur noch die Form. */
   .theme-keyboard .hero-flaeche,
   .theme-keyboard .symbolzeile,
-  .theme-tastenhell .hero-flaeche,
-  .theme-tastenhell .symbolzeile {
+  .theme-luftig .hero-flaeche,
+  .theme-luftig .symbolzeile {
     border-radius: 14px;
     padding: 6px 8px;
     margin: 6px 8px 2px;
@@ -157,7 +167,7 @@
      deutlich dunkler (Nutzer-Hinweis). Deshalb hier mehr Luft zwischen den
      Kategoriefeldern — und der Hero liegt als Taste mittendrin statt als
      randloser Balken oben (gleiche Breite wie die Kategoriefelder). */
-  .theme-tastenhell .kategorie-liste {
+  .theme-luftig .kategorie-liste {
     /* `!important`, weil der Abstand als Inline-Style am Container haengt
        (`gap:2`) — dagegen verliert ein Stylesheet. */
     gap: 8px !important;
@@ -176,12 +186,12 @@
      Innenpolster der Taste kaeme zu ihrer Zeilenhoehe hinzu — hier deshalb
      oben/unten abgeraeumt; die Hoehe traegt die Zeile selbst. */
   .theme-keyboard .werkzeuge-zeile,
-  .theme-tastenhell .werkzeuge-zeile {
+  .theme-luftig .werkzeuge-zeile {
     padding-top: 0;
     padding-bottom: 0;
   }
-  .theme-tastenhell .hero-flaeche,
-  .theme-tastenhell .symbolzeile {
+  .theme-luftig .hero-flaeche,
+  .theme-luftig .symbolzeile {
     border-radius: 16px;
     margin-left: 10px;
     margin-right: 10px;
@@ -190,7 +200,7 @@
      dieselbe Fuge wie die Kategoriefelder untereinander (8px, s.o.), statt
      der geerbten 6px/2px. Nur fuer Tastenhell — das dunkle Keyboard-Theme
      behaelt seine engere Staffelung. */
-  .theme-tastenhell .hero-flaeche {
+  .theme-luftig .hero-flaeche {
     margin-top: 8px;
     margin-bottom: 8px;
   }
@@ -208,11 +218,11 @@
      Filterzeile (Ausgaben/Einnahmen/vorgemerkt/?): auch sie brachten je
      eigene Polster mit (6px/4px bzw. 0/6px). Die Werkzeuge-Zeile darunter
      traegt bereits die Klasse symbolzeile und ist damit schon dabei. */
-  .theme-tastenhell .diagramm-flaeche,
-  .theme-tastenhell .symbolzeile,
-  .theme-tastenhell .sortier-zeile,
-  .theme-tastenhell .such-zeile,
-  .theme-tastenhell .filter-zeile {
+  .theme-luftig .diagramm-flaeche,
+  .theme-luftig .symbolzeile,
+  .theme-luftig .sortier-zeile,
+  .theme-luftig .such-zeile,
+  .theme-luftig .filter-zeile {
     margin-top: 8px !important;
     margin-bottom: 8px !important;
   }
@@ -224,9 +234,9 @@
      sonst lautlos — dann bleiben die alten 6px/4px stehen und addieren sich
      auf den Rand. (Derselbe Fallstrick wie beim Kartenabstand, der
      Reiterbreite und dem Polster der Reiterleiste, s.u.) */
-  .theme-tastenhell .sortier-zeile,
-  .theme-tastenhell .such-zeile,
-  .theme-tastenhell .filter-zeile {
+  .theme-luftig .sortier-zeile,
+  .theme-luftig .such-zeile,
+  .theme-luftig .filter-zeile {
     padding-top: 0 !important;
     padding-bottom: 0 !important;
   }
@@ -238,7 +248,7 @@
      sich sichtbar hinter der Karte durch.
      Der Hero selbst bleibt deckend, es scheint also kein Text durch ihn
      hindurch; sichtbar wird die Liste nur in den Fugen ringsum. */
-  .theme-tastenhell .hero-sticky {
+  .theme-luftig .hero-sticky {
     background: transparent !important;
   }
 
@@ -250,10 +260,10 @@
      Grau in Grau.
      Damit die letzte Zeile trotzdem ueber der Leiste zum Stehen kommt, bekommt
      der Scrollbereich die 57px als eigenen Innenabstand zurueck. */
-  .theme-tastenhell .app-content {
+  .theme-luftig .app-content {
     padding-bottom: 0 !important;
   }
-  .theme-tastenhell .screen-scroll {
+  .theme-luftig .screen-scroll {
     /* Dieselbe Rechnung wie die Leistenhoehe (s.u.: 52px Innenraum + 12px
        Aussenabstand) — sonst endet die Liste zu frueh oder zu spaet. */
     padding-bottom: 64px;
@@ -263,20 +273,20 @@
      `farbschema` im Theme). Alles, was DUNKEL gemalt ist, dreht es hier
      zurueck — sonst zeichnet der Browser Felder, Kalender und Auswahllisten
      darin fuer einen hellen Grund. */
-  .theme-tastenhell .aufriss-blatt,
-  .theme-tastenhell .hero-flaeche,
-  .theme-tastenhell .nav-tab,
-  .theme-tastenhell .menue-kachel,
+  .theme-luftig .aufriss-blatt,
+  .theme-luftig .hero-flaeche,
+  .theme-luftig .nav-tab,
+  .theme-luftig .menue-kachel,
   /* Die Dialoge selbst zeigen die Platte und bleiben deshalb hell; nur ihre
      Felder sind Tasten — und die brauchen das dunkle Schema fuer Kalender
      und Auswahllisten. */
-  .theme-tastenhell .mobile-modal input,
-  .theme-tastenhell .mobile-modal select,
-  .theme-tastenhell .mobile-modal textarea,
-  .theme-tastenhell .formular-blatt input,
-  .theme-tastenhell .formular-blatt select,
-  .theme-tastenhell .formular-blatt textarea,
-  .theme-tastenhell .wahl-taste {
+  .theme-luftig .mobile-modal input,
+  .theme-luftig .mobile-modal select,
+  .theme-luftig .mobile-modal textarea,
+  .theme-luftig .formular-blatt input,
+  .theme-luftig .formular-blatt select,
+  .theme-luftig .formular-blatt textarea,
+  .theme-luftig .wahl-taste {
     color-scheme: dark;
   }
 
@@ -286,7 +296,7 @@
      aus dem Theme und nicht aus dieser Datei.
      Die Reiter behalten ihr `flex:1` und rücken deshalb weiterhin mit dem
      + Knopf mit; hier stehen nur Form und Abstand. */
-  .theme-tastenhell .nav-bottom {
+  .theme-luftig .nav-bottom {
     background: transparent !important;
     /* Ohne Leiste keine Kante: die Trennlinie haette ueber der Platte
        gestanden, quer durch die Fugen zwischen den Tasten. Der Schatten muss
@@ -351,7 +361,7 @@
        ihre Breite und rücken nur auseinander (Nutzer-Wunsch). */
     justify-content: space-between;
   }
-  .theme-tastenhell .nav-tab {
+  .theme-luftig .nav-tab {
     border-radius: 14px;
     /* Seitlich 4px → 4 + 4 = 8px Fuge zwischen zwei Reitern, also derselbe
        Abstand wie zwischen den Kategoriefeldern. Oben/unten bleibt es bei den
@@ -623,7 +633,7 @@
     margin-left: 10px;
     margin-right: 10px;
   }
-  .theme-tastenhell .jahres-tabelle { border-radius: 16px; }
+  .theme-luftig .jahres-tabelle { border-radius: 16px; }
   /* Der Fuss der Tabelle (Umschalter + Legende) traegt die unteren Ecken:
      der Rahmen selbst reicht bis hinter die Leiste, seine Unterkante liegt
      ausserhalb des Bildes. Sichtbar endet die Platte an dieser Zeile. */
@@ -631,7 +641,7 @@
     border-bottom-left-radius: 14px;
     border-bottom-right-radius: 14px;
   }
-  .theme-tastenhell .jahres-tabelle-fuss {
+  .theme-luftig .jahres-tabelle-fuss {
     border-bottom-left-radius: 16px;
     border-bottom-right-radius: 16px;
   }

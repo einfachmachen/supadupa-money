@@ -3702,6 +3702,12 @@ export default function SupaDupaMoney() {
         randlos. Die Kette kann nicht mehr veralten, wenn sie keine ist. */}
     <div className={[noBorders?"no-borders":null,
       themeName?`theme-${themeName}`:null,
+      // „Luftig": Abstand, Form und Durchsicht wie in „Tastenhell". Die
+      // Regeln dafuer stehen in themes.css unter `.theme-luftig` und haengen
+      // an keinem Theme-Namen — ein Theme meldet sich mit `luftig:true` an.
+      // Aus demselben Grund wie die Zeile darueber: eine Kette aus
+      // Theme-Namen im Stylesheet veraltet, sobald ein Theme dazukommt.
+      T.luftig?"theme-luftig":null,
       amtMode===0?"amts-blur":null, amtMode<2?"amts-neutral":null,
       amtFont?`amtfont-${amtFont}`:null].filter(Boolean).join(" ")||undefined}
       style={{background:T.bg,

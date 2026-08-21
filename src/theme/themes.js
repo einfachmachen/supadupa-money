@@ -1101,7 +1101,82 @@ THEMES.tastenhell = {
   // Keine helle Fuge wie beim Keyboard-Theme: hier IST die Platte die Fuge.
   // Die Taste liegt mit einem weichen Schatten darauf.
   card_shadow:"0 1px 3px rgba(0,0,0,0.34), 0 0 0 1px rgba(0,0,0,0.20)",
+  // Abstand, Form und Durchsicht kommen aus `.theme-luftig` (themes.css).
+  // Die Regeln standen frueher fest auf `.theme-tastenhell`, beschreiben aber
+  // nichts Farbiges — sie gelten jetzt fuer jedes Theme, das sich hiermit
+  // anmeldet.
+  luftig:true,
   name:"Tastenhell",
+};
+
+// ════════════════════════════════════════════════════════════════════════
+//  LUFTIGE FASSUNGEN von „Lime" und „Deep Ocean" (Nutzer-Wunsch)
+//
+//  Gleiche Farbwelt, gleiche Akzente — nur die Gestalt von „Tastenhell":
+//  Bloecke liegen als abgesetzte Flaechen auf einer Platte, mit Fugen
+//  dazwischen, runden Ecken und einem Schatten, der sie anhebt.
+//
+//  Drei Dinge muessen dafuer zusammenkommen:
+//
+//  1. `luftig:true` — schaltet die Abstands- und Formregeln frei
+//     (themes.css, `.theme-luftig`).
+//  2. Eine dunklere PLATTE als die Flaechen. In den Vorlagen liegen bg
+//     (#2C3035) und surf (#363B42) dicht beieinander; als Fuge zwischen zwei
+//     Karten waere das kaum zu sehen. Die Platte geht deshalb eine Stufe
+//     tiefer — die Karten selbst bleiben unveraendert.
+//  3. `flaechen_extra` + `card_shadow`: Hero, Symbolzeile, Reiter und Blaetter
+//     sind im Markup KEINE Karten (sie malen den Seitenhintergrund). Ohne
+//     diese Auszeichnung verschwaemmen sie mit der Platte, und von Fugen
+//     waere nichts zu sehen.
+//
+//  KEIN `txt_card`: Platte und Karten sind hier beide dunkel, es gibt also
+//  nur EINE Textfarbe. Der Zwei-Textfarben-Mechanismus (§4.7) bleibt
+//  unberuehrt — `kartenTextRegel` kommt mit `flaechen_extra` allein zurecht.
+// ════════════════════════════════════════════════════════════════════════
+
+// Die abgesetzten Bereiche einer luftigen dunklen Fassung. `flaeche` ist die
+// Kartenfarbe des jeweiligen Themes (= dessen `surf`).
+function luftigFlaechen(flaeche, heroVerlauf) {
+  return {
+    ".hero-flaeche": heroVerlauf,
+    ".symbolzeile": flaeche,
+    ".aufriss-blatt": flaeche,
+    ".menue-kachel": flaeche,
+    // Jeder Reiter der unteren Leiste eine eigene Taste — die Leiste selbst
+    // wird dafuer durchsichtig (themes.css), damit die Platte dazwischen steht.
+    ".nav-tab": flaeche,
+    ".diagramm-flaeche": flaeche,
+    ".tages-karte": flaeche,
+    ".warn-karte": flaeche,
+    ".hinweis-karte": flaeche,
+    ".wahl-taste": flaeche,
+  };
+}
+// Schatten fuer dunkle Platten: Ein reiner Schlagschatten verliert sich auf
+// dunklem Grund. Die feine helle Oberkante (`inset`) hebt die Karte
+// zusaetzlich an — dasselbe Mittel, mit dem echte Tasten Licht fangen.
+const LUFTIG_SCHATTEN =
+  "0 2px 6px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.07)";
+
+THEMES.limeluftig = {
+  ...THEMES.dark,
+  // Eine Stufe tiefer als die Karten (#363B42) — sonst gaebe es keine Fuge.
+  bg:"#20242A", surf3:"#1B1F24",
+  hero_bg:"linear-gradient(135deg,#3B414A,#2F343B)",
+  flaechen_extra: luftigFlaechen("#363B42", "linear-gradient(135deg,#3B414A,#2F343B)"),
+  card_shadow: LUFTIG_SCHATTEN,
+  luftig:true,
+  name:"Lime Luftig",
+};
+
+THEMES.deepoceanluftig = {
+  ...THEMES.deepocean,
+  bg:"#1E252C", surf3:"#192026",
+  hero_bg:"linear-gradient(135deg,#3A424B,#2C333B)",
+  flaechen_extra: luftigFlaechen("#363B42", "linear-gradient(135deg,#3A424B,#2C333B)"),
+  card_shadow: LUFTIG_SCHATTEN,
+  luftig:true,
+  name:"Deep Ocean Luftig",
 };
 
 // Globales T — wird von getAppTheme() überschrieben, initialisiert mit dark — wird von getAppTheme() überschrieben, initialisiert mit dark

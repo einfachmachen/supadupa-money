@@ -53,13 +53,15 @@ describe("Theme-Stylesheets: Kommentare", () => {
   // Zusatzsicherung fuer die Regeln, die diesen Fehler ausgeloest haben: sie
   // muessen als zusammenhaengende Selektorliste erhalten bleiben. Ein Selektor,
   // dem Text vorausgeht, waere fuer den Browser unlesbar.
-  it("themes.css: der 8px-Rhythmus von Tastenhell steht als gueltige Regel", () => {
+  it("themes.css: der 8px-Rhythmus der luftigen Themes steht als gueltige Regel", () => {
     const text = fs.readFileSync(path.resolve("src/theme/css/themes.css"), "utf8");
     // Kommentare entfernen — uebrig bleibt, was der Browser wirklich sieht.
     const ohneKommentare = text.replace(/\/\*[\s\S]*?\*\//g, "");
     for (const klasse of ["diagramm-flaeche", "symbolzeile", "sortier-zeile", "such-zeile", "filter-zeile"]) {
-      const treffer = ohneKommentare.includes(`.theme-tastenhell .${klasse}`);
-      expect(treffer, `.theme-tastenhell .${klasse} fehlt im wirksamen CSS`).toBe(true);
+      // Die Regeln hiessen frueher `.theme-tastenhell` und gelten jetzt fuer
+      // jedes Theme mit `luftig:true` (siehe tests/themeLuftig.test.js).
+      const treffer = ohneKommentare.includes(`.theme-luftig .${klasse}`);
+      expect(treffer, `.theme-luftig .${klasse} fehlt im wirksamen CSS`).toBe(true);
     }
     // Kein Fliesstext zwischen Regelende und naechstem Selektor: nach einer
     // schliessenden Klammer darf nur Selektor-Syntax folgen, kein Prosa-Wort
