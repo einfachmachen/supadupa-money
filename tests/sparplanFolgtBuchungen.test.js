@@ -26,6 +26,9 @@
 // kvStore — genau wie in der App.
 
 import { describe, it, expect, beforeAll } from "vitest";
+import { THEMES } from "../src/theme/themes.js";
+import { setActiveTheme, theme as T } from "../src/theme/activeTheme.js";
+import { knopfPaar, HELL, kontrastWert } from "../src/theme/amtPill.js";
 import "fake-indexeddb/auto";
 import React from "react";
 import { createRoot } from "react-dom/client";
@@ -134,4 +137,68 @@ describe("Sparplan folgt den Buchungen", () => {
     expect(nachher[0], "die Rate des laufenden Monats muss sinken")
       .toBeLessThan(vorher[0]);
   }, 20000);
+
+  it("sagt sofort oben, dass es rechnet — und schaltet die alte Ansicht unscharf", async () => {
+    // Der Fortschritt stand nur AUF dem Neuberechnen-Knopf, und der sitzt weit
+    // unten: „muss sonst erst weit nach unten scrollen, um es ueberhaupt zu
+    // erkennen" (Nutzer). Seit die Vorschau von selbst nachrechnet, ist das die
+    // haeufigste Art, wie man ihr begegnet.
+    const { kvStore } = await import("../src/utils/kvStore.js");
+    const { TagesgeldWidget } = await import("../src/components/organisms/TagesgeldWidget.jsx");
+    const { AppCtx } = await import("../src/state/AppContext.js");
+
+    await kvStore.init();
+    kvStore.setItem("mbt_sparen_monate", "3");
+    kvStore.setItem("mbt_spar_planname", "Sparplan 1");
+    kvStore.removeItem("mbt_spar_result");
+
+    const zeige = async (txs) => {
+      const el = document.createElement("div");
+      document.body.appendChild(el);
+      const root = createRoot(el);
+      await act(async () => {
+        root.render(React.createElement(AppCtx.Provider, { value: machCtx(txs) },
+          React.createElement(TagesgeldWidget, { year: JAHR, month: MONAT, initialCollapsed: false })));
+      });
+      return { el, root };
+    };
+
+    // Erst einen Stand erzeugen …
+    const a = await zeige(grundBestand());
+    await act(async () => { await new Promise((r) => setTimeout(r, 1400)); });
+    await act(async () => { a.root.unmount(); });
+    a.el.remove();
+
+    // … dann mit geaenderten Buchungen wieder oeffnen.
+    const b = await zeige([...grundBestand(), brocken]);
+
+    expect(b.el.textContent, "die Meldung muss sofort dastehen")
+      .toContain("wird neu berechnet");
+    const oben = b.el.textContent.indexOf("wird neu berechnet");
+    const tabelle = b.el.textContent.indexOf("Tiefst-Saldo");
+    expect(oben, "und zwar VOR der Tabelle").toBeLessThan(tabelle < 0 ? Infinity : tabelle);
+    expect(b.el.querySelector('[style*="blur"]'), "die alte Ansicht wird unscharf")
+      .toBeTruthy();
+
+    // Ist sie fertig, verschwindet beides wieder.
+    await act(async () => { await new Promise((r) => setTimeout(r, 1400)); });
+    expect(b.el.textContent).not.toContain("wird neu berechnet");
+    expect(b.el.querySelector('[style*="blur"]')).toBeNull();
+
+    await act(async () => { b.root.unmount(); });
+    b.el.remove();
+  }, 20000);
+
+  it("die Schrift auf dem Statusband trägt in jedem Theme", () => {
+    // Dieselbe Rechnung wie im Widget (`rechnePaar`). Ein Band, das man nicht
+    // lesen kann, ist keine Meldung.
+    const schwach = [];
+    Object.keys(THEMES).forEach((name) => {
+      setActiveTheme(name);
+      const { grund, schrift } = knopfPaar(T.blue, HELL);
+      const wert = kontrastWert(schrift, grund);
+      if (wert < 4.5) schwach.push(`${name}: ${wert.toFixed(2)}:1`);
+    });
+    expect(schwach, `zu schwach — ${schwach.join(", ")}`).toEqual([]);
+  });
 });

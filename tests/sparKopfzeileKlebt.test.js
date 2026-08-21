@@ -62,11 +62,25 @@ describe("Sparplan-Kopfzeile klebt", () => {
     expect(dash).toMatch(/className="hero-sticky"/);
   });
 
-  it("kein overflow:hidden im Widget — das schaltet sticky ab", () => {
-    // Ein einziges overflow:hidden auf einem Vorfahren wuerde die Kopfzeile
-    // still wieder mitscrollen lassen. Das eine vorhandene sitzt an einer
-    // Textkuerzung tief drin, nicht ueber der Tabelle.
-    const treffer = widget.match(/overflow:"hidden"/g) || [];
-    expect(treffer.length, "neues overflow:hidden pruefen").toBeLessThanOrEqual(1);
+  it("kein overflow:hidden ueber der Tabelle — das schaltet sticky ab", () => {
+    // Ein overflow:hidden auf einem VORFAHREN der Kopfzeile wuerde sie still
+    // wieder mitscrollen lassen. Deshalb wird jedes Vorkommen einzeln
+    // verantwortet statt bloss gezaehlt — sonst waechst die Zahl irgendwann
+    // stillschweigend mit.
+    //
+    // Erlaubt, weil beide an kleinen Blattelementen sitzen und die Tabelle
+    // nicht umschliessen:
+    //   * der Fortschrittsbalken im Statusband (64x4px),
+    //   * die Textkuerzung an den Zinsmonat-Schaltern.
+    const erlaubt = [
+      /background:"rgba\(0,0,0,0\.22\)",overflow:"hidden"/,     // Fortschrittsbalken
+      /userSelect:"none",overflow:"hidden",whiteSpace:"nowrap"/,  // Textkuerzung
+    ];
+    const treffer = widget.match(/[^\n]*overflow:"hidden"[^\n]*/g) || [];
+    const unbekannt = treffer.filter((zeile) => !erlaubt.some((r) => r.test(zeile)));
+    expect(unbekannt, `unverantwortetes overflow:hidden — ${unbekannt.join(" | ")}`)
+      .toEqual([]);
+    // Und die bekannten muessen es auch wirklich noch geben.
+    expect(treffer.length).toBe(2);
   });
 });

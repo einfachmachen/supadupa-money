@@ -15,7 +15,7 @@ import { sparPlanPflege, heuteIsoVon } from "../../utils/sparPlanPflege.js";
 import { recordDeletedTxs } from "../../utils/txTombstones.js";
 import { computeMinTagessaldo, computeTagessaldoAt, buildTxsByMonth, sparPlanOptimum,
   tiefpunktImFenster } from "../../utils/sparBerechnen.js";
-import { knopfPaar, DUNKEL } from "../../theme/amtPill.js";
+import { knopfPaar, DUNKEL, HELL } from "../../theme/amtPill.js";
 import { AMPEL } from "../../utils/syncBadge.js";
 import { DEFAULT_ZINS_MONATE, parseZinsMonate, serializeZinsMonate,
   zinsTermine, sweepFenster, computeSweep, ohneSweepBuchungen, sweepFuerMonat,
@@ -207,6 +207,13 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   // Rechnung, damit die Schrift auf dem Gold in JEDEM Theme trägt, statt sich
   // auf ein festes Schwarz zu verlassen.
   const pflegePaar = () => knopfPaar(T.gold, DUNKEL);
+  // Das Statusband „wird neu berechnet": informierend, nicht warnend —
+  // deshalb der blaue Akzent und nicht Gold. Schrift wie ueberall gerechnet.
+  const rechnePaar = () => knopfPaar(T.blue, HELL);
+  // Zwischen dem Erkennen einer Aenderung und dem Rechnen liegen 450 ms
+  // Sammelpause (siehe der Abdruck-Effekt oben). Beides zusammen ist „die
+  // Tabelle gilt gerade nicht".
+  const rechnetNeu = computing || resultOutdated;
   // Bestehende Sparplan-Series für aktuellen Plannamen finden
   const findExistingSeries = (name) => {
     const desc = buildSparDesc(name);
@@ -765,6 +772,42 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
         </div>
       )}
 
+      {/* ── „Wird neu berechnet" — ganz oben, nicht unten am Knopf ───────
+          Der Fortschritt stand bisher nur AUF dem Neuberechnen-Knopf, und der
+          sitzt weit unten: „muss sonst erst weit nach unten scrollen, um es
+          ueberhaupt zu erkennen" (Nutzer). Seit die Vorschau von selbst
+          nachrechnet, ist das die haeufigste Art, wie man ihr begegnet — also
+          gehoert die Meldung an die erste Stelle.
+
+          `resultOutdated` ist mit drin, nicht nur `computing`: Zwischen dem
+          Erkennen und dem Rechnen liegen 450 ms Sammelpause. Ohne sie bliebe
+          die alte Tabelle in dieser Zeit scharf und unkommentiert stehen. */}
+      {!collapsed&&rechnetNeu&&(
+        <div style={{margin:"0 0 8px",padding:"7px 10px",borderRadius:10,
+          background:rechnePaar().grund,color:rechnePaar().schrift,
+          display:"flex",alignItems:"center",gap:8,fontSize:12,lineHeight:1.3}}>
+          <span style={{flexShrink:0,display:"inline-flex"}}>
+            {Li("refresh-cw",14,rechnePaar().schrift)}</span>
+          <b style={{flex:1,minWidth:0}}>Sparplan wird neu berechnet…</b>
+          <span style={{fontFamily:NUM_FONT,fontWeight:700,flexShrink:0}}>
+            {computing?`${progress} %`:""}</span>
+          <div style={{width:64,height:4,borderRadius:2,flexShrink:0,
+            background:"rgba(0,0,0,0.22)",overflow:"hidden"}}>
+            <div style={{height:"100%",borderRadius:2,background:rechnePaar().schrift,
+              width:`${computing?Math.max(3,progress):3}%`,transition:"width 0.15s"}}/>
+          </div>
+        </div>
+      )}
+
+      {/* Die alte Ansicht bleibt stehen, wird aber unscharf und nicht
+          bedienbar — so ist auf einen Blick klar, dass die Zahlen darunter
+          gerade nicht mehr gelten (Nutzer-Wunsch). `filter` statt `opacity`:
+          Bei blosser Transparenz laesst sich jede Zahl noch ablesen, und
+          genau das soll sie nicht. */}
+      <div style={rechnetNeu
+        ? {filter:"blur(2.5px)",opacity:0.55,pointerEvents:"none",
+           userSelect:"none",transition:"filter 0.2s,opacity 0.2s"}
+        : {transition:"filter 0.2s,opacity 0.2s"}}>
       {!collapsed&&<>
         {/* Konfig-Karte als echtes RASTER statt einzelner Flex-Zeilen: nur so
             beginnen die Felder aller Zeilen an derselben Stelle — und zwar
@@ -1305,6 +1348,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
         </>)}
 
       </>}
+      </div>
     </div>
   );
 }
