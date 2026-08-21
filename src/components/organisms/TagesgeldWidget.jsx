@@ -19,6 +19,7 @@ import { AMPEL } from "../../utils/syncBadge.js";
 import { DEFAULT_ZINS_MONATE, parseZinsMonate, serializeZinsMonate,
   zinsTermine, sweepFenster, computeSweep, ohneSweepBuchungen, sweepFuerMonat,
   SWEEP_RUECK_DESC } from "../../utils/zinsSweep.js";
+import { parseZinssatz, vorigerZinsTermin, tageZwischen, zinsVergleich } from "../../utils/zinsErtrag.js";
 
 function TagesgeldWidget({year, month, initialCollapsed=true}) {
   const {  getKumulierterSaldo, txs, setTxs, cats, accounts, setAccounts, getAcc, budgets, getCat, getBudgetForMonth, selAcc, getProgEndeAccGlobal, resetProgEndeCache, sparOpenRequest, frageBestaetigung } = useContext(AppCtx);
@@ -137,6 +138,55 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   const [sparSubId, setSparSubId]   = useState(()=>kvStore.getItem("mbt_spar_subid")||"");
   const [sparAccId, setSparAccId]   = useState(()=>kvStore.getItem("mbt_spar_accid")||"");
   const [sparPlanName, setSparPlanName] = useState(()=>kvStore.getItem("mbt_spar_planname")||"Sparplan 1");
+  // ── Zins-Sweep („Mega-Sparrate") — rein informativ ────────────────────
+  // Zeigt als zusätzliche Tabellenspalte, wie viel zum Zinsstichtag kurzfristig
+  // aufs Tagesgeld geschoben werden kann, ohne am nächsten Banktag in
+  // Schieflage zu geraten.
+  //
+  // Diese drei Einstellungen stehen bewusst HIER OBEN, vor `datenAbdruck`:
+  //
+  //   * Alle drei entwerten die Vorschau-Tabelle — sie zeigt in jedem
+  //     Zinsmonat das Mega-Sparraten-Band und (seit dem Zinssatz) den
+  //     Zinsvergleich. Sie gehören deshalb in den Abdruck; nur was dort
+  //     einfließt, löst ein Nachrechnen aus.
+  //   * Ein bloßes `setResultOutdated(true)` im Setzer reichte NICHT: Seit der
+  //     „Neuberechnen"-Knopf weg ist, rechnet einzig der Abdruck-Effekt nach.
+  //     Eine Einstellung, die nur „veraltet" setzt, ließe die Tabelle für
+  //     immer unscharf stehen — unter einer Meldung „wird neu berechnet", die
+  //     niemand einlöst.
+  //   * Die Abhängigkeitsliste eines `useCallback` wird beim ERSTEN Rendern
+  //     ausgewertet. Stünden sie unter `datenAbdruck`, griffe sie auf noch
+  //     nicht angelegte Bindungen zu (temporale Todeszone — genau daran ist
+  //     die App in dieser Sitzung schon einmal abgestürzt).
+  const [zinsMonate, setZinsMonateState] = useState(
+    ()=>parseZinsMonate(kvStore.getItem("mbt_zins_monate")) ?? DEFAULT_ZINS_MONATE);
+  const setZinsMonate = (arr) => {
+    const next = [...new Set(arr)].sort((a,b)=>a-b);
+    setZinsMonateState(next);
+    kvStore.setItem("mbt_zins_monate", serializeZinsMonate(next));
+  };
+  const toggleZinsMonat = (m) =>
+    setZinsMonate(zinsMonate.includes(m) ? zinsMonate.filter(x=>x!==m) : [...zinsMonate, m]);
+  // Rechnet damit, dass die Rückbuchung am Rückbuchungstag selbst erfolgt und
+  // hausintern sofort gutgeschrieben wird. Standardmäßig AUS: der höhere
+  // Betrag setzt voraus, dass an genau diesem Tag zurücküberwiesen wird.
+  const [sofortRueck, setSofortRueckState] = useState(
+    ()=>kvStore.getItem("mbt_zins_sofortrueck")==="1");
+  const setSofortRueck = (v) => {
+    setSofortRueckState(v);
+    kvStore.setItem("mbt_zins_sofortrueck", v?"1":"0");
+  };
+  // Der Zinssatz des Tagesgeldkontos, in % p.a. Als TEXT im Zustand, nicht als
+  // Zahl: Sonst lässt sich „2," nicht tippen — der Zwischenstand wäre keine
+  // gültige Zahl und das Komma spränge beim Tippen wieder weg. Gerechnet wird
+  // mit `zinssatz` (geparst), gezeigt wird `zinssatzText`.
+  const [zinssatzText, setZinssatzText] = useState(
+    ()=>kvStore.getItem("mbt_zins_satz") || "");
+  const zinssatz = parseZinssatz(zinssatzText);
+  const setZinssatz = (roh) => {
+    setZinssatzText(roh);
+    kvStore.setItem("mbt_zins_satz", roh);
+  };
 
   // Der Abdruck der Daten, aus denen eine Tabelle entstand (siehe oben).
   const datenAbdruck = React.useCallback(() => {
@@ -154,9 +204,13 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     });
     try { misch(JSON.stringify(budgets||{})); } catch { /* egal */ }
     misch(puffer); misch(monate); misch(sparPlanName); misch(sparAccId);
+    // Die Zins-Einstellungen gehören dazu: Sie ändern das Mega-Sparraten-Band
+    // und den Zinsvergleich in JEDEM Zinsmonat der Tabelle.
+    misch(serializeZinsMonate(zinsMonate)); misch(sofortRueck?1:0); misch(zinssatzText);
     return (h>>>0).toString(36);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [txs, budgets, puffer, monate, sparPlanName, sparAccId]);
+  }, [txs, budgets, puffer, monate, sparPlanName, sparAccId,
+      zinsMonate, sofortRueck, zinssatzText]);
 
   // Nach programmatischem Setzen (Dropdown-Auswahl) bleibt scrollLeft bei 0 —
   // text-align:right allein wirkt sich NICHT auf die Scroll-Position eines
@@ -222,30 +276,6 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   };
   const [sparTgtCatId, setSparTgtCatId] = useState(()=>kvStore.getItem("mbt_spar_tgt_catid")||"");
   const [sparTgtSubId, setSparTgtSubId] = useState(()=>kvStore.getItem("mbt_spar_tgt_subid")||"");
-
-  // ── Zins-Sweep („Mega-Sparrate") — rein informativ ────────────────────
-  // Zeigt als zusätzliche Tabellenspalte, wie viel zum Zinsstichtag kurzfristig
-  // aufs Tagesgeld geschoben werden kann, ohne am nächsten Banktag in
-  // Schieflage zu geraten. Welche Zeile ihre Details ausklappt (Monatsschlüssel
-  // y*12+m) bzw. null = keine.
-  const [zinsMonate, setZinsMonateState] = useState(
-    ()=>parseZinsMonate(kvStore.getItem("mbt_zins_monate")) ?? DEFAULT_ZINS_MONATE);
-  const setZinsMonate = (arr) => {
-    const next = [...new Set(arr)].sort((a,b)=>a-b);
-    setZinsMonateState(next);
-    kvStore.setItem("mbt_zins_monate", serializeZinsMonate(next));
-  };
-  const toggleZinsMonat = (m) =>
-    setZinsMonate(zinsMonate.includes(m) ? zinsMonate.filter(x=>x!==m) : [...zinsMonate, m]);
-  // Rechnet damit, dass die Rückbuchung am Rückbuchungstag selbst erfolgt und
-  // hausintern sofort gutgeschrieben wird. Standardmäßig AUS: der höhere
-  // Betrag setzt voraus, dass an genau diesem Tag zurücküberwiesen wird.
-  const [sofortRueck, setSofortRueckState] = useState(
-    ()=>kvStore.getItem("mbt_zins_sofortrueck")==="1");
-  const setSofortRueck = (v) => {
-    setSofortRueckState(v);
-    kvStore.setItem("mbt_zins_sofortrueck", v?"1":"0");
-  };
 
   const [toast, setToast] = useState("");
   const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(""),3000); };
@@ -498,6 +528,11 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     // Buchungen und würde diesen hypothetischen Stand schlicht ignorieren.
     const zinsMonateVorschau = parseZinsMonate(kvStore.getItem("mbt_zins_monate")) ?? DEFAULT_ZINS_MONATE;
     const sofortRueckVorschau = kvStore.getItem("mbt_zins_sofortrueck") === "1";
+    // Wie die beiden Zeilen darüber aus dem Speicher und nicht aus dem
+    // Zustand: `berechnen` läuft in Häppchen weiter, während der Zustand sich
+    // längst geändert haben kann. Aus dem Speicher gelesen gehört jeder
+    // Durchlauf zu genau einem Stand.
+    const zinssatzVorschau = parseZinssatz(kvStore.getItem("mbt_zins_satz")) ?? 0;
     const basisTxs = ohneSweepBuchungen(txs)
       .filter(t => !(excludeDesc && t.pending && t.desc === excludeDesc));
     const sweepCtx = { txs: basisTxs, cats, accounts, getKumulierterSaldo, getCat,
@@ -632,7 +667,40 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
               virtualSpar, monate: zinsMonateVorschau, saldoAmTag });
           } catch(e) { sweep = null; }
         }
-        rows.push({y, m, minTag, minNach: minNachSparen, tiefTag, saldoEnde, zusaetzlich, kumuliert, sweep});
+        // ── Zinsertrag des Termins ───────────────────────────────────────
+        //
+        // Nur in Zinsmonaten, nur mit eingetragenem Zinssatz — sonst kostet es
+        // Rechenzeit für eine Zeile, die niemand sehen will.
+        //
+        // Der verzinste Stand ist der Tagesgeld-Stand AM STICHTAG. Er setzt
+        // sich aus zwei Teilen zusammen, die auseinandergehalten werden
+        // müssen: dem gebuchten Bestand (`sweepCtx` — echte Buchungen OHNE die
+        // Raten dieses Plans) und den geplanten Raten bis hierher
+        // (`kumuliert`, die Rate dieses Monats eingeschlossen, denn sie geht am
+        // Monatsletzten ab und ist am Stichtag da). Beides zu addieren wäre
+        // doppelt gezählt, wenn `sweepCtx` die Plan-Raten noch enthielte —
+        // genau deshalb sind sie dort herausgefiltert.
+        let zins = null;
+        if(zinssatzVorschau > 0 && sweep && sparAccId) {
+          try {
+            const vorig = vorigerZinsTermin(sweep.termin, zinsMonateVorschau);
+            const tageZeitraum = vorig ? tageZwischen(vorig, sweep.termin) : null;
+            const gebucht = computeTagessaldoAt(sweep.termin, sparAccId, sweepCtx);
+            if(tageZeitraum > 0 && gebucht !== null && gebucht !== undefined) {
+              zins = zinsVergleich({
+                saldoNormal: gebucht + kumuliert,
+                // Was die Mega-Sparrate zusätzlich hinlegt, ist genau der
+                // Betrag, der am nächsten Banktag zurückgeht — die normale
+                // Rate steckt schon in `kumuliert`.
+                extra: sweep.zurueck,
+                prozent: zinssatzVorschau, tageZeitraum,
+                tageFenster: tageZwischen(sweep.termin, sweep.bis) || 1,
+              });
+              if(zins) zins.stichtagSaldo = gebucht + kumuliert;
+            }
+          } catch(e) { zins = null; }
+        }
+        rows.push({y, m, minTag, minNach: minNachSparen, tiefTag, saldoEnde, zusaetzlich, kumuliert, sweep, zins});
       }
       setProgress(Math.round(i/total*100));
       if(i < total) gleich(step);
@@ -738,6 +806,21 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   // String und darf, anders als `betrag`, auch in Template-Literals stehen.
   const fmtR = (v) => fmtK(Math.round(v));
   const betragR = (v) => betragText(fmtR(v));
+  // Zinsbeträge bleiben MIT Cent. Sie sind klein — bei 2 % auf ein paar tausend
+  // Euro geht es um einstellige Beträge, und ob die Mega-Sparrate 27 Cent oder
+  // 12 € bringt, ist genau die Frage. Gerundet wäre beides „0" bzw. „12".
+  //
+  // ── Der Zinsvergleich zum NÄCHSTEN Termin ────────────────────────────
+  //
+  // Er wird nicht neu gerechnet, sondern aus der Vorschau-Tabelle geholt: Dort
+  // steht er schon, für jeden Zinsmonat. Zweimal gerechnet wären es zwei
+  // Zahlen, die irgendwann auseinanderlaufen — der Fehler, der in dieser App
+  // schon zwischen Plan und Vormerkungen steckte.
+  const zinsZeile = sweep
+    ? (result||[]).find(r => r.zins && r.sweep && r.sweep.termin === sweep.termin)
+    : null;
+  const zinsNaechst = zinsZeile ? zinsZeile.zins : null;
+  const zinsNaechstTermin = sweep ? sweep.termin : null;
   // ── Das Symbol, das den Sparplan anlegt oder wegwirft ────────────────
   //
   // Es steht VOR „Heute sicher sparen:" und damit in einer Zeile, die es
@@ -1093,6 +1176,39 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                 );
               })}
             </div>
+            {/* ── Zinssatz ────────────────────────────────────────────────
+                Ohne ihn zeigt der Plan zwar, wie viel sich zum Termin bewegen
+                lässt, aber nicht, was es bringt. Leer heißt „nicht
+                eingetragen" und blendet die Zinszeilen aus — nicht „0 %".
+
+                inputMode="decimal" statt type="number": Auf dem Handy kommt
+                damit eine Tastatur mit Komma, und der Zwischenstand „2," bleibt
+                stehen, statt vom Browser verworfen zu werden. */}
+            <div style={{display:"flex",alignItems:"center",gap:8,marginTop:9}}>
+              <span style={{...LBL,flexShrink:0}}>Zinssatz</span>
+              <input value={zinssatzText} inputMode="decimal" placeholder="z. B. 2,25"
+                title="Zinssatz des Tagesgeldkontos in Prozent pro Jahr"
+                onChange={e=>setZinssatz(e.target.value)}
+                style={{...FIELD,width:90,textAlign:"right"}}/>
+              <span style={{...LBL,flexShrink:0}}>% p. a.</span>
+            </div>
+            {/* Der ehrliche Hinweis gehört genau HIERHIN — an die Stelle, an
+                der die Annahme gemacht wird, nicht ans Ergebnis. Herleitung
+                beider Modelle in utils/zinsErtrag.js. */}
+            {zinssatz > 0 && (
+              <div style={{color:T.txt,fontSize:12,lineHeight:1.45,marginTop:6}}>
+                Gerechnet auf den Stand am Stichtag — nur so wirkt die
+                Mega-Sparrate.
+                {zinsNaechst
+                  ? <> Verzinst Deine Bank <b>taggenau</b>, bringt sie am
+                      {" "}{kurzDat(zinsNaechstTermin)} statt
+                      {" "}<b>+{betrag(zinsNaechst.plus)} €</b> nur
+                      {" "}<b>+{betrag(zinsNaechst.taggenauPlus)} €</b>.
+                      {" "}Steht in den Bedingungen Deiner Bank.</>
+                  : <> Verzinst Deine Bank taggenau, bringt sie nur die ein bis
+                      zwei Tage im Fenster. Steht in den Bedingungen Deiner Bank.</>}
+              </div>
+            )}
             {/* Deutlich höherer Betrag, aber nur zulässig, wenn am
                 Rückbuchungstag auch wirklich zurücküberwiesen wird. */}
             <div onClick={()=>setSofortRueck(!sofortRueck)}
@@ -1250,6 +1366,19 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
               <>{betragR(sweep.hin)} €</>)}
             {betragZeile(`zurück aufs Giro am ${kurzDat(sweep.bis)}`, T.acc,
               <>{betragR(sweep.zurueck)} €</>)}
+            {/* ── Wofür das Ganze: der Zinsertrag ─────────────────────────
+                Eine Zeile, keine zweite Betragszeile: Der Ertrag ist die
+                BEGRÜNDUNG der Beträge darüber, nicht ein dritter Betrag
+                neben ihnen. Mit Cent — bei diesen Größenordnungen ist der
+                Unterschied zwischen 0,27 € und 12,35 € die ganze Aussage. */}
+            {zinsNaechst && (
+              <div style={{color:T.txt,fontSize:12,marginTop:6,lineHeight:1.45}}>
+                Zinsen am {kurzDat(sweep.termin)}:{" "}
+                <b style={{color:T.acc_gold}}>{betrag(zinsNaechst.mitMega)} €</b>
+                {" "}statt <b>{betrag(zinsNaechst.normal)} €</b> —
+                {" "}<b style={{color:T.acc_pos}}>+{betrag(zinsNaechst.plus)} €</b>
+              </div>
+            )}
             {/* Auf das Wesentliche gekürzt (Nutzer: „Habe selbst keine Lust
                 soviel lesen zu müssen"). Vier Absätze sind zu drei knappen
                 Sätzen geworden; weggefallen ist, was sich aus den Zahlen selbst
@@ -1304,7 +1433,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
               <div style={{flex:1,textAlign:"right",color:T.txt,fontSize:11}}>+ Monat</div>
               <div style={{flex:1,textAlign:"right",color:T.txt,fontSize:11,fontWeight:700}}>∑ gespart</div>
             </div>
-            {result.map(({y,m,minTag,minNach,tiefTag,zusaetzlich,kumuliert,sweep},i)=>{
+            {result.map(({y,m,minTag,minNach,tiefTag,zusaetzlich,kumuliert,sweep,zins},i)=>{
               const zusCol=zusaetzlich>0?zusaetzlich<500?T.warn:T.pos:T.txt2;
               const isCurM=i===0;
               const kritisch=minNach!==null&&minNach<puffer;
@@ -1368,6 +1497,15 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                     {" → "}{kurzTag(sweep.bis)}{" "}
                     <b style={{fontFamily:NUM_FONT}}>{betragK(sweep.zurueck)}</b>
                     {" zurück"}
+                    {/* Der Ertrag steht in DERSELBEN Zeile: Er gehört zu diesem
+                        Termin und nicht in eine eigene Zeile darunter — das
+                        Band soll ein Band bleiben. Mit Cent (siehe `betrag`
+                        gegen `betragR` weiter oben). */}
+                    {zins && <>{" · Zins "}
+                      <b style={{fontFamily:NUM_FONT}}>+{betrag(zins.plus)} €</b>
+                      {" (taggenau "}
+                      <b style={{fontFamily:NUM_FONT}}>+{betrag(zins.taggenauPlus)} €</b>
+                      {")"}</>}
                   </div>
                 )}
                 </div>

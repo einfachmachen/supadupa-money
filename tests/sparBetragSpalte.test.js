@@ -65,14 +65,23 @@ describe("Sparplan-Kopf: eine Zeile je Betrag, rechtsbündig, ohne Cent", () => 
     // 77 Monate taeuscht eine Genauigkeit vor, die es nicht gibt.
     expect(wirksam).toMatch(/const fmtR = \(v\) => fmtK\(Math\.round\(v\)\)/);
     expect(wirksam).toMatch(/const betragR = \(v\) => betragText\(fmtR\(v\)\)/);
-    // Die Betraege des Bereichs laufen alle darueber — kein `betrag(` mehr
-    // zwischen „Heute sicher sparen" und dem Ende des Erklaertexts.
+    // Die SPARBETRAEGE des Bereichs laufen alle darueber — zwischen „Heute
+    // sicher sparen" und dem Ende des Erklaertexts steht kein `betrag(` mehr.
+    //
+    // Ausgenommen sind die ZINSBETRAEGE: Sie behalten ihre Cent. Bei 2 % auf
+    // ein paar tausend Euro geht es um einstellige Betraege, und ob die
+    // Mega-Sparrate 27 Cent oder 12 € bringt, ist genau die Frage — gerundet
+    // waere beides „0" bzw. „12". Die Ausnahme steht hier namentlich, damit
+    // sie nicht zum Schlupfloch fuer den naechsten Sparbetrag wird.
     const von = wirksam.indexOf('betragZeile("Heute sicher sparen:"');
     const bis = wirksam.indexOf("auf dem Giro.");
     expect(von, "der Bereich muss es geben").toBeGreaterThan(-1);
     expect(bis).toBeGreaterThan(von);
-    expect(wirksam.slice(von, bis), "kein ungerundeter Betrag im Sparbereich")
-      .not.toMatch(/[^R]betrag\(/);
+    const ungerundet = wirksam.slice(von, bis).split("\n")
+      .filter((z) => /[^R]betrag\(/.test(z))
+      .filter((z) => !/zins/i.test(z));
+    expect(ungerundet, `ungerundeter Betrag im Sparbereich: ${ungerundet.join(" | ")}`)
+      .toEqual([]);
   });
 
   it("die Klammerzusätze sind weg", () => {
