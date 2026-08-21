@@ -355,10 +355,14 @@ function DashboardScreenV2() {
     };
     // activePanel: null | "warnings" | "sparen" | "vormerkungen"
     const [activePanel, setActivePanel] = useState(null);
-    // Der Absicherungs-Stand wird an ZWEI Stellen gebraucht: für den Rahmen um
-    // das Schild-Symbol („alles in Ordnung", leise) und für den Balken darunter
-    // (nur im Handlungsfall). Beide lesen denselben Hook — zwei Rechnungen für
+    // Der Absicherungs-Stand wird an ZWEI Stellen gebraucht: für die grüne
+    // Umrandung des Hero („alles in Ordnung") und für den Balken darunter (nur
+    // im Handlungsfall). Beide lesen denselben Hook — zwei Rechnungen für
     // dieselbe Frage sind in diesem Projekt schon einmal auseinandergelaufen.
+    //
+    // Erster Anlauf war ein Rahmen um das SCHILD-Symbol. Der kostete zwar
+    // keinen Platz, war aber „leider zu versteckt" (Nutzer). Der Hero ist die
+    // Fläche, auf die man ohnehin zuerst schaut.
     const absicherung = useAbsicherungsStatus();
     // Klappt der Hero-Chevron (detailsOpen) zu, verschwindet auch die
     // 3-Symbol-Zeile, die das aktive Panel überhaupt erst geöffnet hat —
@@ -1121,6 +1125,7 @@ function DashboardScreenV2() {
 
               return (
                 <SaldoHeroV2 year={year} month={month}
+                  ringFarbe={absicherung.art==="sicher" ? T.pos : null}
                   buchInM={buchInM}  buchOutM={buchOutM}
                   buchInE={buchInE}  buchOutE={buchOutE}
                   pendInM={pendInM}  pendOutM={pendOutM}
@@ -1266,7 +1271,7 @@ function DashboardScreenV2() {
           const showRow = detailsOpen && (!isPastMonth || visiblePTxs.length>0 || !schnellstartDone);
           if(!showRow) return null;
           const togglePanel = (key) => setActivePanel(p => p===key ? null : key);
-          const Card = ({panel, icon, badge, color, activeBg, activeBgSolid, hasContent=true, tourId, onClick, ring}) => {
+          const Card = ({panel, icon, badge, color, activeBg, activeBgSolid, hasContent=true, tourId, onClick}) => {
             // hasContent=false: das zugehörige Panel würde ohnehin nichts
             // anzeigen (z.B. 0 Warnungen) — dann bleibt das Symbol optisch
             // neutral statt als "aktiver Tab" ohne jeden Inhalt darunter.
@@ -1299,13 +1304,6 @@ function DashboardScreenV2() {
                   border:"1.5px solid transparent",
                   borderBottom:reiterAbgesetzt ? "1.5px solid transparent" : "none",
                   transition:"background 0.15s,border-color 0.15s",
-                  // `ring`: die leise Variante von „alles in Ordnung". Der
-                  // Rahmen ist ohnehin schon reserviert (siehe oben) — ihn
-                  // einzufärben kostet KEINEN Platz. Genau das war der Wunsch:
-                  // „Das grüne dauerhafte Banner nimmt dauerhaft Platz weg …
-                  // eher dezent — als Umrandung oder ähnlich."
-                  ...(ring && !(panel && isActive) ? {borderColor:ring, opacity:1,
-                    borderRadius:10} : null),
                   ...(panel && isActive ? {
                     background:bg,
                     borderColor:bg,
@@ -1358,12 +1356,10 @@ function DashboardScreenV2() {
                   Warnungen = Farbton der Warnbox-Köpfe, Sparen = neutrale
                   Sparplan-Fläche, Vormerkungen = blasse Akzentfarbe (Panel
                   selbst ist inzwischen ebenfalls in dieser Farbe). */}
-              {/* Ist alles abgesichert, sagt das der Rahmen um das Schild —
-                  kein Balken, keine zusätzliche Zeile. `activeBg` folgt der
-                  Warnfarbe des Panels darunter (nicht mehr T.neg: das ist die
-                  Ausgabenfarbe und färbte die Warnkarte pastellgrün ein). */}
-              {!isPastMonth && <Card panel="warnings"     icon="shield-check" badge={warnCount}   color={warnCount>0 ? T.warn_icon : T.pos} activeBg={`${T.warn_bold}20`} hasContent={warnCount>0} tourId="panel-warnings"
-                ring={absicherung.art==="sicher" ? T.pos : null}/>}
+              {/* `activeBg` folgt der Warnfarbe des Panels darunter (nicht
+                  mehr T.neg: das ist die Ausgabenfarbe und faerbte die
+                  Warnkarte pastellgruen ein). */}
+              {!isPastMonth && <Card panel="warnings"     icon="shield-check" badge={warnCount}   color={warnCount>0 ? T.warn_icon : T.pos} activeBg={`${T.warn_bold}20`} hasContent={warnCount>0} tourId="panel-warnings"/>}
               {!isPastMonth && <Card panel="sparen"       icon="piggy-bank"   badge={null}        color={T.blue} activeBg={T.surf2} activeBgSolid tourId="panel-sparen"/>}
               <Card panel="vormerkungen" icon="clock"        badge={visiblePTxs.length} color={blasserAkzent()} activeBg={blasserAkzent()} activeBgSolid hasContent={visiblePTxs.length>0}/>
             </div>

@@ -106,13 +106,27 @@ describe("Absicherungs-Satz", () => {
     expect(src, "kein gruener Balken mehr").not.toMatch(/nichts zu tun/);
   });
 
-  it("der gute Fall zeigt sich als Umrandung am Schild — ohne Platzbedarf", () => {
+  it("der gute Fall zeigt sich als Umrandung um den HERO", () => {
+    // Erster Anlauf war ein Rahmen um das Schild-Symbol: kostenlos, aber
+    // „leider zu versteckt" (Nutzer). Der Hero ist die Flaeche, auf die man
+    // ohnehin zuerst schaut.
     const dash = readFileSync(resolve(wurzel, "src/components/screens/DashboardScreenV2.jsx"), "utf8");
-    expect(dash).toMatch(/ring=\{absicherung\.art==="sicher" \? T\.pos : null\}/);
-    // Der Rahmen ist ohnehin reserviert (1.5px transparent) — ihn zu faerben
-    // kostet keine einzige Zeile Hoehe. Genau darum ging es.
-    expect(dash).toMatch(/border:"1\.5px solid transparent"/);
-    expect(dash).toMatch(/ring && !\(panel && isActive\)/);
+    const hero = readFileSync(resolve(wurzel, "src/components/organisms/SaldoHeroV2.jsx"), "utf8");
+    expect(dash).toMatch(/ringFarbe=\{absicherung\.art==="sicher" \? T\.pos : null\}/);
+    expect(dash, "nicht mehr am Schild").not.toMatch(/ring=\{absicherung/);
+    expect(hero).toMatch(/\{ringFarbe && \(/);
+  });
+
+  it("die Umrandung verschiebt nichts und folgt der Theme-Rundung", () => {
+    // Ein echter `border` machte den Hero 4px hoeher — das Layout spraenge
+    // beim Umschalten. Und ein fester Radius saesse in der Haelfte der Themes
+    // falsch (Tastenhell 16px, Keyboard 14px, andere gar keiner).
+    const hero = readFileSync(resolve(wurzel, "src/components/organisms/SaldoHeroV2.jsx"), "utf8");
+    const i = hero.indexOf("{ringFarbe && (");
+    const block = hero.slice(i, i + 320);
+    expect(block).toMatch(/position:"absolute",inset:0/);
+    expect(block).toMatch(/borderRadius:"inherit"/);
+    expect(block, "darf keine Klicks abfangen").toMatch(/pointerEvents:"none"/);
   });
 
   it("beide Stellen lesen denselben Stand", () => {

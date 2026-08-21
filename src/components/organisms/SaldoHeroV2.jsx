@@ -35,6 +35,9 @@ function SaldoHeroV2({
   // freien Bereich links im Hero, unter dem Fragezeichen. Ohne den Handler
   // (Monat, Jahr) erscheint das Symbol gar nicht.
   chartOpen, onToggleChart,
+  // Grüne Umrandung „alles abgesichert" (siehe unten). Ohne Wert kein Rahmen —
+  // die Monatsansicht nutzt denselben Hero und lässt ihn weg.
+  ringFarbe,
 }) {
   const { selAcc, setSelAcc, startKonto, setStartKonto, accounts, getKumulierterSaldo, txs, getCat, getSub, amtMode, setAmtMode, setShowGuidedTour, debugFlags, setDebugFlag } = useContext(AppCtx);
   const [progDrill, setProgDrill] = useState(null);
@@ -329,6 +332,24 @@ function SaldoHeroV2({
     <div className="hero-flaeche" style={{
       padding: `5px ${framePad}px 6px`,
       position:"relative"}}>
+      {/* ── „Alles abgesichert" als Umrandung ────────────────────────────
+          Der gute Fall hatte einen eigenen, dauerhaften Balken („Abgesichert
+          bis Dez 32 — nichts zu tun"). Er nahm jeden Tag eine Zeile weg und
+          sagte an 360 von 365 Tagen dasselbe. Ein Rahmen um das Schild-Symbol
+          war der erste Ersatz — kostenlos, aber „leider zu versteckt"
+          (Nutzer). Also hier: um den Hero, die Fläche, auf die man ohnehin
+          zuerst schaut.
+
+          Als ÜBERLAGERUNG, nicht als `border`: Ein echter Rahmen würde den
+          Hero um 4px höher machen und das Layout beim Umschalten springen
+          lassen. `borderRadius:"inherit"` übernimmt die Rundung, die das
+          jeweilige Theme dem Hero gibt (14px, 16px oder gar keine) — ein
+          fester Wert säße in der Hälfte der Themes falsch. */}
+      {ringFarbe && (
+        <div aria-hidden="true" style={{position:"absolute",inset:0,
+          border:`2px solid ${ringFarbe}`,borderRadius:"inherit",
+          pointerEvents:"none"}}/>
+      )}
       {/* Freier Bereich links oben: minimaler Theme-Umschalter, direkt darunter
           das Feature-Tour-Symbol (im Editorial-Layout sitzt beides stattdessen
           inline in der Kicker-Zeile). */}
