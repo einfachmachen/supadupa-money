@@ -340,14 +340,23 @@ function SaldoHeroV2({
           (Nutzer). Also hier: um den Hero, die Fläche, auf die man ohnehin
           zuerst schaut.
 
-          Als ÜBERLAGERUNG, nicht als `border`: Ein echter Rahmen würde den
-          Hero um 4px höher machen und das Layout beim Umschalten springen
-          lassen. `borderRadius:"inherit"` übernimmt die Rundung, die das
-          jeweilige Theme dem Hero gibt (14px, 16px oder gar keine) — ein
-          fester Wert säße in der Hälfte der Themes falsch. */}
+          Als ÜBERLAGERUNG, nicht als Rahmen am Hero selbst: Ein echter
+          `border` würde ihn um 4px höher machen und das Layout beim
+          Umschalten springen lassen. `borderRadius:"inherit"` übernimmt die
+          Rundung, die das jeweilige Theme dem Hero gibt (14px, 16px oder gar
+          keine) — ein fester Wert säße in der Hälfte der Themes falsch.
+
+          UND: als INNERER SCHATTEN, nicht als `border`. Der Randlos-Modus ist
+          der Standard der App und setzt per `.no-borders *` jede border-color
+          auf `transparent !important` (themes.css). Der erste Anlauf war ein
+          `border` — er wurde gezeichnet, war aber unsichtbar; im Browser
+          gemessen: inline `rgb(200,220,46)`, berechnet `rgba(0,0,0,0)`. Genau
+          deshalb war „die grüne Umrandung nicht zu entdecken" (Nutzer).
+          Dieselbe Lösung wie bei den Eingabefeldern eine Regel weiter unten:
+          „Randlos" meint die DEKO-Linien der App, nicht eine Information. */}
       {ringFarbe && (
         <div aria-hidden="true" style={{position:"absolute",inset:0,
-          border:`2px solid ${ringFarbe}`,borderRadius:"inherit",
+          boxShadow:`inset 0 0 0 2px ${ringFarbe}`,borderRadius:"inherit",
           pointerEvents:"none"}}/>
       )}
       {/* Freier Bereich links oben: minimaler Theme-Umschalter, direkt darunter

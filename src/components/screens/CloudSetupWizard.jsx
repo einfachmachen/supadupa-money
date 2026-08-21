@@ -110,7 +110,7 @@ function LinkBtn({ href, icon, children, color }) {
     <a href={href} target="_blank" rel="noopener noreferrer"
       style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
         textDecoration: "none", marginTop: 12, padding: "13px", borderRadius: 13,
-        border: kante ? `1.5px solid ${kante}` : "none", background: grund, color: schrift,
+        boxShadow: kante ? `inset 0 0 0 1.5px ${kante}` : "none", border: "none", background: grund, color: schrift,
         fontSize: 16, fontWeight: 800 }}>
       {Li(icon, 18, schrift)} {children}
     </a>
@@ -291,7 +291,7 @@ function CloudSetupWizard({ onClose, onBack }) {
           </div>
           <button onClick={() => setStep(idxOf("test"))}
             style={{ flexShrink: 0, background: kastenKnopf(T.pos, T.pos).grund,
-              border: kastenKnopf(T.pos, T.pos).kante ? `1.5px solid ${kastenKnopf(T.pos, T.pos).kante}` : "none",
+              boxShadow: kastenKnopf(T.pos, T.pos).kante ? `inset 0 0 0 1.5px ${kastenKnopf(T.pos, T.pos).kante}` : "none", border: "none",
               borderRadius: 9,
               padding: "8px 11px", color: kastenKnopf(T.pos, T.pos).schrift, fontSize: 12.5, fontWeight: 800, cursor: "pointer",
               whiteSpace: "nowrap" }}>
@@ -381,7 +381,7 @@ function CloudSetupWizard({ onClose, onBack }) {
               <button onClick={copyWorkerCode}
                 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
                   width: "100%", marginTop: 12, padding: "12px", borderRadius: 13,
-                  border: aktionsKnopf().kante ? `1.5px solid ${aktionsKnopf().kante}` : "none",
+                  boxShadow: aktionsKnopf().kante ? `inset 0 0 0 1.5px ${aktionsKnopf().kante}` : "none", border: "none",
                   background: aktionsKnopf().grund, color: aktionsKnopf().schrift, fontSize: 15, fontWeight: 800, cursor: "pointer" }}>
                 {Li(codeCopied ? "check" : "copy", 16, aktionsKnopf().schrift)} {codeCopied ? "Code kopiert!" : "Worker-Code kopieren"}
               </button>
@@ -447,7 +447,7 @@ function CloudSetupWizard({ onClose, onBack }) {
               <button onClick={genSecret}
                 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
                   width: "100%", marginTop: 12, padding: "12px", borderRadius: 13,
-                  border: aktionsKnopf().kante ? `1.5px solid ${aktionsKnopf().kante}` : "none",
+                  boxShadow: aktionsKnopf().kante ? `inset 0 0 0 1.5px ${aktionsKnopf().kante}` : "none", border: "none",
                   background: aktionsKnopf().grund, color: aktionsKnopf().schrift, fontSize: 15, fontWeight: 800, cursor: "pointer" }}>
                 {Li(copied ? "check" : "key", 16, aktionsKnopf().schrift)} {copied ? "Kopiert!" : "Secret generieren & kopieren"}
               </button>
@@ -516,7 +516,7 @@ function CloudSetupWizard({ onClose, onBack }) {
               <button onClick={runTest} disabled={!cfActive || testState === "testing"}
                 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
                   width: "100%", marginTop: 12, padding: "13px", borderRadius: 13,
-                  border: testKnopf().kante ? `1.5px solid ${testKnopf().kante}` : "none",
+                  boxShadow: testKnopf().kante ? `inset 0 0 0 1.5px ${testKnopf().kante}` : "none", border: "none",
                   background: testKnopf().grund, color: testKnopf().schrift, fontSize: 15, fontWeight: 800,
                   fontFamily: "inherit",
                   cursor: !cfActive ? "not-allowed" : "pointer" }}>
@@ -535,7 +535,7 @@ function CloudSetupWizard({ onClose, onBack }) {
                 <button onClick={() => { saveConfig?.(); }}
                   style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
                     width: "100%", marginTop: 12, padding: "13px", borderRadius: 13,
-                    border: aktionsKnopf().kante ? `1.5px solid ${aktionsKnopf().kante}` : "none",
+                    boxShadow: aktionsKnopf().kante ? `inset 0 0 0 1.5px ${aktionsKnopf().kante}` : "none", border: "none",
                     background: aktionsKnopf().grund, color: aktionsKnopf().schrift, fontSize: 16, fontWeight: 800, cursor: "pointer" }}>
                   {Li("upload-cloud", 16, aktionsKnopf().schrift)} Daten jetzt hochladen
                 </button>

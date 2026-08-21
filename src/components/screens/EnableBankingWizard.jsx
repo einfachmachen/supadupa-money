@@ -156,7 +156,7 @@ function LinkBtn({ href, icon, children, color }) {
     <a href={href} target="_blank" rel="noopener noreferrer"
       style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
         textDecoration: "none", marginTop: 12, padding: "13px", borderRadius: 13,
-        border: kante ? `1.5px solid ${kante}` : "none", background: grund, color: schrift,
+        boxShadow: kante ? `inset 0 0 0 1.5px ${kante}` : "none", border: "none", background: grund, color: schrift,
         fontSize: 16, fontWeight: 800 }}>
       {Li(icon, 18, schrift)} {children}
     </a>
@@ -178,7 +178,7 @@ function ActionBtn({ onClick, disabled, children, bg, icon }) {
     <button onClick={onClick} disabled={disabled}
       style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
         width: "100%", marginTop: 12, padding: "13px", borderRadius: 13,
-        border: kante ? `1.5px solid ${kante}` : "none",
+        boxShadow: kante ? `inset 0 0 0 1.5px ${kante}` : "none", border: "none",
         cursor: disabled ? "not-allowed" : "pointer", background: grund,
         color: schrift, fontSize: 15.5, fontWeight: 800,
         fontFamily: "inherit" }}>
@@ -583,7 +583,7 @@ function EnableBankingWizard({ onClose, onBack }) {
           </div>
           <button onClick={() => setStep(idxOf("zuordnen"))}
             style={{ flexShrink: 0, background: kastenKnopf(T.pos, T.pos).grund,
-              border: kastenKnopf(T.pos, T.pos).kante ? `1.5px solid ${kastenKnopf(T.pos, T.pos).kante}` : "none",
+              boxShadow: kastenKnopf(T.pos, T.pos).kante ? `inset 0 0 0 1.5px ${kastenKnopf(T.pos, T.pos).kante}` : "none", border: "none",
               borderRadius: 9,
               padding: "8px 11px", color: kastenKnopf(T.pos, T.pos).schrift, fontSize: 12.5, fontWeight: 800, cursor: "pointer",
               whiteSpace: "nowrap" }}>
