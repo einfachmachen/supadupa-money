@@ -1057,11 +1057,18 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
             </div>
           </div>
         </div>
-        {/* Sofort-Betrag + Neuberechnen-Button, darunter die Mega-Sparrate */}
+        {/* Sofort-Betrag, darunter die Mega-Sparrate.
+            Der „Neuberechnen"-Knopf, der hier stand, ist weg: Seit die Vorschau
+            ihren Daten-Abdruck mitfuehrt, merkt das Panel selbst, wenn die
+            Buchungen sich geaendert haben, und rechnet beim Oeffnen nach
+            (Nutzer: „kann doch jetzt komplett weg — passiert ja eh
+            automatisch"). Den Fortschritt zeigt das Band ganz oben.
+            Das SCHREIBEN der Vormerkungen haengt weiterhin an einem Knopf —
+            der steht unter der Tabelle. */}
         <div style={{background:"rgba(0,0,0,0.15)",borderRadius:10,padding:"10px 12px",
           marginBottom:6}}>
-        <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <div style={{flex:1}}>
+        <div>
+          <div>
             {(()=>{
               // Kein Spielraum wenn: total=0 oder Durchschnitt pro Monat < puffer
               // (zu wenig um sinnvoll zu sein) — die Werte kommen von oben.
@@ -1069,10 +1076,18 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                 ? "Ein bestehender Sparplan schöpft bereits alles bis auf den Puffer ab."
                 : `Ø ${fmt(Math.round(durchschnitt))} €/Monat — zu wenig für einen sinnvollen Sparplan (Schwelle: ${fmt(puffer)} €/Monat).`;
               return (<>
-                <div style={{color:T.txt,fontSize:12,marginBottom:4}}>
+                {/* Eine Zeile, auch auf schmalen Geräten (Nutzer-Wunsch) —
+                    darum kein Umbruch. Kein `overflow:hidden` dazu: Der Text
+                    ist kurz und die Zeile hat jetzt die volle Breite (der Knopf
+                    daneben ist weg). `overflow:hidden` steht in diesem Widget
+                    unter Aufsicht (sparKopfzeileKlebt.test.js), weil es in
+                    einem Vorfahren der Tabelle deren `position:sticky`
+                    abschalten würde — dann gar nicht erst anfangen. */}
+                <div style={{color:T.txt,fontSize:12,marginBottom:4,whiteSpace:"nowrap"}}>
                   Heute sicher sparen (Monat 1):
                 </div>
-                <div style={{color:col,fontSize:BETRAG_GROSS,fontWeight:800,fontFamily:NUM_FONT,letterSpacing:-0.5}}>
+                <div style={{color:col,fontSize:BETRAG_GROSS,fontWeight:800,fontFamily:NUM_FONT,
+                  letterSpacing:-0.5,textAlign:"right"}}>
                   {computing?"…":maxTransfer===null?"—":maxTransfer<=0?"0":betrag(maxTransfer)} €
                 </div>
 
@@ -1088,52 +1103,16 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                 )}
               </>);
             })()}</div>
-          <div style={{flexShrink:0,display:"flex",flexDirection:"column",gap:4,alignItems:"flex-end"}}>
-            {(()=>{
-              const {seriesIds:_existingIds} = findExistingSeries(sparPlanName);
-              const hasExisting = _existingIds.length>0;
-              if(hasExisting) {
-                // Bestehender Plan: „Neuberechnen" — rechnet neu UND überschreibt
-                // die Serie mit dem frischen Ergebnis (z.B. nach geändertem Enddatum).
-                return (
-                  <button onClick={autoAnpassen} disabled={computing}
-                    style={{padding:"8px 14px",borderRadius:10,border:"none",
-                      background:computing?"rgba(255,255,255,0.1)":resultOutdated?T.gold:T.pos,
-                      color:computing?T.txt2:"#000",fontSize:12,fontWeight:700,
-                      cursor:computing?"default":"pointer",
-                      display:"flex",alignItems:"center",gap:6}}>
-                    {Li(computing?"loader":"refresh-cw",13,computing?T.txt2:"#000")}
-                    {computing?`${progress}%`:resultOutdated?"⚠ Neu berechnen":"Neuberechnen"}
-                  </button>
-                );
-              }
-              // Neuer Plan: klassisches „Neuberechnen" (nur Vorschau, kein Speichern).
-              return (
-                <button onClick={()=>{ setResultOutdated(false); berechnen(); }} disabled={computing}
-                  style={{padding:"8px 14px",borderRadius:10,border:"none",
-                    background:computing?"rgba(255,255,255,0.1)":resultOutdated?T.gold:T.blue,
-                    color:computing?T.txt2:"#fff",fontSize:12,fontWeight:700,
-                    cursor:computing?"default":"pointer",
-                    display:"flex",alignItems:"center",gap:6}}>
-                  {Li(computing?"loader":"refresh-cw",13,computing?T.txt2:"#fff")}
-                  {computing?`${progress}%`:resultOutdated?"⚠ Neu berechnen":"Neuberechnen"}
-                </button>
-              );
-            })()}
-            {computing&&(
-              <div style={{width:120,height:3,borderRadius:2,background:"rgba(255,255,255,0.1)"}}>
-                <div style={{height:"100%",borderRadius:2,background:T.blue,
-                  width:`${progress}%`,transition:"width 0.1s"}}/>
-              </div>
-            )}
-          </div>
         </div>
         {/* Die Summe ueber den ganzen Zeitraum — volle Breite, in derselben
             Groesse wie die Zeile darueber. Vorher stand sie in der linken
             Spalte neben dem Knopf und damit auf halber Breite: Bei 77 Monaten
-            brach sie dreimal um und war in 9px kaum zu lesen. */}
+            brach sie dreimal um und war in 9px kaum zu lesen.
+            Sie schliesst ohne Abstand an den Betrag an (Nutzer-Wunsch): Sie
+            gehoert zu ihm, ein Abstand haette sie zu einer eigenen Angabe
+            gemacht. */}
         {result&&!keinSpielraum&&(
-          <div style={{color:T.acc_pos,fontSize:12,marginTop:6,lineHeight:1.45}}>
+          <div style={{color:T.acc_pos,fontSize:12,lineHeight:1.45}}>
             ∑ {monate+1} Monate: <b style={{fontFamily:NUM_FONT}}>{betrag(totalKumuliert)} €</b>
             {" · "}Ø <b style={{fontFamily:NUM_FONT}}>{betrag(Math.round(durchschnitt))} €</b>/Monat
           </div>
@@ -1205,39 +1184,43 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
             selben Tag ab, und der Hin-Betrag ENTHÄLT die normale Rate. */}
         {sweepAktiv&&sweep&&sweep.hin>0&&(
           <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${T.bd}`}}>
-            {/* Beschriftung oben, Betrag darunter — beides linksbündig, und der
-                Betrag in derselben Größe wie „Heute sicher sparen". Vorher
-                standen die Beträge rechts außen in drei verschiedenen Graden;
-                das Auge musste bei jeder Zeile neu suchen (Nutzer: „wirkt oben
-                unruhig"). */}
+            {/* Beschriftung oben, Betrag rechtsbündig darunter, und alle Beträge
+                in derselben Größe wie „Heute sicher sparen". Vorher standen sie
+                in drei verschiedenen Graden; das Auge musste bei jeder Zeile neu
+                suchen (Nutzer: „wirkt oben unruhig"). Rechtsbündig, weil Zahlen
+                dann untereinander an derselben Stelle enden — der Vergleich
+                zweier Beträge ist genau das, worum es hier geht. */}
             <div style={{color:T.txt,fontSize:12}}>
               Mega-Sparrate zum {kurzDat(sweep.termin)} <span style={{color:T.acc_gold}}>(Zinstermin)</span>
             </div>
             <div style={{color:T.acc_gold,fontSize:BETRAG_GROSS,fontWeight:800,
-              fontFamily:NUM_FONT,letterSpacing:-0.5}}>
+              fontFamily:NUM_FONT,letterSpacing:-0.5,textAlign:"right"}}>
               {betrag(sweep.hin)} €
             </div>
             <div style={{color:T.txt,fontSize:12,marginTop:6}}>
               zurück aufs Giro am {kurzDat(sweep.bis)} ({wochentag(sweep.bis)})
             </div>
             <div style={{color:T.acc,fontSize:BETRAG_GROSS,fontWeight:800,
-              fontFamily:NUM_FONT,letterSpacing:-0.5}}>
+              fontFamily:NUM_FONT,letterSpacing:-0.5,textAlign:"right"}}>
               {betrag(sweep.zurueck)} €
             </div>
             {/* Auf das Wesentliche gekürzt (Nutzer: „Habe selbst keine Lust
                 soviel lesen zu müssen"). Vier Absätze sind zu drei knappen
-                Zeilen geworden; weggefallen ist, was sich aus den Zahlen selbst
+                Sätzen geworden; weggefallen ist, was sich aus den Zahlen selbst
                 ergibt („wird nicht zusätzlich überwiesen") oder was den Ablauf
                 erklärt, statt eine Entscheidung zu stützen (das Banner auf der
-                Startseite, die Nachführung bis zum Stichtag). */}
+                Startseite, die Nachführung bis zum Stichtag).
+                Fortlaufend statt in Zeilen umgebrochen (Nutzer-Wunsch): drei
+                kurze Sätze untereinander sahen aus wie eine Aufzählung mit drei
+                gleichrangigen Punkten, obwohl es ein Absatz ist. */}
             <div style={{color:T.txt,fontSize:12,marginTop:6,lineHeight:1.5}}>
               {sweep.bleibt>0 && <>Davon <b>{betrag(sweep.bleibt)} €</b> normale Rate —
-                bleibt auf dem {zielKontoName}.<br/></>}
+                bleibt auf dem {zielKontoName}.{" "}</>}
               Am {kurzDat(sweep.engpassTag)} bleiben <b>{betrag(Math.round(sweep.restNachSweep))} €</b> auf dem Giro.
-              <br/>
+              {" "}
               {sweepGesetzt()
                 ? "Bereits vorgemerkt."
-                : `Vorschau — vorgemerkt wird automatisch, sobald ${MONTHS_G[Number(sweep.termin.slice(5,7))-1]} läuft.`}
+                : "Die Mega-Sparrate wird erst vorgemerkt, wenn der Zinsmonat läuft."}
             </div>
           </div>
         )}
@@ -1246,21 +1229,39 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
         {/* Ergebnis-Tabelle */}
         {!result&&(
           <div style={{textAlign:"center",color:T.txt2,fontSize:10,padding:"8px 0"}}>
-            Klicke „Neuberechnen" um den Sparplan zu ermitteln
+            Sparplan wird ermittelt …
           </div>
         )}
         {result&&result.length>0&&(<>
-          {/* „Anlegen" nur bei einem NEUEN Plan — bei bestehendem läuft die
-              Aktualisierung über „Neuberechnen". Ohne Karte drumherum: die
-              enthielt nach dem Umbau nichts als diesen einen Knopf. */}
+          {/* Der Knopf, der die Vormerkungen SCHREIBT. Ohne Karte drumherum: die
+              enthielt nach dem Umbau nichts als diesen einen Knopf.
+              Zwei Fälle, ein Knopf: Bei einem NEUEN Plan legt er die Serie an
+              („Anlegen"), bei einem bestehenden schreibt er das frische Ergebnis
+              in die vorhandene Serie („Vormerkungen aktualisieren", via
+              autoAnpassen). Der zweite Fall hing vorher am „Neuberechnen"-Knopf
+              oben — der ist weg, weil das RECHNEN von selbst passiert. Das
+              Schreiben tut es ausdrücklich nicht: Es ändert Buchungen und bleibt
+              deshalb eine Entscheidung des Nutzers. */}
           {(()=>{
             const {seriesIds:_existingIds} = findExistingSeries(sparPlanName);
-            if(_existingIds.length>0) return null;
+            if(_existingIds.length>0) return (
+              <div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}>
+                <button onClick={autoAnpassen} disabled={computing}
+                  style={{padding:"7px 14px",borderRadius:10,border:"none",
+                  background:computing?"rgba(255,255,255,0.1)":T.pos,
+                  color:computing?T.txt2:"#000",fontSize:12,fontWeight:700,
+                  cursor:computing?"default":"pointer",
+                  display:"flex",alignItems:"center",gap:6}}>
+                  {Li(computing?"loader":"refresh-cw",14,computing?T.txt2:"#000")}
+                  {computing?`${progress}%`:"Vormerkungen aktualisieren"}
+                </button>
+              </div>
+            );
             return (
               <div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}>
                 <button onClick={()=>{
                   const sparMonate = result ? result.filter(r=>r.zusaetzlich>0) : [];
-                  if(!result) { showToast("Bitte zuerst Neuberechnen klicken."); return; }
+                  if(!result) { showToast("Der Sparplan wird noch berechnet."); return; }
                   if(!sparMonate.length) { showToast("Keine Sparraten möglich — Konto bereits voll genutzt oder unter Puffer."); return; }
                   const sparDesc = buildSparDesc(sparPlanName);
                   const seriesId = "series-"+uid();
@@ -1370,7 +1371,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                     {kumuliert>0?betragK(kumuliert):"—"}
                   </div>
                 </div>
-                {/* Zinsmonat: die Super-Sparrate gehört SICHTBAR in den Plan,
+                {/* Zinsmonat: die Mega-Sparrate gehört SICHTBAR in den Plan,
                     nicht erst in den laufenden Monat (Nutzer-Wunsch). Zwei
                     Zahlen, weil es zwei verschiedene Dinge sind: `hin` geht am
                     Stichtag aufs Tagesgeld, `zurueck` kommt am nächsten
@@ -1393,7 +1394,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                   <div style={{margin:"3px -6px -3px",padding:"3px 6px 4px",
                     background:sweepGrund(),color:sweepFarbe(),
                     fontSize:10.5,lineHeight:1.35}}>
-                    <b>Super-Sparrate</b>{" "}
+                    <b>Mega-Sparrate</b>{" "}
                     {kurzTag(sweep.termin)}:{" "}
                     <b style={{fontFamily:NUM_FONT}}>{betragK(sweep.hin)}</b>
                     {" → "}{kurzTag(sweep.bis)}{" "}

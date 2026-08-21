@@ -1,4 +1,8 @@
-// Die Super-Sparraten-Zeile im Sparplan (TagesgeldWidget).
+// Die Mega-Sparraten-Zeile im Sparplan (TagesgeldWidget).
+//
+// (Der Dateiname stammt aus der Zeit, als sie noch „Super-Sparrate" hiess —
+// der Nutzer nennt sie inzwischen ueberall „Mega-Sparrate", und der Text im
+// Bildschirm folgt dem.)
 //
 // VOLLE Signalfläche in Sonnengelb, keine Tönung (Nutzer-Wunsch — dieselbe
 // Entscheidung wie beim Sync-Hinweis: „einfache, klare Farben").
@@ -29,7 +33,7 @@ const wurzel = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 // Genau die Rechnung aus TagesgeldWidget.jsx (`sweepPaar`).
 const paar = () => knopfPaar(AMPEL.gelb, DUNKEL);
 
-describe("Super-Sparraten-Zeile: Sonnengelb mit gerechneter Schrift", () => {
+describe("Mega-Sparraten-Zeile: Sonnengelb mit gerechneter Schrift", () => {
   it("die Schrift trägt auf dem Sonnengelb", () => {
     const { grund, schrift } = paar();
     const wert = kontrastWert(schrift, grund);
@@ -48,7 +52,7 @@ describe("Super-Sparraten-Zeile: Sonnengelb mit gerechneter Schrift", () => {
   it("die Fläche ist deckend, nicht getönt", () => {
     // Eine Tönung (`${…}1f`) wäre der Rückfall in genau das Problem oben.
     const src = readFileSync(resolve(wurzel, "src/components/organisms/TagesgeldWidget.jsx"), "utf8");
-    const i = src.indexOf("Super-Sparrate</b>");
+    const i = src.indexOf("Mega-Sparrate</b>");
     const block = src.slice(i - 500, i + 400);
     expect(block).toMatch(/background:\s*sweepGrund\(\)/);
     expect(block, "keine Hex-Alpha-Toenung").not.toMatch(/\$\{T\.gold\}1f/);
@@ -60,7 +64,7 @@ describe("Super-Sparraten-Zeile: Sonnengelb mit gerechneter Schrift", () => {
     // reicht". Ein gerahmtes Kaestchen IN einer gerahmten Zeile las sich als
     // zweiter Bereich; das Symbol kostete die Breite, an der die Zeile umbrach.
     const src = readFileSync(resolve(wurzel, "src/components/organisms/TagesgeldWidget.jsx"), "utf8");
-    const i = src.indexOf("Super-Sparrate</b>");
+    const i = src.indexOf("Mega-Sparrate</b>");
     expect(i, "die Zeile muss es geben").toBeGreaterThan(-1);
     const block = src.slice(i - 500, i + 400);
     expect(block, "kein Rahmen ringsum").not.toMatch(/border:\s*`1px solid/);
