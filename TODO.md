@@ -682,31 +682,50 @@ Logik noch nicht sichtbar war:
   lassen und die Funde entweder im Theme oder ueber die Helfer
   (`aufPlatte`/`imKasten`/`knopfPaar`) beheben.
 
-## Gestaltung — die Abstaende von „Tastenhell" fuer ALLE Themes
+## Gestaltung — die Abstaende von „Tastenhell" fuer ALLE Themes — ERLEDIGT
 
-- [ ] **Nutzer-Wunsch:** „Tastenhell" wirkt deutlich aufgelockerter als die
-  uebrigen Themes, und das soll ueberall so sein. Die Ursache ist nicht die
-  Farbe, sondern der Abstand: Das Theme bringt eine eigene Regelgruppe in
-  `src/theme/css/themes.css` mit (`.theme-tastenhell …`) — Aussenabstand um
-  Hero und Symbolzeile (`margin: 8px 10px`), groessere Radien (16 statt 14),
-  Luft zwischen den Kategoriezeilen (`.kategorie-liste { gap: 8px }`),
-  Abstaende um Diagramm-, Sortier-, Such- und Filterzeile, und eine untere
-  Leiste mit Fugen zwischen den Reitern.
+**Nutzer-Wunsch:** „Tastenhell" wirkt deutlich aufgelockerter als die uebrigen
+Themes, und das soll ueberall so sein. Erst als zwei Duplikate erprobt („Lime
+Luftig", „Deep Ocean Luftig"), dann: „Bitte aendere alle Themes so um. Den
+Zusatz ‚luftig' kannst Du entfernen." Die Duplikate sind wieder weg; wer eines
+ausgewaehlt hatte, wird ueber `THEME_ALIAS` auf die Vorlage geleitet.
 
-  Zu tun: Diese Werte aus dem Theme herausloesen und zur Grundeinstellung der
-  App machen, statt sie an `.theme-tastenhell` zu haengen. Zwei Punkte, die
-  dabei nicht untergehen duerfen:
+**Wie:** Die Regelgruppe in `themes.css` hing fest auf `.theme-tastenhell`,
+beschreibt aber nichts Farbiges. Sie haengt jetzt an einem MERKMAL: Ein Theme
+setzt `luftig:true`, App.jsx haengt die Klasse `theme-luftig` an die Wurzel.
+`luftigMachen()` in `themes.js` setzt das Merkmal fuer alle Themes und
+ergaenzt `flaechen_extra` (welche Bereiche abgesetzte Flaechen sind) und
+`card_shadow`. Custom-Themes aus dem Editor laufen ueber `getTheme()`
+ebenfalls durch.
 
-  1. **Die Fuge braucht einen Kontrast.** Bei „Tastenhell" ist die Platte
-     hell und die Karte dunkel — der Abstand ist deshalb SICHTBAR. In
-     Themes, deren Karten fast die Hintergrundfarbe haben (`kontrasthell`:
-     beides `#FFFFFF`), entsteht durch mehr Abstand kein luftigeres Bild,
-     sondern nur eine groessere weisse Flaeche. Dort muss
-     `flaecheAbgesetzt()` mitziehen — den Helfer gibt es schon, er wird bloss
-     noch nicht ueberall benutzt.
-  2. **Die Hoehe.** Mehr Abstand heisst weniger Zeilen pro Bildschirm. Auf
-     einem iPhone 13 mini ist das spuerbar. Vor dem Umbau einmal im Browser
-     durchmessen, nicht schaetzen.
+**Die beiden Punkte, die nicht untergehen durften:**
+
+1. **Die Fuge braucht einen Kontrast.** Bestaetigt. Der naheliegende Griff —
+   die Platte abdunkeln — wurde gemessen und wieder verworfen: In hellen
+   Themes steht dort DUNKLER Text (Limehell 90 → 125 Stellen unter der
+   Schwelle), in dunklen ist ein guter Teil des Textes halbdurchsichtig und
+   wird auf dunklerem Grund selbst dunkler (Lime 60 → 62). Die Umstellung
+   fasst deshalb KEINE Farbe an; die Trennung tragen Abstand, Rundung und
+   Schatten. Fuer dunkle Themes, deren Karte sich farblich kaum von der Platte
+   abhebt (unter 1,12:1 — Magenta, Xbox, PS5, Obsidian), zeichnet ein feiner
+   heller Ring die Kante nach.
+   Themes, die per `*`-Regel `box-shadow:none` und `border-radius:0` setzen
+   (Brutalist, Terminal, Swiss, Clean, Kloetzchenwelt), bleiben flach und
+   eckig — das ist ihre Identitaet, und die Fugen allein reichen dort.
+
+2. **Die Hoehe.** Gemessen auf 375x812 (iPhone 13 mini), Theme „Lime":
+   Der Block ueber der Kategorienliste endet bei 208px statt 181px — **27px
+   mehr**. Dazu die Fuge zwischen den Zeilen (2px → 8px, also +6px je Zeile).
+   Bei rund zehn sichtbaren Zeilen sind das ~87px, also **etwa eine Zeile
+   weniger** pro Bildschirm. Bewusst in Kauf genommen.
+
+**Kontrast insgesamt** (npm run kontrast, Stellen unter der Schwelle, vorher →
+nachher): Lime 60 → 62, Deep Ocean 63 → 64, Limehell 90 → 85, Kontrast Hell
+54 → 55, Creme 133 → 130, Glutorange 53 → 53, Magazin 66 → 67, Kloetzchenwelt
+59 → 60, Keyboard 59 → 59, Tastenhell 37 → 37. In Summe unveraendert.
+
+Tests: `tests/themeLuftig.test.js` (u. a.: keine Farbe wird angefasst,
+bedeutungstragende Flaechen wie `.warn-karte` bleiben ausgespart).
 
 ## Sync / Performance
 

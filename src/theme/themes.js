@@ -1110,35 +1110,41 @@ THEMES.tastenhell = {
 };
 
 // ════════════════════════════════════════════════════════════════════════
-//  LUFTIGE FASSUNGEN von „Lime" und „Deep Ocean" (Nutzer-Wunsch)
+//  LUFTIG — die Gestalt von „Tastenhell" fuer ALLE Themes (Nutzer-Wunsch)
 //
-//  Gleiche Farbwelt, gleiche Akzente — nur die Gestalt von „Tastenhell":
-//  Bloecke liegen als abgesetzte Flaechen auf einer Platte, mit Fugen
-//  dazwischen, runden Ecken und einem Schatten, der sie anhebt.
+//  Bloecke liegen als abgesetzte Flaechen mit Fugen dazwischen auf einer
+//  Platte, mit runden Ecken und einem Schatten, der sie anhebt.
 //
-//  Drei Dinge muessen dafuer zusammenkommen:
+//  Zuerst gab es das als zwei Duplikate („Lime Luftig", „Deep Ocean Luftig").
+//  Sie sind wieder weg: Wenn ALLE Themes so aussehen, ist es keine Variante
+//  mehr, sondern die Gestalt der App. Wer eines der beiden ausgewaehlt hatte,
+//  landet ueber ALIASSE wieder bei der Vorlage — die sieht jetzt genauso aus.
 //
-//  1. `luftig:true` — schaltet die Abstands- und Formregeln frei
-//     (themes.css, `.theme-luftig`).
-//  2. Eine dunklere PLATTE als die Flaechen. In den Vorlagen liegen bg
-//     (#2C3035) und surf (#363B42) dicht beieinander; als Fuge zwischen zwei
-//     Karten waere das kaum zu sehen. Die Platte geht deshalb eine Stufe
-//     tiefer — die Karten selbst bleiben unveraendert.
-//  3. `flaechen_extra` + `card_shadow`: Hero, Symbolzeile, Reiter und Blaetter
-//     sind im Markup KEINE Karten (sie malen den Seitenhintergrund). Ohne
-//     diese Auszeichnung verschwaemmen sie mit der Platte, und von Fugen
-//     waere nichts zu sehen.
+//  Drei Dinge gehoeren dazu, und keines ist eine Farbe:
 //
-//  KEIN `txt_card`: Platte und Karten sind hier beide dunkel, es gibt also
-//  nur EINE Textfarbe. Der Zwei-Textfarben-Mechanismus (§4.7) bleibt
-//  unberuehrt — `kartenTextRegel` kommt mit `flaechen_extra` allein zurecht.
+//  1. `luftig:true` schaltet Abstand und Form frei (themes.css,
+//     `.theme-luftig`; die Klasse setzt App.jsx).
+//  2. `flaechen_extra` zeichnet die Bereiche aus, die im Markup KEINE Karten
+//     sind — Hero, Symbolzeile, Reiter, Blaetter, Diagramm. Ohne das
+//     verschwaemmen sie mit der Platte und von Fugen waere nichts zu sehen.
+//  3. Eine sichtbare Fuge: Platte und Flaeche muessen sich unterscheiden. In
+//     vielen Themes liegen sie so dicht beieinander (Lime: #2C3035 gegen
+//     #363B42), dass man den Zwischenraum nicht saehe.
+//
+//  BEWUSST NICHT dabei: `.warn-karte`, `.hinweis-karte`, `.wahl-taste`,
+//  `.tages-karte`. Die malen ihre eigene, BEDEUTUNGSTRAGENDE Farbe — eine
+//  Warnung ihren Warnton, die Typwahl die Farbe des gewaehlten Typs. Ein
+//  `background: … !important` daraufzulegen loescht genau die Information.
+//  Genau das war schon einmal zu sehen: „die Detaildarstellung ist zu
+//  duester" (Nutzer), als die Warnkarte in einem Theme zur dunklen Taste
+//  wurde. „Tastenhell" braucht sie trotzdem und zaehlt sie selbst auf — dort
+//  ist die Platte hell und die Akzentfarben faenden sonst keinen Grund.
 // ════════════════════════════════════════════════════════════════════════
 
-// Die abgesetzten Bereiche einer luftigen dunklen Fassung. `flaeche` ist die
-// Kartenfarbe des jeweiligen Themes (= dessen `surf`).
-function luftigFlaechen(flaeche, heroVerlauf) {
+// Die abgesetzten Bereiche. `flaeche` ist die Kartenfarbe des Themes.
+function luftigFlaechen(flaeche) {
   return {
-    ".hero-flaeche": heroVerlauf,
+    ".hero-flaeche": flaeche,
     ".symbolzeile": flaeche,
     ".aufriss-blatt": flaeche,
     ".menue-kachel": flaeche,
@@ -1146,42 +1152,123 @@ function luftigFlaechen(flaeche, heroVerlauf) {
     // wird dafuer durchsichtig (themes.css), damit die Platte dazwischen steht.
     ".nav-tab": flaeche,
     ".diagramm-flaeche": flaeche,
-    ".tages-karte": flaeche,
-    ".warn-karte": flaeche,
-    ".hinweis-karte": flaeche,
-    ".wahl-taste": flaeche,
   };
 }
-// Schatten fuer dunkle Platten: Ein reiner Schlagschatten verliert sich auf
-// dunklem Grund. Die feine helle Oberkante (`inset`) hebt die Karte
-// zusaetzlich an — dasselbe Mittel, mit dem echte Tasten Licht fangen.
-const LUFTIG_SCHATTEN =
-  "0 2px 6px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.07)";
 
-THEMES.limeluftig = {
-  ...THEMES.dark,
-  // Eine Stufe tiefer als die Karten (#363B42) — sonst gaebe es keine Fuge.
-  bg:"#20242A", surf3:"#1B1F24",
-  hero_bg:"linear-gradient(135deg,#3B414A,#2F343B)",
-  flaechen_extra: luftigFlaechen("#363B42", "linear-gradient(135deg,#3B414A,#2F343B)"),
-  card_shadow: LUFTIG_SCHATTEN,
-  luftig:true,
-  name:"Lime Luftig",
-};
+// Helligkeit 0..1 (dieselbe Formel wie in der Theme-Auswahl).
+function _luma(c) {
+  const h = String(c || "").trim();
+  const m = h.match(/^#([0-9a-fA-F]{6})$/);
+  if (!m) return 0.5;
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16));
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+}
+// WCAG-Kontrast zweier Vollfarben — hier nur fuer die Fuge gebraucht.
+function _relL(c) {
+  const m = String(c || "").match(/^#([0-9a-fA-F]{6})$/);
+  if (!m) return null;
+  const k = [0, 2, 4].map((i) => {
+    const v = parseInt(m[1].slice(i, i + 2), 16) / 255;
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * k[0] + 0.7152 * k[1] + 0.0722 * k[2];
+}
+function _kontrast(a, b) {
+  const la = _relL(a), lb = _relL(b);
+  if (la === null || lb === null) return 21;
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+function _abdunkeln(hex, anteil) {
+  const m = String(hex || "").match(/^#([0-9a-fA-F]{6})$/);
+  if (!m) return hex;
+  const teile = [0, 2, 4].map((i) => Math.round(parseInt(m[1].slice(i, i + 2), 16) * (1 - anteil)));
+  return "#" + teile.map((v) => Math.max(0, v).toString(16).padStart(2, "0")).join("").toUpperCase();
+}
+function _aufhellen(hex, anteil) {
+  const m = String(hex || "").match(/^#([0-9a-fA-F]{6})$/);
+  if (!m) return hex;
+  const teile = [0, 2, 4].map((i) => {
+    const v = parseInt(m[1].slice(i, i + 2), 16);
+    return Math.round(v + (255 - v) * anteil);
+  });
+  return "#" + teile.map((v) => Math.min(255, v).toString(16).padStart(2, "0")).join("").toUpperCase();
+}
 
-THEMES.deepoceanluftig = {
-  ...THEMES.deepocean,
-  bg:"#1E252C", surf3:"#192026",
-  hero_bg:"linear-gradient(135deg,#3A424B,#2C333B)",
-  flaechen_extra: luftigFlaechen("#363B42", "linear-gradient(135deg,#3A424B,#2C333B)"),
-  card_shadow: LUFTIG_SCHATTEN,
-  luftig:true,
-  name:"Deep Ocean Luftig",
-};
+// Wie deutlich Platte und Flaeche sich mindestens unterscheiden muessen,
+// damit die Fuge zu sehen ist. Gemessen an den Themes, die von sich aus schon
+// luftig aussahen: darunter verschwimmt der Zwischenraum.
+const FUGE_ZIEL = 1.18;
+
+// Schatten. Auf hellem Grund traegt ein Schlagschatten allein; auf dunklem
+// verliert er sich — dort hebt zusaetzlich eine feine helle Oberkante an,
+// dasselbe Mittel, mit dem echte Tasten Licht fangen.
+const SCHATTEN_HELL   = "0 1px 3px rgba(0,0,0,0.20), 0 0 0 1px rgba(0,0,0,0.06)";
+const SCHATTEN_DUNKEL = "0 2px 6px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.07)";
+// Und fuer dunkle Themes, deren Karte sich farblich kaum von der Platte
+// unterscheidet („Terminal", „Swiss", „Magenta": unter 1,12:1): Dort ist der
+// Schlagschatten auf dem ohnehin schwarzen Grund nicht mehr zu sehen, und die
+// Bloecke verschwaemmen trotz Fuge. Ein feiner heller Ring zeichnet ihre Kante
+// nach. Er ueberlebt den Randlos-Modus (der raeumt `border-color` ab, nicht
+// `box-shadow`) — und genau wie die Kante der Eingabefelder traegt er hier
+// eine Information, keine Deko.
+const SCHATTEN_DUNKEL_FLACH =
+  "0 2px 6px rgba(0,0,0,0.50), 0 0 0 1px rgba(255,255,255,0.10), inset 0 1px 0 rgba(255,255,255,0.06)";
+// Ab hier traegt die Farbe die Fuge selbst und der Ring waere nur Linie.
+const FUGE_TRAEGT = 1.12;
+
+// Macht EIN Theme luftig. Idempotent — mehrfaches Anwenden aendert nichts.
+// `luftig:false` im Theme ist der ausdrueckliche Verzicht.
+function luftigMachen(t) {
+  if (!t || t.luftig === false || t._luftig_fertig) return t;
+  t._luftig_fertig = true;
+  t.luftig = true;
+  if (!t.card_shadow) {
+    const dunkel = _luma(t.bg) < 0.5;
+    t.card_shadow = !dunkel ? SCHATTEN_HELL
+      : (_kontrast(t.surf, t.bg) < FUGE_TRAEGT ? SCHATTEN_DUNKEL_FLACH : SCHATTEN_DUNKEL);
+  }
+
+  // ── KEINE Farbe wird angefasst ────────────────────────────────────────
+  //
+  // Der naheliegende Griff waere, die Platte abzudunkeln, damit die Fuge
+  // zwischen den Karten deutlicher wird. Zwei Messungen sprechen dagegen
+  // (npm run kontrast, Stellen unter der Schwelle):
+  //
+  //   * Helle Themes: „Limehell" 90 → 125. Auf einer hellen Platte steht
+  //     DUNKLER Text — ein dunklerer Grund rueckt an ihn heran statt weg.
+  //   * Dunkle Themes: „Lime" 60 → 62. Hier steht heller Text, aber ein guter
+  //     Teil davon ist halbdurchsichtig (`rgba(200,210,220,0.6)`). Solcher
+  //     Text wird auf dunklerem Grund selbst dunkler — der Kontrast sinkt
+  //     also mit, statt zu steigen.
+  //
+  // Die Fuge braucht die Farbaenderung auch nicht: Sie entsteht aus Abstand,
+  // Rundung und dem Schatten. Auf hellem Grund traegt der Schlagschatten
+  // allein; auf dunklem hebt zusaetzlich die feine helle Oberkante an.
+  //
+  // Damit ist diese Umstellung rein GESTALTERISCH — kein Theme aendert eine
+  // einzige Farbe, und keine gemessene Stelle kann dadurch schlechter werden.
+  // Der Grundsatz ergaenzt, was das Theme nicht selbst sagt — je Selektor
+  // gewinnt das Theme. „Keyboard" zeichnete nur Hero und Symbolzeile aus und
+  // haette sonst eine durchsichtige Reiterleiste ohne Reiter-Flaechen
+  // bekommen (die Leiste wird in `.theme-luftig` durchsichtig).
+  t.flaechen_extra = { ...luftigFlaechen(t.surf), ...(t.flaechen_extra || {}) };
+  return t;
+}
+
+// Alle mitgelieferten Themes. `custom_preview` bleibt aussen vor — es ist
+// kein Theme, sondern der Arbeitsstand des Theme-Editors.
+Object.entries(THEMES).forEach(([k, t]) => { if (k !== "custom_preview") luftigMachen(t); });
+
+// Wer eines der beiden kurzlebigen Duplikate ausgewaehlt hatte, landet auf
+// der Vorlage — die sieht jetzt genauso aus.
+const THEME_ALIAS = { limeluftig: "dark", deepoceanluftig: "deepocean" };
 
 // Globales T — wird von getAppTheme() überschrieben, initialisiert mit dark — wird von getAppTheme() überschrieben, initialisiert mit dark
 function getTheme(name) {
-  const t = THEMES[name] || THEMES.dark;
+  const t = THEMES[THEME_ALIAS[name] || name] || THEMES.dark;
+  // Auch selbst gebaute Themes (Theme-Editor, aus dem Speicher nachgeladen)
+  // bekommen die Gestalt — sonst saehe genau eines anders aus als alle.
+  luftigMachen(t);
   if (!t.lbl)         t.lbl         = t.txt2;
   if (!t.cf)          t.cf          = "#F6821F";
   if (!t.mid)         t.mid         = "#67E8F9";
@@ -1242,4 +1329,4 @@ function getTheme(name) {
 }
 // INP: live getter damit Theme-Wechsel wirkt
 
-export { THEMES, getTheme };
+export { THEMES, getTheme, THEME_ALIAS };

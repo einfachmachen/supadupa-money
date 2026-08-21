@@ -69,7 +69,7 @@ import { AppCtx } from "./state/AppContext.js";
 import { theme as T, setActiveTheme, isLightTheme, kartenTextRegel, wurzelTextVars } from "./theme/activeTheme.js";
 import { readableOn, isLightColor } from "./theme/amtPill.js";
 import { PAL, gs } from "./theme/palette.js";
-import { getTheme, THEMES } from "./theme/themes.js";
+import { getTheme, THEMES, THEME_ALIAS } from "./theme/themes.js";
 import { BASE_ROWS, CUR_YEAR, INIT_ACCOUNTS, INIT_CATS } from "./utils/constants.js";
 import { kvStore } from "./utils/kvStore.js";
 import { useLocalSaveDebounce } from "./hooks/useLocalSaveDebounce.js";
@@ -106,7 +106,12 @@ export default function SupaDupaMoney() {
   // zeigte zwar Dark, die Theme-Auswahl aber gar nichts Markiertes.
   const [themeName, setThemeName] = useState(()=>{
     const gespeichert = kvStore.getItem("mbt_theme");
-    return (!gespeichert || gespeichert==="darkhell") ? "dark" : gespeichert;
+    if(!gespeichert || gespeichert==="darkhell") return "dark";
+    // Dasselbe fuer die beiden kurzlebigen „Luftig"-Duplikate: Sie sind wieder
+    // weg, weil inzwischen ALLE Themes so aussehen. Ohne diese Aufloesung
+    // bliebe ein Name stehen, den es nicht mehr gibt — die App zeigte dann
+    // zwar Lime, in der Theme-Auswahl waere aber nichts markiert.
+    return THEME_ALIAS[gespeichert] || gespeichert;
   });
   const [noBorders, setNoBorders] = useState(()=>kvStore.getItem("mbt_noborders")==="0" ? false : true);
   const [themeRev, setThemeRev] = useState(0); // incremented to force re-render on same theme
