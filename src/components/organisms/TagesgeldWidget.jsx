@@ -268,6 +268,40 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     berechnen();
   }, [collapsed, result, sparPlanName, txs, computing]);
 
+  // ── Der Plan muss den Buchungen folgen ───────────────────────────────
+  //
+  // Gemeldet: „Obwohl ich eben zum Test 2.000 € als Tagesgeld-Sparrate
+  // vorgemerkt habe UND alles sofort in Schieflage gerät, ändert sich gar
+  // nichts im Sparplan unterm Sparschwein."
+  //
+  // Zu Recht. Die Vorschau-Tabelle liegt lokal im kvStore, damit sie nach
+  // einem Neuladen nicht leer ist — und wurde bis hierher NUR neu gerechnet,
+  // wenn es noch gar keinen Stand gab oder man den Knopf drückte.
+  // `resultOutdated` hing an genau zwei Dingen: Horizont und Puffer. Eine
+  // geänderte Buchung — also das, was den Plan überhaupt bewegt — löste
+  // nichts aus. Der Regel-Stempel (VORSCHAU_REGEL) hat davon nur die eine
+  // Hälfte erwischt: eine geänderte RECHENREGEL. Die geänderten DATEN blieben
+  // liegen.
+  //
+  // Zwei Schritte statt einem, damit im geschlossenen Panel keine Arbeit
+  // anfällt: Erst wird der Stand als veraltet MARKIERT, gerechnet wird erst,
+  // wenn das Panel offen ist. Die Verzögerung fängt ganze Schübe ab (Sync,
+  // Serien-Anlage, die Automatik in App.jsx) — sonst rechnete die Vorschau
+  // bei jeder einzelnen Buchung neu.
+  const ersterLaufRef = React.useRef(true);
+  React.useEffect(() => {
+    if(ersterLaufRef.current) { ersterLaufRef.current = false; return; }
+    if(resultRef.current) setResultOutdated(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [txs, budgets, accounts, cats, puffer, monate, sparPlanName]);
+
+  React.useEffect(() => {
+    if(collapsed || !resultOutdated || computing) return;
+    const id = setTimeout(() => { setResultOutdated(false); berechnen(); }, 450);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [collapsed, resultOutdated, computing]);
+
   // Wenn unter dem aktuellen Plannamen bereits eine Sparplan-Series existiert,
   // Kategorien / Zielkonto aus deren ersten Buchungen übernehmen. Sonst sieht
   // der User auf einem fremden Browser leere Felder, obwohl die Info in den
