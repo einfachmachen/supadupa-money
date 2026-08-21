@@ -4,43 +4,47 @@
 // ständig darum Gedanken machen zu müssen, sondern recht entspannt auf Nummer
 // sicher zu gehen."
 //
-// Die Sparplan-Tabelle kann alles beantworten, aber sie will gelesen werden.
-// Hier steht eine einzige Aussage, dieselbe Stelle, jeden Tag:
+// Zwei Aussagen, und nur die stehen hier:
 //
-//     „Abgesichert bis Mär 27 — nichts zu tun."
 //     „Am 12.04. fehlen 340 € — bis 09.04. vom Tagesgeld zurückholen."
 //     „Am 12.04. fehlen 340 €, verfügbar sind nur 120 €."
 //
-// Der Unterschied zwischen den letzten beiden ist der Kern: Ein Engpass, den
-// das Tagesgeld deckt, ist eine Überweisung — kein Grund zur Sorge. Erst wenn
-// es ihn NICHT deckt, muss wirklich etwas geändert werden.
+// Der Unterschied ist der Kern: Ein Engpass, den das Tagesgeld deckt, ist eine
+// Überweisung — kein Grund zur Sorge. Erst wenn es ihn NICHT deckt, muss
+// wirklich etwas geändert werden.
 //
-// REINE AUSKUNFT. Hier wird nichts gebucht und nichts verschoben — das war die
-// Bedingung, unter der dieser Schritt zuerst kommt: sofort spürbar, ohne dass
-// eine Automatik Geld bewegt, deren Logik man noch nicht gesehen hat.
+// ── „Alles in Ordnung" bekommt KEINEN Balken ──────────────────────────
+//
+// Anfangs stand hier auch der gute Fall („Abgesichert bis Dez 32 — nichts zu
+// tun."), in derselben Größe und Farbigkeit wie eine Warnung. Rückmeldung:
+// „Das grüne dauerhafte Banner nimmt dauerhaft Platz weg. Die Information,
+// dass alles gut ist, möchte ich eher dezent sehen — als Umrandung oder
+// ähnlich."
+//
+// Das ist mehr als Geschmack: Eine Meldung, die an 360 von 365 Tagen dasselbe
+// sagt, wird zur Tapete und nimmt den beiden anderen die Wirkung. Der gute
+// Fall zeigt sich jetzt als Umrandung am Schild-Symbol in der Zeile darüber
+// (siehe DashboardScreenV2) — sichtbar, wenn man hinschaut, und sonst still.
+// Diese Komponente rendert dann schlicht nichts.
 //
 // ── Warum dieser Satz das orange Banner verdrängt ──────────────────────
 //
-// Rückmeldung nach dem ersten Einbau: „Die Warnungen nehmen Überhand."
 // Dieselbe Schieflage stand gleichzeitig im orangen Balken ganz oben, in
-// diesem Satz und in der Warnkarte im Panel. Drei Meldungen, ein Sachverhalt.
-//
-// Der Satz ist die bessere der drei: Er sagt nicht nur, DASS etwas fehlt,
-// sondern was zu tun ist. Solange er steht, tritt der orange Balken zurück —
-// über denselben Modul-Speicher wie beim Sync-Hinweis (`SyncStatusBadge`),
-// damit App.jsx nicht raten muss, ob gerade die Startseite sichtbar ist.
+// diesem Satz und in der Warnkarte („Die Warnungen nehmen Überhand"). Der Satz
+// ist die beste der drei: Er sagt nicht nur, DASS etwas fehlt, sondern was zu
+// tun ist. Solange er steht, tritt der orange Balken zurück — über denselben
+// Modul-Speicher wie beim Sync-Hinweis (`SyncStatusBadge`), damit App.jsx
+// nicht raten muss, ob gerade die Startseite sichtbar ist.
 
-import React, { useContext, useSyncExternalStore } from "react";
-import { AppCtx } from "../../state/AppContext.js";
+import React, { useSyncExternalStore } from "react";
 import { theme as T } from "../../theme/activeTheme.js";
 import { NUM_FONT } from "../../utils/format.js";
 import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
-import { useTagesgeldFrei } from "../../state/useTagesgeldFrei.js";
-import { absicherungsStatus } from "../../utils/absicherung.js";
+import { useAbsicherungsStatus } from "../../state/useAbsicherungsStatus.js";
 import { knopfPaar, DUNKEL } from "../../theme/amtPill.js";
 
-// ── Modul-Speicher: steht der Satz gerade auf dem Bildschirm? ──────────
+// ── Modul-Speicher: steht der Satz gerade als Balken auf dem Bildschirm? ──
 let _sichtbar = 0;
 const _hoerer = new Set();
 const _melden = () => _hoerer.forEach((h) => h());
@@ -51,54 +55,35 @@ export function useAbsicherungsSatzAktiv() {
   return useSyncExternalStore(_abonnieren, _stand, () => false);
 }
 
-const MONATE_K = ["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
 const kurzDat = (iso) => {
   const [y, m, d] = String(iso).split("-");
   return `${d}.${m}.${String(y).slice(2)}`;
 };
-const monatText = (jjjjMm) => {
-  const [y, m] = String(jjjjMm).split("-").map(Number);
-  return `${MONATE_K[m - 1]} ${String(y).slice(2)}`;
-};
 
 function AbsicherungsSatz({ onOeffnen }) {
-  const { txs, liquidityWarnings } = useContext(AppCtx);
-  const tagesgeldFrei = useTagesgeldFrei();
+  const status = useAbsicherungsStatus();
+  // Nur der Handlungsfall bekommt einen Balken — siehe oben.
+  const alsBalken = status.art !== "sicher";
 
-  // Solange dieser Satz im Baum hängt, tritt der orange Balken zurück.
+  // An-/abmelden GENAU dann, wenn wirklich ein Balken steht: Nur dann darf der
+  // orange Balken in App.jsx zurücktreten.
   React.useEffect(() => {
+    if (!alsBalken) return undefined;
     _sichtbar++; _melden();
     return () => { _sichtbar--; _melden(); };
-  }, []);
+  }, [alsBalken]);
 
-  // Bis wann überhaupt gerechnet wurde: der späteste Monat mit Vormerkungen.
-  const horizontBis = React.useMemo(() => {
-    let max = null;
-    (txs || []).forEach((t) => {
-      if (!t.pending) return;
-      const d = String(t.date).slice(0, 7);
-      if (!max || d > max) max = d;
-    });
-    return max;
-  }, [txs]);
-
-  const status = React.useMemo(() => absicherungsStatus({
-    warnungen: liquidityWarnings, tagesgeldFrei, horizontBis,
-  }), [liquidityWarnings, tagesgeldFrei, horizontBis]);
+  if (!alsBalken) return null;
 
   // Farbe nach Bedeutung, Schrift dagegen gerechnet — nicht geraten. Die
   // Fläche ist deckend (wie beim Sync-Hinweis und der Super-Sparraten-Zeile):
   // eine Tönung sieht über 34 Themes jedes Mal anders aus.
-  const ton = status.art === "sicher" ? T.pos : status.art === "rueckholen" ? T.gold : T.neg;
+  const ton = status.art === "rueckholen" ? T.gold : T.warn_bold;
   const paar = knopfPaar(ton, DUNKEL);
   // Nur Symbole aus dem statischen Satz (lucideStatic.js) — sie stehen
   // sofort, ohne auf den nachgeladenen Icon-Chunk zu warten.
-  const symbol = status.art === "sicher" ? "shield"
-    : status.art === "rueckholen" ? "arrow-down" : "alert-triangle";
-
-  // „Nichts zu tun" braucht keinen Weg irgendwohin — ein Pfeil, der nichts
-  // aufmacht, war genau der gemeldete Fehlgriff („passiert nichts").
-  const klickbar = status.art !== "sicher" && typeof onOeffnen === "function";
+  const symbol = status.art === "rueckholen" ? "arrow-down" : "alert-triangle";
+  const klickbar = typeof onOeffnen === "function";
 
   return (
     <div onClick={klickbar ? onOeffnen : undefined}
@@ -109,10 +94,6 @@ function AbsicherungsSatz({ onOeffnen }) {
         display:"flex",alignItems:"center",gap:8,fontSize:12,lineHeight:1.35}}>
       <span style={{flexShrink:0,display:"inline-flex"}}>{Li(symbol,15,paar.schrift)}</span>
       <div style={{flex:1,minWidth:0}}>
-        {status.art === "sicher" && (
-          <><b>Abgesichert{status.bis ? ` bis ${monatText(status.bis)}` : ""}</b>
-            {" — nichts zu tun."}</>
-        )}
         {status.art === "rueckholen" && (
           <>Am <b>{kurzDat(status.tag)}</b> fehlen{" "}
             <b style={{fontFamily:NUM_FONT}}>{betrag(status.fehlt)} €</b>
@@ -132,7 +113,6 @@ function AbsicherungsSatz({ onOeffnen }) {
             {status.weitere === 1 ? "" : "e"}</span>
         )}
       </div>
-      {/* Der Pfeil steht nur da, wo er auch etwas aufmacht. */}
       {klickbar && <span style={{flexShrink:0,display:"inline-flex"}}>
         {Li("chevron-right",16,paar.schrift)}</span>}
     </div>

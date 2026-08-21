@@ -78,10 +78,13 @@ describe("Absicherungs-Satz", () => {
   it("die Anzeige rechnet nichts nach, sie liest nur", () => {
     // Sonst haetten wir eine dritte Quelle fuer dieselbe Wahrheit — genau das
     // Problem, das uns bei Vorschau und Automatik schon eingeholt hat.
-    const src = readFileSync(resolve(wurzel, "src/components/organisms/AbsicherungsSatz.jsx"), "utf8");
-    expect(src, "die Warnungen kommen aus dem Context").toMatch(/liquidityWarnings/);
-    expect(src, "keine eigene Engpass-Rechnung").not.toMatch(/computeKontoWarnungen/);
-    expect(src, "es wird nichts geschrieben").not.toMatch(/setTxs/);
+    const satz = readFileSync(resolve(wurzel, "src/components/organisms/AbsicherungsSatz.jsx"), "utf8");
+    const hook = readFileSync(resolve(wurzel, "src/state/useAbsicherungsStatus.js"), "utf8");
+    expect(hook, "die Warnungen kommen aus dem Context").toMatch(/liquidityWarnings/);
+    [satz, hook].forEach((src) => {
+      expect(src, "keine eigene Engpass-Rechnung").not.toMatch(/computeKontoWarnungen/);
+      expect(src, "es wird nichts geschrieben").not.toMatch(/setTxs/);
+    });
   });
 
   it("der Satz steht auf der Startseite und öffnet die Warnungen", () => {
@@ -92,11 +95,31 @@ describe("Absicherungs-Satz", () => {
     expect(src).toMatch(/onOeffnen=\{\(\)=>setActivePanel/);
   });
 
-  it("„nichts zu tun\" ist NICHT klickbar", () => {
-    // Ein Pfeil, der nichts aufmacht, ist genau der gemeldete Fehlgriff.
+  it("„alles in Ordnung\" bekommt KEINEN Balken", () => {
+    // „Das gruene dauerhafte Banner nimmt dauerhaft Platz weg. Die
+    // Information, dass alles gut ist, moechte ich eher dezent sehen — als
+    // Umrandung oder aehnlich." Eine Meldung, die an 360 von 365 Tagen
+    // dasselbe sagt, wird zur Tapete und nimmt den anderen die Wirkung.
     const src = readFileSync(resolve(wurzel, "src/components/organisms/AbsicherungsSatz.jsx"), "utf8");
-    expect(src).toMatch(/const klickbar = status\.art !== "sicher"/);
-    expect(src, "der Pfeil nur, wo er etwas aufmacht").toMatch(/klickbar && <span/);
+    expect(src).toMatch(/const alsBalken = status\.art !== "sicher"/);
+    expect(src).toMatch(/if \(!alsBalken\) return null;/);
+    expect(src, "kein gruener Balken mehr").not.toMatch(/nichts zu tun/);
+  });
+
+  it("der gute Fall zeigt sich als Umrandung am Schild — ohne Platzbedarf", () => {
+    const dash = readFileSync(resolve(wurzel, "src/components/screens/DashboardScreenV2.jsx"), "utf8");
+    expect(dash).toMatch(/ring=\{absicherung\.art==="sicher" \? T\.pos : null\}/);
+    // Der Rahmen ist ohnehin reserviert (1.5px transparent) — ihn zu faerben
+    // kostet keine einzige Zeile Hoehe. Genau darum ging es.
+    expect(dash).toMatch(/border:"1\.5px solid transparent"/);
+    expect(dash).toMatch(/ring && !\(panel && isActive\)/);
+  });
+
+  it("beide Stellen lesen denselben Stand", () => {
+    const dash = readFileSync(resolve(wurzel, "src/components/screens/DashboardScreenV2.jsx"), "utf8");
+    const satz = readFileSync(resolve(wurzel, "src/components/organisms/AbsicherungsSatz.jsx"), "utf8");
+    expect(dash).toMatch(/const absicherung = useAbsicherungsStatus\(\)/);
+    expect(satz).toMatch(/const status = useAbsicherungsStatus\(\)/);
   });
 
   it("solange der Satz steht, tritt der orange Balken zurück", () => {
@@ -122,9 +145,9 @@ describe("Absicherungs-Satz", () => {
   it("beide Stellen holen den Tagesgeld-Bestand aus DERSELBEN Funktion", () => {
     // Zwei eigene Rechnungen waeren genau der Fehler, der uns bei Vorschau und
     // Automatik schon einmal eingeholt hat.
-    const satz = readFileSync(resolve(wurzel, "src/components/organisms/AbsicherungsSatz.jsx"), "utf8");
+    const hook = readFileSync(resolve(wurzel, "src/state/useAbsicherungsStatus.js"), "utf8");
     const warn = readFileSync(resolve(wurzel, "src/components/atoms/SchieflageVorwarnung.jsx"), "utf8");
-    [satz, warn].forEach((src) => {
+    [hook, warn].forEach((src) => {
       expect(src).toMatch(/useTagesgeldFrei/);
       expect(src, "keine eigene Saldo-Rechnung").not.toMatch(/saldoIst\(/);
     });

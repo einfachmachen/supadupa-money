@@ -8,6 +8,7 @@ import { MONTHS_S } from "../../utils/constants.js";
 import { fmt, pn, NUM_FONT } from "../../utils/format.js";
 import { betrag } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
+import { aufToenung } from "../../theme/amtPill.js";
 
 function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=false}) {
   if(window.MBT_DEBUG?.disable_warnings) return null;
@@ -34,6 +35,24 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
   // dadurch selbst wie eine unpassende Trennlinie).
   const cardRadius = "0 10px 10px 10px";
 
+  // ── Warum diese Karte nicht mehr in T.neg gehalten ist ────────────────
+  //
+  // Sie war komplett aus `T.neg` gebaut. `neg` ist aber seit dem Farbumbau die
+  // AUSGABEN-Farbe (Cyan), nicht die Warnfarbe — dieselbe Verwechslung war
+  // beim orangen Balken in App.jsx schon einmal zu korrigieren. Über dem
+  // hellen Seitengrund ergab die 9-%-Toenung dieses Cyans ein Pastellgrün mit
+  // cyanfarbener Schrift: nach „alles gut" aussehend, obwohl es eine Warnung
+  // ist (Nutzer: „die Farben passen nicht. Das Pastellgrün mag ich nicht").
+  //
+  // Jetzt der eigens dafür definierte Warnton `warn_bold` — in JEDEM Theme
+  // kräftig, damit die Warnung überall gleich gut lesbar bleibt.
+  const WARN = T.warn_bold;
+  const TOENUNG = 0x20 / 255;   // = die "20"-Deckkraft der Kopfzeile unten
+  // Schrift auf der WIRKLICH gemalten Fläche prüfen, nicht auf der Platte:
+  // Ein Warnton auf seiner eigenen Tönung verliert Kontrast. Symbole dürfen
+  // die niedrigere Schwelle nutzen (3:1, WCAG 1.4.11).
+  const auf = (farbe, schwelle) => aufToenung(farbe, TOENUNG, ".warn-karte", schwelle);
+
   return (
     <div style={{margin:"0 10px 4px",borderRadius:cardRadius}}>
       {warnings.slice(0, showFolgemonate ? warnings.length : 1).map((w,i)=>{
@@ -49,18 +68,18 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
           // dünne, andersfarbige Lücke zum Tab darüber, die wie eine
           // Trennlinie wirkt — der Tab berührt das Panel jetzt direkt.
           <div key={i} style={{margin:`${i===0?0:2}px 0 3px`,borderRadius:i===0?"0 8px 8px 8px":8,overflow:"hidden",
-            border:`1px solid ${T.neg}44`,borderTop:i===0?"none":`1px solid ${T.neg}44`}}>
+            border:`1px solid ${WARN}66`,borderTop:i===0?"none":`1px solid ${WARN}66`}}>
             {/* Monats-Header — immer sichtbar */}
-            <div onClick={hasMultiple?toggleExpand:undefined}
-              style={{background:`${T.neg}18`,padding:"7px 10px",
+            <div onClick={hasMultiple?toggleExpand:undefined} className="warn-karte"
+              style={{background:`${WARN}20`,padding:"7px 10px",
                 display:"flex",alignItems:"center",gap:10,
                 cursor:hasMultiple?"pointer":"default"}}>
               {/* Warndreieck entfernt — die 3 Symbole in der Icon-Zeile oben
                   reichen als Kennzeichnung. Kein Platzhalter mehr: Text
                   beginnt jetzt bündig mit "offene VM" im Vormerkungen-Tab. */}
               <div style={{flex:1,minWidth:0}}>
-                <div style={{color:T.acc_neg,fontSize:12,fontWeight:700,lineHeight:1.3}}>
-                  {isFuture&&<span style={{color:T.acc_gold,fontSize:10,marginRight:6}}>{MONTHS_S[w.month]} {w.year}</span>}
+                <div style={{color:auf(WARN),fontSize:12,fontWeight:700,lineHeight:1.3}}>
+                  {isFuture&&<span style={{color:auf(T.gold),fontSize:10,marginRight:6}}>{MONTHS_S[w.month]} {w.year}</span>}
                   {hasMultiple
                     ? (w.minPuffer>0
                       ? <>{(w.allDays||[]).length}× unter Puffer ({betrag(w.minPuffer)} €) — schlimmste: {betrag(w.saldoVal)} €</>
@@ -70,12 +89,12 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
                       : <>Ab {(()=>{const[,dm,dd]=w.date.split("-");return`${parseInt(dd)}.${parseInt(dm)}.`;})()}  Kontostand im Minus: −{betrag(w.deficit)} €</>)
                   }
                 </div>
-                {!hasMultiple&&<div style={{color:T.txt2,fontSize:10,marginTop:2}}>
-                  {w.nextPos?(()=>{const[,wm,wd]=(w.nextPos.date||"").split("-");return<>Ausgleichen bis <span style={{color:T.acc_gold,fontWeight:700}}>{parseInt(wd)}.{parseInt(wm)}.</span>{w.nextPos.name&&` (${w.nextPos.name})`} — mindestens <span style={{color:T.acc_neg,fontWeight:700,fontFamily:NUM_FONT}}>{betrag(w.deficit)} €</span> einplanen</>})():<>Kein Ausgleich — mindestens <span style={{color:T.acc_neg,fontWeight:700,fontFamily:NUM_FONT}}>{betrag(w.deficit)} €</span> fehlen</>}
+                {!hasMultiple&&<div style={{color:T.txt,fontSize:10,marginTop:2}}>
+                  {w.nextPos?(()=>{const[,wm,wd]=(w.nextPos.date||"").split("-");return<>Ausgleichen bis <span style={{color:auf(T.gold),fontWeight:700}}>{parseInt(wd)}.{parseInt(wm)}.</span>{w.nextPos.name&&` (${w.nextPos.name})`} — mindestens <span style={{color:auf(WARN),fontWeight:700,fontFamily:NUM_FONT}}>{betrag(w.deficit)} €</span> einplanen</>})():<>Kein Ausgleich — mindestens <span style={{color:auf(WARN),fontWeight:700,fontFamily:NUM_FONT}}>{betrag(w.deficit)} €</span> fehlen</>}
                 </div>}
               </div>
-              {hasMultiple&&<div style={{color:T.txt2,fontSize:10,flexShrink:0}}>
-                {Li(isExpanded?"chevron-up":"chevron-down",12,T.txt2)}
+              {hasMultiple&&<div style={{color:T.txt,fontSize:10,flexShrink:0}}>
+                {Li(isExpanded?"chevron-up":"chevron-down",12,auf(T.txt,3))}
               </div>}
             </div>
             {/* Aufgeklappte Einzel-Warnungen */}
@@ -85,14 +104,14 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
               const[,wm,wd]=(d.nextPos?.date||"").split("-");
               const nextLabel=d.nextPos?`${parseInt(wd)}.${parseInt(wm)}.`:null;
               return(
-                <div key={j} style={{padding:"5px 10px 5px 48px",
-                  borderTop:`1px solid ${T.neg}22`,background:`${T.neg}0C`}}>
-                  <div style={{color:T.acc_neg,fontSize:11,fontWeight:700}}>
+                <div key={j} className="warn-karte" style={{padding:"5px 10px 5px 48px",
+                  borderTop:`1px solid ${WARN}33`,background:`${WARN}12`}}>
+                  <div style={{color:auf(WARN),fontSize:11,fontWeight:700}}>
                     Ab {fromLabel} −{betrag(d.deficit)} €
                   </div>
-                  <div style={{color:T.txt2,fontSize:10}}>
+                  <div style={{color:T.txt,fontSize:10}}>
                     {nextLabel
-                      ? <>Ausgleichen bis <span style={{color:T.acc_gold,fontWeight:700}}>{nextLabel}</span>{d.nextPos?.name&&` (${d.nextPos.name})`} — mindestens <span style={{color:T.acc_neg,fontWeight:700,fontFamily:NUM_FONT}}>{betrag(d.deficit)} €</span></>
+                      ? <>Ausgleichen bis <span style={{color:auf(T.gold),fontWeight:700}}>{nextLabel}</span>{d.nextPos?.name&&` (${d.nextPos.name})`} — mindestens <span style={{color:auf(WARN),fontWeight:700,fontFamily:NUM_FONT}}>{betrag(d.deficit)} €</span></>
                       : <>Kein Ausgleich im Monat</>}
                   </div>
                 </div>
