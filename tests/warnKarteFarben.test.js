@@ -21,7 +21,7 @@ import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { THEMES } from "../src/theme/themes.js";
 import { setActiveTheme, theme as T } from "../src/theme/activeTheme.js";
-import { aufToenung, kontrastWert, mischen, flaecheVon } from "../src/theme/amtPill.js";
+import { aufToenung, kontrastWert, mischen, flaecheVon, knopfPaar, DUNKEL } from "../src/theme/amtPill.js";
 
 const wurzel = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const src = readFileSync(resolve(wurzel, "src/components/organisms/KontoWarnungWidget.jsx"), "utf8");
@@ -97,5 +97,49 @@ describe("Warnkarte: Warnfarbe statt Ausgabenfarbe", () => {
     // Sonst sitzt ein cyanfarbener Reiter auf einer orangen Karte.
     const dash = readFileSync(resolve(wurzel, "src/components/screens/DashboardScreenV2.jsx"), "utf8");
     expect(dash).toMatch(/panel="warnings"[\s\S]{0,200}activeBg=\{`\$\{T\.warn_bold\}18`\}/);
+  });
+});
+
+// ── Der Zuordnungs-Hinweis („1 Vormerkung automatisch zugeordnet") ────────
+//
+// Er war aus einem FESTEN `rgba(34,197,94,0.10)` gebaut — einem Gruen, das mit
+// dem Theme nichts zu tun hat. Auf dunkler Platte ergibt das ein sattes
+// Dunkelgruen, auf heller (Tastenhell) ein blasses Mint: „Bitte Farbe weg von
+// Pastell, Darstellung ansonsten so lassen" (Nutzer).
+//
+// Jetzt eine DECKENDE Flaeche im Positiv-Ton des Themes — dieselbe
+// Entscheidung wie beim Absicherungs-Satz und der Super-Sparraten-Zeile: Sie
+// bringt ihren Untergrund selbst mit und sieht deshalb in jedem Theme gleich
+// aus, statt vom Grund abzuhaengen.
+describe("Zuordnungs-Hinweis: deckend statt pastell", () => {
+  const dash = readFileSync(resolve(wurzel, "src/components/screens/DashboardScreenV2.jsx"), "utf8");
+  // Ohne Kommentare — der alte Farbwert darf in der Erklaerung noch stehen,
+  // als Style-Wert nicht mehr.
+  const dashWirksam = dash.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+
+  it("kein festes Gruen mehr", () => {
+    expect(dashWirksam, "die feste rgba-Farbe ist weg")
+      .not.toMatch(/rgba\(34,\s*197,\s*94/);
+    expect(dash).toMatch(/const zuordnungPaar = \(\) => knopfPaar\(T\.pos, DUNKEL\)/);
+  });
+
+  it("die Schrift trägt in jedem Theme auf der Fläche", () => {
+    const schwach = [];
+    namen.forEach((name) => {
+      if (name === "custom_preview") return;
+      setActiveTheme(name);
+      const { grund, schrift } = knopfPaar(T.pos, DUNKEL);
+      const wert = kontrastWert(schrift, grund);
+      if (wert < 4.5) schwach.push(`${name}: ${wert.toFixed(2)}:1`);
+    });
+    expect(schwach, `zu schwach — ${schwach.join(", ")}`).toEqual([]);
+  });
+
+  it("Aufbau und Texte bleiben, wie sie waren", () => {
+    // „Darstellung ansonsten so lassen" — dieselben drei Zeilen, dasselbe
+    // Symbol, derselbe Schliessen-Knopf.
+    ["1 Vormerkung automatisch zugeordnet", "Antippen zum Prüfen/Lösen"]
+      .forEach((t) => expect(dash).toContain(t));
+    expect(dash).toMatch(/Li\("link",16,zuordnungPaar\(\)\.schrift\)/);
   });
 });

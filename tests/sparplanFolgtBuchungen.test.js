@@ -189,6 +189,53 @@ describe("Sparplan folgt den Buchungen", () => {
     b.el.remove();
   }, 20000);
 
+  it("stürzt in einem KÜNFTIGEN Monat nicht ab", async () => {
+    // Gemeldet als roter Vollbild-Crash beim Tippen aufs Sparschwein:
+    // „ReferenceError: Cannot access 'qn' before initialization".
+    //
+    // Der fruehe Ausstieg `if(!isCurr) return null` stand VOR der Deklaration
+    // von `berechnen`. In einem kuenftigen Monat brach der Rumpf dort ab, die
+    // const wurde nie initialisiert — die Effekte waren aber laengst
+    // registriert und riefen sie trotzdem. Klassische TDZ.
+    //
+    // Kein Test konnte das sehen: `app_boot` rendert die App, aber dieses
+    // Widget haengt nur im Baum, solange das Sparen-Panel offen ist, und die
+    // Render-Tests darueber liefen alle im LAUFENDEN Monat.
+    const { kvStore } = await import("../src/utils/kvStore.js");
+    const { TagesgeldWidget } = await import("../src/components/organisms/TagesgeldWidget.jsx");
+    const { AppCtx } = await import("../src/state/AppContext.js");
+    await kvStore.init();
+    // OHNE das greift der Auto-Load nicht (er steigt bei vorhandener Tabelle
+    // aus) und der Absturz waere zufaellig nicht zu sehen.
+    kvStore.removeItem("mbt_spar_result");
+    kvStore.setItem("mbt_spar_planname", "Sparplan 1");
+
+    const fehler = [];
+    const alt = window.onerror;
+    window.addEventListener("error", (e) => fehler.push(String(e.error || e.message)));
+
+    // Zwei Monate weiter — genau der Fall aus dem Bild (Okt statt Aug).
+    const idx = MONAT + 2, kM = idx % 12, kJ = JAHR + Math.floor(idx / 12);
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    const root = createRoot(el);
+    await act(async () => {
+      root.render(React.createElement(AppCtx.Provider, { value: machCtx(grundBestand()) },
+        React.createElement(TagesgeldWidget, { year: kJ, month: kM, initialCollapsed: false })));
+    });
+    // Die Effekte laufen nach dem Rendern; der Absturz kam aus ihnen, nicht
+    // aus dem Render — deshalb muss hier wirklich gewartet werden.
+    await act(async () => { await new Promise((r) => setTimeout(r, 1400)); });
+
+    expect(fehler, `Absturz: ${fehler.join(" | ")}`).toEqual([]);
+    // Und im kuenftigen Monat zeigt das Widget bewusst nichts.
+    expect(el.textContent.trim()).toBe("");
+
+    await act(async () => { root.unmount(); });
+    el.remove();
+    window.onerror = alt;
+  }, 20000);
+
   it("die Schrift auf dem Statusband trägt in jedem Theme", () => {
     // Dieselbe Rechnung wie im Widget (`rechnePaar`). Ein Band, das man nicht
     // lesen kann, ist keine Meldung.

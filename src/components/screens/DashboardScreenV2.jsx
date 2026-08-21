@@ -19,7 +19,7 @@ import { TagesgeldWidget } from "../organisms/TagesgeldWidget.jsx";
 import { AutoMatchReview } from "../organisms/AutoMatchReview.jsx";
 import { AppCtx } from "../../state/AppContext.js";
 import { theme as T, isLightTheme, flaecheAbgesetzt, blasserAkzent } from "../../theme/activeTheme.js";
-import { amtStyle, readableOn, isLightColor, schriftAuf, flaecheVon } from "../../theme/amtPill.js";
+import { amtStyle, readableOn, isLightColor, schriftAuf, flaecheVon, knopfPaar, DUNKEL } from "../../theme/amtPill.js";
 import { UNTEN_FREI } from "../../theme/palette.js";
 import { groupBudgetPairs, budgetOpenRestFor } from "../../utils/budgets.js";
 import { dayOf, drillSort, fmt, pn, uid, NUM_FONT } from "../../utils/format.js";
@@ -364,6 +364,9 @@ function DashboardScreenV2() {
     // keinen Platz, war aber „leider zu versteckt" (Nutzer). Der Hero ist die
     // Fläche, auf die man ohnehin zuerst schaut.
     const absicherung = useAbsicherungsStatus();
+    // Deckende Flaeche fuer den Zuordnungs-Hinweis, Schrift dagegen gerechnet
+    // (siehe dort). Als Funktion, damit sie dem Theme-Wechsel folgt.
+    const zuordnungPaar = () => knopfPaar(T.pos, DUNKEL);
     // Klappt der Hero-Chevron (detailsOpen) zu, verschwindet auch die
     // 3-Symbol-Zeile, die das aktive Panel überhaupt erst geöffnet hat —
     // ein offenes Panel ohne sichtbaren Auslöser wirkt sonst wie hängen
@@ -1186,28 +1189,41 @@ function DashboardScreenV2() {
           }) : [];
           if(!activeMatches.length) return null;
           return (<>
+            {/* ── Kein Pastell ───────────────────────────────────────────
+                Der Kasten war aus einem FESTEN `rgba(34,197,94,0.10)` gebaut —
+                einem Gruen, das mit dem Theme gar nichts zu tun hat. Auf einer
+                dunklen Platte ergibt das ein sattes Dunkelgruen, auf einer
+                hellen (Tastenhell) ein blasses Mint: „Bitte Farbe weg von
+                Pastell, Darstellung ansonsten so lassen" (Nutzer).
+
+                Jetzt eine DECKENDE Flaeche im Positiv-Ton des Themes, mit
+                gerechneter Schrift — dieselbe Entscheidung wie beim
+                Absicherungs-Satz und der Super-Sparraten-Zeile: Eine deckende
+                Flaeche bringt ihren Untergrund selbst mit und sieht deshalb in
+                jedem Theme gleich aus. Aufbau, Texte und Groessen bleiben,
+                wie sie waren. */}
             <div onClick={()=>setShowMatchReview(true)}
               style={{margin:"8px 16px",padding:"10px 14px",borderRadius:11,cursor:"pointer",
-              background:"rgba(34,197,94,0.10)",border:`1px solid ${T.pos}44`,
+              background:zuordnungPaar().grund,
               display:"flex",gap:10,alignItems:"flex-start"}}>
-              {Li("link",16,T.acc_pos)}
+              {Li("link",16,zuordnungPaar().schrift)}
               <div style={{flex:1}}>
-                <div style={{color:T.acc_pos,fontSize:13,fontWeight:700,marginBottom:2}}>
+                <div style={{color:zuordnungPaar().schrift,fontSize:13,fontWeight:700,marginBottom:2}}>
                   {activeMatches.length===1 ? "1 Vormerkung automatisch zugeordnet" : `${activeMatches.length} Vormerkungen automatisch zugeordnet`}
                 </div>
-                <div style={{color:T.txt2,fontSize:12,lineHeight:1.6}}>
+                <div style={{color:zuordnungPaar().schrift,fontSize:12,lineHeight:1.6}}>
                   {activeMatches.map(m => {
                     const [y,mo,d] = (m.date||"").split("-");
                     return `${m.desc||"(ohne Bezeichnung)"} · ${fmt(Math.abs(m.totalAmount||0))} € · ${d}.${mo}.${y}`;
                   }).join(" — ")}
                 </div>
-                <div style={{color:T.acc_pos,fontSize:10,marginTop:4,fontWeight:700}}>
+                <div style={{color:zuordnungPaar().schrift,fontSize:10,marginTop:4,fontWeight:700}}>
                   Antippen zum Prüfen/Lösen
                 </div>
               </div>
               <button onClick={(e)=>{e.stopPropagation();setMatchToast(null);}}
-                style={{background:"none",border:"none",color:T.txt2,cursor:"pointer",padding:2}}>
-                {Li("x",14,T.txt2)}
+                style={{background:"none",border:"none",color:zuordnungPaar().schrift,cursor:"pointer",padding:2}}>
+                {Li("x",14,zuordnungPaar().schrift)}
               </button>
             </div>
             {showMatchReview && (

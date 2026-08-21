@@ -322,7 +322,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   // sind in txs persistiert, die Vorschau-Ergebnis-Tabelle nur per kvStore lokal.
   const didAutoLoadRef = React.useRef(false);
   React.useEffect(() => {
-    if(collapsed) return;
+    if(!isCurr || collapsed) return;
     if(didAutoLoadRef.current) return;
     if(computing) return;
     if(result) { didAutoLoadRef.current = true; return; }
@@ -359,7 +359,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   // Die Verzögerung fängt ganze Schübe ab (Sync, Serien-Anlage, die Automatik
   // in App.jsx) — sonst rechnete die Vorschau bei jeder einzelnen Buchung neu.
   React.useEffect(() => {
-    if(collapsed) return;
+    if(!isCurr || collapsed) return;
     if(!resultRef.current) return;      // noch nichts da — das macht der Auto-Load
     const jetzt = datenAbdruck();
     if(abdruckRef.current === jetzt) return;
@@ -406,8 +406,6 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
       }
     }
   }, [sparPlanName, txs]);
-
-  if(!isCurr) return null;
 
   // Tagesgenauen Minimalsaldo eines Monats berechnen — Kernrechnung ausgelagert
   // nach utils/sparBerechnen.js (computeMinTagessaldo), damit dieselbe Logik
@@ -726,6 +724,16 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
 
   const maxTransfer = result?.[0]?.zusaetzlich ?? null;
   const col = maxTransfer===null?T.txt2:maxTransfer<=0?T.txt2:maxTransfer<500?T.warn:T.pos;
+  // Die Kennzahlen der Vorschau stehen HIER und nicht mehr in der Karte:
+  // Die Summenzeile lag frueher in der linken Spalte NEBEN dem
+  // Neuberechnen-Knopf und hatte deshalb nur die halbe Breite — bei
+  // 77 Monaten brach sie dreimal um und stand in 9px da. Sie steht jetzt
+  // unter der Zeile ueber die volle Breite (Nutzer-Wunsch), und dafuer
+  // brauchen beide Stellen dieselben Werte.
+  const totalKumuliert = result?.[result.length-1]?.kumuliert ?? 0;
+  const sparMonateAnzahl = result ? result.filter(r=>r.zusaetzlich>0).length : 0;
+  const durchschnitt = sparMonateAnzahl > 0 ? totalKumuliert/(monate+1) : 0;
+  const keinSpielraum = !!result && (totalKumuliert === 0 || durchschnitt < puffer);
 
   // Enddatum ↔ Monate: monate = Anzahl Folgemonate ab dem aktuellen Monat
   // (Schleife in berechnen() startet bei nowY/nowM, läuft monate+1 Iterationen,
@@ -756,6 +764,30 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   // in der Icon-Zeile darüber entsteht jetzt direkt über die identische
   // Tab-Hintergrundfarbe (T.surf2, siehe activeBg in DashboardScreenV2), ein
   // zusätzlicher andersfarbiger Rand hätte dort wie eine Trennlinie gewirkt.
+  // ── Der fruehe Ausstieg steht GANZ UNTEN, nicht oben ─────────────────
+  //
+  // Er stand direkt hinter den Effekten — und genau daran ist die App
+  // abgestuerzt ("CRASH: ReferenceError: Cannot access 'qn' before
+  // initialization", beim Tippen aufs Sparschwein in einem kuenftigen Monat).
+  //
+  // Der Grund: `berechnen` ist eine `const` weiter unten, und mehrere Effekte
+  // rufen sie auf. In einem NICHT laufenden Monat brach der Rumpf oben ab, die
+  // Deklaration wurde nie erreicht — die Effekte waren aber laengst
+  // registriert und liefen trotzdem. Sie griffen damit auf eine const im toten
+  // Bereich zu (TDZ).
+  //
+  // Auffallen konnte das keinem Test: `app_boot` rendert zwar die ganze App,
+  // aber dieses Widget haengt nur im Baum, solange das Sparen-Panel offen ist —
+  // und der Render-Test dafuer lief im LAUFENDEN Monat, wo der Rumpf
+  // durchlaeuft.
+  //
+  // Zwischen dem alten und dem neuen Platz stehen ausschliesslich
+  // Deklarationen; den Ausstieg nach unten zu ziehen kostet nichts und nimmt
+  // der ganzen Fehlerklasse den Boden. Die beiden Effekte, die `berechnen`
+  // rufen, pruefen `isCurr` zusaetzlich selbst — ein kuenftiger Monat soll gar
+  // nicht erst rechnen.
+  if(!isCurr) return null;
+
   return (
     // Kopfzeile ("Sparen" / "Tagesgenaue Sparvorschläge" / Ausklapp-Pfeil)
     // entfällt: der Sparschwein-Reiter darüber sagt bereits, worum es geht,
@@ -991,11 +1023,8 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
         <div style={{display:"flex",alignItems:"center",gap:12}}>
           <div style={{flex:1}}>
             {(()=>{
-              const totalKumuliert = result?.[result.length-1]?.kumuliert??0;
-              const sparMonate = result ? result.filter(r=>r.zusaetzlich>0).length : 0;
-              const durchschnitt = sparMonate > 0 ? totalKumuliert / (monate+1) : 0;
-              // Kein Spielraum wenn: total=0 oder Durchschnitt pro Monat < puffer (zu wenig um sinnvoll zu sein)
-              const keinSpielraum = result && (totalKumuliert === 0 || durchschnitt < puffer);
+              // Kein Spielraum wenn: total=0 oder Durchschnitt pro Monat < puffer
+              // (zu wenig um sinnvoll zu sein) — die Werte kommen von oben.
               const keinSpielraumGrund = totalKumuliert === 0
                 ? "Ein bestehender Sparplan schöpft bereits alles bis auf den Puffer ab."
                 : `Ø ${fmt(Math.round(durchschnitt))} €/Monat — zu wenig für einen sinnvollen Sparplan (Schwelle: ${fmt(puffer)} €/Monat).`;
@@ -1006,12 +1035,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                 <div style={{color:col,fontSize:26,fontWeight:800,fontFamily:NUM_FONT,letterSpacing:-0.5}}>
                   {computing?"…":maxTransfer===null?"—":maxTransfer<=0?"0":betrag(maxTransfer)} €
                 </div>
-                {result&&!keinSpielraum&&<div style={{color:T.acc_pos,fontSize:9,marginTop:2}}>
-                  ∑ {monate+1} Monate: <span style={{fontWeight:700,fontFamily:NUM_FONT}}>
-                    {betrag(totalKumuliert)} €
-                  </span>
-                  {" · "}Ø <span style={{fontWeight:700,fontFamily:NUM_FONT}}>{betrag(Math.round(durchschnitt))} €</span>/Monat
-                </div>}
+
                 {keinSpielraum&&(
                   <div style={{marginTop:4,background:"rgba(234,64,37,0.12)",border:`1px solid ${T.neg}44`,
                     borderRadius:8,padding:"6px 10px",display:"flex",alignItems:"center",gap:6}}>
@@ -1064,6 +1088,16 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
             )}
           </div>
         </div>
+        {/* Die Summe ueber den ganzen Zeitraum — volle Breite, in derselben
+            Groesse wie die Zeile darueber. Vorher stand sie in der linken
+            Spalte neben dem Knopf und damit auf halber Breite: Bei 77 Monaten
+            brach sie dreimal um und war in 9px kaum zu lesen. */}
+        {result&&!keinSpielraum&&(
+          <div style={{color:T.acc_pos,fontSize:12,marginTop:6,lineHeight:1.45}}>
+            ∑ {monate+1} Monate: <b style={{fontFamily:NUM_FONT}}>{betrag(totalKumuliert)} €</b>
+            {" · "}Ø <b style={{fontFamily:NUM_FONT}}>{betrag(Math.round(durchschnitt))} €</b>/Monat
+          </div>
+        )}
 
         {/* ── Raten, die die Automatik NICHT pflegt ────────────────────────
             Der Plan oben und die Vormerkungen sind seit `sparPlanOptimum`
