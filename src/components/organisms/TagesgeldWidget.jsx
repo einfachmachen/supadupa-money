@@ -757,6 +757,12 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   // 77 Monaten brach sie dreimal um und stand in 9px da. Sie steht jetzt
   // unter der Zeile ueber die volle Breite (Nutzer-Wunsch), und dafuer
   // brauchen beide Stellen dieselben Werte.
+  // EINE Groesse fuer alle Betraege dieses Bereichs. Vorher standen dort 26px
+  // (sicher sparen), 20px (Mega-Sparrate) und 13px (Rueckbuchung) neben- und
+  // untereinander — das war der „unruhige" Eindruck oben (Nutzer). Drei Zahlen,
+  // die dasselbe bedeuten (Geld, das an einem Tag fliesst), sollen auch gleich
+  // gross sein; die Bedeutung traegt die Beschriftung darueber, nicht der Grad.
+  const BETRAG_GROSS = 22;
   const totalKumuliert = result?.[result.length-1]?.kumuliert ?? 0;
   const sparMonateAnzahl = result ? result.filter(r=>r.zusaetzlich>0).length : 0;
   const durchschnitt = sparMonateAnzahl > 0 ? totalKumuliert/(monate+1) : 0;
@@ -1015,8 +1021,8 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
               war nicht erkennbar, wofür die Felder überhaupt da sind. */}
           <div style={{gridColumn:"1 / -1",marginTop:2}}>
             <div style={{color:T.txt,fontSize:12,marginBottom:6,lineHeight:1.45}}>
-              In welchen Monaten schreibt das Tagesgeld Zinsen gut? Zum
-              Monatsletzten dieser Monate wird die Mega-Sparrate ermittelt.
+              In welchen Monaten gibt es Zinsen? Am Monatsletzten greift dann
+              die Mega-Sparrate.
             </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:4}}>
               {MONTHS_G.map((nm,mi)=>{
@@ -1040,12 +1046,13 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
               <span style={{flexShrink:0,marginTop:1}}>
                 {Li(sofortRueck?"check-circle":"square",14,sofortRueck?T.gold:T.txt)}
               </span>
+              {/* Gekuerzt: Der mittlere Satz erklaerte nur, WARUM ein hoeherer
+                  Betrag geht — das folgt schon aus „am selben Tag". Die
+                  Bedingung bleibt, sie ist die eigentliche Entscheidung. */}
               <span style={{color:T.txt,fontSize:12,lineHeight:1.45}}>
-                Rückbuchung am selben Tag — hausintern sofort gutgeschrieben.
-                Erlaubt einen deutlich höheren Betrag, weil eine Unterdeckung am
-                Rückbuchungstag noch am selben Tag ausgeglichen wird.
-                <span style={{color:T.warn}}> Setzt voraus, dass Du an diesem Tag
-                tatsächlich zurücküberweist.</span>
+                Rückbuchung am selben Tag — erlaubt einen deutlich höheren Betrag.
+                <span style={{color:T.warn}}> Nur ankreuzen, wenn Du an dem Tag
+                wirklich zurücküberweist.</span>
               </span>
             </div>
           </div>
@@ -1065,7 +1072,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                 <div style={{color:T.txt,fontSize:12,marginBottom:4}}>
                   Heute sicher sparen (Monat 1):
                 </div>
-                <div style={{color:col,fontSize:26,fontWeight:800,fontFamily:NUM_FONT,letterSpacing:-0.5}}>
+                <div style={{color:col,fontSize:BETRAG_GROSS,fontWeight:800,fontFamily:NUM_FONT,letterSpacing:-0.5}}>
                   {computing?"…":maxTransfer===null?"—":maxTransfer<=0?"0":betrag(maxTransfer)} €
                 </div>
 
@@ -1198,47 +1205,39 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
             selben Tag ab, und der Hin-Betrag ENTHÄLT die normale Rate. */}
         {sweepAktiv&&sweep&&sweep.hin>0&&(
           <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${T.bd}`}}>
-            <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:8}}>
-              <div style={{color:T.txt,fontSize:12}}>
-                Mega-Sparrate zum {kurzDat(sweep.termin)} <span style={{color:T.acc_gold}}>(Zinstermin)</span>
-              </div>
-              <div style={{color:T.acc_gold,fontSize:20,fontWeight:800,fontFamily:NUM_FONT,letterSpacing:-0.5}}>
-                {betrag(sweep.hin)} €
-              </div>
+            {/* Beschriftung oben, Betrag darunter — beides linksbündig, und der
+                Betrag in derselben Größe wie „Heute sicher sparen". Vorher
+                standen die Beträge rechts außen in drei verschiedenen Graden;
+                das Auge musste bei jeder Zeile neu suchen (Nutzer: „wirkt oben
+                unruhig"). */}
+            <div style={{color:T.txt,fontSize:12}}>
+              Mega-Sparrate zum {kurzDat(sweep.termin)} <span style={{color:T.acc_gold}}>(Zinstermin)</span>
             </div>
-            <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:8,marginTop:3}}>
-              <div style={{color:T.txt,fontSize:12}}>
-                zurück aufs Giro am {kurzDat(sweep.bis)} ({wochentag(sweep.bis)})
-              </div>
-              <div style={{color:T.acc,fontSize:13,fontWeight:800,fontFamily:NUM_FONT}}>
-                {betrag(sweep.zurueck)} €
-              </div>
+            <div style={{color:T.acc_gold,fontSize:BETRAG_GROSS,fontWeight:800,
+              fontFamily:NUM_FONT,letterSpacing:-0.5}}>
+              {betrag(sweep.hin)} €
             </div>
-            <div style={{color:T.txt,fontSize:12,marginTop:5,lineHeight:1.45}}>
-              {sweep.bleibt>0
-                ? `Enthält die normale Sparrate von ${fmt(sweep.bleibt)} € — die bleibt auf dem ${zielKontoName} und wird nicht zusätzlich überwiesen. `
-                : ""}
-              Engster Tag {kurzDat(sweep.engpassTag)}: danach bleiben {betrag(Math.round(sweep.restNachSweep))} € auf dem Giro.
+            <div style={{color:T.txt,fontSize:12,marginTop:6}}>
+              zurück aufs Giro am {kurzDat(sweep.bis)} ({wochentag(sweep.bis)})
             </div>
-            {/* Ehrliche Einordnung: der Wert ist eine Vorschau, keine Zusage.
-                Werden nach dem Gehaltseingang noch Budget-Vormerkungen
-                freigegeben, steigt der verfügbare Betrag teils deutlich. */}
-            <div style={{color:T.txt,fontSize:12,marginTop:5,lineHeight:1.45,fontStyle:"italic"}}>
-              Vorschau — endgültig steht der Betrag erst am Monatsletzten fest.
-              Freigegebene Budget-Vormerkungen können ihn bis dahin noch deutlich
-              erhöhen. Am Stichtag selbst rechnet das Banner auf der Startseite neu.
+            <div style={{color:T.acc,fontSize:BETRAG_GROSS,fontWeight:800,
+              fontFamily:NUM_FONT,letterSpacing:-0.5}}>
+              {betrag(sweep.zurueck)} €
             </div>
-            {/* Vormerken ersetzt die normale Rate des Zinsmonats durch den
-                Hin-Betrag und legt die Rückbuchung an — bewusst auf Knopfdruck
-                statt automatisch, weil es den Saldoverlauf verändert. */}
-            {/* Die Vormerkungen entstehen automatisch (siehe App.jsx:
-                currentMonthSparAdjust) — aber erst, wenn der Zinsmonat der
-                LAUFENDE ist. Vorher ist das hier reine Vorschau; ohne diesen
-                Hinweis würde man vergeblich nach Buchungen suchen. */}
-            <div style={{color:T.txt,fontSize:12,marginTop:5,lineHeight:1.45}}>
+            {/* Auf das Wesentliche gekürzt (Nutzer: „Habe selbst keine Lust
+                soviel lesen zu müssen"). Vier Absätze sind zu drei knappen
+                Zeilen geworden; weggefallen ist, was sich aus den Zahlen selbst
+                ergibt („wird nicht zusätzlich überwiesen") oder was den Ablauf
+                erklärt, statt eine Entscheidung zu stützen (das Banner auf der
+                Startseite, die Nachführung bis zum Stichtag). */}
+            <div style={{color:T.txt,fontSize:12,marginTop:6,lineHeight:1.5}}>
+              {sweep.bleibt>0 && <>Davon <b>{betrag(sweep.bleibt)} €</b> normale Rate —
+                bleibt auf dem {zielKontoName}.<br/></>}
+              Am {kurzDat(sweep.engpassTag)} bleiben <b>{betrag(Math.round(sweep.restNachSweep))} €</b> auf dem Giro.
+              <br/>
               {sweepGesetzt()
-                ? `Vorgemerkt: ${fmt(sweep.hin)} € am ${kurzDat(sweep.termin)}, ${fmt(sweep.zurueck)} € zurück am ${kurzDat(sweep.bis)}. Die Beträge werden bis zum Stichtag automatisch nachgeführt.`
-                : `Vormerkungen entstehen automatisch, sobald ${MONTHS_G[Number(sweep.termin.slice(5,7))-1]} der laufende Monat ist — dann mit dem bis dahin gültigen Betrag.`}
+                ? "Bereits vorgemerkt."
+                : `Vorschau — vorgemerkt wird automatisch, sobald ${MONTHS_G[Number(sweep.termin.slice(5,7))-1]} läuft.`}
             </div>
           </div>
         )}
