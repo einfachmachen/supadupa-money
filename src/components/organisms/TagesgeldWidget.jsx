@@ -83,16 +83,54 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   // alt sie ist, ist schlimmer als gar keine.
   // 2 = Fenster ab Ratentermin (sparPlanOptimum)
   // 3 = „nach Sparen" im Fenster gemessen statt Monats-Tiefstand minus Rate
-  const VORSCHAU_REGEL = 3;
-  const [result,    setResultState]   = useState(()=>{ try {
+  // 4 = Abdruck der Daten mitgespeichert (siehe unten)
+  const VORSCHAU_REGEL = 4;
+
+  // ── Und ein Abdruck der DATEN, aus denen die Tabelle entstand ────────
+  //
+  // Der Stempel oben fängt nur die eine Hälfte: eine geänderte Rechenregel.
+  // Die andere Hälfte sind geänderte BUCHUNGEN — und die war der eigentliche
+  // Befund: „Ich habe testweise eine Vormerkung über 3.000 € erstellt und bin
+  // in den Sparplan. Da wurde aber nichts geändert oder nach Aufruf neu
+  // berechnet."
+  //
+  // Ein erster Versuch hing an einem Effekt, der auf `txs` horcht. Der kann
+  // gar nicht greifen: Das Widget ist nur eingehängt, solange das Sparen-Panel
+  // OFFEN ist (siehe DashboardScreenV2). Wer eine Vormerkung anlegt, tut das
+  // bei geschlossenem Panel — es gibt niemanden, der etwas mitbekommt. Und
+  // beim nächsten Öffnen startet die Komponente frisch: Sie liest die
+  // gespeicherte Tabelle und hat keinerlei Anhalt, dass sie veraltet ist.
+  //
+  // Deshalb muss die Tabelle SELBST wissen, woraus sie entstanden ist. Der
+  // Abdruck wird mitgespeichert und beim Öffnen gegen den heutigen Stand
+  // gehalten. Passt er nicht, wird gerechnet — ohne Knopfdruck.
+  // (Die Funktion selbst steht weiter unten — sie liest `monate`,
+  // `sparPlanName` und `sparAccId`, und deren Deklarationen kommen erst
+  // danach. Die Abhaengigkeitsliste eines useCallback wird SOFORT ausgewertet;
+  // hier oben gaebe das einen ReferenceError. Dieselbe TDZ-Falle wie bei
+  // `sparOptimum` in App.jsx.)
+
+  const gespeichert = (()=>{ try {
     const s=kvStore.getItem("mbt_spar_result");
     if(!s) return null;
     const p=JSON.parse(s);
     if(Array.isArray(p)) return null;                  // Stand vor dem Stempel
-    return p && p.regel===VORSCHAU_REGEL ? p.rows : null;
-  } catch{return null;} });
+    return p && p.regel===VORSCHAU_REGEL ? p : null;
+  } catch{return null;} })();
+  const [result,    setResultState]   = useState(()=>gespeichert ? gespeichert.rows : null);
   const resultRef = React.useRef(result);
-  const setResult = (v) => { resultRef.current = v; setResultState(v); try{ if(v) kvStore.setItem("mbt_spar_result",JSON.stringify({regel:VORSCHAU_REGEL, rows:v})); else kvStore.removeItem("mbt_spar_result"); }catch{} };
+  // Der Abdruck, zu dem die gerade angezeigte Tabelle gehört.
+  const abdruckRef = React.useRef(gespeichert ? (gespeichert.abdruck||null) : null);
+  const setResult = (v) => {
+    resultRef.current = v; setResultState(v);
+    try {
+      if(v) {
+        const abdruck = datenAbdruck();
+        abdruckRef.current = abdruck;
+        kvStore.setItem("mbt_spar_result", JSON.stringify({regel:VORSCHAU_REGEL, abdruck, rows:v}));
+      } else { abdruckRef.current = null; kvStore.removeItem("mbt_spar_result"); }
+    } catch{}
+  };
   const [resultOutdated, setResultOutdated] = useState(false);
   const [computing, setComputing]= useState(false);
   const [monate,    setMonate]   = useState(()=>parseInt(kvStore.getItem("mbt_sparen_monate")||"3"));
@@ -100,6 +138,27 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   const [sparSubId, setSparSubId]   = useState(()=>kvStore.getItem("mbt_spar_subid")||"");
   const [sparAccId, setSparAccId]   = useState(()=>kvStore.getItem("mbt_spar_accid")||"");
   const [sparPlanName, setSparPlanName] = useState(()=>kvStore.getItem("mbt_spar_planname")||"Sparplan 1");
+
+  // Der Abdruck der Daten, aus denen eine Tabelle entstand (siehe oben).
+  const datenAbdruck = React.useCallback(() => {
+    // FNV-1a über die Felder, die den Plan bewegen. Ein String über alle
+    // Buchungen wäre bei mehreren tausend Einträgen unnötig Speicher.
+    let h = 2166136261;
+    const misch = (v) => {
+      const s = String(v ?? "");
+      for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+      h ^= 0x2c; h = Math.imul(h, 16777619);      // Trenner: "1|2" ≠ "12|"
+    };
+    (txs||[]).forEach(t => {
+      misch(t.id); misch(t.date); misch(t.totalAmount);
+      misch(t.pending?1:0); misch(t.accountId); misch(t.desc);
+    });
+    try { misch(JSON.stringify(budgets||{})); } catch { /* egal */ }
+    misch(puffer); misch(monate); misch(sparPlanName); misch(sparAccId);
+    return (h>>>0).toString(36);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [txs, budgets, puffer, monate, sparPlanName, sparAccId]);
+
   // Nach programmatischem Setzen (Dropdown-Auswahl) bleibt scrollLeft bei 0 —
   // text-align:right allein wirkt sich NICHT auf die Scroll-Position eines
   // <input> aus (nur auf die Ausrichtung bei Restplatz). Ohne diesen Ref bliebe
@@ -283,24 +342,29 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   // Hälfte erwischt: eine geänderte RECHENREGEL. Die geänderten DATEN blieben
   // liegen.
   //
-  // Zwei Schritte statt einem, damit im geschlossenen Panel keine Arbeit
-  // anfällt: Erst wird der Stand als veraltet MARKIERT, gerechnet wird erst,
-  // wenn das Panel offen ist. Die Verzögerung fängt ganze Schübe ab (Sync,
-  // Serien-Anlage, die Automatik in App.jsx) — sonst rechnete die Vorschau
-  // bei jeder einzelnen Buchung neu.
-  const ersterLaufRef = React.useRef(true);
+  // Verglichen wird der ABDRUCK, nicht ein Ereignis (siehe oben): Der erste
+  // Versuch horchte auf `txs` und konnte deshalb gar nicht greifen — das
+  // Widget ist nur eingehängt, solange das Panel offen ist, und eine
+  // Vormerkung legt man bei geschlossenem Panel an.
+  //
+  // Deshalb läuft dieser Effekt AUCH beim ersten Rendern, ohne Ausnahme. Er
+  // vergleicht, was die gespeicherte Tabelle sah, mit dem, was jetzt da ist.
+  // Die Verzögerung fängt ganze Schübe ab (Sync, Serien-Anlage, die Automatik
+  // in App.jsx) — sonst rechnete die Vorschau bei jeder einzelnen Buchung neu.
   React.useEffect(() => {
-    if(ersterLaufRef.current) { ersterLaufRef.current = false; return; }
-    if(resultRef.current) setResultOutdated(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [txs, budgets, accounts, cats, puffer, monate, sparPlanName]);
-
-  React.useEffect(() => {
-    if(collapsed || !resultOutdated || computing) return;
-    const id = setTimeout(() => { setResultOutdated(false); berechnen(); }, 450);
+    if(collapsed) return;
+    if(!resultRef.current) return;      // noch nichts da — das macht der Auto-Load
+    const jetzt = datenAbdruck();
+    if(abdruckRef.current === jetzt) return;
+    setResultOutdated(true);
+    const id = setTimeout(() => {
+      abdruckRef.current = jetzt;       // vor dem Rechnen, sonst laeuft es doppelt
+      setResultOutdated(false);
+      berechnen();
+    }, 450);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [collapsed, resultOutdated, computing]);
+  }, [collapsed, datenAbdruck, accounts, cats]);
 
   // Wenn unter dem aktuellen Plannamen bereits eine Sparplan-Series existiert,
   // Kategorien / Zielkonto aus deren ersten Buchungen übernehmen. Sonst sieht

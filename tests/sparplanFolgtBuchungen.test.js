@@ -13,9 +13,17 @@
 // Der Regel-Stempel (VORSCHAU_REGEL) hatte davon nur die eine Hälfte erwischt:
 // eine geänderte RECHENREGEL. Die geänderten DATEN blieben liegen.
 //
-// Dieser Test rendert das Widget wirklich (jsdom, mit Effekten), setzt einen
-// gespeicherten Stand voraus und ändert dann die Buchungen — so wie es beim
-// Anlegen einer Vormerkung passiert.
+// Der erste Anlauf dagegen horchte auf `txs` — und konnte gar nicht greifen:
+// Das Widget ist nur eingehaengt, solange das Sparen-Panel OFFEN ist (siehe
+// DashboardScreenV2). Eine Vormerkung legt man bei GESCHLOSSENEM Panel an; es
+// gibt also niemanden, der etwas mitbekommt. Beim naechsten Oeffnen startet die
+// Komponente frisch, liest die gespeicherte Tabelle und hat keinen Anhalt, dass
+// sie veraltet ist. Genau daran scheiterte der erste Fix in der echten App,
+// waehrend der Test gruen war — er liess das Widget die ganze Zeit eingehaengt.
+//
+// Deshalb bildet dieser Test den LEBENSZYKLUS nach: oeffnen, schliessen
+// (unmount), Buchung anlegen, wieder oeffnen. Die Tabelle ueberlebt im
+// kvStore — genau wie in der App.
 
 import { describe, it, expect, beforeAll } from "vitest";
 import "fake-indexeddb/auto";
@@ -89,14 +97,19 @@ describe("Sparplan folgt den Buchungen", () => {
     const { TagesgeldWidget } = await import("../src/components/organisms/TagesgeldWidget.jsx");
     const { AppCtx } = await import("../src/state/AppContext.js");
 
+    // OHNE init() faellt kvStore auf localStorage zurueck und die gespeicherte
+    // Tabelle ueberlebt den Wechsel nicht — dann rechnet das Widget beim
+    // zweiten Oeffnen ohnehin neu und der Test bewiese nichts.
+    await kvStore.init();
     kvStore.setItem("mbt_sparen_monate", "3");
     kvStore.setItem("mbt_spar_planname", "Sparplan 1");
     kvStore.removeItem("mbt_spar_result");
 
-    const wurzelEl = document.createElement("div");
-    document.body.appendChild(wurzelEl);
-    const root = createRoot(wurzelEl);
-    const zeige = async (txs) => {
+    // Panel oeffnen: einhaengen, rechnen lassen, ablesen, wieder aushaengen.
+    const oeffneUndLies = async (txs) => {
+      const el = document.createElement("div");
+      document.body.appendChild(el);
+      const root = createRoot(el);
       await act(async () => {
         root.render(React.createElement(AppCtx.Provider, { value: machCtx(txs) },
           React.createElement(TagesgeldWidget, { year: JAHR, month: MONAT, initialCollapsed: false })));
@@ -104,21 +117,21 @@ describe("Sparplan folgt den Buchungen", () => {
       // Die Vorschau rechnet in requestAnimationFrame-Haeppchen, die
       // Neuberechnung zusätzlich mit 450 ms Verzögerung.
       await act(async () => { await new Promise((r) => setTimeout(r, 1400)); });
+      const raten = ratenAus(el);
+      await act(async () => { root.unmount(); });
+      el.remove();
+      return raten;
     };
 
-    await zeige(grundBestand());
-    const vorher = ratenAus(wurzelEl);
+    const vorher = await oeffneUndLies(grundBestand());
     expect(vorher.length, "die Vorschau muss Raten zeigen").toBeGreaterThan(0);
 
-    // Jetzt die Buchung — genau der gemeldete Fall.
-    await zeige([...grundBestand(), brocken]);
-    const nachher = ratenAus(wurzelEl);
+    // Panel ist jetzt ZU. Genau so legt man eine Vormerkung an — und genau
+    // deshalb reicht ein Effekt auf `txs` nicht.
+    const nachher = await oeffneUndLies([...grundBestand(), brocken]);
 
     expect(nachher, "die Vorschau muss sich geändert haben").not.toEqual(vorher);
     expect(nachher[0], "die Rate des laufenden Monats muss sinken")
       .toBeLessThan(vorher[0]);
-
-    await act(async () => { root.unmount(); });
-    wurzelEl.remove();
   }, 20000);
 });

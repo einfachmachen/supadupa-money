@@ -22,7 +22,7 @@ const wurzel = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const src = readFileSync(resolve(wurzel, "src/components/organisms/TagesgeldWidget.jsx"), "utf8");
 
 // Die beiden Zeilen aus dem Widget nachgestellt — Lesen und Schreiben.
-const VORSCHAU_REGEL = 3;
+const VORSCHAU_REGEL = 4;
 const lies = (roh, regel = VORSCHAU_REGEL) => {
   try {
     if (!roh) return null;
@@ -31,7 +31,7 @@ const lies = (roh, regel = VORSCHAU_REGEL) => {
     return p && p.regel === regel ? p.rows : null;
   } catch { return null; }
 };
-const schreib = (v) => JSON.stringify({ regel: VORSCHAU_REGEL, rows: v });
+const schreib = (v) => JSON.stringify({ regel: VORSCHAU_REGEL, abdruck: "xyz", rows: v });
 
 describe("Vorschau-Cache: Stempel statt blindem Vertrauen", () => {
   const rows = [{ y: 2026, m: 7, zusaetzlich: 583 }];
@@ -46,7 +46,7 @@ describe("Vorschau-Cache: Stempel statt blindem Vertrauen", () => {
   });
 
   it("ein Stand einer älteren Regel wird verworfen", () => {
-    expect(lies(JSON.stringify({ regel: 2, rows }))).toBeNull();
+    expect(lies(JSON.stringify({ regel: 3, rows }))).toBeNull();
   });
 
   it("Schrott im Speicher wirft nicht, sondern rechnet neu", () => {
@@ -56,8 +56,24 @@ describe("Vorschau-Cache: Stempel statt blindem Vertrauen", () => {
 
   it("das Widget benutzt den Stempel wirklich", () => {
     expect(src).toMatch(/const VORSCHAU_REGEL = \d+/);
-    expect(src).toMatch(/regel:VORSCHAU_REGEL, rows:v/);
+    expect(src).toMatch(/regel:VORSCHAU_REGEL, abdruck, rows:v/);
     expect(src, "ein nacktes Array ist der Stand von vorher").toMatch(/Array\.isArray\(p\)\) return null/);
+  });
+
+  it("der Stempel allein reicht NICHT — der Abdruck der Daten muss mit", () => {
+    // Der Stempel faengt eine geaenderte RECHENREGEL. Die andere Haelfte sind
+    // geaenderte BUCHUNGEN: „Ich habe testweise eine Vormerkung ueber 3.000 €
+    // erstellt und bin in den Sparplan. Da wurde aber nichts geaendert."
+    //
+    // Ein Effekt auf `txs` kann das nicht loesen — das Widget haengt nur im
+    // Baum, solange das Sparen-Panel offen ist, und eine Vormerkung legt man
+    // bei geschlossenem Panel an. Die Tabelle muss deshalb SELBST wissen,
+    // woraus sie entstanden ist.
+    expect(src).toMatch(/const datenAbdruck = React\.useCallback/);
+    expect(src).toMatch(/abdruckRef\.current === jetzt/);
+    // Und der Abdruck wird beim Oeffnen verglichen, nicht nur bei Aenderungen
+    // waehrend das Panel offen steht.
+    expect(src, "kein Erstlauf-Ausschluss mehr").not.toMatch(/ersterLaufRef/);
   });
 
   it("ohne gespeicherten Stand rechnet das Panel von selbst nach", () => {

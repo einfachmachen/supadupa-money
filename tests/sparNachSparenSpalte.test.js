@@ -123,6 +123,6 @@ describe("Sparplan-Tabelle: die Spalte „nach Sparen\"", () => {
       .not.toMatch(/const minNachSparen = minTag!==null \? minTag - zusaetzlich : null/);
     // Und der gespeicherte Stand traegt die neue Regelnummer, sonst zeigte die
     // Tabelle nach dem Update weiter ihre alten Minusbetraege.
-    expect(src).toMatch(/const VORSCHAU_REGEL = 3/);
+    expect(src).toMatch(/const VORSCHAU_REGEL = [4-9]\d*/);
   });
 });
