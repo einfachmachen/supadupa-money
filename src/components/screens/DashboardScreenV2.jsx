@@ -1359,7 +1359,7 @@ function DashboardScreenV2() {
               {/* `activeBg` folgt der Warnfarbe des Panels darunter (nicht
                   mehr T.neg: das ist die Ausgabenfarbe und faerbte die
                   Warnkarte pastellgruen ein). */}
-              {!isPastMonth && <Card panel="warnings"     icon="shield-check" badge={warnCount}   color={warnCount>0 ? T.warn_icon : T.pos} activeBg={`${T.warn_bold}20`} hasContent={warnCount>0} tourId="panel-warnings"/>}
+              {!isPastMonth && <Card panel="warnings"     icon="shield-check" badge={warnCount}   color={warnCount>0 ? T.warn_icon : T.pos} activeBg={`${T.warn_bold}18`} hasContent={warnCount>0} tourId="panel-warnings"/>}
               {!isPastMonth && <Card panel="sparen"       icon="piggy-bank"   badge={null}        color={T.blue} activeBg={T.surf2} activeBgSolid tourId="panel-sparen"/>}
               <Card panel="vormerkungen" icon="clock"        badge={visiblePTxs.length} color={blasserAkzent()} activeBg={blasserAkzent()} activeBgSolid hasContent={visiblePTxs.length>0}/>
             </div>

@@ -47,11 +47,18 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
   // Jetzt der eigens dafür definierte Warnton `warn_bold` — in JEDEM Theme
   // kräftig, damit die Warnung überall gleich gut lesbar bleibt.
   const WARN = T.warn_bold;
-  const TOENUNG = 0x20 / 255;   // = die "20"-Deckkraft der Kopfzeile unten
+  const TOENUNG = 0x18 / 255;   // = die "18"-Deckkraft der Kopfzeile unten
   // Schrift auf der WIRKLICH gemalten Fläche prüfen, nicht auf der Platte:
   // Ein Warnton auf seiner eigenen Tönung verliert Kontrast. Symbole dürfen
   // die niedrigere Schwelle nutzen (3:1, WCAG 1.4.11).
-  const auf = (farbe, schwelle) => aufToenung(farbe, TOENUNG, ".warn-karte", schwelle);
+  //
+  // OHNE Klassen-Angabe, und das ist hier der Punkt: Ein Zwischenstand hatte
+  // den Kasten als `.warn-karte` ausgezeichnet. Themes mit gegensaetzlichen
+  // Flaechen („Tastenhell") malen darauf ihre dunkle Taste — aus dem hellen,
+  // luftigen Kasten wurde ein dunkler Block („die Detaildarstellung ist zu
+  // duester", Nutzer). Die Toenung soll hier wirklich gemalt werden; der
+  // Grund ist also die Toenung ueber dem Seitenhintergrund.
+  const auf = (farbe, schwelle) => aufToenung(farbe, TOENUNG, undefined, schwelle);
 
   return (
     <div style={{margin:"0 10px 4px",borderRadius:cardRadius}}>
@@ -70,8 +77,8 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
           <div key={i} style={{margin:`${i===0?0:2}px 0 3px`,borderRadius:i===0?"0 8px 8px 8px":8,overflow:"hidden",
             border:`1px solid ${WARN}66`,borderTop:i===0?"none":`1px solid ${WARN}66`}}>
             {/* Monats-Header — immer sichtbar */}
-            <div onClick={hasMultiple?toggleExpand:undefined} className="warn-karte"
-              style={{background:`${WARN}20`,padding:"7px 10px",
+            <div onClick={hasMultiple?toggleExpand:undefined}
+              style={{background:`${WARN}18`,padding:"7px 10px",
                 display:"flex",alignItems:"center",gap:10,
                 cursor:hasMultiple?"pointer":"default"}}>
               {/* Warndreieck entfernt — die 3 Symbole in der Icon-Zeile oben
@@ -104,8 +111,8 @@ function KontoWarnungWidget({showFolgemonateToggle=false, onCountChange, hidden=
               const[,wm,wd]=(d.nextPos?.date||"").split("-");
               const nextLabel=d.nextPos?`${parseInt(wd)}.${parseInt(wm)}.`:null;
               return(
-                <div key={j} className="warn-karte" style={{padding:"5px 10px 5px 48px",
-                  borderTop:`1px solid ${WARN}33`,background:`${WARN}12`}}>
+                <div key={j} style={{padding:"5px 10px 5px 48px",
+                  background:`${WARN}0C`}}>
                   <div style={{color:auf(WARN),fontSize:11,fontWeight:700}}>
                     Ab {fromLabel} −{betrag(d.deficit)} €
                   </div>
