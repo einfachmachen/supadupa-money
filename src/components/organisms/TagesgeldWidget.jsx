@@ -3,13 +3,12 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { CatPicker } from "../molecules/CatPicker.jsx";
 import { AppCtx } from "../../state/AppContext.js";
-import { theme as T } from "../../theme/activeTheme.js";
+import { theme as T, GEFAHR } from "../../theme/activeTheme.js";
 import { fmt, uid, NUM_FONT } from "../../utils/format.js";
 import { betrag, betragText } from "../../utils/betrag.jsx";
 import { Li } from "../../utils/icons.jsx";
 import { kvStore } from "../../utils/kvStore.js";
-import { planLegDecisions } from "../../utils/sparPlanSeries.js";
-import { getSparWatermark, noteSparWatermark } from "../../utils/sparWatermarks.js";
+import { noteSparWatermark } from "../../utils/sparWatermarks.js";
 import { buildTxIdMap } from "../../utils/tx.js";
 import { sparPlanPflege, heuteIsoVon } from "../../utils/sparPlanPflege.js";
 import { recordDeletedTxs } from "../../utils/txTombstones.js";
@@ -22,7 +21,7 @@ import { DEFAULT_ZINS_MONATE, parseZinsMonate, serializeZinsMonate,
   SWEEP_RUECK_DESC } from "../../utils/zinsSweep.js";
 
 function TagesgeldWidget({year, month, initialCollapsed=true}) {
-  const {  getKumulierterSaldo, txs, setTxs, cats, accounts, setAccounts, getAcc, budgets, getCat, getBudgetForMonth, selAcc, getProgEndeAccGlobal, resetProgEndeCache, sparOpenRequest } = useContext(AppCtx);
+  const {  getKumulierterSaldo, txs, setTxs, cats, accounts, setAccounts, getAcc, budgets, getCat, getBudgetForMonth, selAcc, getProgEndeAccGlobal, resetProgEndeCache, sparOpenRequest, frageBestaetigung } = useContext(AppCtx);
   const MONTHS_G=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
   // Ein Feld-Stil für ALLE Eingaben/Auswahlen im Widget (Planname, Puffer,
   // Vorschau, Monate, Abgang/Zugang) — vorher nutzten die oberen Felder das
@@ -425,87 +424,24 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     return result2;
   };
 
-  // Extrahierte Aktualisierungs-Logik — nutzbar von Button UND autoAnpassen
-  const doAktualisieren = (rows, seriesId, tgtSeriesId, sparDesc) => {
-    const sparMonate = rows.filter(r=>r.zusaetzlich>0);
-    // Entscheidungslogik in utils/sparPlanSeries.js (testbar, siehe dort):
-    // pro Bein (Abgang vom Giro / Zugang aufs Zielkonto) GETRENNT merken,
-    // welche Monate bisher eine Rate hatten — eine vom Nutzer manuell
-    // gelöschte einzelne Rate innerhalb der bisher abgedeckten Spanne soll
-    // beim Neuberechnen nicht stillschweigend wieder auftauchen, auch dann
-    // nicht, wenn nur EIN Bein des verknüpften Paars gelöscht wurde (z.B.
-    // nur die Tagesgeld-Einnahme, der Giro-Abgang blieb bestehen).
-    const oldAbgang = txs.filter(t=>t._seriesId===seriesId&&t.pending);
-    const oldZugang = txs.filter(t=>t._seriesId===tgtSeriesId&&t.pending);
-    // Wasserzeichen aus vorherigen Läufen: schützt vor dem "letzte Rate
-    // gelöscht"-Fall, in dem oldAbgang/oldZugang allein die alte Spanne
-    // fälschlich verkürzt anzeigen würden (siehe utils/sparWatermarks.js).
-    const historicalMaxAbgangKey = getSparWatermark(seriesId);
-    const historicalMaxZugangKey = getSparWatermark(tgtSeriesId);
-    const decisions = new Map(
-      planLegDecisions(sparMonate.map(row=>row.y*12+row.m), oldAbgang, oldZugang, !!sparAccId,
-        historicalMaxAbgangKey, historicalMaxZugangKey)
-        .map(d=>[d.key, d])
-    );
-
-    setTxs(p=>{
-      // Nur PENDING Buchungen der alten Serie entfernen — echte (bereits gebuchte) bleiben
-      const ohne = p.filter(t=>{
-        if(t._seriesId!==seriesId&&t._seriesId!==tgtSeriesId) return true;
-        if(!t.pending) return true; // bereits gebucht — behalten
-        return false; // pending — entfernen
-      });
-      const newTxs = sparMonate.flatMap((row)=>{
-        const key = row.y*12+row.m;
-        const { keepAbgang, keepZugang } = decisions.get(key);
-        if(!keepAbgang && !keepZugang) return [];
-        const pad2 = n=>String(n).padStart(2,"0");
-        const lastDay = new Date(row.y, row.m+1, 0).getDate();
-        const date = `${row.y}-${pad2(row.m+1)}-${pad2(lastDay)}`;
-        const amount = -row.zusaetzlich;
-        const abgang = keepAbgang ? {
-          id:"pend-"+uid(), date, desc:sparDesc,
-          totalAmount:amount, pending:true, _csvType:"expense",
-          accountId:"acc-giro",
-          _seriesId:seriesId,
-          splits:sparCatId?[{id:uid(),catId:sparCatId,subId:sparSubId||"",amount}]
-                          :[{id:uid(),catId:"",subId:"",amount}],
-        } : null;
-        if(!keepZugang) return abgang ? [abgang] : [];
-        const zugang = {
-          id:"pend-"+uid(), date, desc:sparDesc,
-          totalAmount:row.zusaetzlich, pending:true, _csvType:"income",
-          accountId:sparAccId,
-          ...(abgang ? {_linkedTo:abgang.id} : {}),
-          _seriesId:tgtSeriesId,
-          splits:sparTgtCatId?[{id:uid(),catId:sparTgtCatId,subId:sparTgtSubId||"",amount:row.zusaetzlich}]
-                             :[{id:uid(),catId:"",subId:"",amount:row.zusaetzlich}],
-        };
-        return abgang ? [abgang, zugang] : [zugang];
-      });
-      // _seriesIdx/_seriesTotal erst hier vergeben (getrennt je Bein), damit
-      // die Zählung auch bei einseitig übersprungenen Monaten stimmt.
-      let ai = 0, zi = 0;
-      const abgangTotal = newTxs.filter(t=>t._seriesId===seriesId).length;
-      const zugangTotal = newTxs.filter(t=>t._seriesId===tgtSeriesId).length;
-      newTxs.forEach(t=>{
-        if(t._seriesId===seriesId) { ai++; t._seriesIdx=ai; t._seriesTotal=abgangTotal; }
-        else { zi++; t._seriesIdx=zi; t._seriesTotal=zugangTotal; }
-      });
-      return [...ohne, ...newTxs];
-    });
-    // Wasserzeichen auf die gerade berechnete Planspanne vorziehen (nie
-    // zurücksetzen) — unabhängig davon, ob einzelne Monate wegen einer
-    // vorherigen Löschung gerade übersprungen wurden. Erst dadurch "weiß"
-    // ein künftiger Lauf (auch auf einem anderen, synchronisierten Gerät),
-    // wie weit diese Serie tatsächlich schon einmal reichte.
-    const maxSparMonateKey = sparMonate.length ? Math.max(...sparMonate.map(row=>row.y*12+row.m)) : -Infinity;
-    if(isFinite(maxSparMonateKey)) {
-      noteSparWatermark(seriesId, maxSparMonateKey);
-      if(sparAccId) noteSparWatermark(tgtSeriesId, maxSparMonateKey);
-    }
-    return sparMonate.length;
-  };
+  // ── Warum es hier kein „Vormerkungen auffrischen" mehr gibt ───────────
+  //
+  // Bis hierher stand an dieser Stelle `doAktualisieren`/`autoAnpassen`: Es
+  // schrieb ein frisches Ergebnis in eine BESTEHENDE Serie und musste dabei
+  // Buch führen, welche Rate der Nutzer zwischendurch von Hand gelöscht hatte
+  // (utils/sparPlanSeries.js, utils/sparWatermarks.js), damit sie nicht
+  // stillschweigend wieder auftauchte.
+  //
+  // Der Sparplan hat jetzt nur noch zwei Zustände — es gibt ihn oder nicht —
+  // und entsprechend einen Knopf, der ihn anlegt oder wegwirft (Nutzer-Wunsch,
+  // siehe `sparplanAnlegen`/`sparplanLoeschen`). Auffrischen heißt damit:
+  // löschen, dann neu anlegen. Das Ergebnis ist dasselbe, denn die Vorschau
+  // rechnet ohnehin von selbst nach — und die Buchführung über einzeln
+  // gelöschte Raten erübrigt sich, weil ein Löschen jetzt den ganzen Plan
+  // meint und nicht mehr eine einzelne Rate darin.
+  //
+  // Die beiden Hilfsmodule bleiben liegen, samt Tests: Sie beschreiben eine
+  // Entscheidung, die zurückkommen kann, wenn das Auffrischen zurückkommt.
 
   const berechnen = (onDone, accOverride) => {
     const effAcc = accOverride !== undefined ? accOverride : selAcc;
@@ -705,26 +641,81 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     gleich(step);
   };
 
-  const autoAnpassen = () => {
-    const {desc:sparDesc, series:existingSeries, seriesIds} = findExistingSeries(sparPlanName);
-    if(!seriesIds.length) { showToast("Kein Sparplan zum Anpassen gefunden."); return; }
-    const seriesId = seriesIds[seriesIds.length-1];
-    const altKumuliert = existingSeries.reduce((s,t)=>s+Math.abs(t.totalAmount),0);
-    // Wichtig: immer mit Giro-Konto rechnen, unabhängig von selAcc
-    const prevSelAcc = selAcc;
-    // Temporär auf Giro schalten für die Berechnung — via lokale Variable
-    const savedSelAcc = selAcc;
-    // Berechnung mit acc-giro erzwingen: minTagCache leeren und mit Giro-Kontext rechnen
-    minTagCache.current = {};
-    resetProgEndeCache();
-    berechnen((rows)=>{
-      const anzahl = doAktualisieren(rows, seriesId, seriesId+"-tgt", sparDesc);
-      const neuKumuliert = rows.filter(r=>r.zusaetzlich>0).reduce((s,r)=>s+r.zusaetzlich,0);
-      const diff = neuKumuliert - altKumuliert;
-      const diffStr = diff>0 ? `+${fmt(diff)} €` : diff<0 ? `−${fmt(Math.abs(diff))} €` : "keine Änderung";
-      showToast(`✓ Automatisch angepasst: ${anzahl} Raten · ${diffStr}`);
-    }, "acc-giro"); // Immer Giro für Sparplan-Berechnung
+  // ── Sparplan anlegen und löschen ──────────────────────────────────────
+  //
+  // Der Sparplan hat genau zwei Zustände, und deshalb genau EINEN Knopf:
+  // Gibt es noch keine Vormerkungsserie, legt er sie an; gibt es eine, wirft
+  // er sie weg (Nutzer: „Sobald es einen Sparplan gibt, wechseln wir es doch
+  // zu einem Papierkorb-Symbol"). Zum Auffrischen genügt beides nacheinander —
+  // die Vorschau rechnet ohnehin von selbst nach, das Anlegen schreibt also
+  // immer den frischen Stand.
+  const sparplanAnlegen = () => {
+    const sparMonate = result ? result.filter(r=>r.zusaetzlich>0) : [];
+    if(!result) { showToast("Der Sparplan wird noch berechnet."); return; }
+    if(!sparMonate.length) { showToast("Keine Sparraten möglich — Konto bereits voll genutzt oder unter Puffer."); return; }
+    const sparDesc = buildSparDesc(sparPlanName);
+    const seriesId = "series-"+uid();
+    const newTxs = sparMonate.flatMap((row, i) => {
+      const pad2 = n=>String(n).padStart(2,"0");
+      const lastDay = new Date(row.y, row.m+1, 0).getDate();
+      const date = `${row.y}-${pad2(row.m+1)}-${pad2(lastDay)}`;
+      const amount = -row.zusaetzlich;
+      const abgang = {
+        id: "pend-"+uid(), date, desc:sparDesc,
+        totalAmount: amount, pending:true, _csvType:"expense",
+        accountId: "acc-giro",
+        _seriesId: seriesId, _seriesIdx: i+1, _seriesTotal: sparMonate.length,
+        splits: sparCatId ? [{id:uid(),catId:sparCatId,subId:sparSubId||"",amount}]
+                          : [{id:uid(),catId:"",subId:"",amount}],
+      };
+      if(!sparAccId) return [abgang];
+      const zugang = {
+        id: "pend-"+uid(), date, desc:sparDesc,
+        totalAmount: row.zusaetzlich, pending:true, _csvType:"income",
+        accountId: sparAccId,
+        _linkedTo: abgang.id,
+        _seriesId: seriesId+"-tgt", _seriesIdx: i+1, _seriesTotal: sparMonate.length,
+        splits: sparTgtCatId ? [{id:uid(),catId:sparTgtCatId,subId:sparTgtSubId||"",amount:row.zusaetzlich}]
+                            : [{id:uid(),catId:"",subId:"",amount:row.zusaetzlich}],
+      };
+      return [abgang, zugang];
+    });
+    setTxs(p=>[...p, ...newTxs]);
+    // Wasserzeichen setzen: Es hält fest, wie weit diese Serie einmal reichte
+    // — die einzige Spur, die ein anderes, synchronisiertes Gerät davon hat.
+    const maxKey = Math.max(...sparMonate.map(row=>row.y*12+row.m));
+    noteSparWatermark(seriesId, maxKey);
+    if(sparAccId) noteSparWatermark(seriesId+"-tgt", maxKey);
+    showToast(`✓ ${sparMonate.length} Sparvormerkungen angelegt${sparAccId?" (Abgang + Zugang)":""}`);
   };
+
+  // Löschen heißt: alle VORGEMERKTEN Raten dieser Serie weg — beide Beine.
+  // Bereits gebuchte Raten bleiben unangetastet; sie sind Vergangenheit und
+  // gehören nicht mehr dem Plan, sondern dem Konto.
+  const sparplanLoeschen = () => {
+    const {series} = findExistingSeries(sparPlanName);
+    const serienIds = new Set(series.map(t=>t._seriesId).flatMap(id=>[id, id+"-tgt"]));
+    const weg = txs.filter(t => t.pending && (
+      serienIds.has(t._seriesId) || series.some(a=>a.id===t._linkedTo)));
+    if(!weg.length) { showToast("Kein Sparplan zum Löschen gefunden."); return; }
+    const summe = weg.filter(t=>t.totalAmount<0).reduce((s,t)=>s+Math.abs(t.totalAmount),0);
+    const anzahl = weg.filter(t=>t.totalAmount<0).length;
+    const frage = `Sparplan „${sparPlanName}" löschen?\n\n${anzahl} vorgemerkte `
+      + `${anzahl===1?"Rate":"Raten"} über zusammen ${fmtR(summe)} € werden entfernt. `
+      + `Bereits gebuchte Raten bleiben stehen. Die Vorschau bleibt — Du kannst den `
+      + `Plan danach mit dem frischen Stand neu anlegen.`;
+    // Die Rückfrage kommt aus der App, nicht vom Browser — der native Dialog
+    // ragt im schmalen Fenster aus dem Bild (siehe BestaetigenDialog.jsx).
+    frageBestaetigung(frage, () => {
+      // Grabsteine setzen, sonst holt der nächste Sync die gelöschten Raten
+      // von einem anderen Gerät zurück.
+      recordDeletedTxs(weg.map(t=>t.id));
+      const ids = new Set(weg.map(t=>t.id));
+      setTxs(p=>p.filter(t=>!ids.has(t.id)));
+      showToast(`✓ Sparplan gelöscht — ${anzahl} ${anzahl===1?"Vormerkung":"Vormerkungen"} entfernt`);
+    }, { jaLabel:"Löschen", ton:"gefahr" });
+  };
+
   // ── Ableitungen für die Zins-Sweep-Spalte ─────────────────────────────
   // sweepAktiv/sweep kommen aus dem Effekt weiter oben (nicht aus dem Render).
   // Ob die Automatik die Buchungen bereits gesetzt hat — das passiert erst,
@@ -737,17 +728,33 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   // Option folgend. fmtK selbst bleibt ein String — er wird mit dem
   // Vorzeichen zusammengesetzt, und da darf kein Element stehen.
   const betragK = (v) => betragText(fmtK(v));
+  // Der Sparbereich zeigt GERUNDETE Beträge — ohne Cent (Nutzer: „Da die
+  // Sparbeträge keine vollen Beträge sind, können die Nachkommastellen weg").
+  // Das ist keine Sparsamkeit an der Anzeige, sondern Ehrlichkeit: Die Zahlen
+  // entstehen aus einer Vorschau über Monate hinweg; ein Cent darin gaukelt
+  // eine Genauigkeit vor, die es nicht gibt. Nebenbei macht es die Zeilen
+  // schmal genug, dass Beschriftung und Betrag nebeneinander passen.
+  // Nach dem Runden bleibt kein Komma übrig — `fmtR` ist deshalb immer ein
+  // String und darf, anders als `betrag`, auch in Template-Literals stehen.
+  const fmtR = (v) => fmtK(Math.round(v));
+  const betragR = (v) => betragText(fmtR(v));
+  // Beschriftung links, Betrag rechts — in EINER Zeile.
+  const betragZeile = (label, farbe, wert) => (
+    <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",gap:10}}>
+      <div style={{color:T.txt,fontSize:12,whiteSpace:"nowrap"}}>{label}</div>
+      <div style={{color:farbe,fontSize:BETRAG_GROSS,fontWeight:800,fontFamily:NUM_FONT,
+        letterSpacing:-0.5,whiteSpace:"nowrap",flexShrink:0}}>{wert}</div>
+    </div>
+  );
   const zielKontoName = accounts.find(a=>a.id===sparAccId)?.name || "Tagesgeld";
-  const WOCHENTAGE = ["So","Mo","Di","Mi","Do","Fr","Sa"];
   const kurzDat = (iso) => {
     const [y,m,d] = String(iso).split("-").map(Number);
     const p2 = n=>String(n).padStart(2,"0");
     return `${p2(d)}.${p2(m)}.${String(y).slice(2)}`;
   };
-  const wochentag = (iso) => {
-    const [y,m,d] = String(iso).split("-").map(Number);
-    return WOCHENTAGE[new Date(y,m-1,d).getDay()];
-  };
+  // Der Wochentag hinter dem Rückbuchungsdatum („(Do)") ist mit der einzeiligen
+  // Darstellung weggefallen — er kostete Breite und sagte nichts, was die
+  // Entscheidung stützt. Deshalb gibt es hier auch keine Wochentagsnamen mehr.
 
   const maxTransfer = result?.[0]?.zusaetzlich ?? null;
   const col = maxTransfer===null?T.txt2:maxTransfer<=0?T.txt2:maxTransfer<500?T.warn:T.pos;
@@ -1074,22 +1081,20 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
               // (zu wenig um sinnvoll zu sein) — die Werte kommen von oben.
               const keinSpielraumGrund = totalKumuliert === 0
                 ? "Ein bestehender Sparplan schöpft bereits alles bis auf den Puffer ab."
-                : `Ø ${fmt(Math.round(durchschnitt))} €/Monat — zu wenig für einen sinnvollen Sparplan (Schwelle: ${fmt(puffer)} €/Monat).`;
+                : `Ø ${fmtR(durchschnitt)} €/Monat — zu wenig für einen sinnvollen Sparplan (Schwelle: ${fmtR(puffer)} €/Monat).`;
               return (<>
-                {/* Eine Zeile, auch auf schmalen Geräten (Nutzer-Wunsch) —
-                    darum kein Umbruch. Kein `overflow:hidden` dazu: Der Text
-                    ist kurz und die Zeile hat jetzt die volle Breite (der Knopf
-                    daneben ist weg). `overflow:hidden` steht in diesem Widget
-                    unter Aufsicht (sparKopfzeileKlebt.test.js), weil es in
-                    einem Vorfahren der Tabelle deren `position:sticky`
-                    abschalten würde — dann gar nicht erst anfangen. */}
-                <div style={{color:T.txt,fontSize:12,marginBottom:4,whiteSpace:"nowrap"}}>
-                  Heute sicher sparen (Monat 1):
-                </div>
-                <div style={{color:col,fontSize:BETRAG_GROSS,fontWeight:800,fontFamily:NUM_FONT,
-                  letterSpacing:-0.5,textAlign:"right"}}>
-                  {computing?"…":maxTransfer===null?"—":maxTransfer<=0?"0":betrag(maxTransfer)} €
-                </div>
+                {/* Beschriftung und Betrag in DERSELBEN Zeile (Nutzer-Wunsch:
+                    „platzsparend jeweils in eine Zeile"). Möglich wurde das
+                    erst dadurch, dass beide Seiten kürzer geworden sind: die
+                    Klammerzusätze („(Monat 1)", „(Zinstermin)", „(Do)") sind
+                    weg, und die Beträge zeigen keine Nachkommastellen mehr.
+                    `alignItems:"baseline"` stellt 12px-Text und 22px-Zahl auf
+                    dieselbe Schriftlinie — bei `center` säße der Text sichtbar
+                    zu hoch. */}
+                {betragZeile("Heute sicher sparen:", col, (
+                  computing?"…":maxTransfer===null?"—":maxTransfer<=0?"0 €"
+                    : <>{betragR(maxTransfer)} €</>
+                ))}
 
                 {keinSpielraum&&(
                   <div style={{marginTop:4,background:"rgba(234,64,37,0.12)",border:`1px solid ${T.neg}44`,
@@ -1108,13 +1113,13 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
             Groesse wie die Zeile darueber. Vorher stand sie in der linken
             Spalte neben dem Knopf und damit auf halber Breite: Bei 77 Monaten
             brach sie dreimal um und war in 9px kaum zu lesen.
-            Sie schliesst ohne Abstand an den Betrag an (Nutzer-Wunsch): Sie
-            gehoert zu ihm, ein Abstand haette sie zu einer eigenen Angabe
-            gemacht. */}
+            Sie schliesst ohne Abstand an den Betrag an und steht wie er
+            rechtsbuendig (Nutzer-Wunsch): Sie gehoert zu ihm, ein Abstand oder
+            eine andere Kante haette sie zu einer eigenen Angabe gemacht. */}
         {result&&!keinSpielraum&&(
-          <div style={{color:T.acc_pos,fontSize:12,lineHeight:1.45}}>
-            ∑ {monate+1} Monate: <b style={{fontFamily:NUM_FONT}}>{betrag(totalKumuliert)} €</b>
-            {" · "}Ø <b style={{fontFamily:NUM_FONT}}>{betrag(Math.round(durchschnitt))} €</b>/Monat
+          <div style={{color:T.acc_pos,fontSize:12,lineHeight:1.45,textAlign:"right"}}>
+            ∑ {monate+1} Monate: <b style={{fontFamily:NUM_FONT}}>{betragR(totalKumuliert)} €</b>
+            {" · "}Ø <b style={{fontFamily:NUM_FONT}}>{betragR(durchschnitt)} €</b>/Monat
           </div>
         )}
 
@@ -1141,7 +1146,7 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                       {" "}({pflege.vergangenMonate.map(monatsText).join(", ")})
                     </div>
                     <div style={{color:T.txt,fontSize:10,lineHeight:1.4}}>
-                      Termin vorbei, aber nie gebucht — zusammen {betrag(pflege.vergangenSumme)} €.
+                      Termin vorbei, aber nie gebucht — zusammen {betragR(pflege.vergangenSumme)} €.
                       Sie zählen weder im Saldo noch im Plan und werden auch nicht mehr
                       angepasst. Entfernen, falls die Überweisung ausgefallen ist;
                       stehen lassen, falls sie nur noch nicht importiert wurde.
@@ -1184,26 +1189,20 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
             selben Tag ab, und der Hin-Betrag ENTHÄLT die normale Rate. */}
         {sweepAktiv&&sweep&&sweep.hin>0&&(
           <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${T.bd}`}}>
-            {/* Beschriftung oben, Betrag rechtsbündig darunter, und alle Beträge
-                in derselben Größe wie „Heute sicher sparen". Vorher standen sie
-                in drei verschiedenen Graden; das Auge musste bei jeder Zeile neu
-                suchen (Nutzer: „wirkt oben unruhig"). Rechtsbündig, weil Zahlen
-                dann untereinander an derselben Stelle enden — der Vergleich
-                zweier Beträge ist genau das, worum es hier geht. */}
-            <div style={{color:T.txt,fontSize:12}}>
-              Mega-Sparrate zum {kurzDat(sweep.termin)} <span style={{color:T.acc_gold}}>(Zinstermin)</span>
-            </div>
-            <div style={{color:T.acc_gold,fontSize:BETRAG_GROSS,fontWeight:800,
-              fontFamily:NUM_FONT,letterSpacing:-0.5,textAlign:"right"}}>
-              {betrag(sweep.hin)} €
-            </div>
-            <div style={{color:T.txt,fontSize:12,marginTop:6}}>
-              zurück aufs Giro am {kurzDat(sweep.bis)} ({wochentag(sweep.bis)})
-            </div>
-            <div style={{color:T.acc,fontSize:BETRAG_GROSS,fontWeight:800,
-              fontFamily:NUM_FONT,letterSpacing:-0.5,textAlign:"right"}}>
-              {betrag(sweep.zurueck)} €
-            </div>
+            {/* Beschriftung links, Betrag rechts — beide in einer Zeile, alle
+                Beträge in derselben Größe wie „Heute sicher sparen". Vorher
+                standen sie in drei verschiedenen Graden und jeder unter seiner
+                Beschriftung; das Auge musste bei jeder Zeile neu suchen, und der
+                Block war doppelt so hoch (Nutzer: „wirkt oben unruhig",
+                „platzsparend jeweils in eine Zeile").
+                Der Zusatz „(Zinstermin)" ist weg: Dass es einer ist, sagt die
+                Zeile darüber schon, und er hat genau die Breite gekostet, an der
+                die Zeile umbrach. Dasselbe gilt für den Wochentag hinter dem
+                Rückbuchungsdatum. */}
+            {betragZeile(`Mega-Sparrate zum ${kurzDat(sweep.termin)}`, T.acc_gold,
+              <>{betragR(sweep.hin)} €</>)}
+            {betragZeile(`zurück aufs Giro am ${kurzDat(sweep.bis)}`, T.acc,
+              <>{betragR(sweep.zurueck)} €</>)}
             {/* Auf das Wesentliche gekürzt (Nutzer: „Habe selbst keine Lust
                 soviel lesen zu müssen"). Vier Absätze sind zu drei knappen
                 Sätzen geworden; weggefallen ist, was sich aus den Zahlen selbst
@@ -1214,9 +1213,9 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                 kurze Sätze untereinander sahen aus wie eine Aufzählung mit drei
                 gleichrangigen Punkten, obwohl es ein Absatz ist. */}
             <div style={{color:T.txt,fontSize:12,marginTop:6,lineHeight:1.5}}>
-              {sweep.bleibt>0 && <>Davon <b>{betrag(sweep.bleibt)} €</b> normale Rate —
+              {sweep.bleibt>0 && <>Davon <b>{betragR(sweep.bleibt)} €</b> normale Rate —
                 bleibt auf dem {zielKontoName}.{" "}</>}
-              Am {kurzDat(sweep.engpassTag)} bleiben <b>{betrag(Math.round(sweep.restNachSweep))} €</b> auf dem Giro.
+              Am {kurzDat(sweep.engpassTag)} bleiben <b>{betragR(sweep.restNachSweep)} €</b> auf dem Giro.
               {" "}
               {sweepGesetzt()
                 ? "Bereits vorgemerkt."
@@ -1226,6 +1225,44 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
         )}
         </div>
 
+        {/* EIN Symbol für die beiden Zustände des Plans — anlegen oder
+            wegwerfen (Nutzer-Wunsch: „platzsparendes Symbol", „sobald es einen
+            Sparplan gibt, wechseln wir es doch zu einem Papierkorb"). Der lange
+            Knopf davor kostete eine ganze Zeile über der Tabelle.
+
+            Warum es überhaupt einen Knopf braucht, obwohl gerechnet wird: Das
+            RECHNEN passiert von selbst, das SCHREIBEN nicht. Anlegen und
+            Löschen ändern Vormerkungen — das bleibt eine Entscheidung des
+            Nutzers und keine Nebenwirkung des Hinschauens.
+
+            Steht ÜBER der Ergebnis-Tabelle und nicht darin: Einen bestehenden
+            Plan muss man auch dann wegwerfen können, wenn die Vorschau gerade
+            nichts hergibt (leeres Ergebnis, laufende Rechnung) — sonst sitzt
+            man auf Vormerkungen, an die man nicht mehr herankommt.
+
+            Beschriftung im `title`/`aria-label` statt daneben: Ein Symbol ohne
+            Namen ist für Screenreader stumm. */}
+        {(()=>{
+          const {seriesIds:_existingIds} = findExistingSeries(sparPlanName);
+          const gibtEs = _existingIds.length>0;
+          if(!gibtEs && !(result&&result.length>0)) return null;
+          const name = gibtEs ? "Sparplan löschen" : "Sparplan anlegen";
+          const anlegenPaar = knopfPaar(T.pos, DUNKEL);
+          const aus = !gibtEs && computing;
+          return (
+            <div style={{display:"flex",justifyContent:"flex-end",marginTop:6}}>
+              <button onClick={gibtEs?sparplanLoeschen:sparplanAnlegen} disabled={aus}
+                title={name} aria-label={name}
+                style={{width:36,height:36,borderRadius:10,border:"none",padding:0,
+                background:aus?"rgba(255,255,255,0.1)":gibtEs?GEFAHR:anlegenPaar.grund,
+                cursor:aus?"default":"pointer",opacity:aus?0.5:1,
+                display:"flex",alignItems:"center",justifyContent:"center"}}>
+                {Li(gibtEs?"trash-2":"plus-circle",18,
+                    aus?T.txt2:gibtEs?"#fff":anlegenPaar.schrift)}
+              </button>
+            </div>
+          );
+        })()}
         {/* Ergebnis-Tabelle */}
         {!result&&(
           <div style={{textAlign:"center",color:T.txt2,fontSize:10,padding:"8px 0"}}>
@@ -1233,84 +1270,6 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
           </div>
         )}
         {result&&result.length>0&&(<>
-          {/* Der Knopf, der die Vormerkungen SCHREIBT. Ohne Karte drumherum: die
-              enthielt nach dem Umbau nichts als diesen einen Knopf.
-              Zwei Fälle, ein Knopf: Bei einem NEUEN Plan legt er die Serie an
-              („Anlegen"), bei einem bestehenden schreibt er das frische Ergebnis
-              in die vorhandene Serie („Vormerkungen aktualisieren", via
-              autoAnpassen). Der zweite Fall hing vorher am „Neuberechnen"-Knopf
-              oben — der ist weg, weil das RECHNEN von selbst passiert. Das
-              Schreiben tut es ausdrücklich nicht: Es ändert Buchungen und bleibt
-              deshalb eine Entscheidung des Nutzers. */}
-          {(()=>{
-            const {seriesIds:_existingIds} = findExistingSeries(sparPlanName);
-            if(_existingIds.length>0) return (
-              <div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}>
-                <button onClick={autoAnpassen} disabled={computing}
-                  style={{padding:"7px 14px",borderRadius:10,border:"none",
-                  background:computing?"rgba(255,255,255,0.1)":T.pos,
-                  color:computing?T.txt2:"#000",fontSize:12,fontWeight:700,
-                  cursor:computing?"default":"pointer",
-                  display:"flex",alignItems:"center",gap:6}}>
-                  {Li(computing?"loader":"refresh-cw",14,computing?T.txt2:"#000")}
-                  {computing?`${progress}%`:"Vormerkungen aktualisieren"}
-                </button>
-              </div>
-            );
-            return (
-              <div style={{display:"flex",justifyContent:"flex-end",marginTop:8}}>
-                <button onClick={()=>{
-                  const sparMonate = result ? result.filter(r=>r.zusaetzlich>0) : [];
-                  if(!result) { showToast("Der Sparplan wird noch berechnet."); return; }
-                  if(!sparMonate.length) { showToast("Keine Sparraten möglich — Konto bereits voll genutzt oder unter Puffer."); return; }
-                  const sparDesc = buildSparDesc(sparPlanName);
-                  const seriesId = "series-"+uid();
-                  const newTxs = sparMonate.flatMap((row, i) => {
-                    const pad2 = n=>String(n).padStart(2,"0");
-                    const lastDay = new Date(row.y, row.m+1, 0).getDate();
-                    const date = `${row.y}-${pad2(row.m+1)}-${pad2(lastDay)}`;
-                    const amount = -row.zusaetzlich;
-                    const abgang = {
-                      id: "pend-"+uid(), date, desc:sparDesc,
-                      totalAmount: amount, pending:true, _csvType:"expense",
-                      accountId: "acc-giro",
-                      _seriesId: seriesId, _seriesIdx: i+1, _seriesTotal: sparMonate.length,
-                      splits: sparCatId ? [{id:uid(),catId:sparCatId,subId:sparSubId||"",amount}]
-                                        : [{id:uid(),catId:"",subId:"",amount}],
-                    };
-                    if(!sparAccId) return [abgang];
-                    const zugang = {
-                      id: "pend-"+uid(), date, desc:sparDesc,
-                      totalAmount: row.zusaetzlich, pending:true, _csvType:"income",
-                      accountId: sparAccId,
-                      _linkedTo: abgang.id,
-                      _seriesId: seriesId+"-tgt", _seriesIdx: i+1, _seriesTotal: sparMonate.length,
-                      splits: sparTgtCatId ? [{id:uid(),catId:sparTgtCatId,subId:sparTgtSubId||"",amount:row.zusaetzlich}]
-                                          : [{id:uid(),catId:"",subId:"",amount:row.zusaetzlich}],
-                    };
-                    return [abgang, zugang];
-                  });
-                  setTxs(p=>[...p, ...newTxs]);
-                  // Wasserzeichen direkt bei Erstanlage setzen, damit eine
-                  // spätere Löschung der letzten Rate schon beim allerersten
-                  // "Neuberechnen" korrekt erkannt wird (siehe doAktualisieren).
-                  const maxKey = Math.max(...sparMonate.map(row=>row.y*12+row.m));
-                  noteSparWatermark(seriesId, maxKey);
-                  if(sparAccId) noteSparWatermark(seriesId+"-tgt", maxKey);
-                  showToast(`✓ ${sparMonate.length} Sparvormerkungen angelegt${sparAccId?" (Abgang + Zugang)":""}`);
-                }} disabled={!result}
-                  style={{padding:"7px 14px",borderRadius:10,border:"none",
-                  background:!result?"rgba(255,255,255,0.1)":T.pos,
-                  color:!result?T.txt2:"#000",
-                  fontSize:12,fontWeight:700,
-                  cursor:!result?"default":"pointer",
-                  opacity:!result?0.5:1,
-                  display:"flex",alignItems:"center",gap:6}}>
-                  {Li("plus-circle",14,!result?T.txt2:"#000")} Anlegen
-                </button>
-              </div>
-            );
-          })()}
           <div style={{display:"flex",flexDirection:"column",gap:2,marginTop:8}}>
             {/* Die Kopfzeile bleibt beim Scrollen stehen — sonst liest man ab
                 der fünften Zeile Zahlen, deren Spalte man nicht mehr kennt
