@@ -83,3 +83,44 @@ describe("Vorschau-Cache: Stempel statt blindem Vertrauen", () => {
     expect(src).toMatch(/if\(result\) \{ didAutoLoadRef\.current = true; return; \}/);
   });
 });
+
+// ── Die Vorschau darf sich nicht in den Zeichentakt draengeln ─────────────
+//
+// Gemeldet: „Wenn eine Sparplan-Neuberechnung läuft und ich hoch und
+// runterscrolle, wird der Bildschirm sporadisch nur halb gezeichnet."
+//
+// Zwei Ursachen, beide behoben:
+//
+//   1. Die Rechnung lief in `requestAnimationFrame`. Das klingt schonend, ist
+//      aber das Gegenteil: rAF kommt VOR jedem einzelnen Bild dran — die
+//      Rechnung draengelt sich also genau in den Takt, den der Browser zum
+//      Scrollen braucht. Bei 77 Monaten sind das rund 26 Haeppchen.
+//      `requestIdleCallback` kommt umgekehrt nur dran, wenn nichts
+//      Dringenderes ansteht; das `timeout` sorgt dafuer, dass die Rechnung
+//      trotzdem fertig wird.
+//   2. Die Unschaerfe der alten Ansicht lag ueber einem sehr grossen Bereich
+//      und wurde bei jedem Scroll-Bild neu gerechnet. Eine eigene Ebene
+//      (`translateZ(0)`) laesst sie einmal rastern und danach nur schieben.
+describe("Vorschau-Rechnung: gibt dem Scrollen Vorrang", () => {
+  it("rechnet in Leerlauf-Haeppchen, nicht im Zeichentakt", () => {
+    expect(src).toMatch(/requestIdleCallback\(fn, \{ timeout: 300 \}\)/);
+    expect(src, "kein rAF mehr fuer die Monatsschleife").not.toMatch(/requestAnimationFrame\(step\)/);
+    // Fallback fuer Safari unter 16.4 — sonst rechnet dort gar nichts mehr.
+    expect(src).toMatch(/setTimeout\(fn, 0\)/);
+  });
+
+  it("hoert auf die Frist, macht aber immer mindestens einen Monat", () => {
+    // Ohne das „mindestens einen" kaeme die Rechnung bei dauerhaftem Scrollen
+    // nie voran — der Fortschrittsbalken stuende still.
+    expect(src).toMatch(/frist\.timeRemaining\(\) > 4/);
+    expect(src).toMatch(/getan === 0 \|\| nochZeit\(\)/);
+  });
+
+  it("die unscharfe Ansicht bekommt eine eigene Ebene", () => {
+    const i = src.indexOf('filter:"blur(2.5px)"');
+    expect(i, "die Unschaerfe muss es geben").toBeGreaterThan(-1);
+    const block = src.slice(i, i + 700);
+    expect(block).toMatch(/transform:"translateZ\(0\)"/);
+    expect(block).toMatch(/willChange:"filter"/);
+  });
+});

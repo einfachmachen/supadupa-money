@@ -523,7 +523,28 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     const virtualSpar = {};
     const rows = [];
     const total = monate + 1;
-    const CHUNK = 3; // Verarbeite mehrere Monate pro Frame
+    const CHUNK = 3; // Verarbeite mehrere Monate pro Haeppchen
+
+    // ── Wann das naechste Haeppchen rechnet ───────────────────────────────
+    //
+    // Frueher `requestAnimationFrame`. Das klingt schonend, ist es aber
+    // nicht: rAF laeuft VOR dem Zeichnen jedes einzelnen Bildes — die
+    // Rechnung draengelt sich also genau in den Takt, den der Browser zum
+    // Scrollen braucht. Bei 77 Monaten sind das rund 26 solcher Haeppchen,
+    // und beim Scrollen waehrend der Neuberechnung blieb der Bildschirm
+    // sporadisch halb gezeichnet stehen (Nutzer-Bild).
+    //
+    // `requestIdleCallback` macht genau das Gegenteil: Es kommt dran, wenn
+    // der Browser gerade NICHTS Dringenderes zu tun hat — Scrollen und
+    // Zeichnen gehen vor. Das `timeout` sorgt dafuer, dass die Rechnung
+    // trotzdem fertig wird, auch wenn jemand minutenlang scrollt.
+    //
+    // Safari kennt rIC erst ab 16.4; darunter (und in jsdom) faellt es auf
+    // einen kurzen Timer zurueck. Der ist zwar auch nicht ideal, draengelt
+    // sich aber wenigstens nicht in den Zeichentakt.
+    const gleich = typeof requestIdleCallback === "function"
+      ? (fn) => requestIdleCallback(fn, { timeout: 300 })
+      : (fn) => setTimeout(fn, 0);
 
     // ── Grundlage für die Super-Sparrate in der Vorschau ────────────────
     //
@@ -607,9 +628,15 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
       getBudgetForMonth, _restCache: {},
       _txsById: buildTxIdMap(ergebnisTxs), _txsByMonth: buildTxsByMonth(ergebnisTxs) };
 
-    const step = () => {
+    const step = (frist) => {
+      // Wie viele Monate in diesem Haeppchen? Hoechstens CHUNK — und wenn
+      // `requestIdleCallback` eine Frist mitgibt, nur solange davon noch
+      // etwas uebrig ist. IMMER mindestens einer, sonst kaeme die Rechnung
+      // bei dauerhaftem Scrollen nie voran.
+      const nochZeit = () => !frist || typeof frist.timeRemaining !== "function"
+        || frist.timeRemaining() > 4;
       const end = Math.min(i + CHUNK, total);
-      for(; i < end; i++) {
+      for(let getan = 0; i < end && (getan === 0 || nochZeit()); i++, getan++) {
         const m=(nowM+i)%12, y=nowY+Math.floor((nowM+i)/12);
         const {min:monatsMin, saldoEnde} = getMinTagessaldo(y, m, virtualSpar, effAcc, excludeDesc);
         const zusaetzlich = (effAcc === undefined || effAcc === null || effAcc === "acc-giro")
@@ -672,10 +699,10 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
         rows.push({y, m, minTag, minNach: minNachSparen, tiefTag, saldoEnde, zusaetzlich, kumuliert, sweep});
       }
       setProgress(Math.round(i/total*100));
-      if(i < total) requestAnimationFrame(step);
+      if(i < total) gleich(step);
       else { setResult([...rows]); setComputing(false); if(onDone) onDone([...rows]); }
     };
-    requestAnimationFrame(step);
+    gleich(step);
   };
 
   const autoAnpassen = () => {
@@ -838,7 +865,13 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
           genau das soll sie nicht. */}
       <div style={rechnetNeu
         ? {filter:"blur(2.5px)",opacity:0.55,pointerEvents:"none",
-           userSelect:"none",transition:"filter 0.2s,opacity 0.2s"}
+           userSelect:"none",transition:"filter 0.2s,opacity 0.2s",
+           // Eigene Ebene erzwingen. Ohne das rechnet der Browser die
+           // Unschaerfe bei JEDEM Scroll-Bild neu ueber einen sehr grossen
+           // Bereich — auf dem iPhone war der Bildschirm dabei sporadisch nur
+           // halb gezeichnet (Nutzer-Bild). Mit eigener Ebene wird einmal
+           // gerastert und danach nur noch verschoben.
+           transform:"translateZ(0)", willChange:"filter"}
         : {transition:"filter 0.2s,opacity 0.2s"}}>
       {!collapsed&&<>
         {/* Konfig-Karte als echtes RASTER statt einzelner Flex-Zeilen: nur so
