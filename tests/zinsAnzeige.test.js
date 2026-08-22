@@ -1,16 +1,15 @@
-// Der Zinsvergleich im Sparplan — durch die ganze Kette gerendert.
+// Die Zinsvorschau — durch die ganze Kette gerendert.
 //
-// Die Rechnung selbst steht in zinsErtrag.test.js. Hier geht es um das, was
+// Die Rechnung selbst steht in zinsPlan.test.js. Hier geht es um das, was
 // dazwischen liegt und wo es in diesem Bauteil schon mehrfach geklemmt hat:
-// Der Zinssatz kommt aus dem kvStore, der Stichtagssaldo aus derselben
-// Buchungs-Grundlage wie der Sweep, der Zeitraum aus den eingestellten
-// Zinsmonaten — und ganz am Ende soll eine Zeile im Bildschirm stehen.
+// Der Zinssatz kommt aus dem kvStore, der Anfangssaldo aus dem
+// Buchungsbestand, die Bewegungen aus den GEPLANTEN Raten (die noch in keiner
+// Buchung stehen), die Termine aus den eingestellten Zinsmonaten — und ganz am
+// Ende soll eine Zeile im Bildschirm stehen.
 //
-// Besonders die Grundlage ist heikel: Der Tagesgeld-Stand am Stichtag setzt
-// sich aus dem gebuchten Bestand UND den geplanten Raten zusammen. Würde der
-// gebuchte Bestand die Plan-Raten schon enthalten, wären sie doppelt gezählt.
-// Deshalb rechnet die Anzeige auf `sweepCtx` — dem Bestand OHNE die Raten
-// dieses Plans.
+// Der heikelste Punkt ist die Grundlage: Der Tagesgeld-Verlauf setzt sich aus
+// dem gebuchten Bestand UND den geplanten Raten zusammen. Stünden die Raten in
+// beidem, wären sie doppelt gezählt.
 
 import { describe, it, expect, beforeAll } from "vitest";
 import "fake-indexeddb/auto";
@@ -35,15 +34,7 @@ beforeAll(() => {
   globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 });
 
-// Gehalt am Ersten, eine bestehende Sparplan-Serie, ein Tagesgeldkonto — und
-// eine große Ausgabe im letzten Vorschaumonat.
-//
-// Die Ausgabe ist nicht Beiwerk, sondern die Voraussetzung: Ohne sie schöpft
-// der Sparplan jeden Monat bis auf den Puffer ab, am Monatsletzten liegt
-// nichts mehr auf dem Giro — und dann gibt es gar keine Mega-Sparrate, über
-// deren Zinsen zu reden wäre (`sweepFuerMonat` gibt null zurück). Erst ein
-// enger Monat WEITER HINTEN deckelt die laufende Rate und lässt zum Stichtag
-// etwas übrig. Genau so sieht Dirks echter Plan aus.
+// Gehalt am Ersten, eine bestehende Sparplan-Serie, ein Tagesgeldkonto.
 function bestand() {
   const out = [];
   for (let i = 0; i < 4; i++) {
@@ -54,31 +45,25 @@ function bestand() {
       totalAmount: -100, pending: true, _csvType: "expense", desc: "Sparen·Sparplan 1",
       _seriesId: "s1", splits: [{ id: `sp${i}`, catId: "", subId: "", amount: -100 }] });
   }
-  const idx3 = MONAT + 3, m3 = idx3 % 12, y3 = JAHR + Math.floor(idx3 / 12);
-  out.push({ id: "gross", accountId: "acc-giro", date: `${y3}-${pad(m3 + 1)}-15`,
-    totalAmount: -15000, pending: true, _csvType: "expense", desc: "Auto",
-    splits: [{ id: "g1", catId: "", subId: "", amount: -15000 }] });
   return out;
 }
 
-function machCtx(txs) {
+function machCtx(txs, setTxs = () => {}, frageBestaetigung = () => {}) {
   return {
-    txs, setTxs: () => {}, cats: [],
+    txs, setTxs, cats: [],
     accounts: [{ id: "acc-giro", name: "Giro", minPuffer: 100 },
                { id: "acc-tg", name: "Tagesgeld" }],
     setAccounts: () => {}, getAcc: (id) => ({ id, name: id }), budgets: {},
-    // Startsaldo des Vormonats: Giro wie Tagesgeld. Fuer das Tagesgeld ist das
-    // der Bestand, auf den die Zinsen laufen.
+    // Startsaldo des Vormonats — für das Tagesgeld der Bestand, auf den die
+    // Zinsen laufen.
     getKumulierterSaldo: (y, m) =>
-      ((y === JAHR && m === MONAT - 1) || (MONAT === 0 && m === 11) ? 5000 : null),
+      ((y === JAHR && m === MONAT - 1) || (MONAT === 0 && m === 11) ? 10000 : null),
     getCat: () => null, getBudgetForMonth: () => 0, selAcc: "acc-giro",
     getProgEndeAccGlobal: undefined, resetProgEndeCache: () => {}, sparOpenRequest: 0,
-    frageBestaetigung: () => {},
+    frageBestaetigung,
   };
 }
 
-// Wie oben, aber der Baum bleibt stehen — für den Test, der IM Bildschirm
-// weitertippt.
 const oeffne = async (kv) => {
   const { kvStore } = await import("../src/utils/kvStore.js");
   const { TagesgeldWidget } = await import("../src/components/organisms/TagesgeldWidget.jsx");
@@ -90,6 +75,7 @@ const oeffne = async (kv) => {
   // JEDER Monat ist Zinsmonat — so liegt der nächste Termin sicher innerhalb
   // des kurzen Vorschau-Zeitraums, und der Test wartet nicht auf ein Quartal.
   kvStore.setItem("mbt_zins_monate", "0,1,2,3,4,5,6,7,8,9,10,11");
+  kvStore.setItem("mbt_zins_basis", "365");
   kvStore.removeItem("mbt_spar_result");
   Object.entries(kv || {}).forEach(([k, v]) => kvStore.setItem(k, v));
 
@@ -124,66 +110,139 @@ const tippe = async (input, wert) => {
   });
 };
 
-describe("Zinsvergleich im Sparplan", () => {
+const zahl = (s) => Number(String(s).replace(/\./g, "").replace(",", "."));
+
+describe("Zinsvorschau im Sparplan", () => {
   it("ohne Zinssatz steht nichts von Zinsen da", async () => {
     // Leer heißt „nicht eingetragen", nicht „0 %". Eine Zeile mit 0,00 € wäre
     // eine Behauptung über ein Konto, über das die App nichts weiß.
     const text = await zeige({ mbt_zins_satz: "" });
-    expect(text).not.toContain("Zinsen am");
+    expect(text).not.toContain("Zinsgutschrift");
   }, 20000);
 
-  it("mit Zinssatz stehen beide Beträge und die Differenz da", async () => {
+  it("mit Zinssatz steht die nächste Gutschrift da", async () => {
     const text = await zeige({ mbt_zins_satz: "2" });
-    expect(text, "die Zinszeile fehlt").toContain("Zinsen am");
-    // „X € statt Y €" — die Gegenüberstellung, um die der Nutzer gebeten hat.
-    expect(text).toMatch(/Zinsen am [\d.]+:\s*[\d.,]+ €\s*statt\s*[\d.,]+ €/);
-    // Und ein Gewinn, kein 0,00 €: Bei 5.000 € Bestand und 2 % muss etwas
-    // herauskommen, sonst rechnet die Kette auf einem leeren Saldo.
-    const treffer = text.match(/statt\s*([\d.]+,\d\d) €\s*—\s*\+([\d.]+,\d\d) €/);
-    expect(treffer, `keine verwertbare Zinszeile in: ${text.slice(0, 400)}`).toBeTruthy();
-    const zahl = (s) => Number(s.replace(/\./g, "").replace(",", "."));
-    expect(zahl(treffer[1]), "Zins ohne Mega-Sparrate").toBeGreaterThan(0);
-    expect(zahl(treffer[2]), "Gewinn durch die Mega-Sparrate").toBeGreaterThan(0);
+    expect(text, "die Zinszeile fehlt").toContain("Zinsgutschrift am");
+    const treffer = text.match(/Zinsgutschrift am [\d.]+:\s*([\d.]+,\d\d) €/);
+    expect(treffer, `keine verwertbare Zinszeile in: ${text.slice(0, 500)}`).toBeTruthy();
+    // 10.000 € zu 2 % bringen im Monat gut 16 € — jedenfalls mehr als nichts.
+    expect(zahl(treffer[1])).toBeGreaterThan(0);
   }, 20000);
 
-  it("ein geänderter Zinssatz rechnet die Tabelle nach — und lässt sie nicht unscharf stehen", async () => {
-    // Die Falle: Ein `setResultOutdated(true)` allein schaltet die Ansicht
-    // unscharf und blendet „wird neu berechnet" ein — aber NACHGERECHNET wird
-    // nur, wenn sich der Daten-Abdruck ändert. Seit der „Neuberechnen"-Knopf
-    // weg ist, gibt es niemanden mehr, der die Meldung einlöst: Die Tabelle
-    // bliebe für immer unscharf unter einem Versprechen stehen.
+  it("die Gutschrift steht auch an den Monaten der Tabelle", async () => {
+    const text = await zeige({ mbt_zins_satz: "2" });
+    expect(text).toMatch(/Zinsen \d\d\.\d\d\.:\s*\+[\d.]+,\d\d €\s*für \d+ Tage/);
+  }, 20000);
+
+  it("doppelter Zinssatz, doppelte Gutschrift", async () => {
+    // Der Beleg, dass wirklich gerechnet und nicht bloß neu gezeichnet wird —
+    // und zugleich, dass die Einstellung die Tabelle nicht unscharf stehen
+    // lässt (dafür muss sie im Daten-Abdruck stehen).
     const { el, root } = await oeffne({ mbt_zins_satz: "2" });
-    const vorher = el.textContent || "";
-    expect(vorher).toContain("Zinsen am");
+    const vorher = (el.textContent || "").match(/Zinsgutschrift am [\d.]+:\s*([\d.]+,\d\d) €/);
+    expect(vorher).toBeTruthy();
 
     const feld = [...el.querySelectorAll("input")]
       .find((i) => i.placeholder && i.placeholder.includes("2,25"));
     expect(feld, "das Zinssatz-Feld muss es geben").toBeTruthy();
     await tippe(feld, "4");
-    // 450 ms Sammelpause plus Rechenzeit.
     await act(async () => { await new Promise((r) => setTimeout(r, 1600)); });
-    const nachher = el.textContent || "";
 
-    expect(nachher, "die Meldung muss eingelöst sein").not.toContain("wird neu berechnet");
-    expect(nachher, "die Zinszeile muss noch da sein").toContain("Zinsen am");
-    expect(nachher, "und einen anderen Betrag zeigen").not.toBe(vorher);
-    // Doppelter Zinssatz, doppelter Zins — der beste Beleg, dass wirklich neu
-    // gerechnet wurde und nicht bloß neu gezeichnet.
-    const zins = (t) => Number((t.match(/—\s*\+([\d.]+,\d\d) €/) || [])[1]
-      ?.replace(/\./g, "").replace(",", "."));
-    expect(zins(nachher)).toBeCloseTo(zins(vorher) * 2, 1);
+    const text = el.textContent || "";
+    expect(text, "die Meldung muss eingelöst sein").not.toContain("wird neu berechnet");
+    const nachher = text.match(/Zinsgutschrift am [\d.]+:\s*([\d.]+,\d\d) €/);
+    expect(nachher).toBeTruthy();
+    expect(zahl(nachher[1])).toBeCloseTo(zahl(vorher[1]) * 2, 1);
 
     await act(async () => { root.unmount(); });
     el.remove();
   }, 20000);
 
-  it("der taggenaue Gegenwert steht daneben — nicht nur der schöne Fall", async () => {
-    // Die Mega-Sparrate lohnt sich NUR, wenn die Bank den Stand am Stichtag
-    // verzinst. Rechnet sie taggenau (bei Tagesgeld verbreitet), bleiben von
-    // einem Quartal ein bis zwei Tage übrig. Wer nur die erste Zahl sieht,
-    // verschiebt Tausende für ein paar Cent, ohne es zu merken.
+  it("die Jahresbasis wirkt sich aus", async () => {
+    // 360 statt 365 sind 1,4 % mehr Zins. Wer die Umschaltung nicht ernst
+    // nimmt, rechnet dauerhaft daneben.
+    const a = await zeige({ mbt_zins_satz: "2", mbt_zins_basis: "365" });
+    const b = await zeige({ mbt_zins_satz: "2", mbt_zins_basis: "360" });
+    const lies = (t) => zahl(t.match(/Zinsgutschrift am [\d.]+:\s*([\d.]+,\d\d) €/)[1]);
+    expect(lies(b)).toBeGreaterThan(lies(a));
+    expect(lies(b) / lies(a)).toBeCloseTo(365 / 360, 2);
+  }, 30000);
+
+  it("von der Mega-Sparrate ist im Bildschirm nichts mehr zu sehen", async () => {
     const text = await zeige({ mbt_zins_satz: "2" });
-    expect(text, "der Hinweis auf das Zinsmodell fehlt").toContain("taggenau");
-    expect(text).toContain("Stand am Stichtag");
+    expect(text).not.toContain("Mega-Sparrate");
+    expect(text).not.toContain("zurück aufs Giro");
   }, 20000);
+});
+
+// ── Vormerken: die Gutschriften landen als Buchung auf dem Tagesgeld ──────
+//
+// „Dennoch wäre es schön, die zu erwartenden Zinsen mit zu berechnen und
+// vorzumerken." Anzeigen allein reicht nicht: Erst als Vormerkung zählen sie
+// im Saldo, im Monat und in der Prognose. Über ein paar Jahre ist das ein
+// dreistelliger Betrag, der sonst schlicht fehlt.
+//
+// Der Test fährt den echten Weg: Der Plan wird gelöscht (dann zeigt der Knopf
+// wieder das Plus) und neu angelegt. Dafür hält eine kleine Hülle die
+// Buchungen wirklich im Zustand — mit einem Spion allein ginge es nicht, weil
+// der zweite Schritt den ersten schon sehen muss.
+describe("Zinsgutschriften vormerken", () => {
+  const HuelleBauen = (TagesgeldWidget, AppCtx, start, gesehen) => function Huelle() {
+    const [txs, setTxs] = React.useState(start);
+    gesehen.current = txs;
+    const ctx = machCtx(txs, (f) => setTxs((p) => (typeof f === "function" ? f(p) : f)),
+      (frage, onJa) => onJa());
+    return React.createElement(AppCtx.Provider, { value: ctx },
+      React.createElement(TagesgeldWidget, { year: JAHR, month: MONAT, initialCollapsed: false }));
+  };
+
+  it("Löschen nimmt sie mit, Anlegen schreibt sie neu", async () => {
+    const { kvStore } = await import("../src/utils/kvStore.js");
+    const { TagesgeldWidget } = await import("../src/components/organisms/TagesgeldWidget.jsx");
+    const { AppCtx } = await import("../src/state/AppContext.js");
+    await kvStore.init();
+    kvStore.setItem("mbt_sparen_monate", "3");
+    kvStore.setItem("mbt_spar_planname", "Sparplan 1");
+    kvStore.setItem("mbt_spar_accid", "acc-tg");
+    kvStore.setItem("mbt_zins_monate", "0,1,2,3,4,5,6,7,8,9,10,11");
+    kvStore.setItem("mbt_zins_satz", "2");
+    kvStore.setItem("mbt_zins_basis", "365");
+    kvStore.removeItem("mbt_spar_result");
+
+    const gesehen = { current: null };
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    const root = createRoot(el);
+    await act(async () => {
+      root.render(React.createElement(
+        HuelleBauen(TagesgeldWidget, AppCtx, bestand(), gesehen)));
+    });
+    await act(async () => { await new Promise((r) => setTimeout(r, 1600)); });
+
+    const knopf = () => el.querySelector('button[aria-label="Sparplan löschen"]')
+      || el.querySelector('button[aria-label="Sparplan anlegen"]');
+    expect(knopf()?.getAttribute("aria-label"), "erst der Papierkorb").toBe("Sparplan löschen");
+    await act(async () => { knopf().dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    await act(async () => { await new Promise((r) => setTimeout(r, 1600)); });
+
+    expect(knopf()?.getAttribute("aria-label"), "jetzt das Plus").toBe("Sparplan anlegen");
+    await act(async () => { knopf().dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    await act(async () => { await new Promise((r) => setTimeout(r, 600)); });
+
+    const zinsen = (gesehen.current || []).filter((t) => t._zinsId);
+    expect(zinsen.length, "es müssen Zinsgutschriften angelegt worden sein").toBeGreaterThan(0);
+    zinsen.forEach((t) => {
+      expect(t.accountId, "auf dem Tagesgeldkonto").toBe("acc-tg");
+      expect(t.pending, "als Vormerkung").toBe(true);
+      expect(t._csvType).toBe("income");
+      expect(t.totalAmount, "eine Gutschrift ist positiv").toBeGreaterThan(0);
+      expect(t.desc).toBe("Zinsen·Sparplan 1");
+      // Am Zinstermin, also am Monatsletzten.
+      const [y, m, d] = t.date.split("-").map(Number);
+      expect(d).toBe(new Date(y, m, 0).getDate());
+    });
+
+    await act(async () => { root.unmount(); });
+    el.remove();
+  }, 30000);
 });

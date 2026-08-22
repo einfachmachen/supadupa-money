@@ -30,8 +30,7 @@
 // ("Sparen·<Name>"). `heuteIso`: Stichtag "YYYY-MM-DD" (der heutige Tag zählt
 // noch als offen — dieselbe Grenze wie bei den Budget-Phasen).
 export function sparPlanPflege({ txs, sparDesc, heuteIso }) {
-  const eigene = (txs || []).filter(
-    (t) => t.pending && t.desc === sparDesc && !t._sweepId);
+  const eigene = (txs || []).filter((t) => t.pending && t.desc === sparDesc);
   const monatsPfx = heuteIso.slice(0, 7);
 
   // Vergangenes: BEIDE Beine (Abgang auf Giro und der verknüpfte Zugang).

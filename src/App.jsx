@@ -82,8 +82,8 @@ import { betrag, setCentsGedreht as setCentsGedrehtFlag } from "./utils/betrag.j
 import { MONTHS_S } from "./utils/constants.js";
 import { computeKontoWarnungen } from "./utils/kontoWarnungen.js";
 import { sparPlanOptimum, sparHilfeFuerEngpass, computeTagessaldoAt, buildTxsByMonth } from "./utils/sparBerechnen.js";
-import { DEFAULT_ZINS_MONATE, parseZinsMonate, monatsLetzter, sweepFenster,
-  computeSweep, ohneSweepBuchungen, sweepZustandAnwenden } from "./utils/zinsSweep.js";
+import { DEFAULT_ZINS_MONATE, parseZinsMonate, monatsLetzter, zinsTermine } from "./utils/zinsTermine.js";
+import { sweepAufraeumen } from "./utils/sweepAufraeumen.js";
 import { Li } from "./utils/icons.jsx";
 import { makeYearData } from "./utils/yearData.js";
 import { isDuplCounterpart, buildTxIdMap } from "./utils/tx.js";
@@ -1110,7 +1110,7 @@ export default function SupaDupaMoney() {
       }
     }
     if(allTxs.length > 0) {
-      const migrated = stripVormNotes(migrateBudgetDates(migrateRecurringOvershoot(stripBudgetSeries(migrateSeries(allTxs.map(t=>({...t, splits:Array.isArray(t.splits)?t.splits:[]})))))));
+      const migrated = stripVormNotes(migrateSweepWeg(migrateBudgetDates(migrateRecurringOvershoot(stripBudgetSeries(migrateSeries(allTxs.map(t=>({...t, splits:Array.isArray(t.splits)?t.splits:[]}))))))));
       // Migration: alle Buchungen ohne accountId → acc-giro
       const migratedWithAcc = migrated.map(t => t.accountId ? t : {...t, accountId:"acc-giro"});
       setTxs(migratedWithAcc);
@@ -1261,6 +1261,20 @@ export default function SupaDupaMoney() {
   // tatsächlich vorhanden UND der letzte Termin über den 6-Jahres-Horizont
   // hinausreicht (enges, konservatives Kriterium gegen Fehlalarme bei
   // absichtlich langen, vom Nutzer selbst befristeten Serien).
+  // Migration: Spuren der entfallenen „Mega-Sparrate" entfernen.
+  //
+  // Das Feature ist weg (siehe utils/sweepAufraeumen.js). Wer die Automatik
+  // hat laufen lassen, hat aber eine auf mehrere tausend Euro angehobene
+  // Sparrate und zwei Rückbuchungen im Bestand — ohne dass es dafür noch
+  // irgendeine Anzeige gäbe. Die Rate fällt auf ihren ursprünglichen Betrag
+  // zurück, die Rückbuchungen verschwinden samt Grabstein (sonst holt der
+  // nächste Sync sie von einem anderen Gerät wieder).
+  const migrateSweepWeg = (txList) => {
+    const { txs: sauber, entfernt } = sweepAufraeumen(txList);
+    if(entfernt.length) recordDeletedTxs(entfernt);
+    return sauber;
+  };
+
   const migrateRecurringOvershoot = (txList) => {
     const bySeries = {};
     txList.forEach(t => {
@@ -1334,7 +1348,7 @@ export default function SupaDupaMoney() {
       // sonst kann ein (teilweise fehlgeschlagener oder veralteter) Cloud-
       // Snapshot eine Löschung rückgängig machen, siehe utils/txTombstones.js.
       const incomingTxs = filterTombstonedTxs(d.txs||[]);
-      setTxs(stripVormNotes(migrateBudgetDates(migrateRecurringOvershoot(stripBudgetSeries(migrateSeries(incomingTxs.map(t=>({...t,splits:Array.isArray(t.splits)?t.splits:[]}))))))));
+      setTxs(stripVormNotes(migrateSweepWeg(migrateBudgetDates(migrateRecurringOvershoot(stripBudgetSeries(migrateSeries(incomingTxs.map(t=>({...t,splits:Array.isArray(t.splits)?t.splits:[]})))))))));
     }
     if(force || (Array.isArray(d.accounts) && d.accounts.length)) {
       // Migration: alten Puffer ins Giro-Konto übernehmen
@@ -2164,11 +2178,10 @@ export default function SupaDupaMoney() {
     let abgebrochen = false;
     const rechne = () => {
       if (abgebrochen) return;
-      const reineTxs = ohneSweepBuchungen(txs);
       try {
         setSparHilfe(sparHilfeFuerEngpass({
-          txs: reineTxs, engpassIso: tag, puffer: pn(_giroPuffer) || 0, today: new Date(),
-          ctx: { txs: reineTxs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth },
+          txs, engpassIso: tag, puffer: pn(_giroPuffer) || 0, today: new Date(),
+          ctx: { txs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth },
         }));
       } catch { setSparHilfe(null); }
     };
@@ -2193,43 +2206,6 @@ export default function SupaDupaMoney() {
       count: liquidityWarnings.length,
     };
   }, [liquidityWarnings]);
-
-  // Ist der gemeldete Engpass allein durch den geplanten Zins-Sweep verursacht?
-  // Dann ist er kein Alarm, sondern Absicht: die Rückbuchung gleicht ihn aus,
-  // und der oberste Balken sagt bereits, was zu tun ist. Zwei orangefarbene
-  // Warnbalken übereinander stumpfen dagegen ab — genau die Wirkung, die der
-  // Engpass-Balken bei einer ECHTEN Schieflage braucht.
-  //
-  // Bewusst eng gefasst, damit nichts Ungeplantes verschluckt wird:
-  //   • genau EIN betroffener Monat (count===1) — jeder weitere Monat geht
-  //     über das Sweep-Fenster hinaus und bleibt gemeldet
-  //   • dieser Monat ist der Monat der Rückbuchung
-  //   • die Unterdeckung ist nicht größer als der Rückbuchungsbetrag
-  const strainDurchSweep = useMemo(()=>{
-    if(!strainWarning || strainWarning.count !== 1) return false;
-    const rueck = (txs||[])
-      .filter(t => t.pending && t._sweepId && t.accountId==="acc-giro" && t.totalAmount>0)
-      .sort((a,b)=>String(a.date).localeCompare(String(b.date)))[0];
-    if(!rueck) return false;
-    // Betroffen sein können BEIDE Monate des Sweep-Fensters: der Stichtag
-    // (dort geht der Hin-Betrag ab) und der Rückbuchungstag. Mit
-    // eingeschalteter Sofort-Rückbuchung ist sogar der Stichtag der engste
-    // Tag — die erste Fassung prüfte nur den Rückbuchungsmonat und ließ den
-    // Balken deshalb weiter stehen.
-    const hin = (txs||[]).find(t => t.pending && t._sweepHin && t.accountId==="acc-giro");
-    const monate = new Set();
-    [rueck.date, hin && hin.date].forEach(d => {
-      if(!d) return;
-      const [y, m] = String(d).split("-").map(Number);
-      if(y && m) monate.add(y*12 + (m-1));
-    });
-    const s = strainWarning.soonest;
-    if(!monate.has(s.yr*12 + s.mi)) return false;
-    // +1 EUR Toleranz: deficit ist gerundet (Math.round), der Rückbuchungs-
-    // betrag abgerundet — ohne Spielraum kippt der Vergleich am Cent.
-    return s.deficit <= Math.abs(rueck.totalAmount) + 1;
-  }, [strainWarning, txs]);
-
 
   const [autoSparInfo, setAutoSparInfo] = useState(null);
 
@@ -2726,13 +2702,7 @@ export default function SupaDupaMoney() {
     // welcher gemeint ist, dann lieber nichts automatisch anfassen.
     const pad2 = n => String(n).padStart(2, "0");
     const monthPfx = `${y}-${pad2(m + 1)}-`;
-    // AUF DEM NORMALISIERTEN BESTAND rechnen: eine bereits für den Zins-Sweep
-    // angehobene Rate wird auf ihren ursprünglichen Wert zurückgesetzt und die
-    // Rückbuchung ausgeblendet. Sonst sähe diese Automatik den Mega-Betrag als
-    // „aktuelle Rate", verglichen mit dem sicheren Wert — und schriebe ihn
-    // jedes Mal zurück, während der Sweep ihn wieder anhebt.
-    const reineTxs = ohneSweepBuchungen(txs);
-    const candidates = reineTxs.filter(t => t.pending && !t._linkedTo && t._seriesId
+    const candidates = txs.filter(t => t.pending && !t._linkedTo && t._seriesId
       && t.accountId === "acc-giro" && (t.desc || "").startsWith("Sparen·")
       && (t.date || "").startsWith(monthPfx));
     if(candidates.length !== 1) return null;
@@ -2749,75 +2719,26 @@ export default function SupaDupaMoney() {
     // Schieflage stehen. Jetzt gibt es eine Quelle für alle Raten.
     //
     // Solange die (verzögerte) Rechnung noch nicht gelaufen ist, bleibt die
-    // Rate unangetastet; dieser Block kümmert sich dann nur um den Sweep.
+    // Rate unangetastet.
     const safeAmount = sparOptimum.has(abgang.id) ? sparOptimum.get(abgang.id) : oldAmount;
     const zugang = reineTxs.find(t => t._linkedTo === abgang.id && t.pending);
 
-    // ── Zins-Sweep: fällt der Monatsletzte auf einen Zinstermin, geht am
-    // Stichtag mehr aufs Tagesgeld, als dauerhaft entbehrlich ist — der
-    // Überhang kommt am nächsten Banktag zurück. Beide Größen gehören
-    // zusammen: die normale Rate ergibt sich aus der 24-Monats-Sicht oben,
-    // der Überhang aus dem Zwei-Tage-Fenster. Deshalb hier gemeinsam, statt
-    // als zweite Automatik, die um dieselbe Buchung konkurriert.
-    const zinsMonate = parseZinsMonate(kvStore.getItem("mbt_zins_monate")) ?? DEFAULT_ZINS_MONATE;
-    let sweepZiel = null;
-    if(zinsMonate.includes(m) && zugang) {
-      const termin = monatsLetzter(y, m);
-      // Simulation MIT der neuen sicheren Rate — sonst berechnete sich der
-      // Überhang auf einem Saldo, den es gleich nicht mehr gibt.
-      const simTxs = reineTxs.map(t => {
-        if(t.id === abgang.id) return { ...t, totalAmount: -safeAmount };
-        if(t.id === zugang.id) return { ...t, totalAmount: safeAmount };
-        return t;
-      });
-      const sctx = { txs: simTxs, cats, accounts, getKumulierterSaldo, getCat,
-        getBudgetForMonth, _restCache: {},
-        _txsById: buildTxIdMap(simTxs), _txsByMonth: buildTxsByMonth(simTxs) };
-      const f = sweepFenster(termin);
-      const salden = f.tage.map(d => ({ date: d, saldo: computeTagessaldoAt(d, "acc-giro", sctx, today) }));
-      const r = computeSweep({ salden, puffer: pn(_giroPuffer), normaleSparrate: safeAmount,
-        sofortRueck: kvStore.getItem("mbt_zins_sofortrueck") === "1" });
-      if(r && r.zurueck > 0) {
-        sweepZiel = { abgangId: abgang.id, zugangId: zugang.id, hin: r.hin,
-          zurueck: r.zurueck, basis: safeAmount, ruecktag: f.bis,
-          zielKontoId: zugang.accountId, planName: (abgang.desc||"").replace(/^Sparen·/, "") };
-      }
-    }
-    if(!sweepZiel) {
-      // Kein Zinsmonat: nur die normale Rate pflegen — und einen ggf. noch
-      // stehenden Sweep zurückbauen (Zinsmonate abgewählt, Termin vorbei).
-      sweepZiel = { abgangId: abgang.id, zugangId: zugang?.id || null, hin: 0,
-        zurueck: 0, basis: 0, ruecktag: null, zielKontoId: null, planName: "" };
-    }
-    if(safeAmount === oldAmount && !sweepZustandAnwenden(txs, {...sweepZiel, mkId: () => "probe"}))
-      return null; // Rate stimmt UND Sweep-Zustand stimmt → nichts zu tun
+    if(safeAmount === oldAmount) return null;   // Rate stimmt → nichts zu tun
     return { abgangId: abgang.id, zugangId: zugang?.id || null, oldAmount, safeAmount,
-      sweepZiel, monthLabel: `${MONTHS_S[m]} ${y}` };
+      monthLabel: `${MONTHS_S[m]} ${y}` };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sparOptimum, txs, cats, accounts, _giroPuffer, budgets, startBalances]);
 
   useEffect(() => {
     if(!currentMonthSparAdjust) return;
-    const { abgangId, zugangId, oldAmount, safeAmount, sweepZiel, monthLabel } = currentMonthSparAdjust;
-    setTxs(prev => {
-      // 1) Normale Rate auf den sicheren Wert setzen (Sweep-Marker fallen dabei
-      //    weg — Schritt 2 setzt sie passend neu).
-      let next = prev.map(t => {
-        if(t.id === abgangId) {
-          const { _sweepHin, _sweepBasis, ...rest } = t;
-          return { ...rest, totalAmount: -safeAmount, splits: (t.splits||[]).map(s=>({...s, amount: -safeAmount})) };
-        }
-        if(zugangId && t.id === zugangId) {
-          const { _sweepHin, _sweepBasis, ...rest } = t;
-          return { ...rest, totalAmount: safeAmount, splits: (t.splits||[]).map(s=>({...s, amount: safeAmount})) };
-        }
-        return t;
-      });
-      // 2) Sweep-Zustand abgleichen. Liefert null, wenn er bereits passt —
-      //    genau das beendet den Kreislauf (siehe utils/zinsSweep.js).
-      const mitSweep = sweepZustandAnwenden(next, { ...sweepZiel, mkId: uid });
-      return mitSweep || next;
-    });
+    const { abgangId, zugangId, oldAmount, safeAmount, monthLabel } = currentMonthSparAdjust;
+    setTxs(prev => prev.map(t => {
+      if(t.id === abgangId)
+        return { ...t, totalAmount: -safeAmount, splits: (t.splits||[]).map(s=>({...s, amount: -safeAmount})) };
+      if(zugangId && t.id === zugangId)
+        return { ...t, totalAmount: safeAmount, splits: (t.splits||[]).map(s=>({...s, amount: safeAmount})) };
+      return t;
+    }));
     if(safeAmount !== oldAmount) {
       setAutoSparInfo({ monthLabel, oldAmount, newAmount: safeAmount,
         direction: safeAmount > oldAmount ? "up" : "down" });
@@ -2849,15 +2770,10 @@ export default function SupaDupaMoney() {
       const pad2 = n => String(n).padStart(2, "0");
       // Ab dem LAUFENDEN Monat — er gehört mit in dieselbe Optimierung.
       const ab = `${today.getFullYear()}-${pad2(today.getMonth() + 1)}-01`;
-      // Auf dem NORMALISIERTEN Bestand rechnen: eine für den Zins-Sweep
-      // angehobene Rate wird auf ihren Grundwert zurückgesetzt und die
-      // Rückbuchung ausgeblendet — sonst gälte der Sweep-Betrag als „aktuelle
-      // Rate" und würde jedes Mal zurückgeschrieben.
-      const reineTxs = ohneSweepBuchungen(txs);
       try {
         setSparOptimum(sparPlanOptimum({
-          txs: reineTxs, puffer: pn(_giroPuffer), today, abDatumIso: ab,
-          ctx: { txs: reineTxs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth },
+          txs, puffer: pn(_giroPuffer), today, abDatumIso: ab,
+          ctx: { txs, cats, accounts, getKumulierterSaldo, getCat, getBudgetForMonth },
         }));
       } catch { /* stiller Helfer — bei einem Rechenfehler lieber nichts tun */ }
     };
@@ -2873,8 +2789,7 @@ export default function SupaDupaMoney() {
   }, [txs, cats, accounts, _giroPuffer, budgets, startBalances]);
 
   // Die Raten der FOLGEMONATE anwenden. Der laufende Monat läuft weiter über
-  // `currentMonthSparAdjust` — dort hängt der Zins-Sweep mit dran, und der
-  // gehört in EINEN Schreibvorgang mit der Rate.
+  // `currentMonthSparAdjust`.
   useEffect(() => {
     if(!sparOptimum.size) return;
     const today = new Date();
@@ -3805,57 +3720,7 @@ export default function SupaDupaMoney() {
           Erscheint, solange die Vorschau in den nächsten 12 Monaten kippt — NICHT
           ausblendbar; verschwindet erst, wenn das Problem behoben ist. Tippen öffnet
           Money Mood (Details). */}
-      {/* ── Fällige Sweep-Rücküberweisung: oberster Balken, noch VOR der
-          Liquiditätswarnung. Bewusst hier und nicht nur unter dem Hero: Dieser
-          Balken ist auf ALLEN Screens sichtbar, und die Rückbuchung zu
-          vergessen ist der einzige Weg, wie der Zins-Sweep schiefgeht — mit
-          eingeschalteter Sofort-Rückbuchung steht das Konto sonst real im
-          Minus. Die Liquiditätswarnung darunter erklärt dann den Zusammenhang;
-          hier oben steht nur, was zu TUN ist. ── */}
-      {(()=>{
-        const p2 = n => String(n).padStart(2,"0");
-        const heute = new Date();
-        const heuteIso = `${heute.getFullYear()}-${p2(heute.getMonth()+1)}-${p2(heute.getDate())}`;
-        const offen = (txs||[])
-          .filter(t => t.pending && t._sweepId && t.accountId==="acc-giro" && t.totalAmount>0)
-          .sort((a,b)=>String(a.date).localeCompare(String(b.date)))[0];
-        if(!offen) return null;
-        const faellig = String(offen.date) <= heuteIso;
-        const ueberfaellig = String(offen.date) < heuteIso;
-        // Vor dem Termin nur zeigen, wenn ohnehin ein Engpass gemeldet wird —
-        // sonst wäre es wochenlang ein Daueralarm ohne Handlungsbedarf.
-        if(!faellig && !strainWarning) return null;
-        const gegen = (txs||[]).find(q => q.id === offen._linkedTo);
-        const vonKonto = accounts.find(a => a.id === (gegen && gegen.accountId));
-        const dat = String(offen.date).split("-").reverse().join(".");
-        return (
-          <div onClick={navigateToSparen}
-            style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",
-              background: ueberfaellig ? "#B3261E" : T.warn_bold, color:"#fff",
-              padding:"7px 12px",flexShrink:0,boxShadow:"0 1px 6px rgba(0,0,0,0.3)"}}>
-            {Li("arrow-left-right",16,"#fff")}
-            <div style={{flex:1,minWidth:0,lineHeight:1.25}}>
-              <div style={{fontSize:12.5,fontWeight:700,overflow:"hidden",
-                textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                {betrag(Math.abs(offen.totalAmount))} € zurück aufs Giro
-                {ueberfaellig ? " — überfällig!" : ""}
-              </div>
-              <div style={{fontSize:11,opacity:0.92,overflow:"hidden",
-                textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                von {vonKonto ? vonKonto.name : "Tagesgeld"} · {faellig ? "seit" : "am"} {dat} · tippen
-              </div>
-            </div>
-            {Li("chevron-right",18,"#fff")}
-          </div>
-        );
-      })()}
-
-      {/* Solange der Absicherungs-Satz auf dem Bildschirm steht, tritt dieser
-          Balken zurück: Beide melden dieselbe Schieflage, und der Satz sagt
-          zusätzlich, was zu tun ist (Nutzer: „Die Warnungen nehmen Überhand").
-          Auf allen anderen Bildschirmen — Monat, Trend, Daten — bleibt der
-          Balken die einzige Meldung und erscheint wie bisher. */}
-      {strainWarning && !strainDurchSweep && !absicherungsSatzDa && (()=>{
+      {strainWarning && !absicherungsSatzDa && (()=>{
         const w = strainWarning, s = w.soonest;
         const label = `${MONTHS_S[s.mi]} ${s.yr}`;
         return (

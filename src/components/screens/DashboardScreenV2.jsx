@@ -7,7 +7,6 @@ import { CategoryChart } from "../molecules/CategoryChart.jsx";
 import { BudgetEditorModal } from "../organisms/BudgetEditorModal.jsx";
 import { IconPickerDialog } from "../organisms/IconPickerDialog.jsx";
 import { KontoWarnungWidget } from "../organisms/KontoWarnungWidget.jsx";
-import { SweepBanner } from "../organisms/SweepBanner.jsx";
 import { AbsicherungsSatz } from "../organisms/AbsicherungsSatz.jsx";
 import { PendingList } from "../organisms/PendingList.jsx";
 import { SaldoHeroV2 } from "../organisms/SaldoHeroV2.jsx";
@@ -1202,7 +1201,7 @@ function DashboardScreenV2() {
 
                 Jetzt eine DECKENDE Flaeche im Positiv-Ton des Themes, mit
                 gerechneter Schrift — dieselbe Entscheidung wie beim
-                Absicherungs-Satz und der Super-Sparraten-Zeile: Eine deckende
+                Absicherungs-Satz und der Zinsgutschrift-Zeile: Eine deckende
                 Flaeche bringt ihren Untergrund selbst mit und sieht deshalb in
                 jedem Theme gleich aus. Aufbau, Texte und Groessen bleiben,
                 wie sie waren. */}
@@ -1396,11 +1395,6 @@ function DashboardScreenV2() {
             nichts"). */}
         {!isPastMonth && <AbsicherungsSatz
           onOeffnen={()=>setActivePanel(p=>p==="warnings"?null:"warnings")}/>}
-
-        {/* Zins-Sweep: am Stichtag die Überweisung, danach die Rückbuchung.
-            Steht ÜBER den Panel-Reitern, damit es auch dann auffällt, wenn
-            gerade ein anderes Panel offen ist. */}
-        {!isPastMonth && <SweepBanner/>}
 
         {/* Warnungen-Widget: immer gemountet, damit der Badge-Zähler aktuell bleibt */}
         {!isPastMonth && (

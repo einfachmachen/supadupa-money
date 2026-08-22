@@ -55,9 +55,10 @@ describe("Sparplan-Kopf: eine Zeile je Betrag, rechtsbündig, ohne Cent", () => 
     expect(block).toMatch(/fontSize:BETRAG_GROSS/);
     expect(block, "der Betrag bricht nicht um und schrumpft nicht")
       .toMatch(/whiteSpace:"nowrap",flexShrink:0/);
-    // Und alle drei Betraege gehen wirklich durch diese eine Zeile.
-    expect((wirksam.match(/betragZeile\(/g) || []).length,
-      "sicher sparen, hin, zurueck").toBe(3);
+    // Seit die Mega-Sparrate weg ist, gibt es in diesem Bereich nur noch
+    // EINEN Betrag: „Heute sicher sparen". Die Hilfsfunktion bleibt trotzdem
+    // — sie hält die Form fest, in der der naechste dazukommt.
+    expect((wirksam.match(/betragZeile\(/g) || []).length).toBe(1);
   });
 
   it("die Beträge im Sparbereich zeigen keine Nachkommastellen", () => {
@@ -68,13 +69,12 @@ describe("Sparplan-Kopf: eine Zeile je Betrag, rechtsbündig, ohne Cent", () => 
     // Die SPARBETRAEGE des Bereichs laufen alle darueber — zwischen „Heute
     // sicher sparen" und dem Ende des Erklaertexts steht kein `betrag(` mehr.
     //
-    // Ausgenommen sind die ZINSBETRAEGE: Sie behalten ihre Cent. Bei 2 % auf
-    // ein paar tausend Euro geht es um einstellige Betraege, und ob die
-    // Mega-Sparrate 27 Cent oder 12 € bringt, ist genau die Frage — gerundet
-    // waere beides „0" bzw. „12". Die Ausnahme steht hier namentlich, damit
-    // sie nicht zum Schlupfloch fuer den naechsten Sparbetrag wird.
+    // Ausgenommen sind die ZINSBETRAEGE: Sie behalten ihre Cent. Eine
+    // Gutschrift von 8,40 € auf 8 € zu runden wirft einen guten Teil der
+    // Aussage weg. Die Ausnahme steht hier namentlich, damit sie nicht zum
+    // Schlupfloch fuer den naechsten Sparbetrag wird.
     const von = wirksam.indexOf('betragZeile("Heute sicher sparen:"');
-    const bis = wirksam.indexOf("auf dem Giro.");
+    const bis = wirksam.indexOf("{result&&result.length>0&&(<>");
     expect(von, "der Bereich muss es geben").toBeGreaterThan(-1);
     expect(bis).toBeGreaterThan(von);
     const ungerundet = wirksam.slice(von, bis).split("\n")
@@ -115,21 +115,19 @@ describe("Sparplan-Kopf: eine Zeile je Betrag, rechtsbündig, ohne Cent", () => 
       .not.toMatch(/Klicke „Neuberechnen"/);
   });
 
-  it("der Erklärtext läuft fort, ohne Zeilenumbrüche", () => {
-    const i = wirksam.indexOf("bleiben <b>{betragR(sweep.restNachSweep)} €</b>");
-    expect(i, "der Erklärtext muss es geben").toBeGreaterThan(-1);
-    const block = wirksam.slice(i - 400, i + 400);
-    expect(block, "kein <br/> im Erklärtext").not.toMatch(/<br\/>/);
+  it("von der Mega-Sparrate ist nichts mehr übrig", () => {
+    // „Meine Idee mit der Mega-Sparrate war leider pure Illusion. Es wird
+    // taggenau verzinst und nur am Ende jedes Quartals die Summe der
+    // taggenauen Zinsen ausgezahlt. Von daher können wir das Feature wieder
+    // komplett entfernen." (Nutzer)
+    expect(wirksam, "kein Sweep-Rest im Bildschirm").not.toMatch(/Mega-Sparrate/);
+    expect(wirksam).not.toMatch(/sweep/i);
+    expect(wirksam, "auch nicht die Sofort-Rückbuchung").not.toMatch(/sofortRueck/);
   });
 
-  it("die Vormerkung ist klar benannt — und heißt Mega-Sparrate", () => {
-    expect(src).toContain("Die Mega-Sparrate wird erst vorgemerkt, wenn der Zinsmonat läuft.");
-    expect(wirksam, "der alte, unklare Satz ist weg")
-      .not.toMatch(/vorgemerkt wird automatisch, sobald/);
-    // Auch in der Tabelle darunter — zwei Namen für dieselbe Sache waren der
-    // Anlass („Unten die Einträge in der Liste … ändern").
-    expect(wirksam, "kein Super mehr im Bildschirmtext").not.toContain("Super-Sparrate<");
-    expect(wirksam).toContain("Mega-Sparrate</b>");
+  it("dafür steht dort jetzt die erwartete Zinsgutschrift", () => {
+    expect(wirksam).toContain("Zinsgutschrift am");
+    expect(wirksam).toMatch(/betrag\(zinsNaechst\.zins\)/);
   });
 });
 
@@ -167,7 +165,7 @@ describe("Sparplan-Knopf: anlegen oder löschen", () => {
   it("Löschen fragt nach und trifft nur Vormerkungen", () => {
     const i = wirksam.indexOf("const sparplanLoeschen");
     expect(i, "die Funktion muss es geben").toBeGreaterThan(-1);
-    const block = wirksam.slice(i, i + 1400);
+    const block = wirksam.slice(i, i + 2000);
     // Gefragt wird im App-Stil, nicht vom Browser.
     expect(block).toMatch(/frageBestaetigung\(frage/);
     expect(block).toMatch(/ton:"gefahr"/);
@@ -177,6 +175,8 @@ describe("Sparplan-Knopf: anlegen oder löschen", () => {
     // Ohne Grabstein holt der naechste Sync die Raten von einem anderen
     // Geraet zurueck.
     expect(block).toMatch(/recordDeletedTxs\(/);
+    // Die vorgemerkten Zinsgutschriften gehoeren zum Plan und gehen mit ihm.
+    expect(block).toMatch(/_zinsId/);
   });
 
   it("das Auffrischen ist bewusst entfallen, nicht vergessen", () => {

@@ -153,16 +153,15 @@ export function computeMinTagessaldo(y, m, virtualSpar = {}, accId, excludeSparD
 // Vormonats, CSV-Duplikatfilter, Vorzeichen aus Kategorie/_csvType und die
 // Budget-Reservierung (RestMitte/RestEnde).
 //
-// Nötig für den Zins-Sweep (utils/zinsSweep.js): dessen Fenster läuft vom
+// Nötig für das Ratenfenster: es läuft vom
 // Monatsletzten bis zum nächsten Banktag und überschreitet damit regelmäßig
 // die Monatsgrenze — computeMinTagessaldo liefert dagegen nur das Minimum
 // EINES Monats.
 // `virtualSpar` (optional): geplante, aber noch nicht gebuchte Sparraten als
 // Datum→Betrag-Karte — dasselbe Format wie in `computeMinTagessaldo`. Die
-// Sparplan-Vorschau rechnet damit (sie legt ja noch keine Buchungen an), und
-// die Super-Sparrate soll dort schon VOR dem Zinsmonat stehen. Ohne diesen
-// Durchgriff sähe die Sweep-Rechnung einen Saldo, in dem die geplanten Raten
-// gar nicht abgezogen sind — und käme auf einen viel zu hohen Betrag.
+// Sparplan-Vorschau rechnet damit, weil sie noch keine Buchungen angelegt hat:
+// Ohne diesen Durchgriff sähe sie einen Saldo, in dem die geplanten Raten gar
+// nicht abgezogen sind.
 export function computeTagessaldoAt(iso, accId, ctx, today = new Date(), virtualSpar = {}) {
   const [y, mo] = String(iso).split("-").map(Number);
   if (!y || !mo) return null;
@@ -279,9 +278,9 @@ export function computeSafeCurrentMonthAmount({ y, m, puffer, abgangId, abgangDe
 // des LAUFENDEN Monats. Sie prüft damit den ganzen Horizont — eine Schieflage
 // im Januar senkt also schon im August die Sparrate. Das ist teuer und
 // unnötig: Das Geld wird bis Dezember gar nicht gebraucht, liegt bis dahin
-// zinslos auf Giro, und genau die Monate mit der Super-Sparrate verlieren
+// zinslos auf Giro, und genau die Monate mit dem hoechsten Bestand verlieren
 // ihren Vorsprung (Nutzer-Hinweis: „Ich möchte so viel wie möglich sparen —
-// besonders in den Monaten mit der Super-Sparrate").
+// besonders in den zinsstarken Monaten").
 //
 // Die richtige Aufteilung folgt aus der Sache selbst: Geld, das eine Rate
 // NICHT abbucht, bleibt von ihrem Termin an auf Giro liegen — aber die

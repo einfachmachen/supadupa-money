@@ -76,7 +76,7 @@ function AbsicherungsSatz({ onOeffnen }) {
   if (!alsBalken) return null;
 
   // Farbe nach Bedeutung, Schrift dagegen gerechnet — nicht geraten. Die
-  // Fläche ist deckend (wie beim Sync-Hinweis und der Super-Sparraten-Zeile):
+  // Fläche ist deckend (wie beim Sync-Hinweis und der Zinsgutschrift-Zeile):
   // eine Tönung sieht über 34 Themes jedes Mal anders aus.
   const ton = status.art === "rueckholen" ? T.gold : T.warn_bold;
   const paar = knopfPaar(ton, DUNKEL);

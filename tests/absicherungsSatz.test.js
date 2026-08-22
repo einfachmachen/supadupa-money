@@ -163,7 +163,7 @@ describe("Absicherungs-Satz", () => {
     const app = readFileSync(resolve(wurzel, "src/App.jsx"), "utf8");
     expect(satz).toMatch(/export function useAbsicherungsSatzAktiv/);
     expect(app).toMatch(/const absicherungsSatzDa = useAbsicherungsSatzAktiv\(\)/);
-    expect(app).toMatch(/strainWarning && !strainDurchSweep && !absicherungsSatzDa/);
+    expect(app).toMatch(/strainWarning && !absicherungsSatzDa/);
   });
 
   it("die Vorwarnung im Dialog sagt dasselbe — schon VOR dem Speichern", () => {

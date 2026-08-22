@@ -67,10 +67,12 @@ describe("Sparplan-Pflege: was die Automatik liegen lässt", () => {
     expect(sparPlanPflege({ txs, sparDesc: DESC, heuteIso: HEUTE }).vergangenAnzahl).toBe(0);
   });
 
-  it("fremde Pläne und Sweep-Buchungen bleiben unangetastet", () => {
+  it("fremde Pläne bleiben unangetastet", () => {
+    // Der Filter auf `_sweepId` ist mit der Mega-Sparrate entfallen — es gibt
+    // keine Buchungen mehr, die unter dem Namen dieses Plans laufen, ohne eine
+    // Rate zu sein.
     const txs = [
       { ...abgang("fremd", "2026-07-31", 200), desc: "Sparen·Urlaub" },
-      { ...abgang("sweep", "2026-07-31", 9000), _sweepId: "sw1" },
     ];
     const p = sparPlanPflege({ txs, sparDesc: DESC, heuteIso: HEUTE });
     expect(p.vergangenIds).toEqual([]);
