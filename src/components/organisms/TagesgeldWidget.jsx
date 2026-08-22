@@ -474,7 +474,6 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     const kontoCtx = { txs: basisTxs, cats, accounts, getKumulierterSaldo, getCat,
       getBudgetForMonth, _restCache: {},
       _txsById: buildTxIdMap(basisTxs), _txsByMonth: buildTxsByMonth(basisTxs) };
-    const saldoAmTag = (d, c, vs) => computeTagessaldoAt(d, "acc-giro", c, undefined, vs);
 
     const addVS = (y, m, wert, vs) => {
       if(!wert || wert <= 0) return;

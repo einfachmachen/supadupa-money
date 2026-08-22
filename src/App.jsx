@@ -84,6 +84,7 @@ import { computeKontoWarnungen } from "./utils/kontoWarnungen.js";
 import { sparPlanOptimum, sparHilfeFuerEngpass, computeTagessaldoAt, buildTxsByMonth } from "./utils/sparBerechnen.js";
 import { DEFAULT_ZINS_MONATE, parseZinsMonate, monatsLetzter, zinsTermine } from "./utils/zinsTermine.js";
 import { sweepAufraeumen } from "./utils/sweepAufraeumen.js";
+import { sparAnpassungFuerMonat, sparRateSetzen } from "./utils/sparAutomatik.js";
 import { Li } from "./utils/icons.jsx";
 import { makeYearData } from "./utils/yearData.js";
 import { isDuplCounterpart, buildTxIdMap } from "./utils/tx.js";
@@ -2694,55 +2695,23 @@ export default function SupaDupaMoney() {
   // TDZ-Falle, vor der der Kommentar direkt darunter schon einmal warnt).
   const [sparOptimum, setSparOptimum] = useState(() => new Map());
 
-  const currentMonthSparAdjust = useMemo(() => {
-    const today = new Date();
-    const y = today.getFullYear(), m = today.getMonth();
-    // Nur bei GENAU EINER eindeutigen Sparplan-Abgang-Buchung für diesen Monat
-    // auf Giro automatisch eingreifen — bei mehreren Plänen wäre nicht klar,
-    // welcher gemeint ist, dann lieber nichts automatisch anfassen.
-    const pad2 = n => String(n).padStart(2, "0");
-    const monthPfx = `${y}-${pad2(m + 1)}-`;
-    const candidates = txs.filter(t => t.pending && !t._linkedTo && t._seriesId
-      && t.accountId === "acc-giro" && (t.desc || "").startsWith("Sparen·")
-      && (t.date || "").startsWith(monthPfx));
-    if(candidates.length !== 1) return null;
-    const abgang = candidates[0];
-    const oldAmount = round2(Math.abs(abgang.totalAmount));
-    // Der Betrag kommt aus DERSELBEN Rechnung wie die der Folgemonate
-    // (`sparOptimum`, weiter unten) — der ganze Plan wird in einem Zug
-    // optimiert, nicht Monat für Monat.
-    //
-    // Warum nicht mehr hier gerechnet wird: Zwei getrennte Rechnungen für
-    // denselben Plan liefen einander in die Quere. Die eine hob die Rate des
-    // laufenden Monats auf das Maximum ihres Fensters, die andere musste das
-    // in den Folgemonaten wieder einfangen — und wo das nicht ging, blieb eine
-    // Schieflage stehen. Jetzt gibt es eine Quelle für alle Raten.
-    //
-    // Solange die (verzögerte) Rechnung noch nicht gelaufen ist, bleibt die
-    // Rate unangetastet.
-    const safeAmount = sparOptimum.has(abgang.id) ? sparOptimum.get(abgang.id) : oldAmount;
-    const zugang = reineTxs.find(t => t._linkedTo === abgang.id && t.pending);
-
-    if(safeAmount === oldAmount) return null;   // Rate stimmt → nichts zu tun
-    return { abgangId: abgang.id, zugangId: zugang?.id || null, oldAmount, safeAmount,
-      monthLabel: `${MONTHS_S[m]} ${y}` };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sparOptimum, txs, cats, accounts, _giroPuffer, budgets, startBalances]);
+  // Die Entscheidung selbst steht in utils/sparAutomatik.js — als reine
+  // Funktion, damit sie geprüft werden kann. Hier drin war sie es nicht: Sie
+  // greift nur, wenn genau eine Sparplan-Rate für den laufenden Monat im
+  // Bestand steht, und kein Boot-Test mit leeren Daten kommt dort hinein. Beim
+  // Ausbau der Mega-Sparrate blieb deshalb eine Zeile mit einer gelöschten
+  // Hilfsvariablen stehen, und die App stürzte ab, während alle Tests grün
+  // waren.
+  const currentMonthSparAdjust = useMemo(
+    () => sparAnpassungFuerMonat({ txs, sparOptimum }),
+    [sparOptimum, txs]);
 
   useEffect(() => {
     if(!currentMonthSparAdjust) return;
-    const { abgangId, zugangId, oldAmount, safeAmount, monthLabel } = currentMonthSparAdjust;
-    setTxs(prev => prev.map(t => {
-      if(t.id === abgangId)
-        return { ...t, totalAmount: -safeAmount, splits: (t.splits||[]).map(s=>({...s, amount: -safeAmount})) };
-      if(zugangId && t.id === zugangId)
-        return { ...t, totalAmount: safeAmount, splits: (t.splits||[]).map(s=>({...s, amount: safeAmount})) };
-      return t;
-    }));
-    if(safeAmount !== oldAmount) {
-      setAutoSparInfo({ monthLabel, oldAmount, newAmount: safeAmount,
-        direction: safeAmount > oldAmount ? "up" : "down" });
-    }
+    const { oldAmount, safeAmount, y, m } = currentMonthSparAdjust;
+    setTxs(prev => sparRateSetzen(prev, currentMonthSparAdjust));
+    setAutoSparInfo({ monthLabel: `${MONTHS_S[m]} ${y}`, oldAmount, newAmount: safeAmount,
+      direction: safeAmount > oldAmount ? "up" : "down" });
   }, [currentMonthSparAdjust]);
 
   // ── Der Sparplan als GANZES ───────────────────────────────────────────
