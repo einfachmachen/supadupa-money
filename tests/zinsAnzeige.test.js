@@ -35,8 +35,8 @@ beforeAll(() => {
 });
 
 // Gehalt am Ersten, eine bestehende Sparplan-Serie, ein Tagesgeldkonto.
-function bestand() {
-  const out = [];
+function bestand(extra = []) {
+  const out = [...extra];
   for (let i = 0; i < 4; i++) {
     const idx = MONAT + i, m = idx % 12, y = JAHR + Math.floor(idx / 12);
     out.push({ id: `inc-${i}`, accountId: "acc-giro", date: `${y}-${pad(m + 1)}-01`,
@@ -64,7 +64,7 @@ function machCtx(txs, setTxs = () => {}, frageBestaetigung = () => {}) {
   };
 }
 
-const oeffne = async (kv) => {
+const oeffne = async (kv, extra = []) => {
   const { kvStore } = await import("../src/utils/kvStore.js");
   const { TagesgeldWidget } = await import("../src/components/organisms/TagesgeldWidget.jsx");
   const { AppCtx } = await import("../src/state/AppContext.js");
@@ -83,15 +83,15 @@ const oeffne = async (kv) => {
   document.body.appendChild(el);
   const root = createRoot(el);
   await act(async () => {
-    root.render(React.createElement(AppCtx.Provider, { value: machCtx(bestand()) },
+    root.render(React.createElement(AppCtx.Provider, { value: machCtx(bestand(extra)) },
       React.createElement(TagesgeldWidget, { year: JAHR, month: MONAT, initialCollapsed: false })));
   });
   await act(async () => { await new Promise((r) => setTimeout(r, 1600)); });
   return { el, root };
 };
 
-const zeige = async (kv) => {
-  const { el, root } = await oeffne(kv);
+const zeige = async (kv, extra = []) => {
+  const { el, root } = await oeffne(kv, extra);
   const text = el.textContent || "";
   await act(async () => { root.unmount(); });
   el.remove();
@@ -131,7 +131,8 @@ describe("Zinsvorschau im Sparplan", () => {
 
   it("die Gutschrift steht auch an den Monaten der Tabelle", async () => {
     const text = await zeige({ mbt_zins_satz: "2" });
-    expect(text).toMatch(/Zinsen \d\d\.\d\d\.:\s*\+[\d.]+,\d\d €\s*für \d+ Tage/);
+    // „Zinsen 30 Tage bis 30.09.: +23,07 € — gebucht 01.10."
+    expect(text).toMatch(/Zinsen \d+ Tage bis \d\d\.\d\d\.:\s*\+[\d.]+,\d\d €\s*— gebucht \d\d\.\d\d\./);
   }, 20000);
 
   it("doppelter Zinssatz, doppelte Gutschrift", async () => {
@@ -166,6 +167,39 @@ describe("Zinsvorschau im Sparplan", () => {
     const lies = (t) => zahl(t.match(/Zinsgutschrift am [\d.]+:\s*([\d.]+,\d\d) €/)[1]);
     expect(lies(b)).toBeGreaterThan(lies(a));
     expect(lies(b) / lies(a)).toBeCloseTo(365 / 360, 2);
+  }, 30000);
+
+  it("eine SCHON vorgemerkte Gutschrift des laufenden Zeitraums zählt im Saldo", async () => {
+    // Die Grenze, an der es leicht danebengeht: Gerechnet wird ab dem Tag nach
+    // dem letzten Zinstermin, und der Anker ist der Saldo AN diesem Termin.
+    // Die Gutschrift für den abgeschlossenen Zeitraum ist auf den Tag danach
+    // datiert — sie liegt also knapp hinter dem Anker. Wird sie (wie die
+    // künftigen) aus den Bewegungen gefiltert, fällt sie in die Lücke und
+    // fehlt im Saldo.
+    const ersterDesMonats = `${JAHR}-${pad(MONAT + 1)}-01`;
+    const alt = { id: "zins-alt", accountId: "acc-tg", date: ersterDesMonats,
+      totalAmount: 5000, pending: true, _csvType: "income", desc: "Zinsen·Sparplan 1",
+      _zinsId: "z-alt", splits: [{ id: "za", catId: "", subId: "", amount: 5000 }] };
+    const lies = (t) => zahl(t.match(/Zinsgutschrift am [\d.]+:\s*([\d.]+,\d\d) €/)[1]);
+    const ohne = await zeige({ mbt_zins_satz: "2" });
+    const mit = await zeige({ mbt_zins_satz: "2" }, [alt]);
+    expect(lies(mit), "5.000 € mehr auf dem Konto bringen mehr Zins")
+      .toBeGreaterThan(lies(ohne));
+  }, 30000);
+
+  it("eine KÜNFTIGE Gutschrift zählt NICHT doppelt", async () => {
+    // Die rechnet der Plan gerade selbst aus. Stünde sie zusätzlich in den
+    // Bewegungen, verzinste sie sich selbst — und jedes Neuanlegen triebe den
+    // Betrag weiter hoch.
+    const naechsterIdx = MONAT + 2;
+    const kuenftig = { id: "zins-kuenftig", accountId: "acc-tg",
+      date: `${JAHR + Math.floor(naechsterIdx / 12)}-${pad((naechsterIdx % 12) + 1)}-01`,
+      totalAmount: 5000, pending: true, _csvType: "income", desc: "Zinsen·Sparplan 1",
+      _zinsId: "z-neu", splits: [{ id: "zk", catId: "", subId: "", amount: 5000 }] };
+    const lies = (t) => zahl(t.match(/bis [\d.]+ zusammen ([\d.]+) €/)[1]);
+    const ohne = await zeige({ mbt_zins_satz: "2" });
+    const mit = await zeige({ mbt_zins_satz: "2" }, [kuenftig]);
+    expect(lies(mit)).toBe(lies(ohne));
   }, 30000);
 
   it("von der Mega-Sparrate ist im Bildschirm nichts mehr zu sehen", async () => {
@@ -237,9 +271,10 @@ describe("Zinsgutschriften vormerken", () => {
       expect(t._csvType).toBe("income");
       expect(t.totalAmount, "eine Gutschrift ist positiv").toBeGreaterThan(0);
       expect(t.desc).toBe("Zinsen·Sparplan 1");
-      // Am Zinstermin, also am Monatsletzten.
-      const [y, m, d] = t.date.split("-").map(Number);
-      expect(d).toBe(new Date(y, m, 0).getDate());
+      // Am Tag NACH dem Zinstermin (Nutzer-Wunsch): Der Termin ist immer ein
+      // Monatsletzter, die Gutschrift also immer ein Monatserster.
+      const [, , d] = t.date.split("-").map(Number);
+      expect(d, "gebucht wird am Tag nach der Zinsberechnung").toBe(1);
     });
 
     await act(async () => { root.unmount(); });

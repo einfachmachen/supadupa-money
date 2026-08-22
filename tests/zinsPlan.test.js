@@ -157,3 +157,30 @@ describe("Zinsplan über mehrere Termine", () => {
     expect(plan.map((p) => p.termin)).toEqual(["2026-09-30"]);
   });
 });
+
+// ── Berechnet zum Quartalsletzten, gebucht am Tag darauf ──────────────────
+//
+// Nutzer: „Kannst Du die Zinsen dann bitte für den Tag nach der
+// Zinsberechnung auf dem Tagesgeldkonto gutschreiben? Das erhöht ja auch
+// etwas den Tagesgeldsaldo."
+//
+// Genau so macht es die Bank: Der 30.09. ist der Tag, BIS zu dem gerechnet
+// wird, der 01.10. der Tag, an dem das Geld da ist. Für den Zinseszins ist der
+// Unterschied nicht kosmetisch — die Gutschrift verzinst sich ab dem ersten
+// Tag des nächsten Quartals, nicht schon am letzten Tag des alten.
+describe("Gutschrift am Tag nach dem Termin", () => {
+  it("jeder Termin nennt seinen Buchungstag", () => {
+    const plan = zinsPlan({ termine: ["2026-09-30", "2026-12-31"], abIso: "2026-07-01",
+      startSaldo: 10000, prozent: 2, basis: 365 });
+    expect(plan[0].gutschrift).toBe("2026-10-01");
+    expect(plan[1].gutschrift).toBe("2027-01-01");
+  });
+
+  it("der Buchungstag ist zugleich der erste Tag des nächsten Zeitraums", () => {
+    // Sonst zählte ein Tag doppelt oder fiele heraus — und der Zinseszins
+    // liefe um einen Tag daneben.
+    const plan = zinsPlan({ termine: ["2026-09-30", "2026-12-31"], abIso: "2026-07-01",
+      startSaldo: 10000, prozent: 2, basis: 365 });
+    expect(plan[1].abschnitte[0].von).toBe(plan[0].gutschrift);
+  });
+});

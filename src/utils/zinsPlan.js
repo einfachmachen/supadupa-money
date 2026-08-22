@@ -21,9 +21,10 @@
 // ── Zinseszins ───────────────────────────────────────────────────────────
 //
 // Die gutgeschriebenen Zinsen bleiben auf dem Konto und verzinsen sich mit.
-// Sie werden deshalb ab dem Tag NACH ihrem Termin zum Saldo gezählt. Für die
-// Vorschau über mehrere Jahre ist das kein Detail: Bei 2 % und 20.000 € sind
-// es nach fünf Jahren rund 100 € Unterschied.
+// Sie werden ab dem Tag NACH dem Termin zum Saldo gezählt — an dem Tag bucht
+// die Bank sie auch (`gutschrift`). Für die Vorschau über mehrere Jahre ist das
+// kein Detail: Bei 2 % und 20.000 € sind es nach fünf Jahren rund 100 €
+// Unterschied.
 //
 // ── Jahresbasis ──────────────────────────────────────────────────────────
 //
@@ -119,7 +120,8 @@ export function zinsAusAbschnitten(abschnitte, prozent, basis = ZINS_BASIS_STAND
 
 // Der ganze Plan: je Zinstermin ein Betrag.
 //
-// `termine`     — aufsteigend, jeweils der Tag der Gutschrift (Quartalsletzter).
+// `termine`     — aufsteigend, jeweils der Tag, BIS zu dem gerechnet wird
+//                 (Quartalsletzter). Gebucht wird einen Tag später.
 // `abIso`       — erster Tag, der noch verzinst wird (Vortag = Stand `startSaldo`).
 // `startSaldo`  — Saldo am Tag VOR `abIso`.
 //
@@ -142,7 +144,16 @@ export function zinsPlan({ termine = [], abIso, startSaldo = 0, bewegungen = [],
     });
     const zins = zinsAusAbschnitten(abschnitte, prozent, basis);
     const tage = abschnitte.reduce((s, a) => s + a.tage, 0);
-    out.push({ termin, zins, tage, abschnitte });
+    // `termin` ist der Tag, BIS zu dem gerechnet wird — `gutschrift` der Tag,
+    // an dem das Geld auf dem Konto ist. Die Bank rechnet das Quartal zum
+    // Quartalsletzten ab und bucht am Tag darauf (Nutzer-Wunsch: „für den Tag
+    // nach der Zinsberechnung gutschreiben").
+    //
+    // Damit passt der Zinseszins genau: Die Gutschrift zählt ab dem ersten Tag
+    // des NÄCHSTEN Zeitraums zum Saldo — und `saldoVersatz` wird unten auf
+    // ebendiesen nächsten Zeitraum angewandt. Wäre sie auf den Termin selbst
+    // datiert, verzinste sie sich einen Tag zu früh.
+    out.push({ termin, gutschrift: tagPlus(termin, 1), zins, tage, abschnitte });
     if (mitZinseszins) saldoVersatz += zins;
     von = tagPlus(termin, 1);
   });

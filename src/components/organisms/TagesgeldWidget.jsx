@@ -562,9 +562,17 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
         const startSaldo = computeTagessaldoAt(anker || heuteIso, sparAccId, kontoCtx) || 0;
         // Alles, was sich danach auf dem Tagesgeld bewegt: echte und
         // vorgemerkte Buchungen …
+        //
+        // … mit einer Ausnahme, die genau auf der Grenze sitzt: die eigenen
+        // Zinsgutschriften. Die KÜNFTIGEN gehören nicht dazu — die rechnet
+        // `zinsPlan` gerade selbst aus, und doppelt gezählt verzinsten sie sich
+        // selbst. Die Gutschrift für den ABGESCHLOSSENEN Zeitraum dagegen ist
+        // echtes Geld auf dem Konto: Sie ist auf `abIso` datiert (Termin + 1)
+        // und liegt damit knapp hinter dem Anker — ohne diese Grenze fiele sie
+        // zwischen Anker und Bewegungen hindurch und fehlte im Saldo.
         const bewegungen = basisTxs
           .filter(t => t.accountId === sparAccId && String(t.date) > (anker || heuteIso)
-                    && !t._zinsId)
+                    && !(t._zinsId && String(t.date) > abIso))
           .map(t => ({ date: t.date, betrag: t.totalAmount }));
         // … und die Raten, die dieser Plan vorsieht. Sie stehen noch in keiner
         // Buchung — genau deshalb muss die Vorschau sie selbst mitbringen.
@@ -585,7 +593,8 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
           prozent: zinssatzVorschau, basis: zinsBasisVorschau });
         zinsPlanRows.forEach(z => {
           const [zy, zm] = z.termin.split("-").map(Number);
-          zinsProMonat.set(zy*12 + (zm-1), { termin: z.termin, zins: z.zins, tage: z.tage });
+          zinsProMonat.set(zy*12 + (zm-1),
+            { termin: z.termin, gutschrift: z.gutschrift, zins: z.zins, tage: z.tage });
         });
       } catch(e) { /* ohne Zinsen ist die Tabelle immer noch richtig */ }
     }
@@ -700,21 +709,26 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
     // ── Und die erwarteten Zinsgutschriften ──────────────────────────
     //
     // Nutzer-Wunsch: „die zu erwartenden Zinsen mit zu berechnen und
-    // vorzumerken". Sie gehen als EINNAHME auf das Tagesgeldkonto, am Tag der
-    // Gutschrift. Damit stehen sie im Saldo, im Monat und in der Prognose —
-    // ohne sie fehlt am Jahresende ein dreistelliger Betrag, den es wirklich
-    // gibt.
+    // vorzumerken". Sie gehen als EINNAHME auf das Tagesgeldkonto. Damit stehen
+    // sie im Saldo, im Monat und in der Prognose — ohne sie fehlt am Jahresende
+    // ein dreistelliger Betrag, den es wirklich gibt.
     //
-    // Nur künftige Termine: Ein vergangener ist längst gebucht (oder eben
-    // nicht — dann gehört er nicht in eine Vorschau).
+    // Datiert auf den Tag NACH dem Zinstermin (`gutschrift`, nicht `termin`):
+    // Die Bank rechnet zum Quartalsletzten ab und bucht am Tag darauf. „Das
+    // erhöht ja auch etwas den Tagesgeldsaldo" (Nutzer) — und zwar ab genau
+    // diesem Tag, was zugleich der erste Tag des nächsten Zinszeitraums ist.
+    //
+    // Nur künftige Gutschriften: Eine vergangene ist längst gebucht (oder eben
+    // nicht — dann gehört sie nicht in eine Vorschau).
     const zinsNeu = [];
     const zinsSeriesId = seriesId + "-zins";
     if(sparAccId) {
       const heute = heuteIsoVon();
-      const gutschriften = (result||[]).map(r=>r.zins).filter(z => z && z.zins > 0 && z.termin >= heute);
+      const gutschriften = (result||[]).map(r=>r.zins)
+        .filter(z => z && z.zins > 0 && z.gutschrift >= heute);
       gutschriften.forEach((z, i) => {
         zinsNeu.push({
-          id: "pend-"+uid(), date: z.termin, desc: buildZinsDesc(sparPlanName),
+          id: "pend-"+uid(), date: z.gutschrift, desc: buildZinsDesc(sparPlanName),
           totalAmount: z.zins, pending: true, _csvType: "income",
           accountId: sparAccId, _zinsId: zinsSeriesId,
           _seriesId: zinsSeriesId, _seriesIdx: i+1, _seriesTotal: gutschriften.length,
@@ -794,7 +808,8 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
   const zinsReihe = (result||[]).map(r => r.zins).filter(Boolean);
   const zinsNaechst = zinsReihe[0] || null;
   const zinsSumme = zinsReihe.reduce((s2, z) => s2 + (z.zins||0), 0);
-  const letzterZinsTermin = zinsReihe.length ? zinsReihe[zinsReihe.length-1].termin : null;
+  const letzteZinsGutschrift = zinsReihe.length
+    ? zinsReihe[zinsReihe.length-1].gutschrift : null;
   // ── Das Symbol, das den Sparplan anlegt oder wegwirft ────────────────
   //
   // Es steht VOR „Heute sicher sparen:" und damit in einer Zeile, die es
@@ -1315,9 +1330,9 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
         {zinsNaechst && (
           <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${T.bd}`,
             color:T.txt,fontSize:12,lineHeight:1.45}}>
-            Zinsgutschrift am {kurzDat(zinsNaechst.termin)}:{" "}
+            Zinsgutschrift am {kurzDat(zinsNaechst.gutschrift)}:{" "}
             <b style={{color:T.acc_gold,fontFamily:NUM_FONT}}>{betrag(zinsNaechst.zins)} €</b>
-            {zinsSumme > 0 && <>{" · "}bis {kurzDat(letzterZinsTermin)} zusammen{" "}
+            {zinsSumme > 0 && <>{" · "}bis {kurzDat(letzteZinsGutschrift)} zusammen{" "}
               <b style={{color:T.acc_pos,fontFamily:NUM_FONT}}>{betragR(zinsSumme)} €</b></>}
           </div>
         )}
@@ -1409,9 +1424,9 @@ function TagesgeldWidget({year, month, initialCollapsed=true}) {
                   <div style={{margin:"3px -6px -3px",padding:"3px 6px 4px",
                     background:zinsGrund(),color:zinsFarbe(),
                     fontSize:10.5,lineHeight:1.35}}>
-                    <b>Zinsen</b>{" "}{kurzTag(zins.termin)}:{" "}
+                    <b>Zinsen</b>{" "}{zins.tage}{" Tage bis "}{kurzTag(zins.termin)}:{" "}
                     <b style={{fontFamily:NUM_FONT}}>+{betrag(zins.zins)} €</b>
-                    {" für "}{zins.tage}{" Tage"}
+                    {" — gebucht "}{kurzTag(zins.gutschrift)}
                   </div>
                 )}
                 </div>
